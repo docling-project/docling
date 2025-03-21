@@ -13,6 +13,7 @@ from docling.datamodel.pipeline_options import (
     OcrOptions,
     PdfPipelineOptions,
     RapidOcrOptions,
+    OnnxtrOcrOptions,
     TesseractCliOcrOptions,
     TesseractOcrOptions,
 )
@@ -62,6 +63,7 @@ def test_e2e_conversions():
         TesseractOcrOptions(),
         TesseractCliOcrOptions(),
         EasyOcrOptions(force_full_page_ocr=True),
+        OnnxtrOcrOptions(force_full_page_ocr=True),
         TesseractOcrOptions(force_full_page_ocr=True),
         TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]),
         TesseractCliOcrOptions(force_full_page_ocr=True),
