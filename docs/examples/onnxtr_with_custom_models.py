@@ -14,7 +14,7 @@ def main():
     ocr_options = OnnxtrOcrOptions(
         det_arch="db_mobilenet_v3_large",
         reco_arch="Felix92/onnxtr-parseq-multilingual-v1",  # Model will be downloaded from Hugging Face Hub
-        auto_correct_orientation=True,  # This can be used to correct the orientation of the pages
+        auto_correct_orientation=False,  # This can be set to `True` to auto-correct the orientation of the pages
     )
 
     pipeline_options = PdfPipelineOptions(

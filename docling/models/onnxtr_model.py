@@ -50,7 +50,7 @@ class OnnxtrOcrModel(BaseOcrModel):
                     ocr_predictor,
                 )
 
-                # We diable multiprocessing for OnnxTR,
+                # We disable multiprocessing for OnnxTR,
                 # because the speed up is minimal and it can raise memory leaks on windows
                 os.environ["ONNXTR_MULTIPROCESSING_DISABLE"] = "TRUE"
             except ImportError:
@@ -72,11 +72,15 @@ class OnnxtrOcrModel(BaseOcrModel):
                 config = {
                     "assume_straight_pages": True,
                     "straighten_pages": False,
-                    # This should be disabled when docling supports polygons
-                    "export_as_straight_boxes": True,
+                    "export_as_straight_boxes": False,
                     "disable_crop_orientation": False,
                     "disable_page_orientation": False,
                 }
+
+            engine_cfg = EngineConfig(
+                providers=self.options.providers,
+                session_options=self.options.session_options,
+            )
 
             self.reader = ocr_predictor(
                 det_arch=(
@@ -95,10 +99,9 @@ class OnnxtrOcrModel(BaseOcrModel):
                 paragraph_break=self.options.paragraph_break,
                 load_in_8_bit=self.options.load_in_8_bit,
                 **config,
-                # TODO: Allow specification of the engine configs in the options
-                det_engine_cfg=None,
-                reco_engine_cfg=None,
-                clf_engine_cfg=None,
+                det_engine_cfg=engine_cfg,
+                reco_engine_cfg=engine_cfg,
+                clf_engine_cfg=engine_cfg,
             )
 
     def _to_absolute_and_docling_format(
@@ -170,24 +173,29 @@ class OnnxtrOcrModel(BaseOcrModel):
                                 for line in block.lines
                                 for word in line.words
                             ):
-                                all_ocr_cells.append(
-                                    TextCell(
-                                        index=ix,
-                                        text=word.value,
-                                        orig=word.value,
-                                        from_ocr=True,
-                                        confidence=word.confidence,
-                                        rect=BoundingRectangle.from_bounding_box(
-                                            BoundingBox.from_tuple(
-                                                self._to_absolute_and_docling_format(
-                                                    word.geometry,
-                                                    img_shape=(im_height, im_width),
-                                                ),
-                                                origin=CoordOrigin.TOPLEFT,
-                                            )
-                                        ),
+                                if (
+                                    word.confidence >= self.options.confidence_score
+                                    and word.objectness_score
+                                    >= self.options.objectness_score
+                                ):
+                                    all_ocr_cells.append(
+                                        TextCell(
+                                            index=ix,
+                                            text=word.value,
+                                            orig=word.value,
+                                            from_ocr=True,
+                                            confidence=word.confidence,
+                                            rect=BoundingRectangle.from_bounding_box(
+                                                BoundingBox.from_tuple(
+                                                    self._to_absolute_and_docling_format(
+                                                        word.geometry,
+                                                        img_shape=(im_height, im_width),
+                                                    ),
+                                                    origin=CoordOrigin.TOPLEFT,
+                                                )
+                                            ),
+                                        )
                                     )
-                                )
 
                 # Post-process the cells
                 page.cells = self.post_process_cells(all_ocr_cells, page.cells)
