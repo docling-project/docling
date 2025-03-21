@@ -176,11 +176,8 @@ version = "0.7.0"
 description = "Reusable constraint types to use with typing.Annotated"
 optional = false
 python-versions = ">=3.8"
-<<<<<<< HEAD
 groups = ["main", "examples"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
-=======
->>>>>>> 9ba75e8 (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "annotated_types-0.7.0-py3-none-any.whl", hash = "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"},
     {file = "annotated_types-0.7.0.tar.gz", hash = "sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89"},
@@ -192,11 +189,8 @@ version = "4.9.0"
 description = "High level compatibility layer for multiple asynchronous event loop implementations"
 optional = false
 python-versions = ">=3.9"
-<<<<<<< HEAD
 groups = ["examples"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
-=======
->>>>>>> 9ba75e8 (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "anyio-4.9.0-py3-none-any.whl", hash = "sha256:9f76d541cad6e36af7beb62e978876f3b41e3e04f2c1fbf0884604c0a9c4d93c"},
     {file = "anyio-4.9.0.tar.gz", hash = "sha256:673c0c244e15788651a4ff38710fea9675823028a6f08a5eda409e0c9840a028"},
@@ -10470,4 +10464,7 @@ content-hash = "dec1d19b2921bdf0316744008b2d49d3bf31ca4756922069839f4f9b675888d4
 lock-version = "2.0"
 python-versions = "^3.9"
 content-hash = "16324c95a8aae1a710c4151e509c59e9a97d8bb97d4c726861ab3215fbea0a9d"
+<<<<<<< HEAD
 >>>>>>> 9ba75e8 (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+>>>>>>> 218afab (feat(ocr): Add OnnxTR as possible OCR engine)
