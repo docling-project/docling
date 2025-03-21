@@ -11,9 +11,9 @@ from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
     OcrOptions,
+    OnnxtrOcrOptions,
     PdfPipelineOptions,
     RapidOcrOptions,
-    OnnxtrOcrOptions,
     TesseractCliOcrOptions,
     TesseractOcrOptions,
 )

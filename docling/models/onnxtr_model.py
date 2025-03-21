@@ -1,8 +1,10 @@
 import logging
+import os
 from pathlib import Path
 from typing import Iterable, Optional, Type
 
 import numpy
+import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
@@ -42,7 +44,15 @@ class OnnxtrOcrModel(BaseOcrModel):
 
         if self.enabled:
             try:
-                from onnxtr.models import ocr_predictor, EngineConfig, from_hub  # type: ignore
+                from onnxtr.models import (  # type: ignore
+                    EngineConfig,
+                    from_hub,
+                    ocr_predictor,
+                )
+
+                # We diable multiprocessing for OnnxTR,
+                # because the speed up is minimal and it can raise memory leaks on windows
+                os.environ["ONNXTR_MULTIPROCESSING_DISABLE"] = "TRUE"
             except ImportError:
                 raise ImportError(
                     "OnnxTR is not installed. Please install it via `pip install 'onnxtr[gpu]'` to use this OCR engine. "
@@ -62,6 +72,7 @@ class OnnxtrOcrModel(BaseOcrModel):
                 config = {
                     "assume_straight_pages": True,
                     "straighten_pages": False,
+                    # This should be disabled when docling supports polygons
                     "export_as_straight_boxes": True,
                     "disable_crop_orientation": False,
                     "disable_page_orientation": False,
@@ -78,15 +89,22 @@ class OnnxtrOcrModel(BaseOcrModel):
                     if self.options.reco_arch.count("/") == 1
                     else self.options.reco_arch
                 ),
+                det_bs=1,  # NOTE: Should be always 1, because docling handles batching
                 preserve_aspect_ratio=self.options.preserve_aspect_ratio,
                 symmetric_pad=self.options.symmetric_pad,
                 paragraph_break=self.options.paragraph_break,
                 load_in_8_bit=self.options.load_in_8_bit,
                 **config,
+                # TODO: Allow specification of the engine configs in the options
+                det_engine_cfg=None,
+                reco_engine_cfg=None,
+                clf_engine_cfg=None,
             )
 
     def _to_absolute_and_docling_format(
-        self, geom: list[list[float]], img_shape: tuple[int, int]
+        self,
+        geom: tuple[tuple[float, float], tuple[float, float]] | np.ndarray,
+        img_shape: tuple[int, int],
     ) -> tuple[int, int, int, int]:
         """
         Convert a bounding box or polygon from relative to absolute coordinates and return in [x1, y1, x2, y2] format.
@@ -109,14 +127,11 @@ class OnnxtrOcrModel(BaseOcrModel):
             (xmin, ymin), (xmax, ymax) = geom
             x1, y1 = scale_point(xmin, ymin)
             x2, y2 = scale_point(xmax, ymax)
-        elif len(geom) == 4:
+        # 4-Point polygon
+        else:
             abs_points = [scale_point(*point) for point in geom]
             x1, y1 = min(p[0] for p in abs_points), min(p[1] for p in abs_points)
             x2, y2 = max(p[0] for p in abs_points), max(p[1] for p in abs_points)
-        else:
-            raise ValueError(
-                f"Invalid geometry format: {geom}. Expected either 2 or 4 points."
-            )
 
         return x1, y1, x2, y2
 
