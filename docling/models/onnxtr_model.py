@@ -49,7 +49,6 @@ class OnnxtrOcrModel(BaseOcrModel):
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
 
-
             if options.auto_correct_orientation:
                 config = {
                     "assume_straight_pages": False,
@@ -69,8 +68,16 @@ class OnnxtrOcrModel(BaseOcrModel):
                 }
 
             self.reader = ocr_predictor(
-                det_arch=from_hub(self.options.det_arch) if self.options.det_arch.count("/") == 1 else self.options.det_arch,
-                reco_arch=from_hub(self.options.reco_arch) if self.options.reco_arch.count("/") == 1 else self.options.reco_arch,
+                det_arch=(
+                    from_hub(self.options.det_arch)
+                    if self.options.det_arch.count("/") == 1
+                    else self.options.det_arch
+                ),
+                reco_arch=(
+                    from_hub(self.options.reco_arch)
+                    if self.options.reco_arch.count("/") == 1
+                    else self.options.reco_arch
+                ),
                 preserve_aspect_ratio=self.options.preserve_aspect_ratio,
                 symmetric_pad=self.options.symmetric_pad,
                 paragraph_break=self.options.paragraph_break,
@@ -78,7 +85,9 @@ class OnnxtrOcrModel(BaseOcrModel):
                 **config,
             )
 
-    def _to_absolute_and_docling_format(self, geom: list[list[float]], img_shape: tuple[int, int]) -> tuple[int, int, int, int]:
+    def _to_absolute_and_docling_format(
+        self, geom: list[list[float]], img_shape: tuple[int, int]
+    ) -> tuple[int, int, int, int]:
         """
         Convert a bounding box or polygon from relative to absolute coordinates and return in [x1, y1, x2, y2] format.
 
@@ -105,12 +114,15 @@ class OnnxtrOcrModel(BaseOcrModel):
             x1, y1 = min(p[0] for p in abs_points), min(p[1] for p in abs_points)
             x2, y2 = max(p[0] for p in abs_points), max(p[1] for p in abs_points)
         else:
-            raise ValueError(f"Invalid geometry format: {geom}. Expected either 2 or 4 points.")
+            raise ValueError(
+                f"Invalid geometry format: {geom}. Expected either 2 or 4 points."
+            )
 
         return x1, y1, x2, y2
 
-
-    def __call__(self, conv_res: ConversionResult, page_batch: Iterable[Page]) -> Iterable[Page]:
+    def __call__(
+        self, conv_res: ConversionResult, page_batch: Iterable[Page]
+    ) -> Iterable[Page]:
         if not self.enabled:
             yield from page_batch
             return
@@ -129,7 +141,9 @@ class OnnxtrOcrModel(BaseOcrModel):
                     if ocr_rect.area() == 0:
                         continue
 
-                    with page._backend.get_page_image(scale=self.scale, cropbox=ocr_rect) as high_res_image:
+                    with page._backend.get_page_image(
+                        scale=self.scale, cropbox=ocr_rect
+                    ) as high_res_image:
                         im_width, im_height = high_res_image.size
                         result = self.reader([numpy.array(high_res_image)])
 
@@ -151,7 +165,8 @@ class OnnxtrOcrModel(BaseOcrModel):
                                         rect=BoundingRectangle.from_bounding_box(
                                             BoundingBox.from_tuple(
                                                 self._to_absolute_and_docling_format(
-                                                    word.geometry, img_shape=(im_height, im_width)
+                                                    word.geometry,
+                                                    img_shape=(im_height, im_width),
                                                 ),
                                                 origin=CoordOrigin.TOPLEFT,
                                             )
@@ -167,7 +182,6 @@ class OnnxtrOcrModel(BaseOcrModel):
                 self.draw_ocr_rects_and_cells(conv_res, page, ocr_rects)
 
             yield page
-
 
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:

@@ -161,7 +161,9 @@ class OnnxtrOcrOptions(OcrOptions):
 
     det_arch: str = "fast_base"
     reco_arch: str = "crnn_vgg16_bn"  # NOTE: This can be also a hf hub model
-    det_bs: int = 1  # NOTE: Should be 1 because docling seems not to support batch processing yet
+    det_bs: int = (
+        1  # NOTE: Should be 1 because docling seems not to support batch processing yet
+    )
     reco_bs: int = 512
     auto_correct_orientation: bool = False
     preserve_aspect_ratio: bool = True
