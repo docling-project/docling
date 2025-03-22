@@ -5,6 +5,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
+    OnnxtrOcrOptions,
     PdfPipelineOptions,
     RapidOcrOptions,
     TesseractCliOcrOptions,
@@ -21,8 +22,9 @@ def main():
     pipeline_options.do_table_structure = True
     pipeline_options.table_structure_options.do_cell_matching = True
 
-    # Any of the OCR options can be used:EasyOcrOptions, TesseractOcrOptions, TesseractCliOcrOptions, OcrMacOptions(Mac only), RapidOcrOptions
+    # Any of the OCR options can be used:EasyOcrOptions, TesseractOcrOptions, TesseractCliOcrOptions, OcrMacOptions(Mac only), RapidOcrOptions, OnnxtrOcrOptions
     # ocr_options = EasyOcrOptions(force_full_page_ocr=True)
+    # ocr_options = OnnxtrOcrOptions(force_full_page_ocr=True)
     # ocr_options = TesseractOcrOptions(force_full_page_ocr=True)
     # ocr_options = OcrMacOptions(force_full_page_ocr=True)
     # ocr_options = RapidOcrOptions(force_full_page_ocr=True)
