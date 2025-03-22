@@ -72,7 +72,7 @@ openpyxl = "^3.1.5"
 lxml = ">=4.0.0,<6.0.0"
 ocrmac = { version = "^1.0.0", markers = "sys_platform == 'darwin'", optional = true }
 rapidocr-onnxruntime = { version = "^1.4.0", optional = true, markers = "python_version < '3.13'" }
-onnxtr = { extras= ["gpu", "viz"], version = "^0.6.2", optional = true, markers = "python_version >= '3.10'" }
+onnxtr = { extras= ["gpu"], version = "^0.6.2", optional = true, markers = "python_version >= '3.10'" }
 onnxruntime = [
   # 1.19.2 is the last version with python3.9 support,
   # see https://github.com/microsoft/onnxruntime/releases/tag/v1.20.0

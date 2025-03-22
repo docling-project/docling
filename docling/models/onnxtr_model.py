@@ -1,7 +1,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Iterable, Optional, Type
+from typing import Iterable, Optional, Tuple, Type, Union
 
 import numpy
 import numpy as np
@@ -11,14 +11,12 @@ from docling_core.types.doc.page import BoundingRectangle, TextCell
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
     AcceleratorOptions,
     OcrOptions,
     OnnxtrOcrOptions,
 )
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
-from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -104,25 +102,25 @@ class OnnxtrOcrModel(BaseOcrModel):
                 clf_engine_cfg=engine_cfg,
             )
 
-    def _to_absolute_and_docling_format(
+    def _to_absolute_docling_format(
         self,
-        geom: tuple[tuple[float, float], tuple[float, float]] | np.ndarray,
-        img_shape: tuple[int, int],
-    ) -> tuple[int, int, int, int]:
+        geom: Union[Tuple[Tuple[float, float], Tuple[float, float]], np.ndarray],
+        img_shape: Tuple[int, int],
+    ) -> Tuple[int, int, int, int]:
         """
         Convert a bounding box or polygon from relative to absolute coordinates and return in [x1, y1, x2, y2] format.
 
         Args:
-            geom (list): Either [[xmin, ymin], [xmax, ymax]] or [[x1, y1], ..., [x4, y4]]
-            img_shape (tuple[int, int]): (height, width) of the image
+            geom: Either [[xmin, ymin], [xmax, ymax]] or [[x1, y1], ..., [x4, y4]]
+            img_shape: (height, width) of the image
 
         Returns:
-            tuple: (x1, y1, x2, y2)
+            top-left and bottom-right coordinates in absolute format (x1, y1, x2, y2)
         """
         h, w = img_shape
         scale_inv = 1 / self.scale  # Precompute inverse for efficiency
 
-        def scale_point(x: float, y: float) -> tuple[int, int]:
+        def scale_point(x: float, y: float) -> Tuple[int, int]:
             """Scale and round a point to absolute coordinates."""
             return int(round(x * w * scale_inv)), int(round(y * h * scale_inv))
 
@@ -187,7 +185,7 @@ class OnnxtrOcrModel(BaseOcrModel):
                                             confidence=word.confidence,
                                             rect=BoundingRectangle.from_bounding_box(
                                                 BoundingBox.from_tuple(
-                                                    self._to_absolute_and_docling_format(
+                                                    self._to_absolute_docling_format(
                                                         word.geometry,
                                                         img_shape=(im_height, im_width),
                                                     ),
