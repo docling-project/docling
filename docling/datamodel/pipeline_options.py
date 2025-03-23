@@ -3,7 +3,7 @@ import os
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import (
     AnyUrl,
@@ -158,7 +158,7 @@ class OnnxtrOcrOptions(OcrOptions):
 
     lang: List[str] = ["en", "fr"]
     # word confidence threshold for the recognition model
-    confidence_score: float = 0.7
+    confidence_score: float = 0.5
     # detection model objectness score threshold 'fast algorithm'
     objectness_score: float = 0.3
 
@@ -172,8 +172,8 @@ class OnnxtrOcrOptions(OcrOptions):
     paragraph_break: float = 0.035
     load_in_8_bit: bool = False
     # Ref.: https://onnxruntime.ai/docs/api/python/api_summary.html
-    providers: list[tuple[str, dict[str, Any]]] | list[str] | None = None
-    session_options: Any = None
+    providers: Optional[List[Tuple[str, Dict[str, Any]]]] = None
+    session_options: Optional[Any] = None
 
     model_config = ConfigDict(
         extra="forbid",
