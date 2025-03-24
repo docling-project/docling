@@ -63,7 +63,12 @@ class PagePreprocessingModel(BasePageModel):
         def draw_text_boxes(image, cells, show: bool = False):
             draw = ImageDraw.Draw(image)
             for c in cells:
-                x0, y0, x1, y1 = c.to_bounding_box().l, c.to_bounding_box().t, c.to_bounding_box().r, c.to_bounding_box().b
+                x0, y0, x1, y1 = (
+                    c.to_bounding_box().l,
+                    c.to_bounding_box().t,
+                    c.to_bounding_box().r,
+                    c.to_bounding_box().b,
+                )
                 draw.rectangle([(x0, y0), (x1, y1)], outline="red")
             if show:
                 image.show()
