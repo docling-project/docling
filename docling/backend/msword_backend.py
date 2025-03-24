@@ -53,6 +53,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.max_levels: int = 10
         self.level_at_new_list: Optional[int] = None
         self.parents: dict[int, Optional[NodeItem]] = {}
+        self.numbered_headers: dict[int, int] = {}
         for i in range(-1, self.max_levels):
             self.parents[i] = None
 
@@ -346,7 +347,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=None, label=DocItemLabel.TITLE, text=text
             )
         elif "Heading" in p_style_id:
-            self.add_header(doc, p_level, text)
+            is_numbered_style = (
+                "<w:numPr>" in paragraph.style.element.xml
+                or "<w:numPr>" in paragraph._element.xml
+            )
+            self.add_header(doc, p_level, text, is_numbered_style)
 
         elif len(equations) > 0:
             if (raw_text is None or len(raw_text) == 0) and len(text) > 0:
@@ -415,7 +420,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return
 
     def add_header(
-        self, doc: DoclingDocument, curr_level: Optional[int], text: str
+        self,
+        doc: DoclingDocument,
+        curr_level: Optional[int],
+        text: str,
+        is_numbered_style: bool = False,
     ) -> None:
         level = self.get_level()
         if isinstance(curr_level, int):
@@ -433,17 +442,44 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if key >= curr_level:
                         self.parents[key] = None
 
-            self.parents[curr_level] = doc.add_heading(
-                parent=self.parents[curr_level - 1],
-                text=text,
-                level=curr_level,
-            )
+            current_level = curr_level
+            parent_level = curr_level - 1
+            add_level = curr_level
         else:
-            self.parents[self.level] = doc.add_heading(
-                parent=self.parents[self.level - 1],
-                text=text,
-                level=1,
-            )
+            current_level = self.level
+            parent_level = self.level - 1
+            add_level = 1
+
+        if is_numbered_style:
+            if add_level in self.numbered_headers:
+                self.numbered_headers[add_level] += 1
+            else:
+                self.numbered_headers[add_level] = 1
+            text = f"{self.numbered_headers[add_level]} {text}"
+
+            # Reset deeper levels
+            next_level = add_level + 1
+            while next_level in self.numbered_headers:
+                self.numbered_headers[next_level] = 0
+                next_level += 1
+
+            # Scan upper levels
+            previous_level = add_level - 1
+            while previous_level in self.numbered_headers:
+                # MSWord convention: no empty sublevels
+                # I.e., sub-sub section (2.0.1) without a sub-section (2.1)
+                # is processed as 2.1.1
+                if self.numbered_headers[previous_level] == 0:
+                    self.numbered_headers[previous_level] += 1
+
+                text = f"{self.numbered_headers[previous_level]}.{text}"
+                previous_level -= 1
+
+        self.parents[current_level] = doc.add_heading(
+            parent=self.parents[parent_level],
+            text=text,
+            level=add_level,
+        )
         return
 
     def add_listitem(

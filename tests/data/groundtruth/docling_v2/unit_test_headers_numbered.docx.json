@@ -183,8 +183,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Section 1",
-      "text": "Section 1",
+      "orig": "1 Section 1",
+      "text": "1 Section 1",
       "level": 1
     },
     {
@@ -272,8 +272,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Section 1.1",
-      "text": "Section 1.1",
+      "orig": "1.1 Section 1.1",
+      "text": "1.1 Section 1.1",
       "level": 2
     },
     {
@@ -364,8 +364,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Section 1.2",
-      "text": "Section 1.2",
+      "orig": "1.2 Section 1.2",
+      "text": "1.2 Section 1.2",
       "level": 2
     },
     {
@@ -456,8 +456,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Section 1.2.3",
-      "text": "Section 1.2.3",
+      "orig": "1.2.1 Section 1.2.3",
+      "text": "1.2.1 Section 1.2.3",
       "level": 3
     },
     {
@@ -541,8 +541,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Section 2",
-      "text": "Section 2",
+      "orig": "2 Section 2",
+      "text": "2 Section 2",
       "level": 1
     },
     {
@@ -630,8 +630,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Section 2.1.1",
-      "text": "Section 2.1.1",
+      "orig": "2.1.1 Section 2.1.1",
+      "text": "2.1.1 Section 2.1.1",
       "level": 3
     },
     {
@@ -722,8 +722,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Section 2.1",
-      "text": "Section 2.1",
+      "orig": "2.2 Section 2.1",
+      "text": "2.2 Section 2.1",
       "level": 2
     },
     {
