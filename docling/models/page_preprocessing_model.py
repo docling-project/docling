@@ -69,6 +69,7 @@ class PagePreprocessingModel(BasePageModel):
                     c.to_bounding_box().r,
                     c.to_bounding_box().b,
                 )
+
                 draw.rectangle([(x0, y0), (x1, y1)], outline="red")
             if show:
                 image.show()
