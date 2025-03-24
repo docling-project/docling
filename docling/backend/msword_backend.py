@@ -347,10 +347,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=None, label=DocItemLabel.TITLE, text=text
             )
         elif "Heading" in p_style_id:
-            is_numbered_style = (
-                "<w:numPr>" in paragraph.style.element.xml
-                or "<w:numPr>" in paragraph._element.xml
-            )
+            style_element = getattr(paragraph.style, "element", None)
+            if style_element:
+                is_numbered_style = (
+                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
+                )
+            else:
+                is_numbered_style = False
             self.add_header(doc, p_level, text, is_numbered_style)
 
         elif len(equations) > 0:
