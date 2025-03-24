@@ -133,6 +133,10 @@ This chapter describes how you can secure and protect data in DB2 for i. The fol
 - GLYPH&lt;SM590000&gt; Current state of IBM i security
 - GLYPH&lt;SM590000&gt; DB2 for i security controls
 
+$^{1 }$http://www.idtheftcenter.org
+
+$^{2 }$http://www.ponemon.org /
+
 ## 1.1 Security fundamentals
 
 Before reviewing database security techniques, there are two fundamental steps in securing information assets that must be described:

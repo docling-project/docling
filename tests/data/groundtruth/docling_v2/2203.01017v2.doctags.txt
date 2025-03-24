@@ -106,8 +106,8 @@
 <text><loc_252><loc_232><loc_445><loc_328>Cell Content. In this section, we evaluate the entire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations.</text>
 <otsl><loc_272><loc_341><loc_426><loc_406><fcel>Model<ched>Simple<ched>TEDS Complex<ched>All<nl><rhed>Tabula<fcel>78.0<fcel>57.8<fcel>67.9<nl><rhed>Traprange<fcel>60.8<fcel>49.9<fcel>55.4<nl><rhed>Camelot<fcel>80.0<fcel>66.0<fcel>73.0<nl><rhed>Acrobat Pro<fcel>68.9<fcel>61.8<fcel>65.3<nl><rhed>EDD<fcel>91.2<fcel>85.4<fcel>88.3<nl><rhed>TableFormer<fcel>95.4<fcel>90.1<fcel>93.6<nl><caption><loc_252><loc_415><loc_445><loc_435>Table 4: Results of structure with content retrieved using cell detection on PubTabNet. In all cases the input is PDF documents with cropped tables.</caption></otsl>
 <page_footer><loc_241><loc_463><loc_245><loc_469>7</page_footer>
-<unordered_list><page_break>
-<list_item><loc_44><loc_50><loc_50><loc_55>a.</list_item>
+<page_break>
+<unordered_list><list_item><loc_44><loc_50><loc_50><loc_55>a.</list_item>
 <list_item><loc_54><loc_50><loc_408><loc_55>Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells</list_item>
 </unordered_list>
 <section_header_level_1><loc_44><loc_60><loc_232><loc_64>Japanese language (previously unseen by TableFormer):</section_header_level_1>
@@ -127,8 +127,8 @@
 <unordered_list><list_item><loc_256><loc_438><loc_445><loc_450>[1] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-</list_item>
 </unordered_list>
 <page_footer><loc_241><loc_463><loc_245><loc_469>8</page_footer>
-<unordered_list><page_break>
-<list_item><loc_57><loc_48><loc_234><loc_74>end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5</list_item>
+<page_break>
+<unordered_list><list_item><loc_57><loc_48><loc_234><loc_74>end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5</list_item>
 <list_item><loc_45><loc_76><loc_234><loc_95>[2] Zewen Chi, Heyan Huang, Heng-Da Xu, Houjin Yu, Wanxuan Yin, and Xian-Ling Mao. Complicated table structure recognition. arXiv preprint arXiv:1908.04729 , 2019. 3</list_item>
 <list_item><loc_45><loc_97><loc_234><loc_116>[3] Bertrand Couasnon and Aurelie Lemaitre. Recognition of Tables and Forms , pages 647-677. Springer London, London, 2014. 2</list_item>
 <list_item><loc_45><loc_118><loc_234><loc_143>[4] Herv´e D´ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2</list_item>
@@ -229,7 +229,6 @@
 <otsl><loc_68><loc_148><loc_195><loc_184></otsl>
 <otsl><loc_69><loc_195><loc_195><loc_232></otsl>
 <otsl><loc_68><loc_250><loc_203><loc_308></otsl>
-<caption><loc_52><loc_317><loc_223><loc_323>Figure 8: Example of a table with multi-line header.</caption>
 <otsl><loc_254><loc_64><loc_454><loc_86><caption><loc_252><loc_194><loc_445><loc_207>Figure 9: Example of a table with big empty distance between cells.</caption></otsl>
 <otsl><loc_253><loc_98><loc_454><loc_117></otsl>
 <otsl><loc_253><loc_124><loc_454><loc_147></otsl>
@@ -244,12 +243,10 @@
 <page_break>
 <otsl><loc_42><loc_173><loc_231><loc_217></otsl>
 <picture><loc_42><loc_66><loc_231><loc_218></picture>
-<caption><loc_41><loc_225><loc_234><loc_238>Figure 11: Simple table with different style and empty cells.</caption>
 <otsl><loc_42><loc_286><loc_254><loc_310></otsl>
 <otsl><loc_42><loc_318><loc_254><loc_342></otsl>
 <otsl><loc_42><loc_350><loc_254><loc_374></otsl>
 <picture><loc_41><loc_386><loc_145><loc_414></picture>
-<caption><loc_45><loc_424><loc_230><loc_430>Figure 12: Simple table predictions and post processing.</caption>
 <otsl><loc_261><loc_102><loc_437><loc_135></otsl>
 <otsl><loc_261><loc_143><loc_437><loc_177></otsl>
 <otsl><loc_268><loc_182><loc_428><loc_226></otsl>
@@ -273,7 +270,6 @@
 <picture><loc_289><loc_308><loc_405><loc_401></picture>
 <otsl><loc_289><loc_308><loc_405><loc_401></otsl>
 <otsl><loc_41><loc_319><loc_261><loc_399></otsl>
-<caption><loc_252><loc_412><loc_445><loc_425>Figure 16: Example of how post-processing helps to restore mis-aligned bounding boxes prediction artifact.</caption>
 <page_footer><loc_239><loc_463><loc_247><loc_469>15</page_footer>
 <page_break>
 <picture><loc_55><loc_160><loc_432><loc_314><caption><loc_41><loc_321><loc_445><loc_334>Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure.</caption></picture>

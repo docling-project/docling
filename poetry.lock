@@ -873,28 +873,32 @@ name = "docling-core"
 version = "2.23.3"
 description = "A python library to define and validate data types in Docling."
 optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "docling_core-2.23.3-py3-none-any.whl", hash = "sha256:a2166ffc41f8fdf6fdb99b33da6c7146eccf6382712ea92e95772604fb5af5e5"},
-    {file = "docling_core-2.23.3.tar.gz", hash = "sha256:a64ce41e0881c06962a2b3ec80e0665f84de0809dedf1bf84f3a14b75dd665c4"},
-]
+python-versions = "^3.9"
+files = []
+develop = false
 
 [package.dependencies]
-jsonref = ">=1.1.0,<2.0.0"
-jsonschema = ">=4.16.0,<5.0.0"
-latex2mathml = ">=3.77.0,<4.0.0"
-pandas = ">=2.1.4,<3.0.0"
+jsonref = "^1.1.0"
+jsonschema = "^4.16.0"
+latex2mathml = "^3.77.0"
+pandas = "^2.1.4"
 pillow = ">=10.0.0,<12.0.0"
-pydantic = ">=2.6.0,<2.10.0 || >2.10.0,<2.10.1 || >2.10.1,<2.10.2 || >2.10.2,<3.0.0"
+pydantic = ">=2.6.0,<3.0.0,!=2.10.0,!=2.10.1,!=2.10.2"
 pyyaml = ">=5.1,<7.0.0"
-semchunk = {version = ">=2.2.0,<3.0.0", optional = true, markers = "extra == \"chunking\""}
-tabulate = ">=0.9.0,<0.10.0"
-transformers = {version = ">=4.34.0,<5.0.0", optional = true, markers = "extra == \"chunking\""}
-typer = ">=0.12.5,<0.13.0"
-typing-extensions = ">=4.12.2,<5.0.0"
+semchunk = {version = "^2.2.0", optional = true}
+tabulate = "^0.9.0"
+transformers = {version = "^4.34.0", optional = true}
+typer = "^0.12.5"
+typing-extensions = "^4.12.2"
 
 [package.extras]
 chunking = ["semchunk (>=2.2.0,<3.0.0)", "transformers (>=4.34.0,<5.0.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/docling-project/docling-core.git"
+reference = "80704dce4b21656b50bf04182d4636f448c49827"
+resolved_reference = "80704dce4b21656b50bf04182d4636f448c49827"
 
 [[package]]
 name = "docling-ibm-models"
@@ -7838,4 +7842,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "16324c95a8aae1a710c4151e509c59e9a97d8bb97d4c726861ab3215fbea0a9d"
+content-hash = "891d40e03852f5de1979c76134f1ea6b4876abf6cb14a27c3c22f4aa3d0e37f4"
