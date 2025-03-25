@@ -63,7 +63,6 @@ def test_e2e_conversions():
         TesseractOcrOptions(),
         TesseractCliOcrOptions(),
         EasyOcrOptions(force_full_page_ocr=True),
-        OnnxtrOcrOptions(force_full_page_ocr=True),
         TesseractOcrOptions(force_full_page_ocr=True),
         TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]),
         TesseractCliOcrOptions(force_full_page_ocr=True),
@@ -74,6 +73,11 @@ def test_e2e_conversions():
     if sys.version_info < (3, 13):
         engines.append(RapidOcrOptions())
         engines.append(RapidOcrOptions(force_full_page_ocr=True))
+
+    # onnxtr is only available for Python >=3.10
+    if sys.version_info >= (3, 10):
+        engines.append(OnnxtrOcrOptions())
+        engines.append(OnnxtrOcrOptions(force_full_page_ocr=True))
 
     # only works on mac
     if "darwin" == sys.platform:
