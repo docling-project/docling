@@ -897,8 +897,8 @@ chunking = ["semchunk (>=2.2.0,<3.0.0)", "transformers (>=4.34.0,<5.0.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/docling-project/docling-core.git"
-reference = "80704dce4b21656b50bf04182d4636f448c49827"
-resolved_reference = "80704dce4b21656b50bf04182d4636f448c49827"
+reference = "30c2e87536fb2fded0170baed39b4d001d620823"
+resolved_reference = "30c2e87536fb2fded0170baed39b4d001d620823"
 
 [[package]]
 name = "docling-ibm-models"
@@ -7842,4 +7842,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "891d40e03852f5de1979c76134f1ea6b4876abf6cb14a27c3c22f4aa3d0e37f4"
+content-hash = "356cabb283e4d64913d3345d8b387a47f38ed69f358914112e2b1f11c498d999"

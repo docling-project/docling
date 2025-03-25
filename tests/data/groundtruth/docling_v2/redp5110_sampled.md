@@ -199,6 +199,8 @@ Table 2-1 FUNCTION\_USAGE view
 
 To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.
 
+Example 2-1 Query to determine who has authority to define and manage RCAC
+
 SELECT
 
 function\_id,
@@ -254,6 +256,8 @@ Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority
 | MODIFY PLAN CACHE PROPERTIES procedure (currently does not check authority)    | X         |                  | X                |                  |                |
 | CHANGE PLAN CACHE SIZE procedure (currently does not check authority)          | X         |                  | X                |                  |                |
 
+The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.
+
 Figure 3-1 CREATE PERMISSION SQL statement
 
 <!-- image -->
@@ -261,6 +265,8 @@ Figure 3-1 CREATE PERMISSION SQL statement
 ## Column mask
 
 A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.
+
+Table 3-1 summarizes these special registers and their values.
 
 Table 3-1 Special registers and their corresponding values
 

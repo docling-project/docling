@@ -229,6 +229,7 @@
 <otsl><loc_68><loc_148><loc_195><loc_184></otsl>
 <otsl><loc_69><loc_195><loc_195><loc_232></otsl>
 <otsl><loc_68><loc_250><loc_203><loc_308></otsl>
+<caption><loc_52><loc_317><loc_223><loc_323>Figure 8: Example of a table with multi-line header.</caption>
 <otsl><loc_254><loc_64><loc_454><loc_86><caption><loc_252><loc_194><loc_445><loc_207>Figure 9: Example of a table with big empty distance between cells.</caption></otsl>
 <otsl><loc_253><loc_98><loc_454><loc_117></otsl>
 <otsl><loc_253><loc_124><loc_454><loc_147></otsl>
@@ -243,10 +244,12 @@
 <page_break>
 <otsl><loc_42><loc_173><loc_231><loc_217></otsl>
 <picture><loc_42><loc_66><loc_231><loc_218></picture>
+<caption><loc_41><loc_225><loc_234><loc_238>Figure 11: Simple table with different style and empty cells.</caption>
 <otsl><loc_42><loc_286><loc_254><loc_310></otsl>
 <otsl><loc_42><loc_318><loc_254><loc_342></otsl>
 <otsl><loc_42><loc_350><loc_254><loc_374></otsl>
 <picture><loc_41><loc_386><loc_145><loc_414></picture>
+<caption><loc_45><loc_424><loc_230><loc_430>Figure 12: Simple table predictions and post processing.</caption>
 <otsl><loc_261><loc_102><loc_437><loc_135></otsl>
 <otsl><loc_261><loc_143><loc_437><loc_177></otsl>
 <otsl><loc_268><loc_182><loc_428><loc_226></otsl>
@@ -270,6 +273,7 @@
 <picture><loc_289><loc_308><loc_405><loc_401></picture>
 <otsl><loc_289><loc_308><loc_405><loc_401></otsl>
 <otsl><loc_41><loc_319><loc_261><loc_399></otsl>
+<caption><loc_252><loc_412><loc_445><loc_425>Figure 16: Example of how post-processing helps to restore mis-aligned bounding boxes prediction artifact.</caption>
 <page_footer><loc_239><loc_463><loc_247><loc_469>15</page_footer>
 <page_break>
 <picture><loc_55><loc_160><loc_432><loc_314><caption><loc_41><loc_321><loc_445><loc_334>Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure.</caption></picture>

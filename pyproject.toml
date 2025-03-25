@@ -47,7 +47,7 @@ packages = [{ include = "docling" }]
 python = "^3.9"
 pydantic = "^2.0.0"
 # docling-core = { git = "https://github.com/docling-project/docling-core.git", extras = ["chunking"], branch = "main" }
-docling-core = { git = "https://github.com/docling-project/docling-core.git", extras = ["chunking"], rev = "80704dce4b21656b50bf04182d4636f448c49827" }
+docling-core = { git = "https://github.com/docling-project/docling-core.git", extras = ["chunking"], rev = "30c2e87536fb2fded0170baed39b4d001d620823" }
 docling-ibm-models = "^3.4.0"
 docling-parse = "^4.0.0"
 filetype = "^1.2.0"

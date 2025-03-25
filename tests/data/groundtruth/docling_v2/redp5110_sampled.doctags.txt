@@ -105,6 +105,7 @@
 <text><loc_112><loc_155><loc_424><loc_168>The FUNCTION_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION_USAGE view.</text>
 <otsl><loc_111><loc_183><loc_446><loc_279><ched>Column name<ched>Data type<ched>Description<nl><fcel>FUNCTION_ID<fcel>VARCHAR(30)<fcel>ID of the function.<nl><fcel>USER_NAME<fcel>VARCHAR(10)<fcel>Name of the user profile that has a usage setting for this  function.<nl><fcel>USAGE<fcel>VARCHAR(7)<fcel>Usage setting: GLYPH<SM590000> ALLOWED: The user profile is allowed to use the function. GLYPH<SM590000> DENIED: The user profile is not allowed to use the function.<nl><fcel>USER_TYPE<fcel>VARCHAR(5)<fcel>Type of user profile: GLYPH<SM590000> USER: The user profile is a user. GLYPH<SM590000> GROUP: The user profile is a group.<nl><caption><loc_112><loc_176><loc_232><loc_182>Table 2-1 FUNCTION_USAGE view</caption></otsl>
 <text><loc_112><loc_286><loc_447><loc_299>To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.</text>
+<caption><loc_112><loc_307><loc_378><loc_312>Example 2-1 Query to determine who has authority to define and manage RCAC</caption>
 <text><loc_112><loc_318><loc_140><loc_324>SELECT</text>
 <text><loc_149><loc_318><loc_206><loc_324>function_id,</text>
 <text><loc_136><loc_326><loc_197><loc_331>user_name,</text>
@@ -131,12 +132,14 @@
 <page_footer><loc_290><loc_477><loc_428><loc_482>Chapter 2. Roles and separation of duties</page_footer>
 <page_footer><loc_438><loc_477><loc_447><loc_482>11</page_footer>
 <page_break>
+<caption><loc_112><loc_45><loc_432><loc_59>The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.</caption>
 <picture><loc_111><loc_68><loc_446><loc_259><caption><loc_112><loc_261><loc_279><loc_267>Figure 3-1 CREATE PERMISSION SQL statement</caption></picture>
 <section_header_level_1><loc_112><loc_278><loc_176><loc_285>Column mask</section_header_level_1>
 <text><loc_112><loc_287><loc_443><loc_316>A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.</text>
 <page_footer><loc_282><loc_477><loc_428><loc_482>Chapter 3. Row and Column Access Control</page_footer>
 <page_footer><loc_438><loc_477><loc_447><loc_482>15</page_footer>
 <page_break>
+<caption><loc_112><loc_45><loc_337><loc_51>Table 3-1 summarizes these special registers and their values.</caption>
 <otsl><loc_110><loc_65><loc_443><loc_129><ched>Special register<ched>Corresponding value<nl><fcel>USER or SESSION_USER<fcel>The effective user of the thread excluding adopted authority.<nl><fcel>CURRENT_USER<fcel>The effective user of the thread including adopted authority. When no adopted  authority is present, this has the same value as USER.<nl><fcel>SYSTEM_USER<fcel>The authorization ID that initiated the connection.<nl><caption><loc_112><loc_59><loc_304><loc_64>Table 3-1 Special registers and their corresponding values</caption></otsl>
 <text><loc_112><loc_135><loc_440><loc_149>Figure 3-5 shows the difference in the special register values when an adopted authority is used:</text>
 <unordered_list><list_item><loc_112><loc_154><loc_336><loc_160>GLYPH<SM590000> A user connects to the server using the user profile ALICE.</list_item>
