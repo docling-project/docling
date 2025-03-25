@@ -14,9 +14,6 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
         cache: 'poetry'
-    - name: Update lockfile
-      run: poetry update
-      shell: bash
     - name: Install dependencies
       run: poetry install --all-extras
       shell: bash
