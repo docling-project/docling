@@ -213,7 +213,7 @@ description = "Unicode to ASCII transliteration"
 optional = true
 python-versions = ">=3.3"
 groups = ["main"]
-markers = "python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\""
+markers = "python_version >= \"3.10\" and python_version < \"3.13\""
 files = [
     {file = "anyascii-0.3.2-py3-none-any.whl", hash = "sha256:3b3beef6fc43d9036d3b0529050b0c48bfad8bc960e9e562d7223cfb94fe45d4"},
     {file = "anyascii-0.3.2.tar.gz", hash = "sha256:9d5d32ef844fe225b8bc7cba7f950534fae4da27a9bf3a6bea2cb0ea46ce4730"},
@@ -1130,8 +1130,12 @@ groups = ["main"]
 >>>>>>> 808d413 (feat(ocr): Add OnnxTR as possible OCR engine)
 =======
 groups = ["main"]
+<<<<<<< HEAD
 markers = "extra == \"rapidocr\" or python_version == \"3.11\" or python_version == \"3.12\" or python_version == \"3.10\""
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+markers = "extra == \"rapidocr\" or python_version < \"3.13\" and python_version >= \"3.10\""
+>>>>>>> 019a25e (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "coloredlogs-15.0.1-py2.py3-none-any.whl", hash = "sha256:612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934"},
     {file = "coloredlogs-15.0.1.tar.gz", hash = "sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0"},
@@ -1518,7 +1522,7 @@ files = [
     {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
     {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
 ]
-markers = {main = "python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\"", docs = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""}
+markers = {main = "python_version >= \"3.10\" and python_version < \"3.13\"", docs = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""}
 
 [[package]]
 name = "dill"
@@ -2188,8 +2192,12 @@ groups = ["main"]
 >>>>>>> 808d413 (feat(ocr): Add OnnxTR as possible OCR engine)
 =======
 groups = ["main"]
+<<<<<<< HEAD
 markers = "extra == \"rapidocr\" or python_version == \"3.11\" or python_version == \"3.12\" or python_version == \"3.10\""
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+markers = "extra == \"rapidocr\" or python_version < \"3.13\" and python_version >= \"3.10\""
+>>>>>>> 019a25e (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "flatbuffers-25.2.10-py2.py3-none-any.whl", hash = "sha256:ebba5f4d5ea615af3f7fd70fc310636fbb2bbd1f566ac0a23d98dd412de50051"},
     {file = "flatbuffers-25.2.10.tar.gz", hash = "sha256:97e451377a41262f8d9bd4295cc836133415cc03d8cb966410a4af92eb00d26e"},
@@ -2836,8 +2844,12 @@ groups = ["main"]
 >>>>>>> 808d413 (feat(ocr): Add OnnxTR as possible OCR engine)
 =======
 groups = ["main"]
+<<<<<<< HEAD
 markers = "extra == \"rapidocr\" or python_version == \"3.11\" or python_version == \"3.12\" or python_version == \"3.10\""
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+markers = "extra == \"rapidocr\" or python_version < \"3.13\" and python_version >= \"3.10\""
+>>>>>>> 019a25e (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
     {file = "humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc"},
@@ -4212,7 +4224,7 @@ description = "Language detection library ported from Google's language-detectio
 optional = true
 python-versions = "*"
 groups = ["main"]
-markers = "python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\""
+markers = "python_version >= \"3.10\" and python_version < \"3.13\""
 files = [
     {file = "langdetect-1.0.9-py2-none-any.whl", hash = "sha256:7cbc0746252f19e76f77c0b1690aadf01963be835ef0cd4b56dddf2a8f1dfc2a"},
     {file = "langdetect-1.0.9.tar.gz", hash = "sha256:cbc1fef89f8d062739774bd51eda3da3274006b3661d199c2655f6b3f6d605a0"},
@@ -7186,7 +7198,7 @@ description = "ONNX Runtime is a runtime accelerator for Machine Learning models
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\""
+markers = "python_version >= \"3.10\" and python_version < \"3.13\""
 files = [
     {file = "onnxruntime_gpu-1.21.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:bb9428bf56d822db9d423ab88ff0a439aa9192db711b45160650745cb7bc9bbd"},
     {file = "onnxruntime_gpu-1.21.0-cp310-cp310-win_amd64.whl", hash = "sha256:31ea762c03a972ad0807d1cacda7702ea686731119f8ab9132be8b3a9ef3eae0"},
@@ -7218,7 +7230,7 @@ description = "Onnx Text Recognition (OnnxTR): docTR Onnx-Wrapper for high-perfo
 optional = true
 python-versions = "<4,>=3.10.0"
 groups = ["main"]
-markers = "python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\""
+markers = "python_version >= \"3.10\" and python_version < \"3.13\""
 files = [
     {file = "onnxtr-0.6.2-py3-none-any.whl", hash = "sha256:795000f66c7285761a762601850d32374d4b62f92ea3f8e02ce9460927353592"},
     {file = "onnxtr-0.6.2.tar.gz", hash = "sha256:318864acc2e6075bc7fc10a4dc0437a3c5bd4feb4ee2982871931517c45ce55c"},
@@ -7277,8 +7289,12 @@ groups = ["main"]
 >>>>>>> 808d413 (feat(ocr): Add OnnxTR as possible OCR engine)
 =======
 groups = ["main"]
+<<<<<<< HEAD
 markers = "python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\" or python_version == \"3.9\" and extra == \"rapidocr\" or sys_platform == \"darwin\" and python_version <= \"3.12\" and extra == \"rapidocr\" and platform_system == \"Linux\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or sys_platform == \"darwin\" and python_version <= \"3.12\" and extra == \"rapidocr\" and platform_machine == \"x86_64\" or platform_machine == \"aarch64\" and python_version <= \"3.12\" and extra == \"rapidocr\" and platform_system == \"Linux\""
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+markers = "sys_platform == \"darwin\" and (extra == \"rapidocr\" or python_version >= \"3.10\") and platform_machine == \"x86_64\" and python_version < \"3.13\""
+>>>>>>> 019a25e (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "opencv-python-4.11.0.86.tar.gz", hash = "sha256:03d60ccae62304860d232272e4a4fda93c39d595780cb40b161b310244b736a4"},
     {file = "opencv_python-4.11.0.86-cp37-abi3-macosx_13_0_arm64.whl", hash = "sha256:432f67c223f1dc2824f5e73cdfcd9db0efc8710647d4e813012195dc9122a52a"},
@@ -7331,8 +7347,8 @@ numpy = [
 =======
     {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\""},
     {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\""},
-    {version = ">=1.23.5", markers = "python_version >= \"3.11\""},
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.5", markers = "python_version == \"3.11\""},
     {version = ">=1.21.0", markers = "python_version == \"3.9\" and platform_system == \"Darwin\" and platform_machine == \"arm64\""},
     {version = ">=1.19.3", markers = "(python_version >= \"3.8\" and platform_system == \"Linux\" and platform_machine == \"aarch64\" or python_version >= \"3.9\") and (python_version > \"3.9\" or platform_system != \"Darwin\" or platform_machine != \"arm64\")"},
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
@@ -7416,8 +7432,8 @@ numpy = [
 =======
     {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\""},
     {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\""},
-    {version = ">=1.23.5", markers = "python_version >= \"3.11\""},
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.5", markers = "python_version >= \"3.11\""},
     {version = ">=1.21.0", markers = "python_version == \"3.9\" and platform_system == \"Darwin\" and platform_machine == \"arm64\""},
     {version = ">=1.19.3", markers = "(python_version >= \"3.8\" and platform_system == \"Linux\" and platform_machine == \"aarch64\" or python_version >= \"3.9\") and (python_version > \"3.9\" or platform_system != \"Darwin\" or platform_machine != \"arm64\")"},
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
@@ -8380,10 +8396,14 @@ files = [
     {file = "protobuf-6.30.2.tar.gz", hash = "sha256:35c859ae076d8c56054c25b59e5e59638d86545ed6e2b6efac6be0b6ea3ba048"},
 ]
 <<<<<<< HEAD
+<<<<<<< HEAD
 markers = {main = "extra == \"rapidocr\"", examples = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""}
 =======
 markers = {main = "extra == \"rapidocr\" or python_version == \"3.11\" or python_version == \"3.12\" or python_version == \"3.10\"", examples = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""}
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+markers = {main = "extra == \"rapidocr\" or python_version < \"3.13\" and python_version >= \"3.10\"", examples = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""}
+>>>>>>> 019a25e (feat(ocr): Add OnnxTR as possible OCR engine)
 
 [[package]]
 name = "psutil"
@@ -9447,8 +9467,12 @@ markers = "sys_platform == \"win32\""
 >>>>>>> 808d413 (feat(ocr): Add OnnxTR as possible OCR engine)
 =======
 groups = ["main"]
+<<<<<<< HEAD
 markers = "sys_platform == \"win32\" and python_version == \"3.10\" or sys_platform == \"win32\" and python_version == \"3.11\" or sys_platform == \"win32\" and python_version == \"3.12\" or sys_platform == \"win32\" and extra == \"rapidocr\""
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+markers = "sys_platform == \"win32\" and (python_version < \"3.13\" or extra == \"rapidocr\") and platform_machine == \"aarch64\" and (python_version >= \"3.10\" or extra == \"rapidocr\") and platform_system == \"Linux\""
+>>>>>>> 019a25e (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "pyreadline3-3.5.4-py3-none-any.whl", hash = "sha256:eaf8e6cc3c49bcccf145fc6067ba8643d1df34d604a1ec0eccbf7a18e6d3fae6"},
     {file = "pyreadline3-3.5.4.tar.gz", hash = "sha256:8d57d53039a1c75adba8e50dd3d992b28143480816187ea5efbd5c78e6c885b7"},
@@ -10264,7 +10288,7 @@ description = "rapid fuzzy string matching"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\""
+markers = "python_version >= \"3.10\" and python_version < \"3.13\""
 files = [
     {file = "rapidfuzz-3.12.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0b9a75e0385a861178adf59e86d6616cbd0d5adca7228dc9eeabf6f62cf5b0b1"},
     {file = "rapidfuzz-3.12.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:6906a7eb458731e3dd2495af1d0410e23a21a2a2b7ced535e6d5cd15cb69afc5"},
@@ -10391,8 +10415,12 @@ markers = "(python_version == \"3.10\" or python_version == \"3.11\" or python_v
 >>>>>>> 808d413 (feat(ocr): Add OnnxTR as possible OCR engine)
 =======
 groups = ["main"]
+<<<<<<< HEAD
 markers = "(python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\") and extra == \"rapidocr\" or python_version == \"3.9\" and extra == \"rapidocr\" or sys_platform == \"darwin\" and python_version < \"3.10\" and extra == \"rapidocr\" and platform_system == \"Linux\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or sys_platform == \"darwin\" and platform_machine == \"x86_64\" and python_version < \"3.10\" and extra == \"rapidocr\" or platform_machine == \"aarch64\" and python_version < \"3.10\" and extra == \"rapidocr\" and platform_system == \"Linux\""
 >>>>>>> ea558eb (feat(ocr): Add OnnxTR as possible OCR engine)
+=======
+markers = "python_version < \"3.13\" and extra == \"rapidocr\" and sys_platform == \"darwin\" and platform_machine == \"x86_64\""
+>>>>>>> 019a25e (feat(ocr): Add OnnxTR as possible OCR engine)
 files = [
     {file = "rapidocr_onnxruntime-1.4.4-py3-none-any.whl", hash = "sha256:971d7d5f223a7a808662229df1ef69893809d8457d834e6373d3854bc1782cbf"},
 ]
