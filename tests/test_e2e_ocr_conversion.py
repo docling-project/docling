@@ -74,8 +74,8 @@ def test_e2e_conversions():
         engines.append(RapidOcrOptions())
         engines.append(RapidOcrOptions(force_full_page_ocr=True))
 
-    # onnxtr is only available for Python >=3.10
-    if sys.version_info >= (3, 10):
+    # onnxtr is only available for Python >=3.10 and <3.13
+    if sys.version_info >= (3, 10) and sys.version_info < (3, 13):
         engines.append(OnnxtrOcrOptions())
         engines.append(OnnxtrOcrOptions(force_full_page_ocr=True))
 
