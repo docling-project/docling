@@ -11,6 +11,7 @@ from docling.datamodel.pipeline_options import (
     EasyOcrOptions,
     OcrMacOptions,
     OcrOptions,
+    OnnxtrOcrOptions,
     PdfPipelineOptions,
     RapidOcrOptions,
     TesseractCliOcrOptions,
@@ -72,6 +73,11 @@ def test_e2e_conversions():
     if sys.version_info < (3, 13):
         engines.append(RapidOcrOptions())
         engines.append(RapidOcrOptions(force_full_page_ocr=True))
+
+    # onnxtr is only available for Python >=3.10 and <3.13
+    if sys.version_info >= (3, 10) and sys.version_info < (3, 13):
+        engines.append(OnnxtrOcrOptions())
+        engines.append(OnnxtrOcrOptions(force_full_page_ocr=True))
 
     # only works on mac
     if "darwin" == sys.platform:

@@ -3,7 +3,7 @@ import os
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import (
     AnyUrl,
@@ -145,6 +145,35 @@ class RapidOcrOptions(OcrOptions):
     cls_model_path: Optional[str] = None  # same default as rapidocr
     rec_model_path: Optional[str] = None  # same default as rapidocr
     rec_keys_path: Optional[str] = None  # same default as rapidocr
+
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+
+class OnnxtrOcrOptions(OcrOptions):
+    """Options for the Onnxtr engine."""
+
+    kind: ClassVar[Literal["onnxtr"]] = "onnxtr"
+
+    lang: List[str] = ["en", "fr"]
+    # word confidence threshold for the recognition model
+    confidence_score: float = 0.5
+    # detection model objectness score threshold 'fast algorithm'
+    objectness_score: float = 0.3
+
+    # NOTE: This can be also a hf hub model
+    det_arch: str = "fast_base"
+    reco_arch: str = "crnn_vgg16_bn"
+    reco_bs: int = 512
+    auto_correct_orientation: bool = False
+    preserve_aspect_ratio: bool = True
+    symmetric_pad: bool = True
+    paragraph_break: float = 0.035
+    load_in_8_bit: bool = False
+    # Ref.: https://onnxruntime.ai/docs/api/python/api_summary.html
+    providers: Optional[List[Tuple[str, Dict[str, Any]]]] = None
+    session_options: Optional[Any] = None
 
     model_config = ConfigDict(
         extra="forbid",
