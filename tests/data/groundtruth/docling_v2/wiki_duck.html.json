@@ -263,7 +263,7 @@
           "$ref": "#/texts/22"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "header-1",
       "label": "section"
     },
@@ -304,7 +304,7 @@
           "$ref": "#/texts/42"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -314,7 +314,7 @@
         "$ref": "#/texts/24"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -324,7 +324,7 @@
         "$ref": "#/texts/25"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -334,7 +334,7 @@
         "$ref": "#/texts/26"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -344,7 +344,7 @@
         "$ref": "#/texts/27"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -367,7 +367,7 @@
           "$ref": "#/texts/32"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -377,7 +377,7 @@
         "$ref": "#/texts/29"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -387,7 +387,7 @@
         "$ref": "#/texts/30"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -397,7 +397,7 @@
         "$ref": "#/texts/31"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -407,7 +407,7 @@
         "$ref": "#/texts/32"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -430,7 +430,7 @@
           "$ref": "#/texts/37"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -440,7 +440,7 @@
         "$ref": "#/texts/34"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -450,7 +450,7 @@
         "$ref": "#/texts/35"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -460,7 +460,7 @@
         "$ref": "#/texts/36"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -470,7 +470,7 @@
         "$ref": "#/texts/37"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -480,7 +480,7 @@
         "$ref": "#/texts/38"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -497,7 +497,7 @@
           "$ref": "#/texts/41"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -507,7 +507,7 @@
         "$ref": "#/texts/40"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -517,7 +517,7 @@
         "$ref": "#/texts/41"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -527,7 +527,7 @@
         "$ref": "#/texts/42"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -1927,7 +1927,7 @@
           "$ref": "#/groups/9"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "Contents",
@@ -1940,7 +1940,7 @@
         "$ref": "#/groups/9"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "(Top)",
@@ -1958,7 +1958,7 @@
           "$ref": "#/groups/10"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "1 Etymology",
@@ -1976,7 +1976,7 @@
           "$ref": "#/groups/11"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "2 Taxonomy",
@@ -1994,7 +1994,7 @@
           "$ref": "#/groups/12"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "3 Morphology",
@@ -2012,7 +2012,7 @@
           "$ref": "#/groups/13"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "4 Distribution and habitat",
@@ -2030,7 +2030,7 @@
           "$ref": "#/groups/14"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "5 Behaviour Toggle Behaviour subsection",
@@ -2048,7 +2048,7 @@
           "$ref": "#/groups/15"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "5.1 Feeding",
@@ -2066,7 +2066,7 @@
           "$ref": "#/groups/16"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "5.2 Breeding",
@@ -2084,7 +2084,7 @@
           "$ref": "#/groups/17"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "5.3 Communication",
@@ -2102,7 +2102,7 @@
           "$ref": "#/groups/18"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "5.4 Predators",
@@ -2120,7 +2120,7 @@
           "$ref": "#/groups/19"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "6 Relationship with humans Toggle Relationship with humans subsection",
@@ -2138,7 +2138,7 @@
           "$ref": "#/groups/20"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "6.1 Hunting",
@@ -2156,7 +2156,7 @@
           "$ref": "#/groups/21"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "6.2 Domestication",
@@ -2174,7 +2174,7 @@
           "$ref": "#/groups/22"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "6.3 Heraldry",
@@ -2192,7 +2192,7 @@
           "$ref": "#/groups/23"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "6.4 Cultural references",
@@ -2210,7 +2210,7 @@
           "$ref": "#/groups/24"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "7 See also",
@@ -2228,7 +2228,7 @@
           "$ref": "#/groups/25"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "8 Notes Toggle Notes subsection",
@@ -2246,7 +2246,7 @@
           "$ref": "#/groups/26"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "8.1 Citations",
@@ -2264,7 +2264,7 @@
           "$ref": "#/groups/27"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "8.2 Sources",
@@ -2282,7 +2282,7 @@
           "$ref": "#/groups/28"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "9 External links",

@@ -146,7 +146,7 @@ def test_e2e_html_conversions():
             max_text_len=70, explicit_tables=False
         )
         assert verify_export(
-            pred_itxt, str(gt_path) + ".itxt"
+            pred_itxt, str(gt_path) + ".itxt", generate=GENERATE
         ), "export to indented-text"
 
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)

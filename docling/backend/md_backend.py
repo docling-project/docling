@@ -212,9 +212,16 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             traverse(element)
             snippet_text = "".join(strings)
             if len(snippet_text) > 0:
-                parent_item = doc.add_text(
-                    label=doc_label, parent=parent_item, text=snippet_text
-                )
+                if doc_label == DocItemLabel.SECTION_HEADER:
+                    parent_item = doc.add_heading(
+                        text=snippet_text,
+                        level=element.level - 1,
+                        parent=parent_item,
+                    )
+                else:
+                    parent_item = doc.add_text(
+                        label=doc_label, parent=parent_item, text=snippet_text
+                    )
 
         elif isinstance(element, marko.block.List):
             has_non_empty_list_items = False
@@ -232,12 +239,15 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     label=label, name=f"list", parent=parent_item
                 )
 
-        elif isinstance(element, marko.block.ListItem) and len(element.children) > 0:
+        elif (
+            isinstance(element, marko.block.ListItem)
+            and len(element.children) > 0
+            and isinstance((first_child := element.children[0]), marko.block.Paragraph)
+        ):
             self._close_table(doc)
             self._process_inline_text(parent_item, doc)
             _log.debug(" - List item")
 
-            first_child = element.children[0]
             snippet_text = str(first_child.children[0].children)  # type: ignore
             is_numbered = False
             if (
