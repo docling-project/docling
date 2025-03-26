@@ -37,7 +37,7 @@ To install Poetry, follow the documentation here: https://python-poetry.org/docs
 To activate the Virtual Environment, run:
 
 ```bash
-poetry shell
+poetry env activate
 ```
 
 This will spawn a shell with the Virtual Environment activated. If the Virtual Environment doesn't exist, Poetry will create one for you. Then, to install dependencies, run:
