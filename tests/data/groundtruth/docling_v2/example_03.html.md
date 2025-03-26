@@ -1,10 +1,10 @@
 # Example Document
 
-### Introduction
+## Introduction
 
 This is the first paragraph of the introduction.
 
-### Background
+## Background
 
 Some background information here.
 
@@ -18,7 +18,7 @@ Some background information here.
     2. Nested ordered item 2
 2. Second item in ordered list
 
-### Data Table
+## Data Table
 
 | Header 1     | Header 2     | Header 3     |
 |--------------|--------------|--------------|

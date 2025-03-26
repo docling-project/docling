@@ -76,7 +76,7 @@
       "prov": [],
       "orig": "section-1",
       "text": "section-1",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/2",
@@ -89,7 +89,7 @@
       "prov": [],
       "orig": "section-1.1",
       "text": "section-1.1",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/3",
@@ -112,7 +112,7 @@
       "prov": [],
       "orig": "section-2",
       "text": "section-2",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/4",
@@ -125,7 +125,7 @@
       "prov": [],
       "orig": "section-2.0.1",
       "text": "section-2.0.1",
-      "level": 4
+      "level": 3
     },
     {
       "self_ref": "#/texts/5",
@@ -138,7 +138,7 @@
       "prov": [],
       "orig": "section-2.2",
       "text": "section-2.2",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/6",
@@ -151,7 +151,7 @@
       "prov": [],
       "orig": "section-2.3",
       "text": "section-2.3",
-      "level": 3
+      "level": 2
     }
   ],
   "pictures": [],

@@ -2,7 +2,7 @@
 
 This is the first paragraph of the introduction.
 
-### Background
+## Background
 
 Some background information here.
 

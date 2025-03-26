@@ -206,7 +206,7 @@ Duck is the common name for numerous species of waterfowl in the family Anatidae
 
 Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as loons or divers, grebes, gallinules and coots.
 
-### Etymology
+## Etymology
 
 The word duck comes from Old English dūce 'diver', a derivative of the verb *dūcan 'to duck, bend down low as if to get under something, or dive', because of the way many species in the dabbling duck group feed by upending; compare with Dutch duiken and German tauchen 'to dive'.
 
@@ -228,7 +228,7 @@ Wood ducks.
 
 <!-- image -->
 
-### Taxonomy
+## Taxonomy
 
 All ducks belong to the biological order Anseriformes, a group that contains the ducks, geese and swans, as well as the screamers, and the magpie goose.[5] All except the screamers belong to the biological family Anatidae.[5] Within the family, ducks are split into a variety of subfamilies and 'tribes'. The number and composition of these subfamilies and tribes is the cause of considerable disagreement among taxonomists.[5] Some base their decisions on morphological characteristics, others on shared behaviours or genetic studies.[6][7] The number of suggested subfamilies containing ducks ranges from two to five.[8][9] The significant level of hybridisation that occurs among wild ducks complicates efforts to tease apart the relationships between various species.[9]
 
@@ -240,7 +240,7 @@ In most modern classifications, the so-called 'true ducks' belong to the subfami
 
 A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The whistling ducks are assigned either to a tribe (Dendrocygnini) in the subfamily Anatinae or the subfamily Anserinae,[15] or to their own subfamily (Dendrocygninae) or family (Dendrocyganidae).[9][16] The freckled duck of Australia is either the sole member of the tribe Stictonettini in the subfamily Anserinae,[15] or in its own family, the Stictonettinae.[9] The shelducks make up the tribe Tadornini in the family Anserinae in some classifications,[15] and their own subfamily, Tadorninae, in others,[17] while the steamer ducks are either placed in the family Anserinae in the tribe Tachyerini[15] or lumped with the shelducks in the tribe Tadorini.[9] The perching ducks make up in the tribe Cairinini in the subfamily Anserinae in some classifications, while that tribe is eliminated in other classifications and its members assigned to the tribe Anatini.[9] The torrent duck is generally included in the subfamily Anserinae in the monotypic tribe Merganettini,[15] but is sometimes included in the tribe Tadornini.[18] The pink-eared duck is sometimes included as a true duck either in the tribe Anatini[15] or the tribe Malacorhynchini,[19] and other times is included with the shelducks in the tribe Tadornini.[15]
 
-### Morphology
+## Morphology
 
 Male Mandarin duck
 
@@ -250,7 +250,7 @@ The overall body plan of ducks is elongated and broad, and they are also relativ
 
 The drakes of northern species often have extravagant plumage, but that is moulted in summer to give a more female-like appearance, the "eclipse" plumage. Southern resident species typically show less sexual dimorphism, although there are exceptions such as the paradise shelduck of New Zealand, which is both strikingly sexually dimorphic and in which the female's plumage is brighter than that of the male. The plumage of juvenile birds generally resembles that of the female. Female ducks have evolved to have a corkscrew shaped vagina to prevent rape.
 
-### Distribution and habitat
+## Distribution and habitat
 
 Flying steamer ducks in Ushuaia, Argentina
 
@@ -264,9 +264,9 @@ Female mallard in Cornwall, England
 
 Some duck species, mainly those breeding in the temperate and Arctic Northern Hemisphere, are migratory; those in the tropics are generally not. Some ducks, particularly in Australia where rainfall is erratic, are nomadic, seeking out the temporary lakes and pools that form after localised heavy rain.[23]
 
-### Behaviour
+## Behaviour
 
-#### Feeding
+### Feeding
 
 Pecten along the bill
 
@@ -288,7 +288,7 @@ The others have the characteristic wide flat bill adapted to dredging-type jobs 
 
 The Guardian published an article advising that ducks should not be fed with bread because it damages the health of the ducks and pollutes waterways.[25]
 
-#### Breeding
+### Breeding
 
 A Muscovy duckling
 
@@ -296,13 +296,13 @@ A Muscovy duckling
 
 Ducks generally only have one partner at a time, although the partnership usually only lasts one year.[26] Larger species and the more sedentary species (like fast-river specialists) tend to have pair-bonds that last numerous years.[27] Most duck species breed once a year, choosing to do so in favourable conditions (spring/summer or wet seasons). Ducks also tend to make a nest before breeding, and, after hatching, lead their ducklings to water. Mother ducks are very caring and protective of their young, but may abandon some of their ducklings if they are physically stuck in an area they cannot get out of (such as nesting in an enclosed courtyard) or are not prospering due to genetic defects or sickness brought about by hypothermia, starvation, or disease. Ducklings can also be orphaned by inconsistent late hatching where a few eggs hatch after the mother has abandoned the nest and led her ducklings to water.[28]
 
-#### Communication
+### Communication
 
 Female mallard ducks (as well as several other species in the genus Anas, such as the American and Pacific black ducks, spot-billed duck, northern pintail and common teal) make the classic "quack" sound while males make a similar but raspier sound that is sometimes written as "breeeeze",[29][self-published source?] but, despite widespread misconceptions, most species of duck do not "quack".[30] In general, ducks make a range of calls, including whistles, cooing, yodels and grunts. For example, the scaup – which are diving ducks – make a noise like "scaup" (hence their name). Calls may be loud displaying calls or quieter contact calls.
 
 A common urban legend claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the University of Salford in 2003 as part of the British Association's Festival of Science.[31] It was also debunked in one of the earlier episodes of the popular Discovery Channel television show MythBusters.[32]
 
-#### Predators
+### Predators
 
 Ringed teal
 
@@ -312,15 +312,15 @@ Ducks have many predators. Ducklings are particularly vulnerable, since their in
 
 Adult ducks are fast fliers, but may be caught on the water by large aquatic predators including big fish such as the North American muskie and the European pike. In flight, ducks are safe from all but a few predators such as humans and the peregrine falcon, which uses its speed and strength to catch ducks.
 
-### Relationship with humans
+## Relationship with humans
 
-#### Hunting
+### Hunting
 
 Humans have hunted ducks since prehistoric times. Excavations of middens in California dating to 7800 – 6400 BP have turned up bones of ducks, including at least one now-extinct flightless species.[33] Ducks were captured in "significant numbers" by Holocene inhabitants of the lower Ohio River valley, suggesting they took advantage of the seasonal bounty provided by migrating waterfowl.[34] Neolithic hunters in locations as far apart as the Caribbean,[35] Scandinavia,[36] Egypt,[37] Switzerland,[38] and China relied on ducks as a source of protein for some or all of the year.[39] Archeological evidence shows that Māori people in New Zealand hunted the flightless Finsch's duck, possibly to extinction, though rat predation may also have contributed to its fate.[40] A similar end awaited the Chatham duck, a species with reduced flying capabilities which went extinct shortly after its island was colonised by Polynesian settlers.[41] It is probable that duck eggs were gathered by Neolithic hunter-gathers as well, though hard evidence of this is uncommon.[35][42]
 
 In many areas, wild ducks (including ducks farmed and released into the wild) are hunted for food or sport,[43] by shooting, or by being trapped using duck decoys. Because an idle floating duck or a duck squatting on land cannot react to fly or move quickly, "a sitting duck" has come to mean "an easy target". These ducks may be contaminated by pollutants such as PCBs.[44]
 
-#### Domestication
+### Domestication
 
 Indian Runner ducks, a common breed of domestic ducks
 
@@ -328,7 +328,7 @@ Indian Runner ducks, a common breed of domestic ducks
 
 Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their down). Approximately 3 billion ducks are slaughtered each year for meat worldwide.[45] They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the mallard (Anas platyrhynchos), apart from the Muscovy duck (Cairina moschata).[46][47] The Call duck is another example of a domestic duck breed. Its name comes from its original use established by hunters, as a decoy to attract wild mallards from the sky, into traps set for them on the ground. The call duck is the world's smallest domestic duck breed, as it weighs less than 1 kg (2.2 lb).[48]
 
-#### Heraldry
+### Heraldry
 
 Three black-colored ducks in the coat of arms of Maaninka[49]
 
@@ -336,13 +336,13 @@ Three black-colored ducks in the coat of arms of Maaninka[49]
 
 Ducks appear on several coats of arms, including the coat of arms of Lubāna (Latvia)[50] and the coat of arms of Föglö (Åland).[51]
 
-#### Cultural references
+### Cultural references
 
 In 2002, psychologist Richard Wiseman and colleagues at the University of Hertfordshire, UK, finished a year-long LaughLab experiment, concluding that of all animals, ducks attract the most humor and silliness; he said, "If you're going to tell a joke involving an animal, make it a duck."[52] The word "duck" may have become an inherently funny word in many languages, possibly because ducks are seen as silly in their looks or behavior. Of the many ducks in fiction, many are cartoon characters, such as Walt Disney's Donald Duck, and Warner Bros.' Daffy Duck. Howard the Duck started as a comic book character in 1973[53][54] and was made into a movie in 1986.
 
 The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck as the mascot for the fictional youth hockey team who are protagonists of the movie, based on the duck being described as a fierce fighter. This led to the duck becoming the nickname and mascot for the eventual National Hockey League professional team of the Anaheim Ducks, who were founded with the name the Mighty Ducks of Anaheim.[citation needed] The duck is also the nickname of the University of Oregon sports teams as well as the Long Island Ducks minor league baseball team.[55]
 
-### See also
+## See also
 
 - Birds portal
 
@@ -353,9 +353,9 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 - Fictional ducks
 - Rubber duck
 
-### Notes
+## Notes
 
-#### Citations
+### Citations
 
 1. ^ "Duckling". The American Heritage Dictionary of the English Language, Fourth Edition. Houghton Mifflin Company. 2006. Retrieved 2015-05-22.
 2. ^ "Duckling". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.
@@ -413,7 +413,7 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 54. ^ Sanderson, Peter; Gilbert, Laura (2008). "1970s". Marvel Chronicle A Year by Year History. London, United Kingdom: Dorling Kindersley. p. 161. ISBN 978-0756641238. December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.
 55. ^ "The Duck". University of Oregon Athletics. Retrieved 2022-01-20.
 
-#### Sources
+### Sources
 
 - American Ornithologists' Union (1998). Checklist of North American Birds (PDF). Washington, DC: American Ornithologists' Union. ISBN 978-1-891276-00-2. Archived (PDF) from the original on 2022-10-09.
 - Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). Handbook of the Birds of the World. Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions. ISBN 978-84-87334-10-8.
@@ -436,7 +436,7 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 - Sued-Badillo, Jalil (2003). Autochthonous Societies. General History of the Caribbean. Paris: UNESCO. ISBN 978-92-3-103832-7.
 - Thorpe, I. J. (1996). The Origins of Agriculture in Europe. New York: Routledge. ISBN 978-0-415-08009-5.
 
-### External links
+## External links
 
 - Definitions from Wiktionary
 - Media from Commons

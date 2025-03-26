@@ -243,7 +243,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[hlevel] = doc.add_heading(
                 parent=self.parents[hlevel - 1],
                 text=text,
-                level=hlevel,
+                level=hlevel - 1,
                 content_layer=self.content_layer,
             )
 

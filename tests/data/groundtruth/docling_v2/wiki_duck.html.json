@@ -1932,7 +1932,7 @@
       "prov": [],
       "orig": "Contents",
       "text": "Contents",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/23",
@@ -4785,7 +4785,7 @@
       "prov": [],
       "orig": "Etymology",
       "text": "Etymology",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/215",
@@ -4895,7 +4895,7 @@
       "prov": [],
       "orig": "Taxonomy",
       "text": "Taxonomy",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/223",
@@ -4966,7 +4966,7 @@
       "prov": [],
       "orig": "Morphology",
       "text": "Morphology",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/228",
@@ -5028,7 +5028,7 @@
       "prov": [],
       "orig": "Distribution and habitat",
       "text": "Distribution and habitat",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/232",
@@ -5102,7 +5102,7 @@
       "prov": [],
       "orig": "Behaviour",
       "text": "Behaviour",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/237",
@@ -5140,7 +5140,7 @@
       "prov": [],
       "orig": "Feeding",
       "text": "Feeding",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/238",
@@ -5256,7 +5256,7 @@
       "prov": [],
       "orig": "Breeding",
       "text": "Breeding",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/247",
@@ -5300,7 +5300,7 @@
       "prov": [],
       "orig": "Communication",
       "text": "Communication",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/250",
@@ -5347,7 +5347,7 @@
       "prov": [],
       "orig": "Predators",
       "text": "Predators",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/253",
@@ -5409,7 +5409,7 @@
       "prov": [],
       "orig": "Relationship with humans",
       "text": "Relationship with humans",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/257",
@@ -5429,7 +5429,7 @@
       "prov": [],
       "orig": "Hunting",
       "text": "Hunting",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/258",
@@ -5473,7 +5473,7 @@
       "prov": [],
       "orig": "Domestication",
       "text": "Domestication",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/261",
@@ -5517,7 +5517,7 @@
       "prov": [],
       "orig": "Heraldry",
       "text": "Heraldry",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/264",
@@ -5561,7 +5561,7 @@
       "prov": [],
       "orig": "Cultural references",
       "text": "Cultural references",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/267",
@@ -5605,7 +5605,7 @@
       "prov": [],
       "orig": "See also",
       "text": "See also",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/270",
@@ -5723,7 +5723,7 @@
       "prov": [],
       "orig": "Notes",
       "text": "Notes",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/278",
@@ -5740,7 +5740,7 @@
       "prov": [],
       "orig": "Citations",
       "text": "Citations",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/279",
@@ -6527,7 +6527,7 @@
       "prov": [],
       "orig": "Sources",
       "text": "Sources",
-      "level": 3
+      "level": 2
     },
     {
       "self_ref": "#/texts/335",
@@ -6860,7 +6860,7 @@
       "prov": [],
       "orig": "External links",
       "text": "External links",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/356",

@@ -133,7 +133,7 @@
       "prov": [],
       "orig": "Introduction",
       "text": "Introduction",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/2",
@@ -168,7 +168,7 @@
       "prov": [],
       "orig": "Background",
       "text": "Background",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/4",
@@ -317,7 +317,7 @@
       "prov": [],
       "orig": "Data Table",
       "text": "Data Table",
-      "level": 2
+      "level": 1
     }
   ],
   "pictures": [],

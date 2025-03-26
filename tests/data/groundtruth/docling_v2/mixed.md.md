@@ -2,7 +2,7 @@
 
 Some text
 
-### Famous ducks
+## Famous ducks
 
 Here is a table:
 

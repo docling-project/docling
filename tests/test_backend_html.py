@@ -32,16 +32,16 @@ def test_heading_levels():
     )
     doc = backend.convert()
 
-    found_lvl_2 = found_lvl_3 = False
+    found_lvl_1 = found_lvl_2 = False
     for item, _ in doc.iterate_items():
         if isinstance(item, SectionHeaderItem):
             if item.text == "Etymology":
+                found_lvl_1 = True
+                assert item.level == 1
+            elif item.text == "Feeding":
                 found_lvl_2 = True
                 assert item.level == 2
-            elif item.text == "Feeding":
-                found_lvl_3 = True
-                assert item.level == 3
-    assert found_lvl_2 and found_lvl_3
+    assert found_lvl_1 and found_lvl_2
 
 
 @pytest.mark.skip(
