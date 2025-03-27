@@ -213,8 +213,8 @@ class PictureDescriptionBaseOptions(BaseOptions):
     batch_size: int = 8
     scale: float = 2
 
-    bitmap_area_threshold: float = (
-        0.2  # percentage of the area for a bitmap to processed with the models
+    picture_area_threshold: float = (
+        0.05  # percentage of the area for a picture to processed with the models
     )
 
 

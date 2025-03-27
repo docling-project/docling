@@ -63,8 +63,20 @@ class PictureDescriptionBaseModel(
         elements: List[PictureItem] = []
         for el in element_batch:
             assert isinstance(el.item, PictureItem)
-            elements.append(el.item)
-            images.append(el.image)
+            describe_image = True
+            # Don't describe the image if it's smaller than the threshold
+            if len(el.item.prov) > 0:
+                prov = el.item.prov[0]  # PictureItems have at most a single provenance
+                page = doc.pages.get(prov.page_no)
+                if page is not None:
+                    page_area = page.size.width * page.size.height
+                    if page_area > 0:
+                        area_fraction = prov.bbox.area() / page_area
+                        if area_fraction < self.options.picture_area_threshold:
+                            describe_image = False
+            if describe_image:
+                elements.append(el.item)
+                images.append(el.image)
 
         outputs = self._annotate_images(images)
 
