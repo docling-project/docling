@@ -214,7 +214,7 @@ class PictureDescriptionBaseOptions(BaseOptions):
     scale: float = 2
 
     bitmap_area_threshold: float = (
-        0.2  # percentage of the area for a bitmap to processed with the models
+        0.01  # percentage of the area for a bitmap to processed with the models
     )
 
 
