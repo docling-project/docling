@@ -46,7 +46,7 @@ packages = [{ include = "docling" }]
 ######################
 python = "^3.9"
 pydantic = "^2.0.0"
-docling-core = {extras = ["chunking"], version = "^2.23.1"}
+docling-core = {extras = ["chunking"], version = "^2.24.1"}
 docling-ibm-models = "^3.4.0"
 docling-parse = "^4.0.0"
 filetype = "^1.2.0"
