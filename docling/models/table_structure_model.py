@@ -227,22 +227,10 @@ class TableStructureModel(BasePageModel):
                             if sp is not None:
                                 tcells = sp.get_cells_in_bbox(
                                     cell_unit=TextCellUnit.WORD,
-                                    bbox=table_cluster.bbox.to_bottom_left_origin(
-                                        page.size.height
-                                    ),
+                                    bbox=table_cluster.bbox,
                                 )
-                                # Transform origin of returned cells:
-                                tcells2 = []
-                                for tcell in tcells:
-                                    # Do the copy to not affect cells that are in two (or more) table regions
-                                    tcell = tcell.model_copy(deep=True)
-                                    tcell.rect = tcell.rect.to_top_left_origin(
-                                        page.size.height
-                                    )
-                                    tcells2.append(tcell)
-                                tcells = tcells2
                             else:
-                                print("Otherwise - we use normal (line/phrase) cells")
+                                # Otherwise - we use normal (line/phrase) cells
                                 tcells = table_cluster.cells
                             tokens = []
                             for c in tcells:
@@ -268,7 +256,6 @@ class TableStructureModel(BasePageModel):
                             )
                             table_out = tf_output[0]
                             table_cells = []
-                            # print("len(tf_responses)={}".format(len(table_out["tf_responses"])))
                             for element in table_out["tf_responses"]:
 
                                 if not self.do_cell_matching:
