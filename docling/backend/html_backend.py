@@ -40,6 +40,7 @@ TAGS_FOR_NODE_ITEMS: Final = [
     "table",
     "figure",
     "img",
+    "div",  # Add div to ensure panel-titles are considered
 ]
 
 
@@ -126,6 +127,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def walk(self, tag: Tag, doc: DoclingDocument) -> None:
 
+        # Skip if the current tag is hidden
+        if self.is_hidden_element(tag):
+            return
+
         # Iterate over elements in the body of the document
         text: str = ""
         for element in tag.children:
@@ -161,6 +166,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return
 
     def analyze_tag(self, tag: Tag, doc: DoclingDocument) -> None:
+        # Skip hidden elements
+        if self.is_hidden_element(tag):
+            return
+
         if tag.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             self.handle_header(tag, doc)
         elif tag.name in ["p"]:
@@ -177,6 +186,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.handle_figure(tag, doc)
         elif tag.name == "img":
             self.handle_image(tag, doc)
+        # Special handling for accordion panel titles (Bootstrap)
+        elif tag.name == "div" and "panel-title" in tag.get("class", []):
+            self.handle_panel_title(tag, doc)
+        # Special handling for entire accordion panels
+        elif tag.name == "div" and "panel" in tag.get("class", []):
+            self.handle_panel(tag, doc)
         else:
             self.walk(tag, doc)
 
@@ -194,12 +209,41 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return [item]
 
         tag = cast(Tag, item)
+        if self.is_hidden_element(tag):
+            return []
+
         if tag.name not in ["ul", "ol"]:
             for child in tag:
                 # Recursively get the child's text content
                 result.extend(self.extract_text_recursively(child))
 
         return ["".join(result) + " "]
+
+    def is_hidden_element(self, tag: Tag) -> bool:
+        """Check if an element is hidden based on its class attributes."""
+        if not isinstance(tag, Tag):
+            return False
+
+        # Check for classes that indicate hidden content
+        classes = tag.get("class", [])
+        if isinstance(classes, str):
+            classes = classes.split()
+
+        hidden_classes = ["hidden", "d-none", "hide", "invisible", "collapse"]
+        for cls in hidden_classes:
+            if cls in classes:
+                return True
+
+        # Check for style attribute with display:none or visibility:hidden
+        style = tag.get("style", "")
+        if "display:none" in style or "visibility:hidden" in style:
+            return True
+
+        # Check hidden attribute
+        if tag.has_attr("hidden"):
+            return True
+
+        return False
 
     def handle_header(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles header tags (h1, h2, etc.)."""
@@ -544,3 +588,58 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption=None,
             content_layer=self.content_layer,
         )
+
+    def handle_panel_title(self, element: Tag, doc: DoclingDocument) -> None:
+        """Handles panel titles that contain questions in Bootstrap accordion."""
+        # Skip if the element is hidden
+        if self.is_hidden_element(element):
+            return
+
+        # Find the anchor tag that contains the question text
+        anchor = element.find("a")
+        if anchor and anchor.text and not self.is_hidden_element(anchor):
+            question_text = anchor.text.strip()
+            # Add the question as a proper text item
+            doc.add_text(
+                parent=self.parents[self.level],
+                label=DocItemLabel.TEXT,
+                text=question_text,
+                content_layer=self.content_layer,
+            )
+
+    def handle_panel(self, element: Tag, doc: DoclingDocument) -> None:
+        """Handles entire Bootstrap accordion panels."""
+        # Skip if the element is hidden
+        if self.is_hidden_element(element):
+            return
+
+        # First, find and process the panel-title (question)
+        panel_title = element.find("div", class_="panel-title")
+        if panel_title and not self.is_hidden_element(panel_title):
+            self.handle_panel_title(panel_title, doc)
+
+        # Then, find and process the panel-body (answer)
+        panel_body = element.find("div", class_="panel-body")
+        if panel_body and not self.is_hidden_element(panel_body):
+            # Create a group for the answer
+            panel_group = doc.add_group(
+                parent=self.parents[self.level],
+                name="panel-answer",
+                label=GroupLabel.SECTION,
+                content_layer=self.content_layer,
+            )
+
+            # Save current level
+            current_level = self.level
+            # Set new parent for content in the panel
+            self.level += 1
+            self.parents[self.level] = panel_group
+
+            # Process panel body content
+            self.walk(panel_body, doc)
+
+            # Restore previous level
+            self.level = current_level
+        else:
+            # If no panel-body found, just process children normally
+            self.walk(element, doc)

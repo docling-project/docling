@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hidden Elements Test</title>
+</head>
+<body>
+<div class="container">
+    <h3>Visible Elements Test</h3>
+    
+    <!-- Visible content that should be extracted -->
+    <p>This is a regular paragraph that should be extracted.</p>
+    
+    <!-- Content with class="hidden" that should be skipped -->
+    <div class="hidden">
+        <p>This text has class="hidden" and should NOT be extracted.</p>
+    </div>
+    
+    <!-- Content with style="display:none" that should be skipped -->
+    <div style="display:none">
+        <p>This text has style="display:none" and should NOT be extracted.</p>
+    </div>
+    
+    <!-- Content with hidden attribute that should be skipped -->
+    <div hidden>
+        <p>This text has the hidden attribute and should NOT be extracted.</p>
+    </div>
+    
+    <!-- Content with class="d-none" (Bootstrap) that should be skipped -->
+    <div class="d-none">
+        <p>This text has class="d-none" and should NOT be extracted.</p>
+    </div>
+    
+    <!-- Content with class="invisible" (Bootstrap) that should be skipped -->
+    <div class="invisible">
+        <p>This text has class="invisible" and should NOT be extracted.</p>
+    </div>
+    
+    <!-- Content with class="collapse" (Bootstrap) that should be skipped -->
+    <div class="collapse">
+        <p>This text has class="collapse" and should NOT be extracted.</p>
+    </div>
+    
+    <!-- Visible content that should be extracted -->
+    <div class="visible-content">
+        <p>This is another regular paragraph that should be extracted.</p>
+        <div class="keywords hidden">Keywords that should NOT be extracted.</div>
+    </div>
+</div>
+</body>
+</html> 
