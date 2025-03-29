@@ -1,3 +1,9 @@
+## [v2.28.4](https://github.com/docling-project/docling/releases/tag/v2.28.4) - 2025-03-29
+
+### Fix
+
+* Fixes tables when using OCR ([#1261](https://github.com/docling-project/docling/issues/1261)) ([`7afad7e`](https://github.com/docling-project/docling/commit/7afad7e52da642b258edd67f8f4815ea430f05e1))
+
 ## [v2.28.3](https://github.com/docling-project/docling/releases/tag/v2.28.3) - 2025-03-28
 
 ### Fix
