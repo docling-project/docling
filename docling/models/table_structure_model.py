@@ -229,6 +229,9 @@ class TableStructureModel(BasePageModel):
                                     cell_unit=TextCellUnit.WORD,
                                     bbox=table_cluster.bbox,
                                 )
+                                if len(tcells) == 0:
+                                    # In case word-level cells yield empty
+                                    tcells = table_cluster.cells
                             else:
                                 # Otherwise - we use normal (line/phrase) cells
                                 tcells = table_cluster.cells
