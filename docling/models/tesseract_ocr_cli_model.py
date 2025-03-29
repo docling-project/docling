@@ -247,7 +247,7 @@ class TesseractOcrCliModel(BaseOcrModel):
 
                             cell = TextCell(
                                 index=ix,
-                                text=text,
+                                text=str(text),
                                 orig=text,
                                 from_ocr=True,
                                 confidence=conf / 100.0,
