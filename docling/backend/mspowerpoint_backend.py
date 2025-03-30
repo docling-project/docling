@@ -392,9 +392,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     self.handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
-                    self.handle_pictures(
-                        shape, parent_slide, slide_ind, doc, slide_size
-                    )
+                    if hasattr(shape, "image"): # make sure the Picture shape has an image attribute
+                        image_part = shape.image
+                        if image_part.ext not in ["emf", "wmf"]: # all extensions except emf and wmf that lead to bug in adding picture to doc
+                            self.handle_pictures(shape, parent_slide, slide_ind, doc, slide_size)     
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
                     return
