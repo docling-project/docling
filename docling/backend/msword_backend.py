@@ -14,6 +14,8 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
 )
+from docling_core.types.doc.document import Formatting
+
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.table import CT_Tc
@@ -264,7 +266,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         else:
             return label, None
 
-    def format_text(self, text, bold: bool, italic: bool, underline: bool):
+    @classmethod
+    def get_format_from_run(cls, run: Run) -> Formatting:
+        return Formatting(
+            bold=run.bold if run.bold is not None else False,
+            italic=run.italic if run.italic is not None else False,
+            underline=run.underline if run.underline is not None else False,
+        )
+
+    def format_text(self, text: str, format: Formatting) -> str:
         """
         Apply bold, italic, and underline markdown styles to a text
         """
@@ -273,11 +283,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         prefix, text, suffix = re.match(r"(^\s*)(.*?)(\s*$)", text, re.DOTALL).groups()
 
         # Apply style
-        if bold:
+        if format.bold:
             text = f"**{text}**"
-        if italic:
+        if format.italic:
             text = f"*{text}*"
-        if underline:
+        if format.underline:
             text = f"<u>{text}</u>"
 
         # Add back leading and trailing spaces
@@ -292,33 +302,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         paragraph_text = ""
         group_text = ""
-        previous_style = None
+        previous_format = None
 
-        # Iterate over the runs of the paragraph and group them by style
+        # Iterate over the runs of the paragraph and group them by format
         for c in paragraph.iter_inner_content():
             if isinstance(c, Hyperlink):
                 text = f"[{c.text}]({c.address})"
-                style = (c.runs[0].bold, c.runs[0].italic, c.runs[0].underline)
+                format = self.get_format_from_run(c.runs[0])
             elif isinstance(c, Run):
                 text = c.text
-                style = (c.bold, c.italic, c.underline)
+                format = self.get_format_from_run(c)
             else:
                 continue
 
-            # Initialize previous_style with the first style
-            previous_style = previous_style or style
+            # Initialize previous_format with the first format
+            previous_format = previous_format or format
 
             # If the style changes for a non empty text, format the group and reset it
-            if len(text.strip()) and (style != previous_style):
-                paragraph_text += self.format_text(group_text, *previous_style)
-                previous_style = style
+            if len(text.strip()) and (format != previous_format):
+                previous_text = self.format_text(group_text, previous_format)
+                paragraph_text += previous_text
+                previous_format = format
                 group_text = ""
 
             group_text += text
 
         # Format the last group
         if len(group_text.strip()) > 0:
-            paragraph_text += self.format_text(group_text, *style)
+            paragraph_text += self.format_text(group_text, format)
 
         return paragraph_text.strip()
 
