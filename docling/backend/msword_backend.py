@@ -274,45 +274,25 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             underline=run.underline if run.underline is not None else False,
         )
 
-    def format_text(self, text: str, format: Formatting) -> str:
-        """
-        Apply bold, italic, and underline markdown styles to a text
-        """
 
-        # Exclude leading and trailing spaces from style
-        prefix, text, suffix = re.match(r"(^\s*)(.*?)(\s*$)", text, re.DOTALL).groups()
-
-        # Apply style
-        if format.bold:
-            text = f"**{text}**"
-        if format.italic:
-            text = f"*{text}*"
-        if format.underline:
-            text = f"<u>{text}</u>"
-
-        # Add back leading and trailing spaces
-        text = prefix + text + suffix
-
-        return text
-
-    def format_paragraph(self, paragraph):
+    def format_paragraph(self, paragraph: Paragraph) -> list[tuple[str, Formatting, str]]:
         """
         Apply hyperlink, bold, italic, and underline markdown styles to a paragraph
         """
 
-        paragraph_text = ""
+        paragraph_elements = []
         group_text = ""
         previous_format = None
-        hyperlink = None
 
         # Iterate over the runs of the paragraph and group them by format
         for c in paragraph.iter_inner_content():
             if isinstance(c, Hyperlink):
-                text = f"[{c.text}]({c.address})"
-                format = self.get_format_from_run(c.runs[0])
+                text = c.text
                 hyperlink = c.address
+                format = self.get_format_from_run(c.runs[0])
             elif isinstance(c, Run):
                 text = c.text
+                hyperlink = None
                 format = self.get_format_from_run(c)
             else:
                 continue
@@ -320,21 +300,27 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Initialize previous_format with the first format
             previous_format = previous_format or format
 
-            # If the style changes for a non empty text, format the group and reset it
             if (len(text.strip()) and (format != previous_format)) or (hyperlink is not None):
-                paragraph_text += self.format_text(group_text, previous_format)
-                previous_format = format
+                
+                # If the style changes for a non empty text, add the previous group
+                if len(group_text.strip()) > 0:
+                    paragraph_elements.append((group_text, previous_format, None))
                 group_text = ""
-                hyperlink = None
 
+                # If there is a hyperlink, add it immediately
+                if hyperlink is not None:
+                    paragraph_elements.append((text, format, hyperlink))
+                    text = ""
+                else:
+                    previous_format = format
+                
             group_text += text
 
         # Format the last group
         if len(group_text.strip()) > 0:
-            paragraph_text += self.format_text(group_text, format)
+            paragraph_elements.append((group_text, format, None))
 
-        #TODO: return a list of tuple (text, format, hyperlink) instead of a single string
-        return paragraph_text.strip()
+        return paragraph_elements
 
     def handle_equations_in_text(self, element, text):
         only_texts = []
@@ -370,7 +356,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         if text is None:
             return
-        text = self.format_paragraph(paragraph)
+        paragraph_elements = self.format_paragraph(paragraph)
 
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
@@ -481,17 +467,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "Quote",
         ]:
             level = self.get_level()
-            doc.add_text(
-                label=DocItemLabel.PARAGRAPH, parent=self.parents[level - 1], text=text
-            )
+            for text, format, hyperlink in paragraph_elements:
+                doc.add_text(
+                    label=DocItemLabel.PARAGRAPH, parent=self.parents[level - 1], text=text,
+                    formatting=format, hyperlink=hyperlink                    
+                )
 
         else:
             # Text style names can, and will have, not only default values but user values too
             # hence we treat all other labels as pure text
             level = self.get_level()
-            doc.add_text(
-                label=DocItemLabel.PARAGRAPH, parent=self.parents[level - 1], text=text
-            )
+            for text, format, hyperlink in paragraph_elements:
+                doc.add_text(
+                    label=DocItemLabel.PARAGRAPH, parent=self.parents[level - 1], text=text,
+                    formatting=format, hyperlink=hyperlink
+                )
 
         self.update_history(p_style_id, p_level, numid, ilevel)
         return
