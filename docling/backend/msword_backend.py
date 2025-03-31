@@ -379,7 +379,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 doc,
                 numid,
                 ilevel,
-                text,
+                paragraph_elements,
                 is_numbered,
             )
             self.update_history(p_style_id, p_level, numid, ilevel)
@@ -556,7 +556,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         numid: int,
         ilevel: int,
-        text: str,
+        elements: list[tuple[str, Formatting, str]],
         is_numbered: bool = False,
     ) -> None:
         enum_marker = ""
@@ -575,12 +575,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-            doc.add_list_item(
-                marker=enum_marker,
-                enumerated=is_numbered,
-                parent=self.parents[level],
-                text=text,
-            )
+                
+            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level])
+            for text, format, hyperlink in elements:
+                doc.add_list_item(
+                    marker=enum_marker,
+                    enumerated=is_numbered,
+                    parent=inline_fmt, 
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
+                )
 
         elif (
             self.prev_numid() == numid
@@ -611,13 +616,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-            doc.add_list_item(
-                marker=enum_marker,
-                enumerated=is_numbered,
-                parent=self.parents[self.level_at_new_list + ilevel],
-                text=text,
-            )
-
+                
+            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel])
+            for text, format, hyperlink in elements:
+                doc.add_list_item(
+                    marker=enum_marker,
+                    enumerated=is_numbered,
+                    parent=inline_fmt,
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
+                )
         elif (
             self.prev_numid() == numid
             and self.level_at_new_list is not None
@@ -633,12 +642,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-            doc.add_list_item(
-                marker=enum_marker,
-                enumerated=is_numbered,
-                parent=self.parents[self.level_at_new_list + ilevel],
-                text=text,
-            )
+            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel])
+            for text, format, hyperlink in elements:
+                doc.add_list_item(
+                    marker=enum_marker,
+                    enumerated=is_numbered,
+                    parent=inline_fmt,
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
+                )
             self.listIter = 0
 
         elif self.prev_numid() == numid or prev_indent == ilevel:
@@ -647,12 +660,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-            doc.add_list_item(
-                marker=enum_marker,
-                enumerated=is_numbered,
-                parent=self.parents[level - 1],
-                text=text,
-            )
+            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
+            for text, format, hyperlink in elements:
+                # Add the list item to the parent group
+                doc.add_list_item(
+                    marker=enum_marker,
+                    enumerated=is_numbered,
+                    parent=inline_fmt,
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
+                )
         return
 
     def handle_tables(
