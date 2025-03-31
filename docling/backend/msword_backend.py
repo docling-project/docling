@@ -304,7 +304,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 
                 # If the style changes for a non empty text, add the previous group
                 if len(group_text.strip()) > 0:
-                    paragraph_elements.append((group_text, previous_format, None))
+                    paragraph_elements.append((group_text.strip(), previous_format, None))
                 group_text = ""
 
                 # If there is a hyperlink, add it immediately
