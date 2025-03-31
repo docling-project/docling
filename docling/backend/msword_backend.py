@@ -309,7 +309,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 # If there is a hyperlink, add it immediately
                 if hyperlink is not None:
-                    paragraph_elements.append((text, format, hyperlink))
+                    paragraph_elements.append((text.strip(), format, hyperlink))
                     text = ""
                 else:
                     previous_format = format
@@ -318,7 +318,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Format the last group
         if len(group_text.strip()) > 0:
-            paragraph_elements.append((group_text, format, None))
+            paragraph_elements.append((group_text.strip(), format, None))
 
         return paragraph_elements
 
@@ -470,7 +470,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
             for text, format, hyperlink in paragraph_elements:
                 doc.add_text(
-                    label=DocItemLabel.PARAGRAPH, parent=parent, text=text.strip(),
+                    label=DocItemLabel.PARAGRAPH, parent=parent, text=text,
                     formatting=format, hyperlink=hyperlink                    
                 )
 
