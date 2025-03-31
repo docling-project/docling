@@ -20,6 +20,8 @@ from docx.oxml.table import CT_Tc
 from docx.oxml.xmlchemy import BaseOxmlElement
 from docx.table import Table, _Cell
 from docx.text.paragraph import Paragraph
+from docx.text.run import Run
+from docx.text.hyperlink import Hyperlink
 from lxml import etree
 from lxml.etree import XPath
 from PIL import Image, UnidentifiedImageError
@@ -294,10 +296,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Iterate over the runs of the paragraph and group them by style
         for c in paragraph.iter_inner_content():
-            if isinstance(c, docx.text.hyperlink.Hyperlink):
+            if isinstance(c, Hyperlink):
                 text = f"[{c.text}]({c.address})"
                 style = (c.runs[0].bold, c.runs[0].italic, c.runs[0].underline)
-            elif isinstance(c, docx.text.run.Run):
+            elif isinstance(c, Run):
                 text = c.text
                 style = (c.bold, c.italic, c.underline)
             else:
