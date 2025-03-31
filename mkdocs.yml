@@ -65,7 +65,7 @@ nav:
     - Chunking: concepts/chunking.md
   - Examples:
     - Examples: examples/index.md
-    - Conversion:
+    - 🔀 Conversion:
       - "Simple conversion": examples/minimal.py
       - "Custom conversion": examples/custom_convert.py
       - "Batch conversion": examples/batch_convert.py
@@ -76,27 +76,37 @@ nav:
       - "Multimodal export": examples/export_multimodal.py
       - "Force full page OCR": examples/full_page_ocr.py
       - "Accelerator options": examples/run_with_accelerator.py
-    - Chunking:
+    - ✂️ Chunking:
       - "Hybrid chunking": examples/hybrid_chunking.ipynb
-    - RAG / QA:
-      - "RAG with Haystack": examples/rag_haystack.ipynb
-      - "RAG with LlamaIndex 🦙": examples/rag_llamaindex.ipynb
-      - "RAG with LangChain 🦜🔗": examples/rag_langchain.ipynb
-      - "Hybrid RAG with Qdrant": examples/hybrid_rag_qdrant.ipynb
+    - 💬 RAG / QA:
+      - examples/rag_haystack.ipynb
+      - examples/rag_llamaindex.ipynb
+      - examples/rag_langchain.ipynb
+      - examples/rag_weaviate.ipynb
+      - RAG with Granite [↗]: https://github.com/ibm-granite-community/granite-snack-cookbook/blob/main/recipes/RAG/Granite_Docling_RAG.ipynb
+      - examples/retrieval_qdrant.ipynb
   - Integrations:
     - Integrations: integrations/index.md
-    - "🐝 Bee": integrations/bee.md
-    - "Cloudera": integrations/cloudera.md
-    - "Data Prep Kit": integrations/data_prep_kit.md
-    - "DocETL": integrations/docetl.md
-    - "🐶 InstructLab": integrations/instructlab.md
-    - "Kotaemon": integrations/kotaemon.md
-    - "🦙 LlamaIndex": integrations/llamaindex.md
-    - "Prodigy": integrations/prodigy.md
-    - "Red Hat Enterprise Linux AI": integrations/rhel_ai.md
-    - "spaCy": integrations/spacy.md
-    - "txtai": integrations/txtai.md
-    # - "LangChain 🦜🔗": integrations/langchain.md
+    - 🤖 Agentic / AI dev frameworks:
+      - "Bee Agent Framework": integrations/bee.md
+      - "Crew AI": integrations/crewai.md
+      - "Haystack": integrations/haystack.md
+      # - "LangChain": integrations/langchain.md
+      - "LlamaIndex": integrations/llamaindex.md
+      - "txtai": integrations/txtai.md
+    - ⭐️ Featured:
+      - "Data Prep Kit": integrations/data_prep_kit.md
+      - "InstructLab": integrations/instructlab.md
+      - "NVIDIA": integrations/nvidia.md
+      - "Prodigy": integrations/prodigy.md
+      - "RHEL AI": integrations/rhel_ai.md
+      - "spaCy": integrations/spacy.md
+    - 🗂️ More integrations:
+      - "Cloudera": integrations/cloudera.md
+      - "DocETL": integrations/docetl.md
+      - "Kotaemon": integrations/kotaemon.md
+      - "OpenContracts": integrations/opencontracts.md
+      - "Vectara": integrations/vectara.md
   - Reference:
     - Python API:
       - Document Converter: reference/document_converter.md

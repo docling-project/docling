@@ -37,10 +37,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue().decode("utf-8")
+                text_stream = self.path_or_stream.getvalue()
                 self.soup = BeautifulSoup(text_stream, "html.parser")
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, "r", encoding="utf-8") as f:
+                with open(self.path_or_stream, "rb") as f:
                     html_content = f.read()
                     self.soup = BeautifulSoup(html_content, "html.parser")
         except Exception as e:

@@ -176,6 +176,7 @@ class DocumentConverter:
     def convert(
         self,
         source: Union[Path, str, DocumentStream],  # TODO review naming
+        headers: Optional[Dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -185,6 +186,7 @@ class DocumentConverter:
             raises_on_error=raises_on_error,
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
+            headers=headers,
         )
         return next(all_res)
 
@@ -192,6 +194,7 @@ class DocumentConverter:
     def convert_all(
         self,
         source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
+        headers: Optional[Dict[str, str]] = None,
         raises_on_error: bool = True,  # True: raises on first conversion error; False: does not raise on conv error
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -201,8 +204,7 @@ class DocumentConverter:
             max_file_size=max_file_size,
         )
         conv_input = _DocumentConversionInput(
-            path_or_stream_iterator=source,
-            limits=limits,
+            path_or_stream_iterator=source, limits=limits, headers=headers
         )
         conv_res_iter = self._convert(conv_input, raises_on_error=raises_on_error)
 

@@ -32,6 +32,7 @@ This is an automatic generated API reference of the DoclingDocument type.
             - CoordOrigin
             - ImageRefMode
             - Size
+        docstring_style: sphinx
         show_if_no_docstring: true
         show_submodules: true
         docstring_section_style: list
