@@ -269,19 +269,44 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for subt in element.iter():
             tag_name = etree.QName(subt).localname
             if tag_name == "t" and "math" not in subt.tag:
-                only_texts.append(subt.text)
-                texts_and_equations.append(subt.text)
+                if isinstance(subt.text, str):
+                    only_texts.append(subt.text)
+                    texts_and_equations.append(subt.text)
             elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
                 latex_equation = str(oMath2Latex(subt))
                 only_equations.append(latex_equation)
                 texts_and_equations.append(latex_equation)
 
-        if "".join(only_texts).strip() != text.strip():
+        if len(only_equations) < 1:
+            return text, []
+
+        if (
+            re.sub(r"\s+", "", "".join(only_texts)).strip()
+            != re.sub(r"\s+", "", text).strip()
+        ):
             # If we are not able to reconstruct the initial raw text
             # do not try to parse equations and return the original
             return text, []
 
-        return "".join(texts_and_equations), only_equations
+        # Insert equations into original text
+        # This is done to preserve white space structure
+        output_text = ""
+        init_i = 0
+        for i_substr, substr in enumerate(texts_and_equations):
+            if substr not in text:
+                if i_substr > 0:
+                    i_text_before = text[init_i:].find(
+                        texts_and_equations[i_substr - 1]
+                    )
+                    output_text += text[init_i:][
+                        : i_text_before + len(texts_and_equations[i_substr - 1])
+                    ]
+                    init_i += i_text_before + len(texts_and_equations[i_substr - 1])
+                output_text += substr
+                if only_equations.index(substr) == len(only_equations) - 1:
+                    output_text += text[init_i:]
+
+        return output_text, only_equations
 
     def handle_text_elements(
         self,
@@ -348,7 +373,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
-            if style_element:
+            if style_element is not None:
                 is_numbered_style = (
                     "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
                 )
