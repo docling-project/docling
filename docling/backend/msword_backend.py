@@ -303,12 +303,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         paragraph_text = ""
         group_text = ""
         previous_format = None
+        hyperlink = None
 
         # Iterate over the runs of the paragraph and group them by format
         for c in paragraph.iter_inner_content():
             if isinstance(c, Hyperlink):
                 text = f"[{c.text}]({c.address})"
                 format = self.get_format_from_run(c.runs[0])
+                hyperlink = c.address
             elif isinstance(c, Run):
                 text = c.text
                 format = self.get_format_from_run(c)
@@ -319,11 +321,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             previous_format = previous_format or format
 
             # If the style changes for a non empty text, format the group and reset it
-            if len(text.strip()) and (format != previous_format):
-                previous_text = self.format_text(group_text, previous_format)
-                paragraph_text += previous_text
+            if (len(text.strip()) and (format != previous_format)) or (hyperlink is not None):
+                paragraph_text += self.format_text(group_text, previous_format)
                 previous_format = format
                 group_text = ""
+                hyperlink = None
 
             group_text += text
 
@@ -331,6 +333,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if len(group_text.strip()) > 0:
             paragraph_text += self.format_text(group_text, format)
 
+        #TODO: return a list of tuple (text, format, hyperlink) instead of a single string
         return paragraph_text.strip()
 
     def handle_equations_in_text(self, element, text):
