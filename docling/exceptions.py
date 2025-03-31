@@ -4,3 +4,7 @@ class BaseError(RuntimeError):
 
 class ConversionError(BaseError):
     pass
+
+
+class OperationNotAllowed(BaseError):
+    pass

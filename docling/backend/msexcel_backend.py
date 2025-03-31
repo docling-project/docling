@@ -26,6 +26,7 @@ _log = logging.getLogger(__name__)
 
 from typing import Any, List
 
+from PIL import Image as PILImage
 from pydantic import BaseModel
 
 
@@ -44,7 +45,6 @@ class ExcelTable(BaseModel):
 
 
 class MsExcelDocumentBackend(DeclarativeDocumentBackend):
-
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
         super().__init__(in_doc, path_or_stream)
 
@@ -164,7 +164,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
                     end_row_offset_idx=excel_cell.row + excel_cell.row_span,
                     start_col_offset_idx=excel_cell.col,
                     end_col_offset_idx=excel_cell.col + excel_cell.col_span,
-                    col_header=False,
+                    column_header=excel_cell.row == 0,
                     row_header=False,
                 )
                 table_data.table_cells.append(cell)
@@ -173,7 +173,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _find_data_tables(self, sheet: Worksheet):
+    def _find_data_tables(self, sheet: Worksheet) -> List[ExcelTable]:
         """
         Find all compact rectangular data tables in a sheet.
         """
@@ -326,49 +326,18 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, sheet: Worksheet
     ) -> DoclingDocument:
 
-        # FIXME: mypy does not agree with _images ...
-        """
-        # Iterate over images in the sheet
-        for idx, image in enumerate(sheet._images):  # Access embedded images
+        # Iterate over byte images in the sheet
+        for idx, image in enumerate(sheet._images):  # type: ignore
 
-            image_bytes = BytesIO(image.ref.blob)
-            pil_image = Image.open(image_bytes)
+            try:
+                pil_image = PILImage.open(image.ref)
 
-            doc.add_picture(
-                parent=self.parents[0],
-                image=ImageRef.from_pil(image=pil_image, dpi=72),
-                caption=None,
-            )
-        """
-
-        # FIXME: mypy does not agree with _charts ...
-        """
-        for idx, chart in enumerate(sheet._charts):  # Access embedded charts
-            chart_path = f"chart_{idx + 1}.png"
-            _log.info(
-                f"Chart found, but dynamic rendering is required for: {chart_path}"
-            )
-
-            _log.info(f"Chart {idx + 1}:")
-        
-            # Chart type
-            _log.info(f"Type: {type(chart).__name__}")
-            
-            # Title
-            if chart.title:
-                _log.info(f"Title: {chart.title}")
-            else:
-                _log.info("No title")
-            
-            # Data series
-            for series in chart.series:
-                _log.info(" => series ...")
-                _log.info(f"Data Series: {series.title}")
-                _log.info(f"Values: {series.values}")
-                _log.info(f"Categories: {series.categories}")
-                
-            # Position
-            # _log.info(f"Anchor Cell: {chart.anchor}")
-        """
+                doc.add_picture(
+                    parent=self.parents[0],
+                    image=ImageRef.from_pil(image=pil_image, dpi=72),
+                    caption=None,
+                )
+            except:
+                _log.error("could not extract the image from excel sheets")
 
         return doc

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "name": "example_01",
   "origin": {
     "mimetype": "text/html",
@@ -10,6 +10,7 @@
   "furniture": {
     "self_ref": "#/furniture",
     "children": [],
+    "content_layer": "furniture",
     "name": "_root_",
     "label": "unspecified"
   },
@@ -20,6 +21,7 @@
         "$ref": "#/texts/0"
       }
     ],
+    "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
@@ -37,6 +39,7 @@
           "$ref": "#/texts/5"
         }
       ],
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -53,6 +56,7 @@
           "$ref": "#/texts/7"
         }
       ],
+      "content_layer": "body",
       "name": "ordered list",
       "label": "ordered_list"
     }
@@ -71,6 +75,7 @@
           "$ref": "#/texts/2"
         }
       ],
+      "content_layer": "body",
       "label": "title",
       "prov": [],
       "orig": "Introduction",
@@ -82,7 +87,8 @@
         "$ref": "#/texts/0"
       },
       "children": [],
-      "label": "paragraph",
+      "content_layer": "body",
+      "label": "text",
       "prov": [],
       "orig": "This is the first paragraph of the introduction.",
       "text": "This is the first paragraph of the introduction."
@@ -106,11 +112,12 @@
           "$ref": "#/groups/1"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "Background",
       "text": "Background",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/3",
@@ -118,7 +125,8 @@
         "$ref": "#/texts/2"
       },
       "children": [],
-      "label": "paragraph",
+      "content_layer": "body",
+      "label": "text",
       "prov": [],
       "orig": "Some background information here.",
       "text": "Some background information here."
@@ -129,6 +137,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "First item in unordered list",
@@ -142,6 +151,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Second item in unordered list",
@@ -155,6 +165,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "First item in ordered list",
@@ -168,6 +179,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Second item in ordered list",
@@ -183,6 +195,7 @@
         "$ref": "#/texts/2"
       },
       "children": [],
+      "content_layer": "body",
       "label": "picture",
       "prov": [],
       "captions": [],
@@ -193,5 +206,6 @@
   ],
   "tables": [],
   "key_value_items": [],
+  "form_items": [],
   "pages": {}
 }

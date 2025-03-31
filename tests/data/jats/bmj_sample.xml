@@ -1,0 +1,842 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1 20151215//EN" "JATS-journalpublishing1.dtd">
+<article article-type="research-article" dtd-version="1.1" xml:lang="en"
+xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+<front>
+<journal-meta>
+<journal-id journal-id-type="pmc">bmj</journal-id>
+<journal-id journal-id-type="pubmed">BMJ</journal-id>
+<journal-id journal-id-type="publisher">BMJ</journal-id>
+<issn>0959-8138</issn>
+<publisher>
+<publisher-name>BMJ</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="other">jBMJ.v324.i7342.pg880</article-id>
+<article-id pub-id-type="pmid">11950738</article-id>
+<article-categories>
+<subj-group>
+<subject>Primary care</subject>
+<subj-group>
+<subject>190</subject>
+<subject>10</subject>
+<subject>218</subject>
+<subject>219</subject>
+<subject>355</subject>
+<subject>357</subject>
+</subj-group>
+</subj-group>
+</article-categories>
+<title-group>
+<article-title>Evolving general practice consultation in Britain: issues of length and
+context</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author">
+<name>
+<surname>Freeman</surname>
+<given-names>George K</given-names>
+</name>
+<role>professor of general practice</role>
+<xref ref-type="aff" rid="aff-a"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Horder</surname>
+<given-names>John P</given-names>
+</name>
+<role>past president</role>
+<xref ref-type="aff" rid="aff-b"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Howie</surname>
+<given-names>John G R</given-names>
+</name>
+<role>emeritus professor of general practice</role>
+<xref ref-type="aff" rid="aff-c"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Hungin</surname>
+<given-names>A Pali</given-names>
+</name>
+<role>professor of general practice</role>
+<xref ref-type="aff" rid="aff-d"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Hill</surname>
+<given-names>Alison P</given-names>
+</name>
+<role>general practitioner</role>
+<xref ref-type="aff" rid="aff-e"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Shah</surname>
+<given-names>Nayan C</given-names>
+</name>
+<role>general practitioner</role>
+<xref ref-type="aff" rid="aff-b"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Wilson</surname>
+<given-names>Andrew</given-names>
+</name>
+<role>senior lecturer</role>
+<xref ref-type="aff" rid="aff-f"/>
+</contrib>
+</contrib-group>
+<aff id="aff-a">Centre for Primary Care and Social Medicine, Imperial College of Science,
+Technology and Medicine, London W6 8RP</aff>
+<aff id="aff-b">Royal College of General Practitioners, London SW7 1PU</aff>
+<aff id="aff-c">Department of General Practice, University of Edinburgh, Edinburgh EH8 9DX</aff>
+<aff id="aff-d">Centre for Health Studies, University of Durham, Durham DH1 3HN</aff>
+<aff id="aff-e">Kilburn Park Medical Centre, London NW6</aff>
+<aff id="aff-f">Department of General Practice and Primary Health Care, University of Leicester,
+Leicester LE5 4PW</aff>
+<author-notes>
+<fn fn-type="con">
+<p>Contributors: GKF wrote the paper and revised it after repeated and detailed comments from
+all of the other authors and feedback from the first referee and from the <italic>BMJ</italic>
+editorial panel. All other authors gave detailed and repeated comments and cristicisms. GKF is
+the guarantor of the paper.</p>
+</fn>
+<fn>
+<p>Correspondence to: G Freeman <email>g.freeman@ic.ac.uk</email> </p>
+</fn>
+</author-notes>
+<pub-date date-type="pub" publication-format="print" iso-8601-date="2002-04-13">
+<day>13</day>
+<month>4</month>
+<year>2002</year>
+</pub-date>
+<volume>324</volume>
+<issue>7342</issue>
+<fpage>880</fpage>
+<lpage>882</lpage>
+<history>
+<date date-type="accepted" iso-8601-date="2002-02-07" publication-format="print">
+<day>7</day>
+<month>2</month>
+<year>2002</year>
+</date>
+</history>
+<permissions>
+<copyright-statement>Copyright &#x00A9; 2002, BMJ</copyright-statement>
+<copyright-year>2002, </copyright-year>
+</permissions>
+</article-meta>
+</front>
+<body>
+<p>In 1999 Shah<xref ref-type="bibr" rid="B1">1</xref> and others said that the Royal College of
+General Practitioners should advocate longer consultations in general practice as a matter of
+policy. The college set up a working group chaired by A P Hungin, and a systematic review of
+literature on consultation length in general practice was commissioned. The working group agreed
+that the available evidence would be hard to interpret without discussion of the changing context
+within which consultations now take place. For many years general practitioners and those who
+have surveyed patients' opinions in the United Kingdom have complained about short consultation
+time, despite a steady increase in actual mean length. Recently Mechanic pointed out that this is
+also true in the United States.<xref ref-type="bibr" rid="B2">2</xref> Is there any justification
+for a further increase in mean time allocated per consultation in general practice?</p>
+<p>We report on the outcome of extensive debate among a group of general practitioners with an
+interest in the process of care, with reference to the interim findings of the commissioned
+systematic review and our personal databases. The review identified 14 relevant papers. <boxed-text>
+<sec>
+<title>Summary points</title>
+<p> <list list-type="bullet">
+<list-item>
+<p>Longer consultations are associated with a range of better patient outcomes</p>
+</list-item>
+<list-item>
+<p>Modern consultations in general practice deal with patients with more serious and chronic
+conditions</p>
+</list-item>
+<list-item>
+<p>Increasing patient participation means more complex interaction, which demands extra
+time</p>
+</list-item>
+<list-item>
+<p>Difficulties with access and with loss of continuity add to perceived stress and poor
+performance and lead to further pressure on time</p>
+</list-item>
+<list-item>
+<p>Longer consultations should be a professional priority, combined with increased use of
+technology and more flexible practice management to maximise interpersonal continuity</p>
+</list-item>
+<list-item>
+<p>Research on implementation is needed</p>
+</list-item>
+</list> </p>
+</sec>
+</boxed-text> </p>
+<sec sec-type="subjects">
+<title>Longer consultations: benefits for patients</title>
+<p>The systematic review consistently showed that doctors with longer consultation times
+prescribe less and offer more advice on lifestyle and other health promoting activities. Longer
+consultations have been significantly associated with better recognition and handling of
+psychosocial problems<xref ref-type="bibr" rid="B3">3</xref> and with better patient
+enablement.<xref ref-type="bibr" rid="B4">4</xref> Also clinical care for some chronic illnesses
+is better in practices with longer booked intervals between one appointment and the next.<xref
+ref-type="bibr" rid="B5">5</xref> It is not clear whether time is itself the main influence or
+whether some doctors insist on more time.</p>
+<p>A national survey in 1998 reported that most (87&#x0025;) patients were satisfied with the
+length of their most recent consultation.<xref ref-type="bibr" rid="B6">6</xref> Satisfaction
+with any service will be high if expectations are met or exceeded. But expectations are modified
+by previous experience.<xref ref-type="bibr" rid="B7">7</xref> The result is that primary care
+patients are likely to be satisfied with what they are used to unless the context modifies the
+effects of their own experience.</p>
+</sec>
+<sec>
+<title>Context of modern consultations</title>
+<p>Shorter consultations were more appropriate when the population was younger, when even a brief
+absence from employment due to sickness required a doctor's note, and when many simple remedies
+were available only on prescription. Recently at least five important influences have increased
+the content and hence the potential length of the consultation.</p>
+</sec>
+<sec>
+<title>Participatory consultation style</title>
+<p>The most effective consultations are those in which doctors most directly acknowledge and
+perhaps respond to patients' problems and concerns. In addition, for patients to be committed to
+taking advantage of medical advice they must agree with both the goals and methods proposed. A
+landmark publication in the United Kingdom was <italic>Meetings Between Experts</italic>, which
+argued that while doctors are the experts about medical problems in general patients are the
+experts on how they themselves experience these problems.<xref ref-type="bibr" rid="B8">8</xref>
+New emphasis on teaching consulting skills in general practice advocated specific attention to
+the patient's agenda, beliefs, understanding, and agreement. Currently the General Medical
+Council, aware that communication difficulties underlie many complaints about doctors, has
+further emphasised the importance of involving patients in consultations in its revised guidance
+to medical schools.<xref ref-type="bibr" rid="B9">9</xref> More patient involvement should give
+a better outcome, but this participatory style usually lengthens consultations.</p>
+</sec>
+<sec>
+<title>Extended professional agenda</title>
+<p>The traditional consultation in general practice was brief.<xref ref-type="bibr" rid="B2"
+>2</xref> The patient presented symptoms and the doctor prescribed treatment. In 1957 Balint
+gave new insights into the meaning of symptoms.<xref ref-type="bibr" rid="B10">10</xref> By 1979
+an enhanced model of consultation was presented, in which the doctors dealt with ongoing as well
+as presenting problems and added health promotion and education about future appropriate use of
+services.<xref ref-type="bibr" rid="B11">11</xref> Now, with an ageing population and more
+community care of chronic illness, there are more issues to be considered at each consultation.
+Ideas of what constitutes good general practice are more complex.<xref ref-type="bibr" rid="B12"
+>12</xref> Good practice now includes both extended care of chronic medical problems&#x2014;for
+example, coronary heart disease<xref ref-type="bibr" rid="B13">13</xref>&#x2014;and a public
+health role. At first this model was restricted to those who lead change (&#x201C;early
+adopters&#x201D;) and enthusiasts<xref ref-type="bibr" rid="B14">14</xref> but now it is
+embedded in professional and managerial expectations of good practice.</p>
+<p>Adequate time is essential. It may be difficult for an elderly patient with several active
+problems to undress, be examined, and get adequate professional consideration in under 15
+minutes. Here the doctor is faced with the choice of curtailing the consultation or of reducing
+the time available for the next patient. Having to cope with these situations often contributes
+to professional dissatisfaction.<xref ref-type="bibr" rid="B15">15</xref> This combination of
+more care, more options, and more genuine discussion of those options with informed patient
+choice inevitably leads to pressure on time.</p>
+</sec>
+<sec>
+<title>Access problems</title>
+<p>In a service free at the point of access, rising demand will tend to increase rationing by
+delay. But attempts to improve access by offering more consultations at short notice squeeze
+consultation times.</p>
+<p>While appointment systems can and should reduce queuing time for consultations, they have long
+tended to be used as a brake on total demand.<xref ref-type="bibr" rid="B16">16</xref> This may
+seriously erode patients' confidence in being able to see their doctor or nurse when they need
+to. Patients are offered appointments further ahead but may keep these even if their symptoms
+have remitted &#x201C;just in case.&#x201D; Availability of consultations is thus blocked.
+Receptionists are then inappropriately blamed for the inadequate access to doctors.</p>
+<p>In response to perception of delay, the government has set targets in the NHS plan of
+&#x201C;guaranteed access to a primary care professional within 24 hours and to a primary care
+doctor within 48 hours.&#x201D; Implementation is currently being negotiated.</p>
+<p>Virtually all patients think that they would not consult unless it was absolutely necessary.
+They do not think they are wasting NHS time and do not like being made to feel so. But
+underlying general practitioners' willingness to make patients wait several days is their
+perception that few of the problems are urgent. Patients and general practitioners evidently do
+not agree about the urgency of so called minor problems. To some extent general practice in the
+United Kingdom may have scored an &#x201C;own goal&#x201D; by setting up perceived access
+barriers (appointment systems and out of hours cooperatives) in the attempt to increase
+professional standards and control demand in a service that is free at the point of access.</p>
+<p>A further government initiative has been to bypass general practice with new
+services&#x2014;notably, walk-in centres (primary care clinics in which no appointment is
+needed) and NHS Direct (a professional telephone helpline giving advice on simple remedies and
+access to services). Introduced widely and rapidly, these services each potentially provide
+significant features of primary care&#x2014;namely, quick access to skilled health advice and
+first line treatment.</p>
+</sec>
+<sec>
+<title>Loss of interpersonal continuity</title>
+<p>If a patient has to consult several different professionals, particularly over a short period
+of time, there is inevitable duplication of stories, risk of naive diagnoses, potential for
+conflicting advice, and perhaps loss of trust. Trust is essential if patients are to accept the
+&#x201C;wait and see&#x201D; management policy which is, or should be, an important part of the
+management of self limiting conditions, which are often on the boundary between illness and
+non-illness.<xref ref-type="bibr" rid="B17">17</xref> Such duplication again increases pressure
+for more extra (unscheduled) consultations resulting in late running and professional
+frustration.<xref ref-type="bibr" rid="B18">18</xref> </p>
+<p>Mechanic described how loss of longitudinal (and perhaps personal and relational<xref
+ref-type="bibr" rid="B19">19</xref>) continuity influences the perception and use of time
+through an inability to build on previous consultations.<xref ref-type="bibr" rid="B2">2</xref>
+Knowing the doctor well, particularly in smaller practices, is associated with enhanced patient
+enablement in shorter time.<xref ref-type="bibr" rid="B4">4</xref> Though Mechanic pointed out
+that three quarters of UK patients have been registered with their general practitioner five
+years or more, this may be misleading. Practices are growing, with larger teams and more
+registered patients. Being registered with a doctor in a larger practice is usually no guarantee
+that the patient will be able to see the same doctor or the doctor of his or her choice, who may
+be different. Thus the system does not encourage adequate personal continuity. This adds to
+pressure on time and reduces both patient and professional satisfaction.</p>
+</sec>
+<sec>
+<title>Health service reforms</title>
+<p>Finally, for the past 15 years the NHS has experienced unprecedented change with a succession
+of major administrative reforms. Recent reforms have focused on an NHS led by primary care,
+including the aim of shifting care from the secondary specialist sector to primary care. One
+consequence is increased demand for primary care of patients with more serious and less stable
+problems. With the limited piloting of reforms we do not know whether such major redirection can
+be achieved without greatly altering the delicate balance between expectations (of both patients
+and staff) and what is delivered.</p>
+</sec>
+<sec>
+<title>The future</title>
+<p>We think that the way ahead must embrace both longer mean consultation times and more
+flexibility. More time is needed for high quality consultations with patients with major and
+complex problems of all kinds. But patients also need access to simpler services and advice.
+This should be more appropriate (and cost less) when it is given by professionals who know the
+patient and his or her medical history and social circumstances. For doctors, the higher quality
+associated with longer consultations may lead to greater professional satisfaction and, if these
+longer consultations are combined with more realistic scheduling, to reduced levels of
+stress.<xref ref-type="bibr" rid="B20">20</xref> They will also find it easier to develop
+further the care of chronic disease.</p>
+<p>The challenge posed to general practice by walk-in centres and NHS Direct is considerable, and
+the diversion of funding from primary care is large. The risk of waste and duplication increases
+as more layers of complexity are added to a primary care service that started out as something
+familiar, simple, and local and which is still envied in other developed countries.<xref
+ref-type="bibr" rid="B21">21</xref> Access needs to be simple, and the advantages of personal
+knowledge and trust in minimising duplication and overmedicalisation need to be exploited.</p>
+<p>We must ensure better communication and access so that patients can more easily deal with
+minor issues and queries with someone they know and trust and avoid the formality and
+inconvenience of a full face to face consultation. Too often this has to be with a different
+professional, unfamiliar with the nuances of the case. There should be far more managerial
+emphasis on helping patients to interact with their chosen practitioner<xref ref-type="bibr"
+rid="B22">22</xref>; such a programme has been described.<xref ref-type="bibr" rid="B23"
+>23</xref> Modern information systems make it much easier to record which doctor(s) a patient
+prefers to see and to monitor how often this is achieved. The telephone is hardly modern but is
+underused. Email avoids the problems inherent in arranging simultaneous availability necessary
+for telephone consultations but at the cost of reducing the communication of emotions. There is
+a place for both.<xref ref-type="bibr" rid="B2">2</xref> Access without prior appointment is a
+valued feature of primary care, and we need to know more about the right balance between planned
+and ad hoc consulting.</p>
+</sec>
+<sec>
+<title>Next steps</title>
+<p>General practitioners do not behave in a uniform way. They can be categorised as slow, medium,
+and fast and react in different ways to changes in consulting speed.<xref ref-type="bibr"
+rid="B18">18</xref> They are likely to have differing views about a widespread move to lengthen
+consultation time. We do not need further confirmation that longer consultations are desirable
+and necessary, but research could show us the best way to learn how to introduce them with
+minimal disruption to the way in which patients and practices like primary care to be
+provided.<xref ref-type="bibr" rid="B24">24</xref> We also need to learn how to make the most of
+available time in complex consultations.</p>
+<p>Devising appropriate incentives and helping practices move beyond just reacting to demand in
+the traditional way by working harder and faster is perhaps our greatest challenge in the United
+Kingdom. The new primary are trusts need to work together with the growing primary care research
+networks to carry out the necessary development work. In particular, research is needed on how a
+primary care team can best provide the right balance of quick access and interpersonal knowledge
+and trust.</p>
+</sec>
+</body>
+<back>
+<ack>
+<p>We thank the other members of the working group: Susan Childs, Paul Freeling, Iona Heath,
+Marshall Marinker, and Bonnie Sibbald. We also thank Fenny Green of the Royal College of General
+Practitioners for administrative help.</p>
+</ack>
+<ref-list>
+<ref id="B1">
+<label>1</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Shah</surname>
+<given-names>NC</given-names>
+</name> </person-group>
+<article-title>Viewpoint: Consultation time&#x2014;time for a change? Still the
+&#x201C;perfunctory work of perfunctory men!&#x201D;</article-title>
+<source>Br J Gen Pract</source>
+<year iso-8601-date="1999">1999</year>
+<volume>49</volume>
+<fpage>497</fpage>
+</element-citation>
+</ref>
+<ref id="B2">
+<label>2</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Mechanic</surname>
+<given-names>D</given-names>
+</name> </person-group>
+<article-title>How should hamsters run? Some observations about sufficient patient time in
+primary care</article-title>
+<source>BMJ</source>
+<year iso-8601-date="2001">2001</year>
+<volume>323</volume>
+<fpage>266</fpage>
+<lpage>268</lpage>
+<pub-id pub-id-type="pmid">11485957</pub-id>
+</element-citation>
+</ref>
+<ref id="B3">
+<label>3</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Howie</surname>
+<given-names>JGR</given-names>
+</name> <name>
+<surname>Porter</surname>
+<given-names>AMD</given-names>
+</name> <name>
+<surname>Heaney</surname>
+<given-names>DJ</given-names>
+</name> <name>
+<surname>Hopton</surname>
+<given-names>JL</given-names>
+</name> </person-group>
+<article-title>Long to short consultation ratio: a proxy measure of quality of care for general
+practice</article-title>
+<source>Br J Gen Pract</source>
+<year iso-8601-date="1991">1991</year>
+<volume>41</volume>
+<fpage>48</fpage>
+<lpage>54</lpage>
+<pub-id pub-id-type="pmid">2031735</pub-id>
+</element-citation>
+</ref>
+<ref id="B4">
+<label>4</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Howie</surname>
+<given-names>JGR</given-names>
+</name> <name>
+<surname>Heaney</surname>
+<given-names>DJ</given-names>
+</name> <name>
+<surname>Maxwell</surname>
+<given-names>M</given-names>
+</name> <name>
+<surname>Walker</surname>
+<given-names>JJ</given-names>
+</name> <name>
+<surname>Freeman</surname>
+<given-names>GK</given-names>
+</name> <name>
+<surname>Rai</surname>
+<given-names>H</given-names>
+</name> </person-group>
+<article-title>Quality at general practice consultations: cross-sectional
+survey</article-title>
+<source>BMJ</source>
+<year iso-8601-date="1999">1999</year>
+<volume>319</volume>
+<fpage>738</fpage>
+<lpage>743</lpage>
+<pub-id pub-id-type="pmid">10487999</pub-id>
+</element-citation>
+</ref>
+<ref id="B5">
+<label>5</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Kaplan</surname>
+<given-names>SH</given-names>
+</name> <name>
+<surname>Greenfield</surname>
+<given-names>S</given-names>
+</name> <name>
+<surname>Ware</surname>
+<given-names>JE</given-names>
+</name> </person-group>
+<article-title>Assessing the effects of physician-patient interactions on the outcome of
+chronic disease</article-title>
+<source>Med Care</source>
+<year iso-8601-date="1989">1989</year>
+<volume>27</volume>
+<supplement>suppl 3</supplement>
+<fpage>110</fpage>
+<lpage>125</lpage>
+</element-citation>
+</ref>
+<ref id="B6">
+<label>6</label>
+<element-citation publication-type="book" publication-format="print">
+<person-group person-group-type="editor"> <name>
+<surname>Airey</surname>
+<given-names>C</given-names>
+</name> <name>
+<surname>Erens</surname>
+<given-names>B</given-names>
+</name> </person-group>
+<source>National surveys of NHS patients: general practice, 1998</source>
+<year iso-8601-date="1999">1999</year>
+<publisher-loc>London</publisher-loc>
+<publisher-name>NHS Executive</publisher-name>
+</element-citation>
+</ref>
+<ref id="B7">
+<label>7</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Hart</surname>
+<given-names>JT</given-names>
+</name> </person-group>
+<article-title>Expectations of health care: promoted, managed or shared?</article-title>
+<source>Health Expect</source>
+<year iso-8601-date="1998">1998</year>
+<volume>1</volume>
+<fpage>3</fpage>
+<lpage>13</lpage>
+<pub-id pub-id-type="pmid">11281857</pub-id>
+</element-citation>
+</ref>
+<ref id="B8">
+<label>8</label>
+<element-citation publication-type="book" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Tuckett</surname>
+<given-names>D</given-names>
+</name> <name>
+<surname>Boulton</surname>
+<given-names>M</given-names>
+</name> <name>
+<surname>Olson</surname>
+<given-names>C</given-names>
+</name> <name>
+<surname>Williams</surname>
+<given-names>A</given-names>
+</name> </person-group>
+<source>Meetings between experts: an approach to sharing ideas in medical
+consultations</source>
+<year iso-8601-date="1985">1985</year>
+<publisher-loc>London</publisher-loc>
+<publisher-name>Tavistock Publications</publisher-name>
+</element-citation>
+</ref>
+<ref id="B9">
+<label>9</label>
+<mixed-citation publication-type="webpage" publication-format="web">General Medical Council.
+<source>Draft recommendations on undergraduate medical education</source>. July 2001.
+www.gmc-uk.org/med_ed/tomorrowsdoctors/index.htm (accessed 2 Jan 2002).</mixed-citation>
+</ref>
+<ref id="B10">
+<label>10</label>
+<element-citation publication-type="book" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Balint</surname>
+<given-names>M</given-names>
+</name> </person-group>
+<source>The doctor, his patient and the illness</source>
+<year iso-8601-date="1957">1957</year>
+<publisher-loc>London</publisher-loc>
+<publisher-name>Tavistock</publisher-name>
+</element-citation>
+</ref>
+<ref id="B11">
+<label>11</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Stott</surname>
+<given-names>NCH</given-names>
+</name> <name>
+<surname>Davies</surname>
+<given-names>RH</given-names>
+</name> </person-group>
+<article-title>The exceptional potential in each primary care consultation</article-title>
+<source>J R Coll Gen Pract</source>
+<year iso-8601-date="1979">1979</year>
+<volume>29</volume>
+<fpage>210</fpage>
+<lpage>205</lpage>
+</element-citation>
+</ref>
+<ref id="B12">
+<label>12</label>
+<element-citation publication-type="book" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Hill</surname>
+<given-names>AP</given-names>
+</name> </person-group>
+<person-group person-group-type="editor"> <name>
+<surname>Hill</surname>
+<given-names>AP</given-names>
+</name> </person-group>
+<article-title>Challenges for primary care</article-title>
+<source>What's gone wrong with health care? Challenges for the new millennium</source>
+<year iso-8601-date="2000">2000</year>
+<publisher-loc>London</publisher-loc>
+<publisher-name>King's Fund</publisher-name>
+<fpage>75</fpage>
+<lpage>86</lpage>
+</element-citation>
+</ref>
+<ref id="B13">
+<label>13</label>
+<element-citation publication-type="book" publication-format="print">
+<collab>Department of Health</collab>
+<source>National service framework for coronary heart disease</source>
+<year iso-8601-date="2000">2000</year>
+<publisher-loc>London</publisher-loc>
+<publisher-name>Department of Health</publisher-name>
+</element-citation>
+</ref>
+<ref id="B14">
+<label>14</label>
+<element-citation publication-type="book" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Hart</surname>
+<given-names>JT</given-names>
+</name> </person-group>
+<source>A new kind of doctor: the general practitioner's part in the health of the
+community</source>
+<year iso-8601-date="1988">1988</year>
+<publisher-loc>London</publisher-loc>
+<publisher-name>Merlin Press</publisher-name>
+</element-citation>
+</ref>
+<ref id="B15">
+<label>15</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Morrison</surname>
+<given-names>I</given-names>
+</name> <name>
+<surname>Smith</surname>
+<given-names>R</given-names>
+</name> </person-group>
+<article-title>Hamster health care</article-title>
+<source>BMJ</source>
+<year iso-8601-date="2000">2000</year>
+<volume>321</volume>
+<fpage>1541</fpage>
+<lpage>1542</lpage>
+<pub-id pub-id-type="pmid">11124164</pub-id>
+</element-citation>
+</ref>
+<ref id="B16">
+<label>16</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Arber</surname>
+<given-names>S</given-names>
+</name> <name>
+<surname>Sawyer</surname>
+<given-names>L</given-names>
+</name> </person-group>
+<article-title>Do appointment systems work?</article-title>
+<source>BMJ</source>
+<year iso-8601-date="1982">1982</year>
+<volume>284</volume>
+<fpage>478</fpage>
+<lpage>480</lpage>
+<pub-id pub-id-type="pmid">6800503</pub-id>
+</element-citation>
+</ref>
+<ref id="B17">
+<label>17</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Hjortdahl</surname>
+<given-names>P</given-names>
+</name> <name>
+<surname>Borchgrevink</surname>
+<given-names>CF</given-names>
+</name> </person-group>
+<article-title>Continuity of care: influence of general practitioners' knowledge about their
+patients on use of resources in consultations</article-title>
+<source>BMJ</source>
+<year iso-8601-date="1991">1991</year>
+<volume>303</volume>
+<fpage>1181</fpage>
+<lpage>1184</lpage>
+<pub-id pub-id-type="pmid">1747619</pub-id>
+</element-citation>
+</ref>
+<ref id="B18">
+<label>18</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Howie</surname>
+<given-names>JGR</given-names>
+</name> <name>
+<surname>Hopton</surname>
+<given-names>JL</given-names>
+</name> <name>
+<surname>Heaney</surname>
+<given-names>DJ</given-names>
+</name> <name>
+<surname>Porter</surname>
+<given-names>AMD</given-names>
+</name> </person-group>
+<article-title>Attitudes to medical care, the organization of work, and stress among general
+practitioners</article-title>
+<source>Br J Gen Pract</source>
+<year iso-8601-date="1992">1992</year>
+<volume>42</volume>
+<fpage>181</fpage>
+<lpage>185</lpage>
+<pub-id pub-id-type="pmid">1389427</pub-id>
+</element-citation>
+</ref>
+<ref id="B19">
+<label>19</label>
+<element-citation publication-type="book" publication-format="web">
+<person-group person-group-type="author"> <name>
+<surname>Freeman</surname>
+<given-names>G</given-names>
+</name> <name>
+<surname>Shepperd</surname>
+<given-names>S</given-names>
+</name> <name>
+<surname>Robinson</surname>
+<given-names>I</given-names>
+</name> <name>
+<surname>Ehrich</surname>
+<given-names>K</given-names>
+</name> <name>
+<surname>Richards</surname>
+<given-names>SC</given-names>
+</name> <name>
+<surname>Pitman</surname>
+<given-names>P</given-names>
+</name> </person-group>
+<source>Continuity of care: report of a scoping exercise for the national co-ordinating centre
+for NHS Service Delivery and Organisation R&#x0026;D (NCCSDO), Summer 2000</source>
+<year iso-8601-date="2001">2001</year>
+<publisher-loc>London</publisher-loc>
+<publisher-name>NCCSDO</publisher-name>
+<comment><ext-link ext-link-type="url" xmlns:xlink="http://www.w3.org/1999/xlink"
+xlink:href="http://www.sdo.lshtm.ac.uk/continuityofcare.htm"
+>www.sdo.lshtm.ac.uk/continuityofcare.htm</ext-link> (accessed 2 Jan 2002)</comment>
+</element-citation>
+</ref>
+<ref id="B20">
+<label>20</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Wilson</surname>
+<given-names>A</given-names>
+</name> <name>
+<surname>McDonald</surname>
+<given-names>P</given-names>
+</name> <name>
+<surname>Hayes</surname>
+<given-names>L</given-names>
+</name> <name>
+<surname>Cooney</surname>
+<given-names>J</given-names>
+</name> </person-group>
+<article-title>Longer booking intervals in general practice: effects on doctors' stress and
+arousal</article-title>
+<source>Br J Gen Pract</source>
+<year iso-8601-date="1991">1991</year>
+<volume>41</volume>
+<fpage>184</fpage>
+<lpage>187</lpage>
+<pub-id pub-id-type="pmid">1878267</pub-id>
+</element-citation>
+</ref>
+<ref id="B21">
+<label>21</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>De Maeseneer</surname>
+<given-names>J</given-names>
+</name> <name>
+<surname>Hjortdahl</surname>
+<given-names>P</given-names>
+</name> <name>
+<surname>Starfield</surname>
+<given-names>B</given-names>
+</name> </person-group>
+<article-title>Fix what's wrong, not what's right, with general practice in
+Britain</article-title>
+<source>BMJ</source>
+<year iso-8601-date="2000">2000</year>
+<volume>320</volume>
+<fpage>1616</fpage>
+<lpage>1617</lpage>
+<pub-id pub-id-type="pmid">10856043</pub-id>
+</element-citation>
+</ref>
+<ref id="B22">
+<label>22</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Freeman</surname>
+<given-names>G</given-names>
+</name> <name>
+<surname>Hjortdahl</surname>
+<given-names>P</given-names>
+</name> </person-group>
+<article-title>What future for continuity of care in general practice?</article-title>
+<source>BMJ</source>
+<year iso-8601-date="1997">1997</year>
+<volume>314</volume>
+<fpage>1870</fpage>
+<lpage>1873</lpage>
+<pub-id pub-id-type="pmid">9224130</pub-id>
+</element-citation>
+</ref>
+<ref id="B23">
+<label>23</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Kibbe</surname>
+<given-names>DC</given-names>
+</name> <name>
+<surname>Bentz</surname>
+<given-names>E</given-names>
+</name> <name>
+<surname>McLaughlin</surname>
+<given-names>CP</given-names>
+</name> </person-group>
+<article-title>Continuous quality improvement for continuity of care</article-title>
+<source>J Fam Pract</source>
+<year iso-8601-date="1993">1993</year>
+<volume>36</volume>
+<fpage>304</fpage>
+<lpage>308</lpage>
+<pub-id pub-id-type="pmid">8454977</pub-id>
+</element-citation>
+</ref>
+<ref id="B24">
+<label>24</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author"> <name>
+<surname>Williams</surname>
+<given-names>M</given-names>
+</name> <name>
+<surname>Neal</surname>
+<given-names>RD</given-names>
+</name> </person-group>
+<article-title>Time for a change? The process of lengthening booking intervals in general
+practice</article-title>
+<source>Br J Gen Pract</source>
+<year iso-8601-date="1998">1998</year>
+<volume>48</volume>
+<fpage>1783</fpage>
+<lpage>1786</lpage>
+<pub-id pub-id-type="pmid">10198490</pub-id>
+</element-citation>
+</ref>
+</ref-list>
+<fn-group>
+<fn id="fn1">
+<p>Funding: Meetings of the working group in 1999-2000 were funded by the
+<funding-source>Scientific Foundation Board of the RCGP</funding-source>.</p>
+</fn>
+<fn id="fn2">
+<p>Competing interests: None declared.</p>
+</fn>
+</fn-group>
+</back>
+</article>

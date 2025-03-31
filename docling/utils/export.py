@@ -2,9 +2,9 @@ import logging
 from typing import Any, Dict, Iterable, List, Tuple, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.page import TextCell
 from docling_core.types.legacy_doc.base import BaseCell, BaseText, Ref, Table
 
-from docling.datamodel.base_models import OcrCell
 from docling.datamodel.document import ConversionResult, Page
 
 _log = logging.getLogger(__name__)
@@ -86,11 +86,13 @@ def generate_multimodal_pages(
         if page.size is None:
             return cells
         for cell in page.cells:
-            new_bbox = cell.bbox.to_top_left_origin(
-                page_height=page.size.height
-            ).normalized(page_size=page.size)
-            is_ocr = isinstance(cell, OcrCell)
-            ocr_confidence = cell.confidence if isinstance(cell, OcrCell) else 1.0
+            new_bbox = (
+                cell.rect.to_bounding_box()
+                .to_top_left_origin(page_height=page.size.height)
+                .normalized(page_size=page.size)
+            )
+            is_ocr = cell.from_ocr
+            ocr_confidence = cell.confidence
             cells.append(
                 {
                     "text": cell.text,

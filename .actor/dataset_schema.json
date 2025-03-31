@@ -1,0 +1,31 @@
+{
+    "title": "Docling Actor Dataset",
+    "description": "Records of document processing results from the Docling Actor",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "url": {
+            "title": "Document URL",
+            "type": "string",
+            "description": "URL of the processed document"
+        },
+        "output_file": {
+            "title": "Result URL",
+            "type": "string",
+            "description": "Direct URL to the processed result in key-value store"
+        },
+        "status": {
+            "title": "Processing Status",
+            "type": "string",
+            "description": "Status of the document processing",
+            "enum": ["success", "error"]
+        },
+        "error": {
+            "title": "Error Details",
+            "type": "string",
+            "description": "Error message if processing failed",
+            "optional": true
+        }
+    },
+    "required": ["url", "output_file", "status"]
+} 

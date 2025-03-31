@@ -6,12 +6,14 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, Union
 
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.page import BoundingRectangle, SegmentedPdfPage, TextCell
 from docling_parse.pdf_parsers import pdf_parser_v2
 from PIL import Image, ImageDraw
 from pypdfium2 import PdfPage
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
-from docling.datamodel.base_models import Cell, Size
+from docling.datamodel.base_models import Size
+from docling.utils.locks import pypdfium2_lock
 
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
@@ -77,8 +79,11 @@ class DoclingParseV2PageBackend(PdfPageBackend):
 
         return text_piece
 
-    def get_text_cells(self) -> Iterable[Cell]:
-        cells: List[Cell] = []
+    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+        return None
+
+    def get_text_cells(self) -> Iterable[TextCell]:
+        cells: List[TextCell] = []
         cell_counter = 0
 
         if not self.valid:
@@ -105,16 +110,20 @@ class DoclingParseV2PageBackend(PdfPageBackend):
 
             text_piece = cell_data[cells_header.index("text")]
             cells.append(
-                Cell(
-                    id=cell_counter,
+                TextCell(
+                    index=cell_counter,
                     text=text_piece,
-                    bbox=BoundingBox(
-                        # l=x0, b=y0, r=x1, t=y1,
-                        l=x0 * page_size.width / parser_width,
-                        b=y0 * page_size.height / parser_height,
-                        r=x1 * page_size.width / parser_width,
-                        t=y1 * page_size.height / parser_height,
-                        coord_origin=CoordOrigin.BOTTOMLEFT,
+                    orig=text_piece,
+                    from_ocr=False,
+                    rect=BoundingRectangle.from_bounding_box(
+                        BoundingBox(
+                            # l=x0, b=y0, r=x1, t=y1,
+                            l=x0 * page_size.width / parser_width,
+                            b=y0 * page_size.height / parser_height,
+                            r=x1 * page_size.width / parser_width,
+                            t=y1 * page_size.height / parser_height,
+                            coord_origin=CoordOrigin.BOTTOMLEFT,
+                        )
                     ).to_top_left_origin(page_size.height),
                 )
             )
@@ -140,7 +149,7 @@ class DoclingParseV2PageBackend(PdfPageBackend):
         return cells
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
-        AREA_THRESHOLD = 32 * 32
+        AREA_THRESHOLD = 0  # 32 * 32
 
         images = self._dpage["sanitized"]["images"]["data"]
         images_header = self._dpage["sanitized"]["images"]["header"]
@@ -178,24 +187,28 @@ class DoclingParseV2PageBackend(PdfPageBackend):
                 l=0, r=0, t=0, b=0, coord_origin=CoordOrigin.BOTTOMLEFT
             )
         else:
-            padbox = cropbox.to_bottom_left_origin(page_size.height)
+            padbox = cropbox.to_bottom_left_origin(page_size.height).model_copy()
             padbox.r = page_size.width - padbox.r
             padbox.t = page_size.height - padbox.t
 
-        image = (
-            self._ppage.render(
-                scale=scale * 1.5,
-                rotation=0,  # no additional rotation
-                crop=padbox.as_tuple(),
-            )
-            .to_pil()
-            .resize(size=(round(cropbox.width * scale), round(cropbox.height * scale)))
-        )  # We resize the image from 1.5x the given scale to make it sharper.
+        with pypdfium2_lock:
+            image = (
+                self._ppage.render(
+                    scale=scale * 1.5,
+                    rotation=0,  # no additional rotation
+                    crop=padbox.as_tuple(),
+                )
+                .to_pil()
+                .resize(
+                    size=(round(cropbox.width * scale), round(cropbox.height * scale))
+                )
+            )  # We resize the image from 1.5x the given scale to make it sharper.
 
         return image
 
     def get_size(self) -> Size:
-        return Size(width=self._ppage.get_width(), height=self._ppage.get_height())
+        with pypdfium2_lock:
+            return Size(width=self._ppage.get_width(), height=self._ppage.get_height())
 
     def unload(self):
         self._ppage = None
@@ -206,23 +219,24 @@ class DoclingParseV2DocumentBackend(PdfDocumentBackend):
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
         super().__init__(in_doc, path_or_stream)
 
-        self._pdoc = pdfium.PdfDocument(self.path_or_stream)
-        self.parser = pdf_parser_v2("fatal")
+        with pypdfium2_lock:
+            self._pdoc = pdfium.PdfDocument(self.path_or_stream)
+            self.parser = pdf_parser_v2("fatal")
 
-        success = False
-        if isinstance(self.path_or_stream, BytesIO):
-            success = self.parser.load_document_from_bytesio(
-                self.document_hash, self.path_or_stream
-            )
-        elif isinstance(self.path_or_stream, Path):
-            success = self.parser.load_document(
-                self.document_hash, str(self.path_or_stream)
-            )
+            success = False
+            if isinstance(self.path_or_stream, BytesIO):
+                success = self.parser.load_document_from_bytesio(
+                    self.document_hash, self.path_or_stream
+                )
+            elif isinstance(self.path_or_stream, Path):
+                success = self.parser.load_document(
+                    self.document_hash, str(self.path_or_stream)
+                )
 
-        if not success:
-            raise RuntimeError(
-                f"docling-parse v2 could not load document {self.document_hash}."
-            )
+            if not success:
+                raise RuntimeError(
+                    f"docling-parse v2 could not load document {self.document_hash}."
+                )
 
     def page_count(self) -> int:
         # return len(self._pdoc)  # To be replaced with docling-parse API
@@ -236,9 +250,10 @@ class DoclingParseV2DocumentBackend(PdfDocumentBackend):
         return len_2
 
     def load_page(self, page_no: int) -> DoclingParseV2PageBackend:
-        return DoclingParseV2PageBackend(
-            self.parser, self.document_hash, page_no, self._pdoc[page_no]
-        )
+        with pypdfium2_lock:
+            return DoclingParseV2PageBackend(
+                self.parser, self.document_hash, page_no, self._pdoc[page_no]
+            )
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
@@ -246,5 +261,6 @@ class DoclingParseV2DocumentBackend(PdfDocumentBackend):
     def unload(self):
         super().unload()
         self.parser.unload_document(self.document_hash)
-        self._pdoc.close()
-        self._pdoc = None
+        with pypdfium2_lock:
+            self._pdoc.close()
+            self._pdoc = None

@@ -1,47 +1,20 @@
-- Main page
-- Contents
-- Current events
-- Random article
-- About Wikipedia
-- Contact us
-
-- Help
-- Learn to edit
-- Community portal
-- Recent changes
-- Upload file
-
-<!-- image -->
-
-<!-- image -->
-
-<!-- image -->
-
-    - Donate
-        - Create account
-        - Log in
-        - Create account
-        - Log in
-        - Contributions
-        - Talk
-
 ## Contents
 
-        - (Top)
-        - 1 Etymology
-        - 2 Taxonomy
-        - 3 Morphology
-        - 4 Distribution and habitat
-        - 5 Behaviour Toggle Behaviour subsection
-            - 5.1 Feeding
-            - 5.2 Breeding
-            - 5.3 Communication
-            - 5.4 Predators
-    - 6 Relationship with humans Toggle Relationship with humans subsection
-        - 6.1 Hunting
-        - 6.2 Domestication
-        - 6.3 Heraldry
-        - 6.4 Cultural references
+- (Top)
+- 1 Etymology
+- 2 Taxonomy
+- 3 Morphology
+- 4 Distribution and habitat
+- 5 Behaviour Toggle Behaviour subsection
+    - 5.1 Feeding
+    - 5.2 Breeding
+    - 5.3 Communication
+    - 5.4 Predators
+- 6 Relationship with humans Toggle Relationship with humans subsection
+    - 6.1 Hunting
+    - 6.2 Domestication
+    - 6.3 Heraldry
+    - 6.4 Cultural references
 - 7 See also
 - 8 Notes Toggle Notes subsection
     - 8.1 Citations
@@ -190,28 +163,52 @@
 - Article
 - Talk
 
-    - Read
-    - View source
-    - View history
-    - Read
-    - View source
-    - View history
-    - What links here
-    - Related changes
-    - Upload file
-    - Special pages
-    - Permanent link
-    - Page information
-    - Cite this page
-    - Get shortened URL
-    - Download QR code
-    - Wikidata item
-    - Download as PDF
-    - Printable version
-    - Wikimedia Commons
-    - Wikiquote
+- Read
+- View source
+- View history
+
+Tools
+
+Actions
+
+- Read
+- View source
+- View history
+
+General
+
+- What links here
+- Related changes
+- Upload file
+- Special pages
+- Permanent link
+- Page information
+- Cite this page
+- Get shortened URL
+- Download QR code
+- Wikidata item
+
+Print/export
+
+- Download as PDF
+- Printable version
+
+In other projects
+
+- Wikimedia Commons
+- Wikiquote
+
+Appearance
 
 <!-- image -->
+
+From Wikipedia, the free encyclopedia
+
+Common name for many species of bird
+
+This article is about the bird. For duck as a food, see . For other uses, see .
+
+"Duckling" redirects here. For other uses, see .
 
 | Duck                           | Duck                           |
 |--------------------------------|--------------------------------|
@@ -389,22 +386,22 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 4. ^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.
 5. ^ a b c d Carboneras 1992, p. 536.
 6. ^ Livezey 1986, pp. 737–738.
-7. ^ Madsen, McHugh & de Kloet 1988, p. 452.
-8. ^ Donne-Goussé, Laudet & Hänni 2002, pp. 353–354.
+7. ^ Madsen, McHugh &amp; de Kloet 1988, p. 452.
+8. ^ Donne-Goussé, Laudet &amp; Hänni 2002, pp. 353–354.
 9. ^ a b c d e f Carboneras 1992, p. 540.
-10. ^ Elphick, Dunning & Sibley 2001, p. 191.
+10. ^ Elphick, Dunning &amp; Sibley 2001, p. 191.
 11. ^ Kear 2005, p. 448.
 12. ^ Kear 2005, p. 622–623.
 13. ^ Kear 2005, p. 686.
-14. ^ Elphick, Dunning & Sibley 2001, p. 193.
+14. ^ Elphick, Dunning &amp; Sibley 2001, p. 193.
 15. ^ a b c d e f g Carboneras 1992, p. 537.
 16. ^ American Ornithologists' Union 1998, p. xix.
 17. ^ American Ornithologists' Union 1998.
 18. ^ Carboneras 1992, p. 538.
-19. ^ Christidis & Boles 2008, p. 62.
+19. ^ Christidis &amp; Boles 2008, p. 62.
 20. ^ Shirihai 2008, pp. 239, 245.
-21. ^ a b Pratt, Bruner & Berrett 1987, pp. 98–107.
-22. ^ Fitter, Fitter & Hosking 2000, pp. 52–3.
+21. ^ a b Pratt, Bruner &amp; Berrett 1987, pp. 98–107.
+22. ^ Fitter, Fitter &amp; Hosking 2000, pp. 52–3.
 23. ^ "Pacific Black Duck". www.wiresnr.org. Retrieved 2018-04-27.
 24. ^ Ogden, Evans. "Dabbling Ducks". CWE. Retrieved 2006-11-02.
 25. ^ Karl Mathiesen (16 March 2015). "Don't feed the ducks bread, say conservationists". The Guardian. Retrieved 13 November 2016.
@@ -412,7 +409,7 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 27. ^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). "Long-Term Pair Bonds in Harlequin Ducks". The Condor. 102 (1): 201–205. doi:10.1093/condor/102.1.201. hdl:10315/13797.
 28. ^ "If You Find An Orphaned Duckling - Wildlife Rehabber". wildliferehabber.com. Archived from the original on 2018-09-23. Retrieved 2018-12-22.
 29. ^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]
-30. ^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman & Littlefield. ISBN 9780762797707.
+30. ^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman &amp; Littlefield. ISBN 9780762797707.
 31. ^ Amos, Jonathan (2003-09-08). "Sound science is quackers". BBC News. Retrieved 2006-11-02.
 32. ^ "Mythbusters Episode 8". 12 December 2003.
 33. ^ Erlandson 1994, p. 171.
@@ -446,10 +443,10 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 - Christidis, Les; Boles, Walter E., eds. (2008). Systematics and Taxonomy of Australian Birds. Collingwood, VIC: Csiro Publishing. ISBN 978-0-643-06511-6.
 - Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). "A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis". Molecular Phylogenetics and Evolution. 23 (3): 339–356. Bibcode:2002MolPE..23..339D. doi:10.1016/S1055-7903(02)00019-2. PMID 12099792.
 - Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). The Sibley Guide to Bird Life and Behaviour. London: Christopher Helm. ISBN 978-0-7136-6250-4.
-- Erlandson, Jon M. (1994). Early Hunter-Gatherers of the California Coast. New York, NY: Springer Science & Business Media. ISBN 978-1-4419-3231-0.
+- Erlandson, Jon M. (1994). Early Hunter-Gatherers of the California Coast. New York, NY: Springer Science &amp; Business Media. ISBN 978-1-4419-3231-0.
 - Fieldhouse, Paul (2002). Food, Feasts, and Faith: An Encyclopedia of Food Culture in World Religions. Vol. I: A–K. Santa Barbara: ABC-CLIO. ISBN 978-1-61069-412-4.
 - Fitter, Julian; Fitter, Daniel; Hosking, David (2000). Wildlife of the Galápagos. Princeton, NJ: Princeton University Press. ISBN 978-0-691-10295-5.
-- Higman, B. W. (2012). How Food Made History. Chichester, UK: John Wiley & Sons. ISBN 978-1-4051-8947-7.
+- Higman, B. W. (2012). How Food Made History. Chichester, UK: John Wiley &amp; Sons. ISBN 978-1-4051-8947-7.
 - Hume, Julian H. (2012). Extinct Birds. London: Christopher Helm. ISBN 978-1-4729-3744-5.
 - Jeffries, Richard (2008). Holocene Hunter-Gatherers of the Lower Ohio River Valley. Tuscaloosa: University of Alabama Press. ISBN 978-0-8173-1658-7.
 - Kear, Janet, ed. (2005). Ducks, Geese and Swans: Species Accounts (Cairina to Mergus). Bird Families of the World. Oxford: Oxford University Press. ISBN 978-0-19-861009-0.
@@ -457,7 +454,7 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 - Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988). "A partial classification of waterfowl (Anatidae) based on single-copy DNA" (PDF). The Auk. 105 (3): 452–459. doi:10.1093/auk/105.3.452. Archived (PDF) from the original on 2022-10-09.
 - Maisels, Charles Keith (1999). Early Civilizations of the Old World. London: Routledge. ISBN 978-0-415-10975-8.
 - Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). A Field Guide to the Birds of Hawaii and the Tropical Pacific. Princeton, NJ: Princeton University Press. ISBN 0-691-02399-9.
-- Rau, Charles (1876). Early Man in Europe. New York: Harper & Brothers. LCCN 05040168.
+- Rau, Charles (1876). Early Man in Europe. New York: Harper &amp; Brothers. LCCN 05040168.
 - Shirihai, Hadoram (2008). A Complete Guide to Antarctic Wildlife. Princeton, NJ, US: Princeton University Press. ISBN 978-0-691-13666-0.
 - Sued-Badillo, Jalil (2003). Autochthonous Societies. General History of the Caribbean. Paris: UNESCO. ISBN 978-92-3-103832-7.
 - Thorpe, I. J. (1996). The Origins of Agriculture in Europe. New York: Routledge. ISBN 978-0-415-08009-5.
@@ -473,7 +470,6 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 
 - list of books (useful looking abstracts)
 - Ducks on postage stamps Archived 2013-05-13 at the Wayback Machine
-- 
 - Ducks at a Distance, by Rob Hines at Project Gutenberg - A modern illustrated guide to identification of US waterfowl
 
 | Authority control databases    | Authority control databases                  |
@@ -483,9 +479,15 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 
 <!-- image -->
 
+Retrieved from ""
+
+:
+
 - Ducks
 - Game birds
 - Bird common names
+
+Hidden categories:
 
 - All accuracy disputes
 - Accuracy disputes from February 2020
@@ -527,6 +529,3 @@ additional terms may apply. By using this site, you agree to the Terms of Use an
 - Statistics
 - Cookie statement
 - Mobile view
-
-- 
--

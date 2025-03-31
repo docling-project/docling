@@ -12,7 +12,7 @@ _log = logging.getLogger(__name__)
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("./tests/data/2206.01062.pdf")
+    input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
     output_dir = Path("scratch")
 
     doc_converter = DocumentConverter()

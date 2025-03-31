@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "name": "pftaps057006474.txt",
   "origin": {
     "mimetype": "text/plain",
@@ -10,6 +10,7 @@
   "furniture": {
     "self_ref": "#/furniture",
     "children": [],
+    "content_layer": "furniture",
     "name": "_root_",
     "label": "unspecified"
   },
@@ -20,6 +21,7 @@
         "$ref": "#/texts/0"
       }
     ],
+    "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
@@ -50,6 +52,7 @@
           "$ref": "#/texts/54"
         }
       ],
+      "content_layer": "body",
       "label": "title",
       "prov": [],
       "orig": "Carbocation containing cyanine-type dye",
@@ -65,6 +68,7 @@
           "$ref": "#/texts/2"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "ABSTRACT",
@@ -77,6 +81,7 @@
         "$ref": "#/texts/1"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "To provide a reagent with excellent stability under storage, which can detect a subject compound to be measured with higher specificity and sensitibity.",
@@ -119,6 +124,7 @@
           "$ref": "#/texts/13"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "BACKGROUND OF THE INVENTION",
@@ -131,6 +137,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "1. Field of the Invention",
@@ -142,6 +149,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The present invention relates to a labeled complex for microassay using near-infrared radiation. More specifically, the present invention relates to a labeled complex capable of specifically detecting a certain particular component in a complex mixture with a higher sensitivity.",
@@ -153,6 +161,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "2. Related Background Art",
@@ -164,6 +173,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "On irradiating a laser beam on a trace substance labeled with dyes and the like, information due to the substance is generated such as scattered light, absorption light, fluorescent light and furthermore light acoustics. It is widely known in the field of analysis using lasers, to detect such information so as to practice microassays rapidly with a higher precision.",
@@ -175,6 +185,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "A gas laser represented by an argon laser and a helium laser has conventionally been used exclusively as a laser source. In recent years, however, a semi-conductor laser has been developed, and based on the characteristic features thereof such as inexpensive cost, small scale and easy output control, it is now desired to use the semiconductor laser as a light source.",
@@ -186,6 +197,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "If diagnostically useful substances from living organisms are assayed by means of the wave-length in ultraviolet and visible regions as has conventionally been used, the background (blank) via the intrinsic fluorescence of naturally occurring products, such as flavin, pyridine coenzyme and serum proteins, which are generally contained in samples, is likely to increase. Only if a light source in a near-infrared region can be used, such background from naturally occurring products can be eliminated so that the sensitivity to substances to be measured might be enhanced, consequently.",
@@ -197,6 +209,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "However, the oscillation wavelength of a semiconductor laser is generally in red and near-infrared regions (670 to 830 nm), where not too many dyes generate fluorescence via absorption or excitation. A representative example of such dyes is polymethine-type dye having a longer conjugated chain. Examples of labeling substances from living organisms with a polymethine-type dye and using the labeled substances for microanalysis are reported by K. Sauda, T. Imasaka, et al. in the report in Anal. Chem., 58, 2649-2653 (1986), such that plasma protein is labeled with a cyanine dye having a sulfonate group (for example, Indocyanine Green) for the analysis by high-performance liquid chromatography.",
@@ -208,6 +221,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "Japanese Patent Application Laid-open No. 2-191674 discloses that various cyanine dyes having sulfonic acid groups or sulfonate groups are used for labeling substances from living organisms and for detecting the fluorescence.",
@@ -219,6 +233,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "However, these known cyanine dyes emitting fluorescence via absorption or excitation in the near-infrared region are generally not particularly stable under light or heat.",
@@ -230,6 +245,7 @@
         "$ref": "#/texts/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "If the dyes are used as labeling agents and bonded to substances from living organisms such as antibodies for preparing complexes, the complexes are likely to be oxidized easily by environmental factors such as light, heat, moisture, atmospheric oxygen and the like or to be subjected to modification such as generating cross-links. Particularly in water, a modification such as hydrolysis is further accelerated, disadvantageously. Therefore, the practical use of these complexes as detecting reagents in carrying out the microassay of the components of living organisms has encountered difficulties because of their poor stability under storage.",
@@ -257,6 +273,7 @@
           "$ref": "#/texts/19"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "SUMMARY OF THE INVENTION",
@@ -269,6 +286,7 @@
         "$ref": "#/texts/14"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The present inventors have made various investigations so as to solve the above problems, and have found that a dye of a particular structure, more specifically a particular polymethine dye, and among others, a dye having an azulene skelton, are extremely stable even after the immobilization thereof as a labeling agent onto substances from living organisms. Thus, the inventors have achieved the present invention. It is an object of the present invention to provide a labeled complex with excellent storage stability which can overcome the above problems.",
@@ -280,6 +298,7 @@
         "$ref": "#/texts/14"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "According to an aspect of the present invention, there is provided a labeled complex for detecting a subject compound to be analyzed by means of optical means using near-infrared radiation which complex comprises a substance from a living organism and a labeling agent fixed onto the substance and is bonded to the subject compound to be analyzed, wherein the labeling agent comprises a compound represented by the general formula (I), (II) or (III): wherein R.sub.1 through R.sub.7 are independently selected from the group consisting of hydrogen atom, halogen atom, alkyl group, aryl group, aralkyl group, sulfonate group, amino group, styryl group, nitro group, hydroxyl group, carboxyl group, cyano group, or arylazo group; R.sub.1 through R.sub.7 may be bonded to each other to form a substituted or an unsubstituted condensed ring; R.sub.1 represents a divalent organic residue; and X.sub.1.sup..crclbar. represents an anion; wherein R.sub.8 through R14 are independently selected from the group consisting of hydrogen atom, halogen atom, alkyl group, aryl group, aralkyl group, sulfonate group, amino group, styryl group, nitro group, hydroxyl group, carboxyl group, cyano group, or arylazo group; R.sub.8 through R14 may be bonded to each other to form a substituted or an unsubstituted condensed ring; and R.sub.A represents a divalent organic residue; wherein R.sub.15 through R.sub.21 are independently selected from the group consisting of hydrogen atom, halogen atom, alkyl group, aryl group, a substituted or an unsubstituted aralkyl group, a substituted or an unsubstituted amino group, a substituted or an unsubstituted styryl group, nitro group, sulfonate group, hydroxyl group, carboxyl group, cyano group, or arylazo group; R.sub.15 through R.sub.21 may or may not be bonded to each other to form a substituted or an unsubstituted condensed ring; R.sub.B represents a divalent organic residue; and X.sub.1.sup..crclbar. represents an anion.",
@@ -291,6 +310,7 @@
         "$ref": "#/texts/14"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "According to another aspect of the present invention, there is provided a labeled complex for detecting a subject compound to be analyzed by means of optical means using near-infrared radiation which complex comprises a substance from a living organism and a labeling agent fixed onto the substance and is bonded to the subject compound to be analyzed, wherein the labeling agent comprises a compound represented by the general formula (IV): wherein A, B, D and E are independently selected from the group consisting of hydrogen atom, a substituted or an unsubstituted alkyl group having two or more carbon atoms, alkenyl group, aralkyl group, aryl group, styryl group and heterocyclic group; r.sub.1 ' and r.sub.2 ' are individually selected from the group consisting of hydrogen atom, a substituted or an unsubstituted alkyl group, cyclic alkyl group, alkenyl group, aralkyl group and aryl group; k is 0 or 1; 1 is 0, 1 or 2; and X.sub.2.sup..crclbar.  represents an anion.",
@@ -302,6 +322,7 @@
         "$ref": "#/texts/14"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "According to another aspect of the present invention, there is provided a method of detecting a subject compound to be analyzed by means of optical means which method comprises using a labeled complex comprised of a substance from a living organism and a labeling agent fixed onto the substance and bonding the complex to the subject compound to be analyzed, wherein the labeling agent comprises a compound represented by the general formula (I), (II) or (III).",
@@ -313,6 +334,7 @@
         "$ref": "#/texts/14"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "According to still another aspect of the present invention, there is provided a method of detecting a subject compound to be analyzed by means of optical means which method comprises using a labeled complex comprised of a substance from a living organism and a labeling agent fixed onto the substance and bonding the complex to the subject compound to be analyzed, wherein the labeling agent comprises a compound represented by the general formula (iv).",
@@ -328,6 +350,7 @@
           "$ref": "#/texts/21"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "BRIEF DESCRIPTION OF THE DRAWINGS",
@@ -340,6 +363,7 @@
         "$ref": "#/texts/20"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "FIG. 1 depicts one example of fluorescence emitting wave form of a labeling agent.",
@@ -445,6 +469,7 @@
           "$ref": "#/texts/53"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "DETAILED DESCRIPTION OF THE PREFERRED EMBODIMENTS",
@@ -457,6 +482,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The present invention will now be explained in detail hereinbelow.",
@@ -468,6 +494,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "In accordance with the present invention, the compound of the general formula (I), (II) or (III) is employed as a labeling agent, wherein R.sub.1 to R.sub.21 individually represent hydrogen atom, halogen atom (chlorine atom, bromine atom, and iodine atom) or a monovalent organic residue, and other such functional groups described above. The monovalent organic residue can be selected from a wide variety of such residues.",
@@ -479,6 +506,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The alkyl group is preferably in straight chain or branched chain, having a carbon number of 1 to 12, such as for example methyl group, ethyl group, n-propyl group, iso-propyl group, n-butyl group, sec-butyl group, iso-butyl group, t-butyl group, n-amyl group, t-amyl group, n-hexyl group, n-octyl group, t-octyl group and the like.",
@@ -490,6 +518,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The aryl group preferably has a carbon number of 6 to 20, such as for example phenyl group, naphthyl group, methoxyphenyl group, diethylaminophenyl group, dimethylaminophenyl group and the like.",
@@ -501,6 +530,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The substituted aralkyl group preferably has a carbon number of 7 to 19, such as for example carboxybenzyl group, sulfobenzyl group, hydroxybenzyl group and the like.",
@@ -512,6 +542,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The unsubstituted aralkyl group preferably has a carbon number of 7 to 19, such as for example benzyl group, phenethyl group, .alpha.-naphthylmethyl group, .beta.-naphthylmethyl group and the like.",
@@ -523,6 +554,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The substituted or unsubstituted amino group preferably has a carbon number of 10 or less, such as for example amino group, dimethylamino group, diethylamino group, dipropylamino group, acetylamino group, benzoylamino group and the like.",
@@ -534,6 +566,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The substituted or unsubstituted styryl group preferably has a carbon number of 8 to 14, such as for example styryl group, dimethylaminostyryl group, diethylaminostyryl group, dipropylaminostyryl group, methoxystyryl group, ethoxystyryl group, methylstyryl group and the like.",
@@ -545,6 +578,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The aryl azo group preferably has a carbon number of 6 to 14, such as for example phenylazo group, .alpha.-naphthylazo group, .beta.-naphthylazo group, dimethylaminophenylazo group, chlorophenylazo group, nitrophenylazo group, methoxyphenylazo group and the like.",
@@ -556,6 +590,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "Of the combinations of R.sub.1 and R.sub.2, R.sub.2 and R.sub.3, R.sub.3 and R.sub.4, R.sub.4 and R.sub.5, R.sub.5 and R.sub.6, and R.sub.6 and R.sub.7 of the general formula (I), at least one combination may form a substituted or an unsubstituted condensed ring. The condensed ring may be five, six or seven membered, including aromatic ring (benzene, naphthalene, chlorobenzene, bromobenzene, methyl benzene, ethyl benzene, methoxybenzene, ethoxybenzene and the like); heterocyclic ring (furan ring, benzofuran ring, pyrrole ring, thiophene ring, pyridine ring, quinoline ring, thiazole ring and the like); and aliphatic ring (dimethylene, trimethylene, tetramethylene and the like). This is the case with the general formulas (II) and (III).",
@@ -567,6 +602,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "For the general formula (II), at least one combination among the combinations of R.sub.8 and R.sub.9, R.sub.9 and R.sub.10, R.sub.10 and R.sub.11, R.sub.11 and R.sub.12, R.sub.12 and R.sub.13, and R.sub.13 and R.sub.14, may form a substituted or an unsubstituted condensed ring.",
@@ -578,6 +614,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "Also for the general formula (III), at least one combination of the combinations of R.sub.15 and R.sub.16, R.sub.16 and R.sub.17, R.sub.17 and R.sub.18, R.sub.18 and R.sub.19, R.sub.19 and R.sub.20, and R.sub.20 and R.sub.21, may form a substituted or an unsubstituted condensed ring.",
@@ -589,6 +626,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "In the general formulas (I) to (IV) described above, the general formula (I) is specifically preferable; preference is also given individually to hydrogen atom, alkyl group and sulfonate group in the case of R.sub.1 to R.sub.7 ; hydrogen atom, alkyl group and sulfonate group in the case of R.sub.8 to R.sub.14 ; hydrogen atom, alkyl group and sulfonate group in the case of R.sub.15 to R.sub.21 ; alkyl group and aryl group in the case of A, B, D and E; hydrogen atom and alkyl group in the case Of r.sub.1 ' to r.sub.2 '.",
@@ -600,6 +638,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "In the general formula (I), R represents a divalent organic residue bonded via a double bond. Specific examples of a compound containing such R to be used in the present invention, include those represented by the following general formulas (1) to (12), wherein Q.sup..sym. represents the following azulenium salt nucleus and the right side excluding Q.sup..sym. represents R. wherein the relation between the azulenium salt nucleus represented by Q.sup..crclbar.  and the azulene salt nucleus on the right side in the formula (3) may be symmetric or asymmetric. In the above formulas (1) to (12) as in the case of R.sub.1 to R.sub.7, R.sub.1 ' to R.sub.7 ' and R.sub.1 \" to R.sub.7 \" independently represent hydrogen atom, halogen atom, alkyl group, aryl group, aralkyl group, amino group, styryl group, nitro group, hydroxyl group, carboxyl group, cyano group or aryl azo group, while R.sub.1 ' to R.sub.7 ' and R.sub.1 \" to R.sub.7 \" independently may form a substituted or an unsubstituted condensed ring; n is 0, 1 or 2; r is an integer of 1 to 8; S represents 0 or 1; and t represents 1 or 2.",
@@ -611,6 +650,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "M.sub.2 represents a non-metallic atom group required for the completion of a nitrogen-containing heterocyclic ring.",
@@ -622,6 +662,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "Specific examples of M.sub.2 are atom groups required for the completion of a nitrogen-containing heterocyclic ring, including pyridine, thiazole, benzothiazole, naphthothiazole, oxazole, benzoxazole, naphthoxazole, imidazole, benzimidazole, naphthoimidazole, 2-quinoline, 4-quinoline, isoquinoline or indole, and may be substituted by halogen atom (chlorine atom, bromine atom, iodine atom and the like), alkyl group (methyl, ethyl, propyl, butyl and the like), aryl group (phenyl, tolyl, xylyl and the like), and aralkyl (benzene, p-trimethyl, and the like).",
@@ -633,6 +674,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "R.sub.22 represents hydrogen atom, nitro group, sulfonate group, cyano group, alkyl group (methyl, ethyl, propyl, butyl and the like), or aryl group (phenyl, tolyl, xylyl and the like). R.sub.23 represents alkyl group (methyl, ethyl, propyl, butyl and the like), a substituted alkyl group (2-hydroxyethyl, 2-methoxyethyl, 2-ethoxyethyl, 3-hydroxypropyl, 3-methoxypropyl, 3-ethoxypropyl, 3-chloropropyl, 3-bromopropyl, 3-carboxylpropyl and the like ), a cyclic alkyl group (cyclohexyl, cyclopropyl), aryl aralkyl group (benzene, 2-phenylethyl, 3-phenylpropyl, 3-phenylbutyl, 4-phenylbutyl, .alpha.-naphthylmethyl, .beta.-naphthylmethyl), a substituted aralkyl group (methylbenzyl, ethylbenzyl, dimethylbenzyl, trimethylbenzyl, chlorobenzyl, bromobenzyl and the like), aryl group (phenyl, tolyl, xylyl, .alpha.-naphtyl, .beta.-naphthyl) or a substituted aryl group (chlorophenyl, dichlorophenyl, trichlorophenyl, ethylphenyl, methoxydiphenyl, dimethoxyphenyl, aminophenyl, sulfonate phenyl, nitrophenyl, hydroxyphenyl and the like).",
@@ -644,6 +686,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "R.sub.24 represents a substituted or an unsubstituted aryl group or the cation group thereof, specifically including a substituted or an unsubstituted aryl group (phenyl, tolyl, xylyl, biphenyl, aminophenyl, .alpha.-naphthyl, .beta.-napthyl, anthranyl, pyrenyl, methoxyphenyl, dimethoxyphenyl, trimethoxyphenyl, ethoxyphenyl, diethoxyphenyl, chlorophenyl, dichlorophenyl, trichlorophenyl, bromophenyl, dibromophenyl, tribromophenyl, ethylphenyl, diethylphenyl, nitrophenyl, aminophenyl, dimethylaminophenyl, diethylaminophenyl, dibenzylaminophenyl, dipropylaminophenyl, morpholinophenyl, piperidinylphenyl, piperidinophenyl, diphenylaminophenyl, acetylaminophenyl, benzoylaminophenyl, acetylphenyl, benzoylphenyl, cyanophenyl, sulfonate phenyl, carboxylate phenyl and the like).",
@@ -655,6 +698,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "R.sub.25 represents a heterocyclic ring or the cation group thereof, specifically including a monovalent heterocyclic ring derived from cyclic rings, such as furan, thiophene, benzofuran, thionaphthene, dibenzofuran, carbazole, phenothiazine phenoxazine, pyridine and the like.",
@@ -666,6 +710,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "R.sub.26 represents hydrogen atom, alkyl group (methyl, ethyl, propyl, butyl and the like), or a substituted or an unsubstituted aryl group (phenyl, tolyl, xylyl, biphenyl, ethylphenyl, chlorophenyl, methoxyphenyl, ethoxyphenyl, nitrophenyl, aminophenyl, dimethylaminophenyl, diethylaminophenyl, acetylaminophenyl, .alpha.-naphthyl, .beta.-naphthyl, anthraryl, pyrenyl, sulfonate phenyl, carboxylate phenyl and the like. In the formula, Z.sub.7 represents an atom group required for the completion of pyran, thiapyran, selenapyran, telluropyran, benzopyran, benzothiapyran, benzoselenapyran, benzotelluropyran, naphthopyran, naphthothiapyran, or naphthoselenapyran, or naphthotelluropyran.",
@@ -677,6 +722,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "L.sub.7 represents sulfur atom, oxygen atom or selenium atom or tellurium atom.",
@@ -688,6 +734,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "R.sub.27 and R.sub.28 individually represent hydrogen atom, alkoxy group, a substituted or an unsubstituted aryl group, alkenyl group and a heterocyclic group,",
@@ -699,6 +746,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "More specifically, R.sub.27 and R.sub.28 individually represent hydrogen atom, alkyl group (methyl, ethyl, propyl, butyl and the like), alkyl sulfonate group, alkoxyl group (methoxy, ethoxy, propoxy, ethoxyethyl, methoxyethyl and the like), aryl group (phenyl, tolyl, xylyl, sulfonate phenyl, chlorophenyl, biphenyl, methoxyphenyl and the like), a substituted or an unsubstituted styryl group (styryl, p-methylstyryl, o-chlorostyryl, p-methoxystyryl and the like), a substituted or an unsubstituted 4-phenyl, 1,3-butadienyl group (r-phenyl, 1,3-butadienyl, 4-(p-methylphenyl), 1,3-butadienyl and the like), or a substituted or an unsubstituted heterocyclic group (quinolyl, pyridyl, carbazoyl, furyl and the like).",
@@ -710,6 +758,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "As in the case of R, the same is true with R.sub.A and R.sub.B of the general formulas (II) and (III), respectively.",
@@ -721,6 +770,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "Then, in R, the symbols R.sub.8 ' to R.sub.14 ' individually correspond to R.sub.1 ' to R.sub.7 '; R.sub.8 \" to R.sub.14 \" individually correspond to R.sub.1 \" to R.sub.7 \"; in R.sub.B, R.sub.14 ' to R.sub.21 \" individually correspond to R.sub.1 ' to R.sub.7 '; R.sub.14 \" to R.sub.21 \" individually correspond to R.sub.1 \" to R.sub.7 \".",
@@ -732,6 +782,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "In the azulenium nucleus of the (1) to (12), described above, those represented by the formulas (3), (9) and (10) are more preferably used; and particularly, the formula (3) is preferable.",
@@ -743,6 +794,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "R.sub.1 to R.sub.28, R.sub.1 ' to R.sub.21 ' and R.sub.1 \" to R.sub.21 \" preferably contain one or more well-known polar groups in order to impart water solubility to a compound (labeling agent) represented by the general formula (I), (II) or (III). The polar groups include, for example, hydroxyl group, alkylhydroxyl group, sulfonate group, alkylsulfonate group, carboxylate group, alkylcarboxylate group, tetra-ammonium base and the like. R.sub.1 to R.sub.28, R.sub.1 ' to R.sub.21 ', and R.sub.1 \" to R.sub.21 \" preferably contain one or more well-known reactive groups in order that the compound of the general formula (I) can form a covalent bond with a substance from a living organism.",
@@ -754,6 +806,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The reactive groups include the reactive sites of isocyanate, isothiocyanate, succinimide ester, sulfosuccinimide ester, imide ester, hydrazine, nitroaryl halide, piperidine disulfide, maleimide, thiophthalimide, acid halide, sulfonyl halide, aziridine, azide nitrophenyl, azide amino, 3-(2-pyridyldithio) propionamide and the like. In these reactive sites, the following spacer groups (n=0, 1 to 6) may be interposed in order to prevent steric hindrance during on the bonding of a labeling agent and a substance from a living organism.",
@@ -765,6 +818,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "Preferable such reactive groups include isothiocyanate, sulfosuccinimide ester, succinimide ester maleimide and the like X.sub.1.sup..sym. represents an anion, including chloride ion, bromide ion, iodide ion, perchlorate ion, benzenesulfonate ion, p-toluene sulfonate ion, methylsulfate ion, ethylsulfate ion, propylsulfate ion, tetrafluoroborate ion, tetraphenylborate ion, hexafluorophosphate ion, benzenesulfinic acid salt ion, acetate ion, trifluoroacetate ion, propionate ion, benzoate ion, oxalate ion, succinate ion, malonate ion, oleate ion, stearate ion, citrate ion, monohydrogen diphosphate ion, dihydrogen monophosphate ion, pentachlorostannate ion, chlorosulfonate ion, fluorosulfonate ion, trifluoromethane sulfonate ion, hexafluoroantimonate ion, molybdate ion, tungstate ion, titanate ion, zirconate ion and the like.",
@@ -776,6 +830,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "Specific examples of these labeling agents are illustrated in Tables 1, 2 and 3, but are not limited thereto.",
@@ -787,6 +842,7 @@
         "$ref": "#/texts/22"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "The synthetic method of these azulene dyes is described in U.S. Pat. No. 4,738,908.",
@@ -859,6 +915,7 @@
           "$ref": "#/texts/74"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "CLAIMS",
@@ -871,6 +928,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -882,6 +940,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -893,6 +952,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -904,6 +964,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -915,6 +976,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -926,6 +988,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -937,6 +1000,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -948,6 +1012,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -959,6 +1024,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -970,6 +1036,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -981,6 +1048,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -992,6 +1060,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1003,6 +1072,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1014,6 +1084,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1025,6 +1096,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1036,6 +1108,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1047,6 +1120,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1058,6 +1132,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1069,6 +1144,7 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
@@ -1080,14 +1156,16 @@
         "$ref": "#/texts/54"
       },
       "children": [],
+      "content_layer": "body",
       "label": "paragraph",
       "prov": [],
       "orig": "",
-      "text": "20. The method according to claim 12, wherein A is dimethylaminophenyl group, each of B and E is ethoxyphenyl group, k is 0, l is 1 and D is represented by the following formula: ##STR102##                                                              "
+      "text": "20. The method according to claim 12, wherein A is dimethylaminophenyl group, each of B and E is ethoxyphenyl group, k is 0, l is 1 and D is represented by the following formula: ##STR102##"
     }
   ],
   "pictures": [],
   "tables": [],
   "key_value_items": [],
+  "form_items": [],
   "pages": {}
 }

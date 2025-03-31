@@ -1,14 +1,17 @@
 import logging
-from typing import Iterable
+from pathlib import Path
+from typing import Iterable, Optional, Type
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.page import BoundingRectangle, TextCell
 
-from docling.datamodel.base_models import OcrCell, Page
+from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
+    OcrOptions,
     RapidOcrOptions,
 )
 from docling.datamodel.settings import settings
@@ -23,10 +26,16 @@ class RapidOcrModel(BaseOcrModel):
     def __init__(
         self,
         enabled: bool,
+        artifacts_path: Optional[Path],
         options: RapidOcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
-        super().__init__(enabled=enabled, options=options)
+        super().__init__(
+            enabled=enabled,
+            artifacts_path=artifacts_path,
+            options=options,
+            accelerator_options=accelerator_options,
+        )
         self.options: RapidOcrOptions
 
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
@@ -59,6 +68,7 @@ class RapidOcrModel(BaseOcrModel):
                 det_model_path=self.options.det_model_path,
                 cls_model_path=self.options.cls_model_path,
                 rec_model_path=self.options.rec_model_path,
+                rec_keys_path=self.options.rec_keys_path,
             )
 
     def __call__(
@@ -99,18 +109,26 @@ class RapidOcrModel(BaseOcrModel):
 
                         if result is not None:
                             cells = [
-                                OcrCell(
-                                    id=ix,
+                                TextCell(
+                                    index=ix,
                                     text=line[1],
+                                    orig=line[1],
                                     confidence=line[2],
-                                    bbox=BoundingBox.from_tuple(
-                                        coord=(
-                                            (line[0][0][0] / self.scale) + ocr_rect.l,
-                                            (line[0][0][1] / self.scale) + ocr_rect.t,
-                                            (line[0][2][0] / self.scale) + ocr_rect.l,
-                                            (line[0][2][1] / self.scale) + ocr_rect.t,
-                                        ),
-                                        origin=CoordOrigin.TOPLEFT,
+                                    from_ocr=True,
+                                    rect=BoundingRectangle.from_bounding_box(
+                                        BoundingBox.from_tuple(
+                                            coord=(
+                                                (line[0][0][0] / self.scale)
+                                                + ocr_rect.l,
+                                                (line[0][0][1] / self.scale)
+                                                + ocr_rect.t,
+                                                (line[0][2][0] / self.scale)
+                                                + ocr_rect.l,
+                                                (line[0][2][1] / self.scale)
+                                                + ocr_rect.t,
+                                            ),
+                                            origin=CoordOrigin.TOPLEFT,
+                                        )
                                     ),
                                 )
                                 for ix, line in enumerate(result)
@@ -125,3 +143,7 @@ class RapidOcrModel(BaseOcrModel):
                     self.draw_ocr_rects_and_cells(conv_res, page, ocr_rects)
 
                 yield page
+
+    @classmethod
+    def get_options_type(cls) -> Type[OcrOptions]:
+        return RapidOcrOptions

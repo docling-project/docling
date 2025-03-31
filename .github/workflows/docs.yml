@@ -17,4 +17,3 @@ jobs:
         - name: Build and push docs
           if: inputs.deploy
           run: poetry run mkdocs gh-deploy --force
- 

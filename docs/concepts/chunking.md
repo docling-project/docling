@@ -1,5 +1,18 @@
 ## Introduction
 
+!!! note "Chunking approaches"
+
+    Starting from a `DoclingDocument`, there are in principle two possible chunking
+    approaches:
+
+    1. exporting the `DoclingDocument` to Markdown (or similar format) and then
+      performing user-defined chunking as a post-processing step, or
+    2. using native Docling chunkers, i.e. operating directly on the `DoclingDocument`
+
+    This page is about the latter, i.e. using native Docling chunkers.
+    For an example of using approach (1) check out e.g.
+    [this recipe](../examples/rag_langchain.ipynb) looking at the Markdown export mode.
+
 A *chunker* is a Docling abstraction that, given a
 [`DoclingDocument`](./docling_document.md), returns a stream of chunks, each of which
 captures some part of the document as a string accompanied by respective metadata.
@@ -54,12 +67,12 @@ tokens), &
 chunks with same headings & captions) — users can opt out of this step via param
 `merge_peers` (by default `True`)
 
-👉 Example: see  [here](../../examples/hybrid_chunking).
+👉 Example: see  [here](../examples/hybrid_chunking.ipynb).
 
 ## Hierarchical Chunker
 
 The `HierarchicalChunker` implementation uses the document structure information from
-the [`DoclingDocument`](../docling_document) to create one chunk for each individual
+the [`DoclingDocument`](./docling_document.md) to create one chunk for each individual
 detected document element, by default only merging together list items (can be opted out
 via param `merge_list_items`). It also takes care of attaching all relevant document
 metadata, including headers and captions.

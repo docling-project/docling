@@ -49,17 +49,17 @@
 <figure>
 <location><page_4><loc_23><loc_36><loc_41><loc_53></location>
 </figure>
+<paragraph><location><page_4><loc_43><loc_35><loc_88><loc_53></location>Jim Bainbridge is a senior DB2 consultant on the DB2 for i Center of Excellence team in the IBM Lab Services and Training organization. His primary role is training and implementation services for IBM DB2 Web Query for i and business analytics. Jim began his career with IBM 30 years ago in the IBM Rochester Development Lab, where he developed cooperative processing products that paired IBM PCs with IBM S/36 and AS/.400 systems. In the years since, Jim has held numerous technical roles, including independent software vendors technical support on a broad range of IBM technologies and products, and supporting customers in the IBM Executive Briefing Center and IBM Project Office.</paragraph>
 <figure>
 <location><page_4><loc_24><loc_20><loc_41><loc_33></location>
 </figure>
-<paragraph><location><page_4><loc_43><loc_35><loc_88><loc_53></location>Jim Bainbridge is a senior DB2 consultant on the DB2 for i Center of Excellence team in the IBM Lab Services and Training organization. His primary role is training and implementation services for IBM DB2 Web Query for i and business analytics. Jim began his career with IBM 30 years ago in the IBM Rochester Development Lab, where he developed cooperative processing products that paired IBM PCs with IBM S/36 and AS/.400 systems. In the years since, Jim has held numerous technical roles, including independent software vendors technical support on a broad range of IBM technologies and products, and supporting customers in the IBM Executive Briefing Center and IBM Project Office.</paragraph>
 <paragraph><location><page_4><loc_43><loc_14><loc_88><loc_33></location>Hernando Bedoya is a Senior IT Specialist at STG Lab Services and Training in Rochester, Minnesota. He writes extensively and teaches IBM classes worldwide in all areas of DB2 for i. Before joining STG Lab Services, he worked in the ITSO for nine years writing multiple IBM Redbooksfi publications. He also worked for IBM Colombia as an IBM AS/400fi IT Specialist doing presales support for the Andean countries. He has 28 years of experience in the computing field and has taught database classes in Colombian universities. He holds a Master's degree in Computer Science from EAFIT, Colombia. His areas of expertise are database technology, performance, and data warehousing. Hernando can be contacted at hbedoya@us.ibm.com .</paragraph>
 <subtitle-level-1><location><page_4><loc_11><loc_62><loc_20><loc_64></location>Authors</subtitle-level-1>
 <figure>
 <location><page_5><loc_5><loc_70><loc_39><loc_91></location>
 </figure>
-<paragraph><location><page_5><loc_13><loc_65><loc_19><loc_66></location>Chapter 1.</paragraph>
 <paragraph><location><page_5><loc_82><loc_84><loc_85><loc_88></location>1</paragraph>
+<paragraph><location><page_5><loc_13><loc_65><loc_19><loc_66></location>Chapter 1.</paragraph>
 <subtitle-level-1><location><page_5><loc_22><loc_61><loc_89><loc_68></location>Securing and protecting IBM DB2 data</subtitle-level-1>
 <paragraph><location><page_5><loc_22><loc_46><loc_89><loc_56></location>Recent news headlines are filled with reports of data breaches and cyber-attacks impacting global businesses of all sizes. The Identity Theft Resource Center$^{1}$ reports that almost 5000 data breaches have occurred since 2005, exposing over 600 million records of data. The financial cost of these data breaches is skyrocketing. Studies from the Ponemon Institute$^{2}$ revealed that the average cost of a data breach increased in 2013 by 15% globally and resulted in a brand equity loss of $9.4 million per attack. The average cost that is incurred for each lost record containing sensitive information increased more than 9% to $145 per record.</paragraph>
 <paragraph><location><page_5><loc_22><loc_38><loc_86><loc_44></location>Businesses must make a serious effort to secure their data and recognize that securing information assets is a cost of doing business. In many parts of the world and in many industries, securing the data is required by law and subject to audits. Data security is no longer an option; it is a requirement.</paragraph>
@@ -83,7 +83,6 @@
 <paragraph><location><page_7><loc_22><loc_68><loc_88><loc_75></location>Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure 1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.</paragraph>
 <paragraph><location><page_7><loc_22><loc_60><loc_89><loc_66></location>Using SQL views to limit access to a subset of the data in a table also has its own set of challenges. First, there is the complexity of managing all of the SQL view objects that are used for securing data access. Second, scaling a view-based security solution can be difficult as the amount of data grows and the number of users increases.</paragraph>
 <paragraph><location><page_7><loc_22><loc_54><loc_89><loc_59></location>Even if you are willing to live with these performance and management issues, a user with *ALLOBJ access still can directly access all of the data in the underlying DB2 table and easily bypass the security controls that are built into an SQL view.</paragraph>
-<caption><location><page_7><loc_22><loc_12><loc_52><loc_13></location>Figure 1-2 Existing row and column controls</caption>
 <figure>
 <location><page_7><loc_22><loc_13><loc_89><loc_53></location>
 <caption>Figure 1-2 Existing row and column controls</caption>
@@ -97,7 +96,6 @@
 <paragraph><location><page_8><loc_22><loc_75><loc_72><loc_76></location>CHGFCNUSG FCNID(QIBM_DB_SECADM) USER(HBEDOYA) USAGE(*ALLOWED)</paragraph>
 <subtitle-level-1><location><page_8><loc_11><loc_71><loc_89><loc_72></location>2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view</subtitle-level-1>
 <paragraph><location><page_8><loc_22><loc_66><loc_85><loc_69></location>The FUNCTION_USAGE view contains function usage configuration details. Table 2-1 describes the columns in the FUNCTION_USAGE view.</paragraph>
-<caption><location><page_8><loc_22><loc_64><loc_46><loc_65></location>Table 2-1 FUNCTION_USAGE view</caption>
 <table>
 <location><page_8><loc_22><loc_44><loc_89><loc_63></location>
 <caption>Table 2-1 FUNCTION_USAGE view</caption>
@@ -107,8 +105,9 @@
 <row_3><col_0><body>USAGE</col_0><col_1><body>VARCHAR(7)</col_1><col_2><body>Usage setting: GLYPH<SM590000> ALLOWED: The user profile is allowed to use the function. GLYPH<SM590000> DENIED: The user profile is not allowed to use the function.</col_2></row_3>
 <row_4><col_0><body>USER_TYPE</col_0><col_1><body>VARCHAR(5)</col_1><col_2><body>Type of user profile: GLYPH<SM590000> USER: The user profile is a user. GLYPH<SM590000> GROUP: The user profile is a group.</col_2></row_4>
 </table>
+<caption><location><page_8><loc_22><loc_64><loc_46><loc_65></location>Table 2-1 FUNCTION_USAGE view</caption>
 <paragraph><location><page_8><loc_22><loc_40><loc_89><loc_43></location>To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.</paragraph>
-<paragraph><location><page_8><loc_22><loc_38><loc_76><loc_39></location>Example 2-1 Query to determine who has authority to define and manage RCAC</paragraph>
+<caption><location><page_8><loc_22><loc_38><loc_76><loc_39></location>Example 2-1 Query to determine who has authority to define and manage RCAC</caption>
 <paragraph><location><page_8><loc_22><loc_35><loc_28><loc_36></location>SELECT</paragraph>
 <paragraph><location><page_8><loc_30><loc_35><loc_41><loc_36></location>function_id,</paragraph>
 <paragraph><location><page_8><loc_27><loc_34><loc_39><loc_35></location>user_name,</paragraph>
@@ -128,16 +127,15 @@
 <paragraph><location><page_9><loc_22><loc_65><loc_89><loc_69></location>QIBM_DB_SECADM also is responsible for administering RCAC, which restricts which rows a user is allowed to access in a table and whether a user is allowed to see information in certain columns of a table.</paragraph>
 <paragraph><location><page_9><loc_22><loc_57><loc_88><loc_63></location>A preferred practice is that the RCAC administrator has the QIBM_DB_SECADM function usage ID, but absolutely no other data privileges. The result is that the RCAC administrator can deploy and maintain the RCAC constructs, but cannot grant themselves unauthorized access to data itself.</paragraph>
 <paragraph><location><page_9><loc_22><loc_53><loc_89><loc_56></location>Table 2-2 shows a comparison of the different function usage IDs and *JOBCTL authority to the different CL commands and DB2 for i tools.</paragraph>
-<caption><location><page_9><loc_11><loc_51><loc_64><loc_52></location>Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority</caption>
 <table>
 <location><page_9><loc_11><loc_9><loc_89><loc_50></location>
 <caption>Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority</caption>
-<row_0><col_0><row_header>User action</col_0><col_1><body>*JOBCTL</col_1><col_2><body>QIBM_DB_SECADM</col_2><col_3><body>QIBM_DB_SQLADM</col_3><col_4><body>QIBM_DB_SYSMON</col_4><col_5><body>No Authority</col_5></row_0>
+<row_0><col_0><body>User action</col_0><col_1><col_header>*JOBCTL</col_1><col_2><col_header>QIBM_DB_SECADM</col_2><col_3><col_header>QIBM_DB_SQLADM</col_3><col_4><col_header>QIBM_DB_SYSMON</col_4><col_5><col_header>No Authority</col_5></row_0>
 <row_1><col_0><row_header>SET CURRENT DEGREE  (SQL statement)</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_1>
-<row_2><col_0><row_header>CHGQRYA  command targeting a different user's job</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_2>
-<row_3><col_0><row_header>STRDBMON  or  ENDDBMON  commands targeting a different user's job</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_3>
+<row_2><col_0><row_header>CHGQRYA  command targeting a different user’s job</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_2>
+<row_3><col_0><row_header>STRDBMON  or  ENDDBMON  commands targeting a different user’s job</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_3>
 <row_4><col_0><row_header>STRDBMON  or  ENDDBMON  commands targeting a job that matches the current user</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body>X</col_4><col_5><body>X</col_5></row_4>
-<row_5><col_0><row_header>QUSRJOBI() API format 900 or System i Navigator's SQL Details for Job</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body>X</col_4><col_5><body></col_5></row_5>
+<row_5><col_0><row_header>QUSRJOBI() API format 900 or System i Navigator’s SQL Details for Job</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body>X</col_4><col_5><body></col_5></row_5>
 <row_6><col_0><row_header>Visual Explain within Run SQL scripts</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body>X</col_4><col_5><body>X</col_5></row_6>
 <row_7><col_0><row_header>Visual Explain outside of Run SQL scripts</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_7>
 <row_8><col_0><row_header>ANALYZE PLAN CACHE procedure</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_8>
@@ -146,16 +144,15 @@
 <row_11><col_0><row_header>MODIFY PLAN CACHE PROPERTIES procedure (currently does not check authority)</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_11>
 <row_12><col_0><row_header>CHANGE PLAN CACHE SIZE procedure (currently does not check authority)</col_0><col_1><body>X</col_1><col_2><body></col_2><col_3><body>X</col_3><col_4><body></col_4><col_5><body></col_5></row_12>
 </table>
+<caption><location><page_9><loc_11><loc_51><loc_64><loc_52></location>Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority</caption>
 <caption><location><page_10><loc_22><loc_88><loc_86><loc_91></location>The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.</caption>
-<caption><location><page_10><loc_22><loc_47><loc_56><loc_48></location>Figure 3-1 CREATE PERMISSION SQL statement</caption>
 <figure>
 <location><page_10><loc_22><loc_48><loc_89><loc_86></location>
-<caption>The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.Figure 3-1 CREATE PERMISSION SQL statement</caption>
+<caption>Figure 3-1 CREATE PERMISSION SQL statement</caption>
 </figure>
 <subtitle-level-1><location><page_10><loc_22><loc_43><loc_35><loc_44></location>Column mask</subtitle-level-1>
 <paragraph><location><page_10><loc_22><loc_37><loc_89><loc_43></location>A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.</paragraph>
-<paragraph><location><page_11><loc_22><loc_90><loc_67><loc_91></location>Table 3-1 summarizes these special registers and their values.</paragraph>
-<caption><location><page_11><loc_22><loc_87><loc_61><loc_88></location>Table 3-1 Special registers and their corresponding values</caption>
+<caption><location><page_11><loc_22><loc_90><loc_67><loc_91></location>Table 3-1 summarizes these special registers and their values.</caption>
 <table>
 <location><page_11><loc_22><loc_74><loc_89><loc_87></location>
 <caption>Table 3-1 Special registers and their corresponding values</caption>
@@ -164,13 +161,13 @@
 <row_2><col_0><body>CURRENT_USER</col_0><col_1><body>The effective user of the thread including adopted authority. When no adopted  authority is present, this has the same value as USER.</col_1></row_2>
 <row_3><col_0><body>SYSTEM_USER</col_0><col_1><body>The authorization ID that initiated the connection.</col_1></row_3>
 </table>
+<caption><location><page_11><loc_22><loc_87><loc_61><loc_88></location>Table 3-1 Special registers and their corresponding values</caption>
 <paragraph><location><page_11><loc_22><loc_70><loc_88><loc_73></location>Figure 3-5 shows the difference in the special register values when an adopted authority is used:</paragraph>
 <paragraph><location><page_11><loc_22><loc_68><loc_67><loc_69></location>- GLYPH<SM590000> A user connects to the server using the user profile ALICE.</paragraph>
 <paragraph><location><page_11><loc_22><loc_66><loc_74><loc_67></location>- GLYPH<SM590000> USER and CURRENT USER initially have the same value of ALICE.</paragraph>
 <paragraph><location><page_11><loc_22><loc_62><loc_88><loc_65></location>- GLYPH<SM590000> ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.</paragraph>
 <paragraph><location><page_11><loc_22><loc_57><loc_89><loc_61></location>- GLYPH<SM590000> While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.</paragraph>
 <paragraph><location><page_11><loc_22><loc_53><loc_89><loc_56></location>- GLYPH<SM590000> When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.</paragraph>
-<caption><location><page_11><loc_22><loc_24><loc_56><loc_25></location>Figure 3-5 Special registers and adopted authority</caption>
 <figure>
 <location><page_11><loc_22><loc_25><loc_49><loc_51></location>
 <caption>Figure 3-5 Special registers and adopted authority</caption>
@@ -179,7 +176,6 @@
 <paragraph><location><page_11><loc_22><loc_15><loc_85><loc_18></location>Built-in global variables are provided with the database manager and are used in SQL statements to retrieve scalar values that are associated with the variables.</paragraph>
 <paragraph><location><page_11><loc_22><loc_9><loc_87><loc_13></location>IBM DB2 for i supports nine different built-in global variables that are read only and maintained by the system. These global variables can be used to identify attributes of the database connection and used as part of the RCAC logic.</paragraph>
 <paragraph><location><page_12><loc_22><loc_90><loc_56><loc_91></location>Table 3-2 lists the nine built-in global variables.</paragraph>
-<caption><location><page_12><loc_11><loc_87><loc_33><loc_88></location>Table 3-2 Built-in global variables</caption>
 <table>
 <location><page_12><loc_10><loc_63><loc_90><loc_87></location>
 <caption>Table 3-2 Built-in global variables</caption>
@@ -194,6 +190,7 @@
 <row_8><col_0><body>ROUTINE_SPECIFIC_NAME</col_0><col_1><body>VARCHAR(128)</col_1><col_2><body>Name of the currently running routine</col_2></row_8>
 <row_9><col_0><body>ROUTINE_TYPE</col_0><col_1><body>CHAR(1)</col_1><col_2><body>Type of the currently running routine</col_2></row_9>
 </table>
+<caption><location><page_12><loc_11><loc_87><loc_33><loc_88></location>Table 3-2 Built-in global variables</caption>
 <subtitle-level-1><location><page_12><loc_11><loc_57><loc_63><loc_59></location>3.3 VERIFY_GROUP_FOR_USER function</subtitle-level-1>
 <paragraph><location><page_12><loc_22><loc_45><loc_89><loc_55></location>The VERIFY_GROUP_FOR_USER function was added in IBM i 7.2. Although it is primarily intended for use with RCAC permissions and masks, it can be used in other SQL statements. The first parameter must be one of these three special registers: SESSION_USER, USER, or CURRENT_USER. The second and subsequent parameters are a list of user or group profiles. Each of these values must be 1 - 10 characters in length. These values are not validated for their existence, which means that you can specify the names of user profiles that do not exist without receiving any kind of error.</paragraph>
 <paragraph><location><page_12><loc_22><loc_39><loc_89><loc_43></location>If a special register value is in the list of user profiles or it is a member of a group profile included in the list, the function returns a long integer value of 1. Otherwise, it returns a value of 0. It never returns the null value.</paragraph>
@@ -211,10 +208,9 @@
 <paragraph><location><page_13><loc_25><loc_55><loc_89><loc_57></location>- -Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).</paragraph>
 <paragraph><location><page_13><loc_25><loc_52><loc_87><loc_54></location>- -Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.</paragraph>
 <paragraph><location><page_13><loc_25><loc_50><loc_87><loc_51></location>- To implement this column mask, run the SQL statement that is shown in Example 3-9.</paragraph>
-<paragraph><location><page_13><loc_22><loc_48><loc_58><loc_49></location>Example 3-9 Creating a mask on the TAX_ID column</paragraph>
 <paragraph><location><page_13><loc_22><loc_14><loc_86><loc_47></location>CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;</paragraph>
+<caption><location><page_13><loc_22><loc_48><loc_58><loc_49></location>Example 3-9 Creating a mask on the TAX_ID column</caption>
 <paragraph><location><page_14><loc_22><loc_90><loc_74><loc_91></location>- 3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.</paragraph>
-<caption><location><page_14><loc_11><loc_77><loc_48><loc_78></location>Figure 3-10 Column masks shown in System i Navigator</caption>
 <figure>
 <location><page_14><loc_10><loc_79><loc_89><loc_88></location>
 <caption>Figure 3-10 Column masks shown in System i Navigator</caption>
@@ -230,19 +226,16 @@
 <paragraph><location><page_14><loc_22><loc_55><loc_44><loc_56></location>ACTIVATE ROW ACCESS CONTROL</paragraph>
 <paragraph><location><page_14><loc_22><loc_54><loc_48><loc_55></location>ACTIVATE COLUMN ACCESS CONTROL;</paragraph>
 <paragraph><location><page_14><loc_22><loc_48><loc_88><loc_52></location>- 2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .</paragraph>
-<caption><location><page_14><loc_11><loc_17><loc_57><loc_18></location>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption>
 <figure>
 <location><page_14><loc_10><loc_18><loc_87><loc_46></location>
 <caption>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption>
 </figure>
 <paragraph><location><page_15><loc_22><loc_87><loc_84><loc_91></location>- 2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</paragraph>
-<caption><location><page_15><loc_22><loc_38><loc_53><loc_39></location>Figure 4-68 Visual Explain with RCAC enabled</caption>
+<paragraph><location><page_15><loc_22><loc_32><loc_89><loc_36></location>- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</paragraph>
 <figure>
 <location><page_15><loc_22><loc_40><loc_89><loc_85></location>
 <caption>Figure 4-68 Visual Explain with RCAC enabled</caption>
 </figure>
-<paragraph><location><page_15><loc_22><loc_32><loc_89><loc_36></location>- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</paragraph>
-<caption><location><page_15><loc_11><loc_15><loc_37><loc_16></location>Figure 4-69 Index advice with no RCAC</caption>
 <figure>
 <location><page_15><loc_11><loc_16><loc_83><loc_30></location>
 <caption>Figure 4-69 Index advice with no RCAC</caption>
@@ -252,8 +245,8 @@
 <subtitle-level-1><location><page_18><loc_4><loc_82><loc_73><loc_91></location>Row and Column Access Control Support in IBM DB2 for i</subtitle-level-1>
 <paragraph><location><page_18><loc_4><loc_66><loc_21><loc_69></location>Implement roles and separation of duties</paragraph>
 <paragraph><location><page_18><loc_4><loc_59><loc_20><loc_64></location>Leverage row permissions on the database</paragraph>
-<paragraph><location><page_18><loc_4><loc_52><loc_20><loc_57></location>Protect columns by defining column masks</paragraph>
 <paragraph><location><page_18><loc_25><loc_59><loc_68><loc_69></location>This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.</paragraph>
+<paragraph><location><page_18><loc_4><loc_52><loc_20><loc_57></location>Protect columns by defining column masks</paragraph>
 <paragraph><location><page_18><loc_25><loc_51><loc_68><loc_58></location>This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed.</paragraph>
 <figure>
 <location><page_18><loc_79><loc_93><loc_93><loc_97></location>

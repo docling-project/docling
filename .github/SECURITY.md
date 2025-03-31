@@ -20,4 +20,4 @@ After the initial reply to your report, the security team will keep you informed
 
 ## Security Alerts
 
-We will send announcements of security vulnerabilities and steps to remediate on the [Docling announcements](https://github.com/DS4SD/docling/discussions/categories/announcements).
+We will send announcements of security vulnerabilities and steps to remediate on the [Docling announcements](https://github.com/docling-project/docling/discussions/categories/announcements).

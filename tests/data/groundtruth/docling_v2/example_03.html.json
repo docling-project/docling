@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "name": "example_03",
   "origin": {
     "mimetype": "text/html",
@@ -10,6 +10,7 @@
   "furniture": {
     "self_ref": "#/furniture",
     "children": [],
+    "content_layer": "furniture",
     "name": "_root_",
     "label": "unspecified"
   },
@@ -20,6 +21,7 @@
         "$ref": "#/texts/0"
       }
     ],
+    "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
@@ -37,6 +39,7 @@
           "$ref": "#/texts/8"
         }
       ],
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -53,6 +56,7 @@
           "$ref": "#/texts/7"
         }
       ],
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -69,6 +73,7 @@
           "$ref": "#/texts/12"
         }
       ],
+      "content_layer": "body",
       "name": "ordered list",
       "label": "ordered_list"
     },
@@ -85,6 +90,7 @@
           "$ref": "#/texts/11"
         }
       ],
+      "content_layer": "body",
       "name": "ordered list",
       "label": "ordered_list"
     }
@@ -106,6 +112,7 @@
           "$ref": "#/texts/13"
         }
       ],
+      "content_layer": "body",
       "label": "title",
       "prov": [],
       "orig": "Example Document",
@@ -121,11 +128,12 @@
           "$ref": "#/texts/2"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "Introduction",
       "text": "Introduction",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/2",
@@ -133,7 +141,8 @@
         "$ref": "#/texts/1"
       },
       "children": [],
-      "label": "paragraph",
+      "content_layer": "body",
+      "label": "text",
       "prov": [],
       "orig": "This is the first paragraph of the introduction.",
       "text": "This is the first paragraph of the introduction."
@@ -154,11 +163,12 @@
           "$ref": "#/groups/2"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "Background",
       "text": "Background",
-      "level": 2
+      "level": 1
     },
     {
       "self_ref": "#/texts/4",
@@ -166,7 +176,8 @@
         "$ref": "#/texts/3"
       },
       "children": [],
-      "label": "paragraph",
+      "content_layer": "body",
+      "label": "text",
       "prov": [],
       "orig": "Some background information here.",
       "text": "Some background information here."
@@ -181,6 +192,7 @@
           "$ref": "#/groups/1"
         }
       ],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "First item in unordered list",
@@ -194,6 +206,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Nested item 1",
@@ -207,6 +220,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Nested item 2",
@@ -220,6 +234,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Second item in unordered list",
@@ -237,6 +252,7 @@
           "$ref": "#/groups/3"
         }
       ],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "First item in ordered list",
@@ -250,6 +266,7 @@
         "$ref": "#/groups/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Nested ordered item 1",
@@ -263,6 +280,7 @@
         "$ref": "#/groups/3"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Nested ordered item 2",
@@ -276,6 +294,7 @@
         "$ref": "#/groups/2"
       },
       "children": [],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Second item in ordered list",
@@ -293,11 +312,12 @@
           "$ref": "#/tables/0"
         }
       ],
+      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "Data Table",
       "text": "Data Table",
-      "level": 2
+      "level": 1
     }
   ],
   "pictures": [],
@@ -308,6 +328,7 @@
         "$ref": "#/texts/13"
       },
       "children": [],
+      "content_layer": "body",
       "label": "table",
       "prov": [],
       "captions": [],
@@ -323,7 +344,7 @@
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
             "text": "Header 1",
-            "column_header": false,
+            "column_header": true,
             "row_header": false,
             "row_section": false
           },
@@ -335,7 +356,7 @@
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
             "text": "Header 2",
-            "column_header": false,
+            "column_header": true,
             "row_header": false,
             "row_section": false
           },
@@ -347,7 +368,7 @@
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
             "text": "Header 3",
-            "column_header": false,
+            "column_header": true,
             "row_header": false,
             "row_section": false
           },
@@ -472,7 +493,7 @@
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "Header 1",
-              "column_header": false,
+              "column_header": true,
               "row_header": false,
               "row_section": false
             },
@@ -484,7 +505,7 @@
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
               "text": "Header 2",
-              "column_header": false,
+              "column_header": true,
               "row_header": false,
               "row_section": false
             },
@@ -496,7 +517,7 @@
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
               "text": "Header 3",
-              "column_header": false,
+              "column_header": true,
               "row_header": false,
               "row_section": false
             }
@@ -620,5 +641,6 @@
     }
   ],
   "key_value_items": [],
+  "form_items": [],
   "pages": {}
 }

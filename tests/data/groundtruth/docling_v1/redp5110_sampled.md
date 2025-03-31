@@ -74,9 +74,9 @@ This paper was produced by the IBM DB2 for i Center of Excellence team in partne
 
 <!-- image -->
 
-<!-- image -->
-
 Jim Bainbridge is a senior DB2 consultant on the DB2 for i Center of Excellence team in the IBM Lab Services and Training organization. His primary role is training and implementation services for IBM DB2 Web Query for i and business analytics. Jim began his career with IBM 30 years ago in the IBM Rochester Development Lab, where he developed cooperative processing products that paired IBM PCs with IBM S/36 and AS/.400 systems. In the years since, Jim has held numerous technical roles, including independent software vendors technical support on a broad range of IBM technologies and products, and supporting customers in the IBM Executive Briefing Center and IBM Project Office.
+
+<!-- image -->
 
 Hernando Bedoya is a Senior IT Specialist at STG Lab Services and Training in Rochester, Minnesota. He writes extensively and teaches IBM classes worldwide in all areas of DB2 for i. Before joining STG Lab Services, he worked in the ITSO for nine years writing multiple IBM Redbooksfi publications. He also worked for IBM Colombia as an IBM AS/400fi IT Specialist doing presales support for the Andean countries. He has 28 years of experience in the computing field and has taught database classes in Colombian universities. He holds a Master's degree in Computer Science from EAFIT, Colombia. His areas of expertise are database technology, performance, and data warehousing. Hernando can be contacted at hbedoya@us.ibm.com .
 
@@ -84,9 +84,9 @@ Hernando Bedoya is a Senior IT Specialist at STG Lab Services and Training in Ro
 
 <!-- image -->
 
-Chapter 1.
-
 1
+
+Chapter 1.
 
 ## Securing and protecting IBM DB2 data
 
@@ -211,10 +211,10 @@ Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority
 | User action                                                                    | *JOBCTL   | QIBM_DB_SECADM   | QIBM_DB_SQLADM   | QIBM_DB_SYSMON   | No Authority   |
 |--------------------------------------------------------------------------------|-----------|------------------|------------------|------------------|----------------|
 | SET CURRENT DEGREE  (SQL statement)                                            | X         |                  | X                |                  |                |
-| CHGQRYA  command targeting a different user's job                              | X         |                  | X                |                  |                |
-| STRDBMON  or  ENDDBMON  commands targeting a different user's job              | X         |                  | X                |                  |                |
+| CHGQRYA  command targeting a different user’s job                              | X         |                  | X                |                  |                |
+| STRDBMON  or  ENDDBMON  commands targeting a different user’s job              | X         |                  | X                |                  |                |
 | STRDBMON  or  ENDDBMON  commands targeting a job that matches the current user | X         |                  | X                | X                | X              |
-| QUSRJOBI() API format 900 or System i Navigator's SQL Details for Job          | X         |                  | X                | X                |                |
+| QUSRJOBI() API format 900 or System i Navigator’s SQL Details for Job          | X         |                  | X                | X                |                |
 | Visual Explain within Run SQL scripts                                          | X         |                  | X                | X                | X              |
 | Visual Explain outside of Run SQL scripts                                      | X         |                  | X                |                  |                |
 | ANALYZE PLAN CACHE procedure                                                   | X         |                  | X                |                  |                |
@@ -226,8 +226,6 @@ Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority
 The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.
 
 Figure 3-1 CREATE PERMISSION SQL statement
-
-The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.Figure 3-1 CREATE PERMISSION SQL statement
 <!-- image -->
 
 ## Column mask
@@ -315,9 +313,9 @@ WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . D
 
 - To implement this column mask, run the SQL statement that is shown in Example 3-9.
 
-Example 3-9 Creating a mask on the TAX_ID column
-
 CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;
+
+Example 3-9 Creating a mask on the TAX_ID column
 
 - 3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.
 
@@ -351,10 +349,10 @@ Figure 3-11 Selecting the EMPLOYEES table from System i Navigator
 
 - 2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.
 
+- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
+
 Figure 4-68 Visual Explain with RCAC enabled
 <!-- image -->
-
-- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
 
 Figure 4-69 Index advice with no RCAC
 <!-- image -->
@@ -369,9 +367,9 @@ Implement roles and separation of duties
 
 Leverage row permissions on the database
 
-Protect columns by defining column masks
-
 This IBM Redpaper publication provides information about the IBM i 7.2 feature of IBM DB2 for i Row and Column Access Control (RCAC). It offers a broad description of the function and advantages of controlling access to data in a comprehensive and transparent way. This publication helps you understand the capabilities of RCAC and provides examples of defining, creating, and implementing the row permissions and column masks in a relational database environment.
+
+Protect columns by defining column masks
 
 This paper is intended for database engineers, data-centric application developers, and security officers who want to design and implement RCAC as a part of their data control and governance policy. A solid background in IBM i object level security, DB2 for i relational database concepts, and SQL is assumed.
 

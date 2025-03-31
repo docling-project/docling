@@ -1,27 +1,22 @@
 """Test methods in module docling.backend.patent_uspto_backend.py."""
 
-import json
 import logging
 import os
-import unittest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import pytest
-import yaml
 from docling_core.types import DoclingDocument
 from docling_core.types.doc import DocItemLabel, TableData, TextItem
 
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend, XmlTable
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import (
-    ConversionResult,
-    InputDocument,
-    SectionHeaderItem,
-)
-from docling.document_converter import DocumentConverter
+from docling.datamodel.document import InputDocument
 
-GENERATE: bool = True
+from .test_data_gen_flag import GEN_TEST_DATA
+from .verify_utils import verify_document
+
+GENERATE: bool = GEN_TEST_DATA
 DATA_PATH: Path = Path("./tests/data/uspto/")
 GT_PATH: Path = Path("./tests/data/groundtruth/docling_v2/")
 
@@ -117,12 +112,11 @@ def test_patent_groundtruth(patents, groundtruth):
             assert (
                 pred_md == gt_names[md_name]
             ), f"Markdown file mismatch against groundtruth {md_name}"
-        json_name = path.stem + ".json"
-        if json_name in gt_names:
-            pred_json = json.dumps(doc.export_to_dict(), indent=2)
-            assert (
-                pred_json == gt_names[json_name]
-            ), f"JSON file mismatch against groundtruth {json_name}"
+        json_path = path.with_suffix(".json")
+        if json_path.stem in gt_names:
+            assert verify_document(
+                doc, str(json_path), GENERATE
+            ), f"JSON file mismatch against groundtruth {json_path}"
         itxt_name = path.stem + ".itxt"
         if itxt_name in gt_names:
             pred_itxt = doc._export_to_indented_text()

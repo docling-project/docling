@@ -14,7 +14,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path("./tests/data/2206.01062.pdf")
+    input_doc = Path("./tests/data/pdf/2206.01062.pdf")
 
     # Explicitly set the accelerator
     # accelerator_options = AcceleratorOptions(
@@ -29,6 +29,9 @@ def main():
     # accelerator_options = AcceleratorOptions(
     #     num_threads=8, device=AcceleratorDevice.CUDA
     # )
+
+    # easyocr doesnt support cuda:N allocation, defaults to cuda:0
+    # accelerator_options = AcceleratorOptions(num_threads=8, device="cuda:1")
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.accelerator_options = accelerator_options

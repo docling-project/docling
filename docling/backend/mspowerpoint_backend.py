@@ -16,6 +16,7 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
 )
+from docling_core.types.doc.document import ContentLayer
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
@@ -98,21 +99,28 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return doc
 
-    def generate_prov(self, shape, slide_ind, text=""):
-        left = shape.left
-        top = shape.top
-        width = shape.width
-        height = shape.height
+    def generate_prov(
+        self, shape, slide_ind, text="", slide_size=Size(width=1, height=1)
+    ):
+        if shape.left:
+            left = shape.left
+            top = shape.top
+            width = shape.width
+            height = shape.height
+        else:
+            left = 0
+            top = 0
+            width = slide_size.width
+            height = slide_size.height
         shape_bbox = [left, top, left + width, top + height]
         shape_bbox = BoundingBox.from_tuple(shape_bbox, origin=CoordOrigin.BOTTOMLEFT)
-        # prov = [{"bbox": shape_bbox, "page": parent_slide, "span": [0, len(text)]}]
         prov = ProvenanceItem(
             page_no=slide_ind + 1, charspan=[0, len(text)], bbox=shape_bbox
         )
 
         return prov
 
-    def handle_text_elements(self, shape, parent_slide, slide_ind, doc):
+    def handle_text_elements(self, shape, parent_slide, slide_ind, doc, slide_size):
         is_a_list = False
         is_list_group_created = False
         enum_list_item_value = 0
@@ -121,7 +129,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         list_text = ""
         list_label = GroupLabel.LIST
         doc_label = DocItemLabel.LIST_ITEM
-        prov = self.generate_prov(shape, slide_ind, shape.text.strip())
+        prov = self.generate_prov(shape, slide_ind, shape.text.strip(), slide_size)
 
         # Identify if shape contains lists
         for paragraph in shape.text_frame.paragraphs:
@@ -270,18 +278,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
         return
 
-    def handle_pictures(self, shape, parent_slide, slide_ind, doc):
-        # Get the image bytes
-        image = shape.image
-        image_bytes = image.blob
-        im_dpi, _ = image.dpi
-
+    def handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Open it with PIL
         try:
+            # Get the image bytes
+            image = shape.image
+            image_bytes = image.blob
+            im_dpi, _ = image.dpi
             pil_image = Image.open(BytesIO(image_bytes))
 
             # shape has picture
-            prov = self.generate_prov(shape, slide_ind, "")
+            prov = self.generate_prov(shape, slide_ind, "", slide_size)
             doc.add_picture(
                 parent=parent_slide,
                 image=ImageRef.from_pil(image=pil_image, dpi=im_dpi),
@@ -292,13 +299,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
         return
 
-    def handle_tables(self, shape, parent_slide, slide_ind, doc):
+    def handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Handling tables, images, charts
         if shape.has_table:
             table = shape.table
             table_xml = shape._element
 
-            prov = self.generate_prov(shape, slide_ind, "")
+            prov = self.generate_prov(shape, slide_ind, "", slide_size)
 
             num_cols = 0
             num_rows = len(table.rows)
@@ -340,7 +347,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         end_row_offset_idx=row_idx + row_span,
                         start_col_offset_idx=col_idx,
                         end_col_offset_idx=col_idx + col_span,
-                        col_header=False,
+                        column_header=row_idx == 0,
                         row_header=False,
                     )
                     if len(cell.text.strip()) > 0:
@@ -375,17 +382,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 name=f"slide-{slide_ind}", label=GroupLabel.CHAPTER, parent=parents[0]
             )
 
-            size = Size(width=slide_width, height=slide_height)
-            parent_page = doc.add_page(page_no=slide_ind + 1, size=size)
+            slide_size = Size(width=slide_width, height=slide_height)
+            parent_page = doc.add_page(page_no=slide_ind + 1, size=slide_size)
 
-            def handle_shapes(shape, parent_slide, slide_ind, doc):
-                handle_groups(shape, parent_slide, slide_ind, doc)
+            def handle_shapes(shape, parent_slide, slide_ind, doc, slide_size):
+                handle_groups(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_table:
                     # Handle Tables
-                    self.handle_tables(shape, parent_slide, slide_ind, doc)
+                    self.handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
-                    self.handle_pictures(shape, parent_slide, slide_ind, doc)
+                    self.handle_pictures(
+                        shape, parent_slide, slide_ind, doc, slide_size
+                    )
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
                     return
@@ -397,16 +406,37 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     _log.warning("Warning: shape has text but not text_frame")
                     return
                 # Handle other text elements, including lists (bullet lists, numbered lists)
-                self.handle_text_elements(shape, parent_slide, slide_ind, doc)
+                self.handle_text_elements(
+                    shape, parent_slide, slide_ind, doc, slide_size
+                )
                 return
 
-            def handle_groups(shape, parent_slide, slide_ind, doc):
+            def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
                 if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
                     for groupedshape in shape.shapes:
-                        handle_shapes(groupedshape, parent_slide, slide_ind, doc)
+                        handle_shapes(
+                            groupedshape, parent_slide, slide_ind, doc, slide_size
+                        )
 
             # Loop through each shape in the slide
             for shape in slide.shapes:
-                handle_shapes(shape, parent_slide, slide_ind, doc)
+                handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
+
+            # Handle notes slide
+            if slide.has_notes_slide:
+                notes_slide = slide.notes_slide
+                notes_text = notes_slide.notes_text_frame.text.strip()
+                if notes_text:
+                    bbox = BoundingBox(l=0, t=0, r=0, b=0)
+                    prov = ProvenanceItem(
+                        page_no=slide_ind + 1, charspan=[0, len(notes_text)], bbox=bbox
+                    )
+                    doc.add_text(
+                        label=DocItemLabel.TEXT,
+                        parent=parent_slide,
+                        text=notes_text,
+                        prov=prov,
+                        content_layer=ContentLayer.FURNITURE,
+                    )
 
         return doc

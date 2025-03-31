@@ -1,0 +1,1080 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.0.0",
+  "name": "bmj_sample",
+  "origin": {
+    "mimetype": "application/xml",
+    "binary_hash": 2961779396863376371,
+    "filename": "bmj_sample.xml"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      }
+    ],
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/texts/5"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
+        },
+        {
+          "$ref": "#/texts/11"
+        }
+      ],
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/texts/42"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/43"
+        },
+        {
+          "$ref": "#/texts/44"
+        },
+        {
+          "$ref": "#/texts/45"
+        },
+        {
+          "$ref": "#/texts/46"
+        },
+        {
+          "$ref": "#/texts/47"
+        },
+        {
+          "$ref": "#/texts/48"
+        },
+        {
+          "$ref": "#/texts/49"
+        },
+        {
+          "$ref": "#/texts/50"
+        },
+        {
+          "$ref": "#/texts/51"
+        },
+        {
+          "$ref": "#/texts/52"
+        },
+        {
+          "$ref": "#/texts/53"
+        },
+        {
+          "$ref": "#/texts/54"
+        },
+        {
+          "$ref": "#/texts/55"
+        },
+        {
+          "$ref": "#/texts/56"
+        },
+        {
+          "$ref": "#/texts/57"
+        },
+        {
+          "$ref": "#/texts/58"
+        },
+        {
+          "$ref": "#/texts/59"
+        },
+        {
+          "$ref": "#/texts/60"
+        },
+        {
+          "$ref": "#/texts/61"
+        },
+        {
+          "$ref": "#/texts/62"
+        },
+        {
+          "$ref": "#/texts/63"
+        },
+        {
+          "$ref": "#/texts/64"
+        },
+        {
+          "$ref": "#/texts/65"
+        },
+        {
+          "$ref": "#/texts/66"
+        }
+      ],
+      "name": "list",
+      "label": "list"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/15"
+        },
+        {
+          "$ref": "#/texts/17"
+        },
+        {
+          "$ref": "#/texts/19"
+        },
+        {
+          "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/28"
+        },
+        {
+          "$ref": "#/texts/31"
+        },
+        {
+          "$ref": "#/texts/33"
+        },
+        {
+          "$ref": "#/texts/37"
+        },
+        {
+          "$ref": "#/texts/40"
+        },
+        {
+          "$ref": "#/texts/42"
+        }
+      ],
+      "label": "title",
+      "prov": [],
+      "orig": "Evolving general practice consultation in Britain: issues of length and context",
+      "text": "Evolving general practice consultation in Britain: issues of length and context"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "label": "paragraph",
+      "prov": [],
+      "orig": "George K Freeman, John P Horder, John G R Howie, A Pali Hungin, Alison P Hill, Nayan C Shah, Andrew Wilson",
+      "text": "George K Freeman, John P Horder, John G R Howie, A Pali Hungin, Alison P Hill, Nayan C Shah, Andrew Wilson"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "label": "paragraph",
+      "prov": [],
+      "orig": "Centre for Primary Care and Social Medicine, Imperial College of Science, Technology and Medicine, London W6 8RP; Royal College of General Practitioners, London SW7 1PU; Department of General Practice, University of Edinburgh, Edinburgh EH8 9DX; Centre for Health Studies, University of Durham, Durham DH1 3HN; Kilburn Park Medical Centre, London NW6; Department of General Practice and Primary Health Care, University of Leicester, Leicester LE5 4PW",
+      "text": "Centre for Primary Care and Social Medicine, Imperial College of Science, Technology and Medicine, London W6 8RP; Royal College of General Practitioners, London SW7 1PU; Department of General Practice, University of Edinburgh, Edinburgh EH8 9DX; Centre for Health Studies, University of Durham, Durham DH1 3HN; Kilburn Park Medical Centre, London NW6; Department of General Practice and Primary Health Care, University of Leicester, Leicester LE5 4PW"
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "In 1999 Shah1 and others said that the Royal College of General Practitioners should advocate longer consultations in general practice as a matter of policy. The college set up a working group chaired by A P Hungin, and a systematic review of literature on consultation length in general practice was commissioned. The working group agreed that the available evidence would be hard to interpret without discussion of the changing context within which consultations now take place. For many years general practitioners and those who have surveyed patients' opinions in the United Kingdom have complained about short consultation time, despite a steady increase in actual mean length. Recently Mechanic pointed out that this is also true in the United States.2 Is there any justification for a further increase in mean time allocated per consultation in general practice?",
+      "text": "In 1999 Shah1 and others said that the Royal College of General Practitioners should advocate longer consultations in general practice as a matter of policy. The college set up a working group chaired by A P Hungin, and a systematic review of literature on consultation length in general practice was commissioned. The working group agreed that the available evidence would be hard to interpret without discussion of the changing context within which consultations now take place. For many years general practitioners and those who have surveyed patients' opinions in the United Kingdom have complained about short consultation time, despite a steady increase in actual mean length. Recently Mechanic pointed out that this is also true in the United States.2 Is there any justification for a further increase in mean time allocated per consultation in general practice?"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "We report on the outcome of extensive debate among a group of general practitioners with an interest in the process of care, with reference to the interim findings of the commissioned systematic review and our personal databases. The review identified 14 relevant papers.",
+      "text": "We report on the outcome of extensive debate among a group of general practitioners with an interest in the process of care, with reference to the interim findings of the commissioned systematic review and our personal databases. The review identified 14 relevant papers."
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/0"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Summary points",
+      "text": "Summary points",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Longer consultations are associated with a range of better patient outcomes",
+      "text": "Longer consultations are associated with a range of better patient outcomes",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Modern consultations in general practice deal with patients with more serious and chronic conditions",
+      "text": "Modern consultations in general practice deal with patients with more serious and chronic conditions",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Increasing patient participation means more complex interaction, which demands extra time",
+      "text": "Increasing patient participation means more complex interaction, which demands extra time",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Difficulties with access and with loss of continuity add to perceived stress and poor performance and lead to further pressure on time",
+      "text": "Difficulties with access and with loss of continuity add to perceived stress and poor performance and lead to further pressure on time",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Longer consultations should be a professional priority, combined with increased use of technology and more flexible practice management to maximise interpersonal continuity",
+      "text": "Longer consultations should be a professional priority, combined with increased use of technology and more flexible practice management to maximise interpersonal continuity",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Research on implementation is needed",
+      "text": "Research on implementation is needed",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Longer consultations: benefits for patients",
+      "text": "Longer consultations: benefits for patients",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/texts/12"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "The systematic review consistently showed that doctors with longer consultation times prescribe less and offer more advice on lifestyle and other health promoting activities. Longer consultations have been significantly associated with better recognition and handling of psychosocial problems3 and with better patient enablement.4 Also clinical care for some chronic illnesses is better in practices with longer booked intervals between one appointment and the next.5 It is not clear whether time is itself the main influence or whether some doctors insist on more time.",
+      "text": "The systematic review consistently showed that doctors with longer consultation times prescribe less and offer more advice on lifestyle and other health promoting activities. Longer consultations have been significantly associated with better recognition and handling of psychosocial problems3 and with better patient enablement.4 Also clinical care for some chronic illnesses is better in practices with longer booked intervals between one appointment and the next.5 It is not clear whether time is itself the main influence or whether some doctors insist on more time."
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/texts/12"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "A national survey in 1998 reported that most (87%) patients were satisfied with the length of their most recent consultation.6 Satisfaction with any service will be high if expectations are met or exceeded. But expectations are modified by previous experience.7 The result is that primary care patients are likely to be satisfied with what they are used to unless the context modifies the effects of their own experience.",
+      "text": "A national survey in 1998 reported that most (87%) patients were satisfied with the length of their most recent consultation.6 Satisfaction with any service will be high if expectations are met or exceeded. But expectations are modified by previous experience.7 The result is that primary care patients are likely to be satisfied with what they are used to unless the context modifies the effects of their own experience."
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/16"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Context of modern consultations",
+      "text": "Context of modern consultations",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/texts/15"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "Shorter consultations were more appropriate when the population was younger, when even a brief absence from employment due to sickness required a doctor's note, and when many simple remedies were available only on prescription. Recently at least five important influences have increased the content and hence the potential length of the consultation.",
+      "text": "Shorter consultations were more appropriate when the population was younger, when even a brief absence from employment due to sickness required a doctor's note, and when many simple remedies were available only on prescription. Recently at least five important influences have increased the content and hence the potential length of the consultation."
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/18"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Participatory consultation style",
+      "text": "Participatory consultation style",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/texts/17"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "The most effective consultations are those in which doctors most directly acknowledge and perhaps respond to patients' problems and concerns. In addition, for patients to be committed to taking advantage of medical advice they must agree with both the goals and methods proposed. A landmark publication in the United Kingdom was Meetings Between Experts, which argued that while doctors are the experts about medical problems in general patients are the experts on how they themselves experience these problems.8 New emphasis on teaching consulting skills in general practice advocated specific attention to the patient's agenda, beliefs, understanding, and agreement. Currently the General Medical Council, aware that communication difficulties underlie many complaints about doctors, has further emphasised the importance of involving patients in consultations in its revised guidance to medical schools.9 More patient involvement should give a better outcome, but this participatory style usually lengthens consultations.",
+      "text": "The most effective consultations are those in which doctors most directly acknowledge and perhaps respond to patients' problems and concerns. In addition, for patients to be committed to taking advantage of medical advice they must agree with both the goals and methods proposed. A landmark publication in the United Kingdom was Meetings Between Experts, which argued that while doctors are the experts about medical problems in general patients are the experts on how they themselves experience these problems.8 New emphasis on teaching consulting skills in general practice advocated specific attention to the patient's agenda, beliefs, understanding, and agreement. Currently the General Medical Council, aware that communication difficulties underlie many complaints about doctors, has further emphasised the importance of involving patients in consultations in its revised guidance to medical schools.9 More patient involvement should give a better outcome, but this participatory style usually lengthens consultations."
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/20"
+        },
+        {
+          "$ref": "#/texts/21"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Extended professional agenda",
+      "text": "Extended professional agenda",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/texts/19"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "The traditional consultation in general practice was brief.2 The patient presented symptoms and the doctor prescribed treatment. In 1957 Balint gave new insights into the meaning of symptoms.10 By 1979 an enhanced model of consultation was presented, in which the doctors dealt with ongoing as well as presenting problems and added health promotion and education about future appropriate use of services.11 Now, with an ageing population and more community care of chronic illness, there are more issues to be considered at each consultation. Ideas of what constitutes good general practice are more complex.12 Good practice now includes both extended care of chronic medical problems\u2014for example, coronary heart disease13\u2014and a public health role. At first this model was restricted to those who lead change (\u201cearly adopters\u201d) and enthusiasts14 but now it is embedded in professional and managerial expectations of good practice.",
+      "text": "The traditional consultation in general practice was brief.2 The patient presented symptoms and the doctor prescribed treatment. In 1957 Balint gave new insights into the meaning of symptoms.10 By 1979 an enhanced model of consultation was presented, in which the doctors dealt with ongoing as well as presenting problems and added health promotion and education about future appropriate use of services.11 Now, with an ageing population and more community care of chronic illness, there are more issues to be considered at each consultation. Ideas of what constitutes good general practice are more complex.12 Good practice now includes both extended care of chronic medical problems\u2014for example, coronary heart disease13\u2014and a public health role. At first this model was restricted to those who lead change (\u201cearly adopters\u201d) and enthusiasts14 but now it is embedded in professional and managerial expectations of good practice."
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/texts/19"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "Adequate time is essential. It may be difficult for an elderly patient with several active problems to undress, be examined, and get adequate professional consideration in under 15 minutes. Here the doctor is faced with the choice of curtailing the consultation or of reducing the time available for the next patient. Having to cope with these situations often contributes to professional dissatisfaction.15 This combination of more care, more options, and more genuine discussion of those options with informed patient choice inevitably leads to pressure on time.",
+      "text": "Adequate time is essential. It may be difficult for an elderly patient with several active problems to undress, be examined, and get adequate professional consideration in under 15 minutes. Here the doctor is faced with the choice of curtailing the consultation or of reducing the time available for the next patient. Having to cope with these situations often contributes to professional dissatisfaction.15 This combination of more care, more options, and more genuine discussion of those options with informed patient choice inevitably leads to pressure on time."
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/23"
+        },
+        {
+          "$ref": "#/texts/24"
+        },
+        {
+          "$ref": "#/texts/25"
+        },
+        {
+          "$ref": "#/texts/26"
+        },
+        {
+          "$ref": "#/texts/27"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Access problems",
+      "text": "Access problems",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/texts/22"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "In a service free at the point of access, rising demand will tend to increase rationing by delay. But attempts to improve access by offering more consultations at short notice squeeze consultation times.",
+      "text": "In a service free at the point of access, rising demand will tend to increase rationing by delay. But attempts to improve access by offering more consultations at short notice squeeze consultation times."
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/texts/22"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "While appointment systems can and should reduce queuing time for consultations, they have long tended to be used as a brake on total demand.16 This may seriously erode patients' confidence in being able to see their doctor or nurse when they need to. Patients are offered appointments further ahead but may keep these even if their symptoms have remitted \u201cjust in case.\u201d Availability of consultations is thus blocked. Receptionists are then inappropriately blamed for the inadequate access to doctors.",
+      "text": "While appointment systems can and should reduce queuing time for consultations, they have long tended to be used as a brake on total demand.16 This may seriously erode patients' confidence in being able to see their doctor or nurse when they need to. Patients are offered appointments further ahead but may keep these even if their symptoms have remitted \u201cjust in case.\u201d Availability of consultations is thus blocked. Receptionists are then inappropriately blamed for the inadequate access to doctors."
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/texts/22"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "In response to perception of delay, the government has set targets in the NHS plan of \u201cguaranteed access to a primary care professional within 24 hours and to a primary care doctor within 48 hours.\u201d Implementation is currently being negotiated.",
+      "text": "In response to perception of delay, the government has set targets in the NHS plan of \u201cguaranteed access to a primary care professional within 24 hours and to a primary care doctor within 48 hours.\u201d Implementation is currently being negotiated."
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/texts/22"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "Virtually all patients think that they would not consult unless it was absolutely necessary. They do not think they are wasting NHS time and do not like being made to feel so. But underlying general practitioners' willingness to make patients wait several days is their perception that few of the problems are urgent. Patients and general practitioners evidently do not agree about the urgency of so called minor problems. To some extent general practice in the United Kingdom may have scored an \u201cown goal\u201d by setting up perceived access barriers (appointment systems and out of hours cooperatives) in the attempt to increase professional standards and control demand in a service that is free at the point of access.",
+      "text": "Virtually all patients think that they would not consult unless it was absolutely necessary. They do not think they are wasting NHS time and do not like being made to feel so. But underlying general practitioners' willingness to make patients wait several days is their perception that few of the problems are urgent. Patients and general practitioners evidently do not agree about the urgency of so called minor problems. To some extent general practice in the United Kingdom may have scored an \u201cown goal\u201d by setting up perceived access barriers (appointment systems and out of hours cooperatives) in the attempt to increase professional standards and control demand in a service that is free at the point of access."
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/texts/22"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "A further government initiative has been to bypass general practice with new services\u2014notably, walk-in centres (primary care clinics in which no appointment is needed) and NHS Direct (a professional telephone helpline giving advice on simple remedies and access to services). Introduced widely and rapidly, these services each potentially provide significant features of primary care\u2014namely, quick access to skilled health advice and first line treatment.",
+      "text": "A further government initiative has been to bypass general practice with new services\u2014notably, walk-in centres (primary care clinics in which no appointment is needed) and NHS Direct (a professional telephone helpline giving advice on simple remedies and access to services). Introduced widely and rapidly, these services each potentially provide significant features of primary care\u2014namely, quick access to skilled health advice and first line treatment."
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/29"
+        },
+        {
+          "$ref": "#/texts/30"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Loss of interpersonal continuity",
+      "text": "Loss of interpersonal continuity",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/texts/28"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "If a patient has to consult several different professionals, particularly over a short period of time, there is inevitable duplication of stories, risk of naive diagnoses, potential for conflicting advice, and perhaps loss of trust. Trust is essential if patients are to accept the \u201cwait and see\u201d management policy which is, or should be, an important part of the management of self limiting conditions, which are often on the boundary between illness and non-illness.17 Such duplication again increases pressure for more extra (unscheduled) consultations resulting in late running and professional frustration.18",
+      "text": "If a patient has to consult several different professionals, particularly over a short period of time, there is inevitable duplication of stories, risk of naive diagnoses, potential for conflicting advice, and perhaps loss of trust. Trust is essential if patients are to accept the \u201cwait and see\u201d management policy which is, or should be, an important part of the management of self limiting conditions, which are often on the boundary between illness and non-illness.17 Such duplication again increases pressure for more extra (unscheduled) consultations resulting in late running and professional frustration.18"
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/texts/28"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "Mechanic described how loss of longitudinal (and perhaps personal and relational19) continuity influences the perception and use of time through an inability to build on previous consultations.2 Knowing the doctor well, particularly in smaller practices, is associated with enhanced patient enablement in shorter time.4 Though Mechanic pointed out that three quarters of UK patients have been registered with their general practitioner five years or more, this may be misleading. Practices are growing, with larger teams and more registered patients. Being registered with a doctor in a larger practice is usually no guarantee that the patient will be able to see the same doctor or the doctor of his or her choice, who may be different. Thus the system does not encourage adequate personal continuity. This adds to pressure on time and reduces both patient and professional satisfaction.",
+      "text": "Mechanic described how loss of longitudinal (and perhaps personal and relational19) continuity influences the perception and use of time through an inability to build on previous consultations.2 Knowing the doctor well, particularly in smaller practices, is associated with enhanced patient enablement in shorter time.4 Though Mechanic pointed out that three quarters of UK patients have been registered with their general practitioner five years or more, this may be misleading. Practices are growing, with larger teams and more registered patients. Being registered with a doctor in a larger practice is usually no guarantee that the patient will be able to see the same doctor or the doctor of his or her choice, who may be different. Thus the system does not encourage adequate personal continuity. This adds to pressure on time and reduces both patient and professional satisfaction."
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/32"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Health service reforms",
+      "text": "Health service reforms",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/texts/31"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "Finally, for the past 15 years the NHS has experienced unprecedented change with a succession of major administrative reforms. Recent reforms have focused on an NHS led by primary care, including the aim of shifting care from the secondary specialist sector to primary care. One consequence is increased demand for primary care of patients with more serious and less stable problems. With the limited piloting of reforms we do not know whether such major redirection can be achieved without greatly altering the delicate balance between expectations (of both patients and staff) and what is delivered.",
+      "text": "Finally, for the past 15 years the NHS has experienced unprecedented change with a succession of major administrative reforms. Recent reforms have focused on an NHS led by primary care, including the aim of shifting care from the secondary specialist sector to primary care. One consequence is increased demand for primary care of patients with more serious and less stable problems. With the limited piloting of reforms we do not know whether such major redirection can be achieved without greatly altering the delicate balance between expectations (of both patients and staff) and what is delivered."
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/34"
+        },
+        {
+          "$ref": "#/texts/35"
+        },
+        {
+          "$ref": "#/texts/36"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "The future",
+      "text": "The future",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "We think that the way ahead must embrace both longer mean consultation times and more flexibility. More time is needed for high quality consultations with patients with major and complex problems of all kinds. But patients also need access to simpler services and advice. This should be more appropriate (and cost less) when it is given by professionals who know the patient and his or her medical history and social circumstances. For doctors, the higher quality associated with longer consultations may lead to greater professional satisfaction and, if these longer consultations are combined with more realistic scheduling, to reduced levels of stress.20 They will also find it easier to develop further the care of chronic disease.",
+      "text": "We think that the way ahead must embrace both longer mean consultation times and more flexibility. More time is needed for high quality consultations with patients with major and complex problems of all kinds. But patients also need access to simpler services and advice. This should be more appropriate (and cost less) when it is given by professionals who know the patient and his or her medical history and social circumstances. For doctors, the higher quality associated with longer consultations may lead to greater professional satisfaction and, if these longer consultations are combined with more realistic scheduling, to reduced levels of stress.20 They will also find it easier to develop further the care of chronic disease."
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "The challenge posed to general practice by walk-in centres and NHS Direct is considerable, and the diversion of funding from primary care is large. The risk of waste and duplication increases as more layers of complexity are added to a primary care service that started out as something familiar, simple, and local and which is still envied in other developed countries.21 Access needs to be simple, and the advantages of personal knowledge and trust in minimising duplication and overmedicalisation need to be exploited.",
+      "text": "The challenge posed to general practice by walk-in centres and NHS Direct is considerable, and the diversion of funding from primary care is large. The risk of waste and duplication increases as more layers of complexity are added to a primary care service that started out as something familiar, simple, and local and which is still envied in other developed countries.21 Access needs to be simple, and the advantages of personal knowledge and trust in minimising duplication and overmedicalisation need to be exploited."
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/texts/33"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "We must ensure better communication and access so that patients can more easily deal with minor issues and queries with someone they know and trust and avoid the formality and inconvenience of a full face to face consultation. Too often this has to be with a different professional, unfamiliar with the nuances of the case. There should be far more managerial emphasis on helping patients to interact with their chosen practitioner22; such a programme has been described.23 Modern information systems make it much easier to record which doctor(s) a patient prefers to see and to monitor how often this is achieved. The telephone is hardly modern but is underused. Email avoids the problems inherent in arranging simultaneous availability necessary for telephone consultations but at the cost of reducing the communication of emotions. There is a place for both.2 Access without prior appointment is a valued feature of primary care, and we need to know more about the right balance between planned and ad hoc consulting.",
+      "text": "We must ensure better communication and access so that patients can more easily deal with minor issues and queries with someone they know and trust and avoid the formality and inconvenience of a full face to face consultation. Too often this has to be with a different professional, unfamiliar with the nuances of the case. There should be far more managerial emphasis on helping patients to interact with their chosen practitioner22; such a programme has been described.23 Modern information systems make it much easier to record which doctor(s) a patient prefers to see and to monitor how often this is achieved. The telephone is hardly modern but is underused. Email avoids the problems inherent in arranging simultaneous availability necessary for telephone consultations but at the cost of reducing the communication of emotions. There is a place for both.2 Access without prior appointment is a valued feature of primary care, and we need to know more about the right balance between planned and ad hoc consulting."
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/38"
+        },
+        {
+          "$ref": "#/texts/39"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Next steps",
+      "text": "Next steps",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/38",
+      "parent": {
+        "$ref": "#/texts/37"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "General practitioners do not behave in a uniform way. They can be categorised as slow, medium, and fast and react in different ways to changes in consulting speed.18 They are likely to have differing views about a widespread move to lengthen consultation time. We do not need further confirmation that longer consultations are desirable and necessary, but research could show us the best way to learn how to introduce them with minimal disruption to the way in which patients and practices like primary care to be provided.24 We also need to learn how to make the most of available time in complex consultations.",
+      "text": "General practitioners do not behave in a uniform way. They can be categorised as slow, medium, and fast and react in different ways to changes in consulting speed.18 They are likely to have differing views about a widespread move to lengthen consultation time. We do not need further confirmation that longer consultations are desirable and necessary, but research could show us the best way to learn how to introduce them with minimal disruption to the way in which patients and practices like primary care to be provided.24 We also need to learn how to make the most of available time in complex consultations."
+    },
+    {
+      "self_ref": "#/texts/39",
+      "parent": {
+        "$ref": "#/texts/37"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "Devising appropriate incentives and helping practices move beyond just reacting to demand in the traditional way by working harder and faster is perhaps our greatest challenge in the United Kingdom. The new primary are trusts need to work together with the growing primary care research networks to carry out the necessary development work. In particular, research is needed on how a primary care team can best provide the right balance of quick access and interpersonal knowledge and trust.",
+      "text": "Devising appropriate incentives and helping practices move beyond just reacting to demand in the traditional way by working harder and faster is perhaps our greatest challenge in the United Kingdom. The new primary are trusts need to work together with the growing primary care research networks to carry out the necessary development work. In particular, research is needed on how a primary care team can best provide the right balance of quick access and interpersonal knowledge and trust."
+    },
+    {
+      "self_ref": "#/texts/40",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/41"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "Acknowledgments",
+      "text": "Acknowledgments",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/41",
+      "parent": {
+        "$ref": "#/texts/40"
+      },
+      "children": [],
+      "label": "text",
+      "prov": [],
+      "orig": "We thank the other members of the working group: Susan Childs, Paul Freeling, Iona Heath, Marshall Marinker, and Bonnie Sibbald. We also thank Fenny Green of the Royal College of General Practitioners for administrative help.",
+      "text": "We thank the other members of the working group: Susan Childs, Paul Freeling, Iona Heath, Marshall Marinker, and Bonnie Sibbald. We also thank Fenny Green of the Royal College of General Practitioners for administrative help."
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/1"
+        }
+      ],
+      "label": "section_header",
+      "prov": [],
+      "orig": "References",
+      "text": "References",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/43",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Shah NC. Viewpoint: Consultation time\u2014time for a change? Still the \u201cperfunctory work of perfunctory men!\u201d. Br J Gen Pract 49:497 (1999).",
+      "text": "Shah NC. Viewpoint: Consultation time\u2014time for a change? Still the \u201cperfunctory work of perfunctory men!\u201d. Br J Gen Pract 49:497 (1999).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/44",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Mechanic D. How should hamsters run? Some observations about sufficient patient time in primary care. BMJ 323:266\u2013268 (2001). PMID: 11485957",
+      "text": "Mechanic D. How should hamsters run? Some observations about sufficient patient time in primary care. BMJ 323:266\u2013268 (2001). PMID: 11485957",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/45",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Howie JGR, Porter AMD, Heaney DJ, Hopton JL. Long to short consultation ratio: a proxy measure of quality of care for general practice. Br J Gen Pract 41:48\u201354 (1991). PMID: 2031735",
+      "text": "Howie JGR, Porter AMD, Heaney DJ, Hopton JL. Long to short consultation ratio: a proxy measure of quality of care for general practice. Br J Gen Pract 41:48\u201354 (1991). PMID: 2031735",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/46",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Howie JGR, Heaney DJ, Maxwell M, Walker JJ, Freeman GK, Rai H. Quality at general practice consultations: cross-sectional survey. BMJ 319:738\u2013743 (1999). PMID: 10487999",
+      "text": "Howie JGR, Heaney DJ, Maxwell M, Walker JJ, Freeman GK, Rai H. Quality at general practice consultations: cross-sectional survey. BMJ 319:738\u2013743 (1999). PMID: 10487999",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/47",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Kaplan SH, Greenfield S, Ware JE. Assessing the effects of physician-patient interactions on the outcome of chronic disease. Med Care 27:110\u2013125 (1989).",
+      "text": "Kaplan SH, Greenfield S, Ware JE. Assessing the effects of physician-patient interactions on the outcome of chronic disease. Med Care 27:110\u2013125 (1989).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/48",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Airey C, Erens B. National surveys of NHS patients: general practice, 1998. London: NHS Executive (1999).",
+      "text": "Airey C, Erens B. National surveys of NHS patients: general practice, 1998. London: NHS Executive (1999).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/49",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Hart JT. Expectations of health care: promoted, managed or shared?. Health Expect 1:3\u201313 (1998). PMID: 11281857",
+      "text": "Hart JT. Expectations of health care: promoted, managed or shared?. Health Expect 1:3\u201313 (1998). PMID: 11281857",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/50",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Tuckett D, Boulton M, Olson C, Williams A. Meetings between experts: an approach to sharing ideas in medical consultations. London: Tavistock Publications (1985).",
+      "text": "Tuckett D, Boulton M, Olson C, Williams A. Meetings between experts: an approach to sharing ideas in medical consultations. London: Tavistock Publications (1985).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/51",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "General Medical Council. Draft recommendations on undergraduate medical education. July 2001. www.gmc-uk.org/med_ed/tomorrowsdoctors/index.htm (accessed 2 Jan 2002).",
+      "text": "General Medical Council. Draft recommendations on undergraduate medical education. July 2001. www.gmc-uk.org/med_ed/tomorrowsdoctors/index.htm (accessed 2 Jan 2002).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Balint M. The doctor, his patient and the illness. London: Tavistock (1957).",
+      "text": "Balint M. The doctor, his patient and the illness. London: Tavistock (1957).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/53",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Stott NCH, Davies RH. The exceptional potential in each primary care consultation. J R Coll Gen Pract 29:210\u2013205 (1979).",
+      "text": "Stott NCH, Davies RH. The exceptional potential in each primary care consultation. J R Coll Gen Pract 29:210\u2013205 (1979).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/54",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Hill AP, Hill AP. Challenges for primary care. What's gone wrong with health care? Challenges for the new millennium. London: King's Fund75\u201386 (2000).",
+      "text": "Hill AP, Hill AP. Challenges for primary care. What's gone wrong with health care? Challenges for the new millennium. London: King's Fund75\u201386 (2000).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/55",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "National service framework for coronary heart disease. London: Department of Health (2000).",
+      "text": "National service framework for coronary heart disease. London: Department of Health (2000).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/56",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Hart JT. A new kind of doctor: the general practitioner's part in the health of the community. London: Merlin Press (1988).",
+      "text": "Hart JT. A new kind of doctor: the general practitioner's part in the health of the community. London: Merlin Press (1988).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/57",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Morrison I, Smith R. Hamster health care. BMJ 321:1541\u20131542 (2000). PMID: 11124164",
+      "text": "Morrison I, Smith R. Hamster health care. BMJ 321:1541\u20131542 (2000). PMID: 11124164",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/58",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Arber S, Sawyer L. Do appointment systems work?. BMJ 284:478\u2013480 (1982). PMID: 6800503",
+      "text": "Arber S, Sawyer L. Do appointment systems work?. BMJ 284:478\u2013480 (1982). PMID: 6800503",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/59",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Hjortdahl P, Borchgrevink CF. Continuity of care: influence of general practitioners' knowledge about their patients on use of resources in consultations. BMJ 303:1181\u20131184 (1991). PMID: 1747619",
+      "text": "Hjortdahl P, Borchgrevink CF. Continuity of care: influence of general practitioners' knowledge about their patients on use of resources in consultations. BMJ 303:1181\u20131184 (1991). PMID: 1747619",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/60",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Howie JGR, Hopton JL, Heaney DJ, Porter AMD. Attitudes to medical care, the organization of work, and stress among general practitioners. Br J Gen Pract 42:181\u2013185 (1992). PMID: 1389427",
+      "text": "Howie JGR, Hopton JL, Heaney DJ, Porter AMD. Attitudes to medical care, the organization of work, and stress among general practitioners. Br J Gen Pract 42:181\u2013185 (1992). PMID: 1389427",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/61",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Freeman G, Shepperd S, Robinson I, Ehrich K, Richards SC, Pitman P. Continuity of care: report of a scoping exercise for the national co-ordinating centre for NHS Service Delivery and Organisation R&D (NCCSDO), Summer 2000. London: NCCSDO (2001).",
+      "text": "Freeman G, Shepperd S, Robinson I, Ehrich K, Richards SC, Pitman P. Continuity of care: report of a scoping exercise for the national co-ordinating centre for NHS Service Delivery and Organisation R&D (NCCSDO), Summer 2000. London: NCCSDO (2001).",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/62",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Wilson A, McDonald P, Hayes L, Cooney J. Longer booking intervals in general practice: effects on doctors' stress and arousal. Br J Gen Pract 41:184\u2013187 (1991). PMID: 1878267",
+      "text": "Wilson A, McDonald P, Hayes L, Cooney J. Longer booking intervals in general practice: effects on doctors' stress and arousal. Br J Gen Pract 41:184\u2013187 (1991). PMID: 1878267",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/63",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "De Maeseneer J, Hjortdahl P, Starfield B. Fix what's wrong, not what's right, with general practice in Britain. BMJ 320:1616\u20131617 (2000). PMID: 10856043",
+      "text": "De Maeseneer J, Hjortdahl P, Starfield B. Fix what's wrong, not what's right, with general practice in Britain. BMJ 320:1616\u20131617 (2000). PMID: 10856043",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/64",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Freeman G, Hjortdahl P. What future for continuity of care in general practice?. BMJ 314:1870\u20131873 (1997). PMID: 9224130",
+      "text": "Freeman G, Hjortdahl P. What future for continuity of care in general practice?. BMJ 314:1870\u20131873 (1997). PMID: 9224130",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/65",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Kibbe DC, Bentz E, McLaughlin CP. Continuous quality improvement for continuity of care. J Fam Pract 36:304\u2013308 (1993). PMID: 8454977",
+      "text": "Kibbe DC, Bentz E, McLaughlin CP. Continuous quality improvement for continuity of care. J Fam Pract 36:304\u2013308 (1993). PMID: 8454977",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/66",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "label": "list_item",
+      "prov": [],
+      "orig": "Williams M, Neal RD. Time for a change? The process of lengthening booking intervals in general practice. Br J Gen Pract 48:1783\u20131786 (1998). PMID: 10198490",
+      "text": "Williams M, Neal RD. Time for a change? The process of lengthening booking intervals in general practice. Br J Gen Pract 48:1783\u20131786 (1998). PMID: 10198490",
+      "enumerated": false,
+      "marker": "-"
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "pages": {}
+}

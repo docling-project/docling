@@ -7,7 +7,7 @@ pydantic datatype, which can express several features common to documents, such 
 * Layout information (i.e. bounding boxes) for all items, if available
 * Provenance information
 
-The definition of the Pydantic types is implemented in the module `docling_core.types.doc`, more details in [source code definitions](https://github.com/DS4SD/docling-core/tree/main/docling_core/types/doc).
+The definition of the Pydantic types is implemented in the module `docling_core.types.doc`, more details in [source code definitions](https://github.com/docling-project/docling-core/tree/main/docling_core/types/doc).
 
 It also brings a set of document construction APIs to build up a `DoclingDocument` from scratch.
 

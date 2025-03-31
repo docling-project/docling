@@ -4,6 +4,9 @@ from pathlib import Path
 import pytest
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
+from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -17,7 +20,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 @pytest.fixture
 def test_doc_path():
-    return Path("./tests/data/2206.01062.pdf")
+    return Path("./tests/data/pdf/2206.01062.pdf")
 
 
 def get_converters_with_table_options():
@@ -31,10 +34,7 @@ def get_converters_with_table_options():
 
             converter = DocumentConverter(
                 format_options={
-                    InputFormat.PDF: PdfFormatOption(
-                        pipeline_options=pipeline_options,
-                        backend=DoclingParseDocumentBackend,
-                    )
+                    InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
                 }
             )
 
@@ -105,6 +105,20 @@ def test_e2e_conversions(test_doc_path):
         assert doc_result.status == ConversionStatus.SUCCESS
 
 
+def test_page_range(test_doc_path):
+    converter = DocumentConverter()
+    doc_result: ConversionResult = converter.convert(test_doc_path, page_range=(9, 9))
+
+    assert doc_result.status == ConversionStatus.SUCCESS
+    assert doc_result.input.page_count == 9
+    assert doc_result.document.num_pages() == 1
+
+    doc_result: ConversionResult = converter.convert(
+        test_doc_path, page_range=(10, 10), raises_on_error=False
+    )
+    assert doc_result.status == ConversionStatus.FAILURE
+
+
 def test_ocr_coverage_threshold(test_doc_path):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
@@ -123,3 +137,29 @@ def test_ocr_coverage_threshold(test_doc_path):
 
     # this should have generated no results, since we set a very high threshold
     assert len(doc_result.document.texts) == 0
+
+
+def test_parser_backends(test_doc_path):
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_ocr = False
+    pipeline_options.do_table_structure = False
+
+    for backend_t in [
+        DoclingParseV4DocumentBackend,
+        DoclingParseV2DocumentBackend,
+        DoclingParseDocumentBackend,
+        PyPdfiumDocumentBackend,
+    ]:
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options,
+                    backend=backend_t,
+                )
+            }
+        )
+
+        test_doc_path = Path("./tests/data/pdf/code_and_formula.pdf")
+        doc_result: ConversionResult = converter.convert(test_doc_path)
+
+        assert doc_result.status == ConversionStatus.SUCCESS

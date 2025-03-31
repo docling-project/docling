@@ -1,0 +1,40 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: inline: group group
+    item-2 at level 2: paragraph: This is a word document and this is an inline equation: 
+    item-3 at level 2: formula: A= \pi r^{2} 
+    item-4 at level 2: paragraph: . If instead, I want an equation by line, I can do this:
+  item-5 at level 1: paragraph: 
+  item-6 at level 1: formula: a^{2}+b^{2}=c^{2} \text{ \texttimes } 23
+  item-7 at level 1: paragraph: And that is an equation by itself. Cheers!
+  item-8 at level 1: paragraph: 
+  item-9 at level 1: paragraph: This is another equation:
+  item-10 at level 1: formula: f\left(x\right)=a_{0}+\sum_{n=1} ... })+b_{n}\sin(\frac{n \pi x}{L})\right)
+  item-11 at level 1: paragraph: 
+  item-12 at level 1: paragraph: This is text. This is text. This ... s is text. This is text. This is text.
+  item-13 at level 1: paragraph: 
+  item-14 at level 1: paragraph: 
+  item-15 at level 1: inline: group group
+    item-16 at level 2: paragraph: This is a word document and this is an inline equation: 
+    item-17 at level 2: formula: A= \pi r^{2} 
+    item-18 at level 2: paragraph: . If instead, I want an equation by line, I can do this:
+  item-19 at level 1: paragraph: 
+  item-20 at level 1: formula: \left(x+a\right)^{n}=\sum_{k=0}^ ... ac{}{}{0pt}{}{n}{k}\right)x^{k}a^{n-k}
+  item-21 at level 1: paragraph: 
+  item-22 at level 1: paragraph: And that is an equation by itself. Cheers!
+  item-23 at level 1: paragraph: 
+  item-24 at level 1: paragraph: This is another equation:
+  item-25 at level 1: paragraph: 
+  item-26 at level 1: formula: \left(1+x\right)^{n}=1+\frac{nx} ... ght)x^{2}}{2!}+ \text{ \textellipsis }
+  item-27 at level 1: paragraph: 
+  item-28 at level 1: paragraph: This is text. This is text. This ... s is text. This is text. This is text.
+  item-29 at level 1: paragraph: 
+  item-30 at level 1: paragraph: 
+  item-31 at level 1: inline: group group
+    item-32 at level 2: paragraph: This is a word document and this is an inline equation: 
+    item-33 at level 2: formula: A= \pi r^{2} 
+    item-34 at level 2: paragraph: . If instead, I want an equation by line, I can do this:
+  item-35 at level 1: paragraph: 
+  item-36 at level 1: formula: e^{x}=1+\frac{x}{1!}+\frac{x^{2} ... xtellipsis } , - \infty  < x <  \infty
+  item-37 at level 1: paragraph: 
+  item-38 at level 1: paragraph: And that is an equation by itself. Cheers!
+  item-39 at level 1: paragraph: 

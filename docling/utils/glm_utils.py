@@ -15,6 +15,7 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
 )
+from docling_core.types.doc.document import ContentLayer
 
 
 def resolve_item(paths, obj):
@@ -270,7 +271,6 @@ def to_docling_document(doc_glm, update_name_label=False) -> DoclingDocument:
             container_el = doc.add_group(label=group_label)
 
             _add_child_elements(container_el, doc, obj, pelem)
-
         elif "text" in obj:
             text = obj["text"][span_i:span_j]
 
@@ -304,6 +304,23 @@ def to_docling_document(doc_glm, update_name_label=False) -> DoclingDocument:
                 current_list = None
 
                 doc.add_heading(text=text, prov=prov)
+            elif label == DocItemLabel.CODE:
+                current_list = None
+
+                doc.add_code(text=text, prov=prov)
+            elif label == DocItemLabel.FORMULA:
+                current_list = None
+
+                doc.add_text(label=DocItemLabel.FORMULA, text="", orig=text, prov=prov)
+            elif label in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
+                current_list = None
+
+                doc.add_text(
+                    label=DocItemLabel(name_label),
+                    text=text,
+                    prov=prov,
+                    content_layer=ContentLayer.FURNITURE,
+                )
             else:
                 current_list = None
 

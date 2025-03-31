@@ -4,7 +4,7 @@ ENV GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no"
 
 RUN apt-get update \
     && apt-get install -y libgl1 libglib2.0-0 curl wget git procps \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
 # This will install torch with *only* cpu support
 # Remove the --extra-index-url part if you want to install all the gpu requirements
@@ -16,8 +16,7 @@ ENV TORCH_HOME=/tmp/
 
 COPY docs/examples/minimal.py /root/minimal.py
 
-RUN python -c 'from deepsearch_glm.utils.load_pretrained_models import load_pretrained_nlp_models; load_pretrained_nlp_models(verbose=True);'
-RUN python -c 'from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline; StandardPdfPipeline.download_models_hf(force=True);'
+RUN docling-tools models download
 
 # On container environments, always set a thread budget to avoid undesired thread congestion.
 ENV OMP_NUM_THREADS=4
@@ -25,3 +24,6 @@ ENV OMP_NUM_THREADS=4
 # On container shell:
 # > cd /root/
 # > python minimal.py
+
+# Running as `docker run -e DOCLING_ARTIFACTS_PATH=/root/.cache/docling/models` will use the
+# model weights included in the container image.

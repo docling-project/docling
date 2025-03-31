@@ -15,5 +15,5 @@ env:
 
 jobs:
   code-checks:
-    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'DS4SD/docling' && github.event.pull_request.head.repo.full_name != 'ds4sd/docling') }}
+    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling') }}
     uses: ./.github/workflows/checks.yml

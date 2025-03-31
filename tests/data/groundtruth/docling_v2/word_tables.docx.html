@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png"
+    href="https://raw.githubusercontent.com/docling-project/docling/refs/heads/main/docs/assets/logo.svg"/>
+    <meta charset="UTF-8">
+    <title>
+    Powered by Docling
+    </title>
+    <style>
+    html {
+    background-color: LightGray;
+    }
+    body {
+    margin: 0 auto;
+    width:800px;
+    padding: 30px;
+    background-color: White;
+    font-family: Arial, sans-serif;
+    box-shadow: 10px 10px 10px grey;
+    }
+    figure{
+    display: block;
+    width: 100%;
+    margin: 0px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    }
+    img {
+    display: block;
+    margin: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    max-width: 640px;
+    max-height: 640px;
+    }
+    table {
+    min-width:500px;
+    background-color: White;
+    border-collapse: collapse;
+    cell-padding: 5px;
+    margin: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    }
+    th, td {
+    border: 1px solid black;
+    padding: 8px;
+    }
+    th {
+    font-weight: bold;
+    }
+    table tr:nth-child(even) td{
+    background-color: LightGray;
+    }
+    math annotation {
+    display: none;
+    }
+    .formula-not-decoded {
+    background: repeating-linear-gradient(
+    45deg, /* Angle of the stripes */
+    LightGray, /* First color */
+    LightGray 10px, /* Length of the first color */
+    White 10px, /* Second color */
+    White 20px /* Length of the second color */
+    );
+    margin: 0;
+    text-align: center;
+    }
+    </style>
+    </head>
+<h2>Test with tables</h2>
+<p>A uniform table</p>
+<table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th><th>Header 0.2</th></tr><tr><td>Cell 1.0</td><td>Cell 1.1</td><td>Cell 1.2</td></tr><tr><td>Cell 2.0</td><td>Cell 2.1</td><td>Cell 2.2</td></tr></tbody></table>
+<p></p>
+<p>A non-uniform table with horizontal spans</p>
+<table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th><th>Header 0.2</th></tr><tr><td>Cell 1.0</td><td colspan="2">Merged Cell 1.1 1.2</td></tr><tr><td>Cell 2.0</td><td colspan="2">Merged Cell 2.1 2.2</td></tr></tbody></table>
+<p></p>
+<p>A non-uniform table with horizontal spans in inner columns</p>
+<table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th><th>Header 0.2</th><th>Header 0.3</th></tr><tr><td>Cell 1.0</td><td colspan="2">Merged Cell 1.1 1.2</td><td>Cell 1.3</td></tr><tr><td>Cell 2.0</td><td colspan="2">Merged Cell 2.1 2.2</td><td>Cell 2.3</td></tr></tbody></table>
+<p></p>
+<p>A non-uniform table with vertical spans</p>
+<table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th><th>Header 0.2</th></tr><tr><td>Cell 1.0</td><td rowspan="2">Merged Cell 1.1 2.1</td><td>Cell 1.2</td></tr><tr><td>Cell 2.0</td><td>Cell 2.2</td></tr><tr><td>Cell 3.0</td><td rowspan="2">Merged Cell 3.1 4.1</td><td>Cell 3.2</td></tr><tr><td>Cell 4.0</td><td>Cell 4.2</td></tr></tbody></table>
+<p></p>
+<p>A non-uniform table with all kinds of spans and empty cells</p>
+<table><tbody><tr><th>Header 0.0</th><th>Header 0.1</th><th>Header 0.2</th><th></th><th></th></tr><tr><td>Cell 1.0</td><td rowspan="2">Merged Cell 1.1 2.1</td><td>Cell 1.2</td><td></td><td></td></tr><tr><td>Cell 2.0</td><td>Cell 2.2</td><td></td><td></td></tr><tr><td>Cell 3.0</td><td rowspan="2">Merged Cell 3.1 4.1</td><td>Cell 3.2</td><td rowspan="3"></td><td></td></tr><tr><td>Cell 4.0</td><td>Cell 4.2</td><td rowspan="2">Merged Cell 4.4 5.4</td></tr><tr><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td colspan="5"></td></tr><tr><td></td><td></td><td></td><td></td><td>Cell 8.4</td></tr></tbody></table>
+<p></p>
+<p></p>
+</html>

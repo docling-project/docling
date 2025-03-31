@@ -1,0 +1,148 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: The coreceptor mutation CCR5Δ32  ... V epidemics and is selected for by HIV
+    item-2 at level 2: paragraph: Amy D. Sullivan, Janis Wigginton, Denise Kirschner
+    item-3 at level 2: paragraph: Department of Microbiology and I ... dical School, Ann Arbor, MI 48109-0620
+    item-4 at level 2: section_header: Abstract
+      item-5 at level 3: text: We explore the impact of a host  ... creasing the frequency of this allele.
+    item-6 at level 2: text: Nineteen million people have die ...  factors such as host genetics (4, 5).
+    item-7 at level 2: text: To exemplify the contribution of ...  follow the CCR5Δ32 allelic frequency.
+    item-8 at level 2: text: We hypothesize that CCR5Δ32 limi ... g the frequency of this mutant allele.
+    item-9 at level 2: text: CCR5 is a host-cell chemokine re ... iral strain (such as X4 or R5X4) (30).
+    item-10 at level 2: section_header: The Model
+      item-11 at level 3: text: Because we are most concerned wi ... t both economic and social conditions.
+      item-12 at level 3: picture
+        item-12 at level 4: caption: Figure 1 A schematic representation of the basic compartmental HIV epidemic model. The criss-cross lines indicate the sexual mixing between different compartments. Each of these interactions has a positive probability of taking place; they also incorporate individual rates of transmission indicated as λ, but in full notation is λ î,,→i,j, where i,j,k is the phenotype of the infected partner and î, is the phenotype of the susceptible partner. Also shown are the different rates of disease progression, γ i,j,k , that vary according to genotype, gender, and stage. Thus, the interactions between different genotypes, genders, and stages are associated with a unique probability of HIV infection. M, male; F, female.
+      item-13 at level 3: table with [6x5]
+        item-13 at level 4: caption: Table 1 Children's genotype
+      item-14 at level 3: section_header: Parameter Estimates for the Model.
+        item-15 at level 4: text: Estimates for rates that govern  ... d in Fig. 1 are summarized as follows:
+        item-16 at level 4: formula:  \frac{dS_{i,j}(t)}{dt}={\chi}_{ ... ,\hat {k}{\rightarrow}i,j}S_{i,j}(t), 
+        item-17 at level 4: formula:  \hspace{1em}\hspace{1em}\hspace ... j,A}(t)-{\gamma}_{i,j,A}I_{i,j,A}(t), 
+        item-18 at level 4: formula:  \frac{dI_{i,j,B}(t)}{dt}={\gamm ... j,B}(t)-{\gamma}_{i,j,B}I_{i,j,B}(t), 
+        item-19 at level 4: formula:  \frac{dA(t)}{dt}={\gamma}_{i,j, ...  \right) -{\mu}_{A}A(t)-{\delta}A(t), 
+        item-20 at level 4: text: where, in addition to previously ... on of the infected partner, and j ≠ .
+        item-21 at level 4: table with [14x5]
+          item-21 at level 5: caption: Table 2 Transmission probabilities
+        item-22 at level 4: table with [8x3]
+          item-22 at level 5: caption: Table 3 Progression rates
+        item-23 at level 4: table with [20x3]
+          item-23 at level 5: caption: Table 4 Parameter values
+        item-24 at level 4: text: The effects of the CCR5 W/Δ32 an ... nting this probability of infection is
+        item-25 at level 4: formula:  {\lambda}_{\hat {i},\hat {j},\h ... \hat {i},\hat {j},\hat {k}} \right] , 
+        item-26 at level 4: text: where j ≠  is either male or fe ... e those with AIDS in the simulations).
+        item-27 at level 4: text: The average rate of partner acqu ... owing the male rates to vary (36, 37).
+        item-28 at level 4: section_header: Transmission probabilities.
+          item-29 at level 5: text: The effect of a genetic factor i ... reported; ref. 42) (ref. 43, Table 2).
+          item-30 at level 5: text: Given the assumption of no treat ... ases during the end stage of disease).
+        item-31 at level 4: section_header: Disease progression.
+          item-32 at level 5: text: We assume three stages of HIV in ... ssion rates are summarized in Table 3.
+      item-33 at level 3: section_header: Demographic Setting.
+        item-34 at level 4: text: Demographic parameters are based ... [suppressing (t) notation]: χ1,j 1,j =
+        item-35 at level 4: formula:  B_{r}\hspace{.167em}{ \,\substa ... }+I_{2,M,k})}{N_{M}} \right] + \right 
+        item-36 at level 4: formula:  p_{v} \left \left( \frac{(I_{1, ... ght] \right) \right] ,\hspace{.167em} 
+        item-37 at level 4: text: where the probability of HIV ver ... heir values are summarized in Table 4.
+    item-38 at level 2: section_header: Prevalence of HIV
+      item-39 at level 3: section_header: Demographics and Model Validation.
+        item-40 at level 4: text: The model was validated by using ... 5% to capture early epidemic behavior.
+        item-41 at level 4: text: In deciding on our initial value ... n within given subpopulations (2, 49).
+        item-42 at level 4: text: In the absence of HIV infection, ... those predicted by our model (Fig. 2).
+        item-43 at level 4: picture
+          item-43 at level 5: caption: Figure 2 Model simulation of HIV infection in a population lacking the protective CCR5Δ32 allele compared with national data from Kenya (healthy adults) and Mozambique (blood donors, ref. 17). The simulated population incorporates parameter estimates from sub-Saharan African demographics. Note the two outlier points from the Mozambique data were likely caused by underreporting in the early stages of the epidemic.
+      item-44 at level 3: section_header: Effects of the Allele on Prevalence.
+        item-45 at level 4: text: After validating the model in th ... among adults for total HIV/AIDS cases.
+        item-46 at level 4: text: Although CCR5Δ32/Δ32 homozygosit ... frequency of the mutation as 0.105573.
+        item-47 at level 4: text: Fig. 3 shows the prevalence of H ... mic, reaching 18% before leveling off.
+        item-48 at level 4: picture
+          item-48 at level 5: caption: Figure 3 Prevalence of HIV/AIDS in the adult population as predicted by the model. The top curve (○) indicates prevalence in a population lacking the protective allele. We compare that to a population with 19% heterozygous and 1% homozygous for the allele (implying an allelic frequency of 0.105573. Confidence interval bands (light gray) are shown around the median simulation () providing a range of uncertainty in evaluating parameters for the effect of the mutation on the infectivity and the duration of asymptomatic HIV for heterozygotes.
+        item-49 at level 4: text: In contrast, when a proportion o ... gins to decline slowly after 70 years.
+        item-50 at level 4: text: In the above simulations we assu ...  in the presence of the CCR5 mutation.
+        item-51 at level 4: text: Because some parameters (e.g., r ... s a major influence on disease spread.
+    item-52 at level 2: section_header: HIV Induces Selective Pressure on Genotype Frequency
+      item-53 at level 3: text: To observe changes in the freque ...  for ≈1,600 years before leveling off.
+      item-54 at level 3: picture
+        item-54 at level 4: caption: Figure 4 Effects of HIV-1 on selection of the CCR5Δ32 allele. The Hardy-Weinberg equilibrium level is represented in the no-infection simulation (solid lines) for each population. Divergence from the original Hardy-Weinberg equilibrium is shown to occur in the simulations that include HIV infection (dashed lines). Fraction of the total subpopulations are presented: (A) wild types (W/W), (B) heterozygotes (W/Δ32), and (C) homozygotes (Δ32/Δ32). Note that we initiate this simulation with a much lower allelic frequency (0.00105) than used in the rest of the study to better exemplify the actual selective effect over a 1,000-year time scale. (D) The allelic selection effect over a 2,000-year time scale.
+    item-55 at level 2: section_header: Discussion
+      item-56 at level 3: text: This study illustrates how popul ... pulations where the allele is present.
+      item-57 at level 3: text: We also observed that HIV can pr ... is) have been present for much longer.
+      item-58 at level 3: text: Two mathematical models have con ... ce of the pathogen constant over time.
+      item-59 at level 3: text: Even within our focus on host pr ... f a protective allele such as CCR5Δ32.
+      item-60 at level 3: text: Although our models demonstrate  ... f the population to epidemic HIV (16).
+      item-61 at level 3: text: In assessing the HIV/AIDS epidem ... for education and prevention programs.
+    item-62 at level 2: section_header: Acknowledgments
+      item-63 at level 3: text: We thank Mark Krosky, Katia Koel ... ers for extremely insightful comments.
+    item-64 at level 2: section_header: References
+      item-65 at level 3: list: group list
+        item-66 at level 4: list_item: Weiss HA, Hawkes S. Leprosy Rev 72:92–98 (2001). PMID: 11355525
+        item-67 at level 4: list_item: Taha TE, Dallabetta GA, Hoover D ...  AIDS 12:197–203 (1998). PMID: 9468369
+        item-68 at level 4: list_item: AIDS Epidemic Update. Geneva: World Health Organization1–17 (1998).
+        item-69 at level 4: list_item: D'Souza MP, Harden VA. Nat Med 2:1293–1300 (1996). PMID: 8946819
+        item-70 at level 4: list_item: Martinson JJ, Chapman NH, Rees D ... Genet 16:100–103 (1997). PMID: 9140404
+        item-71 at level 4: list_item: Roos MTL, Lange JMA, deGoede REY ...  Dis 165:427–432 (1992). PMID: 1347054
+        item-72 at level 4: list_item: Garred P, Eugen-Olsen J, Iversen ...  Lancet 349:1884 (1997). PMID: 9217763
+        item-73 at level 4: list_item: Katzenstein TL, Eugen-Olsen J, H ... rovirol 16:10–14 (1997). PMID: 9377119
+        item-74 at level 4: list_item: deRoda H, Meyer K, Katzenstain W ... ce 273:1856–1862 (1996). PMID: 8791590
+        item-75 at level 4: list_item: Meyer L, Magierowska M, Hubert J ...  AIDS 11:F73–F78 (1997). PMID: 9302436
+        item-76 at level 4: list_item: Smith MW, Dean M, Carrington M,  ... ence 277:959–965 (1997). PMID: 9252328
+        item-77 at level 4: list_item: Samson M, Libert F, Doranz BJ, R ... don) 382:722–725 (1996). PMID: 8751444
+        item-78 at level 4: list_item: McNicholl JM, Smith DK, Qari SH, ... ct Dis 3:261–271 (1997). PMID: 9284370
+        item-79 at level 4: list_item: Michael NL, Chang G, Louie LG, M ... at Med 3:338–340 (1997). PMID: 9055864
+        item-80 at level 4: list_item: Mayaud P, Mosha F, Todd J, Balir ... IDS 11:1873–1880 (1997). PMID: 9412707
+        item-81 at level 4: list_item: Hoffman IF, Jere CS, Taylor TE,  ... li P, Dyer JR. AIDS 13:487–494 (1998).
+        item-82 at level 4: list_item: HIV/AIDS Surveillance Database.  ...  International Programs Center (1999).
+        item-83 at level 4: list_item: Anderson RM, May RM, McLean AR.  ... don) 332:228–234 (1988). PMID: 3279320
+        item-84 at level 4: list_item: Berger EA, Doms RW, Fenyo EM, Ko ... (London) 391:240 (1998). PMID: 9440686
+        item-85 at level 4: list_item: Alkhatib G, Broder CC, Berger EA ... rol 70:5487–5494 (1996). PMID: 8764060
+        item-86 at level 4: list_item: Choe H, Farzan M, Sun Y, Sulliva ... ell 85:1135–1148 (1996). PMID: 8674119
+        item-87 at level 4: list_item: Deng H, Liu R, Ellmeier W, Choe  ... don) 381:661–666 (1996). PMID: 8649511
+        item-88 at level 4: list_item: Doranz BJ, Rucker J, Yi Y, Smyth ... ell 85:1149–1158 (1996). PMID: 8674120
+        item-89 at level 4: list_item: Dragic T, Litwin V, Allaway GP,  ... don) 381:667–673 (1996). PMID: 8649512
+        item-90 at level 4: list_item: Zhu T, Mo H, Wang N, Nam DS, Cao ... ce 261:1179–1181 (1993). PMID: 8356453
+        item-91 at level 4: list_item: Bjorndal A, Deng H, Jansson M, F ... rol 71:7478–7487 (1997). PMID: 9311827
+        item-92 at level 4: list_item: Conner RI, Sheridan KE, Ceradini ...  Med 185:621–628 (1997). PMID: 9034141
+        item-93 at level 4: list_item: Liu R, Paxton WA, Choe S, Ceradi ...  Cell 86:367–377 (1996). PMID: 8756719
+        item-94 at level 4: list_item: Mussico M, Lazzarin A, Nicolosi  ... w) 154:1971–1976 (1994). PMID: 8074601
+        item-95 at level 4: list_item: Michael NL, Nelson JA, KewalRama ... rol 72:6040–6047 (1998). PMID: 9621067
+        item-96 at level 4: list_item: Hethcote HW, Yorke JA. Gonorrhea ...  and Control. Berlin: Springer (1984).
+        item-97 at level 4: list_item: Anderson RM, May RM. Nature (London) 333:514–522 (1988). PMID: 3374601
+        item-98 at level 4: list_item: Asiimwe-Okiror G, Opio AA, Musin ... IDS 11:1757–1763 (1997). PMID: 9386811
+        item-99 at level 4: list_item: Carael M, Cleland J, Deheneffe J ... AIDS 9:1171–1175 (1995). PMID: 8519454
+        item-100 at level 4: list_item: Blower SM, Boe C. J AIDS 6:1347–1352 (1993). PMID: 8254474
+        item-101 at level 4: list_item: Kirschner D. J Appl Math 56:143–166 (1996).
+        item-102 at level 4: list_item: Le Pont F, Blower S. J AIDS 4:987–999 (1991). PMID: 1890608
+        item-103 at level 4: list_item: Kim MY, Lagakos SW. Ann Epidemiol 1:117–128 (1990). PMID: 1669741
+        item-104 at level 4: list_item: Anderson RM, May RM. Infectious  ... ol. Oxford: Oxford Univ. Press (1992).
+        item-105 at level 4: list_item: Ragni MV, Faruki H, Kingsley LA. ... ed Immune Defic Syndr 17:42–45 (1998).
+        item-106 at level 4: list_item: Kaplan JE, Khabbaz RF, Murphy EL ... virol 12:193–201 (1996). PMID: 8680892
+        item-107 at level 4: list_item: Padian NS, Shiboski SC, Glass SO ... nghoff E. Am J Edu 146:350–357 (1997).
+        item-108 at level 4: list_item: Leynaert B, Downs AM, de Vincenzi I. Am J Edu 148:88–96 (1998).
+        item-109 at level 4: list_item: Garnett GP, Anderson RM. J Acquired Immune Defic Syndr 9:500–513 (1995).
+        item-110 at level 4: list_item: Stigum H, Magnus P, Harris JR, S ... eteig LS. Am J Edu 145:636–643 (1997).
+        item-111 at level 4: list_item: Ho DD, Neumann AU, Perelson AS,  ... don) 373:123–126 (1995). PMID: 7816094
+        item-112 at level 4: list_item: World Resources (1998–1999). Oxford: Oxford Univ. Press (1999).
+        item-113 at level 4: list_item: Kostrikis LG, Neumann AU, Thomso ...  73:10264–10271 (1999). PMID: 10559343
+        item-114 at level 4: list_item: Low-Beer D, Stoneburner RL, Muku ... at Med 3:553–557 (1997). PMID: 9142126
+        item-115 at level 4: list_item: Grosskurth H, Mosha F, Todd J, S ... . AIDS 9:927–934 (1995). PMID: 7576329
+        item-116 at level 4: list_item: Melo J, Beby-Defaux A, Faria C,  ... AIDS 23:203–204 (2000). PMID: 10737436
+        item-117 at level 4: list_item: Iman RL, Helton JC, Campbell JE. J Quality Technol 13:174–183 (1981).
+        item-118 at level 4: list_item: Iman RL, Helton JC, Campbell JE. J Quality Technol 13:232–240 (1981).
+        item-119 at level 4: list_item: Blower SM, Dowlatabadi H. Int Stat Rev 62:229–243 (1994).
+        item-120 at level 4: list_item: Porco TC, Blower SM. Theor Popul Biol 54:117–132 (1998). PMID: 9733654
+        item-121 at level 4: list_item: Blower SM, Porco TC, Darby G. Nat Med 4:673–678 (1998). PMID: 9623975
+        item-122 at level 4: list_item: Libert F, Cochaux P, Beckman G,  ...  Genet 7:399–406 (1998). PMID: 9466996
+        item-123 at level 4: list_item: Lalani AS, Masters J, Zeng W, Ba ... e 286:1968–1971 (1999). PMID: 10583963
+        item-124 at level 4: list_item: Kermack WO, McKendrick AG. Proc R Soc London 261:700–721 (1927).
+        item-125 at level 4: list_item: Gupta S, Hill AVS. Proc R Soc London Ser B 260:271–277 (1995).
+        item-126 at level 4: list_item: Ruwende C, Khoo SC, Snow RW, Yat ... don) 376:246–249 (1995). PMID: 7617034
+        item-127 at level 4: list_item: McDermott DH, Zimmerman PA, Guig ... ncet 352:866–870 (1998). PMID: 9742978
+        item-128 at level 4: list_item: Kostrikis LG, Huang Y, Moore JP, ... at Med 4:350–353 (1998). PMID: 9500612
+        item-129 at level 4: list_item: Winkler C, Modi W, Smith MW, Nel ... ence 279:389–393 (1998). PMID: 9430590
+        item-130 at level 4: list_item: Martinson JJ, Hong L, Karanicola ... AIDS 14:483–489 (2000). PMID: 10780710
+        item-131 at level 4: list_item: Vernazza PL, Eron JJ, Fiscus SA, ... AIDS 13:155–166 (1999). PMID: 10202821
+  item-132 at level 1: caption: Figure 1 A schematic representat ...  of HIV infection. M, male; F, female.
+  item-133 at level 1: caption: Table 1 Children's genotype
+  item-134 at level 1: caption: Table 2 Transmission probabilities
+  item-135 at level 1: caption: Table 3 Progression rates
+  item-136 at level 1: caption: Table 4 Parameter values
+  item-137 at level 1: caption: Figure 2 Model simulation of HIV ... g in the early stages of the epidemic.
+  item-138 at level 1: caption: Figure 3 Prevalence of HIV/AIDS  ... of asymptomatic HIV for heterozygotes.
+  item-139 at level 1: caption: Figure 4 Effects of HIV-1 on sel ... n effect over a 2,000-year time scale.

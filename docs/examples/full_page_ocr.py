@@ -14,7 +14,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path("./tests/data/2206.01062.pdf")
+    input_doc = Path("./tests/data/pdf/2206.01062.pdf")
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True

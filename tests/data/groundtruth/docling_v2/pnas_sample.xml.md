@@ -1,0 +1,258 @@
+# The coreceptor mutation CCR5Δ32 influences the dynamics of HIV epidemics and is selected for by HIV
+
+Amy D. Sullivan, Janis Wigginton, Denise Kirschner
+
+Department of Microbiology and Immunology, University  of Michigan Medical School, Ann Arbor, MI 48109-0620
+
+## Abstract
+
+We explore the impact of a host genetic factor on heterosexual HIV epidemics by using a deterministic mathematical model. A protective allele unequally distributed across populations is exemplified in our models by the 32-bp deletion in the host-cell chemokine receptor CCR5, CCR5Δ32. Individuals homozygous for CCR5Δ32 are protected against HIV infection whereas those heterozygous for CCR5Δ32 have lower pre-AIDS viral loads and delayed progression to AIDS. CCR5Δ32 may limit HIV spread by decreasing the probability of both risk of infection and infectiousness. In this work, we characterize epidemic HIV within three dynamic subpopulations: CCR5/CCR5 (homozygous, wild type), CCR5/CCR5Δ32 (heterozygous), and CCR5Δ32/CCR5Δ32 (homozygous, mutant). Our results indicate that prevalence of HIV/AIDS is greater in populations lacking the CCR5Δ32 alleles (homozygous wild types only) as compared with populations that include people heterozygous or homozygous for CCR5Δ32. Also, we show that HIV can provide selective pressure for CCR5Δ32, increasing the frequency of this allele.
+
+Nineteen million people have died of AIDS since the discovery of HIV in the 1980s. In 1999 alone, 5.4 million people were newly infected with HIV (ref. 1 and http://www.unaids.org/epidemicupdate/report/Epireport.html). (For brevity, HIV-1 is referred to as HIV in this paper.) Sub-Saharan Africa has been hardest hit, with more than 20% of the general population HIV-positive in some countries (2, 3). In comparison, heterosexual epidemics in developed, market-economy countries have not reached such severe levels. Factors contributing to the severity of the epidemic in economically developing countries abound, including economic, health, and social differences such as high levels of sexually transmitted diseases and a lack of prevention programs. However, the staggering rate at which the epidemic has spread in sub-Saharan Africa has not been adequately explained. The rate and severity of this epidemic also could indicate a greater underlying susceptibility to HIV attributable not only to sexually transmitted disease, economics, etc., but also to other more ubiquitous factors such as host genetics (4, 5).
+
+To exemplify the contribution of such a host genetic factor to HIV prevalence trends, we consider a well-characterized 32-bp deletion in the host-cell chemokine receptor CCR5, CCR5Δ32. When HIV binds to host cells, it uses the CD4 receptor on the surface of host immune cells together with a coreceptor, mainly the CCR5 and CXCR4 chemokine receptors (6). Homozygous mutations for this 32-bp deletion offer almost complete protection from HIV infection, and heterozygous mutations are associated with lower pre-AIDS viral loads and delayed progression to AIDS (7–14). CCR5Δ32 generally is found in populations of European descent, with allelic frequencies ranging from 0 to 0.29 (13). African and Asian populations studied outside the United States or Europe appear to lack the CCR5Δ32 allele, with an allelic frequency of almost zero (5, 13). Thus, to understand the effects of a protective allele, we use a mathematical model to track prevalence of HIV in populations with or without CCR5Δ32 heterozygous and homozygous people and also to follow the CCR5Δ32 allelic frequency.
+
+We hypothesize that CCR5Δ32 limits epidemic HIV by decreasing infection rates, and we evaluate the relative contributions to this by the probability of infection and duration of infectivity. To capture HIV infection as a chronic infectious disease together with vertical transmission occurring in untreated mothers, we model a dynamic population (i.e., populations that vary in growth rates because of fluctuations in birth or death rates) based on realistic demographic characteristics (18). This scenario also allows tracking of the allelic frequencies over time. This work considers how a specific host genetic factor affecting HIV infectivity and viremia at the individual level might influence the epidemic in a dynamic population and how HIV exerts selective pressure, altering the frequency of this mutant allele.
+
+CCR5 is a host-cell chemokine receptor, which is also used as a coreceptor by R5 strains of HIV that are generally acquired during sexual transmission (6, 19–25). As infection progresses to AIDS the virus expands its repertoire of potential coreceptors to include other CC-family and CXC-family receptors in roughly 50% of patients (19, 26, 27). CCR5Δ32 was identified in HIV-resistant people (28). Benefits to individuals from the mutation in this allele are as follows. Persons homozygous for the CCR5Δ32 mutation are almost nonexistent in HIV-infected populations (11, 12) (see ref. 13 for review). Persons heterozygous for the mutant allele (CCR5 W/Δ32) tend to have lower pre-AIDS viral loads. Aside from the beneficial effects that lower viral loads may have for individuals, there is also an altruistic effect, as transmission rates are reduced for individuals with low viral loads (as compared with, for example, AZT and other studies; ref. 29). Finally, individuals heterozygous for the mutant allele (CCR5 W/Δ32) also have a slower progression to AIDS than those homozygous for the wild-type allele (CCR5 W/W) (7–10), remaining in the population 2 years longer, on average. Interestingly, the dearth of information on HIV disease progression in people homozygous for the CCR5Δ32 allele (CCR5 Δ32/Δ32) stems from the rarity of HIV infection in this group (4, 12, 28). However, in case reports of HIV-infected CCR5 Δ32/Δ32 homozygotes, a rapid decline in CD4+ T cells and a high viremia are observed, likely because of initial infection with a more aggressive viral strain (such as X4 or R5X4) (30).
+
+## The Model
+
+Because we are most concerned with understanding the severity of the epidemic in developing countries where the majority of infection is heterosexual, we consider a purely heterosexual model. To model the effects of the allele in the population, we examine the rate of HIV spread by using an enhanced susceptible-infected-AIDS model of epidemic HIV (for review see ref. 31). Our model compares two population scenarios: a CCR5 wild-type population and one with CCR5Δ32 heterozygotes and homozygotes in addition to the wild type. To model the scenario where there are only wild-type individuals present in the population (i.e., CCR5 W/W), we track the sexually active susceptibles at time t [Si,j (t)], where i = 1 refers to genotype (CCR5 W/W only in this case) and j is either the male or female subpopulation. We also track those who are HIV-positive at time t not yet having AIDS in Ii,j,k (t) where k refers to stage of HIV infection [primary (A) or asymptomatic (B)]. The total number of individuals with AIDS at time t are tracked in A(t). The source population are children, χ i,j (t), who mature into the sexually active population at time t (Fig. 1, Table 1). We compare the model of a population lacking the CCR5Δ32 allele to a demographically similar population with a high frequency of the allele. When genetic heterogeneity is included, male and female subpopulations are each further divided into three distinct genotypic groups, yielding six susceptible subpopulations, [Si,j (t), where i ranges from 1 to 3, where 1 = CCR5W/W; 2 = CCR5 W/Δ32; 3 = CCR5 Δ32/Δ32]. The infected classes, Ii,j,k (t), also increase in number to account for these new genotype compartments. In both settings we assume there is no treatment available and no knowledge of HIV status by people in the early acute and middle asymptomatic stages (both conditions exist in much of sub-Saharan Africa). In addition, we assume that sexual mixing in the population occurs randomly with respect to genotype and HIV disease status, all HIV-infected people eventually progress to AIDS, and no barrier contraceptives are used. These last assumptions reflect both economic and social conditions.
+
+Figure 1 A schematic representation of the basic compartmental HIV epidemic model. The criss-cross lines indicate the sexual mixing between different compartments. Each of these interactions has a positive probability of taking place; they also incorporate individual rates of transmission indicated as λ, but in full notation is λ î,,→i,j, where i,j,k is the phenotype of the infected partner and î, is the phenotype of the susceptible partner. Also shown are the different rates of disease progression, γ i,j,k , that vary according to genotype, gender, and stage. Thus, the interactions between different genotypes, genders, and stages are associated with a unique probability of HIV infection. M, male; F, female.
+
+<!-- image -->
+
+Table 1 Children's genotype
+
+| Parents   | Mother   | Mother             | Mother                       | Mother             |
+|-----------|----------|--------------------|------------------------------|--------------------|
+|           |          |                    |                              |                    |
+| Father    |          | W/W                | W/Δ32                        | Δ32/Δ32            |
+|           | W/W      | χ1,j 1,j           | χ1,j 1,j, χ2,j 2,j           | χ2,j 2,j           |
+|           | W/Δ32    | χ1,j 1,j, χ2,j 2,j | χ1,j 1,j, χ2,j 2,j, χ3,j 3,j | χ2,j 2,j, χ3,j 3,j |
+|           | Δ32/Δ32  | χ2,j 2,j           | χ2,j 2,j, χ3,j 3,j           | χ3,j 3,j           |
+
+### Parameter Estimates for the Model.
+
+Estimates for rates that govern the interactions depicted in Fig. 1 were derived from the extensive literature on HIV. Our parameters and their estimates are summarized in Tables 2–4. The general form of the equations describing the rates of transition between population classes as depicted in Fig. 1 are summarized as follows:
+
+$$ \frac{dS_{i,j}(t)}{dt}={\chi}_{i,j}(t)-{\mu}_{j}S_{i,j}(t)-{\lambda}_{\hat {\imath},\hat {},\hat {k}{\rightarrow}i,j}S_{i,j}(t), $$
+
+$$ \hspace{1em}\hspace{1em}\hspace{.167em}\frac{dI_{i,j,A}(t)}{dt}={\lambda}_{\hat {\imath},\hat {},\hat {k}{\rightarrow}i,j}S_{i,j}(t)-{\mu}_{j}I_{i,j,A}(t)-{\gamma}_{i,j,A}I_{i,j,A}(t), $$
+
+$$ \frac{dI_{i,j,B}(t)}{dt}={\gamma}_{i,j,A}I_{i,j,A}(t)-{\mu}_{j}I_{i,j,B}(t)-{\gamma}_{i,j,B}I_{i,j,B}(t), $$
+
+$$ \frac{dA(t)}{dt}={\gamma}_{i,j,B} \left( { \,\substack{ ^{3} \\ {\sum} \\ _{i=1} }\, }I_{i,F,B}(t)+I_{i,M,B}(t) \right) -{\mu}_{A}A(t)-{\delta}A(t), $$
+
+where, in addition to previously defined populations and rates (with i equals genotype, j equals gender, and k equals stage of infection, either A or B), μ j , represents the non-AIDS (natural) death rate for males and females respectively, and μA is estimated by the average (μF + μM/2). This approximation allows us to simplify the model (only one AIDS compartment) without compromising the results, as most people with AIDS die of AIDS (δAIDS) and very few of other causes (μA). These estimates include values that affect infectivity (λ î,,→i,j ), transmission (β î,,→i,j ), and disease progression (γ i  ,  j  ,  k ) where the î,, notation represents the genotype, gender, and stage of infection of the infected partner, and j ≠ .
+
+Table 2 Transmission probabilities
+
+| HIV-infected partner (îıı^^, ^^, k k^^)   | Susceptible partner (i, j)   | Susceptible partner (i, j)   | Susceptible partner (i, j)   | Susceptible partner (i, j)   |
+|-----------------------------------------------|------------------------------|------------------------------|------------------------------|------------------------------|
+| HIV-infected partner (îıı^^, ^^, k k^^)   |                              |                              |                              |                              |
+| HIV-infected partner (îıı^^, ^^, k k^^)   | (^^ to j)                 | W/W                          | W/Δ32                        | Δ32/Δ32                      |
+|                                               |                              |                              |                              |                              |
+| Acute/primary                                 |                              |                              |                              |                              |
+| W/W or Δ32/Δ32                                | M to F                       | 0.040                        | 0.040                        | 0.00040                      |
+|                                               | F to M                       | 0.020                        | 0.020                        | 0.00020                      |
+| W/Δ32                                         | M to F                       | 0.030                        | 0.030                        | 0.00030                      |
+|                                               | F to M                       | 0.015                        | 0.015                        | 0.00015                      |
+| Asymptomatic                                  |                              |                              |                              |                              |
+| W/W or Δ32/Δ32                                | M to F                       | 0.0010                       | 0.0010                       | 10 × 10−6                    |
+|                                               | F to M                       | 0.0005                       | 0.0005                       | 5 × 10−6                     |
+| W/Δ32                                         | M to F                       | 0.0005                       | 0.0005                       | 5 × 10−6                     |
+|                                               | F to M                       | 0.00025                      | 0.00025                      | 2.5 × 10−6                   |
+
+Table 3 Progression rates
+
+| Genotype   | Disease stage   | Males/females    |
+|------------|-----------------|------------------|
+|            |                 |                  |
+| W/W        | A               | 3.5              |
+|            | B               | 0.16667          |
+| W/Δ32      | A               | 3.5              |
+|            | B               | 0.125            |
+| Δ32/Δ32    | A               | 3.5              |
+|            | B               | 0.16667          |
+
+Table 4 Parameter values
+
+| Parameter                               | Definition                                               | Value                   |
+|-----------------------------------------|----------------------------------------------------------|-------------------------|
+|                                         |                                                          |                         |
+| μ F  F, μ M  M                          | All-cause mortality for adult females (males)            | 0.015 (0.016) per year  |
+| μχχ                                     | All-cause childhood mortality (&lt;15 years of age)         | 0.01 per year           |
+| B  r  r                                 | Birthrate                                                | 0.25 per woman per year |
+| SA  F  F                                | Percent females acquiring new partners (sexual activity) | 10%                     |
+| SA  M  M                                | Percent males acquiring new partners (sexual activity)   | 25%                     |
+| m  F  F(ς$$ {\mathrm{_{{F}}^{{2}}}} $$) | Mean (variance) no. of new partners for females          | 1.8 (1.2) per year      |
+| ς$$ {\mathrm{_{{M}}^{{2}}}} $$          | Variance in no. of new partners for males                | 5.5 per year            |
+| 1 − p  v  v                             | Probability of vertical transmission                     | 0.30 per birth          |
+| I  i,j,k  i,j,k(0)                      | Initial total population HIV-positive                    | 0.50%                   |
+| χ i,j  i,j(0)                           | Initial total children in population (&lt;15 years of age)  | 45%                     |
+| W/W (0)                                 | Initial total wild types (W/W) in population             | 80%                     |
+| W/Δ32(0)                                | Initial total heterozygotes (W/Δ32) in population        | 19%                     |
+| Δ32/Δ32(0)                              | Initial total homozygotes (Δ32/Δ32) in population        | 1%                      |
+| r  M  M(r  F  F)                        | Initial percent males (females) in total population      | 49% (51%)               |
+| ϕ F  F, ϕ M  M                          | Number of sexual contacts a female (male) has            | 30 (24) per partner     |
+| ɛ i,j,k  i,j,k                          | % effect of mutation on transmission rates (see Table 2) | 0 &lt; ɛ i,j,k  i,j,k &lt; 1  |
+| δ                                       | Death rate for AIDS population                           | 1.0 per year            |
+| q                                       | Allelic frequency of Δ32 allele                          | 0.105573                |
+
+The effects of the CCR5 W/Δ32 and CCR5 Δ32/Δ32 genotypes are included in our model through both the per-capita probabilities of infection, λ î,,→i,j , and the progression rates, γ i  ,  j  ,  k . The infectivity coefficients, λ î,,→i,j , are calculated for each population subgroup based on the following: likelihood of HIV transmission in a sexual encounter between a susceptible and an infected (βîıı^^,j,k k^^→i,j ) person; formation of new partnerships (c  j  j); number of contacts in a given partnership (ϕ j ); and probability of encountering an infected individual (I  î,, /N   ). The formula representing this probability of infection is
+
+$$ {\lambda}_{\hat {i},\hat {j},\hat {k}{\rightarrow}i,j}=\frac{C_{j}{\cdot}{\phi}_{j}}{N_{\hat {j}}}\hspace{.167em} \left[ { \,\substack{ \\ {\sum} \\ _{\hat {i},\hat {k}} }\, }{\beta}_{\hat {i},\hat {j},\hat {k}{\rightarrow}i,j}{\cdot}I_{\hat {i},\hat {j},\hat {k}} \right] , $$
+
+where j ≠  is either male or female. N    represents the total population of gender  (this does not include those with AIDS in the simulations).
+
+The average rate of partner acquisition, cj , includes the mean plus the variance to mean ratio of the relevant distribution of partner-change rates to capture the small number of high-risk people: cj  = mj  + (ς/m j) where the mean (mj ) and variance (ς) are annual figures for new partnerships only (32). These means are estimated from Ugandan data for the number of heterosexual partners in the past year (33) and the number of nonregular heterosexual partners (i.e., spouses or long-term partners) in the past year (34). In these sexual activity surveys, men invariably have more new partnerships; thus, we assumed that they would have fewer average contacts per partnership than women (a higher rate of new partner acquisition means fewer sexual contacts with a given partner; ref. 35). To incorporate this assumption in our model, the male contacts/partnership, ϕ M , was reduced by 20%. In a given population, the numbers of heterosexual interactions must equate between males and females. The balancing equation applied here is SA F·m F·N F = SA M·m M·N M, where SAj  are the percent sexually active and Nj  are the total in the populations for gender j. To specify changes in partner acquisition, we apply a male flexibility mechanism, holding the female rate of acquisition constant and allowing the male rates to vary (36, 37).
+
+#### Transmission probabilities.
+
+The effect of a genetic factor in a model of HIV transmission can be included by reducing the transmission coefficient. The probabilities of transmission per contact with an infected partner, βîıı^^,^^,k k^^→i,j , have been estimated in the literature (see ref. 38 for estimates in minimally treated groups). We want to capture a decreased risk in transmission based on genotype (ref. 39, Table 2). No studies have directly evaluated differences in infectivity between HIV-infected CCR5 W/Δ32 heterozygotes and HIV-infected CCR5 wild types. Thus, we base estimates for reduced transmission on studies of groups with various HIV serum viral loads (40), HTLV-I/II viral loads (41), and a study of the effect of AZT treatment on transmission (29). We decrease transmission probabilities for infecting CCR5Δ32/Δ32 persons by 100-fold to reflect the rarity of infections in these persons. However, we assume that infected CCR5Δ32/Δ32 homozygotes can infect susceptibles at a rate similar to CCR5W/W homozygotes, as the former generally have high viremias (ref. 30, Table 2). We also assume that male-to-female transmission is twice as efficient as female-to-male transmission (up to a 9-fold difference has been reported; ref. 42) (ref. 43, Table 2).
+
+Given the assumption of no treatment, the high burden of disease in people with AIDS is assumed to greatly limit their sexual activity. Our initial model excludes people with AIDS from the sexually active groups. Subsequently, we allow persons with AIDS to be sexually active, fixing their transmission rates (βAIDS) to be the same across all CCR5 genotypes, and lower than transmission rates for primary-stage infection (as the viral burden on average is not as high as during the acute phase), and larger than transmission rates for asymptomatic-stage infection (as the viral burden characteristically increases during the end stage of disease).
+
+#### Disease progression.
+
+We assume three stages of HIV infection: primary (acute, stage A), asymptomatic HIV (stage B), and AIDS. The rates of transition through the first two stages are denoted by γ i,j,k  i,j,k, where i represents genotype, j is male/female, and k represents either stage A or stage B. Transition rates through each of these stages are assumed to be inversely proportional to the duration of that stage; however, other distributions are possible (31, 44, 45). Although viral loads generally peak in the first 2 months of infection, steady-state viral loads are established several months beyond this (46). For group A, the primary HIV-infecteds, duration is assumed to be 3.5 months. Based on results from European cohort studies (7–10), the beneficial effects of the CCR5 W/Δ32 genotype are observed mainly in the asymptomatic years of HIV infection; ≈7 years after seroconversion survival rates appear to be quite similar between heterozygous and homozygous individuals. We also assume that CCR5Δ32/Δ32-infected individuals and wild-type individuals progress similarly, and that men and women progress through each disease stage at the same rate. Given these observations, and that survival after infection may be shorter in untreated populations, we choose the duration time in stage B to be 6 years for wild-type individuals and 8 years for heterozygous individuals. Transition through AIDS, δAIDS, is inversely proportional to the duration of AIDS. We estimate this value to be 1 year for the time from onset of AIDS to death. The progression rates are summarized in Table 3.
+
+### Demographic Setting.
+
+Demographic parameters are based on data from Malawi, Zimbabwe, and Botswana (3, 47). Estimated birth and child mortality rates are used to calculate the annual numbers of children (χ i,j  i,j) maturing into the potentially sexually active, susceptible group at the age of 15 years (3). For example, in the case where the mother is CCR5 wild type and the father is CCR5 wild type or heterozygous, the number of CCR5 W/W children is calculated as follows [suppressing (t) notation]: χ1,j 1,j =
+
+$$ B_{r}\hspace{.167em}{ \,\substack{ \\ {\sum} \\ _{k} }\, } \left[ S_{1,F}\frac{(S_{1,M}+I_{1,M,k})}{N_{M}}+ \left[ (0.5)S_{1,F}\frac{(S_{2,M}+I_{2,M,k})}{N_{M}} \right] + \right $$
+
+$$ p_{v} \left \left( \frac{(I_{1,F,k}(S_{1,M}+I_{1,M,k}))}{N_{M}}+ \left[ (0.5)I_{1,F,k}\frac{(S_{2,M}+I_{2,M,k})}{N_{M}} \right] \right) \right] ,\hspace{.167em} $$
+
+where the probability of HIV vertical transmission, 1 − pv , and the birthrate, Br , are both included in the equations together with the Mendelian inheritance values as presented in Table 1. The generalized version of this equation (i.e., χ i,j  i,j) can account for six categories of children (including gender and genotype). We assume that all children of all genotypes are at risk, although we can relax this condition if data become available to support vertical protection (e.g., ref. 48). All infected children are assumed to die before age 15. Before entering the susceptible group at age 15, there is additional loss because of mortality from all non-AIDS causes occurring less than 15 years of age at a rate of μχχ × χ i,j  i,j (where μχ is the mortality under 15 years of age). Children then enter the population as susceptibles at an annual rate, ς j  j × χ i,j  i,j/15, where ς j  distributes the children 51% females and 49% males. All parameters and their values are summarized in Table 4.
+
+## Prevalence of HIV
+
+### Demographics and Model Validation.
+
+The model was validated by using parameters estimated from available demographic data. Simulations were run in the absence of HIV infection to compare the model with known population growth rates. Infection was subsequently introduced with an initial low HIV prevalence of 0.5% to capture early epidemic behavior.
+
+In deciding on our initial values for parameters during infection, we use Joint United Nations Programme on HIV/AIDS national prevalence data for Malawi, Zimbabwe, and Botswana. Nationwide seroprevalence of HIV in these countries varies from ≈11% to over 20% (3), although there may be considerable variation within given subpopulations (2, 49).
+
+In the absence of HIV infection, the annual percent population growth rate in the model is ≈2.5%, predicting the present-day values for an average of sub-Saharan African cities (data not shown). To validate the model with HIV infection, we compare our simulation of the HIV epidemic to existing prevalence data for Kenya and Mozambique (http://www.who.int/emc-hiv/fact-sheets/pdfs/kenya.pdf and ref. 51). Prevalence data collected from these countries follow similar trajectories to those predicted by our model (Fig. 2).
+
+Figure 2 Model simulation of HIV infection in a population lacking the protective CCR5Δ32 allele compared with national data from Kenya (healthy adults) and Mozambique (blood donors, ref. 17). The simulated population incorporates parameter estimates from sub-Saharan African demographics. Note the two outlier points from the Mozambique data were likely caused by underreporting in the early stages of the epidemic.
+
+<!-- image -->
+
+### Effects of the Allele on Prevalence.
+
+After validating the model in the wild type-only population, both CCR5Δ32 heterozygous and homozygous people are included. Parameter values for HIV transmission, duration of illness, and numbers of contacts per partner are assumed to be the same within both settings. We then calculate HIV/AIDS prevalence among adults for total HIV/AIDS cases.
+
+Although CCR5Δ32/Δ32 homozygosity is rarely seen in HIV-positive populations (prevalence ranges between 0 and 0.004%), 1–20% of people in HIV-negative populations of European descent are homozygous. Thus, to evaluate the potential impact of CCR5Δ32, we estimate there are 19% CCR5 W/Δ32 heterozygous and 1% CCR5 Δ32/Δ32 homozygous people in our population. These values are in Hardy-Weinberg equilibrium with an allelic frequency of the mutation as 0.105573.
+
+Fig. 3 shows the prevalence of HIV in two populations: one lacking the mutant CCR5 allele and another carrying that allele. In the population lacking the protective mutation, prevalence increases logarithmically for the first 35 years of the epidemic, reaching 18% before leveling off.
+
+Figure 3 Prevalence of HIV/AIDS in the adult population as predicted by the model. The top curve (○) indicates prevalence in a population lacking the protective allele. We compare that to a population with 19% heterozygous and 1% homozygous for the allele (implying an allelic frequency of 0.105573. Confidence interval bands (light gray) are shown around the median simulation () providing a range of uncertainty in evaluating parameters for the effect of the mutation on the infectivity and the duration of asymptomatic HIV for heterozygotes.
+
+<!-- image -->
+
+In contrast, when a proportion of the population carries the CCR5Δ32 allele, the epidemic increases more slowly, but still logarithmically, for the first 50 years, and HIV/AIDS prevalence reaches ≈12% (Fig. 3). Prevalence begins to decline slowly after 70 years.
+
+In the above simulations we assume that people with AIDS are not sexually active. However, when these individuals are included in the sexually active population the severity of the epidemic increases considerably (data not shown). Consistent with our initial simulations, prevalences are still relatively lower in the presence of the CCR5 mutation.
+
+Because some parameters (e.g., rate constants) are difficult to estimate based on available data, we implement an uncertainty analysis to assess the variability in the model outcomes caused by any inaccuracies in estimates of the parameter values with regard to the effect of the allelic mutation. For these analyses we use Latin hypercube sampling, as described in refs. 52–56, Our uncertainty and sensitivity analyses focus on infectivity vs. duration of infectiousness. To this end, we assess the effects on the dynamics of the epidemic for a range of values of the parameters governing transmission and progression rates: βîıı^^,^^,k k^^→i,j  and γ i,j,k  i,j,k. All other parameters are held constant. These results are presented as an interval band about the average simulation for the population carrying the CCR5Δ32 allele (Fig. 3). Although there is variability in the model outcomes, the analysis indicates that the overall model predictions are consistent for a wide range of transmission and progression rates. Further, most of the variation observed in the outcome is because of the transmission rates for both heterosexual males and females in the primary stage of infection (β2,M,A →  i  ,F, β2,F,A →  i  ,M). As mentioned above, we assume lower viral loads correlate with reduced infectivity; thus, the reduction in viral load in heterozygotes has a major influence on disease spread.
+
+## HIV Induces Selective Pressure on Genotype Frequency
+
+To observe changes in the frequency of the CCR5Δ32 allele in a setting with HIV infection as compared with the Hardy-Weinberg equilibrium in the absence of HIV, we follow changes in the total number of CCR5Δ32 heterozygotes and homozygotes over 1,000 years (Fig. 4). We initially perform simulations in the absence of HIV infection as a negative control to show there is not significant selection of the allele in the absence of infection. To determine how long it would take for the allelic frequency to reach present-day levels (e.g., q = 0.105573), we initiate this simulation for 1,000 years with a very small allelic frequency (q = 0.00105). In the absence of HIV, the allelic frequency is maintained in equilibrium as shown by the constant proportions of CCR5Δ32 heterozygotes and homozygotes (Fig. 4, solid lines). The selection for CCR5Δ32 in the presence of HIV is seen in comparison (Fig. 4, dashed lines). We expand the time frame of this simulation to 2,000 years to view the point at which the frequency reaches present levels (where q ∼0.105573 at year = 1200). Note that the allelic frequency increases for ≈1,600 years before leveling off.
+
+Figure 4 Effects of HIV-1 on selection of the CCR5Δ32 allele. The Hardy-Weinberg equilibrium level is represented in the no-infection simulation (solid lines) for each population. Divergence from the original Hardy-Weinberg equilibrium is shown to occur in the simulations that include HIV infection (dashed lines). Fraction of the total subpopulations are presented: (A) wild types (W/W), (B) heterozygotes (W/Δ32), and (C) homozygotes (Δ32/Δ32). Note that we initiate this simulation with a much lower allelic frequency (0.00105) than used in the rest of the study to better exemplify the actual selective effect over a 1,000-year time scale. (D) The allelic selection effect over a 2,000-year time scale.
+
+<!-- image -->
+
+## Discussion
+
+This study illustrates how populations can differ in susceptibility to epidemic HIV/AIDS depending on a ubiquitous attribute such as a prevailing genotype. We have examined heterosexual HIV epidemics by using mathematical models to assess HIV transmission in dynamic populations either with or without CCR5Δ32 heterozygous and homozygous persons. The most susceptible population lacks the protective mutation in CCR5. In less susceptible populations, the majority of persons carrying the CCR5Δ32 allele are heterozygotes. We explore the hypothesis that lower viral loads (CCR5Δ32 heterozygotes) or resistance to infection (CCR5Δ32 homozygotes) observed in persons with this coreceptor mutation ultimately can influence HIV epidemic trends. Two contrasting influences of the protective CCR5 allele are conceivable: it may limit the epidemic by decreasing the probability of infection because of lower viral loads in infected heterozygotes, or it may exacerbate the epidemic by extending the time that infectious individuals remain in the sexually active population. Our results strongly suggest the former. Thus, the absence of this allele in Africa could explain the severity of HIV disease as compared with populations where the allele is present.
+
+We also observed that HIV can provide selective pressure for the CCR5Δ32 allele within a population, increasing the allelic frequency. Other influences may have additionally selected for this allele. Infectious diseases such as plague and small pox have been postulated to select for CCR5Δ32 (57, 58). For plague, relatively high levels of CCR5Δ32 are believed to have arisen within ≈4,000 years, accounting for the prevalence of the mutation only in populations of European descent. Smallpox virus uses the CC-coreceptor, indicating that direct selection for mutations in CCR5 may have offered resistance to smallpox. Given the differences in the epidemic rates of plague (59), smallpox, and HIV, it is difficult to directly compare our results to these findings. However, our model suggests that the CCR5Δ32 mutation could have reached its present allelic frequency in Northern Europe within this time frame if selected for by a disease with virulence patterns similar to HIV. Our results further support the idea that HIV has been only recently introduced as a pathogen into African populations, as the frequency of the protective allele is almost zero, and our model predicts that selection of the mutant allele in this population by HIV alone takes at least 1,000 years. This prediction is distinct from the frequency of the CCR5Δ32 allele in European populations, where pathogens that may have influenced its frequency (e.g., Yersinia pestis) have been present for much longer.
+
+Two mathematical models have considered the role of parasite and host genetic heterogeneity with regard to susceptibility to another pathogen, namely malaria (60, 61). In each it was determined that heterogeneity of host resistance facilitates the maintenance of diversity in parasite virulence. Given our underlying interest in the coevolution of pathogen and host, we focus on changes in a host protective mutation, holding the virulence of the pathogen constant over time.
+
+Even within our focus on host protective mutations, numerous genetic factors, beneficial or detrimental, could potentially influence epidemics. Other genetically determined host factors affecting HIV susceptibility and disease progression include a CCR5 A/A to G/G promoter polymorphism (62), a CCR2 point mutation (11, 63), and a mutation in the CXCR4 ligand (64). The CCR2b mutation, CCR264I, is found in linkage with at least one CCR5 promoter polymorphism (65) and is prevalent in populations where CCR5Δ32 is nonexistent, such as sub-Saharan Africa (63). However, as none of these mutations have been consistently shown to be as protective as the CCR5Δ32 allele, we simplified our model to incorporate only the effect of CCR5Δ32. Subsequent models could be constructed from our model to account for the complexity of multiple protective alleles. It is interesting to note that our model predicts that even if CCR264I is present at high frequencies in Africa, its protective effects may not augment the lack of a protective allele such as CCR5Δ32.
+
+Although our models demonstrate that genetic factors can contribute to the high prevalence of HIV in sub-Saharan Africa, demographic factors are also clearly important in this region. Our models explicitly incorporated such factors, for example, lack of treatment availability. Additional factors were implicitly controlled for by varying only the presence of the CCR5Δ32 allele. More complex models eventually could include interactions with infectious diseases that serve as cofactors in HIV transmission. The role of high sexually transmitted disease prevalences in HIV infection has long been discussed, especially in relation to core populations (15, 50, 66). Malaria, too, might influence HIV transmission, as it is associated with transient increases in semen HIV viral loads and thus could increase the susceptibility of the population to epidemic HIV (16).
+
+In assessing the HIV/AIDS epidemic, considerable attention has been paid to the influence of core groups in driving sexually transmitted disease epidemics. Our results also highlight how characteristics more uniformly distributed in a population can affect susceptibility. We observed that the genotypic profile of a population affects its susceptibility to epidemic HIV/AIDS. Additional studies are needed to better characterize the influence of these genetic determinants on HIV transmission, as they may be crucial in estimating the severity of the epidemic in some populations. This information can influence the design of treatment strategies as well as point to the urgency for education and prevention programs.
+
+## Acknowledgments
+
+We thank Mark Krosky, Katia Koelle, and Kevin Chung for programming and technical assistance. We also thank Drs. V. J. DiRita, P. Kazanjian, and S. M. Blower for helpful comments and discussions. We thank the reviewers for extremely insightful comments.
+
+## References
+
+- Weiss HA, Hawkes S. Leprosy Rev 72:92–98 (2001). PMID: 11355525
+- Taha TE, Dallabetta GA, Hoover DR, Chiphangwi JD, Mtimavalye LAR. AIDS 12:197–203 (1998). PMID: 9468369
+- AIDS Epidemic Update. Geneva: World Health Organization1–17 (1998).
+- D'Souza MP, Harden VA. Nat Med 2:1293–1300 (1996). PMID: 8946819
+- Martinson JJ, Chapman NH, Rees DC, Liu YT, Clegg JB. Nat Genet 16:100–103 (1997). PMID: 9140404
+- Roos MTL, Lange JMA, deGoede REY, Miedema PT, Tersmette F, Coutinho M, Schellekens RA. J Infect Dis 165:427–432 (1992). PMID: 1347054
+- Garred P, Eugen-Olsen J, Iversen AKN, Benfield TL, Svejgaard A, Hofmann B. Lancet 349:1884 (1997). PMID: 9217763
+- Katzenstein TL, Eugen-Olsen J, Hofman B, Benfield T, Pedersen C, Iversen AK, Sorensen AM, Garred P, Koppelhus U, Svejgaard A, Gerstoft J. J Acquired Immune Defic Syndr Hum Retrovirol 16:10–14 (1997). PMID: 9377119
+- deRoda H, Meyer K, Katzenstain W, Dean M. Science 273:1856–1862 (1996). PMID: 8791590
+- Meyer L, Magierowska M, Hubert JB, Rouzioux C, Deveau C, Sanson F, Debre P, Delfraissy JF, Theodorou I. AIDS 11:F73–F78 (1997). PMID: 9302436
+- Smith MW, Dean M, Carrington M, Winkler C, Huttley DA, Lomb GA, Goedert JJ, O'Brien TR, Jacobson LP, Kaslow R, et al. Science 277:959–965 (1997). PMID: 9252328
+- Samson M, Libert F, Doranz BJ, Rucker J, Liesnard C, Farber CM, Saragosti S, Lapoumeroulie C, Cognaux J, Forceille C, et al. Nature (London) 382:722–725 (1996). PMID: 8751444
+- McNicholl JM, Smith DK, Qari SH, Hodge T. Emerging Infect Dis 3:261–271 (1997). PMID: 9284370
+- Michael NL, Chang G, Louie LG, Mascola JR, Dondero D, Birx DL, Sheppard HW. Nat Med 3:338–340 (1997). PMID: 9055864
+- Mayaud P, Mosha F, Todd J, Balira R, Mgara J, West B, Rusizoka M, Mwijarubi E, Gabone R, Gavyole A, et al. AIDS 11:1873–1880 (1997). PMID: 9412707
+- Hoffman IF, Jere CS, Taylor TE, Munthali P, Dyer JR. AIDS 13:487–494 (1998).
+- HIV/AIDS Surveillance Database. Washington, DC: Population Division, International Programs Center (1999).
+- Anderson RM, May RM, McLean AR. Nature (London) 332:228–234 (1988). PMID: 3279320
+- Berger EA, Doms RW, Fenyo EM, Korber BT, Littman DR, Moore JP, Sattentau QJ, Schuitemaker H, Sodroski J, Weiss RA. Nature (London) 391:240 (1998). PMID: 9440686
+- Alkhatib G, Broder CC, Berger EA. J Virol 70:5487–5494 (1996). PMID: 8764060
+- Choe H, Farzan M, Sun Y, Sullivan N, Rollins B, Ponath PD, Wu L, Mackay CR, LaRosa G, Newman W, et al. Cell 85:1135–1148 (1996). PMID: 8674119
+- Deng H, Liu R, Ellmeier W, Choe S, Unutmaz D, Burkhart M, Di Marzio P, Marmon S, Sutton RE, Hill CM, et al. Nature (London) 381:661–666 (1996). PMID: 8649511
+- Doranz BJ, Rucker J, Yi Y, Smyth RJ, Samsom M, Peiper M, Parmentier SC, Collman RG, Doms RW. Cell 85:1149–1158 (1996). PMID: 8674120
+- Dragic T, Litwin V, Allaway GP, Martin SR, Huang Y, Nagashima KA, Cayanan C, Maddon PJ, Koup RA, Moore JP, Paxton WA. Nature (London) 381:667–673 (1996). PMID: 8649512
+- Zhu T, Mo H, Wang N, Nam DS, Cao Y, Koup RA, Ho DD. Science 261:1179–1181 (1993). PMID: 8356453
+- Bjorndal A, Deng H, Jansson M, Fiore JR, Colognesi C, Karlsson A, Albert J, Scarlatti G, Littman DR, Fenyo EM. J Virol 71:7478–7487 (1997). PMID: 9311827
+- Conner RI, Sheridan KE, Ceradinin D, Choe S, Landau NR. J Exp Med 185:621–628 (1997). PMID: 9034141
+- Liu R, Paxton WA, Choe S, Ceradini D, Martin SR, Horuk R, MacDonald ME, Stuhlmann H, Koup RA, Landau NR. Cell 86:367–377 (1996). PMID: 8756719
+- Mussico M, Lazzarin A, Nicolosi A, Gasparini M, Costigliola P, Arici C, Saracco A. Arch Intern Med (Moscow) 154:1971–1976 (1994). PMID: 8074601
+- Michael NL, Nelson JA, KewalRamani VN, Chang G, O'Brien SJ, Mascola JR, Volsky B, Louder M, White GC, Littman DR, et al. J Virol 72:6040–6047 (1998). PMID: 9621067
+- Hethcote HW, Yorke JA. Gonorrhea Transmission Dynamics and Control. Berlin: Springer (1984).
+- Anderson RM, May RM. Nature (London) 333:514–522 (1988). PMID: 3374601
+- Asiimwe-Okiror G, Opio AA, Musinguzi J, Madraa E, Tembo G, Carael M. AIDS 11:1757–1763 (1997). PMID: 9386811
+- Carael M, Cleland J, Deheneffe JC, Ferry B, Ingham R. AIDS 9:1171–1175 (1995). PMID: 8519454
+- Blower SM, Boe C. J AIDS 6:1347–1352 (1993). PMID: 8254474
+- Kirschner D. J Appl Math 56:143–166 (1996).
+- Le Pont F, Blower S. J AIDS 4:987–999 (1991). PMID: 1890608
+- Kim MY, Lagakos SW. Ann Epidemiol 1:117–128 (1990). PMID: 1669741
+- Anderson RM, May RM. Infectious Disease of Humans: Dynamics and Control. Oxford: Oxford Univ. Press (1992).
+- Ragni MV, Faruki H, Kingsley LA. J Acquired Immune Defic Syndr 17:42–45 (1998).
+- Kaplan JE, Khabbaz RF, Murphy EL, Hermansen S, Roberts C, Lal R, Heneine W, Wright D, Matijas L, Thomson R, et al. J Acquired Immune Defic Syndr Hum Retrovirol 12:193–201 (1996). PMID: 8680892
+- Padian NS, Shiboski SC, Glass SO, Vittinghoff E. Am J Edu 146:350–357 (1997).
+- Leynaert B, Downs AM, de Vincenzi I. Am J Edu 148:88–96 (1998).
+- Garnett GP, Anderson RM. J Acquired Immune Defic Syndr 9:500–513 (1995).
+- Stigum H, Magnus P, Harris JR, Samualson SO, Bakketeig LS. Am J Edu 145:636–643 (1997).
+- Ho DD, Neumann AU, Perelson AS, Chen W, Leonard JM, Markowitz M. Nature (London) 373:123–126 (1995). PMID: 7816094
+- World Resources (1998–1999). Oxford: Oxford Univ. Press (1999).
+- Kostrikis LG, Neumann AU, Thomson B, Korber BT, McHardy P, Karanicolas R, Deutsch L, Huang Y, Lew JF, McIntosh K, et al. J Virol 73:10264–10271 (1999). PMID: 10559343
+- Low-Beer D, Stoneburner RL, Mukulu A. Nat Med 3:553–557 (1997). PMID: 9142126
+- Grosskurth H, Mosha F, Todd J, Senkoro K, Newell J, Klokke A, Changalucha J, West B, Mayaud P, Gavyole A. AIDS 9:927–934 (1995). PMID: 7576329
+- Melo J, Beby-Defaux A, Faria C, Guiraud G, Folgosa E, Barreto A, Agius G. J AIDS 23:203–204 (2000). PMID: 10737436
+- Iman RL, Helton JC, Campbell JE. J Quality Technol 13:174–183 (1981).
+- Iman RL, Helton JC, Campbell JE. J Quality Technol 13:232–240 (1981).
+- Blower SM, Dowlatabadi H. Int Stat Rev 62:229–243 (1994).
+- Porco TC, Blower SM. Theor Popul Biol 54:117–132 (1998). PMID: 9733654
+- Blower SM, Porco TC, Darby G. Nat Med 4:673–678 (1998). PMID: 9623975
+- Libert F, Cochaux P, Beckman G, Samson M, Aksenova M, Cao A, Czeizel A, Claustres M, de la Rua C, Ferrari M, et al. Hum Mol Genet 7:399–406 (1998). PMID: 9466996
+- Lalani AS, Masters J, Zeng W, Barrett J, Pannu R, Everett H, Arendt CW, McFadden G. Science 286:1968–1971 (1999). PMID: 10583963
+- Kermack WO, McKendrick AG. Proc R Soc London 261:700–721 (1927).
+- Gupta S, Hill AVS. Proc R Soc London Ser B 260:271–277 (1995).
+- Ruwende C, Khoo SC, Snow RW, Yates SNR, Kwiatkowski D, Gupta S, Warn P, Allsopp CE, Gilbert SC, Peschu N. Nature (London) 376:246–249 (1995). PMID: 7617034
+- McDermott DH, Zimmerman PA, Guignard F, Kleeberger CA, Leitman SF, Murphy PM. Lancet 352:866–870 (1998). PMID: 9742978
+- Kostrikis LG, Huang Y, Moore JP, Wolinsky SM, Zhang L, Guo Y, Deutsch L, Phair J, Neumann AU, Ho DD. Nat Med 4:350–353 (1998). PMID: 9500612
+- Winkler C, Modi W, Smith MW, Nelson GW, Wu X, Carrington M, Dean M, Honjo T, Tashiro K, Yabe D, et al. Science 279:389–393 (1998). PMID: 9430590
+- Martinson JJ, Hong L, Karanicolas R, Moore JP, Kostrikis LG. AIDS 14:483–489 (2000). PMID: 10780710
+- Vernazza PL, Eron JJ, Fiscus SA, Cohen MS. AIDS 13:155–166 (1999). PMID: 10202821

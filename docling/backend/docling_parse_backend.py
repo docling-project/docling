@@ -6,12 +6,12 @@ from typing import Iterable, List, Optional, Union
 
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.page import BoundingRectangle, SegmentedPdfPage, TextCell
 from docling_parse.pdf_parsers import pdf_parser_v1
 from PIL import Image, ImageDraw
 from pypdfium2 import PdfPage
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
-from docling.datamodel.base_models import Cell
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
@@ -68,8 +68,11 @@ class DoclingParsePageBackend(PdfPageBackend):
 
         return text_piece
 
-    def get_text_cells(self) -> Iterable[Cell]:
-        cells: List[Cell] = []
+    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+        return None
+
+    def get_text_cells(self) -> Iterable[TextCell]:
+        cells: List[TextCell] = []
         cell_counter = 0
 
         if not self.valid:
@@ -91,19 +94,24 @@ class DoclingParsePageBackend(PdfPageBackend):
 
             text_piece = self._dpage["cells"][i]["content"]["rnormalized"]
             cells.append(
-                Cell(
-                    id=cell_counter,
+                TextCell(
+                    index=cell_counter,
                     text=text_piece,
-                    bbox=BoundingBox(
-                        # l=x0, b=y0, r=x1, t=y1,
-                        l=x0 * page_size.width / parser_width,
-                        b=y0 * page_size.height / parser_height,
-                        r=x1 * page_size.width / parser_width,
-                        t=y1 * page_size.height / parser_height,
-                        coord_origin=CoordOrigin.BOTTOMLEFT,
+                    orig=text_piece,
+                    from_ocr=False,
+                    rect=BoundingRectangle.from_bounding_box(
+                        BoundingBox(
+                            # l=x0, b=y0, r=x1, t=y1,
+                            l=x0 * page_size.width / parser_width,
+                            b=y0 * page_size.height / parser_height,
+                            r=x1 * page_size.width / parser_width,
+                            t=y1 * page_size.height / parser_height,
+                            coord_origin=CoordOrigin.BOTTOMLEFT,
+                        )
                     ).to_top_left_origin(page_size.height),
                 )
             )
+
             cell_counter += 1
 
         def draw_clusters_and_cells():
@@ -112,7 +120,7 @@ class DoclingParsePageBackend(PdfPageBackend):
             )  # make new image to avoid drawing on the saved ones
             draw = ImageDraw.Draw(image)
             for c in cells:
-                x0, y0, x1, y1 = c.bbox.as_tuple()
+                x0, y0, x1, y1 = c.rect.to_bounding_box().as_tuple()
                 cell_color = (
                     random.randint(30, 140),
                     random.randint(30, 140),
@@ -132,7 +140,7 @@ class DoclingParsePageBackend(PdfPageBackend):
         return cells
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
-        AREA_THRESHOLD = 32 * 32
+        AREA_THRESHOLD = 0  # 32 * 32
 
         for i in range(len(self._dpage["images"])):
             bitmap = self._dpage["images"][i]
@@ -163,7 +171,7 @@ class DoclingParsePageBackend(PdfPageBackend):
                 l=0, r=0, t=0, b=0, coord_origin=CoordOrigin.BOTTOMLEFT
             )
         else:
-            padbox = cropbox.to_bottom_left_origin(page_size.height)
+            padbox = cropbox.to_bottom_left_origin(page_size.height).model_copy()
             padbox.r = page_size.width - padbox.r
             padbox.t = page_size.height - padbox.t
 

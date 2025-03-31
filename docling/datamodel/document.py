@@ -1,3 +1,4 @@
+import csv
 import logging
 import re
 from enum import Enum
@@ -157,6 +158,8 @@ class InputDocument(BaseModel):
                     self.page_count = self._backend.page_count()
                     if not self.page_count <= self.limits.max_num_pages:
                         self.valid = False
+                    elif self.page_count < self.limits.page_range[0]:
+                        self.valid = False
 
         except (FileNotFoundError, OSError) as e:
             self.valid = False
@@ -294,6 +297,7 @@ class _DocumentConversionInput(BaseModel):
                 mime = _DocumentConversionInput._mime_from_extension(ext)
 
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
+        mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
         formats = MimeTypeToFormat.get(mime, [])
         if formats:
@@ -329,11 +333,11 @@ class _DocumentConversionInput(BaseModel):
                 ):
                     input_format = InputFormat.XML_USPTO
 
-                if (
-                    InputFormat.XML_PUBMED in formats
-                    and "/NLM//DTD JATS" in xml_doctype
+                if InputFormat.XML_JATS in formats and (
+                    "JATS-journalpublishing" in xml_doctype
+                    or "JATS-archive" in xml_doctype
                 ):
-                    input_format = InputFormat.XML_PUBMED
+                    input_format = InputFormat.XML_JATS
 
         elif mime == "text/plain":
             if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
@@ -350,6 +354,12 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.HTML][0]
         elif ext in FormatToExtensions[InputFormat.MD]:
             mime = FormatToMimeType[InputFormat.MD][0]
+        elif ext in FormatToExtensions[InputFormat.CSV]:
+            mime = FormatToMimeType[InputFormat.CSV][0]
+        elif ext in FormatToExtensions[InputFormat.JSON_DOCLING]:
+            mime = FormatToMimeType[InputFormat.JSON_DOCLING][0]
+        elif ext in FormatToExtensions[InputFormat.PDF]:
+            mime = FormatToMimeType[InputFormat.PDF][0]
         return mime
 
     @staticmethod
@@ -384,5 +394,34 @@ class _DocumentConversionInput(BaseModel):
         )
         if p.search(content_str):
             return "application/xml"
+
+        return None
+
+    @staticmethod
+    def _detect_csv(
+        content: bytes,
+    ) -> Optional[Literal["text/csv"]]:
+        """Guess the mime type of a CSV file from its content.
+
+        Args:
+            content: A short piece of a document from its beginning.
+
+        Returns:
+            The mime type of a CSV file, or None if the content does
+              not match any of the format.
+        """
+        content_str = content.decode("ascii", errors="ignore").strip()
+
+        # Ensure there's at least one newline (CSV is usually multi-line)
+        if "\n" not in content_str:
+            return None
+
+        # Use csv.Sniffer to detect CSV characteristics
+        try:
+            dialect = csv.Sniffer().sniff(content_str)
+            if dialect.delimiter in {",", ";", "\t", "|"}:  # Common delimiters
+                return "text/csv"
+        except csv.Error:
+            return None
 
         return None

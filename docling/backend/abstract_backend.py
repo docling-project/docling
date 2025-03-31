@@ -27,7 +27,6 @@ class AbstractDocumentBackend(ABC):
     def supports_pagination(cls) -> bool:
         pass
 
-    @abstractmethod
     def unload(self):
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.close()

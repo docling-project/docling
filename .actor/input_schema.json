@@ -1,0 +1,27 @@
+{
+  "title": "Docling Actor Input",
+  "description": "Options for processing documents with Docling via the docling-serve API.",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "http_sources": {
+      "title": "Document URLs",
+      "type": "array",
+      "description": "URLs of documents to process. Supported formats: PDF, DOCX, PPTX, XLSX, HTML, MD, XML, images, and more.",
+      "editor": "json",
+      "prefill": [
+        { "url": "https://vancura.dev/assets/actor-test/facial-hairstyles-and-filtering-facepiece-respirators.pdf" }
+      ]
+    },    
+    "options": {
+      "title": "Processing Options",
+      "type": "object",
+      "description": "Document processing configuration options",
+      "editor": "json",
+      "prefill": {
+        "to_formats": ["md"]
+      }
+    }
+  },
+  "required": ["options", "http_sources"]
+}

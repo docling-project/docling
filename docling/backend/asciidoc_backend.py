@@ -24,7 +24,6 @@ _log = logging.getLogger(__name__)
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
-
     def __init__(self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]):
         super().__init__(in_doc, path_or_stream)
 
@@ -381,7 +380,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     end_row_offset_idx=row_idx + row_span,
                     start_col_offset_idx=col_idx,
                     end_col_offset_idx=col_idx + col_span,
-                    col_header=False,
+                    column_header=row_idx == 0,
                     row_header=False,
                 )
                 data.table_cells.append(cell)

@@ -22,7 +22,7 @@ _log = logging.getLogger(__name__)
 
 
 class PageAssembleOptions(BaseModel):
-    keep_images: bool = False
+    pass
 
 
 class PageAssembleModel(BasePageModel):
@@ -51,6 +51,14 @@ class PageAssembleModel(BasePageModel):
                 lines[ix] += " "
 
         sanitized_text = "".join(lines)
+
+        # Text normalization
+        sanitized_text = sanitized_text.replace("⁄", "/")
+        sanitized_text = sanitized_text.replace("’", "'")
+        sanitized_text = sanitized_text.replace("‘", "'")
+        sanitized_text = sanitized_text.replace("“", '"')
+        sanitized_text = sanitized_text.replace("”", '"')
+        sanitized_text = sanitized_text.replace("•", "·")
 
         return sanitized_text.strip()  # Strip any leading or trailing whitespace
 
@@ -135,31 +143,6 @@ class PageAssembleModel(BasePageModel):
                                 )
                             elements.append(fig)
                             body.append(fig)
-                        elif cluster.label == LayoutModel.FORMULA_LABEL:
-                            equation = None
-                            if page.predictions.equations_prediction:
-                                equation = page.predictions.equations_prediction.equation_map.get(
-                                    cluster.id, None
-                                )
-                            if (
-                                not equation
-                            ):  # fallback: add empty formula, if it isn't present
-                                text = self.sanitize_text(
-                                    [
-                                        cell.text.replace("\x02", "-").strip()
-                                        for cell in cluster.cells
-                                        if len(cell.text.strip()) > 0
-                                    ]
-                                )
-                                equation = TextElement(
-                                    label=cluster.label,
-                                    id=cluster.id,
-                                    cluster=cluster,
-                                    page_no=page.page_no,
-                                    text=text,
-                                )
-                            elements.append(equation)
-                            body.append(equation)
                         elif cluster.label in LayoutModel.CONTAINER_LABELS:
                             container_el = ContainerElement(
                                 label=cluster.label,
@@ -173,12 +156,5 @@ class PageAssembleModel(BasePageModel):
                     page.assembled = AssembledUnit(
                         elements=elements, headers=headers, body=body
                     )
-
-                    # Remove page images (can be disabled)
-                    if not self.options.keep_images:
-                        page._image_cache = {}
-
-                    # Unload backend
-                    page._backend.unload()
 
                 yield page

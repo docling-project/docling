@@ -4,10 +4,12 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Union
 from docling_core.types.doc import (
     BoundingBox,
     DocItemLabel,
+    NodeItem,
     PictureDataType,
     Size,
     TableCell,
 )
+from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_core.types.io import (  # DO ΝΟΤ REMOVE; explicitly exposed from this location
     DocumentStream,
 )
@@ -33,13 +35,15 @@ class InputFormat(str, Enum):
     DOCX = "docx"
     PPTX = "pptx"
     HTML = "html"
-    XML_PUBMED = "xml_pubmed"
     IMAGE = "image"
     PDF = "pdf"
     ASCIIDOC = "asciidoc"
     MD = "md"
+    CSV = "csv"
     XLSX = "xlsx"
     XML_USPTO = "xml_uspto"
+    XML_JATS = "xml_jats"
+    JSON_DOCLING = "json_docling"
 
 
 class OutputFormat(str, Enum):
@@ -56,11 +60,13 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.PDF: ["pdf"],
     InputFormat.MD: ["md"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
-    InputFormat.XML_PUBMED: ["xml", "nxml"],
+    InputFormat.XML_JATS: ["xml", "nxml"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
+    InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx"],
     InputFormat.XML_USPTO: ["xml", "txt"],
+    InputFormat.JSON_DOCLING: ["json"],
 }
 
 FormatToMimeType: Dict[InputFormat, List[str]] = {
@@ -74,7 +80,7 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
-    InputFormat.XML_PUBMED: ["application/xml"],
+    InputFormat.XML_JATS: ["application/xml"],
     InputFormat.IMAGE: [
         "image/png",
         "image/jpeg",
@@ -85,10 +91,12 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
     InputFormat.PDF: ["application/pdf"],
     InputFormat.ASCIIDOC: ["text/asciidoc"],
     InputFormat.MD: ["text/markdown", "text/x-markdown"],
+    InputFormat.CSV: ["text/csv"],
     InputFormat.XLSX: [
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
+    InputFormat.JSON_DOCLING: ["application/json"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -116,14 +124,10 @@ class ErrorItem(BaseModel):
     error_message: str
 
 
-class Cell(BaseModel):
-    id: int
-    text: str
-    bbox: BoundingBox
-
-
-class OcrCell(Cell):
-    confidence: float
+# class Cell(BaseModel):
+#    id: int
+#    text: str
+#    bbox: BoundingBox
 
 
 class Cluster(BaseModel):
@@ -131,7 +135,7 @@ class Cluster(BaseModel):
     label: DocItemLabel
     bbox: BoundingBox
     confidence: float = 1.0
-    cells: List[Cell] = []
+    cells: List[TextCell] = []
     children: List["Cluster"] = []  # Add child cluster support
 
 
@@ -145,6 +149,10 @@ class BasePageElement(BaseModel):
 
 class LayoutPrediction(BaseModel):
     clusters: List[Cluster] = []
+
+
+class VlmPrediction(BaseModel):
+    text: str = ""
 
 
 class ContainerElement(
@@ -190,6 +198,7 @@ class PagePredictions(BaseModel):
     tablestructure: Optional[TableStructurePrediction] = None
     figures_classification: Optional[FigureClassificationPrediction] = None
     equations_prediction: Optional[EquationPrediction] = None
+    vlm_response: Optional[VlmPrediction] = None
 
 
 PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
@@ -201,13 +210,21 @@ class AssembledUnit(BaseModel):
     headers: List[PageElement] = []
 
 
+class ItemAndImageEnrichmentElement(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    item: NodeItem
+    image: Image
+
+
 class Page(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     page_no: int
     # page_hash: Optional[str] = None
     size: Optional[Size] = None
-    cells: List[Cell] = []
+    cells: List[TextCell] = []
+    parsed_page: Optional[SegmentedPdfPage] = None
     predictions: PagePredictions = PagePredictions()
     assembled: Optional[AssembledUnit] = None
 
@@ -219,12 +236,28 @@ class Page(BaseModel):
         {}
     )  # Cache of images in different scales. By default it is cleared during assembling.
 
-    def get_image(self, scale: float = 1.0) -> Optional[Image]:
+    def get_image(
+        self, scale: float = 1.0, cropbox: Optional[BoundingBox] = None
+    ) -> Optional[Image]:
         if self._backend is None:
             return self._image_cache.get(scale, None)
+
         if not scale in self._image_cache:
-            self._image_cache[scale] = self._backend.get_page_image(scale=scale)
-        return self._image_cache[scale]
+            if cropbox is None:
+                self._image_cache[scale] = self._backend.get_page_image(scale=scale)
+            else:
+                return self._backend.get_page_image(scale=scale, cropbox=cropbox)
+
+        if cropbox is None:
+            return self._image_cache[scale]
+        else:
+            page_im = self._image_cache[scale]
+            assert self.size is not None
+            return page_im.crop(
+                cropbox.to_top_left_origin(page_height=self.size.height)
+                .scaled(scale=scale)
+                .as_tuple()
+            )
 
     @property
     def image(self) -> Optional[Image]:

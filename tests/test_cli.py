@@ -18,7 +18,7 @@ def test_cli_version():
 
 
 def test_cli_convert(tmp_path):
-    source = "./tests/data/2305.03393v1-pg9.pdf"
+    source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
     output.mkdir()
     result = runner.invoke(app, [source, "--output", str(output)])

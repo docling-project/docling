@@ -1,0 +1,3089 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.1 20151215//EN" "JATS-journalpublishing1.dtd">
+<article
+article-type="research-article"
+dtd-version="1.1" xml:lang="en"
+xmlns:mml="http://www.w3.org/1998/Math/MathML"
+xmlns:xlink="http://www.w3.org/1999/xlink"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+<front>
+<journal-meta>
+<journal-id journal-id-type="pmc">pnas</journal-id>
+<journal-id journal-id-type="pubmed">Proc Natl Acad Sci U S A</journal-id>
+<journal-id journal-id-type="publisher">PNAS</journal-id>
+<issn>0027-8424</issn>
+<publisher>
+<publisher-name>The National Academy of Sciences</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="publisher-id">181325198</article-id>
+<article-id pub-id-type="publisher-id">3251</article-id>
+<article-id pub-id-type="doi">10.1073/pnas.181325198</article-id>
+<article-id pub-id-type="other">jPNAS.v98.i18.pg10214</article-id>
+<article-id pub-id-type="pmid">11517319</article-id>
+<article-categories>
+<subj-group>
+<subject>Physical Sciences</subject>
+<subj-group>
+<subject>Applied Mathematics</subject>
+</subj-group>
+</subj-group>
+<subj-group>
+<subject>Biological Sciences</subject>
+<subj-group>
+<subject>Genetics</subject>
+</subj-group>
+</subj-group>
+</article-categories>
+<title-group>
+<article-title>The coreceptor mutation CCR5&#x0394;32 influences the dynamics of HIV epidemics and is selected for by HIV</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author">
+<name>
+<surname>Sullivan</surname>
+<given-names>Amy D.</given-names>
+</name>
+<xref ref-type="author-notes" rid="FN150">&#x002A;</xref>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Wigginton</surname>
+<given-names>Janis</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Kirschner</surname>
+<given-names>Denise</given-names>
+</name>
+<xref ref-type="author-notes" rid="FN151">&#x2020;</xref>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+</contrib-group>
+<aff id="aff-1">Department of Microbiology and Immunology, University 
+of Michigan Medical School, Ann Arbor, MI 48109-0620</aff>
+<author-notes>
+<fn id="FN150">
+<p>&#x002A; Present address: Centers for Disease Control and Prevention Epidemiology Program Office, State Branch Oregon Health Division, 800 NE Oregon Street, Suite 772, Portland, OR 97232.</p>
+</fn>
+<fn id="FN151">
+<p>&#x2020; To whom reprint requests should be addressed. E-mail: <email>kirschne@umich.edu</email>.</p>
+</fn>
+<fn fn-type="com">
+<p>Communicated by Avner Friedman, University of Minnesota, Minneapolis, MN</p>
+</fn>
+</author-notes>
+<pub-date date-type="pub" publication-format="print" iso-8601-date="2001-08-28">
+<day>28</day>
+<month>8</month>
+<year>2001</year>
+</pub-date>
+<pub-date date-type="pub" publication-format="electronic" iso-8601-date="2001-08-21">
+<day>21</day>
+<month>8</month>
+<year>2001</year>
+</pub-date>
+<volume>98</volume>
+<issue>18</issue>
+<fpage>10214</fpage>
+<lpage>10219</lpage>
+<history>
+<date date-type="received" iso-8601-date="2000-05-30">
+<day>30</day>
+<month>5</month>
+<year>2000</year>
+</date>
+<date date-type="accepted" iso-8601-date="2001-06-27">
+<day>27</day>
+<month>6</month>
+<year>2001</year>
+</date>
+</history>
+<permissions>
+<copyright-statement>Copyright &#x00A9; 2001, The National Academy of Sciences</copyright-statement>
+<copyright-year>2001</copyright-year>
+</permissions>
+<abstract>
+<p>We explore the impact of a host genetic factor on heterosexual HIV epidemics by using a deterministic mathematical model. A protective allele unequally distributed across populations is exemplified in our models by the 32-bp deletion in the host-cell chemokine receptor CCR5, CCR5&#x0394;32. Individuals homozygous for CCR5&#x0394;32 are protected against HIV infection whereas those heterozygous for CCR5&#x0394;32 have lower pre-AIDS viral loads and delayed progression to AIDS. CCR5&#x0394;32 may limit HIV spread by decreasing the probability of both risk of infection and infectiousness. In this work, we characterize epidemic HIV within three dynamic subpopulations: CCR5&#x002F;CCR5 (homozygous, wild type), CCR5&#x002F;CCR5&#x0394;32 (heterozygous), and CCR5&#x0394;32&#x002F;CCR5&#x0394;32 (homozygous, mutant). Our results indicate that prevalence of HIV&#x002F;AIDS is greater in populations lacking the CCR5&#x0394;32 alleles (homozygous wild types only) as compared with populations that include people heterozygous or homozygous for CCR5&#x0394;32. Also, we show that HIV can provide selective pressure for CCR5&#x0394;32, increasing the frequency of this allele.</p>
+</abstract>
+</article-meta>
+</front>
+<body>
+<p>Nineteen million people have died of AIDS since the discovery of HIV in the 1980s. In 1999 alone, 5.4 million people were newly infected with HIV (ref. <xref ref-type="bibr" rid="B1">1</xref> and <ext-link ext-link-type="url" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.unaids.org/epidemicupdate/report/Epireport.html">http://www.unaids.org/epidemicupdate/report/Epireport.html</ext-link>). (For brevity, HIV-1 is referred to as HIV in this paper.) Sub-Saharan Africa has been hardest hit, with more than 20&#x0025; of the general population HIV-positive in some countries (<xref ref-type="bibr" rid="B2">2</xref>, <xref ref-type="bibr" rid="B3">3</xref>). In comparison, heterosexual epidemics in developed, market-economy countries have not reached such severe levels. Factors contributing to the severity of the epidemic in economically developing countries abound, including economic, health, and social differences such as high levels of sexually transmitted diseases and a lack of prevention programs. However, the staggering rate at which the epidemic has spread in sub-Saharan Africa has not been adequately explained. The rate and severity of this epidemic also could indicate a greater underlying susceptibility to HIV attributable not only to sexually transmitted disease, economics, etc., but also to other more ubiquitous factors such as host genetics (<xref ref-type="bibr" rid="B4">4</xref>, <xref ref-type="bibr" rid="B5">5</xref>).</p>
+<p>To exemplify the contribution of such a host genetic factor to HIV prevalence trends, we consider a well-characterized 32-bp deletion in the host-cell chemokine receptor CCR5, CCR5&#x0394;32. When HIV binds to host cells, it uses the CD4 receptor on the surface of host immune cells together with a coreceptor, mainly the CCR5 and CXCR4 chemokine receptors (<xref ref-type="bibr" rid="B6">6</xref>). Homozygous mutations for this 32-bp deletion offer almost complete protection from HIV infection, and heterozygous mutations are associated with lower pre-AIDS viral loads and delayed progression to AIDS (<xref ref-type="bibr" rid="B7">7</xref>&#x2013;<xref ref-type="bibr" rid="B14">14</xref>). CCR5&#x0394;32 generally is found in populations of European descent, with allelic frequencies ranging from 0 to 0.29 (<xref ref-type="bibr" rid="B13">13</xref>). African and Asian populations studied outside the United States or Europe appear to lack the CCR5&#x0394;32 allele, with an allelic frequency of almost zero (<xref ref-type="bibr" rid="B5">5</xref>, <xref ref-type="bibr" rid="B13">13</xref>). Thus, to understand the effects of a protective allele, we use a mathematical model to track prevalence of HIV in populations with or without CCR5&#x0394;32 heterozygous and homozygous people and also to follow the CCR5&#x0394;32 allelic frequency.</p>
+<p>We hypothesize that CCR5&#x0394;32 limits epidemic HIV by decreasing infection rates, and we evaluate the relative contributions to this by the probability of infection and duration of infectivity. To capture HIV infection as a chronic infectious disease together with vertical transmission occurring in untreated mothers, we model a dynamic population (i.e., populations that vary in growth rates because of fluctuations in birth or death rates) based on realistic demographic characteristics (<xref ref-type="bibr" rid="B18">18</xref>). This scenario also allows tracking of the allelic frequencies over time. This work considers how a specific host genetic factor affecting HIV infectivity and viremia at the individual level might influence the epidemic in a dynamic population and how HIV exerts selective pressure, altering the frequency of this mutant allele.</p>
+<p>CCR5 is a host-cell chemokine receptor, which is also used as a coreceptor by R5 strains of HIV that are generally acquired during sexual transmission (<xref ref-type="bibr" rid="B6">6</xref>, <xref ref-type="bibr" rid="B19">19</xref>&#x2013;<xref ref-type="bibr" rid="B25">25</xref>). As infection progresses to AIDS the virus expands its repertoire of potential coreceptors to include other CC-family and CXC-family receptors in roughly 50&#x0025; of patients (<xref ref-type="bibr" rid="B19">19</xref>, <xref ref-type="bibr" rid="B26">26</xref>, <xref ref-type="bibr" rid="B27">27</xref>). CCR5&#x0394;32 was identified in HIV-resistant people (<xref ref-type="bibr" rid="B28">28</xref>). Benefits to individuals from the mutation in this allele are as follows. Persons homozygous for the CCR5&#x0394;32 mutation are almost nonexistent in HIV-infected populations (<xref ref-type="bibr" rid="B11">11</xref>, <xref ref-type="bibr" rid="B12">12</xref>) (see ref. <xref ref-type="bibr" rid="B13">13</xref> for review). Persons heterozygous for the mutant allele (CCR5 W/&#x0394;32) tend to have lower pre-AIDS viral loads. Aside from the beneficial effects that lower viral loads may have for individuals, there is also an altruistic effect, as transmission rates are reduced for individuals with low viral loads (as compared with, for example, AZT and other studies; ref. <xref ref-type="bibr" rid="B29">29</xref>). Finally, individuals heterozygous for the mutant allele (CCR5 W/&#x0394;32) also have a slower progression to AIDS than those homozygous for the wild-type allele (CCR5 W/W) (<xref ref-type="bibr" rid="B7">7</xref>&#x2013;<xref ref-type="bibr" rid="B10">10</xref>), remaining in the population 2 years longer, on average. Interestingly, the dearth of information on HIV disease progression in people homozygous for the CCR5&#x0394;32 allele (CCR5 &#x0394;32/&#x0394;32) stems from the rarity of HIV infection in this group (<xref ref-type="bibr" rid="B4">4</xref>, <xref ref-type="bibr" rid="B12">12</xref>, <xref ref-type="bibr" rid="B28">28</xref>). However, in case reports of HIV-infected CCR5 &#x0394;32/&#x0394;32 homozygotes, a rapid decline in CD4<sup>&#x002B;</sup> T cells and a high viremia are observed, likely because of initial infection with a more aggressive viral strain (such as X4 or R5X4) (<xref ref-type="bibr" rid="B30">30</xref>).</p>
+<sec>
+<title>The Model</title>
+<p>Because we are most concerned with understanding the severity of the epidemic in developing countries where the majority of infection is heterosexual, we consider a purely heterosexual model. To model the effects of the allele in the population, we examine the rate of HIV spread by using an enhanced susceptible-infected-AIDS model of epidemic HIV (for review see ref. <xref ref-type="bibr" rid="B31">31</xref>). Our model compares two population scenarios: a CCR5 wild-type population and one with CCR5&#x0394;32 heterozygotes and homozygotes in addition to the wild type. To model the scenario where there are only wild-type individuals present in the population (i.e., CCR5 W/W), we track the sexually active susceptibles at time <italic>t</italic> &#x005B;<italic>S<sub>i,j</sub>
+</italic>(<italic>t</italic>)&#x005D;, where <italic>i</italic> = 1 refers to genotype (CCR5 W/W only in this case) and <italic>j</italic> is either the male or female subpopulation. We also track those who are HIV-positive at time <italic>t</italic> not yet having AIDS in <italic>I<sub>i,j,k</sub>
+</italic>(<italic>t</italic>) where <italic>k</italic> refers to stage of HIV infection &#x005B;primary (<italic>A</italic>) or asymptomatic (<italic>B</italic>)&#x005D;. The total number of individuals with AIDS at time <italic>t</italic> are tracked in <italic>A</italic>(<italic>t</italic>). The source population are children, &#x03C7;<sub>
+<italic>i,j</italic>
+</sub>(<italic>t</italic>), who mature into the sexually active population at time <italic>t</italic> (Fig. <xref ref-type="fig" rid="F1">1</xref>, Table <xref ref-type="table" rid="T1">1</xref>). We compare the model of a population lacking the CCR5&#x0394;32 allele to a demographically similar population with a high frequency of the allele. When genetic heterogeneity is included, male and female subpopulations are each further divided into three distinct genotypic groups, yielding six susceptible subpopulations, &#x005B;<italic>S<sub>i,j</sub>
+</italic>(<italic>t</italic>), where <italic>i</italic> ranges from 1 to 3, where 1 = CCR5W/W; 2 = CCR5 W/&#x0394;32; 3 = CCR5 &#x0394;32/&#x0394;32&#x005D;. The infected classes, <italic>I<sub>i,j,k</sub>
+</italic>(<italic>t</italic>), also increase in number to account for these new genotype compartments. In both settings we assume there is no treatment available and no knowledge of HIV status by people in the early acute and middle asymptomatic stages (both conditions exist in much of sub-Saharan Africa). In addition, we assume that sexual mixing in the population occurs randomly with respect to genotype and HIV disease status, all HIV-infected people eventually progress to AIDS, and no barrier contraceptives are used. These last assumptions reflect both economic and social conditions. </p>
+<fig id="F1">
+<label>Figure 1</label>
+<caption>
+<p>A schematic representation of the basic compartmental HIV epidemic model. The criss-cross lines indicate the sexual mixing between different compartments. Each of these interactions has a positive probability of taking place; they also incorporate individual rates of transmission indicated as &#x03BB;, but in full notation is &#x03BB;<sub>
+<italic>&#x00EE;</italic>,<italic>&#xEB30;</italic>,<italic>&#xEA50;</italic>&#x2192;<italic>i</italic>,<italic>j</italic>,</sub> where <italic>i</italic>,<italic>j</italic>,<italic>k</italic> is the phenotype of the infected partner and <italic>&#x00EE;</italic>,<italic>&#xEB30;</italic> is the phenotype of the susceptible partner. Also shown are the different rates of disease progression, &#x03B3;<sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</sub>, that vary according to genotype, gender, and stage. Thus, the interactions between different genotypes, genders, and stages are associated with a unique probability of HIV infection. M, male; F, female.</p>
+</caption>
+<graphic xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="pq1813251001">
+</graphic>
+</fig>
+<table-wrap id="T1">
+<label>Table 1</label>
+<caption>
+<p>Children's genotype</p>
+</caption>
+<table>
+<tr>
+<th>Parents</th>
+<th colspan="4">Mother</th>
+</tr>
+<tr>
+<td colspan="5">
+<hr/>
+</td>
+</tr>
+<tr>
+<td>Father</td>
+<td/>
+<td>W&#x002F;W</td>
+<td>W&#x002F;&#x0394;32</td>
+<td>&#x0394;32&#x002F;&#x0394;32</td>
+</tr>
+<tr>
+<td/>
+<td>W&#x002F;W</td>
+<td>&#x03C7;<sub>1,<italic>j</italic>
+</sub>1,<italic>j</italic>
+</td>
+<td>&#x03C7;<sub>1,<italic>j</italic>
+</sub>1,<italic>j</italic>, &#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic>
+</td>
+<td>&#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic>
+</td>
+</tr>
+<tr>
+<td/>
+<td>W&#x002F;&#x0394;32</td>
+<td>&#x03C7;<sub>1,<italic>j</italic>
+</sub>1,<italic>j</italic>, &#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic>
+</td>
+<td>&#x03C7;<sub>1,<italic>j</italic>
+</sub>1,<italic>j</italic>, &#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic>, &#x03C7;<sub>3,<italic>j</italic>
+</sub>3,<italic>j</italic>
+</td>
+<td>&#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic>, &#x03C7;<sub>3,<italic>j</italic>
+</sub>3,<italic>j</italic>
+</td>
+</tr>
+<tr>
+<td/>
+<td>&#x0394;32&#x002F;&#x0394;32</td>
+<td>&#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic>
+</td>
+<td>&#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic>, &#x03C7;<sub>3,<italic>j</italic>
+</sub>3,<italic>j</italic>
+</td>
+<td>&#x03C7;<sub>3,<italic>j</italic>
+</sub>3,<italic>j</italic>
+</td>
+</tr>
+</table>
+<table-wrap-foot>
+<fn>
+<p>&#x03C7;<sub>1,<italic>j</italic>
+</sub>1,<italic>j</italic> = wild-type children; (W&#x002F;W); &#x03C7;<sub>2,<italic>j</italic>
+</sub>2,<italic>j</italic> = heterozygous children (W&#x002F;&#x0394;32); &#x03C7;<sub>3,<italic>j</italic>
+</sub>3,<italic>j</italic> = homozygous children (&#x0394;32&#x002F;&#x0394;32) of gender <italic>j</italic>. Children's genotypes are determined by using Mendelian inheritance patterns.</p>
+</fn>
+</table-wrap-foot>
+</table-wrap>
+<sec>
+<title>Parameter Estimates for the Model.</title>
+<p>Estimates for rates that govern the interactions depicted in Fig. <xref ref-type="fig" rid="F1">1</xref> were derived from the extensive literature on HIV. Our parameters and their estimates are summarized in Tables <xref ref-type="table" rid="T2">2</xref>&#x2013;<xref ref-type="table" rid="T4">4</xref>. The general form of the equations describing the rates of transition between population classes as depicted in Fig. <xref ref-type="fig" rid="F1">1</xref> are summarized as follows: <disp-formula id="E1">
+<tex-math id="M1">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ \frac{dS_{i,j}(t)}{dt}={\chi}_{i,j}(t)-{\mu}_{j}S_{i,j}(t)-{\lambda}_{\hat {\imath},\hat {},\hat {k}{\rightarrow}i,j}S_{i,j}(t), $$ \end{document} </tex-math>
+</disp-formula>
+<disp-formula id="E2">
+<tex-math id="M2">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ \hspace{1em}\hspace{1em}\hspace{.167em}\frac{dI_{i,j,A}(t)}{dt}={\lambda}_{\hat {\imath},\hat {},\hat {k}{\rightarrow}i,j}S_{i,j}(t)-{\mu}_{j}I_{i,j,A}(t)-{\gamma}_{i,j,A}I_{i,j,A}(t), $$ \end{document} </tex-math>
+</disp-formula>
+<disp-formula id="E3">
+<tex-math id="M3">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ \frac{dI_{i,j,B}(t)}{dt}={\gamma}_{i,j,A}I_{i,j,A}(t)-{\mu}_{j}I_{i,j,B}(t)-{\gamma}_{i,j,B}I_{i,j,B}(t), $$ \end{document} </tex-math>
+</disp-formula>
+<disp-formula id="E4">
+<tex-math id="M4">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ \frac{dA(t)}{dt}={\gamma}_{i,j,B} \left( { \,\substack{ ^{3} \\ {\sum} \\ _{i=1} }\, }I_{i,F,B}(t)+I_{i,M,B}(t) \right) -{\mu}_{A}A(t)-{\delta}A(t), $$ \end{document} </tex-math>
+</disp-formula> where, in addition to previously defined populations and rates (with <italic>i</italic> equals genotype, <italic>j</italic> equals gender, and <italic>k</italic> equals stage of infection, either <italic>A</italic> or <italic>B</italic>), &#x03BC;<sub>
+<italic>j</italic>
+</sub>, represents the non-AIDS (natural) death rate for males and females respectively, and &#x03BC;<sub>A</sub> is estimated by the average (&#x03BC;<sub>F</sub> &#x002B; &#x03BC;<sub>M</sub>/2). This approximation allows us to simplify the model (only one AIDS compartment) without compromising the results, as most people with AIDS die of AIDS (&#x03B4;<sub>AIDS</sub>) and very few of other causes (&#x03BC;<sub>A</sub>). These estimates include values that affect infectivity (&#x03BB;<sub>
+<italic>&#x00EE;</italic>,<italic>&#xEB30;</italic>,<italic>&#xEA50;</italic>&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub>), transmission (&#x03B2;<sub>
+<italic>&#x00EE;</italic>,<italic>&#xEB30;</italic>,<italic>&#xEA50;</italic>&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub>), and disease progression (&#x03B3;<sub>
+<italic>i</italic>
+</sub>
+<sub>,</sub>
+<sub>
+<italic>j</italic>
+</sub>
+<sub>,</sub>
+<sub>
+<italic>k</italic>
+</sub>) where the <italic>&#x00EE;</italic>,<italic>&#xEB30;</italic>,<italic>&#xEA50;</italic> notation represents the genotype, gender, and stage of infection of the infected partner, and <italic>j</italic> &#x2260; <italic>&#xEB30;</italic>. </p>
+<table-wrap id="T2">
+<label>Table 2</label>
+<caption>
+<p>Transmission probabilities</p>
+</caption>
+<table>
+<tr>
+<th rowspan="3">HIV-infected partner (&#x00EE;&#x0131;&#x0131;&#x005E;&#x005E;, &#xEB30;&#xE2D4;&#xE2D4;&#x005E;&#x005E;, &#xEA50;<italic>k</italic>
+<italic>k</italic>&#x005E;&#x005E;)</th>
+<th colspan="4">Susceptible partner (<italic>i</italic>, <italic>j</italic>)</th>
+</tr>
+<tr>
+<td colspan="4">
+<hr/>
+</td>
+</tr>
+<tr>
+<th>(&#xEB30;&#xE2D4;&#xE2D4;&#x005E;&#x005E; to <italic>j</italic>)</th>
+<th>W&#x002F;W</th>
+<th>W&#x002F;&#x0394;32</th>
+<th>&#x0394;32&#x002F;&#x0394;32 </th>
+</tr>
+<tr>
+<td colspan="5">
+<hr/>
+</td>
+</tr>
+<tr>
+<td>Acute&#x002F;primary</td>
+</tr>
+<tr>
+<td>&#x2003;W&#x002F;W or &#x0394;32&#x002F;&#x0394;32</td>
+<td>M to F</td>
+<td>0.040</td>
+<td>0.040</td>
+<td>0.00040 </td>
+</tr>
+<tr>
+<td/>
+<td>F to M</td>
+<td>0.020</td>
+<td>0.020</td>
+<td>0.00020 </td>
+</tr>
+<tr>
+<td>&#x2003;W&#x002F;&#x0394;32</td>
+<td>M to F</td>
+<td>0.030</td>
+<td>0.030</td>
+<td>0.00030 </td>
+</tr>
+<tr>
+<td/>
+<td>F to M</td>
+<td>0.015</td>
+<td>0.015</td>
+<td>0.00015 </td>
+</tr>
+<tr>
+<td>Asymptomatic </td>
+</tr>
+<tr>
+<td>&#x2003;W&#x002F;W or &#x0394;32&#x002F;&#x0394;32</td>
+<td>M to F</td>
+<td>0.0010</td>
+<td>0.0010</td>
+<td>10 &#x00D7; 10<sup>&#x2212;6</sup>
+</td>
+</tr>
+<tr>
+<td/>
+<td>F to M</td>
+<td>0.0005</td>
+<td>0.0005</td>
+<td>5 &#x00D7; 10<sup>&#x2212;6</sup>
+</td>
+</tr>
+<tr>
+<td>&#x2003;W&#x002F;&#x0394;32</td>
+<td>M to F</td>
+<td>0.0005</td>
+<td>0.0005</td>
+<td>5 &#x00D7; 10<sup>&#x2212;6</sup>
+</td>
+</tr>
+<tr>
+<td/>
+<td>F to M</td>
+<td>0.00025</td>
+<td>0.00025</td>
+<td>2.5 &#x00D7; 10<sup>&#x2212;6</sup>
+</td>
+</tr>
+</table>
+<table-wrap-foot>
+<fn>
+<p>Listed are the different transmission probabilities (&#x03B2;<sub>&#x00EE;&#x0131;&#x0131;&#x005E;&#x005E;,&#xEB30;&#xE2D4;&#xE2D4;&#x005E;&#x005E;,&#xEA50;<italic>k</italic>
+<italic>k</italic>&#x005E;&#x005E;&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub>) for random sexual mixing between persons where <italic>i</italic>, <italic>j</italic>, <italic>k</italic> is the phenotype of the infected partner and <italic>i</italic>, <italic>j</italic> is the phenotype of the susceptible partner. M, male; F, female.</p>
+</fn>
+</table-wrap-foot>
+</table-wrap>
+<table-wrap id="T3">
+<label>Table 3</label>
+<caption>
+<p>Progression rates</p>
+</caption>
+<table>
+<tr>
+<th>Genotype</th>
+<th>Disease stage</th>
+<th>Males&#x002F;females </th>
+</tr>
+<tr>
+<td colspan="3">
+<hr/>
+</td>
+</tr>
+<tr>
+<td>W&#x002F;W</td>
+<td>A</td>
+<td>3.5</td>
+</tr>
+<tr>
+<td/>
+<td>B</td>
+<td>0.16667 </td>
+</tr>
+<tr>
+<td>W&#x002F;&#x0394;32</td>
+<td>A</td>
+<td>3.5 </td>
+</tr>
+<tr>
+<td/>
+<td>B</td>
+<td>0.125</td>
+</tr>
+<tr>
+<td>&#x0394;32&#x002F;&#x0394;32</td>
+<td>A</td>
+<td>3.5 </td>
+</tr>
+<tr>
+<td/>
+<td>B</td>
+<td>0.16667</td>
+</tr>
+</table>
+<table-wrap-foot>
+<fn>
+<p>Shown are the rates of progression, &#x03B3;<sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic> reflecting the different rates at which persons progress through different stages of disease by genotype, gender, and disease stage.</p>
+</fn>
+</table-wrap-foot>
+</table-wrap>
+<table-wrap id="T4">
+<label>Table 4</label>
+<caption>
+<p>Parameter values</p>
+</caption>
+<table>
+<tr>
+<th>Parameter</th>
+<th>Definition</th>
+<th>Value</th>
+</tr>
+<tr>
+<td colspan="3">
+<hr/>
+</td>
+</tr>
+<tr>
+<td>&#x03BC;<sub>
+<italic>F</italic>
+</sub>
+<italic>F</italic>, &#x03BC;<sub>
+<italic>M</italic>
+</sub>
+<italic>M</italic>
+</td>
+<td align="left">All-cause mortality for adult females (males)</td>
+<td align="left">0.015 (0.016) per year</td>
+</tr>
+<tr>
+<td>&#x03BC;<sub>&#x03C7;</sub>&#x03C7;</td>
+<td align="left">All-cause childhood mortality (&#x003C;15 years of age)</td>
+<td align="left">0.01 per year</td>
+</tr>
+<tr>
+<td>
+<italic>B</italic>
+<sub>
+<italic>r</italic>
+</sub>
+<italic>r</italic>
+</td>
+<td align="left">Birthrate</td>
+<td align="left">0.25 per woman per year</td>
+</tr>
+<tr>
+<td>
+<italic>SA</italic>
+<sub>
+<italic>F</italic>
+</sub>
+<italic>F</italic>
+</td>
+<td align="left">Percent females acquiring new partners (sexual activity)</td>
+<td align="left">10&#x0025;</td>
+</tr>
+<tr>
+<td>
+<italic>SA</italic>
+<sub>
+<italic>M</italic>
+</sub>
+<italic>M</italic>
+</td>
+<td align="left">Percent males acquiring new partners (sexual activity)</td>
+<td align="left">25&#x0025;</td>
+</tr>
+<tr>
+<td>
+<italic>m</italic>
+<sub>
+<italic>F</italic>
+</sub>
+<italic>F</italic>(&#x03C2;<inline-formula>
+<tex-math id="M5">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ {\mathrm{_{{F}}^{{2}}}} $$ \end{document} </tex-math>
+</inline-formula>)</td>
+<td align="left">Mean (variance) no. of new partners for females</td>
+<td align="left">1.8 (1.2) per year</td>
+</tr>
+<tr>
+<td>&#x03C2;<inline-formula>
+<tex-math id="M6">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ {\mathrm{_{{M}}^{{2}}}} $$ \end{document} </tex-math>
+</inline-formula>
+</td>
+<td align="left">Variance in no. of new partners for males</td>
+<td align="left">5.5 per year </td>
+</tr>
+<tr>
+<td>1 &#x2212; <italic>p</italic>
+<sub>
+<italic>v</italic>
+</sub>
+<italic>v</italic>
+</td>
+<td align="left">Probability of vertical transmission</td>
+<td align="left">0.30 per birth</td>
+</tr>
+<tr>
+<td>
+<italic>I</italic>
+<sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>(0)</td>
+<td align="left">Initial total population HIV-positive</td>
+<td align="left">0.50&#x0025; </td>
+</tr>
+<tr>
+<td>&#x03C7;<sub>
+<italic>i</italic>,<italic>j</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>(0)</td>
+<td align="left">Initial total children in population (&#x003C;15 years of age)</td>
+<td align="left">45&#x0025;</td>
+</tr>
+<tr>
+<td>
+<italic>W</italic>&#x002F;<italic>W</italic> (0)</td>
+<td align="left">Initial total wild types (<italic>W</italic>&#x002F;<italic>W</italic>) in population</td>
+<td align="left">80&#x0025; </td>
+</tr>
+<tr>
+<td>
+<italic>W</italic>&#x002F;&#x0394;32(0)</td>
+<td align="left">Initial total heterozygotes (<italic>W</italic>&#x002F;&#x0394;32) in population</td>
+<td align="left">19&#x0025;</td>
+</tr>
+<tr>
+<td>&#x0394;32&#x002F;&#x0394;32(0)</td>
+<td align="left">Initial total homozygotes (&#x0394;32&#x002F;&#x0394;32) in population</td>
+<td align="left">1&#x0025;</td>
+</tr>
+<tr>
+<td>
+<italic>r</italic>
+<sub>
+<italic>M</italic>
+</sub>
+<italic>M</italic>(<italic>r</italic>
+<sub>
+<italic>F</italic>
+</sub>
+<italic>F</italic>)</td>
+<td align="left">Initial percent males (females) in total population</td>
+<td align="left">49&#x0025; (51&#x0025;)</td>
+</tr>
+<tr>
+<td>&#x03D5;<sub>
+<italic>F</italic>
+</sub>
+<italic>F</italic>, &#x03D5;<sub>
+<italic>M</italic>
+</sub>
+<italic>M</italic>
+</td>
+<td align="left">Number of sexual contacts a female (male) has</td>
+<td align="left">30 (24) per partner</td>
+</tr>
+<tr>
+<td>&#x025B;<sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</td>
+<td align="left">&#x0025; effect of mutation on transmission rates (see Table <xref ref-type="table" rid="T2">2</xref>)</td>
+<td align="left">0 &#x003C; &#x025B;<sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic> &#x003C; 1</td>
+</tr>
+<tr>
+<td>&#x03B4;</td>
+<td align="left">Death rate for AIDS population</td>
+<td align="left">1.0 per year </td>
+</tr>
+<tr>
+<td>
+<italic>q</italic>
+</td>
+<td align="left">Allelic frequency of &#x0394;32 allele</td>
+<td align="left">0.105573</td>
+</tr>
+</table>
+<table-wrap-foot>
+<fn>
+<p>Shown are the parameter values for parameters other than the transmission probabilities (Table <xref ref-type="table" rid="T2">2</xref>) and the progression rates (Table <xref ref-type="table" rid="T3">3</xref>). Each were estimated from data as described in text.</p>
+</fn>
+</table-wrap-foot>
+</table-wrap>
+<p>The effects of the CCR5 W/&#x0394;32 and CCR5 &#x0394;32/&#x0394;32 genotypes are included in our model through both the per-capita probabilities of infection, &#x03BB;<sub>
+<italic>&#x00EE;</italic>,<italic>&#xEB30;</italic>,<italic>&#xEA50;</italic>&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub>, and the progression rates, &#x03B3;<sub>
+<italic>i</italic>
+</sub>
+<sub>,</sub>
+<sub>
+<italic>j</italic>
+</sub>
+<sub>,</sub>
+<sub>
+<italic>k</italic>
+</sub>. The infectivity coefficients, &#x03BB;<sub>
+<italic>&#x00EE;</italic>,<italic>&#xEB30;</italic>,<italic>&#xEA50;</italic>&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub>, are calculated for each population subgroup based on the following: likelihood of HIV transmission in a sexual encounter between a susceptible and an infected (&#x03B2;<sub>&#x00EE;&#x0131;&#x0131;&#x005E;&#x005E;,<italic>j</italic>,&#xEA50;<italic>k</italic>
+<italic>k</italic>&#x005E;&#x005E;&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub>) person; formation of new partnerships (<italic>c</italic>
+<sub>
+<italic>j</italic>
+</sub>
+<italic>j</italic>); number of contacts in a given partnership (&#x03D5;<sub>
+<italic>j</italic>
+</sub>); and probability of encountering an infected individual (<italic>I</italic>
+<sub>
+<italic>&#x00EE;</italic>,<italic>&#xEB30;</italic>,<italic>&#xEA50;</italic>
+</sub>/<italic>N</italic>
+<sub>
+<italic>&#xEB30;</italic>
+</sub>). The formula representing this probability of infection is <disp-formula>
+<tex-math id="M7">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ {\lambda}_{\hat {i},\hat {j},\hat {k}{\rightarrow}i,j}=\frac{C_{j}{\cdot}{\phi}_{j}}{N_{\hat {j}}}\hspace{.167em} \left[ { \,\substack{ \\ {\sum} \\ _{\hat {i},\hat {k}} }\, }{\beta}_{\hat {i},\hat {j},\hat {k}{\rightarrow}i,j}{\cdot}I_{\hat {i},\hat {j},\hat {k}} \right] , $$ \end{document} </tex-math>
+</disp-formula> where <italic>j</italic> &#x2260; <italic>&#xEB30;</italic> is either male or female. <italic>N</italic>
+<sub>
+<italic>&#xEB30;</italic>
+</sub> represents the total population of gender <italic>&#xEB30;</italic> (this does not include those with AIDS in the simulations).</p>
+<p>The average rate of partner acquisition, <italic>c<sub>j</sub>
+</italic>, includes the mean plus the variance to mean ratio of the relevant distribution of partner-change rates to capture the small number of high-risk people: <italic>c<sub>j</sub>
+</italic> = <italic>m<sub>j</sub>
+</italic> &#x002B; (&#x03C2;<inline-formula>
+<tex-math id="M8">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ {\mathrm{_{{\mathit{j}}}^{2}}} $$ \end{document} </tex-math>
+</inline-formula>/<italic>m</italic>
+<sub>j</sub>) where the mean (<italic>m<sub>j</sub>
+</italic>) and variance (&#x03C2;<inline-formula>
+<tex-math id="M9">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ {\mathrm{_{{\mathit{j}}}^{2}}} $$ \end{document} </tex-math>
+</inline-formula>) are annual figures for new partnerships only (<xref ref-type="bibr" rid="B32">32</xref>). These means are estimated from Ugandan data for the number of heterosexual partners in the past year (<xref ref-type="bibr" rid="B33">33</xref>) and the number of nonregular heterosexual partners (i.e., spouses or long-term partners) in the past year (<xref ref-type="bibr" rid="B34">34</xref>). In these sexual activity surveys, men invariably have more new partnerships; thus, we assumed that they would have fewer average contacts per partnership than women (a higher rate of new partner acquisition means fewer sexual contacts with a given partner; ref. <xref ref-type="bibr" rid="B35">35</xref>). To incorporate this assumption in our model, the male contacts/partnership, &#x03D5;<sub>
+<italic>M</italic>
+</sub>, was reduced by 20&#x0025;. In a given population, the numbers of heterosexual interactions must equate between males and females. The balancing equation applied here is <italic>SA</italic>
+<sub>F</sub>&#x00B7;<italic>m</italic>
+<sub>F</sub>&#x00B7;<italic>N</italic>
+<sub>F</sub> = <italic>SA</italic>
+<sub>M</sub>&#x00B7;<italic>m</italic>
+<sub>M</sub>&#x00B7;<italic>N</italic>
+<sub>M</sub>, where <italic>SA<sub>j</sub>
+</italic> are the percent sexually active and <italic>N<sub>j</sub>
+</italic> are the total in the populations for gender <italic>j</italic>. To specify changes in partner acquisition, we apply a male flexibility mechanism, holding the female rate of acquisition constant and allowing the male rates to vary (<xref ref-type="bibr" rid="B36">36</xref>, <xref ref-type="bibr" rid="B37">37</xref>).</p>
+<sec>
+<title>Transmission probabilities.</title>
+<p>The effect of a genetic factor in a model of HIV transmission can be included by reducing the transmission coefficient. The probabilities of transmission per contact with an infected partner, &#x03B2;<sub>&#x00EE;&#x0131;&#x0131;&#x005E;&#x005E;,&#xEB30;&#xE2D4;&#xE2D4;&#x005E;&#x005E;,&#xEA50;<italic>k</italic>
+<italic>k</italic>&#x005E;&#x005E;&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub>, have been estimated in the literature (see ref. <xref ref-type="bibr" rid="B38">38</xref> for estimates in minimally treated groups). We want to capture a decreased risk in transmission based on genotype (ref. <xref ref-type="bibr" rid="B39">39</xref>, Table <xref ref-type="table" rid="T2">2</xref>). No studies have directly evaluated differences in infectivity between HIV-infected CCR5 W/&#x0394;32 heterozygotes and HIV-infected CCR5 wild types. Thus, we base estimates for reduced transmission on studies of groups with various HIV serum viral loads (<xref ref-type="bibr" rid="B40">40</xref>), HTLV-I/II viral loads (<xref ref-type="bibr" rid="B41">41</xref>), and a study of the effect of AZT treatment on transmission (<xref ref-type="bibr" rid="B29">29</xref>). We decrease transmission probabilities for infecting CCR5&#x0394;32/&#x0394;32 persons by 100-fold to reflect the rarity of infections in these persons. However, we assume that infected CCR5&#x0394;32/&#x0394;32 homozygotes can infect susceptibles at a rate similar to CCR5W/W homozygotes, as the former generally have high viremias (ref. <xref ref-type="bibr" rid="B30">30</xref>, Table <xref ref-type="table" rid="T2">2</xref>). We also assume that male-to-female transmission is twice as efficient as female-to-male transmission (up to a 9-fold difference has been reported; ref. <xref ref-type="bibr" rid="B42">42</xref>) (ref. <xref ref-type="bibr" rid="B43">43</xref>, Table <xref ref-type="table" rid="T2">2</xref>).</p>
+<p>Given the assumption of no treatment, the high burden of disease in people with AIDS is assumed to greatly limit their sexual activity. Our initial model excludes people with AIDS from the sexually active groups. Subsequently, we allow persons with AIDS to be sexually active, fixing their transmission rates (&#x03B2;<sub>AIDS</sub>) to be the same across all CCR5 genotypes, and lower than transmission rates for primary-stage infection (as the viral burden on average is not as high as during the acute phase), and larger than transmission rates for asymptomatic-stage infection (as the viral burden characteristically increases during the end stage of disease).</p>
+</sec>
+<sec>
+<title>Disease progression.</title>
+<p>We assume three stages of HIV infection: primary (acute, stage A), asymptomatic HIV (stage B), and AIDS. The rates of transition through the first two stages are denoted by &#x03B3;<sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>, where <italic>i</italic> represents genotype, <italic>j</italic> is male/female, and <italic>k</italic> represents either stage A or stage B. Transition rates through each of these stages are assumed to be inversely proportional to the duration of that stage; however, other distributions are possible (<xref ref-type="bibr" rid="B31">31</xref>, <xref ref-type="bibr" rid="B44">44</xref>, <xref ref-type="bibr" rid="B45">45</xref>). Although viral loads generally peak in the first 2 months of infection, steady-state viral loads are established several months beyond this (<xref ref-type="bibr" rid="B46">46</xref>). For group A, the primary HIV-infecteds, duration is assumed to be 3.5 months. Based on results from European cohort studies (<xref ref-type="bibr" rid="B7">7</xref>&#x2013;<xref ref-type="bibr" rid="B10">10</xref>), the beneficial effects of the CCR5 W/&#x0394;32 genotype are observed mainly in the asymptomatic years of HIV infection; &#x2248;7 years after seroconversion survival rates appear to be quite similar between heterozygous and homozygous individuals. We also assume that CCR5&#x0394;32/&#x0394;32-infected individuals and wild-type individuals progress similarly, and that men and women progress through each disease stage at the same rate. Given these observations, and that survival after infection may be shorter in untreated populations, we choose the duration time in stage B to be 6 years for wild-type individuals and 8 years for heterozygous individuals. Transition through AIDS, &#x03B4;<sub>AIDS</sub>, is inversely proportional to the duration of AIDS. We estimate this value to be 1 year for the time from onset of AIDS to death. The progression rates are summarized in Table <xref ref-type="table" rid="T3">3</xref>.</p>
+</sec>
+</sec>
+<sec>
+<title>Demographic Setting.</title>
+<p>Demographic parameters are based on data from Malawi, Zimbabwe, and Botswana (<xref ref-type="bibr" rid="B3">3</xref>, <xref ref-type="bibr" rid="B47">47</xref>). Estimated birth and child mortality rates are used to calculate the annual numbers of children (&#x03C7;<sub>
+<italic>i</italic>,<italic>j</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>) maturing into the potentially sexually active, susceptible group at the age of 15 years (<xref ref-type="bibr" rid="B3">3</xref>). For example, in the case where the mother is CCR5 wild type and the father is CCR5 wild type or heterozygous, the number of CCR5 W/W children is calculated as follows &#x005B;<italic>s</italic>uppressing (<italic>t</italic>) notation&#x005D;: &#x03C7;<sub>1,<italic>j</italic>
+</sub>1,<italic>j</italic> = <disp-formula>
+<tex-math id="M10">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ B_{r}\hspace{.167em}{ \,\substack{ \\ {\sum} \\ _{k} }\, } \left[ S_{1,F}\frac{(S_{1,M}+I_{1,M,k})}{N_{M}}+ \left[ (0.5)S_{1,F}\frac{(S_{2,M}+I_{2,M,k})}{N_{M}} \right] + \right $$ \end{document} </tex-math>
+</disp-formula>
+<disp-formula>
+<tex-math id="M11">\documentclass[12pt]{minimal} \usepackage{wasysym} \usepackage[substack]{amsmath} \usepackage{amsfonts} \usepackage{amssymb} \usepackage{amsbsy} \usepackage[mathscr]{eucal} \usepackage{mathrsfs} \DeclareFontFamily{T1}{linotext}{} \DeclareFontShape{T1}{linotext}{m}{n} { &#x003C;-&#x003E; linotext }{} \DeclareSymbolFont{linotext}{T1}{linotext}{m}{n} \DeclareSymbolFontAlphabet{\mathLINOTEXT}{linotext} \begin{document} $$ p_{v} \left \left( \frac{(I_{1,F,k}(S_{1,M}+I_{1,M,k}))}{N_{M}}+ \left[ (0.5)I_{1,F,k}\frac{(S_{2,M}+I_{2,M,k})}{N_{M}} \right] \right) \right] ,\hspace{.167em} $$ \end{document} </tex-math>
+</disp-formula> where the probability of HIV vertical transmission, 1 &#x2212; <italic>p<sub>v</sub>
+</italic>, and the birthrate, <italic>B<sub>r</sub>
+</italic>, are both included in the equations together with the Mendelian inheritance values as presented in Table <xref ref-type="table" rid="T1">1</xref>. The generalized version of this equation (i.e., &#x03C7;<sub>
+<italic>i</italic>,<italic>j</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>) can account for six categories of children (including gender and genotype). We assume that all children of all genotypes are at risk, although we can relax this condition if data become available to support vertical protection (e.g., ref. <xref ref-type="bibr" rid="B48">48</xref>). All infected children are assumed to die before age 15. Before entering the susceptible group at age 15, there is additional loss because of mortality from all non-AIDS causes occurring less than 15 years of age at a rate of &#x03BC;<sub>&#x03C7;</sub>&#x03C7; &#x00D7; &#x03C7;<sub>
+<italic>i</italic>,<italic>j</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic> (where &#x03BC;<sub>&#x03C7;</sub> is the mortality under 15 years of age). Children then enter the population as susceptibles at an annual rate, &#x03C2;<sub>
+<italic>j</italic>
+</sub>
+<italic>j</italic> &#x00D7; &#x03C7;<sub>
+<italic>i</italic>,<italic>j</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>/15, where &#x03C2;<sub>
+<italic>j</italic>
+</sub> distributes the children 51&#x0025; females and 49&#x0025; males. All parameters and their values are summarized in Table <xref ref-type="table" rid="T4">4</xref>.</p>
+</sec>
+</sec>
+<sec>
+<title>Prevalence of HIV</title>
+<sec>
+<title>Demographics and Model Validation.</title>
+<p>The model was validated by using parameters estimated from available demographic data. Simulations were run in the absence of HIV infection to compare the model with known population growth rates. Infection was subsequently introduced with an initial low HIV prevalence of 0.5&#x0025; to capture early epidemic behavior.</p>
+<p>In deciding on our initial values for parameters during infection, we use Joint United Nations Programme on HIV&#x002F;AIDS national prevalence data for Malawi, Zimbabwe, and Botswana. Nationwide seroprevalence of HIV in these countries varies from &#x2248;11&#x0025; to over 20&#x0025; (<xref ref-type="bibr" rid="B3">3</xref>), although there may be considerable variation within given subpopulations (<xref ref-type="bibr" rid="B2">2</xref>, <xref ref-type="bibr" rid="B49">49</xref>).</p>
+<p>In the absence of HIV infection, the annual percent population growth rate in the model is &#x2248;2.5&#x0025;, predicting the present-day values for an average of sub-Saharan African cities (data not shown). To validate the model with HIV infection, we compare our simulation of the HIV epidemic to existing prevalence data for Kenya and Mozambique (<ext-link ext-link-type="url" xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.who.int/emc-hiv/fact-sheets/pdfs/kenya.pdf">http://www.who.int/emc-hiv/fact-sheets/pdfs/kenya.pdf</ext-link> and ref. <xref ref-type="bibr" rid="B51">51</xref>). Prevalence data collected from these countries follow similar trajectories to those predicted by our model (Fig. <xref ref-type="fig" rid="F2">2</xref>). </p>
+<fig id="F2">
+<label>Figure 2</label>
+<caption>
+<p>Model simulation of HIV infection in a population lacking the protective CCR5&#x0394;32 allele compared with national data from Kenya (healthy adults) and Mozambique (blood donors, ref. <xref ref-type="bibr" rid="B17">17</xref>). The simulated population incorporates parameter estimates from sub-Saharan African demographics. Note the two outlier points from the Mozambique data were likely caused by underreporting in the early stages of the epidemic.</p>
+</caption>
+<graphic xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="pq1813251002">
+</graphic>
+</fig>
+</sec>
+<sec>
+<title>Effects of the Allele on Prevalence.</title>
+<p>After validating the model in the wild type-only population, both CCR5&#x0394;32 heterozygous and homozygous people are included. Parameter values for HIV transmission, duration of illness, and numbers of contacts per partner are assumed to be the same within both settings. We then calculate HIV/AIDS prevalence among adults for total HIV/AIDS cases.</p>
+<p>Although CCR5&#x0394;32/&#x0394;32 homozygosity is rarely seen in HIV-positive populations (prevalence ranges between 0 and 0.004&#x0025;), 1&#x2013;20&#x0025; of people in HIV-negative populations of European descent are homozygous. Thus, to evaluate the potential impact of CCR5&#x0394;32, we estimate there are 19&#x0025; CCR5 W/&#x0394;32 heterozygous and 1&#x0025; CCR5 &#x0394;32/&#x0394;32 homozygous people in our population. These values are in Hardy-Weinberg equilibrium with an allelic frequency of the mutation as 0.105573.</p>
+<p>Fig. <xref ref-type="fig" rid="F3">3</xref> shows the prevalence of HIV in two populations: one lacking the mutant CCR5 allele and another carrying that allele. In the population lacking the protective mutation, prevalence increases logarithmically for the first 35 years of the epidemic, reaching 18&#x0025; before leveling off. </p>
+<fig id="F3">
+<label>Figure 3</label>
+<caption>
+<p>Prevalence of HIV/AIDS in the adult population as predicted by the model. The top curve (&#x25CB;) indicates prevalence in a population lacking the protective allele. We compare that to a population with 19&#x0025; heterozygous and 1&#x0025; homozygous for the allele (implying an allelic frequency of 0.105573. Confidence interval bands (light gray) are shown around the median simulation (&#xE80B;) providing a range of uncertainty in evaluating parameters for the effect of the mutation on the infectivity and the duration of asymptomatic HIV for heterozygotes.</p>
+</caption>
+<graphic xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="pq1813251003">
+</graphic>
+</fig>
+<p>In contrast, when a proportion of the population carries the CCR5&#x0394;32 allele, the epidemic increases more slowly, but still logarithmically, for the first 50 years, and HIV/AIDS prevalence reaches &#x2248;12&#x0025; (Fig. <xref ref-type="fig" rid="F3">3</xref>). Prevalence begins to decline slowly after 70 years.</p>
+<p>In the above simulations we assume that people with AIDS are not sexually active. However, when these individuals are included in the sexually active population the severity of the epidemic increases considerably (data not shown). Consistent with our initial simulations, prevalences are still relatively lower in the presence of the CCR5 mutation.</p>
+<p>Because some parameters (e.g., rate constants) are difficult to estimate based on available data, we implement an uncertainty analysis to assess the variability in the model outcomes caused by any inaccuracies in estimates of the parameter values with regard to the effect of the allelic mutation. For these analyses we use Latin hypercube sampling, as described in refs. <xref ref-type="bibr" rid="B52">52</xref>&#x2013;<xref ref-type="bibr" rid="B56">56</xref>, Our uncertainty and sensitivity analyses focus on infectivity vs. duration of infectiousness. To this end, we assess the effects on the dynamics of the epidemic for a range of values of the parameters governing transmission and progression rates: &#x03B2;<sub>&#x00EE;&#x0131;&#x0131;&#x005E;&#x005E;,&#xEB30;&#xE2D4;&#xE2D4;&#x005E;&#x005E;,&#xEA50;<italic>k</italic>
+<italic>k</italic>&#x005E;&#x005E;&#x2192;<italic>i</italic>,<italic>j</italic>
+</sub> and &#x03B3;<sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>
+</sub>
+<italic>i</italic>,<italic>j</italic>,<italic>k</italic>. All other parameters are held constant. These results are presented as an interval band about the average simulation for the population carrying the CCR5&#x0394;32 allele (Fig. <xref ref-type="fig" rid="F3">3</xref>). Although there is variability in the model outcomes, the analysis indicates that the overall model predictions are consistent for a wide range of transmission and progression rates. Further, most of the variation observed in the outcome is because of the transmission rates for both heterosexual males and females in the primary stage of infection (&#x03B2;<sub>2,M,A</sub>
+<sub>&#x2192;</sub>
+<sub>
+<italic>i</italic>
+</sub>
+<sub>,F</sub>, &#x03B2;<sub>2,F,A</sub>
+<sub>&#x2192;</sub>
+<sub>
+<italic>i</italic>
+</sub>
+<sub>,M</sub>). As mentioned above, we assume lower viral loads correlate with reduced infectivity; thus, the reduction in viral load in heterozygotes has a major influence on disease spread.</p>
+</sec>
+</sec>
+<sec>
+<title>HIV Induces Selective Pressure on Genotype Frequency</title>
+<p>To observe changes in the frequency of the CCR5&#x0394;32 allele in a setting with HIV infection as compared with the Hardy-Weinberg equilibrium in the absence of HIV, we follow changes in the total number of CCR5&#x0394;32 heterozygotes and homozygotes over 1,000 years (Fig. <xref ref-type="fig" rid="F4">4</xref>). We initially perform simulations in the absence of HIV infection as a negative control to show there is not significant selection of the allele in the absence of infection. To determine how long it would take for the allelic frequency to reach present-day levels (e.g., <italic>q</italic> = 0.105573), we initiate this simulation for 1,000 years with a very small allelic frequency (<italic>q</italic> = 0.00105). In the absence of HIV, the allelic frequency is maintained in equilibrium as shown by the constant proportions of CCR5&#x0394;32 heterozygotes and homozygotes (Fig. <xref ref-type="fig" rid="F4">4</xref>, solid lines). The selection for CCR5&#x0394;32 in the presence of HIV is seen in comparison (Fig. <xref ref-type="fig" rid="F4">4</xref>, dashed lines). We expand the time frame of this simulation to 2,000 years to view the point at which the frequency reaches present levels (where <italic>q</italic> &#x223C;0.105573 at year = 1200). Note that the allelic frequency increases for &#x2248;1,600 years before leveling off. </p>
+<fig id="F4">
+<label>Figure 4</label>
+<caption>
+<p>Effects of HIV-1 on selection of the CCR5&#x0394;32 allele. The Hardy-Weinberg equilibrium level is represented in the no-infection simulation (solid lines) for each population. Divergence from the original Hardy-Weinberg equilibrium is shown to occur in the simulations that include HIV infection (dashed lines). Fraction of the total subpopulations are presented: (<italic>A</italic>) wild types (W/W), (<italic>B</italic>) heterozygotes (W/&#x0394;32), and (<italic>C</italic>) homozygotes (&#x0394;32/&#x0394;32). Note that we initiate this simulation with a much lower allelic frequency (0.00105) than used in the rest of the study to better exemplify the actual selective effect over a 1,000-year time scale. (<italic>D</italic>) The allelic selection effect over a 2,000-year time scale.</p>
+</caption>
+<graphic xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="pq1813251004">
+</graphic>
+</fig>
+</sec>
+<sec sec-type="discussion">
+<title>Discussion</title>
+<p>This study illustrates how populations can differ in susceptibility to epidemic HIV/AIDS depending on a ubiquitous attribute such as a prevailing genotype. We have examined heterosexual HIV epidemics by using mathematical models to assess HIV transmission in dynamic populations either with or without CCR5&#x0394;32 heterozygous and homozygous persons. The most susceptible population lacks the protective mutation in CCR5. In less susceptible populations, the majority of persons carrying the CCR5&#x0394;32 allele are heterozygotes. We explore the hypothesis that lower viral loads (CCR5&#x0394;32 heterozygotes) or resistance to infection (CCR5&#x0394;32 homozygotes) observed in persons with this coreceptor mutation ultimately can influence HIV epidemic trends. Two contrasting influences of the protective CCR5 allele are conceivable: it may limit the epidemic by decreasing the probability of infection because of lower viral loads in infected heterozygotes, or it may exacerbate the epidemic by extending the time that infectious individuals remain in the sexually active population. Our results strongly suggest the former. Thus, the absence of this allele in Africa could explain the severity of HIV disease as compared with populations where the allele is present.</p>
+<p>We also observed that HIV can provide selective pressure for the CCR5&#x0394;32 allele within a population, increasing the allelic frequency. Other influences may have additionally selected for this allele. Infectious diseases such as plague and small pox have been postulated to select for CCR5&#x0394;32 (<xref ref-type="bibr" rid="B57">57</xref>, <xref ref-type="bibr" rid="B58">58</xref>). For plague, relatively high levels of CCR5&#x0394;32 are believed to have arisen within &#x2248;4,000 years, accounting for the prevalence of the mutation only in populations of European descent. Smallpox virus uses the CC-coreceptor, indicating that direct selection for mutations in CCR5 may have offered resistance to smallpox. Given the differences in the epidemic rates of plague (<xref ref-type="bibr" rid="B59">59</xref>), smallpox, and HIV, it is difficult to directly compare our results to these findings. However, our model suggests that the CCR5&#x0394;32 mutation could have reached its present allelic frequency in Northern Europe within this time frame if selected for by a disease with virulence patterns similar to HIV. Our results further support the idea that HIV has been only recently introduced as a pathogen into African populations, as the frequency of the protective allele is almost zero, and our model predicts that selection of the mutant allele in this population by HIV alone takes at least 1,000 years. This prediction is distinct from the frequency of the CCR5&#x0394;32 allele in European populations, where pathogens that may have influenced its frequency (e.g., <italic>Yersinia pestis</italic>) have been present for much longer.</p>
+<p>Two mathematical models have considered the role of parasite and host genetic heterogeneity with regard to susceptibility to another pathogen, namely malaria (<xref ref-type="bibr" rid="B60">60</xref>, <xref ref-type="bibr" rid="B61">61</xref>). In each it was determined that heterogeneity of host resistance facilitates the maintenance of diversity in parasite virulence. Given our underlying interest in the coevolution of pathogen and host, we focus on changes in a host protective mutation, holding the virulence of the pathogen constant over time.</p>
+<p>Even within our focus on host protective mutations, numerous genetic factors, beneficial or detrimental, could potentially influence epidemics. Other genetically determined host factors affecting HIV susceptibility and disease progression include a CCR5 A/A to G/G promoter polymorphism (<xref ref-type="bibr" rid="B62">62</xref>), a CCR2 point mutation (<xref ref-type="bibr" rid="B11">11</xref>, <xref ref-type="bibr" rid="B63">63</xref>), and a mutation in the CXCR4 ligand (<xref ref-type="bibr" rid="B64">64</xref>). The CCR2b mutation, CCR264I, is found in linkage with at least one CCR5 promoter polymorphism (<xref ref-type="bibr" rid="B65">65</xref>) and is prevalent in populations where CCR5&#x0394;32 is nonexistent, such as sub-Saharan Africa (<xref ref-type="bibr" rid="B63">63</xref>). However, as none of these mutations have been consistently shown to be as protective as the CCR5&#x0394;32 allele, we simplified our model to incorporate only the effect of CCR5&#x0394;32. Subsequent models could be constructed from our model to account for the complexity of multiple protective alleles. It is interesting to note that our model predicts that even if CCR264I is present at high frequencies in Africa, its protective effects may not augment the lack of a protective allele such as CCR5&#x0394;32.</p>
+<p>Although our models demonstrate that genetic factors can contribute to the high prevalence of HIV in sub-Saharan Africa, demographic factors are also clearly important in this region. Our models explicitly incorporated such factors, for example, lack of treatment availability. Additional factors were implicitly controlled for by varying only the presence of the CCR5&#x0394;32 allele. More complex models eventually could include interactions with infectious diseases that serve as cofactors in HIV transmission. The role of high sexually transmitted disease prevalences in HIV infection has long been discussed, especially in relation to core populations (<xref ref-type="bibr" rid="B15">15</xref>, <xref ref-type="bibr" rid="B50">50</xref>, <xref ref-type="bibr" rid="B66">66</xref>). Malaria, too, might influence HIV transmission, as it is associated with transient increases in semen HIV viral loads and thus could increase the susceptibility of the population to epidemic HIV (<xref ref-type="bibr" rid="B16">16</xref>).</p>
+<p>In assessing the HIV/AIDS epidemic, considerable attention has been paid to the influence of core groups in driving sexually transmitted disease epidemics. Our results also highlight how characteristics more uniformly distributed in a population can affect susceptibility. We observed that the genotypic profile of a population affects its susceptibility to epidemic HIV/AIDS. Additional studies are needed to better characterize the influence of these genetic determinants on HIV transmission, as they may be crucial in estimating the severity of the epidemic in some populations. This information can influence the design of treatment strategies as well as point to the urgency for education and prevention programs.</p>
+</sec>
+</body>
+<back>
+<ack>
+<p>We thank Mark Krosky, Katia Koelle, and Kevin Chung for programming and technical assistance. We also thank Drs. V. J. DiRita, P. Kazanjian, and S. M. Blower for helpful comments and discussions. We thank the reviewers for extremely insightful comments.</p>
+</ack>
+<ref-list>
+<ref id="B1">
+<label>1</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Weiss</surname>
+<given-names>HA</given-names>
+</name>
+<name>
+<surname>Hawkes</surname>
+<given-names>S</given-names>
+</name>
+</person-group>
+<source>Leprosy Rev</source>
+<year iso-8601-date="2001">2001</year>
+<volume>72</volume>
+<fpage>92</fpage>
+<lpage>98</lpage>
+<pub-id pub-id-type="pmid">11355525</pub-id>
+</element-citation>
+</ref>
+<ref id="B2">
+<label>2</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Taha</surname>
+<given-names>TE</given-names>
+</name>
+<name>
+<surname>Dallabetta</surname>
+<given-names>GA</given-names>
+</name>
+<name>
+<surname>Hoover</surname>
+<given-names>DR</given-names>
+</name>
+<name>
+<surname>Chiphangwi</surname>
+<given-names>JD</given-names>
+</name>
+<name>
+<surname>Mtimavalye</surname>
+<given-names>LAR</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1998">1998</year>
+<volume>12</volume>
+<fpage>197</fpage>
+<lpage>203</lpage>
+<pub-id pub-id-type="pmid">9468369</pub-id>
+</element-citation>
+</ref>
+<ref id="B3">
+<label>3</label>
+<element-citation publication-type="book" publication-format="print">
+<collab>World Health Organization/UNAIDS</collab>
+<source>AIDS Epidemic Update</source>
+<year iso-8601-date="1998">1998</year>
+<publisher-loc>Geneva</publisher-loc>
+<publisher-name>World Health Organization</publisher-name>
+<fpage>1</fpage>
+<lpage>17</lpage>
+</element-citation>
+</ref>
+<ref id="B4">
+<label>4</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>D'Souza</surname>
+<given-names>MP</given-names>
+</name>
+<name>
+<surname>Harden</surname>
+<given-names>VA</given-names>
+</name>
+</person-group>
+<source>Nat Med</source>
+<year iso-8601-date="1996">1996</year>
+<volume>2</volume>
+<fpage>1293</fpage>
+<lpage>1300</lpage>
+<pub-id pub-id-type="pmid">8946819</pub-id>
+</element-citation>
+</ref>
+<ref id="B5">
+<label>5</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Martinson</surname>
+<given-names>JJ</given-names>
+</name>
+<name>
+<surname>Chapman</surname>
+<given-names>NH</given-names>
+</name>
+<name>
+<surname>Rees</surname>
+<given-names>DC</given-names>
+</name>
+<name>
+<surname>Liu</surname>
+<given-names>YT</given-names>
+</name>
+<name>
+<surname>Clegg</surname>
+<given-names>JB</given-names>
+</name>
+</person-group>
+<source>Nat Genet</source>
+<year iso-8601-date="1997">1997</year>
+<volume>16</volume>
+<fpage>100</fpage>
+<lpage>103</lpage>
+<pub-id pub-id-type="pmid">9140404</pub-id>
+</element-citation>
+</ref>
+<ref id="B6">
+<label>6</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Roos</surname>
+<given-names>MTL</given-names>
+</name>
+<name>
+<surname>Lange</surname>
+<given-names>JMA</given-names>
+</name>
+<name>
+<surname>deGoede</surname>
+<given-names>REY</given-names>
+</name>
+<name>
+<surname>Miedema</surname>
+<given-names>PT</given-names>
+</name>
+<name>
+<surname>Tersmette</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Coutinho</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Schellekens</surname>
+<given-names>RA</given-names>
+</name>
+</person-group>
+<source>J Infect Dis</source>
+<year iso-8601-date="1992">1992</year>
+<volume>165</volume>
+<fpage>427</fpage>
+<lpage>432</lpage>
+<pub-id pub-id-type="pmid">1347054</pub-id>
+</element-citation>
+</ref>
+<ref id="B7">
+<label>7</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Garred</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Eugen-Olsen</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Iversen</surname>
+<given-names>AKN</given-names>
+</name>
+<name>
+<surname>Benfield</surname>
+<given-names>TL</given-names>
+</name>
+<name>
+<surname>Svejgaard</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Hofmann</surname>
+<given-names>B</given-names>
+</name>
+</person-group>
+<source>Lancet</source>
+<year iso-8601-date="1997">1997</year>
+<volume>349</volume>
+<fpage>1884</fpage>
+<pub-id pub-id-type="pmid">9217763</pub-id>
+</element-citation>
+</ref>
+<ref id="B8">
+<label>8</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Katzenstein</surname>
+<given-names>TL</given-names>
+</name>
+<name>
+<surname>Eugen-Olsen</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Hofman</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Benfield</surname>
+<given-names>T</given-names>
+</name>
+<name>
+<surname>Pedersen</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Iversen</surname>
+<given-names>AK</given-names>
+</name>
+<name>
+<surname>Sorensen</surname>
+<given-names>AM</given-names>
+</name>
+<name>
+<surname>Garred</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Koppelhus</surname>
+<given-names>U</given-names>
+</name>
+<name>
+<surname>Svejgaard</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Gerstoft</surname>
+<given-names>J</given-names>
+</name>
+</person-group>
+<source>J Acquired Immune Defic Syndr Hum Retrovirol</source>
+<year iso-8601-date="1997">1997</year>
+<volume>16</volume>
+<fpage>10</fpage>
+<lpage>14</lpage>
+<pub-id pub-id-type="pmid">9377119</pub-id>
+</element-citation>
+</ref>
+<ref id="B9">
+<label>9</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>deRoda</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Meyer</surname>
+<given-names>K</given-names>
+</name>
+<name>
+<surname>Katzenstain</surname>
+<given-names>W</given-names>
+</name>
+<name>
+<surname>Dean</surname>
+<given-names>M</given-names>
+</name>
+</person-group>
+<source>Science</source>
+<year iso-8601-date="1996">1996</year>
+<volume>273</volume>
+<fpage>1856</fpage>
+<lpage>1862</lpage>
+<pub-id pub-id-type="pmid">8791590</pub-id>
+</element-citation>
+</ref>
+<ref id="B10">
+<label>10</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Meyer</surname>
+<given-names>L</given-names>
+</name>
+<name>
+<surname>Magierowska</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Hubert</surname>
+<given-names>JB</given-names>
+</name>
+<name>
+<surname>Rouzioux</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Deveau</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Sanson</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Debre</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Delfraissy</surname>
+<given-names>JF</given-names>
+</name>
+<name>
+<surname>Theodorou</surname>
+<given-names>I</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1997">1997</year>
+<volume>11</volume>
+<fpage>F73</fpage>
+<lpage>F78</lpage>
+<pub-id pub-id-type="pmid">9302436</pub-id>
+</element-citation>
+</ref>
+<ref id="B11">
+<label>11</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Smith</surname>
+<given-names>MW</given-names>
+</name>
+<name>
+<surname>Dean</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Carrington</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Winkler</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Huttley</surname>
+<given-names>DA</given-names>
+</name>
+<name>
+<surname>Lomb</surname>
+<given-names>GA</given-names>
+</name>
+<name>
+<surname>Goedert</surname>
+<given-names>JJ</given-names>
+</name>
+<name>
+<surname>O'Brien</surname>
+<given-names>TR</given-names>
+</name>
+<name>
+<surname>Jacobson</surname>
+<given-names>LP</given-names>
+</name>
+<name>
+<surname>Kaslow</surname>
+<given-names>R</given-names>
+</name>
+<etal/>
+</person-group>
+<source>Science</source>
+<year iso-8601-date="1997">1997</year>
+<volume>277</volume>
+<fpage>959</fpage>
+<lpage>965</lpage>
+<pub-id pub-id-type="pmid">9252328</pub-id>
+</element-citation>
+</ref>
+<ref id="B12">
+<label>12</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Samson</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Libert</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Doranz</surname>
+<given-names>BJ</given-names>
+</name>
+<name>
+<surname>Rucker</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Liesnard</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Farber</surname>
+<given-names>CM</given-names>
+</name>
+<name>
+<surname>Saragosti</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Lapoumeroulie</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Cognaux</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Forceille</surname>
+<given-names>C</given-names>
+</name>
+<etal/>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1996">1996</year>
+<volume>382</volume>
+<fpage>722</fpage>
+<lpage>725</lpage>
+<pub-id pub-id-type="pmid">8751444</pub-id>
+</element-citation>
+</ref>
+<ref id="B13">
+<label>13</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>McNicholl</surname>
+<given-names>JM</given-names>
+</name>
+<name>
+<surname>Smith</surname>
+<given-names>DK</given-names>
+</name>
+<name>
+<surname>Qari</surname>
+<given-names>SH</given-names>
+</name>
+<name>
+<surname>Hodge</surname>
+<given-names>T</given-names>
+</name>
+</person-group>
+<source>Emerging Infect Dis</source>
+<year iso-8601-date="1997">1997</year>
+<volume>3</volume>
+<fpage>261</fpage>
+<lpage>271</lpage>
+<pub-id pub-id-type="pmid">9284370</pub-id>
+</element-citation>
+</ref>
+<ref id="B14">
+<label>14</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Michael</surname>
+<given-names>NL</given-names>
+</name>
+<name>
+<surname>Chang</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Louie</surname>
+<given-names>LG</given-names>
+</name>
+<name>
+<surname>Mascola</surname>
+<given-names>JR</given-names>
+</name>
+<name>
+<surname>Dondero</surname>
+<given-names>D</given-names>
+</name>
+<name>
+<surname>Birx</surname>
+<given-names>DL</given-names>
+</name>
+<name>
+<surname>Sheppard</surname>
+<given-names>HW</given-names>
+</name>
+</person-group>
+<source>Nat Med</source>
+<year iso-8601-date="1997">1997</year>
+<volume>3</volume>
+<fpage>338</fpage>
+<lpage>340</lpage>
+<pub-id pub-id-type="pmid">9055864</pub-id>
+</element-citation>
+</ref>
+<ref id="B15">
+<label>15</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Mayaud</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Mosha</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Todd</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Balira</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Mgara</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>West</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Rusizoka</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Mwijarubi</surname>
+<given-names>E</given-names>
+</name>
+<name>
+<surname>Gabone</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Gavyole</surname>
+<given-names>A</given-names>
+</name>
+<etal/>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1997">1997</year>
+<volume>11</volume>
+<fpage>1873</fpage>
+<lpage>1880</lpage>
+<pub-id pub-id-type="pmid">9412707</pub-id>
+</element-citation>
+</ref>
+<ref id="B16">
+<label>16</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Hoffman</surname>
+<given-names>IF</given-names>
+</name>
+<name>
+<surname>Jere</surname>
+<given-names>CS</given-names>
+</name>
+<name>
+<surname>Taylor</surname>
+<given-names>TE</given-names>
+</name>
+<name>
+<surname>Munthali</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Dyer</surname>
+<given-names>JR</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1998">1998</year>
+<volume>13</volume>
+<fpage>487</fpage>
+<lpage>494</lpage>
+</element-citation>
+</ref>
+<ref id="B17">
+<label>17</label>
+<element-citation publication-type="book" publication-format="print">
+<collab>U.S. Bureau of the Census</collab>
+<source>HIV/AIDS Surveillance Database</source>
+<year iso-8601-date="1999">1999</year>
+<publisher-loc>Washington, DC</publisher-loc>
+<publisher-name>Population Division, International Programs Center</publisher-name>
+</element-citation>
+</ref>
+<ref id="B18">
+<label>18</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Anderson</surname>
+<given-names>RM</given-names>
+</name>
+<name>
+<surname>May</surname>
+<given-names>RM</given-names>
+</name>
+<name>
+<surname>McLean</surname>
+<given-names>AR</given-names>
+</name>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1988">1988</year>
+<volume>332</volume>
+<fpage>228</fpage>
+<lpage>234</lpage>
+<pub-id pub-id-type="pmid">3279320</pub-id>
+</element-citation>
+</ref>
+<ref id="B19">
+<label>19</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Berger</surname>
+<given-names>EA</given-names>
+</name>
+<name>
+<surname>Doms</surname>
+<given-names>RW</given-names>
+</name>
+<name>
+<surname>Fenyo</surname>
+<given-names>EM</given-names>
+</name>
+<name>
+<surname>Korber</surname>
+<given-names>BT</given-names>
+</name>
+<name>
+<surname>Littman</surname>
+<given-names>DR</given-names>
+</name>
+<name>
+<surname>Moore</surname>
+<given-names>JP</given-names>
+</name>
+<name>
+<surname>Sattentau</surname>
+<given-names>QJ</given-names>
+</name>
+<name>
+<surname>Schuitemaker</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Sodroski</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Weiss</surname>
+<given-names>RA</given-names>
+</name>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1998">1998</year>
+<volume>391</volume>
+<fpage>240</fpage>
+<pub-id pub-id-type="pmid">9440686</pub-id>
+</element-citation>
+</ref>
+<ref id="B20">
+<label>20</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Alkhatib</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Broder</surname>
+<given-names>CC</given-names>
+</name>
+<name>
+<surname>Berger</surname>
+<given-names>EA</given-names>
+</name>
+</person-group>
+<source>J Virol</source>
+<year iso-8601-date="1996">1996</year>
+<volume>70</volume>
+<fpage>5487</fpage>
+<lpage>5494</lpage>
+<pub-id pub-id-type="pmid">8764060</pub-id>
+</element-citation>
+</ref>
+<ref id="B21">
+<label>21</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Choe</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Farzan</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Sun</surname>
+<given-names>Y</given-names>
+</name>
+<name>
+<surname>Sullivan</surname>
+<given-names>N</given-names>
+</name>
+<name>
+<surname>Rollins</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Ponath</surname>
+<given-names>PD</given-names>
+</name>
+<name>
+<surname>Wu</surname>
+<given-names>L</given-names>
+</name>
+<name>
+<surname>Mackay</surname>
+<given-names>CR</given-names>
+</name>
+<name>
+<surname>LaRosa</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Newman</surname>
+<given-names>W</given-names>
+</name>
+<etal/>
+</person-group>
+<source>Cell</source>
+<year iso-8601-date="1996">1996</year>
+<volume>85</volume>
+<fpage>1135</fpage>
+<lpage>1148</lpage>
+<pub-id pub-id-type="pmid">8674119</pub-id>
+</element-citation>
+</ref>
+<ref id="B22">
+<label>22</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Deng</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Liu</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Ellmeier</surname>
+<given-names>W</given-names>
+</name>
+<name>
+<surname>Choe</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Unutmaz</surname>
+<given-names>D</given-names>
+</name>
+<name>
+<surname>Burkhart</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Di Marzio</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Marmon</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Sutton</surname>
+<given-names>RE</given-names>
+</name>
+<name>
+<surname>Hill</surname>
+<given-names>CM</given-names>
+</name>
+<etal/>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1996">1996</year>
+<volume>381</volume>
+<fpage>661</fpage>
+<lpage>666</lpage>
+<pub-id pub-id-type="pmid">8649511</pub-id>
+</element-citation>
+</ref>
+<ref id="B23">
+<label>23</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Doranz</surname>
+<given-names>BJ</given-names>
+</name>
+<name>
+<surname>Rucker</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Yi</surname>
+<given-names>Y</given-names>
+</name>
+<name>
+<surname>Smyth</surname>
+<given-names>RJ</given-names>
+</name>
+<name>
+<surname>Samsom</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Peiper</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Parmentier</surname>
+<given-names>SC</given-names>
+</name>
+<name>
+<surname>Collman</surname>
+<given-names>RG</given-names>
+</name>
+<name>
+<surname>Doms</surname>
+<given-names>RW</given-names>
+</name>
+</person-group>
+<source>Cell</source>
+<year iso-8601-date="1996">1996</year>
+<volume>85</volume>
+<fpage>1149</fpage>
+<lpage>1158</lpage>
+<pub-id pub-id-type="pmid">8674120</pub-id>
+</element-citation>
+</ref>
+<ref id="B24">
+<label>24</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Dragic</surname>
+<given-names>T</given-names>
+</name>
+<name>
+<surname>Litwin</surname>
+<given-names>V</given-names>
+</name>
+<name>
+<surname>Allaway</surname>
+<given-names>GP</given-names>
+</name>
+<name>
+<surname>Martin</surname>
+<given-names>SR</given-names>
+</name>
+<name>
+<surname>Huang</surname>
+<given-names>Y</given-names>
+</name>
+<name>
+<surname>Nagashima</surname>
+<given-names>KA</given-names>
+</name>
+<name>
+<surname>Cayanan</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Maddon</surname>
+<given-names>PJ</given-names>
+</name>
+<name>
+<surname>Koup</surname>
+<given-names>RA</given-names>
+</name>
+<name>
+<surname>Moore</surname>
+<given-names>JP</given-names>
+</name>
+<name>
+<surname>Paxton</surname>
+<given-names>WA</given-names>
+</name>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1996">1996</year>
+<volume>381</volume>
+<fpage>667</fpage>
+<lpage>673</lpage>
+<pub-id pub-id-type="pmid">8649512</pub-id>
+</element-citation>
+</ref>
+<ref id="B25">
+<label>25</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Zhu</surname>
+<given-names>T</given-names>
+</name>
+<name>
+<surname>Mo</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Wang</surname>
+<given-names>N</given-names>
+</name>
+<name>
+<surname>Nam</surname>
+<given-names>DS</given-names>
+</name>
+<name>
+<surname>Cao</surname>
+<given-names>Y</given-names>
+</name>
+<name>
+<surname>Koup</surname>
+<given-names>RA</given-names>
+</name>
+<name>
+<surname>Ho</surname>
+<given-names>DD</given-names>
+</name>
+</person-group>
+<source>Science</source>
+<year iso-8601-date="1993">1993</year>
+<volume>261</volume>
+<fpage>1179</fpage>
+<lpage>1181</lpage>
+<pub-id pub-id-type="pmid">8356453</pub-id>
+</element-citation>
+</ref>
+<ref id="B26">
+<label>26</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Bjorndal</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Deng</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Jansson</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Fiore</surname>
+<given-names>JR</given-names>
+</name>
+<name>
+<surname>Colognesi</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Karlsson</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Albert</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Scarlatti</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Littman</surname>
+<given-names>DR</given-names>
+</name>
+<name>
+<surname>Fenyo</surname>
+<given-names>EM</given-names>
+</name>
+</person-group>
+<source>J Virol</source>
+<year iso-8601-date="1997">1997</year>
+<volume>71</volume>
+<fpage>7478</fpage>
+<lpage>7487</lpage>
+<pub-id pub-id-type="pmid">9311827</pub-id>
+</element-citation>
+</ref>
+<ref id="B27">
+<label>27</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Conner</surname>
+<given-names>RI</given-names>
+</name>
+<name>
+<surname>Sheridan</surname>
+<given-names>KE</given-names>
+</name>
+<name>
+<surname>Ceradinin</surname>
+<given-names>D</given-names>
+</name>
+<name>
+<surname>Choe</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Landau</surname>
+<given-names>NR</given-names>
+</name>
+</person-group>
+<source>J Exp Med</source>
+<year iso-8601-date="1997">1997</year>
+<volume>185</volume>
+<fpage>621</fpage>
+<lpage>628</lpage>
+<pub-id pub-id-type="pmid">9034141</pub-id>
+</element-citation>
+</ref>
+<ref id="B28">
+<label>28</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Liu</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Paxton</surname>
+<given-names>WA</given-names>
+</name>
+<name>
+<surname>Choe</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Ceradini</surname>
+<given-names>D</given-names>
+</name>
+<name>
+<surname>Martin</surname>
+<given-names>SR</given-names>
+</name>
+<name>
+<surname>Horuk</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>MacDonald</surname>
+<given-names>ME</given-names>
+</name>
+<name>
+<surname>Stuhlmann</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Koup</surname>
+<given-names>RA</given-names>
+</name>
+<name>
+<surname>Landau</surname>
+<given-names>NR</given-names>
+</name>
+</person-group>
+<source>Cell</source>
+<year iso-8601-date="1996">1996</year>
+<volume>86</volume>
+<fpage>367</fpage>
+<lpage>377</lpage>
+<pub-id pub-id-type="pmid">8756719</pub-id>
+</element-citation>
+</ref>
+<ref id="B29">
+<label>29</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Mussico</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Lazzarin</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Nicolosi</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Gasparini</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Costigliola</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Arici</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Saracco</surname>
+<given-names>A</given-names>
+</name>
+</person-group>
+<source>Arch Intern Med (Moscow)</source>
+<year iso-8601-date="1994">1994</year>
+<volume>154</volume>
+<fpage>1971</fpage>
+<lpage>1976</lpage>
+<pub-id pub-id-type="pmid">8074601</pub-id>
+</element-citation>
+</ref>
+<ref id="B30">
+<label>30</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Michael</surname>
+<given-names>NL</given-names>
+</name>
+<name>
+<surname>Nelson</surname>
+<given-names>JA</given-names>
+</name>
+<name>
+<surname>KewalRamani</surname>
+<given-names>VN</given-names>
+</name>
+<name>
+<surname>Chang</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>O'Brien</surname>
+<given-names>SJ</given-names>
+</name>
+<name>
+<surname>Mascola</surname>
+<given-names>JR</given-names>
+</name>
+<name>
+<surname>Volsky</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Louder</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>White</surname>
+<given-names>GC</given-names>
+</name>
+<name>
+<surname>Littman</surname>
+<given-names>DR</given-names>
+</name>
+<etal/>
+</person-group>
+<source>J Virol</source>
+<year iso-8601-date="1998">1998</year>
+<volume>72</volume>
+<fpage>6040</fpage>
+<lpage>6047</lpage>
+<pub-id pub-id-type="pmid">9621067</pub-id>
+</element-citation>
+</ref>
+<ref id="B31">
+<label>31</label>
+<element-citation publication-type="book" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Hethcote</surname>
+<given-names>HW</given-names>
+</name>
+<name>
+<surname>Yorke</surname>
+<given-names>JA</given-names>
+</name>
+</person-group>
+<source>Gonorrhea Transmission Dynamics and Control</source>
+<year iso-8601-date="1984">1984</year>
+<publisher-loc>Berlin</publisher-loc>
+<publisher-name>Springer</publisher-name>
+</element-citation>
+</ref>
+<ref id="B32">
+<label>32</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Anderson</surname>
+<given-names>RM</given-names>
+</name>
+<name>
+<surname>May</surname>
+<given-names>RM</given-names>
+</name>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1988">1988</year>
+<volume>333</volume>
+<fpage>514</fpage>
+<lpage>522</lpage>
+<pub-id pub-id-type="pmid">3374601</pub-id>
+</element-citation>
+</ref>
+<ref id="B33">
+<label>33</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Asiimwe-Okiror</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Opio</surname>
+<given-names>AA</given-names>
+</name>
+<name>
+<surname>Musinguzi</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Madraa</surname>
+<given-names>E</given-names>
+</name>
+<name>
+<surname>Tembo</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Carael</surname>
+<given-names>M</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1997">1997</year>
+<volume>11</volume>
+<fpage>1757</fpage>
+<lpage>1763</lpage>
+<pub-id pub-id-type="pmid">9386811</pub-id>
+</element-citation>
+</ref>
+<ref id="B34">
+<label>34</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Carael</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Cleland</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Deheneffe</surname>
+<given-names>JC</given-names>
+</name>
+<name>
+<surname>Ferry</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Ingham</surname>
+<given-names>R</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1995">1995</year>
+<volume>9</volume>
+<fpage>1171</fpage>
+<lpage>1175</lpage>
+<pub-id pub-id-type="pmid">8519454</pub-id>
+</element-citation>
+</ref>
+<ref id="B35">
+<label>35</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Blower</surname>
+<given-names>SM</given-names>
+</name>
+<name>
+<surname>Boe</surname>
+<given-names>C</given-names>
+</name>
+</person-group>
+<source>J AIDS</source>
+<year iso-8601-date="1993">1993</year>
+<volume>6</volume>
+<fpage>1347</fpage>
+<lpage>1352</lpage>
+<pub-id pub-id-type="pmid">8254474</pub-id>
+</element-citation>
+</ref>
+<ref id="B36">
+<label>36</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Kirschner</surname>
+<given-names>D</given-names>
+</name>
+</person-group>
+<source>J Appl Math</source>
+<year iso-8601-date="1996">1996</year>
+<volume>56</volume>
+<fpage>143</fpage>
+<lpage>166</lpage>
+</element-citation>
+</ref>
+<ref id="B37">
+<label>37</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Le Pont</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Blower</surname>
+<given-names>S</given-names>
+</name>
+</person-group>
+<source>J AIDS</source>
+<year iso-8601-date="1991">1991</year>
+<volume>4</volume>
+<fpage>987</fpage>
+<lpage>999</lpage>
+<pub-id pub-id-type="pmid">1890608</pub-id>
+</element-citation>
+</ref>
+<ref id="B38">
+<label>38</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Kim</surname>
+<given-names>MY</given-names>
+</name>
+<name>
+<surname>Lagakos</surname>
+<given-names>SW</given-names>
+</name>
+</person-group>
+<source>Ann Epidemiol</source>
+<year iso-8601-date="1990">1990</year>
+<volume>1</volume>
+<fpage>117</fpage>
+<lpage>128</lpage>
+<pub-id pub-id-type="pmid">1669741</pub-id>
+</element-citation>
+</ref>
+<ref id="B39">
+<label>39</label>
+<element-citation publication-type="book" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Anderson</surname>
+<given-names>RM</given-names>
+</name>
+<name>
+<surname>May</surname>
+<given-names>RM</given-names>
+</name>
+</person-group>
+<source>Infectious Disease of Humans: Dynamics and Control</source>
+<year iso-8601-date="1992">1992</year>
+<publisher-loc>Oxford</publisher-loc>
+<publisher-name>Oxford Univ. Press</publisher-name>
+</element-citation>
+</ref>
+<ref id="B40">
+<label>40</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Ragni</surname>
+<given-names>MV</given-names>
+</name>
+<name>
+<surname>Faruki</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Kingsley</surname>
+<given-names>LA</given-names>
+</name>
+</person-group>
+<source>J Acquired Immune Defic Syndr</source>
+<year iso-8601-date="1998">1998</year>
+<volume>17</volume>
+<fpage>42</fpage>
+<lpage>45</lpage>
+</element-citation>
+</ref>
+<ref id="B41">
+<label>41</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Kaplan</surname>
+<given-names>JE</given-names>
+</name>
+<name>
+<surname>Khabbaz</surname>
+<given-names>RF</given-names>
+</name>
+<name>
+<surname>Murphy</surname>
+<given-names>EL</given-names>
+</name>
+<name>
+<surname>Hermansen</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Roberts</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Lal</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Heneine</surname>
+<given-names>W</given-names>
+</name>
+<name>
+<surname>Wright</surname>
+<given-names>D</given-names>
+</name>
+<name>
+<surname>Matijas</surname>
+<given-names>L</given-names>
+</name>
+<name>
+<surname>Thomson</surname>
+<given-names>R</given-names>
+</name>
+<etal/>
+</person-group>
+<source>J Acquired Immune Defic Syndr Hum Retrovirol</source>
+<year iso-8601-date="1996">1996</year>
+<volume>12</volume>
+<fpage>193</fpage>
+<lpage>201</lpage>
+<pub-id pub-id-type="pmid">8680892</pub-id>
+</element-citation>
+</ref>
+<ref id="B42">
+<label>42</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Padian</surname>
+<given-names>NS</given-names>
+</name>
+<name>
+<surname>Shiboski</surname>
+<given-names>SC</given-names>
+</name>
+<name>
+<surname>Glass</surname>
+<given-names>SO</given-names>
+</name>
+<name>
+<surname>Vittinghoff</surname>
+<given-names>E</given-names>
+</name>
+</person-group>
+<source>Am J Edu</source>
+<year iso-8601-date="1997">1997</year>
+<volume>146</volume>
+<fpage>350</fpage>
+<lpage>357</lpage>
+</element-citation>
+</ref>
+<ref id="B43">
+<label>43</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Leynaert</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Downs</surname>
+<given-names>AM</given-names>
+</name>
+<name>
+<surname>de Vincenzi</surname>
+<given-names>I</given-names>
+</name>
+</person-group>
+<source>Am J Edu</source>
+<year iso-8601-date="1998">1998</year>
+<volume>148</volume>
+<fpage>88</fpage>
+<lpage>96</lpage>
+</element-citation>
+</ref>
+<ref id="B44">
+<label>44</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Garnett</surname>
+<given-names>GP</given-names>
+</name>
+<name>
+<surname>Anderson</surname>
+<given-names>RM</given-names>
+</name>
+</person-group>
+<source>J Acquired Immune Defic Syndr</source>
+<year iso-8601-date="1995">1995</year>
+<volume>9</volume>
+<fpage>500</fpage>
+<lpage>513</lpage>
+</element-citation>
+</ref>
+<ref id="B45">
+<label>45</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Stigum</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Magnus</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Harris</surname>
+<given-names>JR</given-names>
+</name>
+<name>
+<surname>Samualson</surname>
+<given-names>SO</given-names>
+</name>
+<name>
+<surname>Bakketeig</surname>
+<given-names>LS</given-names>
+</name>
+</person-group>
+<source>Am J Edu</source>
+<year iso-8601-date="1997">1997</year>
+<volume>145</volume>
+<fpage>636</fpage>
+<lpage>643</lpage>
+</element-citation>
+</ref>
+<ref id="B46">
+<label>46</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Ho</surname>
+<given-names>DD</given-names>
+</name>
+<name>
+<surname>Neumann</surname>
+<given-names>AU</given-names>
+</name>
+<name>
+<surname>Perelson</surname>
+<given-names>AS</given-names>
+</name>
+<name>
+<surname>Chen</surname>
+<given-names>W</given-names>
+</name>
+<name>
+<surname>Leonard</surname>
+<given-names>JM</given-names>
+</name>
+<name>
+<surname>Markowitz</surname>
+<given-names>M</given-names>
+</name>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1995">1995</year>
+<volume>373</volume>
+<fpage>123</fpage>
+<lpage>126</lpage>
+<pub-id pub-id-type="pmid">7816094</pub-id>
+</element-citation>
+</ref>
+<ref id="B47">
+<label>47</label>
+<element-citation publication-type="book" publication-format="print">
+<collab>World Resources Institute</collab>
+<source>World Resources (1998&#x2013;1999)</source>
+<year iso-8601-date="1999">1999</year>
+<publisher-loc>Oxford</publisher-loc>
+<publisher-name>Oxford Univ. Press</publisher-name>
+</element-citation>
+</ref>
+<ref id="B48">
+<label>48</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Kostrikis</surname>
+<given-names>LG</given-names>
+</name>
+<name>
+<surname>Neumann</surname>
+<given-names>AU</given-names>
+</name>
+<name>
+<surname>Thomson</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Korber</surname>
+<given-names>BT</given-names>
+</name>
+<name>
+<surname>McHardy</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Karanicolas</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Deutsch</surname>
+<given-names>L</given-names>
+</name>
+<name>
+<surname>Huang</surname>
+<given-names>Y</given-names>
+</name>
+<name>
+<surname>Lew</surname>
+<given-names>JF</given-names>
+</name>
+<name>
+<surname>McIntosh</surname>
+<given-names>K</given-names>
+</name>
+<etal/>
+</person-group>
+<source>J Virol</source>
+<year iso-8601-date="1999">1999</year>
+<volume>73</volume>
+<fpage>10264</fpage>
+<lpage>10271</lpage>
+<pub-id pub-id-type="pmid">10559343</pub-id>
+</element-citation>
+</ref>
+<ref id="B49">
+<label>49</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Low-Beer</surname>
+<given-names>D</given-names>
+</name>
+<name>
+<surname>Stoneburner</surname>
+<given-names>RL</given-names>
+</name>
+<name>
+<surname>Mukulu</surname>
+<given-names>A</given-names>
+</name>
+</person-group>
+<source>Nat Med</source>
+<year iso-8601-date="1997">1997</year>
+<volume>3</volume>
+<fpage>553</fpage>
+<lpage>557</lpage>
+<pub-id pub-id-type="pmid">9142126</pub-id>
+</element-citation>
+</ref>
+<ref id="B50">
+<label>50</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Grosskurth</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Mosha</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Todd</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Senkoro</surname>
+<given-names>K</given-names>
+</name>
+<name>
+<surname>Newell</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Klokke</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Changalucha</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>West</surname>
+<given-names>B</given-names>
+</name>
+<name>
+<surname>Mayaud</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Gavyole</surname>
+<given-names>A</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1995">1995</year>
+<volume>9</volume>
+<fpage>927</fpage>
+<lpage>934</lpage>
+<pub-id pub-id-type="pmid">7576329</pub-id>
+</element-citation>
+</ref>
+<ref id="B51">
+<label>51</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Melo</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Beby-Defaux</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Faria</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Guiraud</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Folgosa</surname>
+<given-names>E</given-names>
+</name>
+<name>
+<surname>Barreto</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Agius</surname>
+<given-names>G</given-names>
+</name>
+</person-group>
+<source>J AIDS</source>
+<year iso-8601-date="2000">2000</year>
+<volume>23</volume>
+<fpage>203</fpage>
+<lpage>204</lpage>
+<pub-id pub-id-type="pmid">10737436</pub-id>
+</element-citation>
+</ref>
+<ref id="B52">
+<label>52</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Iman</surname>
+<given-names>RL</given-names>
+</name>
+<name>
+<surname>Helton</surname>
+<given-names>JC</given-names>
+</name>
+<name>
+<surname>Campbell</surname>
+<given-names>JE</given-names>
+</name>
+</person-group>
+<source>J Quality Technol</source>
+<year iso-8601-date="1981">1981</year>
+<volume>13</volume>
+<fpage>174</fpage>
+<lpage>183</lpage>
+</element-citation>
+</ref>
+<ref id="B53">
+<label>53</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Iman</surname>
+<given-names>RL</given-names>
+</name>
+<name>
+<surname>Helton</surname>
+<given-names>JC</given-names>
+</name>
+<name>
+<surname>Campbell</surname>
+<given-names>JE</given-names>
+</name>
+</person-group>
+<source>J Quality Technol</source>
+<year iso-8601-date="1981">1981</year>
+<volume>13</volume>
+<fpage>232</fpage>
+<lpage>240</lpage>
+</element-citation>
+</ref>
+<ref id="B54">
+<label>54</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Blower</surname>
+<given-names>SM</given-names>
+</name>
+<name>
+<surname>Dowlatabadi</surname>
+<given-names>H</given-names>
+</name>
+</person-group>
+<source>Int Stat Rev</source>
+<year iso-8601-date="1994">1994</year>
+<volume>62</volume>
+<fpage>229</fpage>
+<lpage>243</lpage>
+</element-citation>
+</ref>
+<ref id="B55">
+<label>55</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Porco</surname>
+<given-names>TC</given-names>
+</name>
+<name>
+<surname>Blower</surname>
+<given-names>SM</given-names>
+</name>
+</person-group>
+<source>Theor Popul Biol</source>
+<year iso-8601-date="1998">1998</year>
+<volume>54</volume>
+<fpage>117</fpage>
+<lpage>132</lpage>
+<pub-id pub-id-type="pmid">9733654</pub-id>
+</element-citation>
+</ref>
+<ref id="B56">
+<label>56</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Blower</surname>
+<given-names>SM</given-names>
+</name>
+<name>
+<surname>Porco</surname>
+<given-names>TC</given-names>
+</name>
+<name>
+<surname>Darby</surname>
+<given-names>G</given-names>
+</name>
+</person-group>
+<source>Nat Med</source>
+<year iso-8601-date="1998">1998</year>
+<volume>4</volume>
+<fpage>673</fpage>
+<lpage>678</lpage>
+<pub-id pub-id-type="pmid">9623975</pub-id>
+</element-citation>
+</ref>
+<ref id="B57">
+<label>57</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Libert</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Cochaux</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Beckman</surname>
+<given-names>G</given-names>
+</name>
+<name>
+<surname>Samson</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Aksenova</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Cao</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Czeizel</surname>
+<given-names>A</given-names>
+</name>
+<name>
+<surname>Claustres</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>de la Rua</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Ferrari</surname>
+<given-names>M</given-names>
+</name>
+<etal/>
+</person-group>
+<source>Hum Mol Genet</source>
+<year iso-8601-date="1998">1998</year>
+<volume>7</volume>
+<fpage>399</fpage>
+<lpage>406</lpage>
+<pub-id pub-id-type="pmid">9466996</pub-id>
+</element-citation>
+</ref>
+<ref id="B58">
+<label>58</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Lalani</surname>
+<given-names>AS</given-names>
+</name>
+<name>
+<surname>Masters</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Zeng</surname>
+<given-names>W</given-names>
+</name>
+<name>
+<surname>Barrett</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Pannu</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Everett</surname>
+<given-names>H</given-names>
+</name>
+<name>
+<surname>Arendt</surname>
+<given-names>CW</given-names>
+</name>
+<name>
+<surname>McFadden</surname>
+<given-names>G</given-names>
+</name>
+</person-group>
+<source>Science</source>
+<year iso-8601-date="1999">1999</year>
+<volume>286</volume>
+<fpage>1968</fpage>
+<lpage>1971</lpage>
+<pub-id pub-id-type="pmid">10583963</pub-id>
+</element-citation>
+</ref>
+<ref id="B59">
+<label>59</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Kermack</surname>
+<given-names>WO</given-names>
+</name>
+<name>
+<surname>McKendrick</surname>
+<given-names>AG</given-names>
+</name>
+</person-group>
+<source>Proc R Soc London</source>
+<year iso-8601-date="1927">1927</year>
+<volume>261</volume>
+<fpage>700</fpage>
+<lpage>721</lpage>
+</element-citation>
+</ref>
+<ref id="B60">
+<label>60</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Gupta</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Hill</surname>
+<given-names>AVS</given-names>
+</name>
+</person-group>
+<source>Proc R Soc London Ser B</source>
+<year iso-8601-date="1995">1995</year>
+<volume>260</volume>
+<fpage>271</fpage>
+<lpage>277</lpage>
+</element-citation>
+</ref>
+<ref id="B61">
+<label>61</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Ruwende</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Khoo</surname>
+<given-names>SC</given-names>
+</name>
+<name>
+<surname>Snow</surname>
+<given-names>RW</given-names>
+</name>
+<name>
+<surname>Yates</surname>
+<given-names>SNR</given-names>
+</name>
+<name>
+<surname>Kwiatkowski</surname>
+<given-names>D</given-names>
+</name>
+<name>
+<surname>Gupta</surname>
+<given-names>S</given-names>
+</name>
+<name>
+<surname>Warn</surname>
+<given-names>P</given-names>
+</name>
+<name>
+<surname>Allsopp</surname>
+<given-names>CE</given-names>
+</name>
+<name>
+<surname>Gilbert</surname>
+<given-names>SC</given-names>
+</name>
+<name>
+<surname>Peschu</surname>
+<given-names>N</given-names>
+</name>
+</person-group>
+<source>Nature (London)</source>
+<year iso-8601-date="1995">1995</year>
+<volume>376</volume>
+<fpage>246</fpage>
+<lpage>249</lpage>
+<pub-id pub-id-type="pmid">7617034</pub-id>
+</element-citation>
+</ref>
+<ref id="B62">
+<label>62</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>McDermott</surname>
+<given-names>DH</given-names>
+</name>
+<name>
+<surname>Zimmerman</surname>
+<given-names>PA</given-names>
+</name>
+<name>
+<surname>Guignard</surname>
+<given-names>F</given-names>
+</name>
+<name>
+<surname>Kleeberger</surname>
+<given-names>CA</given-names>
+</name>
+<name>
+<surname>Leitman</surname>
+<given-names>SF</given-names>
+</name>
+<name>
+<surname>Murphy</surname>
+<given-names>PM</given-names>
+</name>
+</person-group>
+<source>Lancet</source>
+<year iso-8601-date="1998">1998</year>
+<volume>352</volume>
+<fpage>866</fpage>
+<lpage>870</lpage>
+<pub-id pub-id-type="pmid">9742978</pub-id>
+</element-citation>
+</ref>
+<ref id="B63">
+<label>63</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Kostrikis</surname>
+<given-names>LG</given-names>
+</name>
+<name>
+<surname>Huang</surname>
+<given-names>Y</given-names>
+</name>
+<name>
+<surname>Moore</surname>
+<given-names>JP</given-names>
+</name>
+<name>
+<surname>Wolinsky</surname>
+<given-names>SM</given-names>
+</name>
+<name>
+<surname>Zhang</surname>
+<given-names>L</given-names>
+</name>
+<name>
+<surname>Guo</surname>
+<given-names>Y</given-names>
+</name>
+<name>
+<surname>Deutsch</surname>
+<given-names>L</given-names>
+</name>
+<name>
+<surname>Phair</surname>
+<given-names>J</given-names>
+</name>
+<name>
+<surname>Neumann</surname>
+<given-names>AU</given-names>
+</name>
+<name>
+<surname>Ho</surname>
+<given-names>DD</given-names>
+</name>
+</person-group>
+<source>Nat Med</source>
+<year iso-8601-date="1998">1998</year>
+<volume>4</volume>
+<fpage>350</fpage>
+<lpage>353</lpage>
+<pub-id pub-id-type="pmid">9500612</pub-id>
+</element-citation>
+</ref>
+<ref id="B64">
+<label>64</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Winkler</surname>
+<given-names>C</given-names>
+</name>
+<name>
+<surname>Modi</surname>
+<given-names>W</given-names>
+</name>
+<name>
+<surname>Smith</surname>
+<given-names>MW</given-names>
+</name>
+<name>
+<surname>Nelson</surname>
+<given-names>GW</given-names>
+</name>
+<name>
+<surname>Wu</surname>
+<given-names>X</given-names>
+</name>
+<name>
+<surname>Carrington</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Dean</surname>
+<given-names>M</given-names>
+</name>
+<name>
+<surname>Honjo</surname>
+<given-names>T</given-names>
+</name>
+<name>
+<surname>Tashiro</surname>
+<given-names>K</given-names>
+</name>
+<name>
+<surname>Yabe</surname>
+<given-names>D</given-names>
+</name>
+<etal/>
+</person-group>
+<source>Science</source>
+<year iso-8601-date="1998">1998</year>
+<volume>279</volume>
+<fpage>389</fpage>
+<lpage>393</lpage>
+<pub-id pub-id-type="pmid">9430590</pub-id>
+</element-citation>
+</ref>
+<ref id="B65">
+<label>65</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Martinson</surname>
+<given-names>JJ</given-names>
+</name>
+<name>
+<surname>Hong</surname>
+<given-names>L</given-names>
+</name>
+<name>
+<surname>Karanicolas</surname>
+<given-names>R</given-names>
+</name>
+<name>
+<surname>Moore</surname>
+<given-names>JP</given-names>
+</name>
+<name>
+<surname>Kostrikis</surname>
+<given-names>LG</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="2000">2000</year>
+<volume>14</volume>
+<fpage>483</fpage>
+<lpage>489</lpage>
+<pub-id pub-id-type="pmid">10780710</pub-id>
+</element-citation>
+</ref>
+<ref id="B66">
+<label>66</label>
+<element-citation publication-type="journal" publication-format="print">
+<person-group person-group-type="author">
+<name>
+<surname>Vernazza</surname>
+<given-names>PL</given-names>
+</name>
+<name>
+<surname>Eron</surname>
+<given-names>JJ</given-names>
+</name>
+<name>
+<surname>Fiscus</surname>
+<given-names>SA</given-names>
+</name>
+<name>
+<surname>Cohen</surname>
+<given-names>MS</given-names>
+</name>
+</person-group>
+<source>AIDS</source>
+<year iso-8601-date="1999">1999</year>
+<volume>13</volume>
+<fpage>155</fpage>
+<lpage>166</lpage>
+<pub-id pub-id-type="pmid">10202821</pub-id>
+</element-citation>
+</ref>
+</ref-list>
+</back>
+</article>

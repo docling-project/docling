@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://github.com/ds4sd/docling">
-    <img loading="lazy" alt="Docling" src="https://github.com/DS4SD/docling/raw/main/docs/assets/docling_processing.png" width="100%"/>
+  <a href="https://github.com/docling-project/docling">
+    <img loading="lazy" alt="Docling" src="https://github.com/docling-project/docling/raw/main/docs/assets/docling_processing.png" width="100%"/>
   </a>
 </p>
 
@@ -11,7 +11,7 @@
 </p>
 
 [![arXiv](https://img.shields.io/badge/arXiv-2408.09869-b31b1b.svg)](https://arxiv.org/abs/2408.09869)
-[![Docs](https://img.shields.io/badge/docs-live-brightgreen)](https://ds4sd.github.io/docling/)
+[![Docs](https://img.shields.io/badge/docs-live-brightgreen)](https://docling-project.github.io/docling/)
 [![PyPI version](https://img.shields.io/pypi/v/docling)](https://pypi.org/project/docling/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/docling)](https://pypi.org/project/docling/)
 [![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
@@ -19,27 +19,30 @@
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![Pydantic v2](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json)](https://pydantic.dev)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![License MIT](https://img.shields.io/github/license/DS4SD/docling)](https://opensource.org/licenses/MIT)
+[![License MIT](https://img.shields.io/github/license/docling-project/docling)](https://opensource.org/licenses/MIT)
 [![PyPI Downloads](https://static.pepy.tech/badge/docling/month)](https://pepy.tech/projects/docling)
+[![Docling Actor](https://apify.com/actor-badge?actor=vancura/docling?fpr=docling)](https://apify.com/vancura/docling)
+[![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-003778?logo=linuxfoundation&logoColor=fff&color=0094ff&labelColor=003778)](https://lfaidata.foundation/projects/)
 
-Docling parses documents and exports them to the desired format with ease and speed.
+Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.
 
 ## Features
 
-* 🗂️ Reads popular document formats (PDF, DOCX, PPTX, XLSX, Images, HTML, AsciiDoc & Markdown) and exports to HTML, Markdown and JSON (with embedded and referenced images)
-* 📑 Advanced PDF document understanding including page layout, reading order & table structures
-* 🧩 Unified, expressive [DoclingDocument](https://ds4sd.github.io/docling/concepts/docling_document/) representation format
-* 🤖 Easy integration with 🦙 LlamaIndex & 🦜🔗 LangChain for powerful RAG / QA applications
-* 🔍 OCR support for scanned PDFs
+* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, XLSX, HTML, images, and more
+* 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
+* 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
+* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, and lossless JSON
+* 🔒 Local execution capabilities for sensitive data and air-gapped environments
+* 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
+* 🔍 Extensive OCR support for scanned PDFs and images
+* 🥚 Support of Visual Language Models ([SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview)) 🆕
 * 💻 Simple and convenient CLI
-
-Explore the [documentation](https://ds4sd.github.io/docling/) to discover plenty examples and unlock the full power of Docling!
 
 ### Coming soon
 
-* ♾️ Equation & code extraction
 * 📝 Metadata extraction, including title, authors, references & language
-* 🦜🔗 Native LangChain extension
+* 📝 Chart understanding (Barchart, Piechart, LinePlot, etc)
+* 📝 Complex chemistry understanding (Molecular structures)
 
 ## Installation
 
@@ -50,11 +53,11 @@ pip install docling
 
 Works on macOS, Linux and Windows environments. Both x86_64 and arm64 architectures.
 
-More [detailed installation instructions](https://ds4sd.github.io/docling/installation/) are available in the docs.
+More [detailed installation instructions](https://docling-project.github.io/docling/installation/) are available in the docs.
 
 ## Getting started
 
-To convert individual documents, use `convert()`, for example:
+To convert individual documents with python, use `convert()`, for example:
 
 ```python
 from docling.document_converter import DocumentConverter
@@ -65,28 +68,44 @@ result = converter.convert(source)
 print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
 ```
 
-More [advanced usage options](https://ds4sd.github.io/docling/usage/) are available in
+More [advanced usage options](https://docling-project.github.io/docling/usage/) are available in
 the docs.
+
+## CLI
+
+Docling has a built-in CLI to run conversions.
+
+```bash
+docling https://arxiv.org/pdf/2206.01062
+```
+
+You can also use 🥚[SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview) and other VLMs via Docling CLI:
+```bash
+docling --pipeline vlm --vlm-model smoldocling https://arxiv.org/pdf/2206.01062
+```
+This will use MLX acceleration on supported Apple Silicon hardware.
+
+Read more [here](https://docling-project.github.io/docling/usage/)
 
 ## Documentation
 
-Check out Docling's [documentation](https://ds4sd.github.io/docling/), for details on
+Check out Docling's [documentation](https://docling-project.github.io/docling/), for details on
 installation, usage, concepts, recipes, extensions, and more.
 
 ## Examples
 
-Go hands-on with our [examples](https://ds4sd.github.io/docling/examples/),
+Go hands-on with our [examples](https://docling-project.github.io/docling/examples/),
 demonstrating how to address different application use cases with Docling.
 
 ## Integrations
 
 To further accelerate your AI application development, check out Docling's native
-[integrations](https://ds4sd.github.io/docling/integrations/) with popular frameworks
+[integrations](https://docling-project.github.io/docling/integrations/) with popular frameworks
 and tools.
 
 ## Get help and support
 
-Please feel free to connect with us using the [discussion section](https://github.com/DS4SD/docling/discussions).
+Please feel free to connect with us using the [discussion section](https://github.com/docling-project/docling/discussions).
 
 ## Technical report
 
@@ -94,7 +113,7 @@ For more details on Docling's inner workings, check out the [Docling Technical R
 
 ## Contributing
 
-Please read [Contributing to Docling](https://github.com/DS4SD/docling/blob/main/CONTRIBUTING.md) for details.
+Please read [Contributing to Docling](https://github.com/docling-project/docling/blob/main/CONTRIBUTING.md) for details.
 
 ## References
 
@@ -118,6 +137,14 @@ If you use Docling in your projects, please consider citing the following:
 The Docling codebase is under MIT license.
 For individual model usage, please refer to the model licenses found in the original packages.
 
-## IBM ❤️ Open Source AI
+## LF AI & Data
 
-Docling has been brought to you by IBM.
+Docling is hosted as a project in the [LF AI & Data Foundation](https://lfaidata.foundation/projects/).
+
+### IBM ❤️ Open Source AI
+
+The project was started by the AI for knowledge team at IBM Research Zurich.
+
+[supported_formats]: https://docling-project.github.io/docling/usage/supported_formats/
+[docling_document]: https://docling-project.github.io/docling/concepts/docling_document/
+[integrations]: https://docling-project.github.io/docling/integrations/

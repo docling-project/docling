@@ -5,9 +5,10 @@ from collections import defaultdict
 from typing import Dict, List, Set, Tuple
 
 from docling_core.types.doc import DocItemLabel, Size
+from docling_core.types.doc.page import TextCell
 from rtree import index
 
-from docling.datamodel.base_models import BoundingBox, Cell, Cluster, OcrCell
+from docling.datamodel.base_models import BoundingBox, Cluster
 
 _log = logging.getLogger(__name__)
 
@@ -198,11 +199,12 @@ class LayoutPostprocessor:
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
     }
 
-    def __init__(self, cells: List[Cell], clusters: List[Cluster], page_size: Size):
+    def __init__(self, cells: List[TextCell], clusters: List[Cluster], page_size: Size):
         """Initialize processor with cells and clusters."""
         """Initialize processor with cells and spatial indices."""
         self.cells = cells
         self.page_size = page_size
+        self.all_clusters = clusters
         self.regular_clusters = [
             c for c in clusters if c.label not in self.SPECIAL_TYPES
         ]
@@ -217,7 +219,7 @@ class LayoutPostprocessor:
             [c for c in self.special_clusters if c.label in self.WRAPPER_TYPES]
         )
 
-    def postprocess(self) -> Tuple[List[Cluster], List[Cell]]:
+    def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
         """Main processing pipeline."""
         self.regular_clusters = self._process_regular_clusters()
         self.special_clusters = self._process_special_clusters()
@@ -267,18 +269,16 @@ class LayoutPostprocessor:
         # Handle orphaned cells
         unassigned = self._find_unassigned_cells(clusters)
         if unassigned:
-            next_id = max((c.id for c in clusters), default=0) + 1
+            next_id = max((c.id for c in self.all_clusters), default=0) + 1
             orphan_clusters = []
             for i, cell in enumerate(unassigned):
-                conf = 1.0
-                if isinstance(cell, OcrCell):
-                    conf = cell.confidence
+                conf = cell.confidence
 
                 orphan_clusters.append(
                     Cluster(
                         id=next_id + i,
                         label=DocItemLabel.TEXT,
-                        bbox=cell.bbox,
+                        bbox=cell.to_bounding_box(),
                         confidence=conf,
                         cells=[cell],
                     )
@@ -556,13 +556,13 @@ class LayoutPostprocessor:
 
         return current_best if current_best else clusters[0]
 
-    def _deduplicate_cells(self, cells: List[Cell]) -> List[Cell]:
+    def _deduplicate_cells(self, cells: List[TextCell]) -> List[TextCell]:
         """Ensure each cell appears only once, maintaining order of first appearance."""
         seen_ids = set()
         unique_cells = []
         for cell in cells:
-            if cell.id not in seen_ids:
-                seen_ids.add(cell.id)
+            if cell.index not in seen_ids:
+                seen_ids.add(cell.index)
                 unique_cells.append(cell)
         return unique_cells
 
@@ -581,11 +581,13 @@ class LayoutPostprocessor:
             best_cluster = None
 
             for cluster in clusters:
-                if cell.bbox.area() <= 0:
+                if cell.rect.to_bounding_box().area() <= 0:
                     continue
 
-                overlap = cell.bbox.intersection_area_with(cluster.bbox)
-                overlap_ratio = overlap / cell.bbox.area()
+                overlap = cell.rect.to_bounding_box().intersection_area_with(
+                    cluster.bbox
+                )
+                overlap_ratio = overlap / cell.rect.to_bounding_box().area()
 
                 if overlap_ratio > best_overlap:
                     best_overlap = overlap_ratio
@@ -600,11 +602,13 @@ class LayoutPostprocessor:
 
         return clusters
 
-    def _find_unassigned_cells(self, clusters: List[Cluster]) -> List[Cell]:
+    def _find_unassigned_cells(self, clusters: List[Cluster]) -> List[TextCell]:
         """Find cells not assigned to any cluster."""
-        assigned = {cell.id for cluster in clusters for cell in cluster.cells}
+        assigned = {cell.index for cluster in clusters for cell in cluster.cells}
         return [
-            cell for cell in self.cells if cell.id not in assigned and cell.text.strip()
+            cell
+            for cell in self.cells
+            if cell.index not in assigned and cell.text.strip()
         ]
 
     def _adjust_cluster_bboxes(self, clusters: List[Cluster]) -> List[Cluster]:
@@ -614,10 +618,10 @@ class LayoutPostprocessor:
                 continue
 
             cells_bbox = BoundingBox(
-                l=min(cell.bbox.l for cell in cluster.cells),
-                t=min(cell.bbox.t for cell in cluster.cells),
-                r=max(cell.bbox.r for cell in cluster.cells),
-                b=max(cell.bbox.b for cell in cluster.cells),
+                l=min(cell.rect.to_bounding_box().l for cell in cluster.cells),
+                t=min(cell.rect.to_bounding_box().t for cell in cluster.cells),
+                r=max(cell.rect.to_bounding_box().r for cell in cluster.cells),
+                b=max(cell.rect.to_bounding_box().b for cell in cluster.cells),
             )
 
             if cluster.label == DocItemLabel.TABLE:
@@ -633,9 +637,9 @@ class LayoutPostprocessor:
 
         return clusters
 
-    def _sort_cells(self, cells: List[Cell]) -> List[Cell]:
+    def _sort_cells(self, cells: List[TextCell]) -> List[TextCell]:
         """Sort cells in native reading order."""
-        return sorted(cells, key=lambda c: (c.id))
+        return sorted(cells, key=lambda c: (c.index))
 
     def _sort_clusters(
         self, clusters: List[Cluster], mode: str = "id"
@@ -646,7 +650,7 @@ class LayoutPostprocessor:
                 clusters,
                 key=lambda cluster: (
                     (
-                        min(cell.id for cell in cluster.cells)
+                        min(cell.index for cell in cluster.cells)
                         if cluster.cells
                         else sys.maxsize
                     ),
