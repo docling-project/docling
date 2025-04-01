@@ -116,7 +116,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
+            doc = self.walk_linear(self.docx_obj.sections[0].header._element, self.docx_obj, doc)
             doc = self.walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
+            doc = self.walk_linear(self.docx_obj.sections[-1].footer._element, self.docx_obj, doc)
             return doc
         else:
             raise RuntimeError(
