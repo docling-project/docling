@@ -39,16 +39,10 @@ _log = logging.getLogger(__name__)
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     @override
-    def __init__(
-        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
-    ) -> None:
+    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.XML_KEY = (
-            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-        )
-        self.xml_namespaces = {
-            "w": "http://schemas.microsoft.com/office/word/2003/wordml"
-        }
+        self.XML_KEY = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+        self.xml_namespaces = {"w": "http://schemas.microsoft.com/office/word/2003/wordml"}
         # self.initialise(path_or_stream)
         # Word file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
@@ -219,13 +213,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         else:
             return [input_string]
 
-    def get_numId_and_ilvl(
-        self, paragraph: Paragraph
-    ) -> tuple[Optional[int], Optional[int]]:
+    def get_numId_and_ilvl(self, paragraph: Paragraph) -> tuple[Optional[int], Optional[int]]:
         # Access the XML element of the paragraph
-        numPr = paragraph._element.find(
-            ".//w:numPr", namespaces=paragraph._element.nsmap
-        )
+        numPr = paragraph._element.find(".//w:numPr", namespaces=paragraph._element.nsmap)
 
         if numPr is not None:
             # Get the numId element and extract the value
@@ -274,13 +264,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             underline=run.underline if run.underline is not None else False,
         )
 
-
-    def format_paragraph(self, paragraph: Paragraph) -> list[tuple[str, Formatting, str]]:
+    def format_paragraph(self, paragraph: Paragraph):
         """
-        Apply hyperlink, bold, italic, and underline markdown styles to a paragraph
+        Extract paragraph elements along with their formatting and hyperlink
         """
 
-        paragraph_elements = []
+        paragraph_elements: list[tuple[str, Formatting, Path | None]] = []
         group_text = ""
         previous_format = None
 
@@ -288,7 +277,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for c in paragraph.iter_inner_content():
             if isinstance(c, Hyperlink):
                 text = c.text
-                hyperlink = c.address
+                hyperlink = Path(c.address)
                 format = self.get_format_from_run(c.runs[0])
             elif isinstance(c, Run):
                 text = c.text
@@ -301,7 +290,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             previous_format = previous_format or format
 
             if (len(text.strip()) and (format != previous_format)) or (hyperlink is not None):
-                
+
                 # If the style changes for a non empty text, add the previous group
                 if len(group_text.strip()) > 0:
                     paragraph_elements.append((group_text.strip(), previous_format, None))
@@ -313,7 +302,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = ""
                 else:
                     previous_format = format
-                
+
             group_text += text
 
         # Format the last group
@@ -370,11 +359,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             numid = None
 
         # Handle lists
-        if (
-            numid is not None
-            and ilevel is not None
-            and p_style_id not in ["Title", "Heading"]
-        ):
+        if numid is not None and ilevel is not None and p_style_id not in ["Title", "Heading"]:
             self.add_listitem(
                 doc,
                 numid,
@@ -403,15 +388,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
-            self.parents[0] = doc.add_text(
-                parent=None, label=DocItemLabel.TITLE, text=text
-            )
+            self.parents[0] = doc.add_text(parent=None, label=DocItemLabel.TITLE, text=text)
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
             if style_element:
-                is_numbered_style = (
-                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
-                )
+                is_numbered_style = "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
             else:
                 is_numbered_style = False
             self.add_header(doc, p_level, text, is_numbered_style)
@@ -470,8 +451,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
             for text, format, hyperlink in paragraph_elements:
                 doc.add_text(
-                    label=DocItemLabel.PARAGRAPH, parent=parent, text=text,
-                    formatting=format, hyperlink=hyperlink                    
+                    label=DocItemLabel.PARAGRAPH,
+                    parent=parent,
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
                 )
 
         else:
@@ -481,8 +465,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
             for text, format, hyperlink in paragraph_elements:
                 doc.add_text(
-                    label=DocItemLabel.PARAGRAPH, parent=parent, text=text,
-                    formatting=format, hyperlink=hyperlink
+                    label=DocItemLabel.PARAGRAPH,
+                    parent=parent,
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
                 )
 
         self.update_history(p_style_id, p_level, numid, ilevel)
@@ -556,7 +543,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         numid: int,
         ilevel: int,
-        elements: list[tuple[str, Formatting, str]],
+        elements: list,
         is_numbered: bool = False,
     ) -> None:
         enum_marker = ""
@@ -575,13 +562,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-                
+
             inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level])
             for text, format, hyperlink in elements:
                 doc.add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
-                    parent=inline_fmt, 
+                    parent=inline_fmt,
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
@@ -616,8 +603,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-                
-            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel])
+
+            inline_fmt = doc.add_group(
+                label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel]
+            )
             for text, format, hyperlink in elements:
                 doc.add_list_item(
                     marker=enum_marker,
@@ -642,7 +631,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel])
+            inline_fmt = doc.add_group(
+                label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel]
+            )
             for text, format, hyperlink in elements:
                 doc.add_list_item(
                     marker=enum_marker,
