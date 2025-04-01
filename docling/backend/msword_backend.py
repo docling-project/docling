@@ -450,11 +450,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "Quote",
         ]:
             level = self.get_level()
-            parent = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
+            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
             for text, format, hyperlink in paragraph_elements:
                 doc.add_text(
                     label=DocItemLabel.PARAGRAPH,
-                    parent=parent,
+                    parent=inline_fmt,
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
@@ -464,11 +464,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Text style names can, and will have, not only default values but user values too
             # hence we treat all other labels as pure text
             level = self.get_level()
-            parent = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
+            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
             for text, format, hyperlink in paragraph_elements:
                 doc.add_text(
                     label=DocItemLabel.PARAGRAPH,
-                    parent=parent,
+                    parent=inline_fmt,
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
