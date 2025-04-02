@@ -234,33 +234,44 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return None, None  # If the paragraph is not part of a list
 
-    def get_label_and_level(self, paragraph: Paragraph) -> tuple[str, Optional[int]]:
-        if paragraph.style is None:
-            return "Normal", None
-        label = paragraph.style.style_id
-        if label is None:
-            return "Normal", None
-        if ":" in label:
-            parts = label.split(":")
+    def get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
+        parts = self.split_text_and_number(style_label)
 
-            if len(parts) == 2:
-                return parts[0], self.str_to_int(parts[1], None)
-
-        parts = self.split_text_and_number(label)
-
-        if "Heading" in label and len(parts) == 2:
+        if len(parts) == 2:
             parts.sort()
             label_str: str = ""
             label_level: Optional[int] = 0
-            if parts[0] == "Heading":
-                label_str = parts[0]
+            if parts[0].strip().lower() == "heading":
+                label_str = "Heading"
                 label_level = self.str_to_int(parts[1], None)
-            if parts[1] == "Heading":
-                label_str = parts[1]
+            if parts[1].strip().lower() == "heading":
+                label_str = "Heading"
                 label_level = self.str_to_int(parts[0], None)
             return label_str, label_level
-        else:
-            return label, None
+
+        return style_label, None
+
+    def get_label_and_level(self, paragraph: Paragraph) -> tuple[str, Optional[int]]:
+        if paragraph.style is None:
+            return "Normal", None
+
+        label = paragraph.style.style_id
+        name = paragraph.style.name
+
+        if label is None:
+            return "Normal", None
+
+        if ":" in label:
+            parts = label.split(":")
+            if len(parts) == 2:
+                return parts[0], self.str_to_int(parts[1], None)
+
+        if "heading" in label.lower():
+            return self.get_heading_and_level(label)
+        if "heading" in name.lower():
+            return self.get_heading_and_level(name)
+
+        return label, None
 
     def handle_equations_in_text(self, element, text):
         only_texts = []
