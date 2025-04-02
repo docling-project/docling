@@ -628,7 +628,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 label=GroupLabel.INLINE, parent=self.parents[level]
             )
             for text, format, hyperlink in elements:
-                doc._add_list_item(
+                doc.add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
@@ -672,7 +672,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level_at_new_list + ilevel],
             )
             for text, format, hyperlink in elements:
-                doc._add_list_item(
+                doc.add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
@@ -700,7 +700,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level_at_new_list + ilevel],
             )
             for text, format, hyperlink in elements:
-                doc._add_list_item(
+                doc.add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
@@ -721,7 +721,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             for text, format, hyperlink in elements:
                 # Add the list item to the parent group
-                doc._add_list_item(
+                doc.add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
