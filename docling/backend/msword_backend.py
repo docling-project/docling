@@ -15,15 +15,14 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import Formatting
-
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.table import CT_Tc
 from docx.oxml.xmlchemy import BaseOxmlElement
 from docx.table import Table, _Cell
+from docx.text.hyperlink import Hyperlink
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
-from docx.text.hyperlink import Hyperlink
 from lxml import etree
 from lxml.etree import XPath
 from PIL import Image, UnidentifiedImageError
@@ -39,10 +38,16 @@ _log = logging.getLogger(__name__)
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]) -> None:
+    def __init__(
+        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+    ) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.XML_KEY = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-        self.xml_namespaces = {"w": "http://schemas.microsoft.com/office/word/2003/wordml"}
+        self.XML_KEY = (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+        )
+        self.xml_namespaces = {
+            "w": "http://schemas.microsoft.com/office/word/2003/wordml"
+        }
         # self.initialise(path_or_stream)
         # Word file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
@@ -116,9 +121,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
-            doc = self.walk_linear(self.docx_obj.sections[0].header._element, self.docx_obj, doc)
+            doc = self.walk_linear(
+                self.docx_obj.sections[0].header._element, self.docx_obj, doc
+            )
             doc = self.walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
-            doc = self.walk_linear(self.docx_obj.sections[-1].footer._element, self.docx_obj, doc)
+            doc = self.walk_linear(
+                self.docx_obj.sections[-1].footer._element, self.docx_obj, doc
+            )
             return doc
         else:
             raise RuntimeError(
@@ -215,9 +224,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         else:
             return [input_string]
 
-    def get_numId_and_ilvl(self, paragraph: Paragraph) -> tuple[Optional[int], Optional[int]]:
+    def get_numId_and_ilvl(
+        self, paragraph: Paragraph
+    ) -> tuple[Optional[int], Optional[int]]:
         # Access the XML element of the paragraph
-        numPr = paragraph._element.find(".//w:numPr", namespaces=paragraph._element.nsmap)
+        numPr = paragraph._element.find(
+            ".//w:numPr", namespaces=paragraph._element.nsmap
+        )
 
         if numPr is not None:
             # Get the numId element and extract the value
@@ -302,11 +315,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Initialize previous_format with the first format
             previous_format = previous_format or format
 
-            if (len(text.strip()) and (format != previous_format)) or (hyperlink is not None):
+            if (len(text.strip()) and (format != previous_format)) or (
+                hyperlink is not None
+            ):
 
                 # If the style changes for a non empty text, add the previous group
                 if len(group_text.strip()) > 0:
-                    paragraph_elements.append((group_text.strip(), previous_format, None))
+                    paragraph_elements.append(
+                        (group_text.strip(), previous_format, None)
+                    )
                 group_text = ""
 
                 # If there is a hyperlink, add it immediately
@@ -397,7 +414,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             numid = None
 
         # Handle lists
-        if numid is not None and ilevel is not None and p_style_id not in ["Title", "Heading"]:
+        if (
+            numid is not None
+            and ilevel is not None
+            and p_style_id not in ["Title", "Heading"]
+        ):
             self.add_listitem(
                 doc,
                 numid,
@@ -426,7 +447,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
-            self.parents[0] = doc.add_text(parent=None, label=DocItemLabel.TITLE, text=text)
+            self.parents[0] = doc.add_text(
+                parent=None, label=DocItemLabel.TITLE, text=text
+            )
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
             if style_element is not None:
@@ -488,7 +511,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "Quote",
         ]:
             level = self.get_level()
-            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
+            inline_fmt = doc.add_group(
+                label=GroupLabel.INLINE, parent=self.parents[level - 1]
+            )
             for text, format, hyperlink in paragraph_elements:
                 doc.add_text(
                     label=DocItemLabel.PARAGRAPH,
@@ -502,7 +527,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Text style names can, and will have, not only default values but user values too
             # hence we treat all other labels as pure text
             level = self.get_level()
-            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
+            inline_fmt = doc.add_group(
+                label=GroupLabel.INLINE, parent=self.parents[level - 1]
+            )
             for text, format, hyperlink in paragraph_elements:
                 doc.add_text(
                     label=DocItemLabel.PARAGRAPH,
@@ -603,7 +630,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
 
-            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level])
+            inline_fmt = doc.add_group(
+                label=GroupLabel.INLINE, parent=self.parents[level]
+            )
             for text, format, hyperlink in elements:
                 doc.add_list_item(
                     marker=enum_marker,
@@ -645,7 +674,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 is_numbered = True
 
             inline_fmt = doc.add_group(
-                label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel]
+                label=GroupLabel.INLINE,
+                parent=self.parents[self.level_at_new_list + ilevel],
             )
             for text, format, hyperlink in elements:
                 doc.add_list_item(
@@ -672,7 +702,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
             inline_fmt = doc.add_group(
-                label=GroupLabel.INLINE, parent=self.parents[self.level_at_new_list + ilevel]
+                label=GroupLabel.INLINE,
+                parent=self.parents[self.level_at_new_list + ilevel],
             )
             for text, format, hyperlink in elements:
                 doc.add_list_item(
@@ -691,7 +722,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if is_numbered:
                 enum_marker = str(self.listIter) + "."
                 is_numbered = True
-            inline_fmt = doc.add_group(label=GroupLabel.INLINE, parent=self.parents[level - 1])
+            inline_fmt = doc.add_group(
+                label=GroupLabel.INLINE, parent=self.parents[level - 1]
+            )
             for text, format, hyperlink in elements:
                 # Add the list item to the parent group
                 doc.add_list_item(
