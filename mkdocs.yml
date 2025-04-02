@@ -90,6 +90,7 @@ nav:
       - examples/rag_haystack.ipynb
       - examples/rag_langchain.ipynb
       - examples/rag_llamaindex.ipynb
+      - examples/visual_grounding.ipynb
     - 🖼️ Picture annotation:
       - "Annotate picture with local VLM": examples/pictures_description.ipynb
       - "Annotate picture with remote VLM": examples/pictures_description_api.py
