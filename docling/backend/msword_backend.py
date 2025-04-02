@@ -429,7 +429,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
                         parent=inline_equation,
-                        text=text_tmp,
+                        text=text_tmp.strip(),
                     )
 
         elif p_style_id in [
