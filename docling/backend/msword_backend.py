@@ -412,8 +412,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if len(text_tmp) == 0:
                         break
 
-                    pre_eq_text = text_tmp.split(eq, maxsplit=1)[0]
-                    text_tmp = text_tmp.split(eq, maxsplit=1)[1]
+                    pre_eq_text = text_tmp.split(eq.strip(), maxsplit=1)[0]
+                    text_tmp = text_tmp.split(eq.strip(), maxsplit=1)[1]
                     if len(pre_eq_text) > 0:
                         doc.add_text(
                             label=DocItemLabel.PARAGRAPH,
