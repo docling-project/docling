@@ -121,13 +121,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
-            doc = self.walk_linear(
-                self.docx_obj.sections[0].header._element, self.docx_obj, doc
-            )
             doc = self.walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
-            doc = self.walk_linear(
-                self.docx_obj.sections[-1].footer._element, self.docx_obj, doc
-            )
             return doc
         else:
             raise RuntimeError(
@@ -283,14 +277,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return label, None
 
     @classmethod
-    def get_format_from_run(cls, run: Run) -> Formatting:
+    def _get_format_from_run(cls, run: Run) -> Formatting:
         return Formatting(
             bold=run.bold if run.bold is not None else False,
             italic=run.italic if run.italic is not None else False,
             underline=run.underline if run.underline is not None else False,
         )
 
-    def format_paragraph(self, paragraph: Paragraph):
+    def _get_paragraph_elements(self, paragraph: Paragraph):
         """
         Extract paragraph elements along with their formatting and hyperlink
         """
@@ -304,11 +298,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(c, Hyperlink):
                 text = c.text
                 hyperlink = Path(c.address)
-                format = self.get_format_from_run(c.runs[0])
+                format = self._get_format_from_run(c.runs[0])
             elif isinstance(c, Run):
                 text = c.text
                 hyperlink = None
-                format = self.get_format_from_run(c)
+                format = self._get_format_from_run(c)
             else:
                 continue
 
@@ -400,7 +394,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         if text is None:
             return
-        paragraph_elements = self.format_paragraph(paragraph)
+        paragraph_elements = self._get_paragraph_elements(paragraph)
 
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
@@ -419,7 +413,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and ilevel is not None
             and p_style_id not in ["Title", "Heading"]
         ):
-            self.add_listitem(
+            self._add_listitem(
                 doc,
                 numid,
                 ilevel,
@@ -605,7 +599,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         return
 
-    def add_listitem(
+    def _add_listitem(
         self,
         doc: DoclingDocument,
         numid: int,
@@ -634,7 +628,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 label=GroupLabel.INLINE, parent=self.parents[level]
             )
             for text, format, hyperlink in elements:
-                doc.add_list_item(
+                doc._add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
@@ -678,7 +672,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level_at_new_list + ilevel],
             )
             for text, format, hyperlink in elements:
-                doc.add_list_item(
+                doc._add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
@@ -706,7 +700,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level_at_new_list + ilevel],
             )
             for text, format, hyperlink in elements:
-                doc.add_list_item(
+                doc._add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
@@ -727,7 +721,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             for text, format, hyperlink in elements:
                 # Add the list item to the parent group
-                doc.add_list_item(
+                doc._add_list_item(
                     marker=enum_marker,
                     enumerated=is_numbered,
                     parent=inline_fmt,
