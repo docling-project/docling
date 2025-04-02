@@ -234,33 +234,44 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return None, None  # If the paragraph is not part of a list
 
-    def get_label_and_level(self, paragraph: Paragraph) -> tuple[str, Optional[int]]:
-        if paragraph.style is None:
-            return "Normal", None
-        label = paragraph.style.style_id
-        if label is None:
-            return "Normal", None
-        if ":" in label:
-            parts = label.split(":")
+    def get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
+        parts = self.split_text_and_number(style_label)
 
-            if len(parts) == 2:
-                return parts[0], self.str_to_int(parts[1], None)
-
-        parts = self.split_text_and_number(label)
-
-        if "Heading" in label and len(parts) == 2:
+        if len(parts) == 2:
             parts.sort()
             label_str: str = ""
             label_level: Optional[int] = 0
-            if parts[0] == "Heading":
-                label_str = parts[0]
+            if parts[0].strip().lower() == "heading":
+                label_str = "Heading"
                 label_level = self.str_to_int(parts[1], None)
-            if parts[1] == "Heading":
-                label_str = parts[1]
+            if parts[1].strip().lower() == "heading":
+                label_str = "Heading"
                 label_level = self.str_to_int(parts[0], None)
             return label_str, label_level
-        else:
-            return label, None
+
+        return style_label, None
+
+    def get_label_and_level(self, paragraph: Paragraph) -> tuple[str, Optional[int]]:
+        if paragraph.style is None:
+            return "Normal", None
+
+        label = paragraph.style.style_id
+        name = paragraph.style.name
+
+        if label is None:
+            return "Normal", None
+
+        if ":" in label:
+            parts = label.split(":")
+            if len(parts) == 2:
+                return parts[0], self.str_to_int(parts[1], None)
+
+        if "heading" in label.lower():
+            return self.get_heading_and_level(label)
+        if "heading" in name.lower():
+            return self.get_heading_and_level(name)
+
+        return label, None
 
     def handle_equations_in_text(self, element, text):
         only_texts = []
@@ -269,19 +280,44 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for subt in element.iter():
             tag_name = etree.QName(subt).localname
             if tag_name == "t" and "math" not in subt.tag:
-                only_texts.append(subt.text)
-                texts_and_equations.append(subt.text)
+                if isinstance(subt.text, str):
+                    only_texts.append(subt.text)
+                    texts_and_equations.append(subt.text)
             elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
                 latex_equation = str(oMath2Latex(subt))
                 only_equations.append(latex_equation)
                 texts_and_equations.append(latex_equation)
 
-        if "".join(only_texts).strip() != text.strip():
+        if len(only_equations) < 1:
+            return text, []
+
+        if (
+            re.sub(r"\s+", "", "".join(only_texts)).strip()
+            != re.sub(r"\s+", "", text).strip()
+        ):
             # If we are not able to reconstruct the initial raw text
             # do not try to parse equations and return the original
             return text, []
 
-        return "".join(texts_and_equations), only_equations
+        # Insert equations into original text
+        # This is done to preserve white space structure
+        output_text = ""
+        init_i = 0
+        for i_substr, substr in enumerate(texts_and_equations):
+            if substr not in text:
+                if i_substr > 0:
+                    i_text_before = text[init_i:].find(
+                        texts_and_equations[i_substr - 1]
+                    )
+                    output_text += text[init_i:][
+                        : i_text_before + len(texts_and_equations[i_substr - 1])
+                    ]
+                    init_i += i_text_before + len(texts_and_equations[i_substr - 1])
+                output_text += substr
+                if only_equations.index(substr) == len(only_equations) - 1:
+                    output_text += text[init_i:]
+
+        return output_text, only_equations
 
     def handle_text_elements(
         self,
@@ -348,7 +384,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
-            if style_element:
+            if style_element is not None:
                 is_numbered_style = (
                     "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
                 )
@@ -376,8 +412,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if len(text_tmp) == 0:
                         break
 
-                    pre_eq_text = text_tmp.split(eq, maxsplit=1)[0]
-                    text_tmp = text_tmp.split(eq, maxsplit=1)[1]
+                    pre_eq_text = text_tmp.split(eq.strip(), maxsplit=1)[0]
+                    text_tmp = text_tmp.split(eq.strip(), maxsplit=1)[1]
                     if len(pre_eq_text) > 0:
                         doc.add_text(
                             label=DocItemLabel.PARAGRAPH,
@@ -393,7 +429,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
                         parent=inline_equation,
-                        text=text_tmp,
+                        text=text_tmp.strip(),
                     )
 
         elif p_style_id in [
