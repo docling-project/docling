@@ -219,6 +219,7 @@ class TableStructureModel(BasePageModel):
                     }
 
                     table_clusters, table_bboxes = zip(*in_tables)
+                    table_orientaton_angle_360 = 0
 
                     if len(table_bboxes):
                         for table_cluster, tbl_box in in_tables:
@@ -229,6 +230,25 @@ class TableStructureModel(BasePageModel):
                                     cell_unit=TextCellUnit.WORD,
                                     bbox=table_cluster.bbox,
                                 )
+                                # Table cluster orientation, derived from cells...
+                                tcells_orientations = {}
+                                for tcell in tcells:
+                                    if tcell.rect.angle_360 not in tcells_orientations:
+                                        tcells_orientations[tcell.rect.angle_360] = 1
+                                    else:
+                                        tcells_orientations[tcell.rect.angle_360] += 1
+                                # Most of the cells in table bbox have this orientation:
+                                if len(tcells_orientations.keys()) > 0:
+                                    table_orientaton_angle_360 = max(
+                                        tcells_orientations,
+                                        key=tcells_orientations.__getitem__,
+                                    )
+                                    print(
+                                        "TABLE ORIENTATION: {}".format(
+                                            table_orientaton_angle_360
+                                        )
+                                    )
+
                                 if len(tcells) == 0:
                                     # In case word-level cells yield empty
                                     tcells = table_cluster.cells
