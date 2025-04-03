@@ -76,15 +76,23 @@ def test_e2e_docx_conversions():
         doc: DoclingDocument = conv_result.document
 
         pred_md: str = doc.export_to_markdown()
+<<<<<<< HEAD
         assert verify_export(
             pred_md, str(gt_path) + ".md", generate=GENERATE
         ), "export to md"
+=======
+        assert verify_export(pred_md, str(gt_path) + ".md", GENERATE), "export to md"
+>>>>>>> 64a7888 (Adding new latex symbols, simplifying how equations are added to text)
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
         assert verify_export(
+<<<<<<< HEAD
             pred_itxt, str(gt_path) + ".itxt", generate=GENERATE
+=======
+            pred_itxt, str(gt_path) + ".itxt", GENERATE
+>>>>>>> 64a7888 (Adding new latex symbols, simplifying how equations are added to text)
         ), "export to indented-text"
 
         assert verify_document(
