@@ -54,6 +54,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.level_at_new_list: Optional[int] = None
         self.parents: dict[int, Optional[NodeItem]] = {}
         self.numbered_headers: dict[int, int] = {}
+        self.equation_bookends: str = "<eq>{EQ}</eq>"
         for i in range(-1, self.max_levels):
             self.parents[i] = None
 
@@ -284,9 +285,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     only_texts.append(subt.text)
                     texts_and_equations.append(subt.text)
             elif "oMath" in subt.tag and "oMathPara" not in subt.tag:
-                latex_equation = str(oMath2Latex(subt))
-                only_equations.append(latex_equation)
-                texts_and_equations.append(latex_equation)
+                latex_equation = str(oMath2Latex(subt)).strip()
+                if len(latex_equation) > 0:
+                    only_equations.append(
+                        self.equation_bookends.format(EQ=latex_equation)
+                    )
+                    texts_and_equations.append(
+                        self.equation_bookends.format(EQ=latex_equation)
+                    )
 
         if len(only_equations) < 1:
             return text, []
@@ -301,21 +307,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Insert equations into original text
         # This is done to preserve white space structure
-        output_text = ""
+        output_text = text[:]
         init_i = 0
         for i_substr, substr in enumerate(texts_and_equations):
-            if substr not in text:
+            if len(substr) == 0:
+                continue
+
+            if substr in output_text[init_i:]:
+                init_i += output_text[init_i:].find(substr) + len(substr)
+            else:
                 if i_substr > 0:
-                    i_text_before = text[init_i:].find(
-                        texts_and_equations[i_substr - 1]
-                    )
-                    output_text += text[init_i:][
-                        : i_text_before + len(texts_and_equations[i_substr - 1])
-                    ]
-                    init_i += i_text_before + len(texts_and_equations[i_substr - 1])
-                output_text += substr
-                if only_equations.index(substr) == len(only_equations) - 1:
-                    output_text += text[init_i:]
+                    output_text = output_text[:init_i] + substr + output_text[init_i:]
+                    init_i += len(substr)
+                else:
+                    output_text = substr + output_text
 
         return output_text, only_equations
 
@@ -393,13 +398,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.add_header(doc, p_level, text, is_numbered_style)
 
         elif len(equations) > 0:
-            if (raw_text is None or len(raw_text) == 0) and len(text) > 0:
+            if (raw_text is None or len(raw_text.strip()) == 0) and len(text) > 0:
                 # Standalone equation
                 level = self.get_level()
                 doc.add_text(
                     label=DocItemLabel.FORMULA,
                     parent=self.parents[level - 1],
-                    text=text,
+                    text=text.replace("<eq>", "").replace("</eq>", ""),
                 )
             else:
                 # Inline equation
@@ -412,8 +417,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if len(text_tmp) == 0:
                         break
 
-                    pre_eq_text = text_tmp.split(eq.strip(), maxsplit=1)[0]
-                    text_tmp = text_tmp.split(eq.strip(), maxsplit=1)[1]
+                    split_text_tmp = text_tmp.split(eq.strip(), maxsplit=1)
+
+                    pre_eq_text = split_text_tmp[0]
+                    text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
+
                     if len(pre_eq_text) > 0:
                         doc.add_text(
                             label=DocItemLabel.PARAGRAPH,
@@ -423,8 +431,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_text(
                         label=DocItemLabel.FORMULA,
                         parent=inline_equation,
-                        text=eq,
+                        text=eq.replace("<eq>", "").replace("</eq>", ""),
                     )
+
                 if len(text_tmp) > 0:
                     doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
