@@ -2,7 +2,7 @@ import logging
 import sys
 import tempfile
 from pathlib import Path
-from typing import Iterable, Optional, Tuple, Type
+from typing import Iterable, Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
