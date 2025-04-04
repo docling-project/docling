@@ -18,6 +18,7 @@ from docling.models.base_model import BasePageModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.layout_postprocessor import LayoutPostprocessor
+from docling.utils.orientation import detect_orientation
 from docling.utils.profiling import TimeRecorder
 from docling.utils.visualization import draw_clusters
 
@@ -155,7 +156,9 @@ class LayoutModel(BasePageModel):
                     assert page.size is not None
                     page_image = page.get_image(scale=1.0)
                     assert page_image is not None
-
+                    page_orientation = detect_orientation(page.cells)
+                    if page_orientation:
+                        page_image = page_image.rotate(-page_orientation, expand=True)
                     clusters = []
                     for ix, pred_item in enumerate(
                         self.layout_predictor.predict(page_image)
