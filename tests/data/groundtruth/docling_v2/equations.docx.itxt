@@ -1,7 +1,7 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: inline: group group
     item-2 at level 2: paragraph: This is a word document and this is an inline equation: 
-    item-3 at level 2: formula: A= \pi r^{2} 
+    item-3 at level 2: formula: A= \pi r^{2}
     item-4 at level 2: paragraph: . If instead, I want an equation by line, I can do this:
   item-5 at level 1: paragraph: 
   item-6 at level 1: formula: a^{2}+b^{2}=c^{2} \text{ \texttimes } 23
@@ -15,7 +15,7 @@ item-0 at level 0: unspecified: group _root_
   item-14 at level 1: paragraph: 
   item-15 at level 1: inline: group group
     item-16 at level 2: paragraph: This is a word document and this is an inline equation: 
-    item-17 at level 2: formula: A= \pi r^{2} 
+    item-17 at level 2: formula: A= \pi r^{2}
     item-18 at level 2: paragraph: . If instead, I want an equation by line, I can do this:
   item-19 at level 1: paragraph: 
   item-20 at level 1: formula: \left(x+a\right)^{n}=\sum_{k=0}^ ... ac{}{}{0pt}{}{n}{k}\right)x^{k}a^{n-k}
@@ -31,7 +31,7 @@ item-0 at level 0: unspecified: group _root_
   item-30 at level 1: paragraph: 
   item-31 at level 1: inline: group group
     item-32 at level 2: paragraph: This is a word document and this is an inline equation: 
-    item-33 at level 2: formula: A= \pi r^{2} 
+    item-33 at level 2: formula: A= \pi r^{2}
     item-34 at level 2: paragraph: . If instead, I want an equation by line, I can do this:
   item-35 at level 1: paragraph: 
   item-36 at level 1: formula: e^{x}=1+\frac{x}{1!}+\frac{x^{2} ... xtellipsis } , - \infty  < x <  \infty

@@ -215,6 +215,9 @@ FUNC = {
     "coth": "\\coth({fe})",
     "sec": "\\sec({fe})",
     "csc": "\\csc({fe})",
+    "mod": "\\mod {fe}",
+    "max": "\\max({fe})",
+    "min": "\\min({fe})",
 }
 
 FUNC_PLACE = "{fe}"

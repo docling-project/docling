@@ -281,8 +281,10 @@ class oMath2Latex(Tag2Method):
                 if FUNC.get(t):
                     latex_chars.append(FUNC[t])
                 else:
-                    raise NotSupport("Not support func %s" % t)
-            else:
+                    print(f"Function not supported, will default to text: {t}")
+                    if isinstance(t, str):
+                        latex_chars.append(t)
+            elif isinstance(t, str):
                 latex_chars.append(t)
         t = BLANK.join(latex_chars)
         return t if FUNC_PLACE in t else t + FUNC_PLACE  # do_func will replace this
@@ -415,10 +417,12 @@ class oMath2Latex(Tag2Method):
         """
         _str = []
         _base_str = []
-        for s in elm.findtext("./{0}t".format(OMML_NS)):
-            out_latex_str = self.process_unicode(s)
-            _str.append(out_latex_str)
-            _base_str.append(s)
+        found_text = elm.findtext("./{0}t".format(OMML_NS))
+        if found_text:
+            for s in found_text:
+                out_latex_str = self.process_unicode(s)
+                _str.append(out_latex_str)
+                _base_str.append(s)
 
         proc_str = escape_latex(BLANK.join(_str))
         base_proc_str = BLANK.join(_base_str)
