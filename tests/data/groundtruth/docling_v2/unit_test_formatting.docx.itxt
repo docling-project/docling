@@ -1,0 +1,30 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: paragraph: italic
+  item-2 at level 1: paragraph: bold
+  item-3 at level 1: paragraph: underline
+  item-4 at level 1: paragraph: hyperlink
+  item-5 at level 1: paragraph: italic and bold hyperlink
+  item-6 at level 1: inline: group group
+    item-7 at level 2: paragraph: Normal
+    item-8 at level 2: paragraph: italic
+    item-9 at level 2: paragraph: bold
+    item-10 at level 2: paragraph: underline
+    item-11 at level 2: paragraph: and
+    item-12 at level 2: paragraph: hyperlink
+    item-13 at level 2: paragraph: on the same line
+  item-14 at level 1: paragraph: 
+  item-15 at level 1: list: group list
+    item-16 at level 2: list_item: Italic bullet 1
+    item-17 at level 2: list_item: Bold bullet 2
+    item-18 at level 2: list_item: Underline bullet 3
+    item-19 at level 2: inline: group group
+      item-20 at level 3: list_item: Some
+      item-21 at level 3: list_item: italic
+      item-22 at level 3: list_item: bold
+      item-23 at level 3: list_item: underline
+    item-24 at level 2: list: group list
+      item-25 at level 3: inline: group group
+        item-26 at level 4: list_item: Nested
+        item-27 at level 4: list_item: italic
+        item-28 at level 4: list_item: bold
+  item-29 at level 1: paragraph: 
