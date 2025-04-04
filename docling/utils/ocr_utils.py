@@ -24,22 +24,27 @@ def map_tesseract_script(script: str) -> str:
 def reverse_tesseract_preprocessing_rotation(
     box: Box, orientation: int, rotated_im_size: Size
 ) -> tuple[Point, Point, Point, Point]:
+    # The box is left top width height in TOPLEFT coordinates
+    # Bounding rectangle start with r_0 at the bottom left whatever the
+    # coordinate system. Then other corners are found rotating counterclockwise
     l, t, w, h = box
-    rotated_w, rotated_h = rotated_im_size
+    rotated_im_w, rotated_im_h = rotated_im_size
     if orientation == 0:
-        return (l, t), (l + w, t), (l + w, t + h), (l, t + h)
+        r0_x = l
+        r0_y = t + h
+        return (r0_x, r0_y), (r0_x + w, r0_y), (r0_x + w, r0_y - h), (r0_x, r0_y - h)
     if orientation == 90:
-        x0 = rotated_h - t
-        y0 = l
-        return (x0, y0), (x0, y0 + w), (x0 - h, y0 + w), (x0 - h, y0)
+        r0_x = rotated_im_h - (t + h)
+        r0_y = l
+        return (r0_x, r0_y), (r0_x, r0_y + w), (r0_x + h, r0_y + w), (r0_x, r0_y + w)
     if orientation == 180:
-        x0 = rotated_w - l
-        y0 = rotated_h - t
-        return (x0, y0), (x0 - w, y0), (x0 - w, y0 - h), (x0, y0 - h)
+        r0_x = rotated_im_w - l
+        r0_y = rotated_im_h - (t + h)
+        return (r0_x, r0_y), (r0_x - w, r0_y), (r0_x - w, r0_y + h), (r0_x, r0_y + h)
     if orientation == 270:
-        x0 = t
-        y0 = rotated_w - l
-        return (x0, y0), (x0, y0 - w), (x0 + h, y0 - w), (x0 + h, y0)
+        r0_x = t + h
+        r0_y = rotated_im_w - l
+        return (r0_x, r0_y), (r0_x, r0_y - w), (r0_x - h, r0_y - w), (r0_x - h, r0_y)
     msg = (
         f"invalid tesseract document orientation {orientation}, "
         f"expected orientation: {sorted(_TESSERACT_ORIENTATIONS)}"
