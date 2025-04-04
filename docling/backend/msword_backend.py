@@ -264,6 +264,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         label = paragraph.style.style_id
         name = paragraph.style.name
+        base_style_label = None
+        base_style_name = None
+        if base_style := getattr(paragraph.style, "base_style", None):
+            base_style_label = base_style.style_id
+            base_style_name = base_style.name
 
         if label is None:
             return "Normal", None
@@ -277,6 +282,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return self._get_heading_and_level(label)
         if "heading" in name.lower():
             return self._get_heading_and_level(name)
+        if base_style_label and "heading" in base_style_label.lower():
+            return self._get_heading_and_level(base_style_label)
+        if base_style_name and "heading" in base_style_name.lower():
+            return self._get_heading_and_level(base_style_name)
 
         return label, None
 
