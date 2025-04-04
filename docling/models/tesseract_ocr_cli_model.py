@@ -266,7 +266,6 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 orientation=doc_orientation,
                                 rotated_image_size=high_res_image.size,
                             )
-
                             cell = TextCell(
                                 index=ix,
                                 text=str(text),
