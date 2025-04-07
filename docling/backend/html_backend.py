@@ -34,6 +34,7 @@ TAGS_FOR_NODE_ITEMS: Final = [
     "h6",
     "p",
     "pre",
+    "code",
     "ul",
     "ol",
     "li",
@@ -165,7 +166,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.handle_header(tag, doc)
         elif tag.name in ["p"]:
             self.handle_paragraph(tag, doc)
-        elif tag.name in ["pre"]:
+        elif tag.name in ["pre", "code"]:
             self.handle_code(tag, doc)
         elif tag.name in ["ul", "ol"]:
             self.handle_list(tag, doc)
