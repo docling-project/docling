@@ -21,11 +21,11 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.utils.ocr_utils import (
-    Box,
     map_tesseract_script,
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
 )
+from docling.utils.orientation import Box
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
