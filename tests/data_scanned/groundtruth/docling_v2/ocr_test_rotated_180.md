@@ -1,3 +1,5 @@
 package
 
-Docling bundles PDF document conversion to JSON and Markdown in an easy self contained
+JSON and Markdown in an easy self contained
+
+Docling bundles PDF document conversion to

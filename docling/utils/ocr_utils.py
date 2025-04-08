@@ -1,14 +1,9 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle
 
-from docling.utils.orientation import (
-    Box,
-    Size,
-    CLIPPED_ORIENTATIONS,
-    rotate_ltwh_bounding_box,
-)
+from docling.utils.orientation import CLIPPED_ORIENTATIONS, rotate_bounding_box
 
 
 def map_tesseract_script(script: str) -> str:
@@ -38,33 +33,37 @@ def parse_tesseract_orientation(orientation: str) -> int:
 
 
 def tesseract_box_to_bounding_rectangle(
-    box: Box,
+    bbox: BoundingBox,
     *,
-    offset: Optional[BoundingBox] = None,
+    original_offset: Optional[BoundingBox] = None,
     scale: float,
     orientation: int,
-    rotated_image_size: Size,
+    im_size: Tuple[int, int],
 ) -> BoundingRectangle:
-    # box is in the top, left, height, width format + top left orientation
-    r_0, r_1, r_2, r_3 = rotate_ltwh_bounding_box(box, orientation, rotated_image_size)
+    # box is in the top, left, height, width format, top left coordinates
+    rect = rotate_bounding_box(bbox, angle=-orientation, im_size=im_size)
     rect = BoundingRectangle(
-        r_x0=r_0[0] / scale,
-        r_y0=r_0[1] / scale,
-        r_x1=r_1[0] / scale,
-        r_y1=r_1[1] / scale,
-        r_x2=r_2[0] / scale,
-        r_y2=r_2[1] / scale,
-        r_x3=r_3[0] / scale,
-        r_y3=r_3[1] / scale,
+        r_x0=rect.r_x0 / scale,
+        r_y0=rect.r_y0 / scale,
+        r_x1=rect.r_x1 / scale,
+        r_y1=rect.r_y1 / scale,
+        r_x2=rect.r_x2 / scale,
+        r_y2=rect.r_y2 / scale,
+        r_x3=rect.r_x3 / scale,
+        r_y3=rect.r_y3 / scale,
         coord_origin=CoordOrigin.TOPLEFT,
     )
-    if offset is not None:
-        rect.r_x0 += offset.l
-        rect.r_x1 += offset.l
-        rect.r_x2 += offset.l
-        rect.r_x3 += offset.l
-        rect.r_y0 += offset.t
-        rect.r_y1 += offset.t
-        rect.r_y2 += offset.t
-        rect.r_y3 += offset.t
+    if original_offset is not None:
+        if not original_offset.coord_origin is CoordOrigin.TOPLEFT:
+            msg = f"expected coordinate origin to be {CoordOrigin.TOPLEFT.value}"
+            raise ValueError(msg)
+        if original_offset is not None:
+            rect.r_x0 += original_offset.l
+            rect.r_x1 += original_offset.l
+            rect.r_x2 += original_offset.l
+            rect.r_x3 += original_offset.l
+            rect.r_y0 += original_offset.t
+            rect.r_y1 += original_offset.t
+            rect.r_y2 += original_offset.t
+            rect.r_y3 += original_offset.t
     return rect
