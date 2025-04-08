@@ -67,6 +67,7 @@ nav:
     - Architecture: concepts/architecture.md
     - Docling Document: concepts/docling_document.md
     - Chunking: concepts/chunking.md
+    - Plugins: concepts/plugins.md
   - Examples:
     - Examples: examples/index.md
     - 🔀 Conversion:
