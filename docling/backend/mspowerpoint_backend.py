@@ -53,6 +53,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
             },
         )
+        self.xpath_expr = etree.XPath(".//a:blip", namespaces={
+            "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+            "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        })
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.pptx_obj = Presentation(self.path_or_stream)
