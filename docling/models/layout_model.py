@@ -1,6 +1,7 @@
 import copy
 import logging
 import warnings
+from copy import deepcopy
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional
@@ -95,7 +96,13 @@ class LayoutModel(BasePageModel):
         )
 
     def draw_clusters_and_cells_side_by_side(
-        self, conv_res, page, clusters, mode_prefix: str, show: bool = False
+        self,
+        conv_res,
+        page,
+        page_orientation: int,
+        clusters,
+        mode_prefix: str,
+        show: bool = False,
     ):
         """
         Draws a page image side by side with clusters filtered into two categories:
@@ -103,9 +110,13 @@ class LayoutModel(BasePageModel):
         - Right: Clusters including FORM, KEY_VALUE_REGION, and PICTURE.
         Includes label names and confidence scores for each cluster.
         """
-        scale_x = page.image.width / page.size.width
-        scale_y = page.image.height / page.size.height
-
+        page_image = deepcopy(page.image)
+        scale_x = page_image.width / page.size.width
+        scale_y = page_image.height / page.size.height
+        if page_orientation:
+            page_image = page_image.rotate(-page_orientation, expand=True)
+            if abs(page_orientation) in [90, 270]:
+                scale_x, scale_y = scale_y, scale_x
         # Filter clusters for left and right images
         exclude_labels = {
             DocItemLabel.FORM,
@@ -115,12 +126,15 @@ class LayoutModel(BasePageModel):
         left_clusters = [c for c in clusters if c.label not in exclude_labels]
         right_clusters = [c for c in clusters if c.label in exclude_labels]
         # Create a deep copy of the original image for both sides
-        left_image = copy.deepcopy(page.image)
-        right_image = copy.deepcopy(page.image)
+        left_image = page_image
+        right_image = copy.deepcopy(left_image)
 
         # Draw clusters on both images
         draw_clusters(left_image, left_clusters, scale_x, scale_y)
         draw_clusters(right_image, right_clusters, scale_x, scale_y)
+        if page_orientation:
+            left_image = left_image.rotate(page_orientation, expand=True)
+            right_image = right_image.rotate(page_orientation, expand=True)
         # Combine the images side by side
         combined_width = left_image.width * 2
         combined_height = left_image.height
@@ -174,7 +188,11 @@ class LayoutModel(BasePageModel):
 
                     if settings.debug.visualize_raw_layout:
                         self.draw_clusters_and_cells_side_by_side(
-                            conv_res, page, clusters, mode_prefix="raw"
+                            conv_res,
+                            page,
+                            page_orientation,
+                            clusters,
+                            mode_prefix="raw",
                         )
 
                     # Apply postprocessing
@@ -208,7 +226,11 @@ class LayoutModel(BasePageModel):
 
                 if settings.debug.visualize_layout:
                     self.draw_clusters_and_cells_side_by_side(
-                        conv_res, page, processed_clusters, mode_prefix="postprocessed"
+                        conv_res,
+                        page,
+                        page_orientation,
+                        processed_clusters,
+                        mode_prefix="postprocessed",
                     )
 
                 yield page
