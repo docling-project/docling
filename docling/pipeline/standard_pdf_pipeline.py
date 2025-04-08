@@ -2,7 +2,7 @@ import logging
 import sys
 import warnings
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
 
@@ -227,7 +227,8 @@ class StandardPdfPipeline(PaginatedPipeline):
                     ):
                         page_ix = element.prov[0].page_no - 1
                         page = next(
-                            (p for p in conv_res.pages if p.page_no == page_ix), None
+                            (p for p in conv_res.pages if p.page_no == page_ix),
+                            cast("Page", None),
                         )
                         assert page is not None
                         assert page.size is not None
