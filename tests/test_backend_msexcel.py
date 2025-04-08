@@ -1,12 +1,17 @@
-import os
+import logging
 from pathlib import Path
 
+import pytest
+
+from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import ConversionResult, DoclingDocument
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
+
+_log = logging.getLogger(__name__)
 
 GENERATE = GEN_TEST_DATA
 
@@ -28,13 +33,15 @@ def get_converter():
     return converter
 
 
-def test_e2e_xlsx_conversions():
+@pytest.fixture(scope="module")
+def documents() -> list[tuple[Path, DoclingDocument]]:
+    documents: list[dict[Path, DoclingDocument]] = []
 
     xlsx_paths = get_xlsx_paths()
     converter = get_converter()
 
     for xlsx_path in xlsx_paths:
-        print(f"converting {xlsx_path}")
+        _log.debug(f"converting {xlsx_path}")
 
         gt_path = (
             xlsx_path.parent.parent / "groundtruth" / "docling_v2" / xlsx_path.name
@@ -44,6 +51,14 @@ def test_e2e_xlsx_conversions():
 
         doc: DoclingDocument = conv_result.document
 
+        assert doc, f"Failed to convert document from file {gt_path}"
+        documents.append((gt_path, doc))
+
+    return documents
+
+
+def test_e2e_xlsx_conversions(documents):
+    for gt_path, doc in documents:
         pred_md: str = doc.export_to_markdown()
         assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
 
@@ -57,3 +72,15 @@ def test_e2e_xlsx_conversions():
         assert verify_document(
             doc, str(gt_path) + ".json", GENERATE
         ), "document document"
+
+
+def test_page_count():
+    path = [item for item in get_xlsx_paths() if item.stem == "test-01"][0]
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
+    assert backend.page_count() == 3

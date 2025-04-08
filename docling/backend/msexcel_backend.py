@@ -1,30 +1,34 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 from docling_core.types.doc import (
+    BoundingBox,
+    CoordOrigin,
     DoclingDocument,
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    ProvenanceItem,
+    Size,
     TableCell,
     TableData,
 )
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
+from PIL import Image as PILImage
+from pydantic import BaseModel
 from typing_extensions import override
 
-from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.abstract_backend import (
+    DeclarativeDocumentBackend,
+    PaginatedDocumentBackend,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
-
-from typing import Any, List
-
-from PIL import Image as PILImage
-from pydantic import BaseModel
 
 
 class ExcelCell(BaseModel):
@@ -38,10 +42,10 @@ class ExcelCell(BaseModel):
 class ExcelTable(BaseModel):
     num_rows: int
     num_cols: int
-    data: List[ExcelCell]
+    data: list[ExcelCell]
 
 
-class MsExcelDocumentBackend(DeclarativeDocumentBackend):
+class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
     @override
     def __init__(
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
@@ -63,12 +67,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
             elif isinstance(self.path_or_stream, Path):
                 self.workbook = load_workbook(filename=str(self.path_or_stream))
 
-            self.valid = True
+            self.valid = self.workbook is not None
         except Exception as e:
             self.valid = False
 
             raise RuntimeError(
-                f"MsPowerpointDocumentBackend could not load document with hash {self.document_hash}"
+                f"MsExcelDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
 
     @override
@@ -80,6 +84,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
     @override
     def supports_pagination(cls) -> bool:
         return True
+
+    def page_count(self) -> int:
+        if self.is_valid() and self.workbook:
+            return len(self.workbook.sheetnames)
+        else:
+            return 0
 
     @classmethod
     @override
@@ -117,6 +127,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
                 # Access the sheet by name
                 sheet = self.workbook[sheet_name]
+                idx = self.workbook.index(sheet)
+                # TODO: check concept of Size as number of rows and cols
+                doc.add_page(page_no=idx + 1, size=Size())
 
                 self.parents[0] = doc.add_group(
                     parent=None,
@@ -142,38 +155,50 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, sheet: Worksheet
     ) -> DoclingDocument:
 
-        tables = self._find_data_tables(sheet)
+        if self.workbook is not None:
+            tables = self._find_data_tables(sheet)
 
-        for excel_table in tables:
-            num_rows = excel_table.num_rows
-            num_cols = excel_table.num_cols
+            for excel_table in tables:
+                num_rows = excel_table.num_rows
+                num_cols = excel_table.num_cols
 
-            table_data = TableData(
-                num_rows=num_rows,
-                num_cols=num_cols,
-                table_cells=[],
-            )
-
-            for excel_cell in excel_table.data:
-
-                cell = TableCell(
-                    text=excel_cell.text,
-                    row_span=excel_cell.row_span,
-                    col_span=excel_cell.col_span,
-                    start_row_offset_idx=excel_cell.row,
-                    end_row_offset_idx=excel_cell.row + excel_cell.row_span,
-                    start_col_offset_idx=excel_cell.col,
-                    end_col_offset_idx=excel_cell.col + excel_cell.col_span,
-                    column_header=excel_cell.row == 0,
-                    row_header=False,
+                table_data = TableData(
+                    num_rows=num_rows,
+                    num_cols=num_cols,
+                    table_cells=[],
                 )
-                table_data.table_cells.append(cell)
 
-            doc.add_table(data=table_data, parent=self.parents[0])
+                for excel_cell in excel_table.data:
+
+                    cell = TableCell(
+                        text=excel_cell.text,
+                        row_span=excel_cell.row_span,
+                        col_span=excel_cell.col_span,
+                        start_row_offset_idx=excel_cell.row,
+                        end_row_offset_idx=excel_cell.row + excel_cell.row_span,
+                        start_col_offset_idx=excel_cell.col,
+                        end_col_offset_idx=excel_cell.col + excel_cell.col_span,
+                        column_header=excel_cell.row == 0,
+                        row_header=False,
+                    )
+                    table_data.table_cells.append(cell)
+
+                page_no = self.workbook.index(sheet) + 1
+                doc.add_table(
+                    data=table_data,
+                    parent=self.parents[0],
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, 0),
+                        bbox=BoundingBox.from_tuple(
+                            (0, 0, 0, 0), origin=CoordOrigin.BOTTOMLEFT
+                        ),
+                    ),
+                )
 
         return doc
 
-    def _find_data_tables(self, sheet: Worksheet) -> List[ExcelTable]:
+    def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
         """
         Find all compact rectangular data tables in a sheet.
         """
@@ -327,18 +352,25 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, sheet: Worksheet
     ) -> DoclingDocument:
 
-        # Iterate over byte images in the sheet
-        for idx, image in enumerate(sheet._images):  # type: ignore
-
-            try:
-                pil_image = PILImage.open(image.ref)
-
-                doc.add_picture(
-                    parent=self.parents[0],
-                    image=ImageRef.from_pil(image=pil_image, dpi=72),
-                    caption=None,
-                )
-            except:
-                _log.error("could not extract the image from excel sheets")
+        if self.workbook is not None:
+            # Iterate over byte images in the sheet
+            for image in sheet._images:  # type: ignore[attr-defined]
+                try:
+                    pil_image = PILImage.open(image.ref)
+                    page_no = self.workbook.index(sheet) + 1
+                    doc.add_picture(
+                        parent=self.parents[0],
+                        image=ImageRef.from_pil(image=pil_image, dpi=72),
+                        caption=None,
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, 0),
+                            bbox=BoundingBox.from_tuple(
+                                (0, 0, 0, 0), origin=CoordOrigin.TOPLEFT
+                            ),
+                        ),
+                    )
+                except:
+                    _log.error("could not extract the image from excel sheets")
 
         return doc
