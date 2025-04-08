@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, Set, Tuple, Union
+from typing import Union
 
 from docling_core.types.doc import (
     DoclingDocument,
@@ -11,12 +11,9 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
 )
-
-# from lxml import etree
-from openpyxl import Workbook, load_workbook
-from openpyxl.cell.cell import Cell
-from openpyxl.drawing.image import Image
+from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
+from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -45,13 +42,16 @@ class ExcelTable(BaseModel):
 
 
 class MsExcelDocumentBackend(DeclarativeDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
+    @override
+    def __init__(
+        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+    ) -> None:
         super().__init__(in_doc, path_or_stream)
 
         # Initialise the parents for the hierarchy
         self.max_levels = 10
 
-        self.parents: Dict[int, Any] = {}
+        self.parents: dict[int, Any] = {}
         for i in range(-1, self.max_levels):
             self.parents[i] = None
 
@@ -71,24 +71,22 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
                 f"MsPowerpointDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
 
+    @override
     def is_valid(self) -> bool:
         _log.info(f"valid: {self.valid}")
         return self.valid
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return True
 
-    def unload(self):
-        if isinstance(self.path_or_stream, BytesIO):
-            self.path_or_stream.close()
-
-        self.path_or_stream = None
-
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    @override
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.XLSX}
 
+    @override
     def convert(self) -> DoclingDocument:
         # Parses the XLSX into a structured document model.
 
@@ -132,7 +130,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _convert_sheet(self, doc: DoclingDocument, sheet: Worksheet):
+    def _convert_sheet(self, doc: DoclingDocument, sheet: Worksheet) -> DoclingDocument:
 
         doc = self._find_tables_in_sheet(doc, sheet)
 
@@ -140,7 +138,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _find_tables_in_sheet(self, doc: DoclingDocument, sheet: Worksheet):
+    def _find_tables_in_sheet(
+        self, doc: DoclingDocument, sheet: Worksheet
+    ) -> DoclingDocument:
 
         tables = self._find_data_tables(sheet)
 
@@ -180,7 +180,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
         # _log.info("find_data_tables")
 
         tables = []  # List to store found tables
-        visited: set[Tuple[int, int]] = set()  # Track already visited cells
+        visited: set[tuple[int, int]] = set()  # Track already visited cells
 
         # Iterate over all cells in the sheet
         for ri, row in enumerate(sheet.iter_rows(values_only=False)):
@@ -191,9 +191,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
                     continue
 
                 # If the cell starts a new table, find its bounds
-                table_bounds, visited_cells = self._find_table_bounds(
-                    sheet, ri, rj, visited
-                )
+                table_bounds, visited_cells = self._find_table_bounds(sheet, ri, rj)
 
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
@@ -205,8 +203,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
         sheet: Worksheet,
         start_row: int,
         start_col: int,
-        visited: set[Tuple[int, int]],
-    ):
+    ) -> tuple[ExcelTable, set[tuple[int, int]]]:
         """
         Determine the bounds of a compact rectangular table.
         Returns:
@@ -220,7 +217,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         # Collect the data within the bounds
         data = []
-        visited_cells = set()
+        visited_cells: set[tuple[int, int]] = set()
         for ri in range(start_row, max_row + 1):
             for rj in range(start_col, max_col + 1):
 
@@ -270,10 +267,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
             visited_cells,
         )
 
-    def _find_table_bottom(self, sheet: Worksheet, start_row: int, start_col: int):
+    def _find_table_bottom(
+        self, sheet: Worksheet, start_row: int, start_col: int
+    ) -> int:
         """Function to find the bottom boundary of the table"""
 
-        max_row = start_row
+        max_row: int = start_row
 
         while max_row < sheet.max_row - 1:
             # Get the cell value or check if it is part of a merged cell
@@ -296,10 +295,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         return max_row
 
-    def _find_table_right(self, sheet: Worksheet, start_row: int, start_col: int):
+    def _find_table_right(
+        self, sheet: Worksheet, start_row: int, start_col: int
+    ) -> int:
         """Function to find the right boundary of the table"""
 
-        max_col = start_col
+        max_col: int = start_col
 
         while max_col < sheet.max_column - 1:
             # Get the cell value or check if it is part of a merged cell
