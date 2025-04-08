@@ -266,6 +266,7 @@ class ResponseFormat(str, Enum):
 class InferenceFramework(str, Enum):
     MLX = "mlx"
     TRANSFORMERS = "transformers"
+    OLLAMA = "ollama"
 
 
 class HuggingFaceVlmOptions(BaseVlmOptions):
@@ -282,6 +283,16 @@ class HuggingFaceVlmOptions(BaseVlmOptions):
     @property
     def repo_cache_folder(self) -> str:
         return self.repo_id.replace("/", "--")
+
+
+class OllamaVlmOptions(BaseVlmOptions):
+    kind: Literal["ollama_model_options"] = "ollama_model_options"
+
+    model_id: str
+    base_url: str = "http://localhost:11434"
+    num_ctx: int | None = None
+    scale: float = 2.0
+    response_format: ResponseFormat
 
 
 smoldocling_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
@@ -307,10 +318,18 @@ granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
     inference_framework=InferenceFramework.TRANSFORMERS,
 )
 
+granite_vision_vlm_ollama_conversion_options = OllamaVlmOptions(
+    model_id="granite3.2-vision:2b",
+    prompt="OCR the full page to markdown.",
+    scale = 1.0,
+    response_format=ResponseFormat.MARKDOWN,
+)
+
 
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"
     GRANITE_VISION = "granite_vision"
+    GRANITE_VISION_OLLAMA = "granite_vision_ollama"
 
 
 # Define an enum for the backend options
