@@ -33,6 +33,7 @@ class _AvailableModels(str, Enum):
     PICTURE_CLASSIFIER = "picture_classifier"
     SMOLVLM = "smolvlm"
     GRANITE_VISION = "granite_vision"
+    GRANITE_VISION_OLLAMA = "granite_vision_ollama"
     EASYOCR = "easyocr"
 
 
