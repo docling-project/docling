@@ -226,7 +226,10 @@ class StandardPdfPipeline(PaginatedPipeline):
                         and self.pipeline_options.generate_table_images
                     ):
                         page_ix = element.prov[0].page_no - 1
-                        page = conv_res.pages[page_ix]
+                        page = next(
+                            (p for p in conv_res.pages if p.page_no == page_ix), None
+                        )
+                        assert page is not None
                         assert page.size is not None
                         assert page.image is not None
 
