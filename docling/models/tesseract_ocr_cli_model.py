@@ -6,10 +6,11 @@ import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, Popen
-from typing import List, Optional, Tuple, Type, cast
+from typing import List, Optional, Tuple, Type
 
 import pandas as pd
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
@@ -25,7 +26,6 @@ from docling.utils.ocr_utils import (
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
 )
-from docling.utils.orientation import Box
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -235,7 +235,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                             doc_orientation = _parse_orientation(df_osd)
                             if doc_orientation != 0:
                                 high_res_image = high_res_image.rotate(
-                                    doc_orientation, expand=True
+                                    -doc_orientation, expand=True
                                 )
                                 high_res_image.save(fname)
                             df_result = self._run_tesseract(fname, df_osd)
@@ -250,21 +250,18 @@ class TesseractOcrCliModel(BaseOcrModel):
                             text = row["text"]
                             conf = row["conf"]
 
-                            rotated_bbox = (
-                                row["left"],
-                                row["top"],
-                                row["width"],
-                                row["height"],
-                            )
-                            rotated_bbox = cast(
-                                Box, tuple(float(c) for c in rotated_bbox)
+                            l, t = float(row["left"]), float(row["top"])
+                            r = l + float(row["width"])
+                            b = t + row["height"]
+                            bbox = BoundingBox(
+                                l=l, t=t, r=r, b=b, coord_origin=CoordOrigin.TOPLEFT
                             )
                             rect = tesseract_box_to_bounding_rectangle(
-                                rotated_bbox,
-                                offset=ocr_rect,
+                                bbox,
+                                original_offset=ocr_rect,
                                 scale=self.scale,
                                 orientation=doc_orientation,
-                                rotated_image_size=high_res_image.size,
+                                im_size=high_res_image.size,
                             )
                             cell = TextCell(
                                 index=ix,

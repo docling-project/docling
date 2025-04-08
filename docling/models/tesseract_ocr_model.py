@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Dict, Iterable, Optional, Type
 
+from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.base_models import Page
@@ -151,7 +152,7 @@ class TesseractOcrModel(BaseOcrModel):
                         doc_orientation = parse_tesseract_orientation(osd["orient_deg"])
                         if doc_orientation != 0:
                             high_res_image = high_res_image.rotate(
-                                doc_orientation, expand=True
+                                -doc_orientation, expand=True
                             )
                         if "auto" in self.options.lang:
                             script = osd["script_name"]
@@ -193,13 +194,18 @@ class TesseractOcrModel(BaseOcrModel):
                             # Extract text within the bounding box
                             text = local_reader.GetUTF8Text().strip()
                             confidence = local_reader.MeanTextConf()
-                            rotated_bbox = (box["x"], box["y"], box["w"], box["h"])
+                            l, t = box["x"], box["y"]
+                            r = l + box["w"]
+                            b = t + box["h"]
+                            bbox = BoundingBox(
+                                l=l, t=t, r=r, b=b, coord_origin=CoordOrigin.TOPLEFT
+                            )
                             rect = tesseract_box_to_bounding_rectangle(
-                                rotated_bbox,
-                                offset=ocr_rect,
+                                bbox,
+                                original_offset=ocr_rect,
                                 scale=self.scale,
                                 orientation=doc_orientation,
-                                rotated_image_size=high_res_image.size,
+                                im_size=high_res_image.size,
                             )
                             cells.append(
                                 TextCell(
