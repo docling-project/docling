@@ -406,7 +406,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     drawing_blip = self.xpath_expr(shape.element)
-                    if drawing_blip:
+                    if drawing_blip: #ensure there is a drwaing blip
                         self.handle_pictures(shape, parent_slide, slide_ind, doc, drawing_blip, slide)
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
