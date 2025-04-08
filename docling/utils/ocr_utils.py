@@ -1,9 +1,12 @@
-from typing import Optional, Tuple
+from typing import Optional
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle
 
-from docling.utils.orientation import CLIPPED_ORIENTATIONS, rotate_bounding_box
+from docling.utils.orientation import (
+    CLIPPED_ORIENTATIONS,
+    rotate_bounding_box,
+)
 
 
 def map_tesseract_script(script: str) -> str:
