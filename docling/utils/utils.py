@@ -4,10 +4,11 @@ import logging
 from io import BytesIO
 from itertools import islice
 from pathlib import Path
-from typing import List, Union
+from typing import Dict, List, Optional, Union
 
 import requests
 from PIL import Image
+from pydantic import AnyUrl
 from tqdm import tqdm
 
 from docling.datamodel.base_models import OpenAiApiResponse
@@ -75,10 +76,12 @@ def download_url_with_progress(url: str, progress: bool = False) -> BytesIO:
 def openai_image_request(
     image: Image.Image,
     prompt: str,
-    url: str = "http://localhost:11434/v1/chat/completions",  # Default to ollama
-    apikey: str | None = None,
+    url: Union[
+        AnyUrl, str
+    ] = "http://localhost:11434/v1/chat/completions",  # Default to ollama
+    apikey: Optional[str] = None,
     timeout: float = 20,
-    headers: dict[str, str] | None = None,
+    headers: Optional[Dict[str, str]] = None,
     **params,
 ) -> str:
     img_io = BytesIO()
@@ -90,9 +93,7 @@ def openai_image_request(
             "content": [
                 {
                     "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/png;base64,{image_base64}"
-                    },
+                    "image_url": {"url": f"data:image/png;base64,{image_base64}"},
                 },
                 {
                     "type": "text",

@@ -64,30 +64,31 @@ class VlmPipeline(PaginatedPipeline):
             self.build_pipe = [
                 OpenAiVlmModel(
                     enabled=True,  # must be always enabled for this pipeline to make sense.
-                    vlm_options=self.pipeline_options.vlm_options,
+                    vlm_options=cast(
+                        OpenAiVlmOptions, self.pipeline_options.vlm_options
+                    ),
                 ),
             ]
-        elif (
-            self.pipeline_options.vlm_options.inference_framework
-            == InferenceFramework.MLX
-        ):
-            self.build_pipe = [
-                HuggingFaceMlxModel(
-                    enabled=True,  # must be always enabled for this pipeline to make sense.
-                    artifacts_path=artifacts_path,
-                    accelerator_options=pipeline_options.accelerator_options,
-                    vlm_options=self.pipeline_options.vlm_options,
-                ),
-            ]
-        elif isinstance(pipeline_options.vlm_options, HuggingFaceVlmOptions):
-            self.build_pipe = [
-                HuggingFaceVlmModel(
-                    enabled=True,  # must be always enabled for this pipeline to make sense.
-                    artifacts_path=artifacts_path,
-                    accelerator_options=pipeline_options.accelerator_options,
-                    vlm_options=self.pipeline_options.vlm_options,
-                ),
-            ]
+        elif isinstance(self.pipeline_options.vlm_options, HuggingFaceVlmOptions):
+            vlm_options = cast(HuggingFaceVlmOptions, self.pipeline_options.vlm_options)
+            if vlm_options.inference_framework == InferenceFramework.MLX:
+                self.build_pipe = [
+                    HuggingFaceMlxModel(
+                        enabled=True,  # must be always enabled for this pipeline to make sense.
+                        artifacts_path=artifacts_path,
+                        accelerator_options=pipeline_options.accelerator_options,
+                        vlm_options=vlm_options,
+                    ),
+                ]
+            else:
+                self.build_pipe = [
+                    HuggingFaceVlmModel(
+                        enabled=True,  # must be always enabled for this pipeline to make sense.
+                        artifacts_path=artifacts_path,
+                        accelerator_options=pipeline_options.accelerator_options,
+                        vlm_options=vlm_options,
+                    ),
+                ]
 
         self.enrichment_pipe = [
             # Other models working on `NodeItem` elements in the DoclingDocument

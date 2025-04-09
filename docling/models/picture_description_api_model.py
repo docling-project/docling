@@ -52,7 +52,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                 image=image,
                 prompt=self.options.prompt,
                 url=self.options.url,
-                timeout=self.options.headers,
+                timeout=self.options.timeout,
                 headers=self.options.headers,
                 **self.options.params,
             )

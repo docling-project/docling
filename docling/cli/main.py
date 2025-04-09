@@ -537,7 +537,9 @@ def convert(
             if vlm_model == VlmModelType.GRANITE_VISION:
                 pipeline_options.vlm_options = granite_vision_vlm_conversion_options
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = granite_vision_vlm_ollama_conversion_options
+                pipeline_options.vlm_options = (
+                    granite_vision_vlm_ollama_conversion_options
+                )
             elif vlm_model == VlmModelType.SMOLDOCLING:
                 pipeline_options.vlm_options = smoldocling_vlm_conversion_options
                 if sys.platform == "darwin":

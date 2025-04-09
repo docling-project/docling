@@ -266,6 +266,7 @@ class Page(BaseModel):
 
 ## OpenAI API Request / Response Models ##
 
+
 class OpenAiChatMessage(BaseModel):
     role: str
     content: str

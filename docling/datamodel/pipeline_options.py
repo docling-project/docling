@@ -289,8 +289,8 @@ class OpenAiVlmOptions(BaseVlmOptions):
     kind: Literal["openai_model_options"] = "openai_model_options"
 
     model_id: str
-    base_url: str = "http://localhost:11434/v1" # Default to ollama
-    apikey: str | None = None,
+    base_url: str = "http://localhost:11434/v1"  # Default to ollama
+    apikey: Optional[str] = None
     scale: float = 2.0
     timeout: float = 60
     response_format: ResponseFormat
@@ -322,8 +322,8 @@ granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
 granite_vision_vlm_ollama_conversion_options = OpenAiVlmOptions(
     model_id="granite3.2-vision:2b",
     prompt="OCR the full page to markdown.",
-    scale = 1.0,
-    timeout = 120,
+    scale=1.0,
+    timeout=120,
     response_format=ResponseFormat.MARKDOWN,
 )
 
@@ -383,7 +383,9 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         False  # (To be used with vlms, or other generative models)
     )
     # If True, text from backend will be used instead of generated text
-    vlm_options: Union[HuggingFaceVlmOptions] = smoldocling_vlm_conversion_options
+    vlm_options: Union[HuggingFaceVlmOptions, OpenAiVlmOptions] = (
+        smoldocling_vlm_conversion_options
+    )
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):

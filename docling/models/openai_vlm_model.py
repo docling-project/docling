@@ -18,11 +18,15 @@ class OpenAiVlmModel(BasePageModel):
         self.enabled = enabled
         self.vlm_options = vlm_options
         if self.enabled:
-            self.url = "/".join([self.vlm_options.base_url.rstrip("/"), "chat/completions"])
+            self.url = "/".join(
+                [self.vlm_options.base_url.rstrip("/"), "chat/completions"]
+            )
             self.apikey = self.vlm_options.apikey
             self.model_id = self.vlm_options.model_id
             self.timeout = self.vlm_options.timeout
-            self.prompt_content = f"This is a page from a document.\n{self.vlm_options.prompt}"
+            self.prompt_content = (
+                f"This is a page from a document.\n{self.vlm_options.prompt}"
+            )
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -36,6 +40,7 @@ class OpenAiVlmModel(BasePageModel):
                     assert page.size is not None
 
                     hi_res_image = page.get_image(scale=self.vlm_options.scale)
+                    assert hi_res_image is not None
                     if hi_res_image:
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
