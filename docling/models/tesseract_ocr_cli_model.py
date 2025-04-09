@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 import os
+import subprocess
 import tempfile
 from collections.abc import Iterable
 from pathlib import Path
@@ -150,9 +151,8 @@ class TesseractOcrCliModel(BaseOcrModel):
         cmd = [self.options.tesseract_cmd]
         cmd.extend(["--psm", "0", "-l", "osd", ifilename, "stdout"])
         _log.info("command: {}".format(" ".join(cmd)))
-        proc = Popen(cmd, stdout=PIPE, stderr=DEVNULL)
-        output, _ = proc.communicate()
-        decoded_data = output.decode("utf-8")
+        output = subprocess.run(cmd, capture_output=True, check=True)
+        decoded_data = output.stdout.decode("utf-8")
         df_detected = pd.read_csv(
             io.StringIO(decoded_data), sep=":", header=None, names=["key", "value"]
         )
@@ -231,14 +231,30 @@ class TesseractOcrCliModel(BaseOcrModel):
                             ) as image_file:
                                 fname = image_file.name
                                 high_res_image.save(image_file)
-                            df_osd = self._perform_osd(fname)
+                            try:
+                                df_osd = self._perform_osd(fname)
+                            except subprocess.CalledProcessError as exc:
+                                _log.error(
+                                    "OSD failed for: %s with error:\n %s",
+                                    image_file,
+                                    exc.stderr,
+                                )
+                                continue
                             doc_orientation = _parse_orientation(df_osd)
                             if doc_orientation != 0:
                                 high_res_image = high_res_image.rotate(
                                     -doc_orientation, expand=True
                                 )
                                 high_res_image.save(fname)
-                            df_result = self._run_tesseract(fname, df_osd)
+                            try:
+                                df_result = self._run_tesseract(fname, df_osd)
+                            except subprocess.CalledProcessError as exc:
+                                _log.error(
+                                    "tesseract OCR failed for: %s with error:\n %s",
+                                    image_file,
+                                    exc.stderr,
+                                )
+                                continue
                         finally:
                             if os.path.exists(fname):
                                 os.remove(fname)
