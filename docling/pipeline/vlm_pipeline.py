@@ -17,14 +17,14 @@ from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
     HuggingFaceVlmOptions,
     InferenceFramework,
-    OllamaVlmOptions,
+    OpenAiVlmOptions,
     ResponseFormat,
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
 from docling.models.hf_mlx_model import HuggingFaceMlxModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
-from docling.models.ollama_vlm_model import OllamaVlmModel
+from docling.models.openai_vlm_model import OpenAiVlmModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -60,9 +60,9 @@ class VlmPipeline(PaginatedPipeline):
 
         self.keep_images = self.pipeline_options.generate_page_images
 
-        if isinstance(pipeline_options.vlm_options, OllamaVlmOptions):
+        if isinstance(pipeline_options.vlm_options, OpenAiVlmOptions):
             self.build_pipe = [
-                OllamaVlmModel(
+                OpenAiVlmModel(
                     enabled=True,  # must be always enabled for this pipeline to make sense.
                     vlm_options=self.pipeline_options.vlm_options,
                 ),
