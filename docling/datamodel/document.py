@@ -283,6 +283,9 @@ class _DocumentConversionInput(BaseModel):
             if mime is None:  # must guess from
                 with obj.open("rb") as f:
                     content = f.read(1024)  # Read first 1KB
+            if mime is not None and mime.lower() == "application/zip" and obj.suffixes[-1].lower() == ".xlsx":
+                mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
 
         elif isinstance(obj, DocumentStream):
             content = obj.stream.read(8192)
