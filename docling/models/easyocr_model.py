@@ -69,7 +69,7 @@ class EasyOcrModel(BaseOcrModel):
             else:
                 warnings.warn(
                     "Deprecated field. Better to set the `accelerator_options.device` in `pipeline_options`. "
-                    "When `use_gpu and accelerator_options.device == AcceleratorDevice.CUDA` the GPU is used "
+                    "When `use_gpu and accelerator_options.device == AcceleratorDevice.CUDA.value` the GPU is used "
                     "to run EasyOCR. Otherwise, EasyOCR runs in CPU."
                 )
                 use_gpu = self.options.use_gpu
