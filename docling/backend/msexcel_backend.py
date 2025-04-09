@@ -1,11 +1,12 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
     CoordOrigin,
+    DocItem,
     DoclingDocument,
     DocumentOrigin,
     GroupLabel,
@@ -16,9 +17,11 @@ from docling_core.types.doc import (
     TableData,
 )
 from openpyxl import load_workbook
+from openpyxl.drawing.image import Image
+from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor
 from openpyxl.worksheet.worksheet import Worksheet
 from PIL import Image as PILImage
-from pydantic import BaseModel
+from pydantic import BaseModel, NonNegativeInt, PositiveInt
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -50,21 +53,37 @@ class ExcelCell(BaseModel):
 
 
 class ExcelTable(BaseModel):
-    """Represents an Excel table.
+    """Represents an Excel table on a worksheet.
 
     Attributes:
+        anchor: The column and row indices of the upper-left cell of the table
+        (0-based index).
         num_rows: The number of rows in the table.
         num_cols: The number of columns in the table.
         data: The data in the table, represented as a list of ExcelCell objects.
     """
 
+    anchor: tuple[NonNegativeInt, NonNegativeInt]
     num_rows: int
     num_cols: int
     data: list[ExcelCell]
 
 
 class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    """Backend for parsing Excel workbooks."""
+    """Backend for parsing Excel workbooks.
+
+    The backend converts an Excel workbook into a DoclingDocument object.
+    Each worksheet is converted into a separate page.
+    The following elements are parsed:
+    - Cell contents, parsed as tables. If two groups of cells are disconnected
+    between each other, they will be parsed as two different tables.
+    - Images, parsed as PictureItem objects.
+
+    The DoclingDocument tables and pictures have their provenance information, including
+    the position in their original Excel worksheet. The position is represented by a
+    bounding box object with the cell indices as units (0-based index). The size of this
+    bounding box is the number of columns and rows that the table or picture spans.
+    """
 
     @override
     def __init__(
@@ -106,7 +125,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     @override
     def is_valid(self) -> bool:
-        _log.info(f"valid: {self.valid}")
+        _log.debug(f"valid: {self.valid}")
         return self.valid
 
     @classmethod
@@ -170,19 +189,19 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             for sheet_name in self.workbook.sheetnames:
                 _log.info(f"Processing sheet: {sheet_name}")
 
-                # Access the sheet by name
                 sheet = self.workbook[sheet_name]
-                idx = self.workbook.index(sheet)
-                # TODO: check concept of Size as number of rows and cols
-                doc.add_page(page_no=idx + 1, size=Size())
+                page_no = self.workbook.index(sheet) + 1
+                # do not rely on sheet.max_column, sheet.max_row if there are images
+                page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
                 self.parents[0] = doc.add_group(
                     parent=None,
                     label=GroupLabel.SECTION,
                     name=f"sheet: {sheet_name}",
                 )
-
                 doc = self._convert_sheet(doc, sheet)
+                width, height = self._find_page_size(doc, page_no)
+                page.size = Size(width=width, height=height)
         else:
             _log.error("Workbook is not initialized.")
 
@@ -222,6 +241,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             tables = self._find_data_tables(sheet)
 
             for excel_table in tables:
+                origin_col = excel_table.anchor[0]
+                origin_row = excel_table.anchor[1]
                 num_rows = excel_table.num_rows
                 num_cols = excel_table.num_cols
 
@@ -254,7 +275,13 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                         page_no=page_no,
                         charspan=(0, 0),
                         bbox=BoundingBox.from_tuple(
-                            (0, 0, 0, 0), origin=CoordOrigin.BOTTOMLEFT
+                            (
+                                origin_col,
+                                origin_row,
+                                origin_col + num_cols,
+                                origin_row + num_rows,
+                            ),
+                            origin=CoordOrigin.TOPLEFT,
                         ),
                     ),
                 )
@@ -322,7 +349,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 row_span = 1
                 col_span = 1
 
-                # _log.info(sheet.merged_cells.ranges)
                 for merged_range in sheet.merged_cells.ranges:
 
                     if (
@@ -346,7 +372,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             col_span=col_span,
                         )
                     )
-                    # _log.info(f"cell: {ri}, {rj} -> {ri - start_row}, {rj - start_col}, {row_span}, {col_span}: {str(cell.value)}")
 
                     # Mark all cells in the span as visited
                     for span_row in range(ri, ri + row_span):
@@ -355,6 +380,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return (
             ExcelTable(
+                anchor=(start_col, start_row),
                 num_rows=max_row + 1 - start_row,
                 num_cols=max_col + 1 - start_col,
                 data=data,
@@ -446,13 +472,21 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             The updated DoclingDocument.
         """
-
         if self.workbook is not None:
             # Iterate over byte images in the sheet
-            for image in sheet._images:  # type: ignore[attr-defined]
+            for item in sheet._images:  # type: ignore[attr-defined]
                 try:
-                    pil_image = PILImage.open(image.ref)
+                    image: Image = cast(Image, item)
+                    pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
                     page_no = self.workbook.index(sheet) + 1
+                    anchor = (0, 0, 0, 0)
+                    if isinstance(image.anchor, TwoCellAnchor):
+                        anchor = (
+                            image.anchor._from.col,
+                            image.anchor._from.row,
+                            image.anchor.to.col + 1,
+                            image.anchor.to.row + 1,
+                        )
                     doc.add_picture(
                         parent=self.parents[0],
                         image=ImageRef.from_pil(image=pil_image, dpi=72),
@@ -461,7 +495,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             page_no=page_no,
                             charspan=(0, 0),
                             bbox=BoundingBox.from_tuple(
-                                (0, 0, 0, 0), origin=CoordOrigin.TOPLEFT
+                                anchor, origin=CoordOrigin.TOPLEFT
                             ),
                         ),
                     )
@@ -469,3 +503,23 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     _log.error("could not extract the image from excel sheets")
 
         return doc
+
+    @staticmethod
+    def _find_page_size(
+        doc: DoclingDocument, page_no: PositiveInt
+    ) -> tuple[float, float]:
+        left: float = -1.0
+        top: float = -1.0
+        right: float = -1.0
+        bottom: float = -1.0
+        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+            if not isinstance(item, DocItem):
+                continue
+            for provenance in item.prov:
+                bbox = provenance.bbox
+                left = min(left, bbox.l) if left != -1 else bbox.l
+                right = max(right, bbox.r) if right != -1 else bbox.r
+                top = min(top, bbox.t) if top != -1 else bbox.t
+                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+
+        return (right - left, bottom - top)

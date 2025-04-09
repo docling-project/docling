@@ -57,7 +57,7 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
-def test_e2e_xlsx_conversions(documents):
+def test_e2e_xlsx_conversions(documents) -> None:
     for gt_path, doc in documents:
         pred_md: str = doc.export_to_markdown()
         assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
@@ -74,7 +74,13 @@ def test_e2e_xlsx_conversions(documents):
         ), "document document"
 
 
-def test_page_count():
+def test_pages(documents) -> None:
+    """Test the page count and page size of converted documents.
+
+    Args:
+        documents: The paths and converted documents.
+    """
+    # number of pages from the backend method
     path = [item for item in get_xlsx_paths() if item.stem == "test-01"][0]
     in_doc = InputDocument(
         path_or_stream=path,
@@ -84,3 +90,12 @@ def test_page_count():
     )
     backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
     assert backend.page_count() == 3
+
+    # number of pages from the converted document
+    doc = [item for path, item in documents if path.stem == "test-01"][0]
+    assert len(doc.pages) == 3
+
+    # page sizes as number of cells
+    assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
+    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
