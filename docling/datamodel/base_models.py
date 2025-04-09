@@ -262,3 +262,34 @@ class Page(BaseModel):
     @property
     def image(self) -> Optional[Image]:
         return self.get_image(scale=self._default_image_scale)
+
+
+## OpenAI API Request / Response Models ##
+
+class OpenAiChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class OpenAiResponseChoice(BaseModel):
+    index: int
+    message: OpenAiChatMessage
+    finish_reason: str
+
+
+class OpenAiResponseUsage(BaseModel):
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
+
+class OpenAiApiResponse(BaseModel):
+    model_config = ConfigDict(
+        protected_namespaces=(),
+    )
+
+    id: str
+    model: Optional[str] = None  # returned by openai
+    choices: List[OpenAiResponseChoice]
+    created: int
+    usage: OpenAiResponseUsage
