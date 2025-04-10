@@ -153,6 +153,7 @@ def export_documents(
     output_dir: Path,
     export_json: bool,
     export_html: bool,
+    export_html_split_page: bool,
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
@@ -180,7 +181,15 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
                 conv_res.document.save_as_html(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname, image_mode=image_export_mode, split_page_view=False
+                )
+
+            # Export HTML format:
+            if export_html_split_page:
+                fname = output_dir / f"{doc_filename}.html"
+                _log.info(f"writing HTML output to {fname}")
+                conv_res.document.save_as_html(
+                    filename=fname, image_mode=image_export_mode, split_page_view=True
                 )
 
             # Export Text format:
@@ -471,6 +480,7 @@ def convert(
 
         export_json = OutputFormat.JSON in to_formats
         export_html = OutputFormat.HTML in to_formats
+        export_html_split_page = OutputFormat.HTML_SPLIT_PAGE in to_formats
         export_md = OutputFormat.MARKDOWN in to_formats
         export_txt = OutputFormat.TEXT in to_formats
         export_doctags = OutputFormat.DOCTAGS in to_formats
@@ -578,6 +588,7 @@ def convert(
             output_dir=output,
             export_json=export_json,
             export_html=export_html,
+            export_html_split_page=export_html_split_page,
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,
