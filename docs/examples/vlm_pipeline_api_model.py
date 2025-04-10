@@ -74,7 +74,7 @@ def main():
     input_doc_path = Path("./tests/data/pdf/2305.03393v1-pg9.pdf")
 
     pipeline_options = VlmPipelineOptions(
-        # enable_remote_services=True  # <-- this is required!
+        enable_remote_services=True  # <-- this is required!
     )
 
     # The ApiVlmOptions() allows to interface with APIs supporting

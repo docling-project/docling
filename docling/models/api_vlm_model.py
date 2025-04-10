@@ -3,6 +3,7 @@ from typing import Iterable
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ApiVlmOptions
+from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BasePageModel
 from docling.utils.api_image_request import api_image_request
 from docling.utils.profiling import TimeRecorder
@@ -13,11 +14,19 @@ class ApiVlmModel(BasePageModel):
     def __init__(
         self,
         enabled: bool,
+        enable_remote_services: bool,
         vlm_options: ApiVlmOptions,
     ):
         self.enabled = enabled
         self.vlm_options = vlm_options
         if self.enabled:
+            if not enable_remote_services:
+                raise OperationNotAllowed(
+                    "Connections to remote services is only allowed when set explicitly. "
+                    "pipeline_options.enable_remote_services=True, or using the CLI "
+                    "--enable-remote-services."
+                )
+
             self.timeout = self.vlm_options.timeout
             self.prompt_content = (
                 f"This is a page from a document.\n{self.vlm_options.prompt}"

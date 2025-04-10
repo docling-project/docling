@@ -64,6 +64,7 @@ class VlmPipeline(PaginatedPipeline):
             self.build_pipe = [
                 ApiVlmModel(
                     enabled=True,  # must be always enabled for this pipeline to make sense.
+                    enable_remote_services=self.pipeline_options.enable_remote_services,
                     vlm_options=cast(ApiVlmOptions, self.pipeline_options.vlm_options),
                 ),
             ]

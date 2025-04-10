@@ -532,7 +532,9 @@ def convert(
                 backend=backend,  # pdf_backend
             )
         elif pipeline == PdfPipeline.VLM:
-            pipeline_options = VlmPipelineOptions()
+            pipeline_options = VlmPipelineOptions(
+                enable_remote_services=enable_remote_services,
+            )
 
             if vlm_model == VlmModelType.GRANITE_VISION:
                 pipeline_options.vlm_options = granite_vision_vlm_conversion_options
