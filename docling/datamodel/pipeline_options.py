@@ -285,10 +285,12 @@ class HuggingFaceVlmOptions(BaseVlmOptions):
         return self.repo_id.replace("/", "--")
 
 
-class OpenAiVlmOptions(BaseVlmOptions):
-    kind: Literal["openai_model_options"] = "openai_model_options"
+class ApiVlmOptions(BaseVlmOptions):
+    kind: Literal["api_model_options"] = "api_model_options"
 
-    url: AnyUrl = AnyUrl("http://localhost:11434/v1/chat/completions")  # Default to ollama
+    url: AnyUrl = AnyUrl(
+        "http://localhost:11434/v1/chat/completions"
+    )  # Default to ollama
     headers: Dict[str, str] = {}
     params: Dict[str, Any] = {}
     scale: float = 2.0
@@ -319,7 +321,7 @@ granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
     inference_framework=InferenceFramework.TRANSFORMERS,
 )
 
-granite_vision_vlm_ollama_conversion_options = OpenAiVlmOptions(
+granite_vision_vlm_ollama_conversion_options = ApiVlmOptions(
     url=AnyUrl("http://localhost:11434/v1/chat/completions"),
     params={"model": "granite3.2-vision:2b"},
     prompt="OCR the full page to markdown.",
@@ -384,7 +386,7 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         False  # (To be used with vlms, or other generative models)
     )
     # If True, text from backend will be used instead of generated text
-    vlm_options: Union[HuggingFaceVlmOptions, OpenAiVlmOptions] = (
+    vlm_options: Union[HuggingFaceVlmOptions, ApiVlmOptions] = (
         smoldocling_vlm_conversion_options
     )
 

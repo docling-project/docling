@@ -15,16 +15,16 @@ from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import InputFormat, Page
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
+    ApiVlmOptions,
     HuggingFaceVlmOptions,
     InferenceFramework,
-    OpenAiVlmOptions,
     ResponseFormat,
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
+from docling.models.api_vlm_model import ApiVlmModel
 from docling.models.hf_mlx_model import HuggingFaceMlxModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
-from docling.models.openai_vlm_model import OpenAiVlmModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -60,13 +60,11 @@ class VlmPipeline(PaginatedPipeline):
 
         self.keep_images = self.pipeline_options.generate_page_images
 
-        if isinstance(pipeline_options.vlm_options, OpenAiVlmOptions):
+        if isinstance(pipeline_options.vlm_options, ApiVlmOptions):
             self.build_pipe = [
-                OpenAiVlmModel(
+                ApiVlmModel(
                     enabled=True,  # must be always enabled for this pipeline to make sense.
-                    vlm_options=cast(
-                        OpenAiVlmOptions, self.pipeline_options.vlm_options
-                    ),
+                    vlm_options=cast(ApiVlmOptions, self.pipeline_options.vlm_options),
                 ),
             ]
         elif isinstance(self.pipeline_options.vlm_options, HuggingFaceVlmOptions):

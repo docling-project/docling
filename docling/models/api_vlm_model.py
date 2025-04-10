@@ -2,18 +2,18 @@ from typing import Iterable
 
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import OpenAiVlmOptions
+from docling.datamodel.pipeline_options import ApiVlmOptions
 from docling.models.base_model import BasePageModel
+from docling.utils.api_image_request import api_image_request
 from docling.utils.profiling import TimeRecorder
-from docling.utils.utils import openai_image_request
 
 
-class OpenAiVlmModel(BasePageModel):
+class ApiVlmModel(BasePageModel):
 
     def __init__(
         self,
         enabled: bool,
-        vlm_options: OpenAiVlmOptions,
+        vlm_options: ApiVlmOptions,
     ):
         self.enabled = enabled
         self.vlm_options = vlm_options
@@ -44,7 +44,7 @@ class OpenAiVlmModel(BasePageModel):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
-                    page_tags = openai_image_request(
+                    page_tags = api_image_request(
                         image=hi_res_image,
                         prompt=self.prompt_content,
                         url=self.vlm_options.url,
