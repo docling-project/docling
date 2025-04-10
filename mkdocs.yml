@@ -75,6 +75,8 @@ nav:
       - "Custom conversion": examples/custom_convert.py
       - "Batch conversion": examples/batch_convert.py
       - "Multi-format conversion": examples/run_with_formats.py
+      - "VLM pipeline with SmolDocling": examples/minimal_vlm_pipeline.py
+      - "VLM pipeline with remote model": examples/vlm_pipeline_api_model.py
       - "Figure export": examples/export_figures.py
       - "Table export": examples/export_tables.py
       - "Multimodal export": examples/export_multimodal.py
