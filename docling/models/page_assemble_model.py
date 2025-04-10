@@ -2,6 +2,7 @@ import logging
 import re
 from typing import Iterable, List
 
+import numpy as np
 from pydantic import BaseModel
 
 from docling.datamodel.base_models import (
@@ -155,6 +156,19 @@ class PageAssembleModel(BasePageModel):
 
                     page.assembled = AssembledUnit(
                         elements=elements, headers=headers, body=body
+                    )
+
+                    # Aggregate page score
+                    scores = conv_res.confidence.pages[page.page_no]
+                    scores.overall_score = float(
+                        np.nanmean(
+                            [
+                                scores.ocr_score,
+                                scores.table_score,
+                                scores.layout_score,
+                                scores.parse_score,
+                            ]
+                        )
                     )
 
                 yield page

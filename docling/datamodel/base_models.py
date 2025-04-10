@@ -1,6 +1,9 @@
+import math
+from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Optional, Union
 
+import numpy as np
 from docling_core.types.doc import (
     BoundingBox,
     DocItemLabel,
@@ -14,7 +17,7 @@ from docling_core.types.io import (  # DO ΝΟΤ REMOVE; explicitly exposed from
     DocumentStream,
 )
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
@@ -262,3 +265,22 @@ class Page(BaseModel):
     @property
     def image(self) -> Optional[Image]:
         return self.get_image(scale=self._default_image_scale)
+
+
+# Create a type alias for score values
+ScoreValue = float
+
+
+class PageConfidenceScores(BaseModel):
+    overall_score: ScoreValue = np.nan
+
+    parse_score: ScoreValue = np.nan
+    layout_score: ScoreValue = np.nan
+    table_score: ScoreValue = np.nan
+    ocr_score: ScoreValue = np.nan
+
+
+class ConfidenceReport(PageConfidenceScores):
+    pages: Dict[int, PageConfidenceScores] = Field(
+        default_factory=lambda: defaultdict(PageConfidenceScores)
+    )
