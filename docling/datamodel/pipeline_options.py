@@ -288,9 +288,9 @@ class HuggingFaceVlmOptions(BaseVlmOptions):
 class OpenAiVlmOptions(BaseVlmOptions):
     kind: Literal["openai_model_options"] = "openai_model_options"
 
-    model_id: str
-    base_url: str = "http://localhost:11434/v1"  # Default to ollama
-    apikey: Optional[str] = None
+    url: AnyUrl = AnyUrl("http://localhost:11434/v1/chat/completions")  # Default to ollama
+    headers: Dict[str, str] = {}
+    params: Dict[str, Any] = {}
     scale: float = 2.0
     timeout: float = 60
     response_format: ResponseFormat
@@ -320,7 +320,8 @@ granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
 )
 
 granite_vision_vlm_ollama_conversion_options = OpenAiVlmOptions(
-    model_id="granite3.2-vision:2b",
+    url=AnyUrl("http://localhost:11434/v1/chat/completions"),
+    params={"model": "granite3.2-vision:2b"},
     prompt="OCR the full page to markdown.",
     scale=1.0,
     timeout=120,

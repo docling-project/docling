@@ -76,10 +76,7 @@ def download_url_with_progress(url: str, progress: bool = False) -> BytesIO:
 def openai_image_request(
     image: Image.Image,
     prompt: str,
-    url: Union[
-        AnyUrl, str
-    ] = "http://localhost:11434/v1/chat/completions",  # Default to ollama
-    apikey: Optional[str] = None,
+    url: AnyUrl,
     timeout: float = 20,
     headers: Optional[Dict[str, str]] = None,
     **params,
@@ -109,8 +106,6 @@ def openai_image_request(
     }
 
     headers = headers or {}
-    if apikey is not None:
-        headers["Authorization"] = f"Bearer {apikey}"
 
     r = requests.post(
         str(url),

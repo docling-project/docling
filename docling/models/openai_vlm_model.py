@@ -18,15 +18,14 @@ class OpenAiVlmModel(BasePageModel):
         self.enabled = enabled
         self.vlm_options = vlm_options
         if self.enabled:
-            self.url = "/".join(
-                [self.vlm_options.base_url.rstrip("/"), "chat/completions"]
-            )
-            self.apikey = self.vlm_options.apikey
-            self.model_id = self.vlm_options.model_id
             self.timeout = self.vlm_options.timeout
             self.prompt_content = (
                 f"This is a page from a document.\n{self.vlm_options.prompt}"
             )
+            self.params = {
+                **self.vlm_options.params,
+                "temperature": 0,
+            }
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -48,11 +47,10 @@ class OpenAiVlmModel(BasePageModel):
                     page_tags = openai_image_request(
                         image=hi_res_image,
                         prompt=self.prompt_content,
-                        url=self.url,
-                        apikey=self.apikey,
+                        url=self.vlm_options.url,
                         timeout=self.timeout,
-                        model=self.model_id,
-                        temperature=0,
+                        headers=self.vlm_options.headers,
+                        **self.params,
                     )
 
                     page.predictions.vlm_response = VlmPrediction(text=page_tags)
