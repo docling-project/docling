@@ -870,13 +870,13 @@ files = [
 
 [[package]]
 name = "docling-core"
-version = "2.25.0"
+version = "2.26.0"
 description = "A python library to define and validate data types in Docling."
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "docling_core-2.25.0-py3-none-any.whl", hash = "sha256:24fe431005518df8e554b69c33178bca903bcf91c230cdcd31a905369f53a461"},
-    {file = "docling_core-2.25.0.tar.gz", hash = "sha256:a2019392592840b2829082ef0c1d1a9096fb3512ae44c3a93dc04a5eaef81b2f"},
+    {file = "docling_core-2.26.0-py3-none-any.whl", hash = "sha256:020676eaba5028b7f85f99932a55bc73b0e0257b3ffbe3743b2cc166dfc05dd6"},
+    {file = "docling_core-2.26.0.tar.gz", hash = "sha256:0ecf6be3e1e3c837fea04dfc99ba4adaa4eeb3f042f89f2533c7a71a944e7b85"},
 ]
 
 [package.dependencies]
@@ -887,9 +887,7 @@ pandas = ">=2.1.4,<3.0.0"
 pillow = ">=10.0.0,<12.0.0"
 pydantic = ">=2.6.0,<2.10.0 || >2.10.0,<2.10.1 || >2.10.1,<2.10.2 || >2.10.2,<3.0.0"
 pyyaml = ">=5.1,<7.0.0"
-semchunk = {version = ">=2.2.0,<3.0.0", optional = true, markers = "extra == \"chunking\""}
 tabulate = ">=0.9.0,<0.10.0"
-transformers = {version = ">=4.34.0,<5.0.0", optional = true, markers = "extra == \"chunking\""}
 typer = ">=0.12.5,<0.13.0"
 typing-extensions = ">=4.12.2,<5.0.0"
 
@@ -2827,32 +2825,6 @@ files = [
     {file = "more-itertools-10.6.0.tar.gz", hash = "sha256:2cd7fad1009c31cc9fb6a035108509e6547547a7a738374f10bd49a09eb3ee3b"},
     {file = "more_itertools-10.6.0-py3-none-any.whl", hash = "sha256:6eb054cb4b6db1473f6e15fcc676a08e4732548acd47c708f0e179c2c7c01e89"},
 ]
-
-[[package]]
-name = "mpire"
-version = "2.10.2"
-description = "A Python package for easy multiprocessing, but faster than multiprocessing"
-optional = false
-python-versions = "*"
-files = [
-    {file = "mpire-2.10.2-py3-none-any.whl", hash = "sha256:d627707f7a8d02aa4c7f7d59de399dec5290945ddf7fbd36cbb1d6ebb37a51fb"},
-    {file = "mpire-2.10.2.tar.gz", hash = "sha256:f66a321e93fadff34585a4bfa05e95bd946cf714b442f51c529038eb45773d97"},
-]
-
-[package.dependencies]
-multiprocess = [
-    {version = "*", optional = true, markers = "python_version < \"3.11\" and extra == \"dill\""},
-    {version = ">=0.70.15", optional = true, markers = "python_version >= \"3.11\" and extra == \"dill\""},
-]
-pygments = ">=2.0"
-pywin32 = {version = ">=301", markers = "platform_system == \"Windows\""}
-tqdm = ">=4.27"
-
-[package.extras]
-dashboard = ["flask"]
-dill = ["multiprocess", "multiprocess (>=0.70.15)"]
-docs = ["docutils (==0.17.1)", "sphinx (==3.2.1)", "sphinx-autodoc-typehints (==1.11.0)", "sphinx-rtd-theme (==0.5.0)", "sphinx-versions (==1.0.1)", "sphinxcontrib-images (==0.9.2)"]
-testing = ["ipywidgets", "multiprocess", "multiprocess (>=0.70.15)", "numpy", "pywin32 (>=301)", "rich"]
 
 [[package]]
 name = "mpmath"
@@ -6162,21 +6134,6 @@ cryptography = ">=2.0"
 jeepney = ">=0.6"
 
 [[package]]
-name = "semchunk"
-version = "2.2.2"
-description = "A fast and lightweight Python library for splitting text into semantically meaningful chunks."
-optional = false
-python-versions = ">=3.9"
-files = [
-    {file = "semchunk-2.2.2-py3-none-any.whl", hash = "sha256:94ca19020c013c073abdfd06d79a7c13637b91738335f3b8cdb5655ee7cc94d2"},
-    {file = "semchunk-2.2.2.tar.gz", hash = "sha256:940e89896e64eeb01de97ba60f51c8c7b96c6a3951dfcf574f25ce2146752f52"},
-]
-
-[package.dependencies]
-mpire = {version = "*", extras = ["dill"]}
-tqdm = "*"
-
-[[package]]
 name = "semver"
 version = "2.13.0"
 description = "Python helper for Semantic Versioning (http://semver.org/)"
@@ -7859,4 +7816,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "2c4da8d08fa1f95af87348179c20747e85749df670dea38f18f586c4397a358d"
+content-hash = "99d99a9de4a1826363c11484687c2b69cbe8b6430684277d61f9207d8cb116f7"
