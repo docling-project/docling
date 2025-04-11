@@ -11,5 +11,5 @@ identifiers:
   - type: url
     value: 'https://arxiv.org/abs/2408.09869'
     description: 'arXiv:2408.09869'
-repository-code: 'https://github.com/DS4SD/docling'
+repository-code: 'https://github.com/docling-project/docling'
 license: MIT
