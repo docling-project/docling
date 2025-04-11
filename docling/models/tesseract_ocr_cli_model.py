@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, Popen
@@ -9,7 +10,7 @@ from typing import Iterable, List, Optional, Tuple, Type
 
 import pandas as pd
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
@@ -20,7 +21,11 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
-from docling.utils.ocr_utils import map_tesseract_script
+from docling.utils.ocr_utils import (
+    map_tesseract_script,
+    parse_tesseract_orientation,
+    tesseract_box_to_bounding_rectangle,
+)
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -93,14 +98,13 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         return name, version
 
-    def _run_tesseract(self, ifilename: str):
+    def _run_tesseract(self, ifilename: str, osd: pd.DataFrame):
         r"""
         Run tesseract CLI
         """
         cmd = [self.options.tesseract_cmd]
-
         if "auto" in self.options.lang:
-            lang = self._detect_language(ifilename)
+            lang = self._parse_language(osd)
             if lang is not None:
                 cmd.append("-l")
                 cmd.append(lang)
@@ -137,22 +141,24 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         return df_filtered
 
-    def _detect_language(self, ifilename: str):
+    def _perform_osd(self, ifilename: str) -> pd.DataFrame:
         r"""
         Run tesseract in PSM 0 mode to detect the language
         """
-        assert self._tesseract_languages is not None
 
         cmd = [self.options.tesseract_cmd]
         cmd.extend(["--psm", "0", "-l", "osd", ifilename, "stdout"])
         _log.info("command: {}".format(" ".join(cmd)))
-        proc = Popen(cmd, stdout=PIPE, stderr=DEVNULL)
-        output, _ = proc.communicate()
-        decoded_data = output.decode("utf-8")
+        output = subprocess.run(cmd, capture_output=True, check=True)
+        decoded_data = output.stdout.decode("utf-8")
         df = pd.read_csv(
             io.StringIO(decoded_data), sep=":", header=None, names=["key", "value"]
         )
-        scripts = df.loc[df["key"] == "Script"].value.tolist()
+        return df
+
+    def _parse_language(self, df_osd: pd.DataFrame) -> Optional[str]:
+        assert self._tesseract_languages is not None
+        scripts = df_osd.loc[df_osd["key"] == "Script"].value.tolist()
         if len(scripts) == 0:
             _log.warning("Tesseract cannot detect the script of the page")
             return None
@@ -224,8 +230,30 @@ class TesseractOcrCliModel(BaseOcrModel):
                             ) as image_file:
                                 fname = image_file.name
                                 high_res_image.save(image_file)
-
-                            df = self._run_tesseract(fname)
+                            try:
+                                osd = self._perform_osd(fname)
+                            except subprocess.CalledProcessError as exc:
+                                _log.error(
+                                    "OSD failed for: %s with error:\n %s",
+                                    image_file,
+                                    exc.stderr,
+                                )
+                                continue
+                            doc_orientation = _parse_orientation(osd)
+                            if doc_orientation != 0:
+                                high_res_image = high_res_image.rotate(
+                                    -doc_orientation, expand=True
+                                )
+                                high_res_image.save(fname)
+                            try:
+                                df = self._run_tesseract(fname, osd)
+                            except subprocess.CalledProcessError as exc:
+                                _log.error(
+                                    "tesseract OCR failed for: %s with error:\n %s",
+                                    image_file,
+                                    exc.stderr,
+                                )
+                                continue
                         finally:
                             if os.path.exists(fname):
                                 os.remove(fname)
@@ -237,31 +265,26 @@ class TesseractOcrCliModel(BaseOcrModel):
                             text = row["text"]
                             conf = row["conf"]
 
-                            l = float(row["left"])
-                            b = float(row["top"])
-                            w = float(row["width"])
-                            h = float(row["height"])
-
-                            t = b + h
-                            r = l + w
-
+                            l, t = float(row["left"]), float(row["top"])
+                            r = l + float(row["width"])
+                            b = t + row["height"]
+                            bbox = BoundingBox(
+                                l=l, t=t, r=r, b=b, coord_origin=CoordOrigin.TOPLEFT
+                            )
+                            rect = tesseract_box_to_bounding_rectangle(
+                                bbox,
+                                original_offset=ocr_rect,
+                                scale=self.scale,
+                                orientation=doc_orientation,
+                                im_size=high_res_image.size,
+                            )
                             cell = TextCell(
                                 index=ix,
                                 text=str(text),
                                 orig=text,
                                 from_ocr=True,
                                 confidence=conf / 100.0,
-                                rect=BoundingRectangle.from_bounding_box(
-                                    BoundingBox.from_tuple(
-                                        coord=(
-                                            (l / self.scale) + ocr_rect.l,
-                                            (b / self.scale) + ocr_rect.t,
-                                            (r / self.scale) + ocr_rect.l,
-                                            (t / self.scale) + ocr_rect.t,
-                                        ),
-                                        origin=CoordOrigin.TOPLEFT,
-                                    )
-                                ),
+                                rect=rect,
                             )
                             all_ocr_cells.append(cell)
 
@@ -277,3 +300,9 @@ class TesseractOcrCliModel(BaseOcrModel):
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:
         return TesseractCliOcrOptions
+
+
+def _parse_orientation(df_osd: pd.DataFrame) -> int:
+    orientations = df_osd.loc[df_osd["key"] == "Orientation in degrees"].value.tolist()
+    orientation = parse_tesseract_orientation(orientations[0].strip())
+    return orientation
