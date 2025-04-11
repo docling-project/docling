@@ -50,6 +50,7 @@ class OutputFormat(str, Enum):
     MARKDOWN = "md"
     JSON = "json"
     HTML = "html"
+    HTML_SPLIT_PAGE = "html_split_page"
     TEXT = "text"
     DOCTAGS = "doctags"
 

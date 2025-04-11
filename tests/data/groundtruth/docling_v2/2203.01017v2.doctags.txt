@@ -106,10 +106,10 @@
 <text><loc_252><loc_232><loc_445><loc_328>Cell Content. In this section, we evaluate the entire pipeline of recovering a table with content. Here we put our approach to test by capitalizing on extracting content from the PDF cells rather than decoding from images. Tab. 4 shows the TEDs score of HTML code representing the structure of the table along with the content inserted in the data cell and compared with the ground-truth. Our method achieved a 5.3% increase over the state-of-the-art, and commercial solutions. We believe our scores would be higher if the HTML ground-truth matched the extracted PDF cell content. Unfortunately, there are small discrepancies such as spacings around words or special characters with various unicode representations.</text>
 <otsl><loc_272><loc_341><loc_426><loc_406><fcel>Model<ched>Simple<ched>TEDS Complex<ched>All<nl><rhed>Tabula<fcel>78.0<fcel>57.8<fcel>67.9<nl><rhed>Traprange<fcel>60.8<fcel>49.9<fcel>55.4<nl><rhed>Camelot<fcel>80.0<fcel>66.0<fcel>73.0<nl><rhed>Acrobat Pro<fcel>68.9<fcel>61.8<fcel>65.3<nl><rhed>EDD<fcel>91.2<fcel>85.4<fcel>88.3<nl><rhed>TableFormer<fcel>95.4<fcel>90.1<fcel>93.6<nl><caption><loc_252><loc_415><loc_445><loc_435>Table 4: Results of structure with content retrieved using cell detection on PubTabNet. In all cases the input is PDF documents with cropped tables.</caption></otsl>
 <page_footer><loc_241><loc_463><loc_245><loc_469>7</page_footer>
-<page_break>
 <unordered_list><list_item><loc_44><loc_50><loc_50><loc_55>a.</list_item>
 <list_item><loc_54><loc_50><loc_408><loc_55>Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells</list_item>
 </unordered_list>
+<page_break>
 <section_header_level_1><loc_44><loc_60><loc_232><loc_64>Japanese language (previously unseen by TableFormer):</section_header_level_1>
 <section_header_level_1><loc_249><loc_60><loc_352><loc_64>Example table from FinTabNet:</section_header_level_1>
 <picture><loc_41><loc_65><loc_246><loc_118></picture>
@@ -127,7 +127,6 @@
 <unordered_list><list_item><loc_256><loc_438><loc_445><loc_450>[1] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-</list_item>
 </unordered_list>
 <page_footer><loc_241><loc_463><loc_245><loc_469>8</page_footer>
-<page_break>
 <unordered_list><list_item><loc_57><loc_48><loc_234><loc_74>end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5</list_item>
 <list_item><loc_45><loc_76><loc_234><loc_95>[2] Zewen Chi, Heyan Huang, Heng-Da Xu, Houjin Yu, Wanxuan Yin, and Xian-Ling Mao. Complicated table structure recognition. arXiv preprint arXiv:1908.04729 , 2019. 3</list_item>
 <list_item><loc_45><loc_97><loc_234><loc_116>[3] Bertrand Couasnon and Aurelie Lemaitre. Recognition of Tables and Forms , pages 647-677. Springer London, London, 2014. 2</list_item>
@@ -154,6 +153,7 @@
 <list_item><loc_252><loc_396><loc_445><loc_422>[24] Shah Rukh Qasim, Hassan Mahmood, and Faisal Shafait. Rethinking table recognition using graph neural networks. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 142-147. IEEE, 2019. 3</list_item>
 <list_item><loc_252><loc_424><loc_445><loc_450>[25] Hamid Rezatofighi, Nathan Tsoi, JunYoung Gwak, Amir Sadeghian, Ian Reid, and Silvio Savarese. Generalized intersection over union: A metric and a loss for bounding box regression. In Proceedings of the IEEE/CVF Conference on</list_item>
 </unordered_list>
+<page_break>
 <page_footer><loc_241><loc_463><loc_245><loc_469>9</page_footer>
 <page_break>
 <text><loc_57><loc_48><loc_234><loc_60>Computer Vision and Pattern Recognition , pages 658-666, 2019. 6</text>
