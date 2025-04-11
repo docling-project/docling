@@ -1,36 +1,50 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, Set, Tuple, Union
+from typing import Any, Union, cast
 
 from docling_core.types.doc import (
+    BoundingBox,
+    CoordOrigin,
+    DocItem,
     DoclingDocument,
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    ProvenanceItem,
+    Size,
     TableCell,
     TableData,
 )
-
-# from lxml import etree
-from openpyxl import Workbook, load_workbook
-from openpyxl.cell.cell import Cell
+from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
+from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor
 from openpyxl.worksheet.worksheet import Worksheet
+from PIL import Image as PILImage
+from pydantic import BaseModel, NonNegativeInt, PositiveInt
+from typing_extensions import override
 
-from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.abstract_backend import (
+    DeclarativeDocumentBackend,
+    PaginatedDocumentBackend,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
 
-from typing import Any, List
-
-from PIL import Image as PILImage
-from pydantic import BaseModel
-
 
 class ExcelCell(BaseModel):
+    """Represents an Excel cell.
+
+    Attributes:
+        row: The row number of the cell.
+        col: The column number of the cell.
+        text: The text content of the cell.
+        row_span: The number of rows the cell spans.
+        col_span: The number of columns the cell spans.
+    """
+
     row: int
     col: int
     text: str
@@ -39,19 +53,57 @@ class ExcelCell(BaseModel):
 
 
 class ExcelTable(BaseModel):
+    """Represents an Excel table on a worksheet.
+
+    Attributes:
+        anchor: The column and row indices of the upper-left cell of the table
+        (0-based index).
+        num_rows: The number of rows in the table.
+        num_cols: The number of columns in the table.
+        data: The data in the table, represented as a list of ExcelCell objects.
+    """
+
+    anchor: tuple[NonNegativeInt, NonNegativeInt]
     num_rows: int
     num_cols: int
-    data: List[ExcelCell]
+    data: list[ExcelCell]
 
 
-class MsExcelDocumentBackend(DeclarativeDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
+class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
+    """Backend for parsing Excel workbooks.
+
+    The backend converts an Excel workbook into a DoclingDocument object.
+    Each worksheet is converted into a separate page.
+    The following elements are parsed:
+    - Cell contents, parsed as tables. If two groups of cells are disconnected
+    between each other, they will be parsed as two different tables.
+    - Images, parsed as PictureItem objects.
+
+    The DoclingDocument tables and pictures have their provenance information, including
+    the position in their original Excel worksheet. The position is represented by a
+    bounding box object with the cell indices as units (0-based index). The size of this
+    bounding box is the number of columns and rows that the table or picture spans.
+    """
+
+    @override
+    def __init__(
+        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+    ) -> None:
+        """Initialize the MsExcelDocumentBackend object.
+
+        Parameters:
+            in_doc: The input document object.
+            path_or_stream: The path or stream to the Excel file.
+
+        Raises:
+            RuntimeError: An error occurred parsing the file.
+        """
         super().__init__(in_doc, path_or_stream)
 
         # Initialise the parents for the hierarchy
         self.max_levels = 10
 
-        self.parents: Dict[int, Any] = {}
+        self.parents: dict[int, Any] = {}
         for i in range(-1, self.max_levels):
             self.parents[i] = None
 
@@ -63,35 +115,47 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
             elif isinstance(self.path_or_stream, Path):
                 self.workbook = load_workbook(filename=str(self.path_or_stream))
 
-            self.valid = True
+            self.valid = self.workbook is not None
         except Exception as e:
             self.valid = False
 
             raise RuntimeError(
-                f"MsPowerpointDocumentBackend could not load document with hash {self.document_hash}"
+                f"MsExcelDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
 
+    @override
     def is_valid(self) -> bool:
-        _log.info(f"valid: {self.valid}")
+        _log.debug(f"valid: {self.valid}")
         return self.valid
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
         return True
 
-    def unload(self):
-        if isinstance(self.path_or_stream, BytesIO):
-            self.path_or_stream.close()
-
-        self.path_or_stream = None
+    @override
+    def page_count(self) -> int:
+        if self.is_valid() and self.workbook:
+            return len(self.workbook.sheetnames)
+        else:
+            return 0
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    @override
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.XLSX}
 
+    @override
     def convert(self) -> DoclingDocument:
-        # Parses the XLSX into a structured document model.
+        """Parse the Excel workbook into a DoclingDocument object.
 
+        Raises:
+            RuntimeError: Unable to run the conversion since the backend object failed to
+            initialize.
+
+        Returns:
+            The DoclingDocument object representing the Excel workbook.
+        """
         origin = DocumentOrigin(
             filename=self.file.name or "file.xlsx",
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -110,6 +174,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     def _convert_workbook(self, doc: DoclingDocument) -> DoclingDocument:
+        """Parse the Excel workbook and attach its structure to a DoclingDocument.
+
+        Args:
+            doc: A DoclingDocument object.
+
+        Returns:
+            A DoclingDocument object with the parsed items.
+        """
 
         if self.workbook is not None:
 
@@ -117,22 +189,34 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
             for sheet_name in self.workbook.sheetnames:
                 _log.info(f"Processing sheet: {sheet_name}")
 
-                # Access the sheet by name
                 sheet = self.workbook[sheet_name]
+                page_no = self.workbook.index(sheet) + 1
+                # do not rely on sheet.max_column, sheet.max_row if there are images
+                page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
                 self.parents[0] = doc.add_group(
                     parent=None,
                     label=GroupLabel.SECTION,
                     name=f"sheet: {sheet_name}",
                 )
-
                 doc = self._convert_sheet(doc, sheet)
+                width, height = self._find_page_size(doc, page_no)
+                page.size = Size(width=width, height=height)
         else:
             _log.error("Workbook is not initialized.")
 
         return doc
 
-    def _convert_sheet(self, doc: DoclingDocument, sheet: Worksheet):
+    def _convert_sheet(self, doc: DoclingDocument, sheet: Worksheet) -> DoclingDocument:
+        """Parse an Excel worksheet and attach its structure to a DoclingDocument
+
+        Args:
+            doc: The DoclingDocument to be updated.
+            sheet: The Excel worksheet to be parsed.
+
+        Returns:
+            The updated DoclingDocument.
+        """
 
         doc = self._find_tables_in_sheet(doc, sheet)
 
@@ -140,47 +224,81 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _find_tables_in_sheet(self, doc: DoclingDocument, sheet: Worksheet):
+    def _find_tables_in_sheet(
+        self, doc: DoclingDocument, sheet: Worksheet
+    ) -> DoclingDocument:
+        """Find all tables in an Excel sheet and attach them to a DoclingDocument.
 
-        tables = self._find_data_tables(sheet)
+        Args:
+            doc: The DoclingDocument to be updated.
+            sheet: The Excel worksheet to be parsed.
 
-        for excel_table in tables:
-            num_rows = excel_table.num_rows
-            num_cols = excel_table.num_cols
+        Returns:
+            The updated DoclingDocument.
+        """
 
-            table_data = TableData(
-                num_rows=num_rows,
-                num_cols=num_cols,
-                table_cells=[],
-            )
+        if self.workbook is not None:
+            tables = self._find_data_tables(sheet)
 
-            for excel_cell in excel_table.data:
+            for excel_table in tables:
+                origin_col = excel_table.anchor[0]
+                origin_row = excel_table.anchor[1]
+                num_rows = excel_table.num_rows
+                num_cols = excel_table.num_cols
 
-                cell = TableCell(
-                    text=excel_cell.text,
-                    row_span=excel_cell.row_span,
-                    col_span=excel_cell.col_span,
-                    start_row_offset_idx=excel_cell.row,
-                    end_row_offset_idx=excel_cell.row + excel_cell.row_span,
-                    start_col_offset_idx=excel_cell.col,
-                    end_col_offset_idx=excel_cell.col + excel_cell.col_span,
-                    column_header=excel_cell.row == 0,
-                    row_header=False,
+                table_data = TableData(
+                    num_rows=num_rows,
+                    num_cols=num_cols,
+                    table_cells=[],
                 )
-                table_data.table_cells.append(cell)
 
-            doc.add_table(data=table_data, parent=self.parents[0])
+                for excel_cell in excel_table.data:
+
+                    cell = TableCell(
+                        text=excel_cell.text,
+                        row_span=excel_cell.row_span,
+                        col_span=excel_cell.col_span,
+                        start_row_offset_idx=excel_cell.row,
+                        end_row_offset_idx=excel_cell.row + excel_cell.row_span,
+                        start_col_offset_idx=excel_cell.col,
+                        end_col_offset_idx=excel_cell.col + excel_cell.col_span,
+                        column_header=excel_cell.row == 0,
+                        row_header=False,
+                    )
+                    table_data.table_cells.append(cell)
+
+                page_no = self.workbook.index(sheet) + 1
+                doc.add_table(
+                    data=table_data,
+                    parent=self.parents[0],
+                    prov=ProvenanceItem(
+                        page_no=page_no,
+                        charspan=(0, 0),
+                        bbox=BoundingBox.from_tuple(
+                            (
+                                origin_col,
+                                origin_row,
+                                origin_col + num_cols,
+                                origin_row + num_rows,
+                            ),
+                            origin=CoordOrigin.TOPLEFT,
+                        ),
+                    ),
+                )
 
         return doc
 
-    def _find_data_tables(self, sheet: Worksheet) -> List[ExcelTable]:
-        """
-        Find all compact rectangular data tables in a sheet.
-        """
-        # _log.info("find_data_tables")
+    def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
+        """Find all compact rectangular data tables in an Excel worksheet.
 
-        tables = []  # List to store found tables
-        visited: set[Tuple[int, int]] = set()  # Track already visited cells
+        Args:
+            sheet: The Excel worksheet to be parsed.
+
+        Returns:
+            A list of ExcelTable objects representing the data tables.
+        """
+        tables: list[ExcelTable] = []  # List to store found tables
+        visited: set[tuple[int, int]] = set()  # Track already visited cells
 
         # Iterate over all cells in the sheet
         for ri, row in enumerate(sheet.iter_rows(values_only=False)):
@@ -191,9 +309,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
                     continue
 
                 # If the cell starts a new table, find its bounds
-                table_bounds, visited_cells = self._find_table_bounds(
-                    sheet, ri, rj, visited
-                )
+                table_bounds, visited_cells = self._find_table_bounds(sheet, ri, rj)
 
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
@@ -205,22 +321,25 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
         sheet: Worksheet,
         start_row: int,
         start_col: int,
-        visited: set[Tuple[int, int]],
-    ):
-        """
-        Determine the bounds of a compact rectangular table.
+    ) -> tuple[ExcelTable, set[tuple[int, int]]]:
+        """Determine the bounds of a compact rectangular table.
+
+        Args:
+            sheet: The Excel worksheet to be parsed.
+            start_row: The row number of the starting cell.
+            start_col: The column number of the starting cell.
+
         Returns:
-        - A dictionary with the bounds and data.
-        - A set of visited cell coordinates.
+            A tuple with an Excel table and a set of cell coordinates.
         """
-        _log.info("find_table_bounds")
+        _log.debug("find_table_bounds")
 
         max_row = self._find_table_bottom(sheet, start_row, start_col)
         max_col = self._find_table_right(sheet, start_row, start_col)
 
         # Collect the data within the bounds
         data = []
-        visited_cells = set()
+        visited_cells: set[tuple[int, int]] = set()
         for ri in range(start_row, max_row + 1):
             for rj in range(start_col, max_col + 1):
 
@@ -230,7 +349,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
                 row_span = 1
                 col_span = 1
 
-                # _log.info(sheet.merged_cells.ranges)
                 for merged_range in sheet.merged_cells.ranges:
 
                     if (
@@ -254,7 +372,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
                             col_span=col_span,
                         )
                     )
-                    # _log.info(f"cell: {ri}, {rj} -> {ri - start_row}, {rj - start_col}, {row_span}, {col_span}: {str(cell.value)}")
 
                     # Mark all cells in the span as visited
                     for span_row in range(ri, ri + row_span):
@@ -263,6 +380,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         return (
             ExcelTable(
+                anchor=(start_col, start_row),
                 num_rows=max_row + 1 - start_row,
                 num_cols=max_col + 1 - start_col,
                 data=data,
@@ -270,10 +388,20 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
             visited_cells,
         )
 
-    def _find_table_bottom(self, sheet: Worksheet, start_row: int, start_col: int):
-        """Function to find the bottom boundary of the table"""
+    def _find_table_bottom(
+        self, sheet: Worksheet, start_row: int, start_col: int
+    ) -> int:
+        """Find the bottom boundary of a table.
 
-        max_row = start_row
+        Args:
+            sheet: The Excel worksheet to be parsed.
+            start_row: The starting row of the table.
+            start_col: The starting column of the table.
+
+        Returns:
+            The row index representing the bottom boundary of the table.
+        """
+        max_row: int = start_row
 
         while max_row < sheet.max_row - 1:
             # Get the cell value or check if it is part of a merged cell
@@ -296,10 +424,20 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
 
         return max_row
 
-    def _find_table_right(self, sheet: Worksheet, start_row: int, start_col: int):
-        """Function to find the right boundary of the table"""
+    def _find_table_right(
+        self, sheet: Worksheet, start_row: int, start_col: int
+    ) -> int:
+        """Find the right boundary of a table.
 
-        max_col = start_col
+        Args:
+            sheet: The Excel worksheet to be parsed.
+            start_row: The starting row of the table.
+            start_col: The starting column of the table.
+
+        Returns:
+            The column index representing the right boundary of the table."
+        """
+        max_col: int = start_col
 
         while max_col < sheet.max_column - 1:
             # Get the cell value or check if it is part of a merged cell
@@ -325,19 +463,63 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend):
     def _find_images_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet
     ) -> DoclingDocument:
+        """Find images in the Excel sheet and attach them to the DoclingDocument.
 
-        # Iterate over byte images in the sheet
-        for idx, image in enumerate(sheet._images):  # type: ignore
+        Args:
+            doc: The DoclingDocument to be updated.
+            sheet: The Excel worksheet to be parsed.
 
-            try:
-                pil_image = PILImage.open(image.ref)
-
-                doc.add_picture(
-                    parent=self.parents[0],
-                    image=ImageRef.from_pil(image=pil_image, dpi=72),
-                    caption=None,
-                )
-            except:
-                _log.error("could not extract the image from excel sheets")
+        Returns:
+            The updated DoclingDocument.
+        """
+        if self.workbook is not None:
+            # Iterate over byte images in the sheet
+            for item in sheet._images:  # type: ignore[attr-defined]
+                try:
+                    image: Image = cast(Image, item)
+                    pil_image = PILImage.open(image.ref)  # type: ignore[arg-type]
+                    page_no = self.workbook.index(sheet) + 1
+                    anchor = (0, 0, 0, 0)
+                    if isinstance(image.anchor, TwoCellAnchor):
+                        anchor = (
+                            image.anchor._from.col,
+                            image.anchor._from.row,
+                            image.anchor.to.col + 1,
+                            image.anchor.to.row + 1,
+                        )
+                    doc.add_picture(
+                        parent=self.parents[0],
+                        image=ImageRef.from_pil(image=pil_image, dpi=72),
+                        caption=None,
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, 0),
+                            bbox=BoundingBox.from_tuple(
+                                anchor, origin=CoordOrigin.TOPLEFT
+                            ),
+                        ),
+                    )
+                except:
+                    _log.error("could not extract the image from excel sheets")
 
         return doc
+
+    @staticmethod
+    def _find_page_size(
+        doc: DoclingDocument, page_no: PositiveInt
+    ) -> tuple[float, float]:
+        left: float = -1.0
+        top: float = -1.0
+        right: float = -1.0
+        bottom: float = -1.0
+        for item, _ in doc.iterate_items(traverse_pictures=True, page_no=page_no):
+            if not isinstance(item, DocItem):
+                continue
+            for provenance in item.prov:
+                bbox = provenance.bbox
+                left = min(left, bbox.l) if left != -1 else bbox.l
+                right = max(right, bbox.r) if right != -1 else bbox.r
+                top = min(top, bbox.t) if top != -1 else bbox.t
+                bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
+
+        return (right - left, bottom - top)

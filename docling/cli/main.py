@@ -40,6 +40,7 @@ from docling.datamodel.pipeline_options import (
     VlmModelType,
     VlmPipelineOptions,
     granite_vision_vlm_conversion_options,
+    granite_vision_vlm_ollama_conversion_options,
     smoldocling_vlm_conversion_options,
     smoldocling_vlm_mlx_conversion_options,
 )
@@ -541,10 +542,16 @@ def convert(
                 backend=backend,  # pdf_backend
             )
         elif pipeline == PdfPipeline.VLM:
-            pipeline_options = VlmPipelineOptions()
+            pipeline_options = VlmPipelineOptions(
+                enable_remote_services=enable_remote_services,
+            )
 
             if vlm_model == VlmModelType.GRANITE_VISION:
                 pipeline_options.vlm_options = granite_vision_vlm_conversion_options
+            elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
+                pipeline_options.vlm_options = (
+                    granite_vision_vlm_ollama_conversion_options
+                )
             elif vlm_model == VlmModelType.SMOLDOCLING:
                 pipeline_options.vlm_options = smoldocling_vlm_conversion_options
                 if sys.platform == "darwin":

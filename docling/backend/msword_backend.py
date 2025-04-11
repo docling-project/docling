@@ -850,7 +850,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_pictures(
         self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
     ) -> None:
-        def get_docx_image(drawing_blip):
+        def get_docx_image(drawing_blip: Any) -> Optional[bytes]:
+            image_data: Optional[bytes] = None
             rId = drawing_blip[0].get(
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
@@ -862,19 +863,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         level = self._get_level()
         # Open the BytesIO object with PIL to create an Image
-        try:
-            image_data = get_docx_image(drawing_blip)
-            image_bytes = BytesIO(image_data)
-            pil_image = Image.open(image_bytes)
-            doc.add_picture(
-                parent=self.parents[level - 1],
-                image=ImageRef.from_pil(image=pil_image, dpi=72),
-                caption=None,
-            )
-        except (UnidentifiedImageError, OSError) as e:
-            _log.warning("Warning: image cannot be loaded by Pillow")
+        image_data: Optional[bytes] = get_docx_image(drawing_blip)
+        if image_data is None:
+            _log.warning("Warning: image cannot be found")
             doc.add_picture(
                 parent=self.parents[level - 1],
                 caption=None,
             )
+        else:
+            try:
+                image_bytes = BytesIO(image_data)
+                pil_image = Image.open(image_bytes)
+                doc.add_picture(
+                    parent=self.parents[level - 1],
+                    image=ImageRef.from_pil(image=pil_image, dpi=72),
+                    caption=None,
+                )
+            except (UnidentifiedImageError, OSError) as e:
+                _log.warning("Warning: image cannot be loaded by Pillow")
+                doc.add_picture(
+                    parent=self.parents[level - 1],
+                    caption=None,
+                )
         return

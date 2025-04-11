@@ -1,3 +1,22 @@
+## [v2.29.0](https://github.com/docling-project/docling/releases/tag/v2.29.0) - 2025-04-10
+
+### Feature
+
+* Handle <code> tags as code blocks ([#1320](https://github.com/docling-project/docling/issues/1320)) ([`0499cd1`](https://github.com/docling-project/docling/commit/0499cd1c1e93f74260754476a8423059915f59c2))
+* **docx:** Add text formatting and hyperlink support ([#630](https://github.com/docling-project/docling/issues/630)) ([`bfcab3d`](https://github.com/docling-project/docling/commit/bfcab3d6778e6f622bb4a6b241bdb4bab22ba378))
+
+### Fix
+
+* **docx:** Adding new latex symbols, simplifying how equations are added to text ([#1295](https://github.com/docling-project/docling/issues/1295)) ([`14e9c0c`](https://github.com/docling-project/docling/commit/14e9c0ce9a7559fac96ba5ed82befa12a7f53bfa))
+* **pptx:** Check if picture shape has an image attached ([#1316](https://github.com/docling-project/docling/issues/1316)) ([`dc3bf9c`](https://github.com/docling-project/docling/commit/dc3bf9ceacb7048a97ceb8b7aa80bfccc8a05ca5))
+* **docx:** Improve text parsing ([#1268](https://github.com/docling-project/docling/issues/1268)) ([`d2d6874`](https://github.com/docling-project/docling/commit/d2d68747f9c31be897f3e63c160c835086d37014))
+* Tesseract OCR CLI can't process images composed with numbers only ([#1201](https://github.com/docling-project/docling/issues/1201)) ([`b3d111a`](https://github.com/docling-project/docling/commit/b3d111a3cdb90b653ddaaa356f9299e9cd39b340))
+
+### Documentation
+
+* Add plugins docs ([#1319](https://github.com/docling-project/docling/issues/1319)) ([`2e99e5a`](https://github.com/docling-project/docling/commit/2e99e5a54fafd901d8f26b56b25bb006c0e8e8b0))
+* Add visual grounding example ([#1270](https://github.com/docling-project/docling/issues/1270)) ([`71148eb`](https://github.com/docling-project/docling/commit/71148eb381747a6b899c84b72946ba9bde665a40))
+
 ## [v2.28.4](https://github.com/docling-project/docling/releases/tag/v2.28.4) - 2025-03-29
 
 ### Fix

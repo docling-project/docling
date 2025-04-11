@@ -2,7 +2,7 @@ import logging
 import sys
 import warnings
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
 
@@ -226,7 +226,11 @@ class StandardPdfPipeline(PaginatedPipeline):
                         and self.pipeline_options.generate_table_images
                     ):
                         page_ix = element.prov[0].page_no - 1
-                        page = conv_res.pages[page_ix]
+                        page = next(
+                            (p for p in conv_res.pages if p.page_no == page_ix),
+                            cast("Page", None),
+                        )
+                        assert page is not None
                         assert page.size is not None
                         assert page.image is not None
 
