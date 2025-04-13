@@ -139,25 +139,23 @@ class VlmPipeline(PaginatedPipeline):
                 conv_res.document.load_from_doctags(doctags_doc)
 
                 # If forced backend text, replace model predicted text with backend one
-                if page.size:
-                    if self.force_backend_text:
-                        scale = self.pipeline_options.images_scale
-                        for element, _level in conv_res.document.iterate_items():
-                            if (
-                                not isinstance(element, TextItem)
-                                or len(element.prov) == 0
-                            ):
-                                continue
-                            crop_bbox = (
-                                element.prov[0]
-                                .bbox.scaled(scale=scale)
-                                .to_top_left_origin(
-                                    page_height=page.size.height * scale
-                                )
-                            )
-                            txt = self.extract_text_from_backend(page, crop_bbox)
-                            element.text = txt
-                            element.orig = txt
+                if self.force_backend_text:
+                    scale = self.pipeline_options.images_scale
+                    for element, _level in conv_res.document.iterate_items():
+                        if not isinstance(element, TextItem) or len(element.prov) == 0:
+                            continue
+                        page_ix = element.prov[0].page_no - 1
+                        page = conv_res.pages[page_ix]
+                        if not page.size:
+                            continue
+                        crop_bbox = (
+                            element.prov[0]
+                            .bbox.scaled(scale=scale)
+                            .to_top_left_origin(page_height=page.size.height * scale)
+                        )
+                        txt = self.extract_text_from_backend(page, crop_bbox)
+                        element.text = txt
+                        element.orig = txt
             elif (
                 self.pipeline_options.vlm_options.response_format
                 == ResponseFormat.MARKDOWN
