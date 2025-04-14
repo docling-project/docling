@@ -1,12 +1,12 @@
 import copy
 import logging
 from abc import abstractmethod
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List, Optional, Type
+from typing import List, Optional, Type
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from docling_core.types.doc.page import BoundingRectangle, PdfTextCell, TextCell
 from PIL import Image, ImageDraw
 from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label

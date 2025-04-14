@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Iterable, Optional, Protocol, Type
+from collections.abc import Iterable
+from typing import Generic, Optional, Protocol, Type
 
 from docling_core.types.doc import BoundingBox, DocItem, DoclingDocument, NodeItem
 from typing_extensions import TypeVar

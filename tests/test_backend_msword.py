@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from docling.backend.msword_backend import MsWordDocumentBackend

@@ -62,7 +62,7 @@ def download(
     models: Annotated[
         Optional[list[_AvailableModels]],
         typer.Argument(
-            help=f"Models to download (default behavior: a predefined set of models will be downloaded).",
+            help="Models to download (default behavior: a predefined set of models will be downloaded).",
         ),
     ] = None,
     all: Annotated[

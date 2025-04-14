@@ -1,13 +1,13 @@
 import csv
 import logging
 import re
+from collections.abc import Iterable
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
     Dict,
-    Iterable,
     List,
     Literal,
     Optional,
@@ -18,31 +18,9 @@ from typing import (
 
 import filetype
 from docling_core.types.doc import (
-    DocItem,
     DocItemLabel,
     DoclingDocument,
-    PictureItem,
-    SectionHeaderItem,
-    TableItem,
-    TextItem,
 )
-from docling_core.types.doc.document import ListItem
-from docling_core.types.legacy_doc.base import (
-    BaseText,
-    Figure,
-    GlmTableCell,
-    PageDimensions,
-    PageReference,
-    Prov,
-    Ref,
-)
-from docling_core.types.legacy_doc.base import Table as DsSchemaTable
-from docling_core.types.legacy_doc.base import TableCell
-from docling_core.types.legacy_doc.document import (
-    CCSDocumentDescription as DsDocumentDescription,
-)
-from docling_core.types.legacy_doc.document import CCSFileInfoObject as DsFileInfoObject
-from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from docling_core.utils.file import resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
 from pydantic import BaseModel
@@ -65,7 +43,7 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.settings import DocumentLimits
 from docling.utils.profiling import ProfilingItem
-from docling.utils.utils import create_file_hash, create_hash
+from docling.utils.utils import create_file_hash
 
 if TYPE_CHECKING:
     from docling.document_converter import FormatOption

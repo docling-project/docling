@@ -76,7 +76,7 @@ def get_val(key, default=None, store=CHR):
         return default
 
 
-class Tag2Method(object):
+class Tag2Method:
     def call_method(self, elm, stag=None):
         getmethod = self.tag2meth.get
         if stag is None:
@@ -157,7 +157,7 @@ class Pr(Tag2Method):
     def do_common(self, elm):
         stag = elm.tag.replace(OMML_NS, "")
         if stag in self.__val_tags:
-            t = elm.get("{0}val".format(OMML_NS))
+            t = elm.get(f"{OMML_NS}val")
             self.__innerdict[stag] = t
         return None
 
@@ -246,7 +246,6 @@ class oMath2Latex(Tag2Method):
         """
         the Pre-Sub-Superscript object -- Not support yet
         """
-        pass
 
     def do_sub(self, elm):
         text = self.process_children(elm)
@@ -329,7 +328,7 @@ class oMath2Latex(Tag2Method):
         t_dict = self.process_children_dict(elm, include=("e", "lim"))
         latex_s = LIM_FUNC.get(t_dict["e"])
         if not latex_s:
-            raise NotSupport("Not support lim %s" % t_dict["e"])
+            raise RuntimeError("Not support lim %s" % t_dict["e"])
         else:
             return latex_s.format(lim=t_dict.get("lim"))
 
@@ -411,7 +410,7 @@ class oMath2Latex(Tag2Method):
         """
         _str = []
         _base_str = []
-        found_text = elm.findtext("./{0}t".format(OMML_NS))
+        found_text = elm.findtext(f"./{OMML_NS}t")
         if found_text:
             for s in found_text:
                 out_latex_str = self.process_unicode(s)

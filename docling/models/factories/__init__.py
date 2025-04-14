@@ -9,7 +9,7 @@ from docling.models.factories.picture_description_factory import (
 logger = logging.getLogger(__name__)
 
 
-@lru_cache()
+@lru_cache
 def get_ocr_factory(allow_external_plugins: bool = False) -> OcrFactory:
     factory = OcrFactory()
     factory.load_from_plugins(allow_external_plugins=allow_external_plugins)
@@ -17,7 +17,7 @@ def get_ocr_factory(allow_external_plugins: bool = False) -> OcrFactory:
     return factory
 
 
-@lru_cache()
+@lru_cache
 def get_picture_description_factory(
     allow_external_plugins: bool = False,
 ) -> PictureDescriptionFactory:

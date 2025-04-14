@@ -376,12 +376,12 @@ def test_patent_uspto_grant_v2(patents):
     assert isinstance(texts[2], TextItem)
     assert texts[2].text == (
         "An interleaver receives incoming data frames of size N. The interleaver "
-        "indexes the elements of the frame with an N₁×N₂ index array. The interleaver "
+        "indexes the elements of the frame with an N₁×N₂ index array. The interleaver "  # noqa: RUF001
         "then effectively rearranges (permutes) the data by permuting the rows of the "
-        "index array. The interleaver employs the equation I(j,k)=I(j,αjk+βj)modP) to "
+        "index array. The interleaver employs the equation I(j,k)=I(j,αjk+βj)modP) to "  # noqa: RUF001
         "permute the columns (indexed by k) of each row (indexed by j). P is at least "
         "equal to N₂, βj is a constant which may be different for each row, and each "
-        "αj is a relative prime number relative to P. After permuting, the "
+        "αj is a relative prime number relative to P. After permuting, the "  # noqa: RUF001
         "interleaver outputs the data in a different order than received (e.g., "
         "receives sequentially row by row, outputs sequentially each column by column)."
     )

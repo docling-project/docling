@@ -1,8 +1,9 @@
 import copy
 import logging
 import warnings
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Optional
 
 from docling_core.types.doc import DocItemLabel
 from docling_ibm_models.layoutmodel.layout_predictor import LayoutPredictor

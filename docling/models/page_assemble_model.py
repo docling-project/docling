@@ -1,6 +1,7 @@
 import logging
 import re
-from typing import Iterable, List
+from collections.abc import Iterable
+from typing import List
 
 from pydantic import BaseModel
 
@@ -53,9 +54,9 @@ class PageAssembleModel(BasePageModel):
         sanitized_text = "".join(lines)
 
         # Text normalization
-        sanitized_text = sanitized_text.replace("⁄", "/")
-        sanitized_text = sanitized_text.replace("’", "'")
-        sanitized_text = sanitized_text.replace("‘", "'")
+        sanitized_text = sanitized_text.replace("⁄", "/")  # noqa: RUF001
+        sanitized_text = sanitized_text.replace("’", "'")  # noqa: RUF001
+        sanitized_text = sanitized_text.replace("‘", "'")  # noqa: RUF001
         sanitized_text = sanitized_text.replace("“", '"')
         sanitized_text = sanitized_text.replace("”", '"')
         sanitized_text = sanitized_text.replace("•", "·")

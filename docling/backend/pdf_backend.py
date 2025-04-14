@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, Optional, Set, Union
+from typing import Optional, Set, Union
 
 from docling_core.types.doc import BoundingBox, Size
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell

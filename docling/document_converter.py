@@ -1,11 +1,11 @@
 import hashlib
 import logging
-import math
 import sys
 import time
+from collections.abc import Iterable, Iterator
 from functools import partial
 from pathlib import Path
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, model_validator, validate_call
 
@@ -254,7 +254,7 @@ class DocumentConverter:
 
         if not had_result and raises_on_error:
             raise ConversionError(
-                f"Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
+                "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
             )
 
     def _convert(
@@ -266,7 +266,7 @@ class DocumentConverter:
             conv_input.docs(self.format_to_options),
             settings.perf.doc_batch_size,  # pass format_options
         ):
-            _log.info(f"Going to convert document batch...")
+            _log.info("Going to convert document batch...")
 
             # parallel processing only within input_batch
             # with ThreadPoolExecutor(

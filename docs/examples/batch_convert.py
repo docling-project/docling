@@ -1,8 +1,8 @@
 import json
 import logging
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 from docling_core.types.doc import ImageRefMode
@@ -11,7 +11,6 @@ from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBacke
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
-from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 _log = logging.getLogger(__name__)

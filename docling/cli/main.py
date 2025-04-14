@@ -6,8 +6,9 @@ import sys
 import tempfile
 import time
 import warnings
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Annotated, Dict, Iterable, List, Optional, Type
+from typing import Annotated, Dict, List, Optional, Type
 
 import rich.table
 import typer
@@ -288,7 +289,7 @@ def convert(
             ...,
             help=(
                 f"The OCR engine to use. When --allow-external-plugins is *not* set, the available values are: "
-                f"{', '.join((o.value for o in ocr_engines_enum_internal))}. "
+                f"{', '.join(o.value for o in ocr_engines_enum_internal)}. "
                 f"Use the option --show-external-plugins to see the options allowed with external plugins."
             ),
         ),

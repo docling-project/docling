@@ -1,12 +1,11 @@
-import logging
 from abc import abstractmethod
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable, List, Optional, Type, Union
+from typing import List, Optional, Type, Union
 
 from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
-    PictureClassificationClass,
     PictureItem,
 )
 from docling_core.types.doc.document import (  # TODO: move import to docling_core.types.doc

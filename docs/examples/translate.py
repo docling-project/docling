@@ -2,9 +2,9 @@ import logging
 import time
 from pathlib import Path
 
-from docling_core.types.doc import ImageRefMode, PictureItem, TableItem, TextItem
+from docling_core.types.doc import ImageRefMode, TableItem, TextItem
 
-from docling.datamodel.base_models import FigureElement, InputFormat, Table
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 

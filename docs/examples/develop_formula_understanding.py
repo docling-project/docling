@@ -3,8 +3,8 @@
 # It does not run the actual formula understanding model.
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from docling_core.types.doc import DocItemLabel, DoclingDocument, NodeItem, TextItem
 

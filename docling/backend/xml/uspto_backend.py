@@ -162,7 +162,6 @@ class PatentUspto(ABC):
         Returns:
             The patent parsed as a docling document.
         """
-        pass
 
 
 class PatentUsptoIce(PatentUspto):
@@ -264,7 +263,7 @@ class PatentUsptoIce(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):  # noqa: N802
+        def startElement(self, tag, attributes):
             """Signal the start of an element.
 
             Args:
@@ -280,7 +279,7 @@ class PatentUsptoIce(PatentUspto):
             self._start_registered_elements(tag, attributes)
 
         @override
-        def skippedEntity(self, name):  # noqa: N802
+        def skippedEntity(self, name):
             """Receive notification of a skipped entity.
 
             HTML entities will be skipped by the parser. This method will unescape them
@@ -314,7 +313,7 @@ class PatentUsptoIce(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):  # noqa: N802
+        def endElement(self, tag):
             """Signal the end of an element.
 
             Args:
@@ -602,7 +601,7 @@ class PatentUsptoGrantV2(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):  # noqa: N802
+        def startElement(self, tag, attributes):
             """Signal the start of an element.
 
             Args:
@@ -615,7 +614,7 @@ class PatentUsptoGrantV2(PatentUspto):
             self._start_registered_elements(tag, attributes)
 
         @override
-        def skippedEntity(self, name):  # noqa: N802
+        def skippedEntity(self, name):
             """Receive notification of a skipped entity.
 
             HTML entities will be skipped by the parser. This method will unescape them
@@ -649,7 +648,7 @@ class PatentUsptoGrantV2(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):  # noqa: N802
+        def endElement(self, tag):
             """Signal the end of an element.
 
             Args:
@@ -690,7 +689,7 @@ class PatentUsptoGrantV2(PatentUspto):
             if tag in [member.value for member in self.Element]:
                 if (
                     tag == self.Element.HEADING.value
-                    and not self.Element.SDOCL.value in self.property
+                    and self.Element.SDOCL.value not in self.property
                 ):
                     level_attr: str = attributes.get("LVL", "")
                     new_level: int = int(level_attr) if level_attr.isnumeric() else 1
@@ -742,7 +741,7 @@ class PatentUsptoGrantV2(PatentUspto):
                 # headers except claims statement
                 elif (
                     self.Element.HEADING.value in self.property
-                    and not self.Element.SDOCL.value in self.property
+                    and self.Element.SDOCL.value not in self.property
                     and text.strip()
                 ):
                     self.parents[self.level + 1] = self.doc.add_heading(
@@ -1163,7 +1162,7 @@ class PatentUsptoAppV1(PatentUspto):
             self.style_html = HtmlEntity()
 
         @override
-        def startElement(self, tag, attributes):  # noqa: N802
+        def startElement(self, tag, attributes):
             """Signal the start of an element.
 
             Args:
@@ -1176,7 +1175,7 @@ class PatentUsptoAppV1(PatentUspto):
             self._start_registered_elements(tag, attributes)
 
         @override
-        def skippedEntity(self, name):  # noqa: N802
+        def skippedEntity(self, name):
             """Receive notification of a skipped entity.
 
             HTML entities will be skipped by the parser. This method will unescape them
@@ -1210,7 +1209,7 @@ class PatentUsptoAppV1(PatentUspto):
                         self.text += unescaped
 
         @override
-        def endElement(self, tag):  # noqa: N802
+        def endElement(self, tag):
             """Signal the end of an element.
 
             Args:
@@ -1526,7 +1525,7 @@ class XmlTable:
 
         return ncols_max
 
-    def _parse_table(self, table: Tag) -> TableData:
+    def _parse_table(self, table: Tag) -> TableData:  # noqa: C901
         """Parse the content of a table tag.
 
         Args:
@@ -1721,7 +1720,7 @@ class HtmlEntity:
                 "0": "&#8304;",
                 "+": "&#8314;",
                 "-": "&#8315;",
-                "−": "&#8315;",
+                "−": "&#8315;",  # noqa: RUF001
                 "=": "&#8316;",
                 "(": "&#8317;",
                 ")": "&#8318;",
@@ -1745,7 +1744,7 @@ class HtmlEntity:
                 "0": "&#8320;",
                 "+": "&#8330;",
                 "-": "&#8331;",
-                "−": "&#8331;",
+                "−": "&#8331;",  # noqa: RUF001
                 "=": "&#8332;",
                 "(": "&#8333;",
                 ")": "&#8334;",

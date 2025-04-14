@@ -1,13 +1,13 @@
 import copy
 import warnings
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional, Union
+from typing import Optional
 
 import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
-    SegmentedPdfPage,
     TextCellUnit,
 )
 from docling_ibm_models.tableformer.data_management.tf_predictor import TFPredictor

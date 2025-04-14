@@ -63,7 +63,7 @@ def main():
         out_path = Path("scratch")
         print(
             f"Document {res.input.file.name} converted."
-            f"\nSaved markdown output to: {str(out_path)}"
+            f"\nSaved markdown output to: {out_path!s}"
         )
         _log.debug(res.document._export_to_indented_text(max_text_len=16))
         # Export Docling document format to markdowndoc:

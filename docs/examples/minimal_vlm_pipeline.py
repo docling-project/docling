@@ -2,17 +2,11 @@ import json
 import time
 from pathlib import Path
 
-import yaml
-
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
     VlmPipelineOptions,
-    granite_vision_vlm_conversion_options,
-    smoldocling_vlm_conversion_options,
     smoldocling_vlm_mlx_conversion_options,
 )
-from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
@@ -62,7 +56,7 @@ out_path.mkdir(parents=True, exist_ok=True)
 for source in sources:
     start_time = time.time()
     print("================================================")
-    print("Processing... {}".format(source))
+    print(f"Processing... {source}")
     print("================================================")
     print("")
 
@@ -77,7 +71,7 @@ for source in sources:
         print(page.predictions.vlm_response.text)
 
     res.document.save_as_html(
-        filename=Path("{}/{}.html".format(out_path, res.input.file.stem)),
+        filename=Path(f"{out_path}/{res.input.file.stem}.html"),
         image_mode=ImageRefMode.REFERENCED,
         labels=[*DEFAULT_EXPORT_LABELS, DocItemLabel.FOOTNOTE],
     )

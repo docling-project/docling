@@ -34,7 +34,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 text_stream = self.path_or_stream.getvalue().decode("utf-8")
                 self.lines = text_stream.split("\n")
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, "r", encoding="utf-8") as f:
+                with open(self.path_or_stream, encoding="utf-8") as f:
                     self.lines = f.readlines()
             self.valid = True
 
@@ -75,7 +75,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _parse(self, doc: DoclingDocument):
+    def _parse(self, doc: DoclingDocument):  # noqa: C901
         """
         Main function that orchestrates the parsing by yielding components:
         title, section headers, text, lists, and tables.
@@ -95,7 +95,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         # indents: dict[int, Union[DocItem, GroupItem, None]] = {}
         indents: dict[int, Union[GroupItem, None]] = {}
 
-        for i in range(0, 10):
+        for i in range(10):
             parents[i] = None
             indents[i] = None
 

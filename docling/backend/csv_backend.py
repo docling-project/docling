@@ -58,7 +58,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
         head = self.content.readline()
         dialect = csv.Sniffer().sniff(head, ",;\t|:")
         _log.info(f'Parsing CSV with delimiter: "{dialect.delimiter}"')
-        if not dialect.delimiter in {",", ";", "\t", "|", ":"}:
+        if dialect.delimiter not in {",", ";", "\t", "|", ":"}:
             raise RuntimeError(
                 f"Cannot convert csv with unknown delimiter {dialect.delimiter}."
             )

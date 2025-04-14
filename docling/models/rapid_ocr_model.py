@@ -1,6 +1,7 @@
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional, Type
+from typing import Optional, Type
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin

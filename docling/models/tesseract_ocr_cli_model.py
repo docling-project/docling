@@ -3,9 +3,10 @@ import io
 import logging
 import os
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, Popen
-from typing import Iterable, List, Optional, Tuple, Type
+from typing import List, Optional, Tuple, Type
 
 import pandas as pd
 from docling_core.types.doc import BoundingBox, CoordOrigin

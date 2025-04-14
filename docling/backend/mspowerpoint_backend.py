@@ -120,7 +120,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return prov
 
-    def handle_text_elements(self, shape, parent_slide, slide_ind, doc, slide_size):
+    def handle_text_elements(self, shape, parent_slide, slide_ind, doc, slide_size):  # noqa: C901
         is_a_list = False
         is_list_group_created = False
         enum_list_item_value = 0
@@ -243,7 +243,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     enum_marker = str(enum_list_item_value) + "."
                 if not is_list_group_created:
                     new_list = doc.add_group(
-                        label=list_label, name=f"list", parent=parent_slide
+                        label=list_label, name="list", parent=parent_slide
                     )
                     is_list_group_created = True
                 doc.add_list_item(
@@ -372,7 +372,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         max_levels = 10
         parents = {}  # type: ignore
-        for i in range(0, max_levels):
+        for i in range(max_levels):
             parents[i] = None
 
         # Loop through each slide

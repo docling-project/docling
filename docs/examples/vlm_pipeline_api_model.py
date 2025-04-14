@@ -10,7 +10,6 @@ from docling.datamodel.pipeline_options import (
     ApiVlmOptions,
     ResponseFormat,
     VlmPipelineOptions,
-    granite_vision_vlm_ollama_conversion_options,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline

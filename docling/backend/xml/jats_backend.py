@@ -348,7 +348,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
-    def _parse_element_citation(self, node: etree._Element) -> str:
+    def _parse_element_citation(self, node: etree._Element) -> str:  # noqa: C901
         citation: Citation = {
             "author_names": "",
             "title": "",
@@ -439,7 +439,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             citation["page"] = node.xpath("fpage")[0].text.replace("\n", " ").strip()
             if len(node.xpath("lpage")) > 0:
                 citation["page"] += (
-                    "–" + node.xpath("lpage")[0].text.replace("\n", " ").strip()
+                    "–" + node.xpath("lpage")[0].text.replace("\n", " ").strip()  # noqa: RUF001
                 )
 
         # Flatten the citation to string
@@ -594,9 +594,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         try:
             self._add_table(doc, parent, table)
-        except Exception as e:
-            _log.warning(f"Skipping unsupported table in {str(self.file)}")
-            pass
+        except Exception:
+            _log.warning(f"Skipping unsupported table in {self.file!s}")
 
         return
 

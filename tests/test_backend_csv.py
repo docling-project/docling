@@ -1,5 +1,3 @@
-import json
-import os
 from pathlib import Path
 
 from pytest import warns
@@ -16,7 +14,7 @@ GENERATE = GEN_TEST_DATA
 
 def get_csv_paths():
     # Define the directory you want to search
-    directory = Path(f"./tests/data/csv/")
+    directory = Path("./tests/data/csv/")
 
     # List all CSV files in the directory and its subdirectories
     return sorted(directory.rglob("*.csv"))

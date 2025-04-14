@@ -25,7 +25,7 @@ def main():
         document = mdb.convert()
 
         out_path = Path("scratch")
-        print(f"Document {path} converted.\nSaved markdown output to: {str(out_path)}")
+        print(f"Document {path} converted.\nSaved markdown output to: {out_path!s}")
 
         # Export Docling document format to markdowndoc:
         fn = os.path.basename(path)

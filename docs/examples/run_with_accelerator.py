@@ -1,13 +1,10 @@
 from pathlib import Path
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
     PdfPipelineOptions,
-    TesseractCliOcrOptions,
-    TesseractOcrOptions,
 )
 from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, PdfFormatOption

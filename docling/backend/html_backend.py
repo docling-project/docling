@@ -55,7 +55,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.max_levels = 10
         self.level = 0
         self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
-        for i in range(0, self.max_levels):
+        for i in range(self.max_levels):
             self.parents[i] = None
 
         try:
@@ -134,7 +134,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     self.analyze_tag(cast(Tag, element), doc)
                 except Exception as exc_child:
                     _log.error(
-                        f"Error processing child from tag {tag.name}: {repr(exc_child)}"
+                        f"Error processing child from tag {tag.name}: {exc_child!r}"
                     )
                     raise exc_child
             elif isinstance(element, NavigableString) and not isinstance(
@@ -357,7 +357,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             marker = ""
             enumerated = False
             if parent_label == GroupLabel.ORDERED_LIST:
-                marker = f"{str(index_in_list)}."
+                marker = f"{index_in_list!s}."
                 enumerated = True
             doc.add_list_item(
                 text=text,

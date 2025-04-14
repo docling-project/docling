@@ -1,16 +1,15 @@
 import logging
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Optional
 
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
     AcceleratorOptions,
     HuggingFaceVlmOptions,
 )
-from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
@@ -41,7 +40,7 @@ class HuggingFaceVlmModel(BasePageModel):
             device = decide_device(accelerator_options.device)
             self.device = device
 
-            _log.debug("Available device for HuggingFace VLM: {}".format(device))
+            _log.debug(f"Available device for HuggingFace VLM: {device}")
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 

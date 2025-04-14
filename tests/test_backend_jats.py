@@ -15,7 +15,7 @@ GENERATE = GEN_TEST_DATA
 
 
 def get_pubmed_paths():
-    directory = Path(os.path.dirname(__file__) + f"/data/pubmed/")
+    directory = Path(os.path.dirname(__file__) + "/data/pubmed/")
     xml_files = sorted(directory.rglob("*.xml"))
     return xml_files
 

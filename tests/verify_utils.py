@@ -216,7 +216,7 @@ def verify_picture_image_v2(
 
 
 def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy: bool):
-    assert len(doc_pred.texts) == len(doc_true.texts), f"Text lengths do not match."
+    assert len(doc_pred.texts) == len(doc_true.texts), "Text lengths do not match."
 
     assert len(doc_true.tables) == len(doc_pred.tables), (
         "document has different count of tables than expected."
@@ -230,7 +230,7 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
         assert isinstance(pred_item, DocItem), "Test item is not a DocItem"
 
         # Validate type
-        assert true_item.label == pred_item.label, f"Object label does not match."
+        assert true_item.label == pred_item.label, "Object label does not match."
 
         # Validate provenance
         assert len(true_item.prov) == len(pred_item.prov), "Length of prov mismatch"
@@ -337,16 +337,16 @@ def verify_conversion_result_v1(
         with open(dt_path, "w") as fw:
             fw.write(doc_pred_dt)
     else:  # default branch in test
-        with open(pages_path, "r") as fr:
+        with open(pages_path) as fr:
             doc_true_pages = PageList.validate_json(fr.read())
 
-        with open(json_path, "r") as fr:
+        with open(json_path) as fr:
             doc_true: DsDocument = DsDocument.model_validate_json(fr.read())
 
-        with open(md_path, "r") as fr:
+        with open(md_path) as fr:
             doc_true_md = fr.read()
 
-        with open(dt_path, "r") as fr:
+        with open(dt_path) as fr:
             doc_true_dt = fr.read()
 
         if not fuzzy:
@@ -419,16 +419,16 @@ def verify_conversion_result_v2(
         with open(dt_path, "w") as fw:
             fw.write(doc_pred_dt)
     else:  # default branch in test
-        with open(pages_path, "r") as fr:
+        with open(pages_path) as fr:
             doc_true_pages = PageList.validate_json(fr.read())
 
-        with open(json_path, "r") as fr:
+        with open(json_path) as fr:
             doc_true: DoclingDocument = DoclingDocument.model_validate_json(fr.read())
 
-        with open(md_path, "r") as fr:
+        with open(md_path) as fr:
             doc_true_md = fr.read()
 
-        with open(dt_path, "r") as fr:
+        with open(dt_path) as fr:
             doc_true_dt = fr.read()
 
         if not fuzzy:

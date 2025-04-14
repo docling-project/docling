@@ -1,8 +1,9 @@
 import logging
 import random
+from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
-from typing import Iterable, List, Optional, Union
+from typing import List, Optional, Union
 
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size

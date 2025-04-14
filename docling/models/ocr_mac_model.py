@@ -1,8 +1,9 @@
 import logging
 import sys
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional, Tuple, Type
+from typing import Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
@@ -41,7 +42,7 @@ class OcrMacModel(BaseOcrModel):
 
         if self.enabled:
             if "darwin" != sys.platform:
-                raise RuntimeError(f"OcrMac is only supported on Mac.")
+                raise RuntimeError("OcrMac is only supported on Mac.")
             install_errmsg = (
                 "ocrmac is not correctly installed. "
                 "Please install it via `pip install ocrmac` to use this OCR engine. "

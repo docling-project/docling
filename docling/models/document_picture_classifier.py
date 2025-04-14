@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (

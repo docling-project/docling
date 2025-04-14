@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional, Type, Union
+from typing import Optional, Type, Union
 
 from PIL import Image
 

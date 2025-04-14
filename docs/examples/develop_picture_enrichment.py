@@ -3,8 +3,9 @@
 # It does not run the actual picture classifier model.
 
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from docling_core.types.doc import (
     DoclingDocument,

@@ -31,7 +31,7 @@ def test_text_cell_counts():
 
     doc_backend = _get_backend(pdf_doc)
 
-    for page_index in range(0, doc_backend.page_count()):
+    for page_index in range(doc_backend.page_count()):
         last_cell_count = None
         for i in range(10):
             page_backend: DoclingParseV4PageBackend = doc_backend.load_page(0)

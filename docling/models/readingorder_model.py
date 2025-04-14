@@ -1,12 +1,7 @@
-import copy
-import random
 from pathlib import Path
 from typing import Dict, List
 
 from docling_core.types.doc import (
-    BoundingBox,
-    CoordOrigin,
-    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -17,13 +12,10 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
-from docling_core.types.legacy_doc.base import Ref
-from docling_core.types.legacy_doc.document import BaseText
 from docling_ibm_models.reading_order.reading_order_rb import (
     PageElement as ReadingOrderPageElement,
+    ReadingOrderPredictor,
 )
-from docling_ibm_models.reading_order.reading_order_rb import ReadingOrderPredictor
-from PIL import ImageDraw
 from pydantic import BaseModel, ConfigDict
 
 from docling.datamodel.base_models import (
@@ -35,7 +27,6 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.settings import settings
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 

@@ -3,9 +3,10 @@ import logging
 import time
 import traceback
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Iterable, List
+from collections.abc import Iterable
+from typing import Any, Callable, List
 
-from docling_core.types.doc import DoclingDocument, NodeItem
+from docling_core.types.doc import NodeItem
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -136,7 +137,7 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
 
         total_elapsed_time = 0.0
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
-            for i in range(0, conv_res.input.page_count):
+            for i in range(conv_res.input.page_count):
                 start_page, end_page = conv_res.input.limits.page_range
                 if (start_page - 1) <= i <= (end_page - 1):
                     conv_res.pages.append(Page(page_no=i))

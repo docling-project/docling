@@ -1,8 +1,9 @@
 import logging
 import random
+from collections.abc import Iterable
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
@@ -29,7 +30,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
         self.valid = True  # No better way to tell from pypdfium.
         try:
             self._ppage: pdfium.PdfPage = pdfium_doc[page_no]
-        except PdfiumError as e:
+        except PdfiumError:
             _log.info(
                 f"An exception occurred when loading page {page_no} of document {document_hash}.",
                 exc_info=True,
