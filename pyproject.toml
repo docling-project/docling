@@ -216,6 +216,12 @@ ignore = [
 
 #extend-select = []
 
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = [
+    # Allow Pydantic's `@validator` decorator to trigger class method treatment.
+    "pydantic.validator",
+]
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]
 "tests/*.py" = ["ASYNC"] # Disable ASYNC check for tests
