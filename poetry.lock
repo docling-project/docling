@@ -873,28 +873,32 @@ name = "docling-core"
 version = "2.26.3"
 description = "A python library to define and validate data types in Docling."
 optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "docling_core-2.26.3-py3-none-any.whl", hash = "sha256:a14956dcde37c5970fd59b8b7b123db2df9b060b9c92b08a5a253350fddf7a0b"},
-    {file = "docling_core-2.26.3.tar.gz", hash = "sha256:7a1dfc3f4c991d732a78f7105f59717596dc894c54a9add3f5ab8ce69e88706f"},
-]
+python-versions = "^3.9"
+files = []
+develop = false
 
 [package.dependencies]
-jsonref = ">=1.1.0,<2.0.0"
-jsonschema = ">=4.16.0,<5.0.0"
-latex2mathml = ">=3.77.0,<4.0.0"
-pandas = ">=2.1.4,<3.0.0"
+jsonref = "^1.1.0"
+jsonschema = "^4.16.0"
+latex2mathml = "^3.77.0"
+pandas = "^2.1.4"
 pillow = ">=10.0.0,<12.0.0"
-pydantic = ">=2.6.0,<2.10.0 || >2.10.0,<2.10.1 || >2.10.1,<2.10.2 || >2.10.2,<3.0.0"
+pydantic = ">=2.6.0,<3.0.0,!=2.10.0,!=2.10.1,!=2.10.2"
 pyyaml = ">=5.1,<7.0.0"
-semchunk = {version = ">=2.2.0,<3.0.0", optional = true, markers = "extra == \"chunking\""}
-tabulate = ">=0.9.0,<0.10.0"
-transformers = {version = ">=4.34.0,<5.0.0", optional = true, markers = "extra == \"chunking\""}
+semchunk = {version = "^2.2.0", optional = true}
+tabulate = "^0.9.0"
+transformers = {version = "^4.34.0", optional = true}
 typer = ">=0.12.5,<0.16.0"
-typing-extensions = ">=4.12.2,<5.0.0"
+typing-extensions = "^4.12.2"
 
 [package.extras]
 chunking = ["semchunk (>=2.2.0,<3.0.0)", "transformers (>=4.34.0,<5.0.0)"]
+
+[package.source]
+type = "git"
+url = "https://github.com/docling-project/docling-core.git"
+reference = "0b54bcd33ce4b0423fe349d26bedc25379e66b4b"
+resolved_reference = "0b54bcd33ce4b0423fe349d26bedc25379e66b4b"
 
 [[package]]
 name = "docling-ibm-models"
@@ -7882,4 +7886,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "d2a8f7997b9ffb249ad26ba492b766d580bdb0072d50e76b0afd92496e983e96"
+content-hash = "47c4c67eed5ab38ce1a75b17c6ec9ce8a4aee578878a7509be9cec402298ac5f"

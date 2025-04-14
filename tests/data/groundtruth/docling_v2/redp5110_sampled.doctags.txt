@@ -182,9 +182,9 @@
 <code><loc_112><loc_267><loc_430><loc_432><_unknown_>CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;<caption><loc_112><loc_257><loc_288><loc_262>Example 3-9 Creating a mask on the TAX_ID column</caption></code>
 <page_footer><loc_282><loc_477><loc_428><loc_482>Chapter 3. Row and Column Access Control</page_footer>
 <page_footer><loc_438><loc_477><loc_447><loc_482>27</page_footer>
+<page_break>
 <unordered_list><list_item><loc_112><loc_45><loc_368><loc_51>3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.</list_item>
 </unordered_list>
-<page_break>
 <picture><loc_52><loc_60><loc_447><loc_107><caption><loc_53><loc_110><loc_239><loc_115>Figure 3-10 Column masks shown in System i Navigator</caption></picture>
 <section_header_level_1><loc_53><loc_128><loc_167><loc_135>3.6.6 Activating RCAC</section_header_level_1>
 <text><loc_112><loc_144><loc_447><loc_165>Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:</text>
@@ -203,10 +203,10 @@
 <picture><loc_52><loc_270><loc_433><loc_408><caption><loc_53><loc_410><loc_284><loc_415>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption></picture>
 <page_footer><loc_53><loc_477><loc_64><loc_482>28</page_footer>
 <page_footer><loc_76><loc_477><loc_273><loc_482>Row and Column Access Control Support in IBM DB2 for i</page_footer>
+<page_break>
 <unordered_list><list_item><loc_112><loc_45><loc_420><loc_66>2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</list_item>
 <list_item><loc_112><loc_320><loc_447><loc_341>3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</list_item>
 </unordered_list>
-<page_break>
 <picture><loc_112><loc_75><loc_446><loc_301><caption><loc_112><loc_303><loc_267><loc_309>Figure 4-68 Visual Explain with RCAC enabled</caption></picture>
 <picture><loc_53><loc_349><loc_414><loc_419><caption><loc_53><loc_421><loc_186><loc_427>Figure 4-69 Index advice with no RCAC</caption></picture>
 <page_footer><loc_175><loc_477><loc_428><loc_482>Chapter 4. Implementing Row and Column Access Control: Banking example</page_footer>
