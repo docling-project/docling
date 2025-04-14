@@ -1,5 +1,10 @@
 on:
   workflow_call:
+    inputs:
+      push_coverage:
+          type: boolean
+          description: "If true, the coverage results are pushed to codecov.io."
+          default: true
 
 env:
   HF_HUB_DOWNLOAD_TIMEOUT: "60"
@@ -32,7 +37,12 @@ jobs:
         run: poetry install --all-extras
       - name: Testing
         run: |
-          poetry run pytest -v tests
+          poetry run pytest -v --cov=docling --cov-report=xml tests
+      - name: Upload coverage to Codecov
+        if: inputs.push_coverage
+        uses: codecov/codecov-action@v2
+        with:
+          file: ./coverage.xml
       - name: Run examples
         run: |
           for file in docs/examples/*.py; do

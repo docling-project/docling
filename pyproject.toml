@@ -110,6 +110,8 @@ ipywidgets = "^8.1.5"
 nbqa = "^1.9.0"
 types-openpyxl = "^3.1.5.20241114"
 types-tqdm = "^4.67.0.20241221"
+coverage = "^7.6.2"
+pytest-cov = "^6.0.0"
 
 [tool.poetry.group.docs.dependencies]
 mkdocs-material = "^9.5.40"
