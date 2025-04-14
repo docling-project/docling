@@ -606,7 +606,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         )
         return
 
-    def _walk_linear(
+    def _walk_linear(  # noqa: C901
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> str:
         skip_tags = ["term"]

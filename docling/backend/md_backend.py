@@ -168,7 +168,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
         self.inline_texts = []
 
-    def _iterate_elements(
+    def _iterate_elements(  # noqa: C901
         self,
         element: marko.element.Element,
         depth: int,

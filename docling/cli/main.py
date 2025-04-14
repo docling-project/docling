@@ -15,6 +15,7 @@ import typer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
+from rich.console import Console
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
@@ -54,7 +55,6 @@ warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
 
 _log = logging.getLogger(__name__)
-from rich.console import Console
 
 console = Console()
 err_console = Console(stderr=True)
@@ -233,7 +233,7 @@ def _split_list(raw: Optional[str]) -> Optional[List[str]]:
 
 
 @app.command(no_args_is_help=True)
-def convert(
+def convert(  # noqa: C901
     input_sources: Annotated[
         List[str],
         typer.Argument(

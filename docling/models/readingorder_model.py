@@ -98,7 +98,7 @@ class ReadingOrderModel:
             else:
                 doc.add_text(parent=doc_item, label=c_label, text=c_text, prov=c_prov)
 
-    def _readingorder_elements_to_docling_doc(
+    def _readingorder_elements_to_docling_doc(  # noqa: C901
         self,
         conv_res: ConversionResult,
         ro_elements: List[ReadingOrderPageElement],

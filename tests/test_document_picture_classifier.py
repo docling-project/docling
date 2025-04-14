@@ -47,7 +47,7 @@ def test_picture_classifier():
 
     res = results[0]
     assert len(res.annotations) == 1
-    assert type(res.annotations[0]) == PictureClassificationData
+    assert isinstance(res.annotations[0], PictureClassificationData)
     classification_data = res.annotations[0]
     assert classification_data.provenance == "DocumentPictureClassifier"
     assert len(classification_data.predicted_classes) == 16, (
@@ -63,7 +63,7 @@ def test_picture_classifier():
 
     res = results[1]
     assert len(res.annotations) == 1
-    assert type(res.annotations[0]) == PictureClassificationData
+    assert isinstance(res.annotations[0], PictureClassificationData)
     classification_data = res.annotations[0]
     assert classification_data.provenance == "DocumentPictureClassifier"
     assert len(classification_data.predicted_classes) == 16, (

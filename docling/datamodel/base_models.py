@@ -12,7 +12,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 
 # DO NOT REMOVE; explicitly exposed from this location
-from docling_core.types.io import (  # noqa: F401
+from docling_core.types.io import (
     DocumentStream,
 )
 from PIL.Image import Image

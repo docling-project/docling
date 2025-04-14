@@ -65,7 +65,7 @@ class TesseractOcrModel(BaseOcrModel):
                 raise ImportError(install_errmsg)
             try:
                 tesseract_version = tesserocr.tesseract_version()
-            except:
+            except Exception:
                 raise ImportError(install_errmsg)
 
             _, self._tesserocr_languages = tesserocr.get_languages()

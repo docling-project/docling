@@ -19,7 +19,7 @@ from typing import (
 import filetype
 
 # DO NOT REMOVE; explicitly exposed from this location
-from docling_core.types.doc import (  # noqa: F401
+from docling_core.types.doc import (
     DocItem,
     DocItemLabel,
     DoclingDocument,
@@ -28,8 +28,8 @@ from docling_core.types.doc import (  # noqa: F401
     TableItem,
     TextItem,
 )
-from docling_core.types.doc.document import ListItem  # noqa: F401
-from docling_core.types.legacy_doc.base import (  # noqa: F401
+from docling_core.types.doc.document import ListItem
+from docling_core.types.legacy_doc.base import (
     BaseText,
     Figure,
     GlmTableCell,
@@ -37,14 +37,14 @@ from docling_core.types.legacy_doc.base import (  # noqa: F401
     PageReference,
     Prov,
     Ref,
+    Table as DsSchemaTable,
+    TableCell,
 )
-from docling_core.types.legacy_doc.base import Table as DsSchemaTable  # noqa: F401
-from docling_core.types.legacy_doc.base import TableCell  # noqa: F401
-from docling_core.types.legacy_doc.document import (  # noqa: F401
+from docling_core.types.legacy_doc.document import (
     CCSDocumentDescription as DsDocumentDescription,
+    CCSFileInfoObject as DsFileInfoObject,
+    ExportedCCSDocument as DsDocument,
 )
-from docling_core.types.legacy_doc.document import CCSFileInfoObject as DsFileInfoObject  # noqa: F401
-from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument  # noqa: F401
 from docling_core.utils.file import resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
 from pydantic import BaseModel

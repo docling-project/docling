@@ -493,7 +493,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             ),
                         ),
                     )
-                except:
+                except Exception:
                     _log.error("could not extract the image from excel sheets")
 
         return doc
