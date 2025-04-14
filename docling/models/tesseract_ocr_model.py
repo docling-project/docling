@@ -38,9 +38,6 @@ class TesseractOcrModel(BaseOcrModel):
         self.options: TesseractOcrOptions
 
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
-        self.reader = None
-        self.osd_reader = None
-        self.script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
 
         if self.enabled:
             install_errmsg = (
@@ -76,7 +73,7 @@ class TesseractOcrModel(BaseOcrModel):
             _log.debug("Initializing TesserOCR: %s", tesseract_version)
             lang = "+".join(self.options.lang)
 
-            if any(l.startswith("script/") for l in self._tesserocr_languages):
+            if any(lang.startswith("script/") for lang in self._tesserocr_languages):
                 self.script_prefix = "script/"
             else:
                 self.script_prefix = ""
@@ -86,6 +83,10 @@ class TesseractOcrModel(BaseOcrModel):
                 "init": True,
                 "oem": tesserocr.OEM.DEFAULT,
             }
+
+            self.reader = None
+            self.osd_reader = None
+            self.script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
 
             if self.options.path is not None:
                 tesserocr_kwargs["path"] = self.options.path

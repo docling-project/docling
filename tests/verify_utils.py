@@ -122,8 +122,8 @@ def verify_tables_v1(doc_pred: DsDocument, doc_true: DsDocument, fuzzy: bool):
         "document has different count of tables than expected."
     )
 
-    for l, true_item in enumerate(doc_true.tables):
-        pred_item = doc_pred.tables[l]
+    for ix, true_item in enumerate(doc_true.tables):
+        pred_item = doc_pred.tables[ix]
 
         assert true_item.num_rows == pred_item.num_rows, (
             "table does not have the same #-rows"

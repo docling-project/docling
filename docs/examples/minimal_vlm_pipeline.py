@@ -2,6 +2,9 @@ import json
 import time
 from pathlib import Path
 
+from docling_core.types.doc import DocItemLabel, ImageRefMode
+from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
+
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
@@ -32,9 +35,6 @@ pipeline_options.vlm_options = smoldocling_vlm_mlx_conversion_options
 
 ## Alternative VLM models:
 # pipeline_options.vlm_options = granite_vision_vlm_conversion_options
-
-from docling_core.types.doc import DocItemLabel, ImageRefMode
-from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 
 ## Set up pipeline for PDF or image inputs
 converter = DocumentConverter(

@@ -80,10 +80,10 @@ def main():
         )
 
     # Generate one parquet from all documents
-    df = pd.json_normalize(rows)
+    df_result = pd.json_normalize(rows)
     now = datetime.datetime.now()
     output_filename = output_dir / f"multimodal_{now:%Y-%m-%d_%H%M%S}.parquet"
-    df.to_parquet(output_filename)
+    df_result.to_parquet(output_filename)
 
     end_time = time.time() - start_time
 

@@ -29,7 +29,7 @@ def resolve_item(paths, obj):
 
     try:
         key = int(paths[0])
-    except:
+    except Exception:
         key = paths[0]
 
     if len(paths) == 1:

@@ -9,48 +9,18 @@ repos:
         args: [--config=pyproject.toml]
         files: '^(docling|tests|docs/examples).*\.(py|ipynb)$'
       # Run the Ruff linter.
-      # - id: ruff
-      #   name: "Ruff linter"
-      #   args: [--exit-non-zero-on-fix, --fix, --config=pyproject.toml]
-      #   files: '^(docling|tests|docs/examples).*\.(py|ipynb)$'
+      - id: ruff
+        name: "Ruff linter"
+        args: [--exit-non-zero-on-fix, --fix, --config=pyproject.toml]
+        files: '^(docling|tests|docs/examples).*\.(py|ipynb)$'
   - repo: local
     hooks:
-      # - id: black
-      #   name: Black
-      #   entry: poetry run black docling docs/examples tests
-      #   pass_filenames: false
-      #   language: system
-      #   files: '\.py$'
-      # - id: isort
-      #   name: isort
-      #   entry: poetry run isort docling docs/examples tests
-      #   pass_filenames: false
-      #   language: system
-      #   files: '\.py$'
-#      - id: flake8
-#        name: flake8
-#        entry: poetry run flake8 docling
-#        pass_filenames: false
-#        language: system
-#        files: '\.py$'
       - id: mypy
         name: MyPy
         entry: poetry run mypy docling
         pass_filenames: false
         language: system
         files: '\.py$'
-      # - id: nbqa_black
-      #   name: nbQA Black
-      #   entry: poetry run nbqa black docs/examples
-      #   pass_filenames: false
-      #   language: system
-      #   files: '\.ipynb$'
-      # - id: nbqa_isort
-      #   name: nbQA isort
-      #   entry: poetry run nbqa isort docs/examples
-      #   pass_filenames: false
-      #   language: system
-      #   files: '\.ipynb$'
       - id: poetry
         name: Poetry check
         entry: poetry check --lock
