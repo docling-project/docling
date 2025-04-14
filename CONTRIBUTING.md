@@ -91,7 +91,7 @@ When submitting a new feature or fix, please consider adding a short test for it
 
 When a change improves the conversion results, multiple reference documents must be regenerated and reviewed.
 
-The reference data can be regenrated with
+The reference data can be regenerated with
 
 ```sh
 DOCLING_GEN_TEST_DATA=1 poetry run pytest
