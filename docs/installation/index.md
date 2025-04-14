@@ -32,6 +32,7 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
     | OcrMac | System dependency. See description below. | `OcrMacOptions` |
     | [RapidOCR](https://github.com/RapidAI/RapidOCR) | Extra feature not included in Default Docling installation can be installed via `pip install rapidocr_onnxruntime` | `RapidOcrOptions` |
+    | [OnnxTR](https://github.com/felixdittrich92/OnnxTR) | Can be installed via the plugin system `pip install "docling-ocr-onnxtr[cpu]"`. Please take a look at [docling-OCR-OnnxTR](https://github.com/felixdittrich92/docling-OCR-OnnxTR).| `OnnxtrOcrOptions` |
 
     The Docling `DocumentConverter` allows to choose the OCR engine with the `ocr_options` settings. For example
 
@@ -111,7 +112,7 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
 
     If you're using an Intel Mac, install Docling with compatible PyTorch
     **Note:** PyTorch 2.2.2 requires Python 3.12 or lower. Make sure you're not using Python 3.13+.
-    
+
     ```bash
     # For uv users
     uv add torch==2.2.2 torchvision==0.17.2 docling
