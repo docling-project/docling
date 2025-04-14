@@ -62,7 +62,7 @@ scipy = [
   { version = "^1.6.0", markers = "python_version >= '3.10'" },
   { version = ">=1.6.0,<1.14.0", markers = "python_version < '3.10'" },
 ]
-typer = "^0.12.5"
+typer = ">=0.12.5,<0.16.0"
 python-docx = "^1.1.2"
 python-pptx = "^1.0.2"
 beautifulsoup4 = "^4.12.3"
