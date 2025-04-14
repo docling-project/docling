@@ -126,7 +126,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         enum_list_item_value = 0
         new_list = None
         bullet_type = "None"
-        list_text = ""
         list_label = GroupLabel.LIST
         doc_label = DocItemLabel.LIST_ITEM
         prov = self.generate_prov(shape, slide_ind, shape.text.strip(), slide_size)
@@ -368,8 +367,6 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         slide_width = pptx_obj.slide_width
         slide_height = pptx_obj.slide_height
 
-        text_content = []  # type: ignore
-
         max_levels = 10
         parents = {}  # type: ignore
         for i in range(max_levels):
@@ -383,7 +380,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             )
 
             slide_size = Size(width=slide_width, height=slide_height)
-            parent_page = doc.add_page(page_no=slide_ind + 1, size=slide_size)
+            doc.add_page(page_no=slide_ind + 1, size=slide_size)
 
             def handle_shapes(shape, parent_slide, slide_ind, doc, slide_size):
                 handle_groups(shape, parent_slide, slide_ind, doc, slide_size)

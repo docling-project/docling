@@ -84,7 +84,7 @@ def main():
             )
         }
     )
-    result = doc_converter.convert(input_doc_path)
+    doc_converter.convert(input_doc_path)
 
 
 if __name__ == "__main__":

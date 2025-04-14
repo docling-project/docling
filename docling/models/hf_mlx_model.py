@@ -121,6 +121,8 @@ class HuggingFaceMlxModel(BasePageModel):
                     generation_time = time.time() - start_time
                     page_tags = output
 
+                    _log.debug(f"Generation time {generation_time:.2f} seconds.")
+
                     # inference_time = time.time() - start_time
                     # tokens_per_second = num_tokens / generation_time
                     # print("")

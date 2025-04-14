@@ -76,7 +76,7 @@ class TesseractOcrModel(BaseOcrModel):
             _log.debug("Initializing TesserOCR: %s", tesseract_version)
             lang = "+".join(self.options.lang)
 
-            if any([l.startswith("script/") for l in self._tesserocr_languages]):
+            if any(l.startswith("script/") for l in self._tesserocr_languages):
                 self.script_prefix = "script/"
             else:
                 self.script_prefix = ""

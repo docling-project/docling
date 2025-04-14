@@ -13,7 +13,7 @@ def chunkify(iterator, chunk_size):
     if isinstance(iterator, List):
         iterator = iter(iterator)
     for first in iterator:  # Take the first element from the iterator
-        yield [first] + list(islice(iterator, chunk_size - 1))
+        yield [first, *list(islice(iterator, chunk_size - 1))]
 
 
 def create_file_hash(path_or_stream: Union[BytesIO, Path]) -> str:

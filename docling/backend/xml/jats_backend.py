@@ -102,13 +102,13 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
             doc_info: etree.DocInfo = self.tree.docinfo
             if doc_info.system_url and any(
-                [kwd in doc_info.system_url for kwd in JATS_DTD_URL]
+                kwd in doc_info.system_url for kwd in JATS_DTD_URL
             ):
                 self.valid = True
                 return
             for ent in doc_info.internalDTD.iterentities():
                 if ent.system_url and any(
-                    [kwd in ent.system_url for kwd in JATS_DTD_URL]
+                    kwd in ent.system_url for kwd in JATS_DTD_URL
                 ):
                     self.valid = True
                     return
@@ -232,10 +232,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 # TODO: once superscript is supported, add label with formatting
                 aff = aff.removeprefix(f"{label[0].text}, ")
             affiliation_names.append(aff)
-        affiliation_ids_names = {
-            id: name
-            for id, name in zip(meta.xpath(".//aff[@id]/@id"), affiliation_names)
-        }
+        affiliation_ids_names = dict(
+            zip(meta.xpath(".//aff[@id]/@id"), affiliation_names)
+        )
 
         # Get author names and affiliation names
         for author_node in meta.xpath(

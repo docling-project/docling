@@ -172,7 +172,7 @@ class DocumentConverter:
         format_options: Optional[Dict[InputFormat, FormatOption]] = None,
     ):
         self.allowed_formats = (
-            allowed_formats if allowed_formats is not None else [e for e in InputFormat]
+            allowed_formats if allowed_formats is not None else list(InputFormat)
         )
         self.format_to_options = {
             format: (

@@ -430,7 +430,7 @@ def convert(
     settings.debug.visualize_ocr = debug_visualize_ocr
 
     if from_formats is None:
-        from_formats = [e for e in InputFormat]
+        from_formats = list(InputFormat)
 
     parsed_headers: Optional[Dict[str, str]] = None
     if headers is not None:

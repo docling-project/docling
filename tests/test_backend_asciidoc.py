@@ -38,7 +38,7 @@ def test_asciidocs_examples():
 
         if os.path.exists(gname):
             with open(gname) as fr:
-                true_mddoc = fr.read()
+                fr.read()
 
             # assert pred_mddoc == true_mddoc, "pred_mddoc!=true_mddoc for asciidoc"
         else:

@@ -146,7 +146,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     item for item in element.next_siblings if isinstance(item, Tag)
                 ]
                 if element.next_sibling is None or any(
-                    [item.name in TAGS_FOR_NODE_ITEMS for item in siblings]
+                    item.name in TAGS_FOR_NODE_ITEMS for item in siblings
                 ):
                     text = text.strip()
                     if text and tag.name in ["div"]:

@@ -65,7 +65,7 @@ def test_crop_page_image(test_doc_path):
     page_backend: DoclingParseV4PageBackend = doc_backend.load_page(0)
 
     # Crop out "Figure 1" from the DocLayNet paper
-    im = page_backend.get_page_image(
+    page_backend.get_page_image(
         scale=2, cropbox=BoundingBox(l=317, t=246, r=574, b=527)
     )
     # im.show()

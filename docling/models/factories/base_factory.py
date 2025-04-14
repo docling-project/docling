@@ -33,7 +33,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
 
     @property
     def registered_kind(self) -> list[str]:
-        return list(opt.kind for opt in self._classes.keys())
+        return [opt.kind for opt in self._classes.keys()]
 
     def get_enum(self) -> enum.Enum:
         return enum.Enum(

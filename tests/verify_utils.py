@@ -291,7 +291,7 @@ def verify_conversion_result_v1(
     input_path: Path,
     doc_result: ConversionResult,
     generate: bool = False,
-    ocr_engine: str = None,
+    ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
 ):
     PageList = TypeAdapter(List[Page])
@@ -375,7 +375,7 @@ def verify_conversion_result_v2(
     input_path: Path,
     doc_result: ConversionResult,
     generate: bool = False,
-    ocr_engine: str = None,
+    ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
 ):
     PageList = TypeAdapter(List[Page])

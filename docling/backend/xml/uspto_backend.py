@@ -1472,9 +1472,7 @@ class XmlTable:
                 if cw == 0:
                     offset_w0.append(col["offset"][ic])
 
-            min_colinfo["offset"] = sorted(
-                list(set(col["offset"] + min_colinfo["offset"]))
-            )
+            min_colinfo["offset"] = sorted(set(col["offset"] + min_colinfo["offset"]))
 
         # add back the 0 width cols to offset list
         offset_w0 = list(set(offset_w0))

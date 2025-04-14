@@ -166,6 +166,10 @@ class HuggingFaceVlmModel(BasePageModel):
                     num_tokens = len(generated_ids[0])
                     page_tags = generated_texts
 
+                    _log.debug(
+                        f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
+                    )
+
                     # inference_time = time.time() - start_time
                     # tokens_per_second = num_tokens / generation_time
                     # print("")

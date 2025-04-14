@@ -129,7 +129,7 @@ def test_tables(tables):
     """Test the table parser."""
     # CHECK table in file tables_20180000016.xml
     file_name = "tables_ipa20180000016.xml"
-    file_table = [item[1] for item in tables if item[0].name == file_name][0]
+    file_table = next(item[1] for item in tables if item[0].name == file_name)
     assert file_table.num_rows == 13
     assert file_table.num_cols == 10
     assert len(file_table.table_cells) == 130
@@ -140,7 +140,7 @@ def test_patent_uspto_ice(patents):
 
     # CHECK application doc number 20200022300
     file_name = "ipa20200022300.xml"
-    doc = [item[1] for item in patents if item[0].name == file_name][0]
+    doc = next(item[1] for item in patents if item[0].name == file_name)
     if GENERATE:
         _generate_groundtruth(doc, Path(file_name).stem)
 
@@ -278,7 +278,7 @@ def test_patent_uspto_ice(patents):
 
     # CHECK application doc number 20180000016 for HTML entities, level 2 headings, tables
     file_name = "ipa20180000016.xml"
-    doc = [item[1] for item in patents if item[0].name == file_name][0]
+    doc = next(item[1] for item in patents if item[0].name == file_name)
     if GENERATE:
         _generate_groundtruth(doc, Path(file_name).stem)
 
@@ -348,7 +348,7 @@ def test_patent_uspto_ice(patents):
 
     # CHECK application doc number 20110039701 for complex long tables
     file_name = "ipa20110039701.xml"
-    doc = [item[1] for item in patents if item[0].name == file_name][0]
+    doc = next(item[1] for item in patents if item[0].name == file_name)
     assert doc.name == file_name
     assert len(doc.tables) == 17
 
@@ -358,7 +358,7 @@ def test_patent_uspto_grant_v2(patents):
 
     # CHECK application doc number 06442728
     file_name = "pg06442728.xml"
-    doc = [item[1] for item in patents if item[0].name == file_name][0]
+    doc = next(item[1] for item in patents if item[0].name == file_name)
     if GENERATE:
         _generate_groundtruth(doc, Path(file_name).stem)
 
@@ -402,7 +402,7 @@ def test_patent_uspto_app_v1(patents):
 
     # CHECK application doc number 20010031492
     file_name = "pa20010031492.xml"
-    doc = [item[1] for item in patents if item[0].name == file_name][0]
+    doc = next(item[1] for item in patents if item[0].name == file_name)
     if GENERATE:
         _generate_groundtruth(doc, Path(file_name).stem)
 
@@ -432,7 +432,7 @@ def test_patent_uspto_grant_aps(patents):
 
     # CHECK application doc number 057006474
     file_name = "pftaps057006474.txt"
-    doc = [item[1] for item in patents if item[0].name == file_name][0]
+    doc = next(item[1] for item in patents if item[0].name == file_name)
     if GENERATE:
         _generate_groundtruth(doc, Path(file_name).stem)
 

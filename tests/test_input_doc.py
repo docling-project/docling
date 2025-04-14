@@ -14,7 +14,7 @@ from docling.document_converter import PdfFormatOption
 def test_in_doc_from_valid_path():
     test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
     doc = _make_input_doc(test_doc_path)
-    assert doc.valid == True
+    assert doc.valid is True
 
 
 def test_in_doc_from_invalid_path():
@@ -22,7 +22,7 @@ def test_in_doc_from_invalid_path():
 
     doc = _make_input_doc(test_doc_path)
 
-    assert doc.valid == False
+    assert doc.valid is False
 
 
 def test_in_doc_from_valid_buf():
@@ -30,7 +30,7 @@ def test_in_doc_from_valid_buf():
     stream = DocumentStream(name="my_doc.pdf", stream=buf)
 
     doc = _make_input_doc_from_stream(stream)
-    assert doc.valid == True
+    assert doc.valid is True
 
 
 def test_in_doc_from_invalid_buf():
@@ -38,7 +38,7 @@ def test_in_doc_from_invalid_buf():
     stream = DocumentStream(name="my_doc.pdf", stream=buf)
 
     doc = _make_input_doc_from_stream(stream)
-    assert doc.valid == False
+    assert doc.valid is False
 
 
 def test_image_in_pdf_backend():
@@ -82,7 +82,7 @@ def test_in_doc_with_page_range():
         backend=PyPdfiumDocumentBackend,
         limits=limits,
     )
-    assert doc.valid == True
+    assert doc.valid is True
 
     limits.page_range = (9, 9)
 
@@ -92,7 +92,7 @@ def test_in_doc_with_page_range():
         backend=PyPdfiumDocumentBackend,
         limits=limits,
     )
-    assert doc.valid == True
+    assert doc.valid is True
 
     limits.page_range = (11, 12)
 
@@ -102,7 +102,7 @@ def test_in_doc_with_page_range():
         backend=PyPdfiumDocumentBackend,
         limits=limits,
     )
-    assert doc.valid == False
+    assert doc.valid is False
 
 
 def test_guess_format(tmp_path):
@@ -187,17 +187,17 @@ def test_guess_format(tmp_path):
     )
     doc_path = temp_dir / "docling_test.xml"
     doc_path.write_text(xml_content, encoding="utf-8")
-    assert dci._guess_format(doc_path) == None
+    assert dci._guess_format(doc_path) is None
     buf = BytesIO(Path(doc_path).open("rb").read())
     stream = DocumentStream(name="docling_test.xml", stream=buf)
-    assert dci._guess_format(stream) == None
+    assert dci._guess_format(stream) is None
 
     # Invalid USPTO patent (as plain text)
     stream = DocumentStream(name="pftaps057006474.txt", stream=BytesIO(b"xyz"))
-    assert dci._guess_format(stream) == None
+    assert dci._guess_format(stream) is None
     doc_path = temp_dir / "pftaps_wrong.txt"
     doc_path.write_text("xyz", encoding="utf-8")
-    assert dci._guess_format(doc_path) == None
+    assert dci._guess_format(doc_path) is None
 
     # Valid Docling JSON
     test_str = '{"name": ""}'

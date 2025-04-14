@@ -64,7 +64,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                 )
 
     def _get_name_and_version(self) -> Tuple[str, str]:
-        if self._name != None and self._version != None:
+        if self._name is not None and self._version is not None:
             return self._name, self._version  # type: ignore
 
         cmd = [self.options.tesseract_cmd, "--version"]
@@ -187,7 +187,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         self._tesseract_languages = df[0].tolist()[1:]
 
         # Decide the script prefix
-        if any([l.startswith("script/") for l in self._tesseract_languages]):
+        if any(l.startswith("script/") for l in self._tesseract_languages):
             script_prefix = "script/"
         else:
             script_prefix = ""
