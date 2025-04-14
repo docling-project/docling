@@ -5,6 +5,9 @@ on:
           type: boolean
           description: "If true, the coverage results are pushed to codecov.io."
           default: true
+    secrets:
+      CODECOV_TOKEN:
+        required: false        
 
 env:
   HF_HUB_DOWNLOAD_TIMEOUT: "60"
@@ -40,8 +43,9 @@ jobs:
           poetry run pytest -v --cov=docling --cov-report=xml tests
       - name: Upload coverage to Codecov
         if: inputs.push_coverage
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
       - name: Run examples
         run: |
