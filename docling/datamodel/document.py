@@ -17,10 +17,34 @@ from typing import (
 )
 
 import filetype
-from docling_core.types.doc import (
+
+# DO NOT REMOVE; explicitly exposed from this location
+from docling_core.types.doc import (  # noqa: F401
+    DocItem,
     DocItemLabel,
     DoclingDocument,
+    PictureItem,
+    SectionHeaderItem,
+    TableItem,
+    TextItem,
 )
+from docling_core.types.doc.document import ListItem  # noqa: F401
+from docling_core.types.legacy_doc.base import (  # noqa: F401
+    BaseText,
+    Figure,
+    GlmTableCell,
+    PageDimensions,
+    PageReference,
+    Prov,
+    Ref,
+)
+from docling_core.types.legacy_doc.base import Table as DsSchemaTable  # noqa: F401
+from docling_core.types.legacy_doc.base import TableCell  # noqa: F401
+from docling_core.types.legacy_doc.document import (  # noqa: F401
+    CCSDocumentDescription as DsDocumentDescription,
+)
+from docling_core.types.legacy_doc.document import CCSFileInfoObject as DsFileInfoObject  # noqa: F401
+from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument  # noqa: F401
 from docling_core.utils.file import resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
 from pydantic import BaseModel

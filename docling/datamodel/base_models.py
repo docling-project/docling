@@ -10,7 +10,9 @@ from docling_core.types.doc import (
     TableCell,
 )
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_core.types.io import (
+
+# DO NOT REMOVE; explicitly exposed from this location
+from docling_core.types.io import (  # noqa: F401
     DocumentStream,
 )
 from PIL.Image import Image
