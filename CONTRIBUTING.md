@@ -83,9 +83,22 @@ pre-commit run --all-files
 
 Note: Checks like `Black` and `isort` will "fail" if they modify files. This is because `pre-commit` doesn't like to see files modified by its hooks. In these cases, `git add` the modified files and `git commit` again.
 
-## Unit tests
+## Tests
 
 When submitting a new feature or fix, please consider adding a short test for it.
+
+### Reference test documents
+
+When a change improves the conversion results, multiple reference documents must be regenerated and reviewed.
+
+The reference data can be regenrated with
+
+```sh
+DOCLING_GEN_TEST_DATA=1 poetry run pytest
+```
+
+All PRs modifying the reference test data require a double review to guarantee we don't miss edge cases.
+
 
 ## Documentation
 
