@@ -83,6 +83,10 @@ pre-commit run --all-files
 
 Note: Checks like `Black` and `isort` will "fail" if they modify files. This is because `pre-commit` doesn't like to see files modified by its hooks. In these cases, `git add` the modified files and `git commit` again.
 
+## Unit tests
+
+When submitting a new feature or fix, please consider adding a short test for it.
+
 ## Documentation
 
 We use [MkDocs](https://www.mkdocs.org/) to write documentation.
