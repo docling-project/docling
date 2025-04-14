@@ -105,7 +105,6 @@ def test_ordered_lists():
 
 
 def get_html_paths():
-
     # Define the directory you want to search
     directory = Path("./tests/data/html/")
 
@@ -115,14 +114,12 @@ def get_html_paths():
 
 
 def get_converter():
-
     converter = DocumentConverter(allowed_formats=[InputFormat.HTML])
 
     return converter
 
 
 def test_e2e_html_conversions():
-
     html_paths = get_html_paths()
     converter = get_converter()
 
@@ -138,15 +135,15 @@ def test_e2e_html_conversions():
         doc: DoclingDocument = conv_result.document
 
         pred_md: str = doc.export_to_markdown()
-        assert verify_export(
-            pred_md, str(gt_path) + ".md", generate=GENERATE
-        ), "export to md"
+        assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
+            "export to md"
+        )
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(
-            pred_itxt, str(gt_path) + ".itxt", generate=GENERATE
-        ), "export to indented-text"
+        assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
+            "export to indented-text"
+        )
 
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)

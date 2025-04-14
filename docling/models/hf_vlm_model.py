@@ -19,7 +19,6 @@ _log = logging.getLogger(__name__)
 
 
 class HuggingFaceVlmModel(BasePageModel):
-
     def __init__(
         self,
         enabled: bool,

@@ -49,7 +49,6 @@ class ExampleFormulaUnderstandingEnrichmentModel(BaseItemAndImageEnrichmentModel
 
 # How the pipeline can be extended.
 class ExampleFormulaUnderstandingPipeline(StandardPdfPipeline):
-
     def __init__(self, pipeline_options: ExampleFormulaUnderstandingPipelineOptions):
         super().__init__(pipeline_options)
         self.pipeline_options: ExampleFormulaUnderstandingPipelineOptions

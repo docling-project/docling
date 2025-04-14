@@ -29,7 +29,6 @@ EnrichElementT = TypeVar("EnrichElementT", default=NodeItem)
 
 
 class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
-
     elements_batch_size: int = settings.perf.elements_batch_size
 
     @abstractmethod
@@ -50,7 +49,6 @@ class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
 
 
 class BaseEnrichmentModel(GenericEnrichmentModel[NodeItem]):
-
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
     ) -> Optional[NodeItem]:
@@ -62,7 +60,6 @@ class BaseEnrichmentModel(GenericEnrichmentModel[NodeItem]):
 class BaseItemAndImageEnrichmentModel(
     GenericEnrichmentModel[ItemAndImageEnrichmentElement]
 ):
-
     images_scale: float
     expansion_factor: float = 0.0
 

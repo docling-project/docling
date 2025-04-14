@@ -44,7 +44,6 @@ class TableStructureModel(BasePageModel):
 
         self.enabled = enabled
         if self.enabled:
-
             if artifacts_path is None:
                 artifacts_path = self.download_models() / self._model_path
             else:
@@ -175,7 +174,6 @@ class TableStructureModel(BasePageModel):
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-
         if not self.enabled:
             yield from page_batch
             return
@@ -186,7 +184,6 @@ class TableStructureModel(BasePageModel):
                 yield page
             else:
                 with TimeRecorder(conv_res, "table_structure"):
-
                     assert page.predictions.layout is not None
                     assert page.size is not None
 
@@ -260,7 +257,6 @@ class TableStructureModel(BasePageModel):
                             table_out = tf_output[0]
                             table_cells = []
                             for element in table_out["tf_responses"]:
-
                                 if not self.do_cell_matching:
                                     the_bbox = BoundingBox.model_validate(
                                         element["bbox"]

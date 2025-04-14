@@ -380,7 +380,6 @@ class PaginatedPipelineOptions(PipelineOptions):
 
 
 class VlmPipelineOptions(PaginatedPipelineOptions):
-
     generate_page_images: bool = True
     force_backend_text: bool = (
         False  # (To be used with vlms, or other generative models)

@@ -122,7 +122,6 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
 
     @override
     def convert(self) -> DoclingDocument:
-
         if self.parser is not None:
             doc = self.parser.parse(self.patent_content)
             if doc is None:

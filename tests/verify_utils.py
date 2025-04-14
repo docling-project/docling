@@ -21,7 +21,6 @@ from docling.datamodel.document import ConversionResult
 
 
 def levenshtein(str1: str, str2: str) -> int:
-
     # Ensure str1 is the shorter string to optimize memory usage
     if len(str1) > len(str2):
         str1, str2 = str2, str1
@@ -46,7 +45,6 @@ def levenshtein(str1: str, str2: str) -> int:
 
 
 def verify_text(gt: str, pred: str, fuzzy: bool, fuzzy_threshold: float = 0.4):
-
     if len(gt) == 0 or not fuzzy:
         assert gt == pred, f"{gt}!={pred}"
     else:
@@ -57,22 +55,19 @@ def verify_text(gt: str, pred: str, fuzzy: bool, fuzzy_threshold: float = 0.4):
 
 
 def verify_cells(doc_pred_pages: List[Page], doc_true_pages: List[Page]):
-
-    assert len(doc_pred_pages) == len(
-        doc_true_pages
-    ), "pred- and true-doc do not have the same number of pages"
+    assert len(doc_pred_pages) == len(doc_true_pages), (
+        "pred- and true-doc do not have the same number of pages"
+    )
 
     for pid, page_true_item in enumerate(doc_true_pages):
-
         num_true_cells = len(page_true_item.cells)
         num_pred_cells = len(doc_pred_pages[pid].cells)
 
-        assert (
-            num_true_cells == num_pred_cells
-        ), f"num_true_cells!=num_pred_cells {num_true_cells}!={num_pred_cells}"
+        assert num_true_cells == num_pred_cells, (
+            f"num_true_cells!=num_pred_cells {num_true_cells}!={num_pred_cells}"
+        )
 
         for cid, cell_true_item in enumerate(page_true_item.cells):
-
             cell_pred_item = doc_pred_pages[pid].cells[cid]
 
             true_text = cell_true_item.text
@@ -81,9 +76,9 @@ def verify_cells(doc_pred_pages: List[Page], doc_true_pages: List[Page]):
 
             true_bbox = cell_true_item.rect.to_bounding_box().as_tuple()
             pred_bbox = cell_pred_item.rect.to_bounding_box().as_tuple()
-            assert (
-                true_bbox == pred_bbox
-            ), f"bbox is not the same: {true_bbox} != {pred_bbox}"
+            assert true_bbox == pred_bbox, (
+                f"bbox is not the same: {true_bbox} != {pred_bbox}"
+            )
 
     return True
 
@@ -123,19 +118,19 @@ def verify_tables_v1(doc_pred: DsDocument, doc_true: DsDocument, fuzzy: bool):
 
     # print("Expected number of tables: {}, result: {}".format(len(doc_true.tables), len(doc_pred.tables)))
 
-    assert len(doc_true.tables) == len(
-        doc_pred.tables
-    ), "document has different count of tables than expected."
+    assert len(doc_true.tables) == len(doc_pred.tables), (
+        "document has different count of tables than expected."
+    )
 
     for l, true_item in enumerate(doc_true.tables):
         pred_item = doc_pred.tables[l]
 
-        assert (
-            true_item.num_rows == pred_item.num_rows
-        ), "table does not have the same #-rows"
-        assert (
-            true_item.num_cols == pred_item.num_cols
-        ), "table does not have the same #-cols"
+        assert true_item.num_rows == pred_item.num_rows, (
+            "table does not have the same #-rows"
+        )
+        assert true_item.num_cols == pred_item.num_cols, (
+            "table does not have the same #-cols"
+        )
 
         assert true_item.data is not None, "documents are expected to have table data"
         assert pred_item.data is not None, "documents are expected to have table data"
@@ -145,7 +140,6 @@ def verify_tables_v1(doc_pred: DsDocument, doc_true: DsDocument, fuzzy: bool):
 
         for i, row in enumerate(true_item.data):
             for j, col in enumerate(true_item.data[i]):
-
                 # print("true: ", true_item.data[i][j].text)
                 # print("pred: ", pred_item.data[i][j].text)
                 # print("")
@@ -154,20 +148,20 @@ def verify_tables_v1(doc_pred: DsDocument, doc_true: DsDocument, fuzzy: bool):
                     true_item.data[i][j].text, pred_item.data[i][j].text, fuzzy=fuzzy
                 )
 
-                assert (
-                    true_item.data[i][j].obj_type == pred_item.data[i][j].obj_type
-                ), "table-cell does not have the same type"
+                assert true_item.data[i][j].obj_type == pred_item.data[i][j].obj_type, (
+                    "table-cell does not have the same type"
+                )
 
     return True
 
 
 def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
-    assert (
-        true_item.data.num_rows == pred_item.data.num_rows
-    ), "table does not have the same #-rows"
-    assert (
-        true_item.data.num_cols == pred_item.data.num_cols
-    ), "table does not have the same #-cols"
+    assert true_item.data.num_rows == pred_item.data.num_rows, (
+        "table does not have the same #-rows"
+    )
+    assert true_item.data.num_cols == pred_item.data.num_cols, (
+        "table does not have the same #-cols"
+    )
 
     assert true_item.data is not None, "documents are expected to have table data"
     assert pred_item.data is not None, "documents are expected to have table data"
@@ -177,7 +171,6 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
     for i, row in enumerate(true_item.data.grid):
         for j, col in enumerate(true_item.data.grid[i]):
-
             # print("true: ", true_item.data[i][j].text)
             # print("pred: ", pred_item.data[i][j].text)
             # print("")
@@ -225,9 +218,9 @@ def verify_picture_image_v2(
 def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy: bool):
     assert len(doc_pred.texts) == len(doc_true.texts), f"Text lengths do not match."
 
-    assert len(doc_true.tables) == len(
-        doc_pred.tables
-    ), "document has different count of tables than expected."
+    assert len(doc_true.tables) == len(doc_pred.tables), (
+        "document has different count of tables than expected."
+    )
 
     for (true_item, _true_level), (pred_item, _pred_level) in zip(
         doc_true.iterate_items(), doc_pred.iterate_items()
@@ -261,25 +254,25 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
 
         # Validate table content
         if isinstance(true_item, TableItem):
-            assert isinstance(
-                pred_item, TableItem
-            ), "Test item is not a TableItem as the expected one"
-            assert verify_table_v2(
-                true_item, pred_item, fuzzy=fuzzy
-            ), "Tables not matching"
+            assert isinstance(pred_item, TableItem), (
+                "Test item is not a TableItem as the expected one"
+            )
+            assert verify_table_v2(true_item, pred_item, fuzzy=fuzzy), (
+                "Tables not matching"
+            )
 
         # Validate picture content
         if isinstance(true_item, PictureItem):
-            assert isinstance(
-                pred_item, PictureItem
-            ), "Test item is not a PictureItem as the expected one"
+            assert isinstance(pred_item, PictureItem), (
+                "Test item is not a PictureItem as the expected one"
+            )
 
             true_image = true_item.get_image(doc=doc_true)
             pred_image = true_item.get_image(doc=doc_pred)
             if true_image is not None:
-                assert verify_picture_image_v2(
-                    true_image, pred_image
-                ), "Picture image mismatch"
+                assert verify_picture_image_v2(true_image, pred_image), (
+                    "Picture image mismatch"
+                )
 
             # TODO: check picture annotations
 
@@ -303,9 +296,9 @@ def verify_conversion_result_v1(
 ):
     PageList = TypeAdapter(List[Page])
 
-    assert (
-        doc_result.status == ConversionStatus.SUCCESS
-    ), f"Doc {input_path} did not convert successfully."
+    assert doc_result.status == ConversionStatus.SUCCESS, (
+        f"Doc {input_path} did not convert successfully."
+    )
 
     doc_pred_pages: List[Page] = doc_result.pages
     doc_pred: DsDocument = doc_result.legacy_document
@@ -357,25 +350,25 @@ def verify_conversion_result_v1(
             doc_true_dt = fr.read()
 
         if not fuzzy:
-            assert verify_cells(
-                doc_pred_pages, doc_true_pages
-            ), f"Mismatch in PDF cell prediction for {input_path}"
+            assert verify_cells(doc_pred_pages, doc_true_pages), (
+                f"Mismatch in PDF cell prediction for {input_path}"
+            )
 
         # assert verify_output(
         #    doc_pred, doc_true
         # ), f"Mismatch in JSON prediction for {input_path}"
 
-        assert verify_tables_v1(
-            doc_pred, doc_true, fuzzy=fuzzy
-        ), f"verify_tables(doc_pred, doc_true) mismatch for {input_path}"
+        assert verify_tables_v1(doc_pred, doc_true, fuzzy=fuzzy), (
+            f"verify_tables(doc_pred, doc_true) mismatch for {input_path}"
+        )
 
-        assert verify_md(
-            doc_pred_md, doc_true_md, fuzzy=fuzzy
-        ), f"Mismatch in Markdown prediction for {input_path}"
+        assert verify_md(doc_pred_md, doc_true_md, fuzzy=fuzzy), (
+            f"Mismatch in Markdown prediction for {input_path}"
+        )
 
-        assert verify_dt(
-            doc_pred_dt, doc_true_dt, fuzzy=fuzzy
-        ), f"Mismatch in DocTags prediction for {input_path}"
+        assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
+            f"Mismatch in DocTags prediction for {input_path}"
+        )
 
 
 def verify_conversion_result_v2(
@@ -387,9 +380,9 @@ def verify_conversion_result_v2(
 ):
     PageList = TypeAdapter(List[Page])
 
-    assert (
-        doc_result.status == ConversionStatus.SUCCESS
-    ), f"Doc {input_path} did not convert successfully."
+    assert doc_result.status == ConversionStatus.SUCCESS, (
+        f"Doc {input_path} did not convert successfully."
+    )
 
     doc_pred_pages: List[Page] = doc_result.pages
     doc_pred: DoclingDocument = doc_result.document
@@ -439,29 +432,28 @@ def verify_conversion_result_v2(
             doc_true_dt = fr.read()
 
         if not fuzzy:
-            assert verify_cells(
-                doc_pred_pages, doc_true_pages
-            ), f"Mismatch in PDF cell prediction for {input_path}"
+            assert verify_cells(doc_pred_pages, doc_true_pages), (
+                f"Mismatch in PDF cell prediction for {input_path}"
+            )
 
         # assert verify_output(
         #    doc_pred, doc_true
         # ), f"Mismatch in JSON prediction for {input_path}"
 
-        assert verify_docitems(
-            doc_pred, doc_true, fuzzy=fuzzy
-        ), f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
+        assert verify_docitems(doc_pred, doc_true, fuzzy=fuzzy), (
+            f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
+        )
 
-        assert verify_md(
-            doc_pred_md, doc_true_md, fuzzy=fuzzy
-        ), f"Mismatch in Markdown prediction for {input_path}"
+        assert verify_md(doc_pred_md, doc_true_md, fuzzy=fuzzy), (
+            f"Mismatch in Markdown prediction for {input_path}"
+        )
 
-        assert verify_dt(
-            doc_pred_dt, doc_true_dt, fuzzy=fuzzy
-        ), f"Mismatch in DocTags prediction for {input_path}"
+        assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
+            f"Mismatch in DocTags prediction for {input_path}"
+        )
 
 
 def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):
-
     if not os.path.exists(gtfile) or generate:
         with open(gtfile, "w") as fw:
             json.dump(pred_doc.export_to_dict(), fw, indent=2)

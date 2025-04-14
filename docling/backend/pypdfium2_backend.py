@@ -225,7 +225,6 @@ class PyPdfiumPageBackend(PdfPageBackend):
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
     ) -> Image.Image:
-
         page_size = self.get_size()
 
         if not cropbox:

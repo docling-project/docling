@@ -160,7 +160,6 @@ def export_documents(
     export_doctags: bool,
     image_export_mode: ImageRefMode,
 ):
-
     success_count = 0
     failure_count = 0
 

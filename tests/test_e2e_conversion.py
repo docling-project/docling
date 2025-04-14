@@ -15,7 +15,6 @@ GENERATE_V2 = GEN_TEST_DATA
 
 
 def get_pdf_paths():
-
     # Define the directory you want to search
     directory = Path("./tests/data/pdf/")
 
@@ -25,7 +24,6 @@ def get_pdf_paths():
 
 
 def get_converter():
-
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False
     pipeline_options.do_table_structure = True
@@ -45,7 +43,6 @@ def get_converter():
 
 
 def test_e2e_pdfs_conversions():
-
     pdf_paths = get_pdf_paths()
     converter = get_converter()
 

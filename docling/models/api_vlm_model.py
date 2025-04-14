@@ -10,7 +10,6 @@ from docling.utils.profiling import TimeRecorder
 
 
 class ApiVlmModel(BasePageModel):
-
     def __init__(
         self,
         enabled: bool,

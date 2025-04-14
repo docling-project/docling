@@ -166,15 +166,72 @@ docling-tools = "docling.cli.tools:app"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
+[tool.ruff]
+target-version = "py39"
 line-length = 88
-target-version = ["py39"]
-include = '\.pyi?$'
+respect-gitignore = true
 
-[tool.isort]
-profile = "black"
-line_length = 88
-py_version = 39
+# extend-exclude = [
+#     "tests",
+# ]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+select = [
+    # "B",  # flake8-bugbear
+    "C",  # flake8-comprehensions
+    "C9",  # mccabe
+    # "D",  # flake8-docstrings
+    "E",  # pycodestyle errors (default)
+    "F",  # pyflakes (default)
+    "I",  # isort
+    "PD", # pandas-vet
+    "PIE", # pie
+    # "PTH", # pathlib
+    "Q",  # flake8-quotes
+    # "RET", # return
+    "RUF", # Enable all ruff-specific checks
+    # "SIM", # simplify
+    "S307", # eval
+    # "T20",  # (disallow print statements) keep debugging statements out of the codebase
+    "W",  # pycodestyle warnings
+    "ASYNC", # async
+    "UP", # pyupgrade
+]
+
+ignore = [
+    "E501",  # Line too long, handled by ruff formatter
+    "D107", # "Missing docstring in __init__",
+    "F811", # "redefinition of the same function"
+    "PL", # Pylint
+    "RUF012", # Mutable Class Attributes
+    "UP007", # Option and Union
+]
+
+#extend-select = []
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]
+"tests/*.py" = ["ASYNC"] # Disable ASYNC check for tests
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+# [tool.ruff.lint.isort.sections]
+# "docling" = ["docling_core", "docling_ibm_models", "docling_parse"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+# section-order = [
+#   "future",
+#   "standard-library",
+#   "third-party",
+#   "docling",
+#   "first-party",
+#   "local-folder",
+# ]
 
 [tool.mypy]
 pretty = true
@@ -201,10 +258,6 @@ module = [
   "pylatexenc.*",
 ]
 ignore_missing_imports = true
-
-[tool.flake8]
-max-line-length = 88
-extend-ignore = ["E203", "E501"]
 
 [tool.semantic_release]
 # for default values check:

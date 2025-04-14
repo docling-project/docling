@@ -19,7 +19,6 @@ _log = logging.getLogger(__name__)
 
 
 class HuggingFaceMlxModel(BasePageModel):
-
     def __init__(
         self,
         enabled: bool,
@@ -32,7 +31,6 @@ class HuggingFaceMlxModel(BasePageModel):
         self.vlm_options = vlm_options
 
         if self.enabled:
-
             try:
                 from mlx_vlm import generate, load  # type: ignore
                 from mlx_vlm.prompt_utils import apply_chat_template  # type: ignore

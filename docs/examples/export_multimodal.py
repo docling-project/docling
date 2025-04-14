@@ -51,7 +51,6 @@ def main():
         page_segments,
         page,
     ) in generate_multimodal_pages(conv_res):
-
         dpi = page._default_image_scale * 72
 
         rows.append(

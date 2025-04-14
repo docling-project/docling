@@ -233,9 +233,9 @@ class Page(BaseModel):
         None  # Internal PDF backend. By default it is cleared during assembling.
     )
     _default_image_scale: float = 1.0  # Default image scale for external usage.
-    _image_cache: Dict[float, Image] = (
-        {}
-    )  # Cache of images in different scales. By default it is cleared during assembling.
+    _image_cache: Dict[
+        float, Image
+    ] = {}  # Cache of images in different scales. By default it is cleared during assembling.
 
     def get_image(
         self, scale: float = 1.0, cropbox: Optional[BoundingBox] = None

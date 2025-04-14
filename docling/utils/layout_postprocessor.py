@@ -484,7 +484,9 @@ class LayoutPostprocessor:
         spatial_index = (
             self.regular_index
             if cluster_type == "regular"
-            else self.picture_index if cluster_type == "picture" else self.wrapper_index
+            else self.picture_index
+            if cluster_type == "picture"
+            else self.wrapper_index
         )
 
         # Map of currently valid clusters

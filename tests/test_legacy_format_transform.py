@@ -23,7 +23,6 @@ def test_doc_paths():
 
 
 def get_converter():
-
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False
 

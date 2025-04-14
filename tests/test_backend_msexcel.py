@@ -17,7 +17,6 @@ GENERATE = GEN_TEST_DATA
 
 
 def get_xlsx_paths():
-
     # Define the directory you want to search
     directory = Path("./tests/data/xlsx/")
 
@@ -27,7 +26,6 @@ def get_xlsx_paths():
 
 
 def get_converter():
-
     converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
 
     return converter
@@ -65,13 +63,13 @@ def test_e2e_xlsx_conversions(documents) -> None:
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(
-            pred_itxt, str(gt_path) + ".itxt"
-        ), "export to indented-text"
+        assert verify_export(pred_itxt, str(gt_path) + ".itxt"), (
+            "export to indented-text"
+        )
 
-        assert verify_document(
-            doc, str(gt_path) + ".json", GENERATE
-        ), "document document"
+        assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
+            "document document"
+        )
 
 
 def test_pages(documents) -> None:

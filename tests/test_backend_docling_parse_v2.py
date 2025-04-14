@@ -41,9 +41,9 @@ def test_text_cell_counts():
                 last_cell_count = len(cells)
 
             if len(cells) != last_cell_count:
-                assert (
-                    False
-                ), "Loading page multiple times yielded non-identical text cell counts"
+                assert False, (
+                    "Loading page multiple times yielded non-identical text cell counts"
+                )
             last_cell_count = len(cells)
 
 

@@ -63,7 +63,6 @@ class TesseractOcrCliModel(BaseOcrModel):
                 )
 
     def _get_name_and_version(self) -> Tuple[str, str]:
-
         if self._name != None and self._version != None:
             return self._name, self._version  # type: ignore
 
@@ -197,7 +196,6 @@ class TesseractOcrCliModel(BaseOcrModel):
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-
         if not self.enabled:
             yield from page_batch
             return

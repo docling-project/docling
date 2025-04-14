@@ -47,9 +47,9 @@ def test_e2e_pubmed_conversions(use_stream=False):
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
-        assert verify_export(
-            pred_itxt, str(gt_path) + ".itxt"
-        ), "export to indented-text"
+        assert verify_export(pred_itxt, str(gt_path) + ".itxt"), (
+            "export to indented-text"
+        )
 
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), "export to json"
 

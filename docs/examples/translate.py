@@ -15,7 +15,6 @@ IMAGE_RESOLUTION_SCALE = 2.0
 
 # FIXME: put in your favorite translation code ....
 def translate(text: str, src: str = "en", dest: str = "de"):
-
     _log.warning("!!! IMPLEMENT HERE YOUR FAVORITE TRANSLATION CODE!!!")
     # from googletrans import Translator
 

@@ -134,9 +134,9 @@ class InputDocument(BaseModel):
                     self._init_doc(backend, path_or_stream)
 
             elif isinstance(path_or_stream, BytesIO):
-                assert (
-                    filename is not None
-                ), "Can't construct InputDocument from stream without providing filename arg."
+                assert filename is not None, (
+                    "Can't construct InputDocument from stream without providing filename arg."
+                )
                 self.file = PurePath(filename)
                 self.filesize = path_or_stream.getbuffer().nbytes
 
@@ -228,7 +228,6 @@ class _DummyBackend(AbstractDocumentBackend):
 
 
 class _DocumentConversionInput(BaseModel):
-
     path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream]]
     headers: Optional[Dict[str, str]] = None
     limits: Optional[DocumentLimits] = DocumentLimits()

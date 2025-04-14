@@ -19,7 +19,6 @@ def _get_backend(fname):
 
 
 def test_asciidocs_examples():
-
     fnames = sorted(glob.glob("./tests/data/asciidoc/*.asciidoc"))
 
     for fname in fnames:

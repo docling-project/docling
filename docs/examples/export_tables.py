@@ -32,12 +32,12 @@ def main():
         print(table_df.to_markdown())
 
         # Save the table as csv
-        element_csv_filename = output_dir / f"{doc_filename}-table-{table_ix+1}.csv"
+        element_csv_filename = output_dir / f"{doc_filename}-table-{table_ix + 1}.csv"
         _log.info(f"Saving CSV table to {element_csv_filename}")
         table_df.to_csv(element_csv_filename)
 
         # Save the table as html
-        element_html_filename = output_dir / f"{doc_filename}-table-{table_ix+1}.html"
+        element_html_filename = output_dir / f"{doc_filename}-table-{table_ix + 1}.html"
         _log.info(f"Saving HTML table to {element_html_filename}")
         with element_html_filename.open("w") as fp:
             fp.write(table.export_to_html(doc=conv_res.document))

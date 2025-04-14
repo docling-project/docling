@@ -176,7 +176,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         visited: Set[marko.element.Element],
         parent_item: Optional[NodeItem] = None,
     ):
-
         if element in visited:
             return
 
@@ -398,7 +397,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
             # if HTML blocks were detected, export to HTML and delegate to HTML backend
             if self._html_blocks > 0:
-
                 # export to HTML
                 html_backend_cls = HTMLDocumentBackend
                 html_str = doc.export_to_html()

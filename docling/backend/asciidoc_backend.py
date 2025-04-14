@@ -125,7 +125,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Lists
             elif self._is_list_item(line):
-
                 _log.debug(f"line: {line}")
                 item = self._parse_list_item(line)
                 _log.debug(f"parsed list-item: {item}")
@@ -147,7 +146,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                     indents[level + 1] = item["indent"]
 
                 elif in_list and item["indent"] < indents[level]:
-
                     # print(item["indent"], " => ", indents[level])
                     while item["indent"] < indents[level]:
                         # print(item["indent"], " => ", indents[level])
@@ -176,7 +174,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             elif in_table and (
                 (not self._is_table_line(line)) or line.strip() == "|==="
             ):  # end of table
-
                 caption = None
                 if len(caption_data) > 0:
                     caption = doc.add_text(
@@ -195,7 +192,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Picture
             elif self._is_picture(line):
-
                 caption = None
                 if len(caption_data) > 0:
                     caption = doc.add_text(
@@ -250,7 +246,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
                 text_data = []
 
             elif len(line.strip()) > 0:  # allow multiline texts
-
                 item = self._parse_text(line)
                 text_data.append(item["text"])
 
@@ -357,7 +352,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return [cell.strip() for cell in line.split("|") if cell.strip()]
 
     def _populate_table_as_grid(self, table_data):
-
         num_rows = len(table_data)
 
         # Adjust the table data into a grid format

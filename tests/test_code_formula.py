@@ -12,7 +12,6 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 
 def get_converter():
-
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
 

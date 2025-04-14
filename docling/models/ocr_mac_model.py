@@ -58,7 +58,6 @@ class OcrMacModel(BaseOcrModel):
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-
         if not self.enabled:
             yield from page_batch
             return
@@ -69,7 +68,6 @@ class OcrMacModel(BaseOcrModel):
                 yield page
             else:
                 with TimeRecorder(conv_res, "ocr"):
-
                     ocr_rects = self.get_ocr_rects(page)
 
                     all_ocr_cells = []

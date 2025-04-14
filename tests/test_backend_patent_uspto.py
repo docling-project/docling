@@ -109,20 +109,20 @@ def test_patent_groundtruth(patents, groundtruth):
         md_name = path.stem + ".md"
         if md_name in gt_names:
             pred_md = doc.export_to_markdown()
-            assert (
-                pred_md == gt_names[md_name]
-            ), f"Markdown file mismatch against groundtruth {md_name}"
+            assert pred_md == gt_names[md_name], (
+                f"Markdown file mismatch against groundtruth {md_name}"
+            )
         json_path = path.with_suffix(".json")
         if json_path.stem in gt_names:
-            assert verify_document(
-                doc, str(json_path), GENERATE
-            ), f"JSON file mismatch against groundtruth {json_path}"
+            assert verify_document(doc, str(json_path), GENERATE), (
+                f"JSON file mismatch against groundtruth {json_path}"
+            )
         itxt_name = path.stem + ".itxt"
         if itxt_name in gt_names:
             pred_itxt = doc._export_to_indented_text()
-            assert (
-                pred_itxt == gt_names[itxt_name]
-            ), f"Indented text file mismatch against groundtruth {itxt_name}"
+            assert pred_itxt == gt_names[itxt_name], (
+                f"Indented text file mismatch against groundtruth {itxt_name}"
+            )
 
 
 def test_tables(tables):

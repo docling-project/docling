@@ -184,7 +184,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
 
         if self.workbook is not None:
-
             # Iterate over all sheets
             for sheet_name in self.workbook.sheetnames:
                 _log.info(f"Processing sheet: {sheet_name}")
@@ -253,7 +252,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 )
 
                 for excel_cell in excel_table.data:
-
                     cell = TableCell(
                         text=excel_cell.text,
                         row_span=excel_cell.row_span,
@@ -303,7 +301,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # Iterate over all cells in the sheet
         for ri, row in enumerate(sheet.iter_rows(values_only=False)):
             for rj, cell in enumerate(row):
-
                 # Skip empty or already visited cells
                 if cell.value is None or (ri, rj) in visited:
                     continue
@@ -342,7 +339,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         visited_cells: set[tuple[int, int]] = set()
         for ri in range(start_row, max_row + 1):
             for rj in range(start_col, max_col + 1):
-
                 cell = sheet.cell(row=ri + 1, column=rj + 1)  # 1-based indexing
 
                 # Check if the cell belongs to a merged range
@@ -350,14 +346,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 col_span = 1
 
                 for merged_range in sheet.merged_cells.ranges:
-
                     if (
                         merged_range.min_row <= ri + 1
                         and ri + 1 <= merged_range.max_row
                         and merged_range.min_col <= rj + 1
                         and rj + 1 <= merged_range.max_col
                     ):
-
                         row_span = merged_range.max_row - merged_range.min_row + 1
                         col_span = merged_range.max_col - merged_range.min_col + 1
                         break

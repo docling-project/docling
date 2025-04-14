@@ -12,7 +12,6 @@ from docling.document_converter import PdfFormatOption
 
 
 def test_in_doc_from_valid_path():
-
     test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
     doc = _make_input_doc(test_doc_path)
     assert doc.valid == True
@@ -27,7 +26,6 @@ def test_in_doc_from_invalid_path():
 
 
 def test_in_doc_from_valid_buf():
-
     buf = BytesIO(Path("./tests/data/pdf/2206.01062.pdf").open("rb").read())
     stream = DocumentStream(name="my_doc.pdf", stream=buf)
 
@@ -36,7 +34,6 @@ def test_in_doc_from_valid_buf():
 
 
 def test_in_doc_from_invalid_buf():
-
     buf = BytesIO(b"")
     stream = DocumentStream(name="my_doc.pdf", stream=buf)
 
@@ -45,7 +42,6 @@ def test_in_doc_from_invalid_buf():
 
 
 def test_image_in_pdf_backend():
-
     in_doc = InputDocument(
         path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
         format=InputFormat.IMAGE,
@@ -76,7 +72,6 @@ def test_image_in_pdf_backend():
 
 
 def test_in_doc_with_page_range():
-
     test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
     limits = DocumentLimits()
     limits.page_range = (1, 10)

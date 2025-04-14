@@ -300,7 +300,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _add_abstract(
         self, doc: DoclingDocument, xml_components: XMLComponents
     ) -> None:
-
         for abstract in xml_components["abstract"]:
             text: str = abstract["content"]
             title: str = abstract["label"] or DEFAULT_HEADER_ABSTRACT

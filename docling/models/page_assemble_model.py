@@ -71,7 +71,6 @@ class PageAssembleModel(BasePageModel):
                 yield page
             else:
                 with TimeRecorder(conv_res, "page_assemble"):
-
                     assert page.predictions.layout is not None
 
                     # assembles some JSON output page by page.
@@ -83,7 +82,6 @@ class PageAssembleModel(BasePageModel):
                     for cluster in page.predictions.layout.clusters:
                         # _log.info("Cluster label seen:", cluster.label)
                         if cluster.label in LayoutModel.TEXT_ELEM_LABELS:
-
                             textlines = [
                                 cell.text.replace("\x02", "-").strip()
                                 for cell in cluster.cells
@@ -109,9 +107,7 @@ class PageAssembleModel(BasePageModel):
                                 tbl = page.predictions.tablestructure.table_map.get(
                                     cluster.id, None
                                 )
-                            if (
-                                not tbl
-                            ):  # fallback: add table without structure, if it isn't present
+                            if not tbl:  # fallback: add table without structure, if it isn't present
                                 tbl = Table(
                                     label=cluster.label,
                                     id=cluster.id,
@@ -130,9 +126,7 @@ class PageAssembleModel(BasePageModel):
                                 fig = page.predictions.figures_classification.figure_map.get(
                                     cluster.id, None
                                 )
-                            if (
-                                not fig
-                            ):  # fallback: add figure without classification, if it isn't present
+                            if not fig:  # fallback: add figure without classification, if it isn't present
                                 fig = FigureElement(
                                     label=cluster.label,
                                     id=cluster.id,

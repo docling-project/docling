@@ -13,7 +13,6 @@ from docling.utils.accelerator_utils import decide_device
 
 
 class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
-
     @classmethod
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         return PictureDescriptionVlmOptions
@@ -36,7 +35,6 @@ class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
         self.options: PictureDescriptionVlmOptions
 
         if self.enabled:
-
             if artifacts_path is None:
                 artifacts_path = self.download_models(repo_id=self.options.repo_id)
             else:

@@ -126,7 +126,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     def walk(self, tag: Tag, doc: DoclingDocument) -> None:
-
         # Iterate over elements in the body of the document
         text: str = ""
         for element in tag.children:
@@ -222,7 +221,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
         else:
             if hlevel > self.level:
-
                 # add invisible group
                 for i in range(self.level + 1, hlevel):
                     self.parents[i] = doc.add_group(
@@ -234,7 +232,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self.level = hlevel
 
             elif hlevel < self.level:
-
                 # remove the tail
                 for key in self.parents.keys():
                     if key > hlevel:

@@ -142,7 +142,6 @@ class LayoutModel(BasePageModel):
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-
         for page in page_batch:
             assert page._backend is not None
             if not page._backend.is_valid():

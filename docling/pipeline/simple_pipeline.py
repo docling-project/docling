@@ -24,7 +24,6 @@ class SimplePipeline(BasePipeline):
         super().__init__(pipeline_options)
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
-
         if not isinstance(conv_res.input._backend, DeclarativeDocumentBackend):
             raise RuntimeError(
                 f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a declarative backend. "

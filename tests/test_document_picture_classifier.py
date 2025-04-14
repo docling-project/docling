@@ -11,7 +11,6 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 
 
 def get_converter():
-
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
 
@@ -52,29 +51,29 @@ def test_picture_classifier():
     assert type(res.annotations[0]) == PictureClassificationData
     classification_data = res.annotations[0]
     assert classification_data.provenance == "DocumentPictureClassifier"
-    assert (
-        len(classification_data.predicted_classes) == 16
-    ), "Number of predicted classes is not equal to 16"
+    assert len(classification_data.predicted_classes) == 16, (
+        "Number of predicted classes is not equal to 16"
+    )
     confidences = [pred.confidence for pred in classification_data.predicted_classes]
-    assert confidences == sorted(
-        confidences, reverse=True
-    ), "Predictions are not sorted in descending order of confidence"
-    assert (
-        classification_data.predicted_classes[0].class_name == "bar_chart"
-    ), "The prediction is wrong for the bar chart image."
+    assert confidences == sorted(confidences, reverse=True), (
+        "Predictions are not sorted in descending order of confidence"
+    )
+    assert classification_data.predicted_classes[0].class_name == "bar_chart", (
+        "The prediction is wrong for the bar chart image."
+    )
 
     res = results[1]
     assert len(res.annotations) == 1
     assert type(res.annotations[0]) == PictureClassificationData
     classification_data = res.annotations[0]
     assert classification_data.provenance == "DocumentPictureClassifier"
-    assert (
-        len(classification_data.predicted_classes) == 16
-    ), "Number of predicted classes is not equal to 16"
+    assert len(classification_data.predicted_classes) == 16, (
+        "Number of predicted classes is not equal to 16"
+    )
     confidences = [pred.confidence for pred in classification_data.predicted_classes]
-    assert confidences == sorted(
-        confidences, reverse=True
-    ), "Predictions are not sorted in descending order of confidence"
-    assert (
-        classification_data.predicted_classes[0].class_name == "map"
-    ), "The prediction is wrong for the bar chart image."
+    assert confidences == sorted(confidences, reverse=True), (
+        "Predictions are not sorted in descending order of confidence"
+    )
+    assert classification_data.predicted_classes[0].class_name == "map", (
+        "The prediction is wrong for the bar chart image."
+    )

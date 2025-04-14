@@ -16,14 +16,12 @@ GENERATE = GEN_TEST_DATA
 
 
 def get_pdf_path():
-
     pdf_path = Path("./tests/data/pdf/2305.03393v1-pg9.pdf")
     return pdf_path
 
 
 @pytest.fixture
 def converter():
-
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False
     pipeline_options.do_table_structure = True
@@ -42,7 +40,6 @@ def converter():
 
 
 def test_convert_path(converter: DocumentConverter):
-
     pdf_path = get_pdf_path()
     print(f"converting {pdf_path}")
 
@@ -56,7 +53,6 @@ def test_convert_path(converter: DocumentConverter):
 
 
 def test_convert_stream(converter: DocumentConverter):
-
     pdf_path = get_pdf_path()
     print(f"converting {pdf_path}")
 
