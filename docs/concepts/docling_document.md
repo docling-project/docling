@@ -31,7 +31,7 @@ The first category is the _content items_, which are stored in these fields:
 All of the above fields are lists and store items inheriting from the `DocItem` type. They can express different
 data structures depending on their type, and reference parents and children through JSON pointers.
 
-The second category is _content structure_, which is encapsualted in:
+The second category is _content structure_, which is encapsulated in:
 
 - `body`: The root node of a tree-structure for the main document body
 - `furniture`: The root node of a tree-structure for all items that don't belong into the body (headers, footers, ...)
@@ -49,7 +49,7 @@ Below example shows how all items in the first page are nested below the `title`
 
 ### Grouping
 
-Below example shows how all items under the heading "Let's swim" (`#/texts/5`) are nested as chilrden. The children of
+Below example shows how all items under the heading "Let's swim" (`#/texts/5`) are nested as children. The children of
 "Let's swim" are both text items and groups, which contain the list elements. The group items are stored in the
 top-level `groups` field.
 
