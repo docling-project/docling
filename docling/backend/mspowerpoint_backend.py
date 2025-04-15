@@ -46,10 +46,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         self.pptx_obj = None
         self.valid = False
-        self.xpath_expr = etree.XPath(".//a:blip", namespaces={
-            "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-            "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-        })
+        self.xpath_expr = etree.XPath(
+            ".//a:blip",
+            namespaces={
+                "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+                "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+            },
+        )
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.pptx_obj = Presentation(self.path_or_stream)
@@ -284,8 +287,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
         return
 
-    def handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size, drawing_blip, slide):
-        
+    def handle_pictures(
+        self, shape, parent_slide, slide_ind, doc, slide_size, drawing_blip, slide
+    ):
+
         def get_pptx_image(drawing_blip):
             rId = drawing_blip[0].get(
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
@@ -295,6 +300,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             image_data = image_part.blob
 
             return image_data
+
         # Open it with PIL
         try:
             # Get the image bytes
@@ -303,7 +309,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             image_bytes = BytesIO(image_data)
             pil_image = Image.open(image_bytes)
             im_dpi, _ = pil_image.info.get("dpi", (72, 72))
-            
+
             # shape has picture
             prov = self.generate_prov(shape, slide_ind, "", slide_size)
             doc.add_picture(
@@ -410,8 +416,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     drawing_blip = self.xpath_expr(shape.element)
-                    if drawing_blip: #ensure there is a drwaing blip
-                        self.handle_pictures(shape, parent_slide, slide_ind, doc, drawing_blip, slide)
+                    if drawing_blip:  # ensure there is a drwaing blip
+                        self.handle_pictures(
+                            shape, parent_slide, slide_ind, doc, drawing_blip, slide
+                        )
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
                     return
