@@ -7,6 +7,7 @@ coverage:
       default:
         informational: true
         target: auto  # auto compares coverage to the previous base commit
+        if_ci_failed: success
         flags:
           - docling
 comment:
