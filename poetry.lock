@@ -870,35 +870,31 @@ files = [
 
 [[package]]
 name = "docling-core"
-version = "2.26.3"
+version = "2.26.4"
 description = "A python library to define and validate data types in Docling."
 optional = false
-python-versions = "^3.9"
-files = []
-develop = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "docling_core-2.26.4-py3-none-any.whl", hash = "sha256:42cc246d4889e6d52f004a2ca85b7f8132735fc6769ed2d06764bd498886d480"},
+    {file = "docling_core-2.26.4.tar.gz", hash = "sha256:a8176d467f38a281b9c179104ba17c3b9a1b8c90a3e329add1609a176cad018f"},
+]
 
 [package.dependencies]
-jsonref = "^1.1.0"
-jsonschema = "^4.16.0"
-latex2mathml = "^3.77.0"
-pandas = "^2.1.4"
+jsonref = ">=1.1.0,<2.0.0"
+jsonschema = ">=4.16.0,<5.0.0"
+latex2mathml = ">=3.77.0,<4.0.0"
+pandas = ">=2.1.4,<3.0.0"
 pillow = ">=10.0.0,<12.0.0"
-pydantic = ">=2.6.0,<3.0.0,!=2.10.0,!=2.10.1,!=2.10.2"
+pydantic = ">=2.6.0,<2.10.0 || >2.10.0,<2.10.1 || >2.10.1,<2.10.2 || >2.10.2,<3.0.0"
 pyyaml = ">=5.1,<7.0.0"
-semchunk = {version = "^2.2.0", optional = true}
-tabulate = "^0.9.0"
-transformers = {version = "^4.34.0", optional = true}
+semchunk = {version = ">=2.2.0,<3.0.0", optional = true, markers = "extra == \"chunking\""}
+tabulate = ">=0.9.0,<0.10.0"
+transformers = {version = ">=4.34.0,<5.0.0", optional = true, markers = "extra == \"chunking\""}
 typer = ">=0.12.5,<0.16.0"
-typing-extensions = "^4.12.2"
+typing-extensions = ">=4.12.2,<5.0.0"
 
 [package.extras]
 chunking = ["semchunk (>=2.2.0,<3.0.0)", "transformers (>=4.34.0,<5.0.0)"]
-
-[package.source]
-type = "git"
-url = "https://github.com/docling-project/docling-core.git"
-reference = "0b54bcd33ce4b0423fe349d26bedc25379e66b4b"
-resolved_reference = "0b54bcd33ce4b0423fe349d26bedc25379e66b4b"
 
 [[package]]
 name = "docling-ibm-models"
@@ -7886,4 +7882,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "47c4c67eed5ab38ce1a75b17c6ec9ce8a4aee578878a7509be9cec402298ac5f"
+content-hash = "d2a8f7997b9ffb249ad26ba492b766d580bdb0072d50e76b0afd92496e983e96"
