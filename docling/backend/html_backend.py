@@ -177,6 +177,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.handle_figure(tag, doc)
         elif tag.name == "img":
             self.handle_image(tag, doc)
+        elif tag.name == "a":
+            # New branch to handle anchor tags.
+            self.handle_anchor(tag, doc)
         else:
             self.walk(tag, doc)
 
@@ -272,7 +275,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def handle_list(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles list tags (ul, ol) and their list items."""
-
         if element.name == "ul":
             # create a list group
             self.parents[self.level + 1] = doc.add_group(
@@ -464,9 +466,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def handle_table(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles table tags."""
-
         table_data = HTMLDocumentBackend.parse_table_data(element)
-
         if table_data is not None:
             doc.add_table(
                 data=table_data,
@@ -501,12 +501,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 nested_list = li.find(["ul", "ol"])
                 if isinstance(nested_list, Tag):
                     result.extend(self.get_list_text(nested_list, level + 1))
-
         return result
 
     def handle_figure(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles image tags (img)."""
-
         # Extract the image URI from the <img> tag
         # image_uri = root.xpath('//figure//img/@src')[0]
 
@@ -536,9 +534,32 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def handle_image(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles image tags (img)."""
         _log.debug(f"ignoring <img> tags at the moment: {element}")
-
         doc.add_picture(
             parent=self.parents[self.level],
             caption=None,
             content_layer=self.content_layer,
         )
+        
+    def handle_anchor(self, element: Tag, doc: DoclingDocument) -> None:
+        """Handles anchor tags (<a>) by extracting the visible text and href attribute."""
+        # Extract the anchor text and the URL (href attribute)
+        text = element.get_text().strip()
+        href = element.get("href", "").strip()
+        
+        if text:
+            # Combine the text with the hyperlink if available
+            combined_text = f"{text} (Link: {href})" if href else text
+            doc.add_text(
+                parent=self.parents[self.level],
+                label=DocItemLabel.TEXT,
+                text=combined_text,
+                content_layer=self.content_layer,
+            )
+        elif href:
+            # If no visible text, add the link itself
+            doc.add_text(
+                parent=self.parents[self.level],
+                label=DocItemLabel.TEXT,
+                text=f"Link: {href}",
+                content_layer=self.content_layer,
+            )
