@@ -541,25 +541,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         
     def handle_anchor(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles anchor tags (<a>) by extracting the visible text and href attribute."""
-        # Extract the anchor text and the URL (href attribute)
+        """Handles anchor tags (<a>) by extracting the visible text and setting the hyperlink property."""
+        # Extract the visible text and href URL
         text = element.get_text().strip()
         href = element.get("href", "").strip()
-        
-        if text:
-            # Combine the text with the hyperlink if available
-            combined_text = f"{text} (Link: {href})" if href else text
+    
+        # If no text is present, use the hyperlink itself as the text.
+        display_text = text if text else href
+    
+        if display_text or href:
             doc.add_text(
                 parent=self.parents[self.level],
                 label=DocItemLabel.TEXT,
-                text=combined_text,
-                content_layer=self.content_layer,
-            )
-        elif href:
-            # If no visible text, add the link itself
-            doc.add_text(
-                parent=self.parents[self.level],
-                label=DocItemLabel.TEXT,
-                text=f"Link: {href}",
+                text=display_text,
+                hyperlink=href if href else None,  # Pass the hyperlink as a separate parameter
                 content_layer=self.content_layer,
             )
