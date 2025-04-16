@@ -178,7 +178,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif tag.name == "img":
             self.handle_image(tag, doc)
         elif tag.name == "a":
-            # New branch to handle anchor tags.
             self.handle_anchor(tag, doc)
         else:
             self.walk(tag, doc)
@@ -554,6 +553,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 label=DocItemLabel.TEXT,
                 text=display_text,
-                hyperlink=href if href else None,  # Pass the hyperlink as a separate parameter
+                hyperlink=href if href else None,
                 content_layer=self.content_layer,
             )
