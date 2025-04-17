@@ -31,6 +31,9 @@
       },
       {
         "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
       }
     ],
     "content_layer": "body",
@@ -84,11 +87,23 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a third div\nwith a new line.",
-      "text": "This is a third div\nwith a new line."
+      "orig": "This is a third div",
+      "text": "This is a third div"
     },
     {
       "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "with a new line.",
+      "text": "with a new line."
+    },
+    {
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/body"
       },
