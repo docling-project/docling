@@ -421,7 +421,7 @@ def convert(  # noqa: C901
         logging.basicConfig(level=logging.WARNING)
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO)
-    elif verbose == 2:
+    else:
         logging.basicConfig(level=logging.DEBUG)
 
     settings.debug.visualize_cells = debug_visualize_cells
