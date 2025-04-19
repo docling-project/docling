@@ -979,31 +979,35 @@ name = "docling-ibm-models"
 version = "3.4.1"
 description = "This package contains the AI models used by the Docling PDF conversion package"
 optional = false
-python-versions = "<4.0,>=3.9"
-files = [
-    {file = "docling_ibm_models-3.4.1-py3-none-any.whl", hash = "sha256:c3582c99dddfa3f0eafcf80cf1267fd8efa39c4a74cc7a88f9dd49684fac2986"},
-    {file = "docling_ibm_models-3.4.1.tar.gz", hash = "sha256:093b4dff2ea284a4953c3aa009e29945208b8d389b94fb14940a03a93f673e96"},
-]
+python-versions = "^3.9"
+files = []
+develop = false
 
 [package.dependencies]
-docling-core = ">=2.19.0,<3.0.0"
+docling-core = "^2.19.0"
 huggingface_hub = ">=0.23,<1"
-jsonlines = ">=3.1.0,<4.0.0"
+jsonlines = "^3.1.0"
 numpy = [
     {version = ">=1.24.4,<3.0.0", markers = "sys_platform != \"darwin\" or platform_machine != \"x86_64\""},
     {version = ">=1.24.4,<2.0.0", markers = "sys_platform == \"darwin\" and platform_machine == \"x86_64\""},
 ]
-opencv-python-headless = ">=4.6.0.66,<5.0.0.0"
+opencv-python-headless = "^4.6.0.66"
 Pillow = ">=10.0.0,<12.0.0"
-pydantic = ">=2.0.0,<3.0.0"
+pydantic = "^2.0.0"
 safetensors = {version = ">=0.4.3,<1", extras = ["torch"]}
-torch = ">=2.2.2,<3.0.0"
-torchvision = ">=0,<1"
-tqdm = ">=4.64.0,<5.0.0"
+torch = "^2.2.2"
+torchvision = "^0"
+tqdm = "^4.64.0"
 transformers = [
     {version = ">=4.42.0,<5.0.0", markers = "sys_platform != \"darwin\" or platform_machine != \"x86_64\""},
     {version = ">=4.42.0,<4.43.0", markers = "sys_platform == \"darwin\" and platform_machine == \"x86_64\""},
 ]
+
+[package.source]
+type = "git"
+url = "https://github.com/docling-project/docling-ibm-models.git"
+reference = "nli/layout_rtdetr_v2"
+resolved_reference = "f8a776000a40e8f26034468ec813fd87963ec1a4"
 
 [[package]]
 name = "docling-parse"
@@ -7010,6 +7014,11 @@ description = "image and video datasets and models for torch deep learning"
 optional = false
 python-versions = ">=3.9"
 files = [
+    {file = "torchvision-0.21.0-1-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:5568c5a1ff1b2ec33127b629403adb530fab81378d9018ca4ed6508293f76e2b"},
+    {file = "torchvision-0.21.0-1-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:ff96666b94a55e802ea6796cabe788541719e6f4905fc59c380fed3517b6a64d"},
+    {file = "torchvision-0.21.0-1-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:ffa2a16499508fe6798323e455f312c7c55f2a88901c9a7c0fb1efa86cf7e327"},
+    {file = "torchvision-0.21.0-1-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:7e9e9afa150e40cd2a8f0701c43cb82a8d724f512896455c0918b987f94b84a4"},
+    {file = "torchvision-0.21.0-1-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:669575b290ec27304569e188a960d12b907d5173f9cd65e86621d34c4e5b6c30"},
     {file = "torchvision-0.21.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:044ea420b8c6c3162a234cada8e2025b9076fa82504758cd11ec5d0f8cd9fa37"},
     {file = "torchvision-0.21.0-cp310-cp310-manylinux1_x86_64.whl", hash = "sha256:b0c0b264b89ab572888244f2e0bad5b7eaf5b696068fc0b93e96f7c3c198953f"},
     {file = "torchvision-0.21.0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:54815e0a56dde95cc6ec952577f67e0dc151eadd928e8d9f6a7f821d69a4a734"},
@@ -7978,4 +7987,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "b36037ec17dc4b6d5197a2f63a1367e05bf888b4fa97e2e2e8c29c217741d69c"
+content-hash = "1fe9abe6488a6dacf638547da3fa994183d16fc4bdc7fd95f173fc2ac7dfa50d"
