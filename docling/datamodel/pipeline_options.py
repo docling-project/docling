@@ -230,6 +230,18 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
     provenance: str = ""
 
 
+class PictureDescriptionLlamaStackApiOptions(PictureDescriptionBaseOptions):
+    kind: ClassVar[Literal["llama-stack"]] = "llama-stack"
+
+    url: AnyUrl = AnyUrl("http://localhost:8321/v1/inference/chat-completion")
+    headers: Dict[str, str] = {}
+    params: Dict[str, Any] = {}
+    timeout: float = 20
+
+    prompt: str = "Describe this image in a few sentences."
+    provenance: str = ""
+
+
 class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
     kind: ClassVar[Literal["vlm"]] = "vlm"
 

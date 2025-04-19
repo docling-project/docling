@@ -176,7 +176,7 @@ pipeline_options.picture_description_options = PictureDescriptionVlmOptions(
 
 The option class `PictureDescriptionApiOptions` allows to use models hosted on remote platforms, e.g.
 on local endpoints served by [VLLM](https://docs.vllm.ai), [Ollama](https://ollama.com/) and others,
-or cloud providers like [IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai), etc.
+or cloud providers like [IBM watsonx.ai](https://www.ibm.com/products/watsonx-ai), etc. The `PictureDescriptionLlamaStackApiOptions` class is a variant which allows to use visual models models through llama-stack server. 
 
 _Note: in most cases this option will send your data to the remote service provider._
 

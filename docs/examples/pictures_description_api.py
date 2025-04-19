@@ -10,6 +10,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PictureDescriptionApiOptions,
+    PictureDescriptionLlamaStackApiOptions
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
@@ -22,7 +23,19 @@ def vllm_local_options(model: str):
             seed=42,
             max_completion_tokens=200,
         ),
-        prompt="Describe the image in three sentences. Be consise and accurate.",
+        prompt="Describe the image in three sentences. Be concise and accurate.",
+        timeout=90,
+    )
+    return options
+
+
+def llama_stack_local_options(model: str):
+    options = PictureDescriptionLlamaStackApiOptions(
+        url="http://localhost:8321/v1/inference/chat-completion",
+        params=dict(
+            model_id=model,
+        ),
+        prompt="Describe the image in three sentences. Be concise and accurate.",
         timeout=90,
     )
     return options
@@ -76,10 +89,13 @@ def main():
 
     # The PictureDescriptionApiOptions() allows to interface with APIs supporting
     # the multi-modal chat interface. Here follow a few example on how to configure those.
-    #
+    # 
     # One possibility is self-hosting model, e.g. via VLLM.
     # $ vllm serve MODEL_NAME
     # Then PictureDescriptionApiOptions can point to the localhost endpoint.
+    #
+    # The PictureDescriptionLlamaStackApiOptions() allows to interface with visual models registered with llama-stack via its chat-completion API.
+    # If you have a local llama-stack instance locally via Docker or Podman, you can point the 'url' to its endpoint.
     #
     # Example for the Granite Vision model: (uncomment the following lines)
     # pipeline_options.picture_description_options = vllm_local_options(

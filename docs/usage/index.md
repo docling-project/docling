@@ -112,6 +112,7 @@ _Note: This option is only related to the system sending user data to remote ser
 The options in this list require the explicit `enable_remote_services=True` when processing the documents.
 
 - `PictureDescriptionApiOptions`: Using vision models via API calls.
+- `PictureDescriptionLlamaStackApiOptions`: Using vision models via llama-stack Server API calls.
 
 
 #### Adjust pipeline features
