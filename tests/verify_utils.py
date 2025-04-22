@@ -456,7 +456,7 @@ def verify_conversion_result_v2(
 def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):
     if not os.path.exists(gtfile) or generate:
         with open(gtfile, "w") as fw:
-            json.dump(pred_doc.export_to_dict(), fw, indent=2)
+            json.dump(pred_doc.export_to_dict(), fw, ensure_ascii=False, indent=2)
 
         return True
     else:
