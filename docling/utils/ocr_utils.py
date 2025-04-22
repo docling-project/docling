@@ -54,7 +54,7 @@ def tesseract_box_to_bounding_rectangle(
         coord_origin=CoordOrigin.TOPLEFT,
     )
     if original_offset is not None:
-        if not original_offset.coord_origin is CoordOrigin.TOPLEFT:
+        if original_offset.coord_origin is not CoordOrigin.TOPLEFT:
             msg = f"expected coordinate origin to be {CoordOrigin.TOPLEFT.value}"
             raise ValueError(msg)
         if original_offset is not None:

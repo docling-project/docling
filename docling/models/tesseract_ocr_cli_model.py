@@ -266,11 +266,15 @@ class TesseractOcrCliModel(BaseOcrModel):
                             text = row["text"]
                             conf = row["conf"]
 
-                            l, t = float(row["left"]), float(row["top"])
-                            r = l + float(row["width"])
-                            b = t + row["height"]
+                            left, top = float(row["left"]), float(row["top"])
+                            right = left + float(row["width"])
+                            bottom = top + row["height"]
                             bbox = BoundingBox(
-                                l=l, t=t, r=r, b=b, coord_origin=CoordOrigin.TOPLEFT
+                                l=left,
+                                t=top,
+                                r=right,
+                                b=bottom,
+                                coord_origin=CoordOrigin.TOPLEFT,
                             )
                             rect = tesseract_box_to_bounding_rectangle(
                                 bbox,
