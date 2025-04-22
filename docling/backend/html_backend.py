@@ -27,6 +27,7 @@ _log = logging.getLogger(__name__)
 # tags that generate NodeItem elements
 TAGS_FOR_NODE_ITEMS: Final = [
     "address",
+    "details",
     "h1",
     "h2",
     "h3",
@@ -39,6 +40,7 @@ TAGS_FOR_NODE_ITEMS: Final = [
     "ul",
     "ol",
     "li",
+    "summary",
     "table",
     "figure",
     "img",
@@ -164,7 +166,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def analyze_tag(self, tag: Tag, doc: DoclingDocument) -> None:
         if tag.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             self.handle_header(tag, doc)
-        elif tag.name in ["p", "address"]:
+        elif tag.name in ["p", "address", "summary"]:
             self.handle_paragraph(tag, doc)
         elif tag.name in ["pre", "code"]:
             self.handle_code(tag, doc)
@@ -178,6 +180,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.handle_figure(tag, doc)
         elif tag.name == "img":
             self.handle_image(tag, doc)
+        elif tag.name == "details":
+            self.handle_details(tag, doc)
         else:
             self.walk(tag, doc)
 
@@ -201,6 +205,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 result.extend(self.extract_text_recursively(child))
 
         return ["".join(result) + " "]
+
+    def handle_details(self, element: Tag, doc: DoclingDocument) -> None:
+        """Handle details tag (details) and its content."""
+
+        self.parents[self.level + 1] = doc.add_group(
+            name="details",
+            label=GroupLabel.SECTION,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+        )
+
+        self.level += 1
+        self.walk(element, doc)
+        self.parents[self.level + 1] = None
+        self.level -= 1
 
     def handle_header(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles header tags (h1, h2, etc.)."""
