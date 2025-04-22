@@ -26,6 +26,7 @@ _log = logging.getLogger(__name__)
 
 # tags that generate NodeItem elements
 TAGS_FOR_NODE_ITEMS: Final = [
+    "address",
     "h1",
     "h2",
     "h3",
@@ -163,7 +164,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def analyze_tag(self, tag: Tag, doc: DoclingDocument) -> None:
         if tag.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             self.handle_header(tag, doc)
-        elif tag.name in ["p"]:
+        elif tag.name in ["p", "address"]:
             self.handle_paragraph(tag, doc)
         elif tag.name in ["pre", "code"]:
             self.handle_code(tag, doc)
@@ -258,7 +259,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def handle_paragraph(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles paragraph tags (p)."""
+        """Handles paragraph tags (p) or equivalent ones."""
         if element.text is None:
             return
         text = element.text.strip()
