@@ -194,11 +194,15 @@ class TesseractOcrModel(BaseOcrModel):
                             # Extract text within the bounding box
                             text = local_reader.GetUTF8Text().strip()
                             confidence = local_reader.MeanTextConf()
-                            l, t = box["x"], box["y"]
-                            r = l + box["w"]
-                            b = t + box["h"]
+                            left, top = box["x"], box["y"]
+                            right = left + box["w"]
+                            bottom = top + box["h"]
                             bbox = BoundingBox(
-                                l=l, t=t, r=r, b=b, coord_origin=CoordOrigin.TOPLEFT
+                                l=left,
+                                t=top,
+                                r=right,
+                                b=bottom,
+                                coord_origin=CoordOrigin.TOPLEFT,
                             )
                             rect = tesseract_box_to_bounding_rectangle(
                                 bbox,
