@@ -1,10 +1,10 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type
+from typing import Dict, Iterable, Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from docling_core.types.doc.page import BoundingRectangle, TextCell
+from docling_core.types.doc.page import TextCell
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
@@ -15,7 +15,11 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
-from docling.utils.ocr_utils import map_tesseract_script
+from docling.utils.ocr_utils import (
+    map_tesseract_script,
+    parse_tesseract_orientation,
+    tesseract_box_to_bounding_rectangle,
+)
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -93,13 +97,13 @@ class TesseractOcrModel(BaseOcrModel):
 
             if lang == "auto":
                 self.reader = tesserocr.PyTessBaseAPI(**tesserocr_kwargs)
-                self.osd_reader = tesserocr.PyTessBaseAPI(
-                    **{"lang": "osd", "psm": tesserocr.PSM.OSD_ONLY} | tesserocr_kwargs
-                )
             else:
                 self.reader = tesserocr.PyTessBaseAPI(
                     **{"lang": lang} | tesserocr_kwargs,
                 )
+            self.osd_reader = tesserocr.PyTessBaseAPI(
+                **{"lang": "osd", "psm": tesserocr.PSM.OSD_ONLY} | tesserocr_kwargs
+            )
             self.reader_RIL = tesserocr.RIL
 
     def __del__(self):
@@ -123,6 +127,7 @@ class TesseractOcrModel(BaseOcrModel):
             else:
                 with TimeRecorder(conv_res, "ocr"):
                     assert self.reader is not None
+                    assert self.osd_reader is not None
                     assert self._tesserocr_languages is not None
 
                     ocr_rects = self.get_ocr_rects(page)
@@ -137,16 +142,17 @@ class TesseractOcrModel(BaseOcrModel):
                         )
 
                         local_reader = self.reader
+                        self.osd_reader.SetImage(high_res_image)
+                        osd = self.osd_reader.DetectOrientationScript()
+                        # No text, probably
+                        if osd is None:
+                            continue
+                        doc_orientation = parse_tesseract_orientation(osd["orient_deg"])
+                        if doc_orientation != 0:
+                            high_res_image = high_res_image.rotate(
+                                -doc_orientation, expand=True
+                            )
                         if "auto" in self.options.lang:
-                            assert self.osd_reader is not None
-
-                            self.osd_reader.SetImage(high_res_image)
-                            osd = self.osd_reader.DetectOrientationScript()
-
-                            # No text, probably
-                            if osd is None:
-                                continue
-
                             script = osd["script_name"]
                             script = map_tesseract_script(script)
                             lang = f"{self.script_prefix}{script}"
@@ -186,11 +192,23 @@ class TesseractOcrModel(BaseOcrModel):
                             # Extract text within the bounding box
                             text = local_reader.GetUTF8Text().strip()
                             confidence = local_reader.MeanTextConf()
-                            left = box["x"] / self.scale
-                            bottom = box["y"] / self.scale
-                            right = (box["x"] + box["w"]) / self.scale
-                            top = (box["y"] + box["h"]) / self.scale
-
+                            left, top = box["x"], box["y"]
+                            right = left + box["w"]
+                            bottom = top + box["h"]
+                            bbox = BoundingBox(
+                                l=left,
+                                t=top,
+                                r=right,
+                                b=bottom,
+                                coord_origin=CoordOrigin.TOPLEFT,
+                            )
+                            rect = tesseract_box_to_bounding_rectangle(
+                                bbox,
+                                original_offset=ocr_rect,
+                                scale=self.scale,
+                                orientation=doc_orientation,
+                                im_size=high_res_image.size,
+                            )
                             cells.append(
                                 TextCell(
                                     index=ix,
@@ -198,12 +216,7 @@ class TesseractOcrModel(BaseOcrModel):
                                     orig=text,
                                     from_ocr=True,
                                     confidence=confidence,
-                                    rect=BoundingRectangle.from_bounding_box(
-                                        BoundingBox.from_tuple(
-                                            coord=(left, top, right, bottom),
-                                            origin=CoordOrigin.TOPLEFT,
-                                        ),
-                                    ),
+                                    rect=rect,
                                 )
                             )
 
