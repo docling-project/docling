@@ -92,6 +92,7 @@ pluggy = "^1.0.0"
 pylatexenc = "^2.10"
 
 [tool.poetry.group.dev.dependencies]
+python = "^3.9.2"
 black = { extras = ["jupyter"], version = "^24.4.2" }
 pytest = "^7.2.2"
 pre-commit = "^3.7.1"
