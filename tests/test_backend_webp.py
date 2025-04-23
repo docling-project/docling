@@ -2,13 +2,18 @@ import sys
 from pathlib import Path
 from typing import List
 
-from tests.verify_utils import verify_conversion_result_v2
-
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
-from docling.datamodel.pipeline_options import RapidOcrOptions, OcrOptions, EasyOcrOptions, TesseractOcrOptions, \
-    TesseractCliOcrOptions, OcrMacOptions
+from docling.datamodel.pipeline_options import (
+    EasyOcrOptions,
+    OcrMacOptions,
+    OcrOptions,
+    RapidOcrOptions,
+    TesseractCliOcrOptions,
+    TesseractOcrOptions,
+)
 from docling.document_converter import DocumentConverter, ImageFormatOption
+from tests.verify_utils import verify_conversion_result_v2
 
 from .test_data_gen_flag import GEN_TEST_DATA
 
