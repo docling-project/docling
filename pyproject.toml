@@ -50,7 +50,6 @@ docling-core = {version = "^2.26.0", extras = ["chunking"]}
 docling-ibm-models = "^3.4.0"
 docling-parse = "^4.0.0"
 filetype = "^1.2.0"
-pypdfium2 = "^4.30.0"
 pydantic-settings = "^2.3.0"
 huggingface_hub = ">=0.23,<1"
 requests = "^2.32.2"
@@ -90,6 +89,7 @@ pillow = ">=10.0.0,<12.0.0"
 tqdm = "^4.65.0"
 pluggy = "^1.0.0"
 pylatexenc = "^2.10"
+pypdfium2 = {version = ">4.30.0,<6", allow-prereleases = true}
 
 [tool.poetry.group.dev.dependencies]
 black = { extras = ["jupyter"], version = "^24.4.2" }
