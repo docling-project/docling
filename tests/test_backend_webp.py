@@ -4,6 +4,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.datamodel.pipeline_options import RapidOcrOptions
 from docling.document_converter import DocumentConverter, ImageFormatOption
+
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
@@ -24,7 +25,7 @@ def get_converter():
     image_format_option.pipeline_options.ocr_options = RapidOcrOptions()
     converter = DocumentConverter(
         format_options={InputFormat.IMAGE: image_format_option},
-        allowed_formats=[InputFormat.IMAGE]
+        allowed_formats=[InputFormat.IMAGE],
     )
 
     return converter
