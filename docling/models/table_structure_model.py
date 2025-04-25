@@ -267,7 +267,7 @@ class TableStructureModel(BasePageModel):
                                     element["bbox"]["token"] = text_piece
 
                                 tc = TableCell.model_validate(element)
-                                if self.do_cell_matching and tc.bbox is not None:
+                                if tc.bbox is not None:
                                     tc.bbox = tc.bbox.scaled(1 / self.scale)
                                 table_cells.append(tc)
 
