@@ -19,6 +19,21 @@
     "children": [
       {
         "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/groups/1"
       }
     ],
     "content_layer": "body",
@@ -29,7 +44,7 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "$ref": "#/texts/2"
+        "$ref": "#/body"
       },
       "children": [
         {
@@ -40,13 +55,13 @@
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/2"
+        "$ref": "#/body"
       },
       "children": [
         {
@@ -57,7 +72,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "ordered list",
+      "name": "group",
       "label": "ordered_list"
     }
   ],
@@ -67,14 +82,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/1"
-        },
-        {
-          "$ref": "#/texts/2"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "title",
       "prov": [],
@@ -84,7 +92,7 @@
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -96,33 +104,20 @@
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/3"
-        },
-        {
-          "$ref": "#/pictures/0"
-        },
-        {
-          "$ref": "#/groups/0"
-        },
-        {
-          "$ref": "#/groups/1"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "Background",
       "text": "Background",
-      "level": 1
+      "level": 2
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/texts/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -171,7 +166,7 @@
       "orig": "First item in ordered list",
       "text": "First item in ordered list",
       "enumerated": true,
-      "marker": "1."
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/7",
@@ -185,25 +180,10 @@
       "orig": "Second item in ordered list",
       "text": "Second item in ordered list",
       "enumerated": true,
-      "marker": "2."
+      "marker": "-"
     }
   ],
-  "pictures": [
-    {
-      "self_ref": "#/pictures/0",
-      "parent": {
-        "$ref": "#/texts/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "picture",
-      "prov": [],
-      "captions": [],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    }
-  ],
+  "pictures": [],
   "tables": [],
   "key_value_items": [],
   "form_items": [],

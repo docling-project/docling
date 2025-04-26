@@ -1,8 +1,10 @@
-## Some heading
+Content before first heading
+
+### Some heading
+
+This is HTML
 
 - A. first
-    - subitem
 - B. second
-    1. strange
 
 The end!

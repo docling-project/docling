@@ -36,20 +36,26 @@
           "$ref": "#/texts/0"
         },
         {
+          "$ref": "#/groups/1"
+        },
+        {
           "$ref": "#/texts/4"
         },
         {
-          "$ref": "#/texts/13"
+          "$ref": "#/groups/2"
+        },
+        {
+          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/groups/0"
       },
       "children": [
         {
@@ -63,13 +69,13 @@
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/groups/0"
       },
       "children": [
         {
@@ -82,25 +88,34 @@
           "$ref": "#/texts/7"
         },
         {
-          "$ref": "#/texts/10"
+          "$ref": "#/groups/3"
+        },
+        {
+          "$ref": "#/texts/11"
+        },
+        {
+          "$ref": "#/groups/5"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
       "self_ref": "#/groups/3",
       "parent": {
-        "$ref": "#/texts/7"
+        "$ref": "#/groups/2"
       },
       "children": [
+        {
+          "$ref": "#/texts/8"
+        },
         {
           "$ref": "#/groups/4"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
@@ -110,28 +125,31 @@
       },
       "children": [
         {
-          "$ref": "#/texts/8"
+          "$ref": "#/texts/9"
         },
         {
-          "$ref": "#/texts/9"
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
       "self_ref": "#/groups/5",
       "parent": {
-        "$ref": "#/texts/10"
+        "$ref": "#/groups/2"
       },
       "children": [
+        {
+          "$ref": "#/texts/12"
+        },
         {
           "$ref": "#/groups/6"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     },
     {
@@ -141,14 +159,14 @@
       },
       "children": [
         {
-          "$ref": "#/texts/11"
+          "$ref": "#/texts/13"
         },
         {
-          "$ref": "#/texts/12"
+          "$ref": "#/texts/14"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     }
   ],
@@ -158,16 +176,12 @@
       "parent": {
         "$ref": "#/groups/0"
       },
-      "children": [
-        {
-          "$ref": "#/groups/1"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Asia",
-      "text": "Asia",
+      "orig": "Asia China Japan Thailand",
+      "text": "Asia China Japan Thailand",
       "enumerated": false,
       "marker": "-"
     },
@@ -218,16 +232,12 @@
       "parent": {
         "$ref": "#/groups/0"
       },
-      "children": [
-        {
-          "$ref": "#/groups/2"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Europe",
-      "text": "Europe",
+      "orig": "Europe UK Germany Switzerland Bern Aargau Italy Piedmont Liguria",
+      "text": "Europe UK Germany Switzerland Bern Aargau Italy Piedmont Liguria",
       "enumerated": false,
       "marker": "-"
     },
@@ -264,21 +274,31 @@
       "parent": {
         "$ref": "#/groups/2"
       },
-      "children": [
-        {
-          "$ref": "#/groups/3"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Switzerland",
-      "text": "Switzerland",
+      "orig": "Switzerland Bern Aargau",
+      "text": "Switzerland Bern Aargau",
       "enumerated": false,
       "marker": "-"
     },
     {
       "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Bern Aargau",
+      "text": "Bern Aargau",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -292,7 +312,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/groups/4"
       },
@@ -306,25 +326,35 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/groups/2"
       },
-      "children": [
-        {
-          "$ref": "#/groups/5"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Italy",
-      "text": "Italy",
+      "orig": "Italy Piedmont Liguria",
+      "text": "Italy Piedmont Liguria",
       "enumerated": false,
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Piedmont Liguria",
+      "text": "Piedmont Liguria",
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -338,7 +368,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -352,7 +382,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/groups/0"
       },
