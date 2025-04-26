@@ -1,4 +1,10 @@
-## Contents
+# Duck - Wikipedia
+
+### Contents
+
+move to sidebar
+
+hide
 
 - (Top)
 - 1 Etymology
@@ -21,7 +27,11 @@
     - 8.2 Sources
 - 9 External links
 
-# Duck
+Toggle the table of contents
+
+## Duck
+
+136 languages
 
 - Acèh
 - Afrikaans
@@ -160,14 +170,24 @@
 - Žemaitėška
 - 中文
 
+Edit links
+
 - Article
 - Talk
+
+English
 
 - Read
 - View source
 - View history
 
 Tools
+
+Tools
+
+move to sidebar
+
+hide
 
 Actions
 
@@ -200,15 +220,23 @@ In other projects
 
 Appearance
 
-<!-- image -->
+move to sidebar
+
+hide
 
 From Wikipedia, the free encyclopedia
 
+(Redirected from Duckling)
+
 Common name for many species of bird
 
-This article is about the bird. For duck as a food, see . For other uses, see .
+This article is about the bird. For duck as a food, see Duck as food. For other uses, see Duck (disambiguation).
 
-"Duckling" redirects here. For other uses, see .
+"Duckling" redirects here. For other uses, see Duckling (disambiguation).
+
+<!-- image -->
+
+<!-- image -->
 
 | Duck                           | Duck                           |
 |--------------------------------|--------------------------------|
@@ -229,7 +257,7 @@ Duck is the common name for numerous species of waterfowl in the family Anatidae
 
 Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as loons or divers, grebes, gallinules and coots.
 
-## Etymology
+### Etymology
 
 The word duck comes from Old English dūce 'diver', a derivative of the verb *dūcan 'to duck, bend down low as if to get under something, or dive', because of the way many species in the dabbling duck group feed by upending; compare with Dutch duiken and German tauchen 'to dive'.
 
@@ -251,7 +279,7 @@ Wood ducks.
 
 <!-- image -->
 
-## Taxonomy
+### Taxonomy
 
 All ducks belong to the biological order Anseriformes, a group that contains the ducks, geese and swans, as well as the screamers, and the magpie goose.[5] All except the screamers belong to the biological family Anatidae.[5] Within the family, ducks are split into a variety of subfamilies and 'tribes'. The number and composition of these subfamilies and tribes is the cause of considerable disagreement among taxonomists.[5] Some base their decisions on morphological characteristics, others on shared behaviours or genetic studies.[6][7] The number of suggested subfamilies containing ducks ranges from two to five.[8][9] The significant level of hybridisation that occurs among wild ducks complicates efforts to tease apart the relationships between various species.[9]
 
@@ -263,7 +291,7 @@ In most modern classifications, the so-called 'true ducks' belong to the subfami
 
 A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The whistling ducks are assigned either to a tribe (Dendrocygnini) in the subfamily Anatinae or the subfamily Anserinae,[15] or to their own subfamily (Dendrocygninae) or family (Dendrocyganidae).[9][16] The freckled duck of Australia is either the sole member of the tribe Stictonettini in the subfamily Anserinae,[15] or in its own family, the Stictonettinae.[9] The shelducks make up the tribe Tadornini in the family Anserinae in some classifications,[15] and their own subfamily, Tadorninae, in others,[17] while the steamer ducks are either placed in the family Anserinae in the tribe Tachyerini[15] or lumped with the shelducks in the tribe Tadorini.[9] The perching ducks make up in the tribe Cairinini in the subfamily Anserinae in some classifications, while that tribe is eliminated in other classifications and its members assigned to the tribe Anatini.[9] The torrent duck is generally included in the subfamily Anserinae in the monotypic tribe Merganettini,[15] but is sometimes included in the tribe Tadornini.[18] The pink-eared duck is sometimes included as a true duck either in the tribe Anatini[15] or the tribe Malacorhynchini,[19] and other times is included with the shelducks in the tribe Tadornini.[15]
 
-## Morphology
+### Morphology
 
 Male Mandarin duck
 
@@ -273,7 +301,9 @@ The overall body plan of ducks is elongated and broad, and they are also relativ
 
 The drakes of northern species often have extravagant plumage, but that is moulted in summer to give a more female-like appearance, the "eclipse" plumage. Southern resident species typically show less sexual dimorphism, although there are exceptions such as the paradise shelduck of New Zealand, which is both strikingly sexually dimorphic and in which the female's plumage is brighter than that of the male. The plumage of juvenile birds generally resembles that of the female. Female ducks have evolved to have a corkscrew shaped vagina to prevent rape.
 
-## Distribution and habitat
+### Distribution and habitat
+
+See also: List of Anseriformes by population
 
 Flying steamer ducks in Ushuaia, Argentina
 
@@ -287,15 +317,11 @@ Female mallard in Cornwall, England
 
 Some duck species, mainly those breeding in the temperate and Arctic Northern Hemisphere, are migratory; those in the tropics are generally not. Some ducks, particularly in Australia where rainfall is erratic, are nomadic, seeking out the temporary lakes and pools that form after localised heavy rain.[23]
 
-## Behaviour
+### Behaviour
 
-### Feeding
+#### Feeding
 
 Pecten along the bill
-
-<!-- image -->
-
-Mallard duckling preening
 
 <!-- image -->
 
@@ -311,7 +337,7 @@ The others have the characteristic wide flat bill adapted to dredging-type jobs 
 
 The Guardian published an article advising that ducks should not be fed with bread because it damages the health of the ducks and pollutes waterways.[25]
 
-### Breeding
+#### Breeding
 
 A Muscovy duckling
 
@@ -319,13 +345,13 @@ A Muscovy duckling
 
 Ducks generally only have one partner at a time, although the partnership usually only lasts one year.[26] Larger species and the more sedentary species (like fast-river specialists) tend to have pair-bonds that last numerous years.[27] Most duck species breed once a year, choosing to do so in favourable conditions (spring/summer or wet seasons). Ducks also tend to make a nest before breeding, and, after hatching, lead their ducklings to water. Mother ducks are very caring and protective of their young, but may abandon some of their ducklings if they are physically stuck in an area they cannot get out of (such as nesting in an enclosed courtyard) or are not prospering due to genetic defects or sickness brought about by hypothermia, starvation, or disease. Ducklings can also be orphaned by inconsistent late hatching where a few eggs hatch after the mother has abandoned the nest and led her ducklings to water.[28]
 
-### Communication
+#### Communication
 
 Female mallard ducks (as well as several other species in the genus Anas, such as the American and Pacific black ducks, spot-billed duck, northern pintail and common teal) make the classic "quack" sound while males make a similar but raspier sound that is sometimes written as "breeeeze",[29][self-published source?] but, despite widespread misconceptions, most species of duck do not "quack".[30] In general, ducks make a range of calls, including whistles, cooing, yodels and grunts. For example, the scaup – which are diving ducks – make a noise like "scaup" (hence their name). Calls may be loud displaying calls or quieter contact calls.
 
 A common urban legend claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the University of Salford in 2003 as part of the British Association's Festival of Science.[31] It was also debunked in one of the earlier episodes of the popular Discovery Channel television show MythBusters.[32]
 
-### Predators
+#### Predators
 
 Ringed teal
 
@@ -335,15 +361,19 @@ Ducks have many predators. Ducklings are particularly vulnerable, since their in
 
 Adult ducks are fast fliers, but may be caught on the water by large aquatic predators including big fish such as the North American muskie and the European pike. In flight, ducks are safe from all but a few predators such as humans and the peregrine falcon, which uses its speed and strength to catch ducks.
 
-## Relationship with humans
+### Relationship with humans
 
-### Hunting
+#### Hunting
+
+Main article: Waterfowl hunting
 
 Humans have hunted ducks since prehistoric times. Excavations of middens in California dating to 7800 – 6400 BP have turned up bones of ducks, including at least one now-extinct flightless species.[33] Ducks were captured in "significant numbers" by Holocene inhabitants of the lower Ohio River valley, suggesting they took advantage of the seasonal bounty provided by migrating waterfowl.[34] Neolithic hunters in locations as far apart as the Caribbean,[35] Scandinavia,[36] Egypt,[37] Switzerland,[38] and China relied on ducks as a source of protein for some or all of the year.[39] Archeological evidence shows that Māori people in New Zealand hunted the flightless Finsch's duck, possibly to extinction, though rat predation may also have contributed to its fate.[40] A similar end awaited the Chatham duck, a species with reduced flying capabilities which went extinct shortly after its island was colonised by Polynesian settlers.[41] It is probable that duck eggs were gathered by Neolithic hunter-gathers as well, though hard evidence of this is uncommon.[35][42]
 
 In many areas, wild ducks (including ducks farmed and released into the wild) are hunted for food or sport,[43] by shooting, or by being trapped using duck decoys. Because an idle floating duck or a duck squatting on land cannot react to fly or move quickly, "a sitting duck" has come to mean "an easy target". These ducks may be contaminated by pollutants such as PCBs.[44]
 
-### Domestication
+#### Domestication
+
+Main article: Domestic duck
 
 Indian Runner ducks, a common breed of domestic ducks
 
@@ -351,7 +381,7 @@ Indian Runner ducks, a common breed of domestic ducks
 
 Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their down). Approximately 3 billion ducks are slaughtered each year for meat worldwide.[45] They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the mallard (Anas platyrhynchos), apart from the Muscovy duck (Cairina moschata).[46][47] The Call duck is another example of a domestic duck breed. Its name comes from its original use established by hunters, as a decoy to attract wild mallards from the sky, into traps set for them on the ground. The call duck is the world's smallest domestic duck breed, as it weighs less than 1 kg (2.2 lb).[48]
 
-### Heraldry
+#### Heraldry
 
 Three black-colored ducks in the coat of arms of Maaninka[49]
 
@@ -359,15 +389,16 @@ Three black-colored ducks in the coat of arms of Maaninka[49]
 
 Ducks appear on several coats of arms, including the coat of arms of Lubāna (Latvia)[50] and the coat of arms of Föglö (Åland).[51]
 
-### Cultural references
+#### Cultural references
 
 In 2002, psychologist Richard Wiseman and colleagues at the University of Hertfordshire, UK, finished a year-long LaughLab experiment, concluding that of all animals, ducks attract the most humor and silliness; he said, "If you're going to tell a joke involving an animal, make it a duck."[52] The word "duck" may have become an inherently funny word in many languages, possibly because ducks are seen as silly in their looks or behavior. Of the many ducks in fiction, many are cartoon characters, such as Walt Disney's Donald Duck, and Warner Bros.' Daffy Duck. Howard the Duck started as a comic book character in 1973[53][54] and was made into a movie in 1986.
 
 The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck as the mascot for the fictional youth hockey team who are protagonists of the movie, based on the duck being described as a fierce fighter. This led to the duck becoming the nickname and mascot for the eventual National Hockey League professional team of the Anaheim Ducks, who were founded with the name the Mighty Ducks of Anaheim.[citation needed] The duck is also the nickname of the University of Oregon sports teams as well as the Long Island Ducks minor league baseball team.[55]
 
-## See also
+### See also
 
 - Birds portal
+<!-- image -->
 
 - Domestic duck
 - Duck as food
@@ -376,112 +407,120 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 - Fictional ducks
 - Rubber duck
 
-## Notes
+### Notes
 
-### Citations
+#### Citations
 
 1. ^ "Duckling". The American Heritage Dictionary of the English Language, Fourth Edition. Houghton Mifflin Company. 2006. Retrieved 2015-05-22.
 2. ^ "Duckling". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.
-3. ^ Dohner, Janet Vorwald (2001). The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds. Yale University Press. ISBN 978-0300138139.
-4. ^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.
-5. ^ a b c d Carboneras 1992, p. 536.
-6. ^ Livezey 1986, pp. 737–738.
-7. ^ Madsen, McHugh &amp; de Kloet 1988, p. 452.
-8. ^ Donne-Goussé, Laudet &amp; Hänni 2002, pp. 353–354.
-9. ^ a b c d e f Carboneras 1992, p. 540.
-10. ^ Elphick, Dunning &amp; Sibley 2001, p. 191.
-11. ^ Kear 2005, p. 448.
-12. ^ Kear 2005, p. 622–623.
-13. ^ Kear 2005, p. 686.
-14. ^ Elphick, Dunning &amp; Sibley 2001, p. 193.
-15. ^ a b c d e f g Carboneras 1992, p. 537.
-16. ^ American Ornithologists' Union 1998, p. xix.
+3. ^ Dohner, Janet Vorwald (2001). The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds. Yale University Press. ISBN 978-0300138139.
+4. ^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.
+5. ^ a b c d Carboneras 1992, p. 536.
+6. ^ Livezey 1986, pp. 737–738.
+7. ^ Madsen, McHugh &amp; de Kloet 1988, p. 452.
+8. ^ Donne-Goussé, Laudet &amp; Hänni 2002, pp. 353–354.
+9. ^ a b c d e f Carboneras 1992, p. 540.
+10. ^ Elphick, Dunning &amp; Sibley 2001, p. 191.
+11. ^ Kear 2005, p. 448.
+12. ^ Kear 2005, p. 622–623.
+13. ^ Kear 2005, p. 686.
+14. ^ Elphick, Dunning &amp; Sibley 2001, p. 193.
+15. ^ a b c d e f g Carboneras 1992, p. 537.
+16. ^ American Ornithologists' Union 1998, p. xix.
 17. ^ American Ornithologists' Union 1998.
-18. ^ Carboneras 1992, p. 538.
-19. ^ Christidis &amp; Boles 2008, p. 62.
-20. ^ Shirihai 2008, pp. 239, 245.
-21. ^ a b Pratt, Bruner &amp; Berrett 1987, pp. 98–107.
-22. ^ Fitter, Fitter &amp; Hosking 2000, pp. 52–3.
+18. ^ Carboneras 1992, p. 538.
+19. ^ Christidis &amp; Boles 2008, p. 62.
+20. ^ Shirihai 2008, pp. 239, 245.
+21. ^ a b Pratt, Bruner &amp; Berrett 1987, pp. 98–107.
+22. ^ Fitter, Fitter &amp; Hosking 2000, pp. 52–3.
 23. ^ "Pacific Black Duck". www.wiresnr.org. Retrieved 2018-04-27.
 24. ^ Ogden, Evans. "Dabbling Ducks". CWE. Retrieved 2006-11-02.
 25. ^ Karl Mathiesen (16 March 2015). "Don't feed the ducks bread, say conservationists". The Guardian. Retrieved 13 November 2016.
-26. ^ Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology. pp. 187–221. doi:10.1007/978-1-4615-6787-5\_4. ISBN 978-1-4615-6789-9.
+26. ^ Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology. pp. 187–221. doi:10.1007/978-1-4615-6787-5\_4. ISBN 978-1-4615-6789-9.
 27. ^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). "Long-Term Pair Bonds in Harlequin Ducks". The Condor. 102 (1): 201–205. doi:10.1093/condor/102.1.201. hdl:10315/13797.
 28. ^ "If You Find An Orphaned Duckling - Wildlife Rehabber". wildliferehabber.com. Archived from the original on 2018-09-23. Retrieved 2018-12-22.
-29. ^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]
-30. ^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman &amp; Littlefield. ISBN 9780762797707.
+29. ^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]
+30. ^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman &amp; Littlefield. ISBN 9780762797707.
 31. ^ Amos, Jonathan (2003-09-08). "Sound science is quackers". BBC News. Retrieved 2006-11-02.
 32. ^ "Mythbusters Episode 8". 12 December 2003.
-33. ^ Erlandson 1994, p. 171.
-34. ^ Jeffries 2008, pp. 168, 243.
-35. ^ a b Sued-Badillo 2003, p. 65.
-36. ^ Thorpe 1996, p. 68.
-37. ^ Maisels 1999, p. 42.
-38. ^ Rau 1876, p. 133.
-39. ^ Higman 2012, p. 23.
-40. ^ Hume 2012, p. 53.
-41. ^ Hume 2012, p. 52.
-42. ^ Fieldhouse 2002, p. 167.
-43. ^ Livingston, A. D. (1998-01-01). Guide to Edible Plants and Animals. Wordsworth Editions, Limited. ISBN 9781853263774.
-44. ^ "Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl" (PDF). New York State Department of Environmental Conservation. US Department of Commerce. December 2008. p. 3. Archived (PDF) from the original on 2022-10-09. Retrieved 2 July 2019.
+33. ^ Erlandson 1994, p. 171.
+34. ^ Jeffries 2008, pp. 168, 243.
+35. ^ a b Sued-Badillo 2003, p. 65.
+36. ^ Thorpe 1996, p. 68.
+37. ^ Maisels 1999, p. 42.
+38. ^ Rau 1876, p. 133.
+39. ^ Higman 2012, p. 23.
+40. ^ Hume 2012, p. 53.
+41. ^ Hume 2012, p. 52.
+42. ^ Fieldhouse 2002, p. 167.
+43. ^ Livingston, A. D. (1998-01-01). Guide to Edible Plants and Animals. Wordsworth Editions, Limited. ISBN 9781853263774.
+44. ^ "Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl" (PDF). New York State Department of Environmental Conservation. US Department of Commerce. December 2008. p. 3. Archived (PDF) from the original on 2022-10-09. Retrieved 2 July 2019.
 45. ^ "FAOSTAT". www.fao.org. Retrieved 2019-10-25.
 46. ^ "Anas platyrhynchos, Domestic Duck; DigiMorph Staff - The University of Texas at Austin". Digimorph.org. Retrieved 2012-12-23.
 47. ^ Sy Montgomery. "Mallard; Encyclopædia Britannica". Britannica.com. Retrieved 2012-12-23.
-48. ^ Glenday, Craig (2014). Guinness World Records. Guinness World Records Limited. pp. 135. ISBN 978-1-908843-15-9.
-49. ^ Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147. ISBN 951-773-085-3.
+48. ^ Glenday, Craig (2014). Guinness World Records. Guinness World Records Limited. pp. 135. ISBN 978-1-908843-15-9.
+49. ^ Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147. ISBN 951-773-085-3.
 50. ^ "Lubānas simbolika" (in Latvian). Retrieved September 9, 2021.
 51. ^ "Föglö" (in Swedish). Retrieved September 9, 2021.
 52. ^ Young, Emma. "World's funniest joke revealed". New Scientist. Retrieved 7 January 2019.
 53. ^ "Howard the Duck (character)". Grand Comics Database.
-54. ^ Sanderson, Peter; Gilbert, Laura (2008). "1970s". Marvel Chronicle A Year by Year History. London, United Kingdom: Dorling Kindersley. p. 161. ISBN 978-0756641238. December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.
+54. ^ Sanderson, Peter; Gilbert, Laura (2008). "1970s". Marvel Chronicle A Year by Year History. London, United Kingdom: Dorling Kindersley. p. 161. ISBN 978-0756641238. December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.
 55. ^ "The Duck". University of Oregon Athletics. Retrieved 2022-01-20.
 
-### Sources
+#### Sources
 
-- American Ornithologists' Union (1998). Checklist of North American Birds (PDF). Washington, DC: American Ornithologists' Union. ISBN 978-1-891276-00-2. Archived (PDF) from the original on 2022-10-09.
-- Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). Handbook of the Birds of the World. Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions. ISBN 978-84-87334-10-8.
-- Christidis, Les; Boles, Walter E., eds. (2008). Systematics and Taxonomy of Australian Birds. Collingwood, VIC: Csiro Publishing. ISBN 978-0-643-06511-6.
-- Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). "A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis". Molecular Phylogenetics and Evolution. 23 (3): 339–356. Bibcode:2002MolPE..23..339D. doi:10.1016/S1055-7903(02)00019-2. PMID 12099792.
-- Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). The Sibley Guide to Bird Life and Behaviour. London: Christopher Helm. ISBN 978-0-7136-6250-4.
-- Erlandson, Jon M. (1994). Early Hunter-Gatherers of the California Coast. New York, NY: Springer Science &amp; Business Media. ISBN 978-1-4419-3231-0.
-- Fieldhouse, Paul (2002). Food, Feasts, and Faith: An Encyclopedia of Food Culture in World Religions. Vol. I: A–K. Santa Barbara: ABC-CLIO. ISBN 978-1-61069-412-4.
-- Fitter, Julian; Fitter, Daniel; Hosking, David (2000). Wildlife of the Galápagos. Princeton, NJ: Princeton University Press. ISBN 978-0-691-10295-5.
-- Higman, B. W. (2012). How Food Made History. Chichester, UK: John Wiley &amp; Sons. ISBN 978-1-4051-8947-7.
-- Hume, Julian H. (2012). Extinct Birds. London: Christopher Helm. ISBN 978-1-4729-3744-5.
-- Jeffries, Richard (2008). Holocene Hunter-Gatherers of the Lower Ohio River Valley. Tuscaloosa: University of Alabama Press. ISBN 978-0-8173-1658-7.
-- Kear, Janet, ed. (2005). Ducks, Geese and Swans: Species Accounts (Cairina to Mergus). Bird Families of the World. Oxford: Oxford University Press. ISBN 978-0-19-861009-0.
+- American Ornithologists' Union (1998). Checklist of North American Birds (PDF). Washington, DC: American Ornithologists' Union. ISBN 978-1-891276-00-2. Archived (PDF) from the original on 2022-10-09.
+- Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). Handbook of the Birds of the World. Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions. ISBN 978-84-87334-10-8.
+- Christidis, Les; Boles, Walter E., eds. (2008). Systematics and Taxonomy of Australian Birds. Collingwood, VIC: Csiro Publishing. ISBN 978-0-643-06511-6.
+- Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). "A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis". Molecular Phylogenetics and Evolution. 23 (3): 339–356. Bibcode:2002MolPE..23..339D. doi:10.1016/S1055-7903(02)00019-2. PMID 12099792.
+- Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). The Sibley Guide to Bird Life and Behaviour. London: Christopher Helm. ISBN 978-0-7136-6250-4.
+- Erlandson, Jon M. (1994). Early Hunter-Gatherers of the California Coast. New York, NY: Springer Science &amp; Business Media. ISBN 978-1-4419-3231-0.
+- Fieldhouse, Paul (2002). Food, Feasts, and Faith: An Encyclopedia of Food Culture in World Religions. Vol. I: A–K. Santa Barbara: ABC-CLIO. ISBN 978-1-61069-412-4.
+- Fitter, Julian; Fitter, Daniel; Hosking, David (2000). Wildlife of the Galápagos. Princeton, NJ: Princeton University Press. ISBN 978-0-691-10295-5.
+- Higman, B. W. (2012). How Food Made History. Chichester, UK: John Wiley &amp; Sons. ISBN 978-1-4051-8947-7.
+- Hume, Julian H. (2012). Extinct Birds. London: Christopher Helm. ISBN 978-1-4729-3744-5.
+- Jeffries, Richard (2008). Holocene Hunter-Gatherers of the Lower Ohio River Valley. Tuscaloosa: University of Alabama Press. ISBN 978-0-8173-1658-7.
+- Kear, Janet, ed. (2005). Ducks, Geese and Swans: Species Accounts (Cairina to Mergus). Bird Families of the World. Oxford: Oxford University Press. ISBN 978-0-19-861009-0.
 - Livezey, Bradley C. (October 1986). "A phylogenetic analysis of recent Anseriform genera using morphological characters" (PDF). The Auk. 103 (4): 737–754. doi:10.1093/auk/103.4.737. Archived (PDF) from the original on 2022-10-09.
 - Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988). "A partial classification of waterfowl (Anatidae) based on single-copy DNA" (PDF). The Auk. 105 (3): 452–459. doi:10.1093/auk/105.3.452. Archived (PDF) from the original on 2022-10-09.
-- Maisels, Charles Keith (1999). Early Civilizations of the Old World. London: Routledge. ISBN 978-0-415-10975-8.
-- Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). A Field Guide to the Birds of Hawaii and the Tropical Pacific. Princeton, NJ: Princeton University Press. ISBN 0-691-02399-9.
-- Rau, Charles (1876). Early Man in Europe. New York: Harper &amp; Brothers. LCCN 05040168.
-- Shirihai, Hadoram (2008). A Complete Guide to Antarctic Wildlife. Princeton, NJ, US: Princeton University Press. ISBN 978-0-691-13666-0.
-- Sued-Badillo, Jalil (2003). Autochthonous Societies. General History of the Caribbean. Paris: UNESCO. ISBN 978-92-3-103832-7.
-- Thorpe, I. J. (1996). The Origins of Agriculture in Europe. New York: Routledge. ISBN 978-0-415-08009-5.
+- Maisels, Charles Keith (1999). Early Civilizations of the Old World. London: Routledge. ISBN 978-0-415-10975-8.
+- Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). A Field Guide to the Birds of Hawaii and the Tropical Pacific. Princeton, NJ: Princeton University Press. ISBN 0-691-02399-9.
+- Rau, Charles (1876). Early Man in Europe. New York: Harper &amp; Brothers. LCCN 05040168.
+- Shirihai, Hadoram (2008). A Complete Guide to Antarctic Wildlife. Princeton, NJ, US: Princeton University Press. ISBN 978-0-691-13666-0.
+- Sued-Badillo, Jalil (2003). Autochthonous Societies. General History of the Caribbean. Paris: UNESCO. ISBN 978-92-3-103832-7.
+- Thorpe, I. J. (1996). The Origins of Agriculture in Europe. New York: Routledge. ISBN 978-0-415-08009-5.
 
-## External links
+### External links
+
+Duck  at Wikipedia's sister projects
 
 - Definitions from Wiktionary
+<!-- image -->
 - Media from Commons
+<!-- image -->
 - Quotations from Wikiquote
+<!-- image -->
 - Recipes from Wikibooks
+<!-- image -->
 - Taxa from Wikispecies
+<!-- image -->
 - Data from Wikidata
+<!-- image -->
 
 - list of books (useful looking abstracts)
 - Ducks on postage stamps Archived 2013-05-13 at the Wayback Machine
 - Ducks at a Distance, by Rob Hines at Project Gutenberg - A modern illustrated guide to identification of US waterfowl
+
+<!-- image -->
 
 | Authority control databases    | Authority control databases                  |
 |--------------------------------|----------------------------------------------|
 | National                       | United StatesFranceBnF dataJapanLatviaIsrael |
 | Other                          | IdRef                                        |
 
-<!-- image -->
+Retrieved from "https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351"
 
-Retrieved from ""
-
-:
+Categories:
 
 - Ducks
 - Game birds
@@ -516,9 +555,8 @@ Hidden categories:
 - Articles with Project Gutenberg links
 - Articles containing video clips
 
-- This page was last edited on 21 September 2024, at 12:11 (UTC).
-- Text is available under the Creative Commons Attribution-ShareAlike License 4.0;
-additional terms may apply. By using this site, you agree to the Terms of Use and Privacy Policy. Wikipedia® is a registered trademark of the Wikimedia Foundation, Inc., a non-profit organization.
+- This page was last edited on 21 September 2024, at 12:11 (UTC).
+- Text is available under the Creative Commons Attribution-ShareAlike License 4.0; additional terms may apply. By using this site, you agree to the Terms of Use and Privacy Policy. Wikipedia® is a registered trademark of the Wikimedia Foundation, Inc., a non-profit organization.
 
 - Privacy policy
 - About Wikipedia
@@ -529,3 +567,10 @@ additional terms may apply. By using this site, you agree to the Terms of Use an
 - Statistics
 - Cookie statement
 - Mobile view
+
+Wikimedia Foundation
+
+<!-- image -->
+Powered by MediaWiki
+
+<!-- image -->
