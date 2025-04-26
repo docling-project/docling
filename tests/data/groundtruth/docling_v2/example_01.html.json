@@ -19,6 +19,9 @@
     "children": [
       {
         "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/4"
       }
     ],
     "content_layer": "body",
@@ -33,10 +36,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/4"
+          "$ref": "#/texts/5"
         },
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/texts/6"
         }
       ],
       "content_layer": "body",
@@ -50,10 +53,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/6"
+          "$ref": "#/texts/7"
         },
         {
-          "$ref": "#/texts/7"
+          "$ref": "#/texts/8"
         }
       ],
       "content_layer": "body",
@@ -67,10 +70,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/8"
+          "$ref": "#/texts/9"
         },
         {
-          "$ref": "#/texts/9"
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
@@ -154,6 +157,18 @@
     {
       "self_ref": "#/texts/4",
       "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [],
+      "orig": "Example image",
+      "text": "Example image"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
         "$ref": "#/groups/0"
       },
       "children": [],
@@ -166,7 +181,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -180,7 +195,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -194,7 +209,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -208,7 +223,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -222,7 +237,7 @@
       "marker": "42."
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -246,7 +261,11 @@
       "content_layer": "body",
       "label": "picture",
       "prov": [],
-      "captions": [],
+      "captions": [
+        {
+          "$ref": "#/texts/4"
+        }
+      ],
       "references": [],
       "footnotes": [],
       "annotations": []

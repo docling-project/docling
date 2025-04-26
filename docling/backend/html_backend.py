@@ -1,10 +1,11 @@
 import logging
+import re
 import traceback
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
 
-from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 from bs4.element import PreformattedString
 from docling_core.types.doc import (
     DocItem,
@@ -13,8 +14,10 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupItem,
     GroupLabel,
+    ListItem,
     TableCell,
     TableData,
+    TextItem,
 )
 from docling_core.types.doc.document import ContentLayer
 from pydantic import BaseModel
@@ -26,10 +29,14 @@ from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
 
-# tags that generate NodeItem elements
-TAGS_FOR_NODE_ITEMS: Final = [
+DEFAULT_IMAGE_WIDTH = 128
+DEFAULT_IMAGE_HEIGHT = 128
+
+# Tags that initiate distinct Docling items
+_BLOCK_TAGS: Final = {
     "address",
     "details",
+    "figure",
     "h1",
     "h2",
     "h3",
@@ -41,12 +48,9 @@ TAGS_FOR_NODE_ITEMS: Final = [
     "code",
     "ul",
     "ol",
-    "li",
     "summary",
     "table",
-    "figure",
-    "img",
-]
+}
 
 
 class _Context(BaseModel):
@@ -56,12 +60,16 @@ class _Context(BaseModel):
 
 class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: Union[BytesIO, Path],
+    ):
         super().__init__(in_doc, path_or_stream)
         self.soup: Optional[Tag] = None
-        # HTML file:
         self.path_or_stream = path_or_stream
-        # Initialise the parents for the hierarchy
+
+        # Initialize the parents for the hierarchy
         self.max_levels = 10
         self.level = 0
         self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
@@ -70,13 +78,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[i] = None
 
         try:
-            if isinstance(self.path_or_stream, BytesIO):
-                text_stream = self.path_or_stream.getvalue()
-                self.soup = BeautifulSoup(text_stream, "html.parser")
-            if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, "rb") as f:
-                    html_content = f.read()
-                    self.soup = BeautifulSoup(html_content, "html.parser")
+            raw = (
+                path_or_stream.getvalue()
+                if isinstance(path_or_stream, BytesIO)
+                else Path(path_or_stream).read_bytes()
+            )
+            self.soup = BeautifulSoup(raw, "html.parser")
         except Exception as e:
             raise RuntimeError(
                 "Could not initialize HTML backend for file with "
@@ -96,7 +103,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def unload(self):
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.close()
-
         self.path_or_stream = None
 
     @classmethod
@@ -106,211 +112,156 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @override
     def convert(self) -> DoclingDocument:
-        # access self.path_or_stream to load stuff
+        _log.debug("Starting HTML conversion...")
+        if not self.is_valid():
+            raise RuntimeError("Invalid HTML document.")
+
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="text/html",
             binary_hash=self.document_hash,
         )
-
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
-        _log.debug("Trying to convert HTML...")
 
-        if self.is_valid():
-            assert self.soup is not None
-            content = self.soup.body or self.soup
-            # Replace <br> tags with newline characters
-            # TODO: remove style to avoid losing text from tags like i, b, span, ...
-            for br in content("br"):
-                br.replace_with(NavigableString("\n"))
+        assert self.soup is not None
+        # set the title as furniture, since it is part of the document metadata
+        title = self.soup.title
+        if title:
+            doc.add_title(
+                text=title.get_text(separator=" ", strip=True),
+                content_layer=ContentLayer.FURNITURE,
+            )
+        # remove scripts/styles
+        for tag in self.soup(["script", "style"]):
+            tag.decompose()
+        content = self.soup.body or self.soup
+        # normalize <br> tags
+        for br in content("br"):
+            br.replace_with(NavigableString("\n"))
+        # set default content layer
+        headers = content.find(["h1", "h2", "h3", "h4", "h5", "h6"])
+        self.content_layer = (
+            ContentLayer.BODY if headers is None else ContentLayer.FURNITURE
+        )
+        # reset context
+        self.ctx = _Context()
 
-            headers = content.find(["h1", "h2", "h3", "h4", "h5", "h6"])
-            self.content_layer = (
-                ContentLayer.BODY if headers is None else ContentLayer.FURNITURE
-            )
-            self.ctx = _Context()  # reset context
-            self.walk(content, doc)
-        else:
-            raise RuntimeError(
-                f"Cannot convert doc with {self.document_hash} because the backend "
-                "failed to init."
-            )
+        try:
+            self._walk(content, doc)
+        except Exception:
+            print(traceback.format_exc())
+
         return doc
 
-    def walk(self, tag: Tag, doc: DoclingDocument) -> None:
-        # Iterate over elements in the body of the document
-        text: str = ""
-        for element in tag.children:
-            if isinstance(element, Tag):
-                try:
-                    self.analyze_tag(cast(Tag, element), doc)
-                except Exception as exc_child:
-                    _log.error(
-                        f"Error processing child from tag {tag.name}:\n{traceback.format_exc()}"
-                    )
-                    raise exc_child
-            elif isinstance(element, NavigableString) and not isinstance(
-                element, PreformattedString
-            ):
-                # Floating text outside paragraphs or analyzed tags
-                text += element
-                siblings: list[Tag] = [
-                    item for item in element.next_siblings if isinstance(item, Tag)
-                ]
-                if element.next_sibling is None or any(
-                    item.name in TAGS_FOR_NODE_ITEMS for item in siblings
-                ):
-                    text = text.strip()
-                    if text and tag.name in ["div"]:
-                        doc.add_text(
-                            parent=self.parents[self.level],
-                            label=DocItemLabel.TEXT,
-                            text=text,
-                            content_layer=self.content_layer,
-                        )
-                    text = ""
+    def _walk(self, element: Tag, doc: DoclingDocument) -> None:
+        """Parse an XML tag by recursively walking its content.
 
-        return
+        While walking, the method buffers inline text across tags like <b> or <span>,
+        emitting text nodes only at block boundaries.
 
-    def analyze_tag(self, tag: Tag, doc: DoclingDocument) -> None:
-        if tag.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
-            self.handle_header(tag, doc)
-        elif tag.name in ["p", "address", "summary"]:
-            self.handle_paragraph(tag, doc)
-        elif tag.name in ["pre", "code"]:
-            self.handle_code(tag, doc)
-        elif tag.name in ["ul", "ol"]:
-            self.handle_list(tag, doc)
-        elif tag.name in ["li"]:
-            self.handle_list_item(tag, doc)
-        elif tag.name == "table":
-            self.handle_table(tag, doc)
-        elif tag.name == "figure":
-            self.handle_figure(tag, doc)
-        elif tag.name == "img":
-            self.handle_image(tag, doc)
-        elif tag.name == "details":
-            self.handle_details(tag, doc)
-        else:
-            self.walk(tag, doc)
+        Args:
+            element: The XML tag to parse.
+            doc: The Docling document to be updated with the parsed content.
+        """
+        buffer: list[str] = []
 
-    def get_text(self, item: PageElement) -> str:
-        """Get the text content of a tag."""
-        parts: list[str] = self.extract_text_recursively(item)
-
-        return "".join(parts) + " "
-
-    # Function to recursively extract text from all child nodes
-    def extract_text_recursively(self, item: PageElement) -> list[str]:
-        result: list[str] = []
-
-        if isinstance(item, NavigableString):
-            return [item]
-
-        tag = cast(Tag, item)
-        if tag.name not in ["ul", "ol"]:
-            for child in tag:
-                # Recursively get the child's text content
-                result.extend(self.extract_text_recursively(child))
-
-        return ["".join(result) + " "]
-
-    def handle_details(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handle details tag (details) and its content."""
-
-        self.parents[self.level + 1] = doc.add_group(
-            name="details",
-            label=GroupLabel.SECTION,
-            parent=self.parents[self.level],
-            content_layer=self.content_layer,
-        )
-
-        self.level += 1
-        self.walk(element, doc)
-        self.parents[self.level + 1] = None
-        self.level -= 1
-
-    def handle_header(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles header tags (h1, h2, etc.)."""
-        hlevel = int(element.name.replace("h", ""))
-        text = element.text.strip()
-
-        self.content_layer = ContentLayer.BODY
-
-        if hlevel == 1:
-            for key in self.parents.keys():
-                self.parents[key] = None
-
-            self.level = 1
-            self.parents[self.level] = doc.add_text(
-                parent=self.parents[0],
-                label=DocItemLabel.TITLE,
-                text=text,
-                content_layer=self.content_layer,
-            )
-        else:
-            if hlevel > self.level:
-                # add invisible group
-                for i in range(self.level + 1, hlevel):
-                    self.parents[i] = doc.add_group(
-                        name=f"header-{i}",
-                        label=GroupLabel.SECTION,
-                        parent=self.parents[i - 1],
+        def flush_buffer():
+            if not buffer:
+                return
+            text = "".join(buffer).strip()
+            buffer.clear()
+            if not text:
+                return
+            for part in text.split("\n"):
+                seg = part.strip()
+                if seg:
+                    doc.add_text(
+                        DocItemLabel.TEXT,
+                        seg,
+                        parent=self.parents[self.level],
                         content_layer=self.content_layer,
                     )
-                self.level = hlevel
 
-            elif hlevel < self.level:
+        for node in element.contents:
+            if isinstance(node, Tag):
+                name = node.name.lower()
+                if name == "img":
+                    flush_buffer()
+                    self._emit_image(node, doc)
+                elif name in _BLOCK_TAGS:
+                    flush_buffer()
+                    self._handle_block(node, doc)
+                elif node.find(_BLOCK_TAGS):
+                    flush_buffer()
+                    self._walk(node, doc)
+                else:
+                    buffer.append(node.text)
+            elif isinstance(node, NavigableString) and not isinstance(
+                node, PreformattedString
+            ):
+                buffer.append(str(node))
+
+        flush_buffer()
+
+    def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> None:
+        tag_name = tag.name.lower()
+        # set default content layer to BODY as soon as we encounter a heading
+        self.content_layer = ContentLayer.BODY
+        level = int(tag_name[1])
+        text = tag.get_text(strip=True, separator=" ")
+        # the first level is for the title item
+        if level == 1:
+            for key in self.parents.keys():
+                self.parents[key] = None
+            self.level = 0
+            self.parents[self.level + 1] = doc.add_title(
+                text, content_layer=self.content_layer
+            )
+        # the other levels need to be lowered by 1 if a title was set
+        else:
+            level -= 1
+            if level > self.level:
+                # add invisible group
+                for i in range(self.level, level):
+                    _log.debug(f"Adding invisible group to level {i}")
+                    self.parents[i + 1] = doc.add_group(
+                        name=f"header-{i + 1}",
+                        label=GroupLabel.SECTION,
+                        parent=self.parents[i],
+                        content_layer=self.content_layer,
+                    )
+                self.level = level
+            elif level < self.level:
                 # remove the tail
                 for key in self.parents.keys():
-                    if key > hlevel:
+                    if key > level + 1:
+                        _log.debug(f"Remove the tail of level {key}")
                         self.parents[key] = None
-                self.level = hlevel
-
-            self.parents[hlevel] = doc.add_heading(
-                parent=self.parents[hlevel - 1],
-                text=text,
-                level=hlevel - 1,
-                content_layer=self.content_layer,
-            )
-
-    def handle_code(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles monospace code snippets (pre)."""
-        if element.text is None:
-            return
-        text = element.text.strip()
-        if text:
-            doc.add_code(
+                self.level = level
+            self.parents[self.level + 1] = doc.add_heading(
                 parent=self.parents[self.level],
                 text=text,
+                level=self.level,
                 content_layer=self.content_layer,
             )
+        self.level += 1
+        for img_tag in tag("img"):
+            if isinstance(img_tag, Tag):
+                self._emit_image(img_tag, doc)
 
-    def handle_paragraph(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles paragraph tags (p) or equivalent ones."""
-        if element.text is None:
-            return
-        text = element.text.strip()
-        if text:
-            doc.add_text(
-                parent=self.parents[self.level],
-                label=DocItemLabel.TEXT,
-                text=text,
-                content_layer=self.content_layer,
-            )
-
-    def handle_list(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles list tags (ul, ol) and their list items."""
-
+    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> None:
+        tag_name = tag.name.lower()
         start: Optional[int] = None
-        if is_ordered := element.name == "ol":
-            start_attr = element.get("start")
+        name: str = ""
+        is_ordered = tag_name == "ol"
+        if is_ordered:
+            start_attr = tag.get("start")
             if isinstance(start_attr, str) and start_attr.isnumeric():
                 start = int(start_attr)
             name = "ordered list" + (f" start {start}" if start is not None else "")
         else:
             name = "list"
-        # create a list group
+        # Create the list container
         list_group = doc.add_list_group(
             name=name,
             parent=self.parents[self.level],
@@ -320,64 +271,152 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.ctx.list_ordered_flag_by_ref[list_group.self_ref] = is_ordered
         if is_ordered and start is not None:
             self.ctx.list_start_by_ref[list_group.self_ref] = start
-
         self.level += 1
 
-        self.walk(element, doc)
+        # For each top-level <li> in this list
+        for li in tag.find_all({"li", "ul", "ol"}, recursive=False):
+            if not isinstance(li, Tag):
+                continue
+
+            # sub-list items should be indented under main list items, but temporarily
+            # addressing invalid HTML (docling-core/issues/357)
+            if li.name in {"ul", "ol"}:
+                self._handle_block(li, doc)
+
+            else:
+                # 1) determine the marker
+                if is_ordered and start is not None:
+                    marker = f"{start + len(list_group.children)}."
+                else:
+                    marker = ""
+
+                # 2) extract only the "direct" text from this <li>
+                parts: list[str] = []
+                for child in li.contents:
+                    if isinstance(child, NavigableString) and not isinstance(
+                        child, PreformattedString
+                    ):
+                        parts.append(child)
+                    elif isinstance(child, Tag) and child.name not in ("ul", "ol"):
+                        text_part = child.get_text()
+                        if text_part:
+                            parts.append(text_part)
+                li_text = re.sub(r"\s+|\n+", " ", "".join(parts)).strip()
+
+                # 3) add the list item
+                if li_text:
+                    self.parents[self.level + 1] = doc.add_list_item(
+                        text=li_text,
+                        enumerated=is_ordered,
+                        marker=marker,
+                        parent=list_group,
+                        content_layer=self.content_layer,
+                    )
+
+                    # 4) recurse into any nested lists, attaching them to this <li> item
+                    for sublist in li({"ul", "ol"}, recursive=False):
+                        if isinstance(sublist, Tag):
+                            self.level += 1
+                            self._handle_block(sublist, doc)
+                            self.parents[self.level + 1] = None
+                            self.level -= 1
+                else:
+                    for sublist in li({"ul", "ol"}, recursive=False):
+                        if isinstance(sublist, Tag):
+                            self._handle_block(sublist, doc)
+
+                # 5) extract any images under this <li>
+                for img_tag in li("img"):
+                    if isinstance(img_tag, Tag):
+                        self._emit_image(img_tag, doc)
 
         self.parents[self.level + 1] = None
         self.level -= 1
 
-    def handle_list_item(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles list item tags (li)."""
-        nested_list = element.find(["ul", "ol"])
+    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> None:
+        tag_name = tag.name.lower()
 
-        parent = self.parents[self.level]
-        if parent is None:
-            _log.debug(f"list-item has no parent in DoclingDocument: {element}")
-            return
-        enumerated = self.ctx.list_ordered_flag_by_ref.get(parent.self_ref, False)
-        if enumerated and (start := self.ctx.list_start_by_ref.get(parent.self_ref)):
-            marker = f"{start + len(parent.children)}."
-        else:
-            marker = ""
+        if tag_name == "figure":
+            img_tag = tag.find("img")
+            if isinstance(img_tag, Tag):
+                self._emit_image(img_tag, doc)
 
-        if nested_list:
-            # Text in list item can be hidden within hierarchy, hence
-            # we need to extract it recursively
-            text: str = self.get_text(element)
-            # Flatten text, remove break lines:
-            text = text.replace("\n", "").replace("\r", "")
-            text = " ".join(text.split()).strip()
+        elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            self._handle_heading(tag, doc)
 
-            if len(text) > 0:
-                # create a list-item
-                self.parents[self.level + 1] = doc.add_list_item(
-                    text=text,
-                    enumerated=enumerated,
-                    marker=marker,
-                    parent=parent,
+        elif tag_name in {"ul", "ol"}:
+            self._handle_list(tag, doc)
+
+        elif tag_name in {"p", "address", "summary"}:
+            for part in tag.text.split("\n"):
+                seg = part.strip()
+                if seg:
+                    doc.add_text(
+                        parent=self.parents[self.level],
+                        label=DocItemLabel.TEXT,
+                        text=seg,
+                        content_layer=self.content_layer,
+                    )
+            for img_tag in tag("img"):
+                if isinstance(img_tag, Tag):
+                    self._emit_image(img_tag, doc)
+
+        elif tag_name == "table":
+            data = HTMLDocumentBackend.parse_table_data(tag)
+            for img_tag in tag("img"):
+                if isinstance(img_tag, Tag):
+                    self._emit_image(tag, doc)
+            if data is not None:
+                doc.add_table(
+                    data=data,
+                    parent=self.parents[self.level],
                     content_layer=self.content_layer,
                 )
-                self.level += 1
-                self.walk(element, doc)
-                self.parents[self.level + 1] = None
-                self.level -= 1
-            else:
-                self.walk(element, doc)
 
-        elif element.text.strip():
-            text = element.text.strip()
+        elif tag_name in {"pre", "code"}:
+            # handle monospace code snippets (pre).
+            text = tag.get_text(strip=True)
+            if text:
+                doc.add_code(
+                    parent=self.parents[self.level],
+                    text=text,
+                    content_layer=self.content_layer,
+                )
 
-            doc.add_list_item(
-                text=text,
-                enumerated=enumerated,
-                marker=marker,
-                parent=parent,
+        elif tag_name == "details":
+            # handle details and its content.
+            self.parents[self.level + 1] = doc.add_group(
+                name="details",
+                label=GroupLabel.SECTION,
+                parent=self.parents[self.level],
                 content_layer=self.content_layer,
             )
-        else:
-            _log.debug(f"list-item has no text: {element}")
+            self.level += 1
+            self._walk(tag, doc)
+            self.parents[self.level + 1] = None
+            self.level -= 1
+
+    def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> None:
+        figure = img_tag.find_parent("figure")
+        caption: str = ""
+        if isinstance(figure, Tag):
+            caption_tag = figure.find("figcaption", recursive=False)
+            if isinstance(caption_tag, Tag):
+                caption = caption_tag.get_text()
+        if not caption:
+            caption = str(img_tag.get("alt", "")).strip()
+
+        caption_item: Optional[TextItem] = None
+        if caption:
+            caption_item = doc.add_text(
+                DocItemLabel.CAPTION, text=caption, content_layer=self.content_layer
+            )
+
+        doc.add_picture(
+            caption=caption_item,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+        )
 
     @staticmethod
     def _get_cell_spans(cell: Tag) -> tuple[int, int]:
@@ -502,84 +541,3 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 data.table_cells.append(table_cell)
 
         return data
-
-    def handle_table(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles table tags."""
-
-        table_data = HTMLDocumentBackend.parse_table_data(element)
-
-        if table_data is not None:
-            doc.add_table(
-                data=table_data,
-                parent=self.parents[self.level],
-                content_layer=self.content_layer,
-            )
-
-    def get_list_text(self, list_element: Tag, level: int = 0) -> list[str]:
-        """Recursively extract text from <ul> or <ol> with proper indentation."""
-        result = []
-        bullet_char = "*"  # Default bullet character for unordered lists
-
-        if list_element.name == "ol":  # For ordered lists, use numbers
-            for i, li in enumerate(list_element("li", recursive=False), 1):
-                if not isinstance(li, Tag):
-                    continue
-                # Add numbering for ordered lists
-                result.append(f"{'    ' * level}{i}. {li.get_text(strip=True)}")
-                # Handle nested lists
-                nested_list = li.find(["ul", "ol"])
-                if isinstance(nested_list, Tag):
-                    result.extend(self.get_list_text(nested_list, level + 1))
-        elif list_element.name == "ul":  # For unordered lists, use bullet points
-            for li in list_element("li", recursive=False):
-                if not isinstance(li, Tag):
-                    continue
-                # Add bullet points for unordered lists
-                result.append(
-                    f"{'    ' * level}{bullet_char} {li.get_text(strip=True)}"
-                )
-                # Handle nested lists
-                nested_list = li.find(["ul", "ol"])
-                if isinstance(nested_list, Tag):
-                    result.extend(self.get_list_text(nested_list, level + 1))
-
-        return result
-
-    def handle_figure(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles image tags (img)."""
-
-        # Extract the image URI from the <img> tag
-        # image_uri = root.xpath('//figure//img/@src')[0]
-
-        contains_captions = element.find(["figcaption"])
-        if not isinstance(contains_captions, Tag):
-            doc.add_picture(
-                parent=self.parents[self.level],
-                caption=None,
-                content_layer=self.content_layer,
-            )
-        else:
-            texts = []
-            for item in contains_captions:
-                texts.append(item.text)
-
-            fig_caption = doc.add_text(
-                label=DocItemLabel.CAPTION,
-                text=("".join(texts)).strip(),
-                content_layer=self.content_layer,
-            )
-            doc.add_picture(
-                parent=self.parents[self.level],
-                caption=fig_caption,
-                content_layer=self.content_layer,
-            )
-
-    def handle_image(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles image tags (img)."""
-        _log.debug(f"ignoring <img> tags at the moment: {element}")
-
-        doc.add_picture(
-            parent=self.parents[self.level],
-            caption=None,
-            content_layer=self.content_layer,
-        )

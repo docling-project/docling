@@ -37,9 +37,11 @@ def test_heading_levels():
         if isinstance(item, SectionHeaderItem):
             if item.text == "Etymology":
                 found_lvl_1 = True
+                # h2 becomes level 1 because of h1 as title
                 assert item.level == 1
             elif item.text == "Feeding":
                 found_lvl_2 = True
+                # h3 becomes level 2 because of h1 as title
                 assert item.level == 2
     assert found_lvl_1 and found_lvl_2
 
