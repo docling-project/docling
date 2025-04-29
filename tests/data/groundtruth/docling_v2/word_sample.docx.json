@@ -32,17 +32,17 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [
-        {
-          "$ref": "#/texts/6"
-        },
         {
           "$ref": "#/texts/7"
         },
         {
           "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
         }
       ],
       "content_layer": "body",
@@ -52,17 +52,17 @@
     {
       "self_ref": "#/groups/1",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [
-        {
-          "$ref": "#/texts/10"
-        },
         {
           "$ref": "#/texts/11"
         },
         {
           "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/13"
         }
       ],
       "content_layer": "body",
@@ -72,17 +72,17 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       "children": [
-        {
-          "$ref": "#/texts/20"
-        },
         {
           "$ref": "#/texts/21"
         },
         {
           "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/23"
         }
       ],
       "content_layer": "body",
@@ -120,6 +120,9 @@
         },
         {
           "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
         }
       ],
       "content_layer": "body",
@@ -149,32 +152,44 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "Figure 1: This is a cute duckling",
-      "text": "Figure 1: This is a cute duckling"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/texts/1"
       },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "Figure 1: This is a cute duckling",
+      "text": "Figure 1: This is a cute duckling"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/texts/1"
+      },
       "children": [
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/texts/6"
         },
         {
           "$ref": "#/groups/0"
         },
         {
-          "$ref": "#/texts/9"
+          "$ref": "#/texts/10"
         },
         {
           "$ref": "#/groups/1"
         },
         {
-          "$ref": "#/texts/13"
+          "$ref": "#/texts/14"
         },
         {
-          "$ref": "#/texts/14"
+          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
@@ -185,9 +200,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/6",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -197,7 +212,7 @@
       "text": "To get started with swimming, first lay down in a water and try not to drown:"
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -211,7 +226,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -225,7 +240,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -239,9 +254,9 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -251,7 +266,7 @@
       "text": "Also, don\u2019t forget:"
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -265,7 +280,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -279,7 +294,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -293,9 +308,9 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [],
       "content_layer": "body",
@@ -305,14 +320,11 @@
       "text": "Hmm, what else\u2026"
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/texts/4"
+        "$ref": "#/texts/5"
       },
       "children": [
-        {
-          "$ref": "#/texts/15"
-        },
         {
           "$ref": "#/texts/16"
         },
@@ -320,13 +332,16 @@
           "$ref": "#/texts/17"
         },
         {
-          "$ref": "#/tables/0"
-        },
-        {
           "$ref": "#/texts/18"
         },
         {
+          "$ref": "#/tables/0"
+        },
+        {
           "$ref": "#/texts/19"
+        },
+        {
+          "$ref": "#/texts/20"
         },
         {
           "$ref": "#/groups/2"
@@ -340,9 +355,9 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       "children": [],
       "content_layer": "body",
@@ -352,9 +367,9 @@
       "text": "After we had a good day of swimming in the lake, it\u2019s important to eat something nice"
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       "children": [],
       "content_layer": "body",
@@ -364,9 +379,9 @@
       "text": "I like to eat leaves"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       "children": [],
       "content_layer": "body",
@@ -376,9 +391,9 @@
       "text": "Here are some interesting things a respectful duck could eat:"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       "children": [],
       "content_layer": "body",
@@ -388,9 +403,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/20",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       "children": [],
       "content_layer": "body",
@@ -400,7 +415,7 @@
       "text": "And let\u2019s add another list in the end:"
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -414,7 +429,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -428,7 +443,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -471,7 +486,7 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/15"
       },
       "children": [],
       "content_layer": "body",

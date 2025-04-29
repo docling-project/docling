@@ -30,13 +30,22 @@
         "$ref": "#/texts/2"
       },
       {
-        "$ref": "#/pictures/1"
-      },
-      {
         "$ref": "#/texts/3"
       },
       {
+        "$ref": "#/pictures/1"
+      },
+      {
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
+      },
+      {
         "$ref": "#/pictures/2"
+      },
+      {
+        "$ref": "#/texts/6"
       }
     ],
     "content_layer": "body",
@@ -78,8 +87,8 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "Vector in emf:",
-      "text": "Vector in emf:"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/3",
@@ -90,8 +99,44 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
+      "orig": "Vector in emf:",
+      "text": "Vector in emf:"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
       "orig": "Raster in webp:",
       "text": "Raster in webp:"
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "",
+      "text": ""
     }
   ],
   "pictures": [

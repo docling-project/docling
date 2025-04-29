@@ -3,27 +3,28 @@ item-0 at level 0: unspecified: group _root_
   item-2 at level 1: title: Swimming in the lake
     item-3 at level 2: paragraph: Duck
     item-4 at level 2: picture
-    item-5 at level 2: paragraph: Figure 1: This is a cute duckling
-    item-6 at level 2: section_header: Let’s swim!
-      item-7 at level 3: paragraph: To get started with swimming, fi ...  down in a water and try not to drown:
-      item-8 at level 3: list: group list
-        item-9 at level 4: list_item: You can relax and look around
-        item-10 at level 4: list_item: Paddle about
-        item-11 at level 4: list_item: Enjoy summer warmth
-      item-12 at level 3: paragraph: Also, don’t forget:
-      item-13 at level 3: list: group list
-        item-14 at level 4: list_item: Wear sunglasses
-        item-15 at level 4: list_item: Don’t forget to drink water
-        item-16 at level 4: list_item: Use sun cream
-      item-17 at level 3: paragraph: Hmm, what else…
-      item-18 at level 3: section_header: Let’s eat
-        item-19 at level 4: paragraph: After we had a good day of swimm ... , it’s important to eat something nice
-        item-20 at level 4: paragraph: I like to eat leaves
-        item-21 at level 4: paragraph: Here are some interesting things a respectful duck could eat:
-        item-22 at level 4: table with [4x3]
-        item-23 at level 4: paragraph: 
-        item-24 at level 4: paragraph: And let’s add another list in the end:
-        item-25 at level 4: list: group list
-          item-26 at level 5: list_item: Leaves
-          item-27 at level 5: list_item: Berries
-          item-28 at level 5: list_item: Grain
+    item-5 at level 2: paragraph: 
+    item-6 at level 2: paragraph: Figure 1: This is a cute duckling
+    item-7 at level 2: section_header: Let’s swim!
+      item-8 at level 3: paragraph: To get started with swimming, fi ...  down in a water and try not to drown:
+      item-9 at level 3: list: group list
+        item-10 at level 4: list_item: You can relax and look around
+        item-11 at level 4: list_item: Paddle about
+        item-12 at level 4: list_item: Enjoy summer warmth
+      item-13 at level 3: paragraph: Also, don’t forget:
+      item-14 at level 3: list: group list
+        item-15 at level 4: list_item: Wear sunglasses
+        item-16 at level 4: list_item: Don’t forget to drink water
+        item-17 at level 4: list_item: Use sun cream
+      item-18 at level 3: paragraph: Hmm, what else…
+      item-19 at level 3: section_header: Let’s eat
+        item-20 at level 4: paragraph: After we had a good day of swimm ... , it’s important to eat something nice
+        item-21 at level 4: paragraph: I like to eat leaves
+        item-22 at level 4: paragraph: Here are some interesting things a respectful duck could eat:
+        item-23 at level 4: table with [4x3]
+        item-24 at level 4: paragraph: 
+        item-25 at level 4: paragraph: And let’s add another list in the end:
+        item-26 at level 4: list: group list
+          item-27 at level 5: list_item: Leaves
+          item-28 at level 5: list_item: Berries
+          item-29 at level 5: list_item: Grain
