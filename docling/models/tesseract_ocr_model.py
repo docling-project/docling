@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional, Type
+from typing import Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
@@ -39,7 +41,7 @@ class TesseractOcrModel(BaseOcrModel):
 
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
         self.reader = None
-        self.script_readers: dict[str, Any] = {}
+        self.script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
 
         if self.enabled:
             install_errmsg = (
