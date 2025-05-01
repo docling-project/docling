@@ -57,7 +57,7 @@ class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
                 artifacts_path,
                 torch_dtype=torch.bfloat16,
                 _attn_implementation=(
-                    "flash_attention_2" if self.device.startswith("cuda") else "eager"
+                    "eager"
                 ),
             ).to(self.device)
 
