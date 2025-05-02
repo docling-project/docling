@@ -189,7 +189,9 @@ class DocumentConverter:
     def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:
         """Generate a hash of pipeline options to use as part of the cache key."""
         options_str = str(pipeline_options.model_dump())
-        return hashlib.md5(options_str.encode("utf-8")).hexdigest()
+        return hashlib.md5(
+            options_str.encode("utf-8"), usedforsecurity=False
+        ).hexdigest()
 
     def initialize_pipeline(self, format: InputFormat):
         """Initialize the conversion pipeline for the selected format."""
