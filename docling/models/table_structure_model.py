@@ -234,7 +234,7 @@ class TableStructureModel(BasePageModel):
                                 tcells = table_cluster.cells
                             tokens = []
                             for c in tcells:
-                                # Only allow non empty stings (spaces) into the cells of a table
+                                # Only allow non empty strings (spaces) into the cells of a table
                                 if len(c.text.strip()) > 0:
                                     new_cell = copy.deepcopy(c)
                                     new_cell.rect = BoundingRectangle.from_bounding_box(
@@ -267,7 +267,7 @@ class TableStructureModel(BasePageModel):
                                     element["bbox"]["token"] = text_piece
 
                                 tc = TableCell.model_validate(element)
-                                if self.do_cell_matching and tc.bbox is not None:
+                                if tc.bbox is not None:
                                     tc.bbox = tc.bbox.scaled(1 / self.scale)
                                 table_cells.append(tc)
 

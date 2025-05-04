@@ -6,7 +6,7 @@ For each document format, the *document converter* knows which format-specific *
 
 !!! tip
 
-    While the document converter holds a default mapping, this configuration is parametrizable, so e.g. for the PDF format, different backends and different pipeline options can be used — see [Usage](../usage.md#adjust-pipeline-features).
+    While the document converter holds a default mapping, this configuration is parametrizable, so e.g. for the PDF format, different backends and different pipeline options can be used — see [Usage](../usage/index.md#adjust-pipeline-features).
 
 The *conversion result* contains the [*Docling document*](./docling_document.md), Docling's fundamental document representation.
 

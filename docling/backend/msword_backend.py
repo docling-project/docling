@@ -436,7 +436,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
-        # Identify wether list is a numbered list or not
+        # Identify whether list is a numbered list or not
         # is_numbered = "List Bullet" not in paragraph.style.name
         is_numbered = False
         p_style_id, p_level = self._get_label_and_level(paragraph)

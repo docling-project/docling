@@ -409,7 +409,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         )
                     return _txt
 
-                # restore original HTML by removing previouly added markers
+                # restore original HTML by removing previously added markers
                 for regex in [
                     rf"<pre>\s*<code>\s*{_START_MARKER}",
                     rf"{_STOP_MARKER}\s*</code>\s*</pre>",

@@ -4,7 +4,7 @@
   "name": "example_06",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 14574683870626799530,
+    "binary_hash": 10224930410364781672,
     "filename": "example_06.html"
   },
   "furniture": {
@@ -30,14 +30,35 @@
         "$ref": "#/texts/3"
       },
       {
-        "$ref": "#/texts/4"
+        "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/texts/6"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        }
+      ],
+      "content_layer": "body",
+      "name": "details",
+      "label": "section"
+    }
+  ],
   "texts": [
     {
       "self_ref": "#/texts/0",
@@ -89,6 +110,30 @@
     },
     {
       "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Heading for the details element",
+      "text": "Heading for the details element"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Description of the details element.",
+      "text": "Description of the details element."
+    },
+    {
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/body"
       },

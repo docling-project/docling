@@ -101,6 +101,7 @@ nav:
       - "Figure enrichment": examples/develop_picture_enrichment.py
       - "Formula enrichment": examples/develop_formula_understanding.py
     - 🗂️ More examples:
+      - examples/rag_milvus.ipynb
       - examples/rag_weaviate.ipynb
       - RAG with Granite [↗]: https://github.com/ibm-granite-community/granite-snack-cookbook/blob/main/recipes/RAG/Granite_Docling_RAG.ipynb
       - examples/rag_azuresearch.ipynb

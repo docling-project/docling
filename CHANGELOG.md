@@ -1,3 +1,26 @@
+## [v2.31.0](https://github.com/docling-project/docling/releases/tag/v2.31.0) - 2025-04-25
+
+### Feature
+
+* Add tutorial using Milvus and Docling for RAG pipeline ([#1449](https://github.com/docling-project/docling/issues/1449)) ([`a2fbbba`](https://github.com/docling-project/docling/commit/a2fbbba9f7f889a1f84f8642cf5c75feb57e8668))
+
+### Fix
+
+* **html:** Handle address, details, and summary tags ([#1436](https://github.com/docling-project/docling/issues/1436)) ([`ed20124`](https://github.com/docling-project/docling/commit/ed20124544a1b10f068b11bbdf12e1bfc7567195))
+* Treat overflowing -v flags as DEBUG ([#1419](https://github.com/docling-project/docling/issues/1419)) ([`8012a3e`](https://github.com/docling-project/docling/commit/8012a3e4d6b9ce4cae28210d525d87175da2f5c2))
+* **codecov:** Fix codecov argument and yaml file ([#1399](https://github.com/docling-project/docling/issues/1399)) ([`fa7fc9e`](https://github.com/docling-project/docling/commit/fa7fc9e63d45f44af57dd6ad7636a2a16f04b8c4))
+
+### Documentation
+
+* Fix wrong output format in example code ([#1427](https://github.com/docling-project/docling/issues/1427)) ([`c2470ed`](https://github.com/docling-project/docling/commit/c2470ed216eaf3aae0ad16306de19682fa55b99b))
+* Add OpenSSF Best Practices badge ([#1430](https://github.com/docling-project/docling/issues/1430)) ([`64918a8`](https://github.com/docling-project/docling/commit/64918a81ac315ea0108f1411a1537dd12117e49c))
+* Typo fixes in docling_document.md ([#1400](https://github.com/docling-project/docling/issues/1400)) ([`995b3b0`](https://github.com/docling-project/docling/commit/995b3b0ab1c4e566eaba2ea31af3db21eb12a7ae))
+* Updated the [Usage] link in architecture.md ([#1416](https://github.com/docling-project/docling/issues/1416)) ([`88948b0`](https://github.com/docling-project/docling/commit/88948b0bbaba2ecbaa71f703d2cc94055a3e6b3e))
+* **ocr:** Add docs entry for OnnxTR OCR plugin ([#1382](https://github.com/docling-project/docling/issues/1382)) ([`a7dd59c`](https://github.com/docling-project/docling/commit/a7dd59c5cb3e7f1eba76c7e2e20be79d8fa5b367))
+* **security:** More statements about secure development ([#1381](https://github.com/docling-project/docling/issues/1381)) ([`293c28c`](https://github.com/docling-project/docling/commit/293c28ca7c4a44dcd56595ed2fe0372fe1b531b2))
+* Add testing in the docs ([#1379](https://github.com/docling-project/docling/issues/1379)) ([`01fbfd5`](https://github.com/docling-project/docling/commit/01fbfd565204258acb2986dcaefad3a328626c66))
+* Add Notes for Installing in Intel macOS ([#1377](https://github.com/docling-project/docling/issues/1377)) ([`a026b4e`](https://github.com/docling-project/docling/commit/a026b4e84bcc8e11ceaa6d9a46c7c741000aff44))
+
 ## [v2.30.0](https://github.com/docling-project/docling/releases/tag/v2.30.0) - 2025-04-14
 
 ### Feature

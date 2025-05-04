@@ -91,7 +91,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
         self.path_or_stream = path_or_stream
 
-        # Initialize the root of the document hiearchy
+        # Initialize the root of the document hierarchy
         self.root: Optional[NodeItem] = None
 
         self.valid = False

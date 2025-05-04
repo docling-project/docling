@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "docling"
-version = "2.30.0"  # DO NOT EDIT, updated automatically
+version = "2.31.0"  # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 authors = [
   "Christoph Auer <cau@zurich.ibm.com>",
@@ -92,6 +92,7 @@ pluggy = "^1.0.0"
 pylatexenc = "^2.10"
 
 [tool.poetry.group.dev.dependencies]
+python = "^3.9.2"
 black = { extras = ["jupyter"], version = "^24.4.2" }
 pytest = "^7.2.2"
 pre-commit = "^3.7.1"
