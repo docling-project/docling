@@ -1,4 +1,5 @@
 import logging
+import traceback
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
@@ -137,7 +138,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     self.analyze_tag(cast(Tag, element), doc)
                 except Exception as exc_child:
                     _log.error(
-                        f"Error processing child from tag {tag.name}: {exc_child!r}"
+                        f"Error processing child from tag {tag.name}:\n{traceback.format_exc()}"
                     )
                     raise exc_child
             elif isinstance(element, NavigableString) and not isinstance(
