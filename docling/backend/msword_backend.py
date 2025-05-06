@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Optional, Set, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -24,7 +24,6 @@ from docx.text.hyperlink import Hyperlink
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 from lxml import etree
-from lxml.etree import XPath
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl
 from typing_extensions import override
@@ -59,6 +58,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.parents: dict[int, Optional[NodeItem]] = {}
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
+        # Track processed textbox elements to avoid duplication
+        self.processed_textbox_elements: Set[int] = set()
+        # Track content hash of processed paragraphs to avoid duplicate content
+        self.processed_paragraph_content: Set[str] = set()
+
         for i in range(-1, self.max_levels):
             self.parents[i] = None
 
@@ -175,9 +179,73 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
                 "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
                 "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+                "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+                "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
+                "v": "urn:schemas-microsoft-com:vml",
+                "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
+                "w10": "urn:schemas-microsoft-com:office:word",
+                "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
             }
-            xpath_expr = XPath(".//a:blip", namespaces=namespaces)
+            xpath_expr = etree.XPath(".//a:blip", namespaces=namespaces)
             drawing_blip = xpath_expr(element)
+
+            # Check for textbox content - check multiple textbox formats
+            # Only process if the element hasn't been processed before
+            element_id = id(element)
+            if element_id not in self.processed_textbox_elements:
+                # Modern Word textboxes
+                txbx_xpath = etree.XPath(
+                    ".//w:txbxContent|.//v:textbox//w:p", namespaces=namespaces
+                )
+                textbox_elements = txbx_xpath(element)
+
+                # No modern textboxes found, check for alternate/legacy textbox formats
+                if not textbox_elements and tag_name in ["drawing", "pict"]:
+                    # Additional checks for textboxes in DrawingML and VML formats
+                    alt_txbx_xpath = etree.XPath(
+                        ".//wps:txbx//w:p|.//w10:wrap//w:p|.//a:p//a:t",
+                        namespaces=namespaces,
+                    )
+                    textbox_elements = alt_txbx_xpath(element)
+
+                    # Check for shape text that's not in a standard textbox
+                    if not textbox_elements:
+                        shape_text_xpath = etree.XPath(
+                            ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
+                            namespaces=namespaces,
+                        )
+                        shape_text_elements = shape_text_xpath(element)
+                        if shape_text_elements:
+                            # Create custom text elements from shape text
+                            text_content = " ".join(
+                                [t.text for t in shape_text_elements if t.text]
+                            )
+                            if text_content.strip():
+                                _log.debug(f"Found shape text: {text_content[:50]}...")
+                                # Create a paragraph-like element to process with standard handler
+                                level = self._get_level()
+                                shape_group = doc.add_group(
+                                    label=GroupLabel.SECTION,
+                                    parent=self.parents[level - 1],
+                                    name="shape-text",
+                                )
+                                doc.add_text(
+                                    label=DocItemLabel.PARAGRAPH,
+                                    parent=shape_group,
+                                    text=text_content,
+                                )
+
+                if textbox_elements:
+                    # Mark the parent element as processed
+                    self.processed_textbox_elements.add(element_id)
+                    # Also mark all found textbox elements as processed
+                    for tb_element in textbox_elements:
+                        self.processed_textbox_elements.add(id(tb_element))
+
+                    _log.debug(
+                        f"Found textbox content with {len(textbox_elements)} elements"
+                    )
+                    self._handle_textbox_content(textbox_elements, docx_obj, doc)
 
             # Check for Tables
             if element.tag.endswith("tbl"):
@@ -423,10 +491,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         element: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
+        is_from_textbox: bool = False,
     ) -> None:
         paragraph = Paragraph(element, docx_obj)
 
+        # Skip if from a textbox and this exact paragraph content was already processed
         raw_text = paragraph.text
+        if is_from_textbox and raw_text:
+            # Create a simple hash of content to detect duplicates
+            content_hash = f"{len(raw_text)}:{raw_text[:50]}"
+            if content_hash in self.processed_paragraph_content:
+                _log.debug(f"Skipping duplicate paragraph content: {content_hash}")
+                return
+            self.processed_paragraph_content.add(content_hash)
+
         text, equations = self._handle_equations_in_text(element=element, text=raw_text)
 
         if text is None:
@@ -885,4 +963,65 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     parent=self.parents[level - 1],
                     caption=None,
                 )
+        return
+
+    def _handle_textbox_content(
+        self,
+        textbox_elements: list,
+        docx_obj: DocxDocument,
+        doc: DoclingDocument,
+    ) -> None:
+        """Process textbox content and add it to the document structure."""
+        level = self._get_level()
+        # Create a textbox group to contain all text from the textbox
+        textbox_group = doc.add_group(
+            label=GroupLabel.SECTION, parent=self.parents[level - 1], name="textbox"
+        )
+
+        # Set this as the current parent to ensure textbox content
+        # is properly nested in document structure
+        original_parent = self.parents[level]
+        self.parents[level] = textbox_group
+
+        # Track processed paragraphs within this textbox to avoid duplication
+        processed_paragraphs = set()
+
+        # Process all elements within the textbox
+        for element in textbox_elements:
+            element_id = id(element)
+            # Skip if we've already processed this exact element
+            if element_id in processed_paragraphs:
+                continue
+
+            tag_name = etree.QName(element).localname
+            processed_paragraphs.add(element_id)
+
+            # Handle paragraphs directly found (VML textboxes)
+            if tag_name == "p":
+                # Direct paragraph from v:textbox
+                self._handle_text_elements(element, docx_obj, doc, is_from_textbox=True)
+
+            # Handle txbxContent elements (Word DrawingML textboxes)
+            elif tag_name == "txbxContent":
+                paragraphs = element.findall(".//w:p", namespaces=element.nsmap)
+                for p in paragraphs:
+                    p_id = id(p)
+                    if p_id not in processed_paragraphs:
+                        processed_paragraphs.add(p_id)
+                        self._handle_text_elements(
+                            p, docx_obj, doc, is_from_textbox=True
+                        )
+            else:
+                # Try to extract any paragraphs from unknown elements
+                paragraphs = element.findall(".//w:p", namespaces=element.nsmap)
+                for p in paragraphs:
+                    p_id = id(p)
+                    if p_id not in processed_paragraphs:
+                        processed_paragraphs.add(p_id)
+                        self._handle_text_elements(
+                            p, docx_obj, doc, is_from_textbox=True
+                        )
+
+        # Restore original parent
+        self.parents[level] = original_parent
         return
