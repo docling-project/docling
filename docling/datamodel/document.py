@@ -303,6 +303,14 @@ class _DocumentConversionInput(BaseModel):
                     else ""
                 )
                 mime = _DocumentConversionInput._mime_from_extension(ext)
+            if mime is not None and mime.lower() == "application/zip":
+                objname = obj.name.lower()
+                if objname.endswith(".xlsx"):
+                    mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                elif objname.endswith(".docx"):
+                    mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                elif objname.endswith(".pptx"):
+                    mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_csv(content)
