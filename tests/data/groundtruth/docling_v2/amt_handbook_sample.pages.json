@@ -3411,7 +3411,7 @@
               "b": 519.65363,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9695363640785217,
+            "confidence": 0.9695364832878113,
             "cells": [
               {
                 "index": 34,
@@ -4081,7 +4081,7 @@
               "b": 142.65363000000002,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9263731241226196,
+            "confidence": 0.9263732433319092,
             "cells": [
               {
                 "index": 59,
@@ -4611,7 +4611,7 @@
               "b": 382.15362999999996,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9253152012825012,
+            "confidence": 0.9253151416778564,
             "cells": [
               {
                 "index": 79,
@@ -4651,7 +4651,7 @@
               "b": 409.15362999999996,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9676451683044434,
+            "confidence": 0.9676452875137329,
             "cells": [
               {
                 "index": 80,
@@ -4711,12 +4711,12 @@
             "label": "picture",
             "bbox": {
               "l": 320.4467468261719,
-              "t": 421.640625,
+              "t": 421.6407165527344,
               "r": 558.8576049804688,
               "b": 692.310791015625,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9881086945533752,
+            "confidence": 0.9881085753440857,
             "cells": [
               {
                 "index": 82,
@@ -5463,7 +5463,7 @@
               "b": 713.009598,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9449448585510254,
+            "confidence": 0.9449449777603149,
             "cells": [
               {
                 "index": 93,
@@ -5528,7 +5528,7 @@
               "b": 710.989597,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9497622847557068,
+            "confidence": 0.9497623443603516,
             "cells": [
               {
                 "index": 95,
@@ -5593,7 +5593,7 @@
               "b": 740.290298,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9368568658828735,
+            "confidence": 0.9368569850921631,
             "cells": [
               {
                 "index": 97,
@@ -6624,7 +6624,7 @@
               "b": 519.65363,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9695363640785217,
+            "confidence": 0.9695364832878113,
             "cells": [
               {
                 "index": 34,
@@ -7312,7 +7312,7 @@
               "b": 142.65363000000002,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9263731241226196,
+            "confidence": 0.9263732433319092,
             "cells": [
               {
                 "index": 59,
@@ -7854,7 +7854,7 @@
               "b": 382.15362999999996,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9253152012825012,
+            "confidence": 0.9253151416778564,
             "cells": [
               {
                 "index": 79,
@@ -7900,7 +7900,7 @@
               "b": 409.15362999999996,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9676451683044434,
+            "confidence": 0.9676452875137329,
             "cells": [
               {
                 "index": 80,
@@ -7966,12 +7966,12 @@
             "label": "picture",
             "bbox": {
               "l": 320.4467468261719,
-              "t": 421.640625,
+              "t": 421.6407165527344,
               "r": 558.8576049804688,
               "b": 692.310791015625,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9881086945533752,
+            "confidence": 0.9881085753440857,
             "cells": [
               {
                 "index": 82,
@@ -8738,7 +8738,7 @@
               "b": 713.009598,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9449448585510254,
+            "confidence": 0.9449449777603149,
             "cells": [
               {
                 "index": 93,
@@ -8809,7 +8809,7 @@
               "b": 710.989597,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9497622847557068,
+            "confidence": 0.9497623443603516,
             "cells": [
               {
                 "index": 95,
@@ -8880,7 +8880,7 @@
               "b": 740.290298,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9368568658828735,
+            "confidence": 0.9368569850921631,
             "cells": [
               {
                 "index": 97,
@@ -9904,7 +9904,7 @@
               "b": 519.65363,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9695363640785217,
+            "confidence": 0.9695364832878113,
             "cells": [
               {
                 "index": 34,
@@ -10592,7 +10592,7 @@
               "b": 142.65363000000002,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9263731241226196,
+            "confidence": 0.9263732433319092,
             "cells": [
               {
                 "index": 59,
@@ -11134,7 +11134,7 @@
               "b": 382.15362999999996,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9253152012825012,
+            "confidence": 0.9253151416778564,
             "cells": [
               {
                 "index": 79,
@@ -11180,7 +11180,7 @@
               "b": 409.15362999999996,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9676451683044434,
+            "confidence": 0.9676452875137329,
             "cells": [
               {
                 "index": 80,
@@ -11246,12 +11246,12 @@
             "label": "picture",
             "bbox": {
               "l": 320.4467468261719,
-              "t": 421.640625,
+              "t": 421.6407165527344,
               "r": 558.8576049804688,
               "b": 692.310791015625,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9881086945533752,
+            "confidence": 0.9881085753440857,
             "cells": [
               {
                 "index": 82,
@@ -12018,7 +12018,7 @@
               "b": 713.009598,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9449448585510254,
+            "confidence": 0.9449449777603149,
             "cells": [
               {
                 "index": 93,
@@ -12089,7 +12089,7 @@
               "b": 710.989597,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9497622847557068,
+            "confidence": 0.9497623443603516,
             "cells": [
               {
                 "index": 95,
@@ -12162,7 +12162,7 @@
               "b": 740.290298,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9368568658828735,
+            "confidence": 0.9368569850921631,
             "cells": [
               {
                 "index": 97,
