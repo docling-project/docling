@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, Type, Union
 
@@ -45,11 +46,13 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                     "pipeline_options.enable_remote_services=True."
                 )
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _annotate_images(
+        self, images: Iterable[Image.Image], concurrency: int = 1
+    ) -> Iterable[str]:
         # Note: technically we could make a batch request here,
         # but not all APIs will allow for it. For example, vllm won't allow more than 1.
-        for image in images:
-            yield api_image_request(
+        def _api_request(image):
+            return api_image_request(
                 image=image,
                 prompt=self.options.prompt,
                 url=self.options.url,
@@ -57,3 +60,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                 headers=self.options.headers,
                 **self.options.params,
             )
+
+        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+            for result in executor.map(_api_request, images):
+                yield from result

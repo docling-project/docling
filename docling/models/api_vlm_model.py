@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
@@ -36,12 +37,15 @@ class ApiVlmModel(BasePageModel):
             }
 
     def __call__(
-        self, conv_res: ConversionResult, page_batch: Iterable[Page]
+        self,
+        conv_res: ConversionResult,
+        page_batch: Iterable[Page],
+        concurrency: int = 1,
     ) -> Iterable[Page]:
-        for page in page_batch:
+        def _vlm_request(page):
             assert page._backend is not None
             if not page._backend.is_valid():
-                yield page
+                return page
             else:
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
@@ -63,4 +67,8 @@ class ApiVlmModel(BasePageModel):
 
                     page.predictions.vlm_response = VlmPrediction(text=page_tags)
 
-                yield page
+                return page
+
+        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+            for result in executor.map(_vlm_request, page_batch):
+                yield from result
