@@ -62,5 +62,4 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
             )
 
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
-            for result in executor.map(_api_request, images):
-                yield from result
+            yield from executor.map(_api_request, images)

@@ -70,5 +70,4 @@ class ApiVlmModel(BasePageModel):
                 return page
 
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
-            for result in executor.map(_vlm_request, page_batch):
-                yield from result
+            yield from executor.map(_vlm_request, page_batch)
