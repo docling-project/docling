@@ -38,6 +38,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
             accelerator_options=accelerator_options,
         )
         self.options: PictureDescriptionApiOptions
+        self.concurrency = self.options.concurrency
 
         if self.enabled:
             if not enable_remote_services:
@@ -46,9 +47,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                     "pipeline_options.enable_remote_services=True."
                 )
 
-    def _annotate_images(
-        self, images: Iterable[Image.Image], concurrency: int = 1
-    ) -> Iterable[str]:
+    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         # Note: technically we could make a batch request here,
         # but not all APIs will allow for it. For example, vllm won't allow more than 1.
         def _api_request(image):
@@ -61,5 +60,5 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                 **self.options.params,
             )
 
-        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
             yield from executor.map(_api_request, images)

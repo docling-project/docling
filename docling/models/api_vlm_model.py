@@ -28,6 +28,7 @@ class ApiVlmModel(BasePageModel):
                 )
 
             self.timeout = self.vlm_options.timeout
+            self.concurrency = self.vlm_options.concurrency
             self.prompt_content = (
                 f"This is a page from a document.\n{self.vlm_options.prompt}"
             )
@@ -37,10 +38,7 @@ class ApiVlmModel(BasePageModel):
             }
 
     def __call__(
-        self,
-        conv_res: ConversionResult,
-        page_batch: Iterable[Page],
-        concurrency: int = 1,
+        self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
         def _vlm_request(page):
             assert page._backend is not None
@@ -69,5 +67,5 @@ class ApiVlmModel(BasePageModel):
 
                 return page
 
-        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
             yield from executor.map(_vlm_request, page_batch)
