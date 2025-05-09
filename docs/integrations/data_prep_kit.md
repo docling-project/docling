@@ -1,10 +1,10 @@
-Docling is used by the [Data Prep Kit](https://ibm.github.io/data-prep-kit/) open-source toolkit for preparing unstructured data for LLM application development ranging from laptop scale to datacenter scale.
+Docling is used by the [Data Prep Kit](https://data-prep-kit.github.io/data-prep-kit/) open-source toolkit for preparing unstructured data for LLM application development ranging from laptop scale to datacenter scale.
 
 ## Components
 ### PDF ingestion to Parquet
-- 💻 [PDF-to-Parquet GitHub](https://github.com/IBM/data-prep-kit/tree/dev/transforms/language/pdf2parquet)
-- 📖 [PDF-to-Parquet docs](https://ibm.github.io/data-prep-kit/transforms/language/pdf2parquet/python/)
+- 💻 [Docling2Parquet source](https://github.com/data-prep-kit/data-prep-kit/tree/dev/transforms/language/docling2parquet)
+- 📖 [Docling2Parquet docs](https://data-prep-kit.github.io/data-prep-kit/transforms/language/pdf2parquet/)
 
 ### Document chunking
-- 💻 [Doc Chunking GitHub](https://github.com/IBM/data-prep-kit/tree/dev/transforms/language/doc_chunk)
-- 📖 [Doc Chunking docs](https://ibm.github.io/data-prep-kit/transforms/language/doc_chunk/python/)
+- 💻 [Doc Chunking source](https://github.com/data-prep-kit/data-prep-kit/tree/dev/transforms/language/doc_chunk)
+- 📖 [Doc Chunking docs](https://data-prep-kit.github.io/data-prep-kit/transforms/language/doc_chunk/)
