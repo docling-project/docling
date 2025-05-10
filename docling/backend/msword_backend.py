@@ -123,6 +123,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
+                
             doc = self._walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
             return doc
         else:
@@ -188,6 +189,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             elif drawing_blip:
                 self._handle_pictures(docx_obj, drawing_blip, doc)
+                self._handle_text_elements(element, docx_obj, doc)
             # Check for the sdt containers, like table of contents
             elif tag_name in ["sdt"]:
                 sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
