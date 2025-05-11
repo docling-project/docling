@@ -79,10 +79,7 @@ onnxruntime = [
   { version = "^1.7.0", optional = true, markers = "python_version >= '3.10'" },
 ]
 
-transformers = [
-  { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^4.46.0", optional = true },
-  { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~4.42.0", optional = true },
-]
+transformers = "4.42.0"
 accelerate = [
   { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^1.2.1", optional = true },
 ]
@@ -149,6 +146,11 @@ torchvision = [
   { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^0" },
   { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~0.17.2" },
 ]
+
+
+[tool.poetry.group.lm.dependencies]
+peft = "^0.15.2"
+backoff = "^2.2.1"
 
 [tool.poetry.extras]
 tesserocr = ["tesserocr"]

@@ -17,7 +17,7 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
-class HuggingFaceVlmModel(BasePageModel):
+class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
     def __init__(
         self,
         enabled: bool,
@@ -64,7 +64,7 @@ class HuggingFaceVlmModel(BasePageModel):
             if not self.param_quantized:
                 self.vlm_model = AutoModelForVision2Seq.from_pretrained(
                     artifacts_path,
-                    device_map=self.device,
+                    device_map=device,
                     torch_dtype=torch.bfloat16,
                     _attn_implementation=(
                         "flash_attention_2"
@@ -78,7 +78,7 @@ class HuggingFaceVlmModel(BasePageModel):
             else:
                 self.vlm_model = AutoModelForVision2Seq.from_pretrained(
                     artifacts_path,
-                    device_map=self.device,
+                    device_map=device,
                     torch_dtype="auto",
                     quantization_config=self.param_quantization_config,
                     _attn_implementation=(

@@ -24,6 +24,8 @@ from docling.datamodel.settings import settings
 from docling.models.api_vlm_model import ApiVlmModel
 from docling.models.hf_mlx_model import HuggingFaceMlxModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
+from docling.models.hf_vlm_models.hf_vlm_model_AutoModelForVision2Seq import HuggingFaceVlmModel_AutoModelForVision2Seq
+from docling.models.hf_vlm_models.hf_vlm_model_AutoModelForCausalLM import HuggingFaceVlmModel_AutoModelForCausalLM
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -77,7 +79,26 @@ class VlmPipeline(PaginatedPipeline):
                         vlm_options=vlm_options,
                     ),
                 ]
+            elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq:
+                self.build_pipe = [
+                    HuggingFaceVlmModel_AutoModelForVision2Seq(
+                        enabled=True,  # must be always enabled for this pipeline to make sense.
+                        artifacts_path=artifacts_path,
+                        accelerator_options=pipeline_options.accelerator_options,
+                        vlm_options=vlm_options,
+                    ),
+                ]
+            elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS_AutoModelForCausalLM:
+                self.build_pipe = [
+                    HuggingFaceVlmModel_AutoModelForCausalLM(
+                        enabled=True,  # must be always enabled for this pipeline to make sense.
+                        artifacts_path=artifacts_path,
+                        accelerator_options=pipeline_options.accelerator_options,
+                        vlm_options=vlm_options,
+                    ),
+                ]
             else:
+                _log.warning("falling back to HuggingFaceVlmModel (AutoModelForVision2Seq) pipeline")
                 self.build_pipe = [
                     HuggingFaceVlmModel(
                         enabled=True,  # must be always enabled for this pipeline to make sense.

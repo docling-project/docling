@@ -7,6 +7,9 @@ from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
+    InferenceFramework,
+    ResponseFormat,
+    HuggingFaceVlmOptions,
     VlmPipelineOptions,
     smoldocling_vlm_mlx_conversion_options,
 )
@@ -31,10 +34,29 @@ pipeline_options.force_backend_text = False
 # pipeline_options.vlm_options = smoldocling_vlm_conversion_options
 
 ## Pick a VLM model. Fast Apple Silicon friendly implementation for SmolDocling-256M via MLX
-pipeline_options.vlm_options = smoldocling_vlm_mlx_conversion_options
+## pipeline_options.vlm_options = smoldocling_vlm_mlx_conversion_options
 
 ## Alternative VLM models:
 # pipeline_options.vlm_options = granite_vision_vlm_conversion_options
+
+# pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
+#     repo_id="mistralai/Pixtral-12B-Base-2409",
+#     # prompt="OCR the full page to markdown.",
+#     prompt="OCR this image and export it in MarkDown.",
+#     response_format=ResponseFormat.MARKDOWN,
+#     inference_framework=InferenceFramework.TRANSFORMERS,
+# )
+
+pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
+    repo_id="microsoft/Phi-4-multimodal-instruct",
+    # prompt="OCR the full page to markdown.",
+    prompt="OCR this image and export it in MarkDown.",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForCausalLM,
+)
+
+
+pipeline_options.vlm_options = pixtral_vlm_conversion_options
 
 ## Set up pipeline for PDF or image inputs
 converter = DocumentConverter(
@@ -67,7 +89,7 @@ for source in sources:
 
     for page in res.pages:
         print("")
-        print("Predicted page in DOCTAGS:")
+        print(f"Predicted page in {pipeline_options.vlm_options.response_format}:")
         print(page.predictions.vlm_response.text)
 
     res.document.save_as_html(

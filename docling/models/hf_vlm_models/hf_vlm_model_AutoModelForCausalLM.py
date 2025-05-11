@@ -14,10 +14,11 @@ from docling.models.base_model import BasePageModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
+
 _log = logging.getLogger(__name__)
 
 
-class HuggingFaceVlmModel(BasePageModel):
+class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
     def __init__(
         self,
         enabled: bool,
@@ -27,20 +28,24 @@ class HuggingFaceVlmModel(BasePageModel):
     ):
         self.enabled = enabled
 
+        self.trust_remote_code = True
+        
         self.vlm_options = vlm_options
 
         if self.enabled:
             import torch
             from transformers import (  # type: ignore
-                AutoModelForVision2Seq,
+                AutoModelForCausalLM,
                 AutoProcessor,
+                GenerationConfig,
                 BitsAndBytesConfig,
             )
-
+            
             device = decide_device(accelerator_options.device)
-            self.device = device
+            self.device = 'cpu' #device
 
             _log.debug(f"Available device for HuggingFace VLM: {device}")
+            print(f"Available device for HuggingFace VLM: {device}")
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -59,10 +64,10 @@ class HuggingFaceVlmModel(BasePageModel):
 
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
-                # trust_remote_code=True,
+                trust_remote_code=self.trust_remote_code,
             )
             if not self.param_quantized:
-                self.vlm_model = AutoModelForVision2Seq.from_pretrained(
+                self.vlm_model = AutoModelForCausalLM.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
                     torch_dtype=torch.bfloat16,
@@ -72,11 +77,11 @@ class HuggingFaceVlmModel(BasePageModel):
                         and accelerator_options.cuda_use_flash_attention2
                         else "eager"
                     ),
-                    # trust_remote_code=True,
-                )  # .to(self.device)
+                    trust_remote_code=self.trust_remote_code,
+                ).to(self.device)
 
             else:
-                self.vlm_model = AutoModelForVision2Seq.from_pretrained(
+                self.vlm_model = AutoModelForCausalLM.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
                     torch_dtype="auto",
@@ -87,9 +92,16 @@ class HuggingFaceVlmModel(BasePageModel):
                         and accelerator_options.cuda_use_flash_attention2
                         else "eager"
                     ),
-                    # trust_remote_code=True,
-                )  # .to(self.device)
+                    trust_remote_code=self.trust_remote_code,
+                ).to(self.device)
 
+            model_path = artifacts_path
+            print(f"model: {model_path}")
+                
+            # Load generation config
+            self.generation_config = GenerationConfig.from_pretrained(model_path)
+
+                
     @staticmethod
     def download_models(
         repo_id: str,
@@ -122,8 +134,8 @@ class HuggingFaceVlmModel(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=2.0)  # 144dpi
-                    # hi_res_image = page.get_image(scale=1.0)  # 72dpi
+                    # hi_res_image = page.get_image(scale=2.0)  # 144dpi
+                    hi_res_image = page.get_image(scale=1.0)  # 72dpi
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
@@ -135,6 +147,7 @@ class HuggingFaceVlmModel(BasePageModel):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
+                    """
                     messages = [
                         {
                             "role": "user",
@@ -170,7 +183,40 @@ class HuggingFaceVlmModel(BasePageModel):
 
                     num_tokens = len(generated_ids[0])
                     page_tags = generated_texts
+                    """
 
+                    hi_res_image.show()
+                    
+                    # Define prompt structure
+                    user_prompt = '<|user|>'
+                    assistant_prompt = '<|assistant|>'
+                    prompt_suffix = '<|end|>'
+                    
+                    # Part 1: Image Processing
+                    print("\n--- IMAGE PROCESSING ---")
+                    # image_url = 'https://www.ilankelman.org/stopsigns/australia.jpg'
+                    prompt = f'{user_prompt}<|image_1|>OCR this image into MarkDown?{prompt_suffix}{assistant_prompt}'
+                    print(f'>>> Prompt\n{prompt}')
+
+                    inputs = self.processor(text=prompt, images=hi_res_image, return_tensors='pt').to(self.device) #.to('cuda:0')
+                    print("inputs: ", inputs.keys())
+                    
+                    # Generate response
+                    generate_ids = self.vlm_model.generate(
+                        **inputs,
+                        max_new_tokens=128,
+                        generation_config=self.generation_config,
+                    )
+                    generate_ids = generate_ids[:, inputs['input_ids'].shape[1]:]
+
+                    num_tokens = len(generated_ids[0])
+                    response = self.processor.batch_decode(
+                        generate_ids,
+                        skip_special_tokens=True,
+                        clean_up_tokenization_spaces=False
+                    )[0]
+                    print(f'>>> Response\n{response}')
+                    
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
@@ -182,6 +228,6 @@ class HuggingFaceVlmModel(BasePageModel):
                     # print(f"Total tokens on page: {num_tokens:.2f}")
                     # print(f"Tokens/sec: {tokens_per_second:.2f}")
                     # print("")
-                    page.predictions.vlm_response = VlmPrediction(text=page_tags)
+                    page.predictions.vlm_response = VlmPrediction(text=response)
 
                 yield page

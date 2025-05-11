@@ -267,7 +267,8 @@ class InferenceFramework(str, Enum):
     MLX = "mlx"
     TRANSFORMERS = "transformers"
     OPENAI = "openai"
-
+    TRANSFORMERS_AutoModelForVision2Seq = "transformers-AutoModelForVision2Seq"
+    TRANSFORMERS_AutoModelForCausalLM = "transformers-AutoModelForCausalLM"
 
 class HuggingFaceVlmOptions(BaseVlmOptions):
     kind: Literal["hf_model_options"] = "hf_model_options"
@@ -310,7 +311,7 @@ smoldocling_vlm_conversion_options = HuggingFaceVlmOptions(
     repo_id="ds4sd/SmolDocling-256M-preview",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
-    inference_framework=InferenceFramework.TRANSFORMERS,
+    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
 )
 
 granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
@@ -318,7 +319,7 @@ granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
     # prompt="OCR the full page to markdown.",
     prompt="OCR this image.",
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS,
+    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
 )
 
 granite_vision_vlm_ollama_conversion_options = ApiVlmOptions(
