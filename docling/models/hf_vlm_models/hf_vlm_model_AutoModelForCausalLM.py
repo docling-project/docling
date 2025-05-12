@@ -137,6 +137,8 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     # hi_res_image = page.get_image(scale=2.0)  # 144dpi
                     hi_res_image = page.get_image(scale=1.0)  # 72dpi
 
+                    hi_res_image.show()
+                    
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
 
@@ -195,7 +197,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     # Part 1: Image Processing
                     print("\n--- IMAGE PROCESSING ---")
                     # image_url = 'https://www.ilankelman.org/stopsigns/australia.jpg'
-                    prompt = f'{user_prompt}<|image_1|>OCR this image into MarkDown?{prompt_suffix}{assistant_prompt}'
+                    prompt = f'{user_prompt}<|image_1|>Convert this image into MarkDown and only return the bare MarkDown!{prompt_suffix}{assistant_prompt}'
                     print(f'>>> Prompt\n{prompt}')
 
                     inputs = self.processor(text=prompt, images=hi_res_image, return_tensors='pt').to(self.device) #.to('cuda:0')
@@ -206,19 +208,20 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                         **inputs,
                         max_new_tokens=128,
                         generation_config=self.generation_config,
+                        num_logits_to_keep=1,
                     )
                     generate_ids = generate_ids[:, inputs['input_ids'].shape[1]:]
 
-                    num_tokens = len(generated_ids[0])
+                    num_tokens = len(generate_ids[0])
                     response = self.processor.batch_decode(
                         generate_ids,
                         skip_special_tokens=True,
-                        clean_up_tokenization_spaces=False
+                        clean_up_tokenization_spaces=False,
                     )[0]
                     print(f'>>> Response\n{response}')
                     
                     _log.debug(
-                        f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
+                        f"Generated {num_tokens} tokens."
                     )
 
                     # inference_time = time.time() - start_time
