@@ -66,6 +66,7 @@ nav:
     - Concepts: concepts/index.md
     - Architecture: concepts/architecture.md
     - Docling Document: concepts/docling_document.md
+    - Serialization: concepts/serialization.md
     - Chunking: concepts/chunking.md
     - Plugins: concepts/plugins.md
   - Examples:
@@ -87,6 +88,8 @@ nav:
       - "Simple translation": examples/translate.py
       - examples/backend_csv.ipynb
       - examples/backend_xml_rag.ipynb
+    - 📤 Serialization:
+      - examples/serialization.ipynb
     - ✂️ Chunking:
       - examples/hybrid_chunking.ipynb
     - 🤖 RAG with AI dev frameworks:
