@@ -366,6 +366,29 @@
       "$ref": "#/figures/2"
     },
     {
+      "prov": [
+        {
+          "bbox": [
+            308.862,
+            232.72709999999995,
+            545.11517,
+            277.49963
+          ],
+          "page": 1,
+          "span": [
+            0,
+            220
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
       "name": "Table",
       "type": "table",
       "$ref": "#/tables/1"
@@ -909,6 +932,29 @@
         {
           "bbox": [
             308.862,
+            503.3020900000001,
+            545.11511,
+            524.16364
+          ],
+          "page": 3,
+          "span": [
+            0,
+            104
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 2: Distribution of the tables across different table dimensions in PubTabNet + FinTabNet datasets",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            308.862,
             465.62009,
             437.27002,
             474.52664
@@ -1283,9 +1329,55 @@
       "$ref": "#/figures/4"
     },
     {
+      "prov": [
+        {
+          "bbox": [
+            50.111992,
+            567.03308,
+            545.10846,
+            588.01422
+          ],
+          "page": 5,
+          "span": [
+            0,
+            212
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 3: TableFormer takes in an image of the PDF and creates bounding box and HTML structure predictions that are synchronized. The bounding boxes grabs the content from the PDF and inserts it in the structure.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/5"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            50.112,
+            111.72906,
+            286.36597,
+            264.2171900000001
+          ],
+          "page": 5,
+          "span": [
+            0,
+            745
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 4: Given an input image of a table, the Encoder produces fixed-length features that represent the input image. The features are then passed to both the Structure Decoder and Cell BBox Decoder . During training, the Structure Decoder receives 'tokenized tags' of the HTML code that represent the table structure. Afterwards, a transformer encoder and decoder architecture is employed to produce features that are received by a linear layer, and the Cell BBox Decoder. The linear layer is applied to the features to predict the tags. Simultaneously, the Cell BBox Decoder selects features referring to the data cells (' < td > ', ' < ') and passes them through an attention network, an MLP, and a linear layer to predict the bounding boxes.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [
@@ -2215,6 +2307,29 @@
       "$ref": "#/figures/7"
     },
     {
+      "prov": [
+        {
+          "bbox": [
+            53.811783000000005,
+            575.89355,
+            385.93451,
+            583.76672
+          ],
+          "page": 8,
+          "span": [
+            0,
+            79
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "b. Structure predicted by TableFormer, with superimposed matched PDF cell text:",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
       "name": "Table",
       "type": "table",
       "$ref": "#/tables/6"
@@ -2253,9 +2368,55 @@
       "$ref": "#/figures/8"
     },
     {
+      "prov": [
+        {
+          "bbox": [
+            62.595001,
+            324.36508,
+            532.63049,
+            333.27164
+          ],
+          "page": 8,
+          "span": [
+            0,
+            112
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/9"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            50.112,
+            426.35013,
+            545.11377,
+            471.12265
+          ],
+          "page": 8,
+          "span": [
+            0,
+            397
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "name": "Picture",
@@ -3711,6 +3872,29 @@
       "prov": [
         {
           "bbox": [
+            50.112,
+            605.63605,
+            545.11371,
+            626.49762
+          ],
+          "page": 12,
+          "span": [
+            0,
+            245
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 7: Distribution of the tables across different dimensions per dataset. Simple vs complex tables per dataset and split, strict vs non strict html structures per dataset and table complexity, missing bboxes per dataset and table complexity.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
             61.569,
             560.20703,
             286.36511,
@@ -4518,6 +4702,29 @@
       "$ref": "#/figures/16"
     },
     {
+      "prov": [
+        {
+          "bbox": [
+            315.79001,
+            411.40909,
+            538.18524,
+            420.31564
+          ],
+          "page": 14,
+          "span": [
+            0,
+            55
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 13: Table predictions example on colorful table.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
       "name": "Table",
       "type": "table",
       "$ref": "#/tables/27"
@@ -4675,6 +4882,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/23"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            50.112,
+            262.80108999999993,
+            545.11383,
+            283.66263
+          ],
+          "page": 16,
+          "span": [
+            0,
+            153
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     }
   ],
   "figures": [
