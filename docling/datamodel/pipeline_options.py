@@ -269,6 +269,7 @@ class InferenceFramework(str, Enum):
     OPENAI = "openai"
     TRANSFORMERS_AutoModelForVision2Seq = "transformers-AutoModelForVision2Seq"
     TRANSFORMERS_AutoModelForCausalLM = "transformers-AutoModelForCausalLM"
+    TRANSFORMERS_LlavaForConditionalGeneration = "transformers-LlavaForConditionalGeneration"
 
 
 class HuggingFaceVlmOptions(BaseVlmOptions):

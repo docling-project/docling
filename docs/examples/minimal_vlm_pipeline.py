@@ -39,24 +39,56 @@ pipeline_options.force_backend_text = False
 ## Alternative VLM models:
 # pipeline_options.vlm_options = granite_vision_vlm_conversion_options
 
-# pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
-#     repo_id="mistralai/Pixtral-12B-Base-2409",
-#     # prompt="OCR the full page to markdown.",
-#     prompt="OCR this image and export it in MarkDown.",
-#     response_format=ResponseFormat.MARKDOWN,
-#     inference_framework=InferenceFramework.TRANSFORMERS,
-# )
+"""
+pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
+     repo_id="mistralai/Pixtral-12B-Base-2409",
+     prompt="OCR this image and export it in MarkDown.",
+     response_format=ResponseFormat.MARKDOWN,
+     inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
+)
+vlm_conversion_options = pixtral_vlm_conversion_options
+"""
 
 pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
+     repo_id="mistral-community/pixtral-12b",
+     prompt="OCR this image and export it in MarkDown.",
+     response_format=ResponseFormat.MARKDOWN,
+     inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
+)
+vlm_conversion_options = pixtral_vlm_conversion_options
+
+"""
+phi_vlm_conversion_options = HuggingFaceVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",
     # prompt="OCR the full page to markdown.",
     prompt="OCR this image and export it in MarkDown.",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForCausalLM,
 )
+vlm_conversion_options = phi_vlm_conversion_options
+"""
 
+"""
+pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
+    repo_id="mlx-community/pixtral-12b-bf16",
+    prompt="Convert this full page to markdown. Do not miss any text and only output the bare MarkDown!",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+)
+vlm_conversion_options = pixtral_vlm_conversion_options
+"""
 
-pipeline_options.vlm_options = pixtral_vlm_conversion_options
+"""
+qwen_vlm_conversion_options = HuggingFaceVlmOptions(
+    repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16",
+    prompt="Convert this full page to markdown. Do not miss any text and only output the bare MarkDown!",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+)
+vlm_conversion_options = qwen_vlm_conversion_options
+"""
+
+pipeline_options.vlm_options = vlm_conversion_options
 
 ## Set up pipeline for PDF or image inputs
 converter = DocumentConverter(

@@ -18,7 +18,6 @@ _log = logging.getLogger(__name__)
 
 
 class HuggingFaceVlmModel(BasePageModel):
-
     """
     def __init__(
         self,
@@ -92,7 +91,7 @@ class HuggingFaceVlmModel(BasePageModel):
                     # trust_remote_code=True,
                 )  # .to(self.device)
     """
-    
+
     @staticmethod
     def download_models(
         repo_id: str,

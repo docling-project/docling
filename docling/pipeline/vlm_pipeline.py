@@ -22,8 +22,14 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.api_vlm_model import ApiVlmModel
-from docling.models.hf_mlx_model import HuggingFaceMlxModel
-from docling.models.hf_vlm_model import HuggingFaceVlmModel
+
+# from docling.models.hf_vlm_model import HuggingFaceVlmModel
+from docling.models.hf_vlm_models.hf_vlm_mlx_model import (
+    HuggingFaceMlxModel
+)
+from docling.models.hf_vlm_models.hf_vlm_model_LlavaForConditionalGeneration import (
+    HuggingFaceVlmModel_LlavaForConditionalGeneration
+)
 from docling.models.hf_vlm_models.hf_vlm_model_AutoModelForCausalLM import (
     HuggingFaceVlmModel_AutoModelForCausalLM,
 )
@@ -107,18 +113,20 @@ class VlmPipeline(PaginatedPipeline):
                         vlm_options=vlm_options,
                     ),
                 ]
-            else:
-                _log.warning(
-                    "falling back to HuggingFaceVlmModel_AutoModelForVision2Seq pipeline"
-                )
+            elif (
+                vlm_options.inference_framework
+                == InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration
+            ):
                 self.build_pipe = [
-                    HuggingFaceVlmModel_AutoModelForVision2Seq(
+                    HuggingFaceVlmModel_LlavaForConditionalGeneration(
                         enabled=True,  # must be always enabled for this pipeline to make sense.
                         artifacts_path=artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
                     ),
-                ]
+                ]                
+            else:
+                raise ValueError(f"Could not instantiate the right type of VLM pipeline: {vlm_options.inference_framework}")
 
         self.enrichment_pipe = [
             # Other models working on `NodeItem` elements in the DoclingDocument
