@@ -100,6 +100,29 @@
       "prov": [
         {
           "bbox": [
+            226.89101,
+            254.01826000000005,
+            384.3548,
+            262.86505
+          ],
+          "page": 1,
+          "span": [
+            0,
+            35
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 1: This is an example image.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
             133.76801,
             122.51225,
             477.48172000000005,
@@ -146,6 +169,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/1"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            226.89101,
+            259.94226000000003,
+            384.3548,
+            268.78903
+          ],
+          "page": 2,
+          "span": [
+            0,
+            35
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 2: This is an example image.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [

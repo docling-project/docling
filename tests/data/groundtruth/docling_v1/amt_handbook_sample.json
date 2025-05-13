@@ -210,6 +210,29 @@
       "prov": [
         {
           "bbox": [
+            72.0,
+            60.99040200000002,
+            184.14828,
+            71.80239900000004
+          ],
+          "page": 1,
+          "span": [
+            0,
+            31
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 7-26. Self-locking nuts.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
             320.99231,
             656.34637,
             561.80835,
@@ -348,6 +371,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/1"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            321.0,
+            63.010403,
+            481.64931999999993,
+            73.82240300000001
+          ],
+          "page": 1,
+          "span": [
+            0,
+            46
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 7-27. Stainless steel self-locking nut.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     }
   ],
   "figures": [

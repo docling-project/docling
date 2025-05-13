@@ -1605,6 +1605,29 @@
       "prov": [
         {
           "bbox": [
+            136.8,
+            91.85700199999997,
+            316.44727,
+            100.18200000000002
+          ],
+          "page": 7,
+          "span": [
+            0,
+            43
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 1-2 Existing row and column controls",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
             64.800003,
             708.67725,
             335.49551,
@@ -2380,6 +2403,29 @@
         {
           "bbox": [
             136.8,
+            369.53699,
+            341.97659,
+            377.862
+          ],
+          "page": 10,
+          "span": [
+            0,
+            42
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 3-1 CREATE PERMISSION SQL statement",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            136.8,
             340.95599,
             215.37601,
             352.05600000000004
@@ -2614,6 +2660,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/10"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            136.8,
+            186.95709,
+            341.25662,
+            195.2821
+          ],
+          "page": 11,
+          "span": [
+            0,
+            50
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 3-5 Special registers and adopted authority",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [
@@ -3205,6 +3274,29 @@
         {
           "bbox": [
             64.800003,
+            610.13702,
+            293.13809,
+            618.46198
+          ],
+          "page": 14,
+          "span": [
+            0,
+            52
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 3-10 Column masks shown in System i Navigator",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            64.800003,
             577.63727,
             203.98521,
             589.62531
@@ -3462,6 +3554,29 @@
       "prov": [
         {
           "bbox": [
+            64.800003,
+            134.63710000000003,
+            347.43054,
+            142.96210999999994
+          ],
+          "page": 14,
+          "span": [
+            0,
+            65
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 3-11 Selecting the EMPLOYEES table from System i Navigator",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
             136.79959,
             687.27832,
             514.04858,
@@ -3510,9 +3625,55 @@
       "$ref": "#/figures/13"
     },
     {
+      "prov": [
+        {
+          "bbox": [
+            136.8,
+            303.117,
+            327.09329,
+            311.44202
+          ],
+          "page": 15,
+          "span": [
+            0,
+            44
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 4-68 Visual Explain with RCAC enabled",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/14"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            64.800003,
+            116.15710000000001,
+            227.10149,
+            124.48209999999995
+          ],
+          "page": 15,
+          "span": [
+            0,
+            37
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 4-69 Index advice with no RCAC",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [
