@@ -24,6 +24,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
     def __init__(
         self,
         enabled: bool,
+        description_type: str,
         enable_remote_services: bool,
         artifacts_path: Optional[Union[Path, str]],
         options: PictureDescriptionApiOptions,
@@ -31,6 +32,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
     ):
         super().__init__(
             enabled=enabled,
+            description_type=description_type,
             enable_remote_services=enable_remote_services,
             artifacts_path=artifacts_path,
             options=options,

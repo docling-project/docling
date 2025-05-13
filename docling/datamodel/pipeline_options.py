@@ -226,7 +226,7 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
     params: Dict[str, Any] = {}
     timeout: float = 20
 
-    prompt: str = "Describe this image in a few sentences."
+    prompt: str = "Describe this image in a few sentences. Extract semantic components from the image (objects, actions, colors, etc.) and generate a star-structure graph with the image as the central node. Link surrounding nodes with labeled relationships to form a unique ontology-style concept map and add this to the description of the image."
     provenance: str = ""
 
 
@@ -234,7 +234,7 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
     kind: ClassVar[Literal["vlm"]] = "vlm"
 
     repo_id: str
-    prompt: str = "Describe this image in a few sentences."
+    prompt: str = "Describe this image in a few sentences. Extract semantic components from the image (objects, actions, colors, etc.) and generate a star-structure graph with the image as the central node. Link surrounding nodes with labeled relationships to form a unique ontology-style concept map and add this to the description of the image."
     # Config from here https://huggingface.co/docs/transformers/en/main_classes/text_generation#transformers.GenerationConfig
     generation_config: Dict[str, Any] = dict(max_new_tokens=200, do_sample=False)
 
@@ -249,7 +249,7 @@ smolvlm_picture_description = PictureDescriptionVlmOptions(
 # phi_picture_description = PictureDescriptionVlmOptions(repo_id="microsoft/Phi-3-vision-128k-instruct")
 granite_picture_description = PictureDescriptionVlmOptions(
     repo_id="ibm-granite/granite-vision-3.1-2b-preview",
-    prompt="What is shown in this image?",
+    prompt="What is shown in this image? Extract semantic components from the image (objects, actions, colors, etc.) and generate a star-structure graph with the image as the central node. Link surrounding nodes with labeled relationships to form a unique ontology-style concept map and add this to the description of the image.",
 )
 
 
@@ -399,6 +399,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
     do_picture_classification: bool = False  # True: classify pictures in documents
     do_picture_description: bool = False  # True: run describe pictures in documents
+    do_table_description: bool = False # True: run describe tables in documents
     force_backend_text: bool = (
         False  # (To be used with vlms, or other generative models)
     )

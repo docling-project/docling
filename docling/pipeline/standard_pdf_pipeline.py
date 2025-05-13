@@ -99,6 +99,18 @@ class StandardPdfPipeline(PaginatedPipeline):
             raise RuntimeError(
                 f"The specified picture description kind is not supported: {pipeline_options.picture_description_options.kind}."
             )
+        
+        # Table description model
+        if (
+            table_description_model := self.get_table_description_model(
+                artifacts_path=artifacts_path
+            )
+        ) is None:
+            raise RuntimeError(
+                f"The specified table description kind is not supported: {pipeline_options.picture_description_options.kind}."
+            )
+
+
 
         self.enrichment_pipe = [
             # Code Formula Enrichment Model
@@ -121,12 +133,17 @@ class StandardPdfPipeline(PaginatedPipeline):
             ),
             # Document Picture description
             picture_description_model,
+            # Document Table description
+            table_description_model,
+
+
         ]
 
         if (
             self.pipeline_options.do_formula_enrichment
             or self.pipeline_options.do_code_enrichment
             or self.pipeline_options.do_picture_description
+            or self.pipeline_options.do_table_description
         ):
             self.keep_backend = True
 
@@ -165,10 +182,27 @@ class StandardPdfPipeline(PaginatedPipeline):
         return factory.create_instance(
             options=self.pipeline_options.picture_description_options,
             enabled=self.pipeline_options.do_picture_description,
+            description_type = 'picture',
             enable_remote_services=self.pipeline_options.enable_remote_services,
             artifacts_path=artifacts_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
+    
+    def get_table_description_model(
+        self, artifacts_path: Optional[Path] = None
+    ) -> Optional[PictureDescriptionBaseModel]:
+        factory = get_picture_description_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        return factory.create_instance(
+            options=self.pipeline_options.picture_description_options,
+            enabled=self.pipeline_options.do_table_description,
+            description_type = 'table',
+            enable_remote_services=self.pipeline_options.enable_remote_services,
+            artifacts_path=artifacts_path,
+            accelerator_options=self.pipeline_options.accelerator_options,
+        )
+
 
     def initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
         with TimeRecorder(conv_res, "page_init"):

@@ -7,6 +7,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
     PictureItem,
+    TableItem
 )
 from docling_core.types.doc.document import (  # TODO: move import to docling_core.types.doc
     PictureDescriptionData,
@@ -34,17 +35,22 @@ class PictureDescriptionBaseModel(
         *,
         enabled: bool,
         enable_remote_services: bool,
+        description_type: str,
         artifacts_path: Optional[Union[Path, str]],
         options: PictureDescriptionBaseOptions,
         accelerator_options: AcceleratorOptions,
     ):
         self.enabled = enabled
         self.options = options
+        self.description_type = description_type
         self.provenance = "not-implemented"
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
-        return self.enabled and isinstance(element, PictureItem)
-
+        if self.description_type == 'table':
+            return self.enabled and isinstance(element, TableItem)
+        elif self.description_type == 'picture':
+            return self.enabled and isinstance(element, PictureItem)
+        
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         raise NotImplementedError
 
@@ -59,9 +65,9 @@ class PictureDescriptionBaseModel(
             return
 
         images: List[Image.Image] = []
-        elements: List[PictureItem] = []
+        elements: List[PictureItem | TableItem] = []
         for el in element_batch:
-            assert isinstance(el.item, PictureItem)
+            assert isinstance(el.item, PictureItem) or isinstance(el.item, TableItem)
             describe_image = True
             # Don't describe the image if it's smaller than the threshold
             if len(el.item.prov) > 0:
@@ -76,7 +82,6 @@ class PictureDescriptionBaseModel(
             if describe_image:
                 elements.append(el.item)
                 images.append(el.image)
-
         outputs = self._annotate_images(images)
 
         for item, output in zip(elements, outputs):
