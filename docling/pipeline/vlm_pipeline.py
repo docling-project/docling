@@ -109,10 +109,10 @@ class VlmPipeline(PaginatedPipeline):
                 ]
             else:
                 _log.warning(
-                    "falling back to HuggingFaceVlmModel (AutoModelForVision2Seq) pipeline"
+                    "falling back to HuggingFaceVlmModel_AutoModelForVision2Seq pipeline"
                 )
                 self.build_pipe = [
-                    HuggingFaceVlmModel(
+                    HuggingFaceVlmModel_AutoModelForVision2Seq(
                         enabled=True,  # must be always enabled for this pipeline to make sense.
                         artifacts_path=artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,

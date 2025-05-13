@@ -42,9 +42,9 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             )
 
             self.device = decide_device(accelerator_options.device)
-            self.device = "cpu"  # device
+            self.device = "cpu" # FIXME
 
-            _log.debug(f"Available device for HuggingFace VLM: {self.device}")
+            _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             # PARAMETERS:
@@ -154,6 +154,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     ).to(self.device)
 
                     # Generate response
+                    start_time = time.time()
                     generate_ids = self.vlm_model.generate(
                         **inputs,
                         max_new_tokens=128,
@@ -162,13 +163,19 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     )
                     generate_ids = generate_ids[:, inputs["input_ids"].shape[1] :]
 
-                    # num_tokens = len(generate_ids[0])
+                    num_tokens = len(generate_ids[0])
+                    generation_time = time.time() - start_time
+                    
                     response = self.processor.batch_decode(
                         generate_ids,
                         skip_special_tokens=True,
                         clean_up_tokenization_spaces=False,
                     )[0]
 
+                    _log.debug(
+                        f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
+                    )
+                    
                     # inference_time = time.time() - start_time
                     # tokens_per_second = num_tokens / generation_time
                     # print("")

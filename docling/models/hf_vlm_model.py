@@ -18,6 +18,8 @@ _log = logging.getLogger(__name__)
 
 
 class HuggingFaceVlmModel(BasePageModel):
+
+    """
     def __init__(
         self,
         enabled: bool,
@@ -89,7 +91,8 @@ class HuggingFaceVlmModel(BasePageModel):
                     ),
                     # trust_remote_code=True,
                 )  # .to(self.device)
-
+    """
+    
     @staticmethod
     def download_models(
         repo_id: str,
@@ -111,6 +114,7 @@ class HuggingFaceVlmModel(BasePageModel):
 
         return Path(download_path)
 
+    """
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -185,3 +189,4 @@ class HuggingFaceVlmModel(BasePageModel):
                     page.predictions.vlm_response = VlmPrediction(text=page_tags)
 
                 yield page
+    """

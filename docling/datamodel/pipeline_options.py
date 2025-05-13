@@ -317,8 +317,7 @@ smoldocling_vlm_conversion_options = HuggingFaceVlmOptions(
 
 granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
     repo_id="ibm-granite/granite-vision-3.1-2b-preview",
-    # prompt="OCR the full page to markdown.",
-    prompt="OCR this image.",
+    prompt="OCR the full page to markdown.",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
 )
