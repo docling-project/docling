@@ -87,6 +87,7 @@
 <location><page_7><loc_22><loc_13><loc_89><loc_53></location>
 <caption>Figure 1-2 Existing row and column controls</caption>
 </figure>
+<caption><location><page_7><loc_22><loc_12><loc_52><loc_13></location>Figure 1-2 Existing row and column controls</caption>
 <subtitle-level-1><location><page_8><loc_11><loc_89><loc_55><loc_91></location>2.1.6 Change Function Usage CL command</subtitle-level-1>
 <paragraph><location><page_8><loc_22><loc_87><loc_89><loc_88></location>The following CL commands can be used to work with, display, or change function usage IDs:</paragraph>
 <paragraph><location><page_8><loc_22><loc_84><loc_49><loc_86></location>- GLYPH<SM590000> Work Function Usage ( WRKFCNUSG )</paragraph>
@@ -150,6 +151,7 @@
 <location><page_10><loc_22><loc_48><loc_89><loc_86></location>
 <caption>Figure 3-1 CREATE PERMISSION SQL statement</caption>
 </figure>
+<caption><location><page_10><loc_22><loc_47><loc_56><loc_48></location>Figure 3-1 CREATE PERMISSION SQL statement</caption>
 <subtitle-level-1><location><page_10><loc_22><loc_43><loc_35><loc_44></location>Column mask</subtitle-level-1>
 <paragraph><location><page_10><loc_22><loc_37><loc_89><loc_43></location>A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.</paragraph>
 <caption><location><page_11><loc_22><loc_90><loc_67><loc_91></location>Table 3-1 summarizes these special registers and their values.</caption>
@@ -172,6 +174,7 @@
 <location><page_11><loc_22><loc_25><loc_49><loc_51></location>
 <caption>Figure 3-5 Special registers and adopted authority</caption>
 </figure>
+<caption><location><page_11><loc_22><loc_24><loc_56><loc_25></location>Figure 3-5 Special registers and adopted authority</caption>
 <subtitle-level-1><location><page_11><loc_11><loc_20><loc_40><loc_21></location>3.2.2 Built-in global variables</subtitle-level-1>
 <paragraph><location><page_11><loc_22><loc_15><loc_85><loc_18></location>Built-in global variables are provided with the database manager and are used in SQL statements to retrieve scalar values that are associated with the variables.</paragraph>
 <paragraph><location><page_11><loc_22><loc_9><loc_87><loc_13></location>IBM DB2 for i supports nine different built-in global variables that are read only and maintained by the system. These global variables can be used to identify attributes of the database connection and used as part of the RCAC logic.</paragraph>
@@ -215,6 +218,7 @@
 <location><page_14><loc_10><loc_79><loc_89><loc_88></location>
 <caption>Figure 3-10 Column masks shown in System i Navigator</caption>
 </figure>
+<caption><location><page_14><loc_11><loc_77><loc_48><loc_78></location>Figure 3-10 Column masks shown in System i Navigator</caption>
 <subtitle-level-1><location><page_14><loc_11><loc_73><loc_33><loc_74></location>3.6.6 Activating RCAC</subtitle-level-1>
 <paragraph><location><page_14><loc_22><loc_67><loc_89><loc_71></location>Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:</paragraph>
 <paragraph><location><page_14><loc_22><loc_65><loc_67><loc_66></location>- 1. Run the SQL statements that are shown in Example 3-10.</paragraph>
@@ -230,16 +234,19 @@
 <location><page_14><loc_10><loc_18><loc_87><loc_46></location>
 <caption>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption>
 </figure>
+<caption><location><page_14><loc_11><loc_17><loc_57><loc_18></location>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption>
 <paragraph><location><page_15><loc_22><loc_87><loc_84><loc_91></location>- 2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</paragraph>
 <paragraph><location><page_15><loc_22><loc_32><loc_89><loc_36></location>- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</paragraph>
 <figure>
 <location><page_15><loc_22><loc_40><loc_89><loc_85></location>
 <caption>Figure 4-68 Visual Explain with RCAC enabled</caption>
 </figure>
+<caption><location><page_15><loc_22><loc_38><loc_53><loc_39></location>Figure 4-68 Visual Explain with RCAC enabled</caption>
 <figure>
 <location><page_15><loc_11><loc_16><loc_83><loc_30></location>
 <caption>Figure 4-69 Index advice with no RCAC</caption>
 </figure>
+<caption><location><page_15><loc_11><loc_15><loc_37><loc_16></location>Figure 4-69 Index advice with no RCAC</caption>
 <paragraph><location><page_16><loc_11><loc_11><loc_82><loc_91></location>THEN C . CUSTOMER_TAX_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( C . CUSTOMER_TAX_ID , 8 , 4 ) ) WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_DRIVERS_LICENSE_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_DRIVERS_LICENSE_NUMBER RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER ELSE '*************' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_LOGIN_ID_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_LOGIN_ID RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_LOGIN_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_LOGIN_ID ELSE '*****' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION ELSE '*****' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ANSWER_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION_ANSWER RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER ELSE '*****' END ENABLE ; ALTER TABLE BANK_SCHEMA.CUSTOMERS ACTIVATE ROW ACCESS CONTROL ACTIVATE COLUMN ACCESS CONTROL ;</paragraph>
 <paragraph><location><page_18><loc_47><loc_94><loc_68><loc_96></location>Back cover</paragraph>
 <subtitle-level-1><location><page_18><loc_4><loc_82><loc_73><loc_91></location>Row and Column Access Control Support in IBM DB2 for i</subtitle-level-1>

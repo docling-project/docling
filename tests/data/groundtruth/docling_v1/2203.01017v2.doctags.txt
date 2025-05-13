@@ -23,6 +23,7 @@
 <location><page_1><loc_52><loc_37><loc_88><loc_45></location>
 <caption>Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'.</caption>
 </figure>
+<caption><location><page_1><loc_50><loc_29><loc_89><loc_35></location>Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'.</caption>
 <table>
 <location><page_1><loc_52><loc_37><loc_88><loc_45></location>
 <row_0><col_0><body>0</col_0><col_1><body>1 2 1</col_1><col_2><body>1 2 1</col_2><col_3><body>1 2 1</col_3><col_4><body>1 2 1</col_4></row_0>
@@ -57,6 +58,7 @@
 <location><page_3><loc_51><loc_68><loc_90><loc_90></location>
 <caption>Figure 2: Distribution of the tables across different table dimensions in PubTabNet + FinTabNet datasets</caption>
 </figure>
+<caption><location><page_3><loc_50><loc_64><loc_89><loc_66></location>Figure 2: Distribution of the tables across different table dimensions in PubTabNet + FinTabNet datasets</caption>
 <paragraph><location><page_3><loc_50><loc_59><loc_71><loc_60></location>balance in the previous datasets.</paragraph>
 <paragraph><location><page_3><loc_50><loc_21><loc_89><loc_58></location>The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as "simple" when it does not contain row spans or column spans, otherwise it is "complex". The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits.</paragraph>
 <paragraph><location><page_3><loc_50><loc_10><loc_89><loc_20></location>Due to the heterogeneity across the dataset formats, it was necessary to combine all available data into one homogenized dataset before we could train our models for practical purposes. Given the size of PubTabNet, we adopted its annotation format and we extracted and converted all tables as PNG images with a resolution of 72 dpi. Additionally, we have filtered out tables with extreme sizes due to small</paragraph>
@@ -88,10 +90,12 @@
 <location><page_5><loc_12><loc_77><loc_85><loc_90></location>
 <caption>Figure 3: TableFormer takes in an image of the PDF and creates bounding box and HTML structure predictions that are synchronized. The bounding boxes grabs the content from the PDF and inserts it in the structure.</caption>
 </figure>
+<caption><location><page_5><loc_8><loc_72><loc_89><loc_74></location>Figure 3: TableFormer takes in an image of the PDF and creates bounding box and HTML structure predictions that are synchronized. The bounding boxes grabs the content from the PDF and inserts it in the structure.</caption>
 <figure>
 <location><page_5><loc_9><loc_36><loc_47><loc_67></location>
 <caption>Figure 4: Given an input image of a table, the Encoder produces fixed-length features that represent the input image. The features are then passed to both the Structure Decoder and Cell BBox Decoder . During training, the Structure Decoder receives 'tokenized tags' of the HTML code that represent the table structure. Afterwards, a transformer encoder and decoder architecture is employed to produce features that are received by a linear layer, and the Cell BBox Decoder. The linear layer is applied to the features to predict the tags. Simultaneously, the Cell BBox Decoder selects features referring to the data cells (' < td > ', ' < ') and passes them through an attention network, an MLP, and a linear layer to predict the bounding boxes.</caption>
 </figure>
+<caption><location><page_5><loc_8><loc_14><loc_47><loc_33></location>Figure 4: Given an input image of a table, the Encoder produces fixed-length features that represent the input image. The features are then passed to both the Structure Decoder and Cell BBox Decoder . During training, the Structure Decoder receives 'tokenized tags' of the HTML code that represent the table structure. Afterwards, a transformer encoder and decoder architecture is employed to produce features that are received by a linear layer, and the Cell BBox Decoder. The linear layer is applied to the features to predict the tags. Simultaneously, the Cell BBox Decoder selects features referring to the data cells (' < td > ', ' < ') and passes them through an attention network, an MLP, and a linear layer to predict the bounding boxes.</caption>
 <paragraph><location><page_5><loc_50><loc_63><loc_89><loc_68></location>forming classification, and adding an adaptive pooling layer of size 28*28. ResNet by default downsamples the image resolution by 32 and then the encoded image is provided to both the Structure Decoder , and Cell BBox Decoder .</paragraph>
 <paragraph><location><page_5><loc_50><loc_48><loc_89><loc_62></location>Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. "Scene Understanding", "Image Captioning"), something which we relate to the simplicity of table images.</paragraph>
 <paragraph><location><page_5><loc_50><loc_31><loc_89><loc_47></location>The transformer encoder receives an encoded image from the CNN Backbone Network and refines it through a multi-head dot-product attention layer, followed by a Feed Forward Network. During training, the transformer decoder receives as input the output feature produced by the transformer encoder, and the tokenized input of the HTML ground-truth tags. Using a stack of multi-head attention layers, different aspects of the tag sequence could be inferred. This is achieved by each attention head on a layer operating in a different subspace, and then combining altogether their attention score.</paragraph>
@@ -167,6 +171,7 @@
 <location><page_8><loc_50><loc_77><loc_91><loc_88></location>
 <caption>b. Structure predicted by TableFormer, with superimposed matched PDF cell text:</caption>
 </figure>
+<caption><location><page_8><loc_9><loc_73><loc_63><loc_74></location>b. Structure predicted by TableFormer, with superimposed matched PDF cell text:</caption>
 <table>
 <location><page_8><loc_9><loc_63><loc_49><loc_72></location>
 <caption>Text is aligned to match original for ease of viewing</caption>
@@ -196,10 +201,12 @@
 <location><page_8><loc_8><loc_44><loc_35><loc_52></location>
 <caption>Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.</caption>
 </figure>
+<caption><location><page_8><loc_10><loc_41><loc_87><loc_42></location>Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.</caption>
 <figure>
 <location><page_8><loc_35><loc_44><loc_61><loc_52></location>
 <caption>Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.</caption>
 </figure>
+<caption><location><page_8><loc_8><loc_54><loc_89><loc_59></location>Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.</caption>
 <figure>
 <location><page_8><loc_63><loc_44><loc_89><loc_52></location>
 </figure>
@@ -269,6 +276,7 @@
 <location><page_12><loc_9><loc_81><loc_89><loc_91></location>
 <caption>Figure 7: Distribution of the tables across different dimensions per dataset. Simple vs complex tables per dataset and split, strict vs non strict html structures per dataset and table complexity, missing bboxes per dataset and table complexity.</caption>
 </figure>
+<caption><location><page_12><loc_8><loc_76><loc_89><loc_79></location>Figure 7: Distribution of the tables across different dimensions per dataset. Simple vs complex tables per dataset and split, strict vs non strict html structures per dataset and table complexity, missing bboxes per dataset and table complexity.</caption>
 <paragraph><location><page_12><loc_10><loc_71><loc_47><loc_73></location>- · TableFormer output does not include the table cell content.</paragraph>
 <paragraph><location><page_12><loc_10><loc_67><loc_47><loc_69></location>- · There are occasional inaccuracies in the predictions of the bounding boxes.</paragraph>
 <paragraph><location><page_12><loc_50><loc_68><loc_89><loc_73></location>dian cell size for all table cells. The usage of median during the computations, helps to eliminate outliers caused by occasional column spans which are usually wider than the normal.</paragraph>
@@ -373,6 +381,7 @@
 <location><page_14><loc_52><loc_55><loc_87><loc_89></location>
 <caption>Figure 13: Table predictions example on colorful table.</caption>
 </figure>
+<caption><location><page_14><loc_52><loc_52><loc_88><loc_53></location>Figure 13: Table predictions example on colorful table.</caption>
 <table>
 <location><page_14><loc_52><loc_40><loc_85><loc_46></location>
 <caption>Figure 14: Example with multi-line text.</caption>
@@ -433,4 +442,5 @@
 <location><page_16><loc_11><loc_37><loc_86><loc_68></location>
 <caption>Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure.</caption>
 </figure>
+<caption><location><page_16><loc_8><loc_33><loc_89><loc_36></location>Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure.</caption>
 </document>

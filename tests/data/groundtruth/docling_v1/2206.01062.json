@@ -435,6 +435,29 @@
         {
           "bbox": [
             317.95499,
+            232.48476000000005,
+            559.80579,
+            251.91701
+          ],
+          "page": 1,
+          "span": [
+            0,
+            84
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 1: Four examples of complex page layouts across different document categories",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            317.95499,
             189.22498999999993,
             379.8205,
             199.53409
@@ -969,6 +992,29 @@
         {
           "bbox": [
             53.79800000000001,
+            536.45276,
+            294.04373,
+            555.88501
+          ],
+          "page": 3,
+          "span": [
+            0,
+            69
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 2: Distribution of DocLayNet pages across document categories.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            53.79800000000001,
             425.10983,
             294.27383,
             510.1964699999999
@@ -1226,6 +1272,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/2"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            53.79800000000001,
+            185.68075999999996,
+            295.64874,
+            237.99000999999998
+          ],
+          "page": 4,
+          "span": [
+            0,
+            281
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 3: Corpus Conversion Service annotation user interface. The PDF page is shown in the background, with overlaid text-cells (in darker shades). The annotation boxes can be drawn by dragging a rectangle over each segment with the respective label from the palette on the right.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [
@@ -1807,6 +1876,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/4"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            317.95499,
+            449.71581999999995,
+            559.80579,
+            512.98401
+          ],
+          "page": 6,
+          "span": [
+            0,
+            329
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Figure 5: Prediction performance (mAP@0.5-0.95) of a Mask R-CNN network with ResNet50 backbone trained on increasing fractions of the DocLayNet dataset. The learning curve flattens around the 80% mark, indicating that increasing the size of the DocLayNet dataset with similar data will not yield significantly better predictions.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [
@@ -2701,6 +2793,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/5"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            62.323874999999994,
+            343.73517,
+            318.50473,
+            349.71457
+          ],
+          "page": 9,
+          "span": [
+            0,
+            89
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Text Caption List-Item Formula Table Section-Header Picture Page-Header Page-Footer Title",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [
