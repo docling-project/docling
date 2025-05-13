@@ -8,22 +8,6 @@ INPUT_DIR = Path("tests/input")
 OUTPUT_DIR = Path("tests/output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-supported_exts = set()
-for fmt in InputFormat:
-    exts = FormatToExtensions.get(fmt, [])
-    if exts:
-        supported_exts.update(exts)
-    else:
-        supported_exts.add(fmt.value)
-supported_exts.add('xlsm')
-
-print(f"Supported extensions: {sorted(supported_exts)}")
-
-input_files = [f for f in INPUT_DIR.iterdir() if f.is_file() and f.suffix[1:].lower() in supported_exts]
-print(f"Found {len(input_files)} files to process: {[f.name for f in input_files]}")
-
-converter = DocumentConverter()
-
 def convert_paths(obj):
     if isinstance(obj, dict):
         return {k: convert_paths(v) for k, v in obj.items()}
@@ -34,14 +18,33 @@ def convert_paths(obj):
     else:
         return obj
 
-for file in input_files:
-    try:
-        print(f"Processing {file}...")
-        result = converter.convert(str(file))
-        out_path = OUTPUT_DIR / (file.stem + ".json")
-        result_dict = convert_paths(result.model_dump())
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(result_dict, f, ensure_ascii=False, indent=2)
-        print(f"Converted {file.name} -> {out_path.name}")
-    except Exception as e:
-        print(f"Failed to convert {file.name}: {e}")
+def test_backend_msexcel_xlsm():
+
+    supported_ext = 'xlsm'
+    
+    input_files = [f for f in INPUT_DIR.iterdir() if f.is_file() and f.suffix[1:].lower() == supported_ext]
+
+    converter = DocumentConverter()
+    
+    xlsm_files_processed = 0
+    for file in input_files:
+        try:
+
+            result = converter.convert(str(file))
+     
+            assert result is not None, f"Conversion failed for {file.name}"
+            out_path = OUTPUT_DIR / (file.stem + ".json")
+            result_dict = convert_paths(result.model_dump())
+            with open(out_path, "w", encoding="utf-8") as f:
+                json.dump(result_dict, f, ensure_ascii=False, indent=2)
+            
+            assert out_path.exists(), f"Output file {out_path} was not created"
+            xlsm_files_processed += 1
+                
+        except Exception as e:
+            assert False, f"Failed to convert {file.name}: {e}"
+
+    if input_files:
+        assert xlsm_files_processed > 0, "No xlsm files were processed despite being present"
+    else:
+        assert True, "No xlsm files were found to process"
