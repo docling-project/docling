@@ -270,6 +270,7 @@ class InferenceFramework(str, Enum):
     TRANSFORMERS_AutoModelForVision2Seq = "transformers-AutoModelForVision2Seq"
     TRANSFORMERS_AutoModelForCausalLM = "transformers-AutoModelForCausalLM"
 
+
 class HuggingFaceVlmOptions(BaseVlmOptions):
     kind: Literal["hf_model_options"] = "hf_model_options"
 

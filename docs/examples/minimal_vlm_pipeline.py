@@ -7,9 +7,9 @@ from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
+    HuggingFaceVlmOptions,
     InferenceFramework,
     ResponseFormat,
-    HuggingFaceVlmOptions,
     VlmPipelineOptions,
     smoldocling_vlm_mlx_conversion_options,
 )

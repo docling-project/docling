@@ -14,7 +14,6 @@ from docling.models.base_model import BasePageModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
-
 _log = logging.getLogger(__name__)
 
 
@@ -29,24 +28,23 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
         self.enabled = enabled
 
         self.trust_remote_code = True
-        
+
         self.vlm_options = vlm_options
+        print(self.vlm_options)
 
         if self.enabled:
             import torch
             from transformers import (  # type: ignore
                 AutoModelForCausalLM,
                 AutoProcessor,
-                GenerationConfig,
                 BitsAndBytesConfig,
+                GenerationConfig,
             )
-            
-            device = decide_device(accelerator_options.device)
-            self.device = 'cpu' #device
 
-            _log.debug(f"Available device for HuggingFace VLM: {device}")
-            print(f"Available device for HuggingFace VLM: {device}")
+            self.device = decide_device(accelerator_options.device)
+            self.device = "cpu"  # device
 
+            _log.debug(f"Available device for HuggingFace VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             # PARAMETERS:
@@ -97,11 +95,10 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
             model_path = artifacts_path
             print(f"model: {model_path}")
-                
+
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(model_path)
 
-                
     @staticmethod
     def download_models(
         repo_id: str,
@@ -134,75 +131,28 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    # hi_res_image = page.get_image(scale=2.0)  # 144dpi
-                    hi_res_image = page.get_image(scale=1.0)  # 72dpi
+                    hi_res_image = page.get_image(scale=2.0)  # 144dpi
+                    # hi_res_image = page.get_image(scale=1.0)  # 72dpi
 
-                    hi_res_image.show()
-                    
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
-
-                    # populate page_tags with predicted doc tags
-                    page_tags = ""
 
                     if hi_res_image:
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
-                    """
-                    messages = [
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": "This is a page from a document.",
-                                },
-                                {"type": "image"},
-                                {"type": "text", "text": self.param_question},
-                            ],
-                        }
-                    ]
-                    prompt = self.processor.apply_chat_template(
-                        messages, add_generation_prompt=False
-                    )
-                    inputs = self.processor(
-                        text=prompt, images=[hi_res_image], return_tensors="pt"
-                    )
-                    inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
-                    start_time = time.time()
-                    # Call model to generate:
-                    generated_ids = self.vlm_model.generate(
-                        **inputs, max_new_tokens=4096, use_cache=True
-                    )
-
-                    generation_time = time.time() - start_time
-                    generated_texts = self.processor.batch_decode(
-                        generated_ids[:, inputs["input_ids"].shape[1] :],
-                        skip_special_tokens=False,
-                    )[0]
-
-                    num_tokens = len(generated_ids[0])
-                    page_tags = generated_texts
-                    """
-
-                    hi_res_image.show()
-                    
                     # Define prompt structure
-                    user_prompt = '<|user|>'
-                    assistant_prompt = '<|assistant|>'
-                    prompt_suffix = '<|end|>'
-                    
-                    # Part 1: Image Processing
-                    print("\n--- IMAGE PROCESSING ---")
-                    # image_url = 'https://www.ilankelman.org/stopsigns/australia.jpg'
-                    prompt = f'{user_prompt}<|image_1|>Convert this image into MarkDown and only return the bare MarkDown!{prompt_suffix}{assistant_prompt}'
-                    print(f'>>> Prompt\n{prompt}')
+                    user_prompt = "<|user|>"
+                    assistant_prompt = "<|assistant|>"
+                    prompt_suffix = "<|end|>"
 
-                    inputs = self.processor(text=prompt, images=hi_res_image, return_tensors='pt').to(self.device) #.to('cuda:0')
-                    print("inputs: ", inputs.keys())
-                    
+                    # Part 1: Image Processing
+                    prompt = f"{user_prompt}<|image_1|>Convert this image into MarkDown and only return the bare MarkDown!{prompt_suffix}{assistant_prompt}"
+
+                    inputs = self.processor(
+                        text=prompt, images=hi_res_image, return_tensors="pt"
+                    ).to(self.device)
+
                     # Generate response
                     generate_ids = self.vlm_model.generate(
                         **inputs,
@@ -210,19 +160,14 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                         generation_config=self.generation_config,
                         num_logits_to_keep=1,
                     )
-                    generate_ids = generate_ids[:, inputs['input_ids'].shape[1]:]
+                    generate_ids = generate_ids[:, inputs["input_ids"].shape[1] :]
 
-                    num_tokens = len(generate_ids[0])
+                    # num_tokens = len(generate_ids[0])
                     response = self.processor.batch_decode(
                         generate_ids,
                         skip_special_tokens=True,
                         clean_up_tokenization_spaces=False,
                     )[0]
-                    print(f'>>> Response\n{response}')
-                    
-                    _log.debug(
-                        f"Generated {num_tokens} tokens."
-                    )
 
                     # inference_time = time.time() - start_time
                     # tokens_per_second = num_tokens / generation_time
