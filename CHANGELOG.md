@@ -1,3 +1,10 @@
+## [v2.31.2](https://github.com/docling-project/docling/releases/tag/v2.31.2) - 2025-05-13
+
+### Fix
+
+* AsciiDoc header identification (#1562) ([#1563](https://github.com/docling-project/docling/issues/1563)) ([`4046d0b`](https://github.com/docling-project/docling/commit/4046d0b2f38254679de5fc78aaf2fe630d6bb61c))
+* Restrict click version and update lock file ([#1582](https://github.com/docling-project/docling/issues/1582)) ([`8baa85a`](https://github.com/docling-project/docling/commit/8baa85a49d3a456d198c52aac8e0b4ac70c92e72))
+
 ## [v2.31.1](https://github.com/docling-project/docling/releases/tag/v2.31.1) - 2025-05-12
 
 ### Fix
