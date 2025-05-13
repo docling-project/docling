@@ -10,6 +10,7 @@
 <location><page_1><loc_12><loc_10><loc_52><loc_31></location>
 <caption>Figure 7-26. Self-locking nuts.</caption>
 </figure>
+<caption><location><page_1><loc_12><loc_8><loc_31><loc_9></location>Figure 7-26. Self-locking nuts.</caption>
 <paragraph><location><page_1><loc_54><loc_85><loc_95><loc_94></location>the most common ranges in size for No. 6 up to 1 / 4 inch, the Rol-top ranges from 1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.</paragraph>
 <paragraph><location><page_1><loc_54><loc_83><loc_55><loc_85></location>.</paragraph>
 <subtitle-level-1><location><page_1><loc_54><loc_82><loc_76><loc_83></location>Stainless Steel Self-Locking Nut</subtitle-level-1>
@@ -20,4 +21,5 @@
 <location><page_1><loc_54><loc_11><loc_94><loc_46></location>
 <caption>Figure 7-27. Stainless steel self-locking nut.</caption>
 </figure>
+<caption><location><page_1><loc_54><loc_8><loc_81><loc_10></location>Figure 7-27. Stainless steel self-locking nut.</caption>
 </document>

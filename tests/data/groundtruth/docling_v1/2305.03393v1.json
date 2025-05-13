@@ -345,6 +345,29 @@
         {
           "bbox": [
             134.765,
+            591.77942,
+            480.59189,
+            665.66583
+          ],
+          "page": 2,
+          "span": [
+            0,
+            574
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Fig. 1. Comparison between HTML and OTSL table structure representation: (A) table-example with complex row and column headers, including a 2D empty span, (B) minimal graphical representation of table structure using rectangular layout, (C) HTML representation, (D) OTSL representation. This example demonstrates many of the key-features of OTSL, namely its reduced vocabulary size (12 versus 5 in this case), its reduced sequence length (55 versus 30) and a enhanced internal structure (variable token sequence length per row in HTML versus a fixed length of rows in OTSL).",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            134.765,
             271.11330999999996,
             480.59232000000003,
             339.68622
@@ -643,6 +666,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/1"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            145.60701,
+            562.78821,
+            469.75223000000005,
+            570.92072
+          ],
+          "page": 5,
+          "span": [
+            0,
+            73
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Fig. 2. Frequency of tokens in HTML and OTSL as they appear in PubTabNet.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [
@@ -1022,6 +1068,29 @@
         {
           "bbox": [
             134.765,
+            636.15033,
+            480.5874,
+            666.2008100000002
+          ],
+          "page": 7,
+          "span": [
+            0,
+            207
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Fig. 3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            134.765,
             477.89725,
             246.65197999999998,
             486.70419
@@ -1394,6 +1463,29 @@
       "prov": [
         {
           "bbox": [
+            134.76501,
+            288.26035,
+            480.59082,
+            307.35187
+          ],
+          "page": 8,
+          "span": [
+            0,
+            104
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Fig. 4. Architecture sketch of the TableFormer model, which is a representative for the Im2Seq approach.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
             134.765,
             127.14524000000006,
             480.5917400000001,
@@ -1662,6 +1754,29 @@
       "prov": [
         {
           "bbox": [
+            134.765,
+            352.28284,
+            480.59106,
+            394.40988
+          ],
+          "page": 10,
+          "span": [
+            0,
+            270
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Fig. 5. The OTSL model produces more accurate bounding boxes with less overlap (E) than the HTML model (D), when predicting the structure of a sparse table (A), at twice the inference speed because of shorter sequence length (B),(C). \"PMC2807444_006_00.png\" PubTabNet. \u03bc",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
             227.91466,
             116.65359999999998,
             230.10028,
@@ -1708,6 +1823,29 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/5"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            134.765,
+            614.23236,
+            480.58838000000003,
+            666.2008100000002
+          ],
+          "page": 11,
+          "span": [
+            0,
+            390
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "Fig. 6. Visualization of predicted structure and detected bounding boxes on a complex table with many rows. The OTSL model (B) captured repeating pattern of horizontally merged cells from the GT (A), unlike the HTML model (C). The HTML model also didn't complete the HTML sequence correctly and displayed a lot more of drift and overlap of bounding boxes. \"PMC5406406_003_01.png\" PubTabNet.",
+      "type": "caption",
+      "payload": null,
+      "name": "Caption",
+      "font": null
     },
     {
       "prov": [

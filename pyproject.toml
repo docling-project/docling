@@ -90,6 +90,7 @@ pillow = ">=10.0.0,<12.0.0"
 tqdm = "^4.65.0"
 pluggy = "^1.0.0"
 pylatexenc = "^2.10"
+click = "<8.2.0"
 
 [tool.poetry.group.dev.dependencies]
 python = "^3.9.2"
