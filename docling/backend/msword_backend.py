@@ -359,15 +359,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def _get_format_from_run(cls, run: Run) -> Optional[Formatting]:
-        has_any_formatting = run.bold or run.italic or run.underline
-        return (
-            Formatting(
-                bold=run.bold or False,
-                italic=run.italic or False,
-                underline=run.underline or False,
-            )
-            if has_any_formatting
-            else None
+        # The .bold and .italic properties are booleans, but .underline can be an enum
+        # like WD_UNDERLINE.THICK (value 6), so we need to convert it to a boolean
+        has_bold = run.bold or False
+        has_italic = run.italic or False
+        # Convert any non-None underline value to True
+        has_underline = bool(run.underline is not None and run.underline)
+
+        return Formatting(
+            bold=has_bold,
+            italic=has_italic,
+            underline=has_underline,
         )
 
     def _get_paragraph_elements(self, paragraph: Paragraph):
