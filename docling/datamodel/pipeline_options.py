@@ -261,6 +261,7 @@ class BaseVlmOptions(BaseModel):
 class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
     MARKDOWN = "markdown"
+    HTML = "html"
 
 
 class InferenceFramework(str, Enum):
@@ -285,6 +286,11 @@ class HuggingFaceVlmOptions(BaseVlmOptions):
     inference_framework: InferenceFramework
     response_format: ResponseFormat
 
+    scale: float = 2.0
+    
+    use_kv_cache: bool = True
+    max_new_tokens: int = 4096
+    
     @property
     def repo_cache_folder(self) -> str:
         return self.repo_id.replace("/", "--")

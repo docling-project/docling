@@ -155,7 +155,7 @@ class VlmPredictionToken(BaseModel):
     
 class VlmPrediction(BaseModel):
     text: str = ""
-    generated_tokens: list[VlmPredictionToken] = -1
+    generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
 
 

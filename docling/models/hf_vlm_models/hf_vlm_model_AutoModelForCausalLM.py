@@ -42,17 +42,19 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             )
 
             self.device = decide_device(accelerator_options.device)
-            self.device = "cpu"  # FIXME
 
-            self.use_cache = True
-            self.max_new_tokens = 64  # FIXME
+            if self.device=="mlx":
+                _log.warning(f"Mapping mlx to cpu for AutoModelForCausalLM")
+                self.device = cpu
+            
+            self.use_cache = vlm_options.use_kv_cache
+            self.max_new_tokens = vlm_options.max_new_tokens
 
             _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             # PARAMETERS:
             if artifacts_path is None:
-                # artifacts_path = self.download_models(self.vlm_options.repo_id)
                 artifacts_path = HuggingFaceVlmModel.download_models(
                     self.vlm_options.repo_id
                 )
@@ -100,7 +102,6 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 ).to(self.device)
 
             model_path = artifacts_path
-            print(f"model: {model_path}")
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(model_path)
@@ -116,7 +117,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=2.0)  # 144dpi
+                    hi_res_image = page.get_image(scale=self.vlm_options.scale)  # 144dpi
                     # hi_res_image = page.get_image(scale=1.0)  # 72dpi
 
                     if hi_res_image is not None:

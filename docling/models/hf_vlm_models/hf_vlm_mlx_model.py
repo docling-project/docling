@@ -28,8 +28,7 @@ class HuggingFaceMlxModel(BasePageModel):
         self.enabled = enabled
 
         self.vlm_options = vlm_options
-
-        self.max_tokens=4096
+        self.max_tokens = vlm_options.max_new_tokens
         
         if self.enabled:
             try:
@@ -42,7 +41,6 @@ class HuggingFaceMlxModel(BasePageModel):
                 )
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
-            _log.debug(f"model init: {repo_cache_folder}")
 
             self.apply_chat_template = apply_chat_template
             self.stream_generate = stream_generate
@@ -52,7 +50,6 @@ class HuggingFaceMlxModel(BasePageModel):
                 _log.debug(
                     f"before HuggingFaceVlmModel.download_models: {self.vlm_options.repo_id}"
                 )
-                # artifacts_path = self.download_models(self.vlm_options.repo_id)
                 artifacts_path = HuggingFaceVlmModel.download_models(
                     self.vlm_options.repo_id,
                     progress=True,
@@ -60,38 +57,11 @@ class HuggingFaceMlxModel(BasePageModel):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
-            _log.debug(f"downloaded model: {artifacts_path}")
-
-            self.param_question = vlm_options.prompt  # "Perform Layout Analysis."
+            self.param_question = vlm_options.prompt
 
             ## Load the model
-            _log.debug("start loading model ...")
-            self.vlm_model, self.processor = load(artifacts_path)
-            _log.debug("loaded model ...")
+            self.vlm_model, self.processor = load(artifacts_path)            
             self.config = load_config(artifacts_path)
-
-    """
-    @staticmethod
-    def download_models(
-        repo_id: str,
-        local_dir: Optional[Path] = None,
-        force: bool = False,
-        progress: bool = False,
-    ) -> Path:
-        from huggingface_hub import snapshot_download
-        from huggingface_hub.utils import disable_progress_bars
-
-        if not progress:
-            disable_progress_bars()
-        download_path = snapshot_download(
-            repo_id=repo_id,
-            force_download=force,
-            local_dir=local_dir,
-            # revision="v0.0.1",
-        )
-
-        return Path(download_path)
-    """
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -104,8 +74,7 @@ class HuggingFaceMlxModel(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=2.0)  # 144dpi
-                    # hi_res_image = page.get_image(scale=1.0)  # 72dpi
+                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
@@ -136,7 +105,6 @@ class HuggingFaceMlxModel(BasePageModel):
                         max_tokens=4096,
                         verbose=False,
                     ):
-                        print(token.logprobs.shape)
                         if len(token.logprobs.shape)==1:
                             tokens.append(VlmPredictionToken(text=token.text,
                                                              token=token.token,
@@ -145,20 +113,15 @@ class HuggingFaceMlxModel(BasePageModel):
                             tokens.append(VlmPredictionToken(text=token.text,
                                                              token=token.token,
                                                              logprob=token.logprobs[0, token.token]))
-                            
                         
-                        # print(token.text, end="", flush=True)
-                        output += token.text
-                        
+                        output += token.text                        
                         if "</doctag>" in token.text:
                             break
 
                     generation_time = time.time() - start_time
                     page_tags = output
-
-                    print(tokens)
                     
-                    _log.debug(f"Generation time {generation_time:.2f} seconds.")
+                    _log.debug(f"{generation_time:.2f} seconds for {len(tokens)} tokens ({len(tokens)/generation_time} tokens/sec).")
                     page.predictions.vlm_response = VlmPrediction(text=page_tags,
                                                                   generation_time=generation_time,
                                                                   generated_tokens=tokens)
