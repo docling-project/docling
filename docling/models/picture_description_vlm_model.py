@@ -1,6 +1,7 @@
+import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Tuple, Type, Union
 
 from PIL import Image
 
@@ -11,6 +12,8 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.utils.accelerator_utils import decide_device
+
+_log = logging.getLogger(__name__)
 
 
 class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
@@ -103,6 +106,45 @@ class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
         # TODO: do batch generation
 
         for image in images:
+            # Prepare inputs
+            prompt = self.processor.apply_chat_template(
+                messages, add_generation_prompt=True
+            )
+            inputs = self.processor(text=prompt, images=[image], return_tensors="pt")
+            inputs = inputs.to(self.device)
+
+            # Generate outputs
+            generated_ids = self.model.generate(
+                **inputs,
+                generation_config=GenerationConfig(**self.options.generation_config),
+            )
+            generated_texts = self.processor.batch_decode(
+                generated_ids[:, inputs["input_ids"].shape[1] :],
+                skip_special_tokens=True,
+            )
+
+            yield generated_texts[0].strip()
+
+    def _annotate_with_context(
+        self, image_context_map: Iterable[Tuple[Image.Image, str]]
+    ) -> Iterable[str]:
+        from transformers import GenerationConfig
+
+        for image, context in image_context_map:
+            # Create input messages with context
+            context_prompt = f"{context}\n{self.options.prompt}"
+            _log.debug("Prompt: %s", context_prompt)
+
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image"},
+                        {"type": "text", "text": context_prompt},
+                    ],
+                },
+            ]
+
             # Prepare inputs
             prompt = self.processor.apply_chat_template(
                 messages, add_generation_prompt=True
