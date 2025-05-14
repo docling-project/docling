@@ -17,7 +17,7 @@ _log = logging.getLogger(__name__)
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("../../tests/data/pdf/2206.01062.pdf")
+    input_doc_path = Path(__file__) / "../../tests/data/pdf/2206.01062.pdf"
 
     ###########################################################################
 

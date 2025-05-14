@@ -19,7 +19,7 @@ IMAGE_RESOLUTION_SCALE = 2.0
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("../../tests/data/pdf/2206.01062.pdf")
+    input_doc_path = Path(__file__) / "../../tests/data/pdf/2206.01062.pdf"
     output_dir = Path("scratch")
 
     # Important: For operating with page images, we must keep them, otherwise the DocumentConverter

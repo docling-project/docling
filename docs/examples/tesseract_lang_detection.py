@@ -9,7 +9,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path("../../tests/data/pdf/2206.01062.pdf")
+    input_doc = Path(__file__) / "../../tests/data/pdf/2206.01062.pdf"
 
     # Set lang=["auto"] with a tesseract OCR engine: TesseractOcrOptions, TesseractCliOcrOptions
     # ocr_options = TesseractOcrOptions(lang=["auto"])
