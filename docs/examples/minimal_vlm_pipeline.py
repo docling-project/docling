@@ -50,10 +50,10 @@ vlm_conversion_options = pixtral_vlm_conversion_options
 """
 
 pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
-     repo_id="mistral-community/pixtral-12b",
-     prompt="OCR this image and export it in MarkDown.",
-     response_format=ResponseFormat.MARKDOWN,
-     inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
+    repo_id="mistral-community/pixtral-12b",
+    prompt="OCR this image and export it in MarkDown.",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
 )
 vlm_conversion_options = pixtral_vlm_conversion_options
 

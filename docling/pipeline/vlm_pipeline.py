@@ -24,17 +24,15 @@ from docling.datamodel.settings import settings
 from docling.models.api_vlm_model import ApiVlmModel
 
 # from docling.models.hf_vlm_model import HuggingFaceVlmModel
-from docling.models.hf_vlm_models.hf_vlm_mlx_model import (
-    HuggingFaceMlxModel
-)
-from docling.models.hf_vlm_models.hf_vlm_model_LlavaForConditionalGeneration import (
-    HuggingFaceVlmModel_LlavaForConditionalGeneration
-)
+from docling.models.hf_vlm_models.hf_vlm_mlx_model import HuggingFaceMlxModel
 from docling.models.hf_vlm_models.hf_vlm_model_AutoModelForCausalLM import (
     HuggingFaceVlmModel_AutoModelForCausalLM,
 )
 from docling.models.hf_vlm_models.hf_vlm_model_AutoModelForVision2Seq import (
     HuggingFaceVlmModel_AutoModelForVision2Seq,
+)
+from docling.models.hf_vlm_models.hf_vlm_model_LlavaForConditionalGeneration import (
+    HuggingFaceVlmModel_LlavaForConditionalGeneration,
 )
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -124,9 +122,11 @@ class VlmPipeline(PaginatedPipeline):
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
                     ),
-                ]                
+                ]
             else:
-                raise ValueError(f"Could not instantiate the right type of VLM pipeline: {vlm_options.inference_framework}")
+                raise ValueError(
+                    f"Could not instantiate the right type of VLM pipeline: {vlm_options.inference_framework}"
+                )
 
         self.enrichment_pipe = [
             # Other models working on `NodeItem` elements in the DoclingDocument

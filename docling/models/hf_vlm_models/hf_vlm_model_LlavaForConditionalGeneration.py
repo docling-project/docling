@@ -4,6 +4,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional
 
+from transformers import AutoProcessor, LlavaForConditionalGeneration
+
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -11,10 +13,9 @@ from docling.datamodel.pipeline_options import (
     HuggingFaceVlmOptions,
 )
 from docling.models.base_model import BasePageModel
+from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
-
-from transformers import AutoProcessor, LlavaForConditionalGeneration
 
 _log = logging.getLogger(__name__)
 
@@ -32,41 +33,45 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
         self.trust_remote_code = True
 
         self.vlm_options = vlm_options
-        print(self.vlm_options)
 
         if self.enabled:
             import torch
             from transformers import (  # type: ignore
-                LlavaForConditionalGeneration,
                 AutoProcessor,
+                LlavaForConditionalGeneration,
             )
 
             self.device = decide_device(accelerator_options.device)
             self.device = "cpu"  # FIXME
 
             torch.set_num_threads(12)  # Adjust the number as needed
-            
+
             _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             # PARAMETERS:
             if artifacts_path is None:
-                artifacts_path = self.download_models(self.vlm_options.repo_id)
+                # artifacts_path = self.download_models(self.vlm_options.repo_id)
+                artifacts_path = HuggingFaceVlmModel.download_models(
+                    self.vlm_options.repo_id
+                )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
             model_path = artifacts_path
             print(f"model: {model_path}")
 
-            self.max_new_tokens = 64 # FIXME
-            
+            self.max_new_tokens = 64  # FIXME
+
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
                 trust_remote_code=self.trust_remote_code,
             )
-            self.vlm_model = LlavaForConditionalGeneration.from_pretrained(artifacts_path).to(self.device)
+            self.vlm_model = LlavaForConditionalGeneration.from_pretrained(
+                artifacts_path
+            ).to(self.device)
 
-    
+    """
     @staticmethod
     def download_models(
         repo_id: str,
@@ -87,6 +92,7 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
         )
 
         return Path(download_path)
+    """
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -109,20 +115,22 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
-                    images = [
-                        hi_res_image
-                    ]
+                    images = [hi_res_image]
                     prompt = "<s>[INST]Describe the images.\n[IMG][/INST]"
-                    
-                    inputs = self.processor(text=prompt, images=images, return_tensors="pt", use_fast=False).to(self.device) #.to("cuda")
+
+                    inputs = self.processor(
+                        text=prompt, images=images, return_tensors="pt", use_fast=False
+                    ).to(self.device)  # .to("cuda")
                     generate_ids = self.vlm_model.generate(
                         **inputs,
                         max_new_tokens=self.max_new_tokens,
-                        use_cache=True  # Enables KV caching which can improve performance
+                        use_cache=True,  # Enables KV caching which can improve performance
                     )
-                    response = self.processor.batch_decode(generate_ids,
-                                                           skip_special_tokens=True,
-                                                           clean_up_tokenization_spaces=False)[0]
+                    response = self.processor.batch_decode(
+                        generate_ids,
+                        skip_special_tokens=True,
+                        clean_up_tokenization_spaces=False,
+                    )[0]
                     print(f"response: {response}")
                     """
                     _log.debug(

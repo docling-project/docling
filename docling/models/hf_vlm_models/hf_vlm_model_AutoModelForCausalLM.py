@@ -11,6 +11,7 @@ from docling.datamodel.pipeline_options import (
     HuggingFaceVlmOptions,
 )
 from docling.models.base_model import BasePageModel
+from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
@@ -30,7 +31,6 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
         self.trust_remote_code = True
 
         self.vlm_options = vlm_options
-        print(self.vlm_options)
 
         if self.enabled:
             import torch
@@ -49,7 +49,10 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
             # PARAMETERS:
             if artifacts_path is None:
-                artifacts_path = self.download_models(self.vlm_options.repo_id)
+                # artifacts_path = self.download_models(self.vlm_options.repo_id)
+                artifacts_path = HuggingFaceVlmModel.download_models(
+                    self.vlm_options.repo_id
+                )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
@@ -99,6 +102,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(model_path)
 
+    """
     @staticmethod
     def download_models(
         repo_id: str,
@@ -119,6 +123,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
         )
 
         return Path(download_path)
+    """
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
