@@ -76,7 +76,7 @@ class ExamplePictureClassifierPipeline(StandardPdfPipeline):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path(__file__) / "../../tests/data/pdf/2206.01062.pdf"
+    input_doc_path = Path(__file__).parent / "../../tests/data/pdf/2206.01062.pdf"
 
     pipeline_options = ExamplePictureClassifierPipelineOptions()
     pipeline_options.images_scale = 2.0

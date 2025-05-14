@@ -122,10 +122,10 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     input_doc_paths = [
-        Path(__file__) / "../../tests/data/pdf/2206.01062.pdf",
-        Path(__file__) / "../../tests/data/pdf/2203.01017v2.pdf",
-        Path(__file__) / "../../tests/data/pdf/2305.03393v1.pdf",
-        Path(__file__) / "../../tests/data/pdf/redp5110_sampled.pdf",
+        Path(__file__).parent / "../../tests/data/pdf/2206.01062.pdf",
+        Path(__file__).parent / "../../tests/data/pdf/2203.01017v2.pdf",
+        Path(__file__).parent / "../../tests/data/pdf/2305.03393v1.pdf",
+        Path(__file__).parent / "../../tests/data/pdf/redp5110_sampled.pdf",
     ]
 
     # buf = BytesIO(Path("./test/data/2206.01062.pdf").open("rb").read())

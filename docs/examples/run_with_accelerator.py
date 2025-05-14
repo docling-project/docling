@@ -11,7 +11,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path(__file__) / "../../tests/data/pdf/2206.01062.pdf"
+    input_doc = Path(__file__).parent / "../../tests/data/pdf/2206.01062.pdf"
 
     # Explicitly set the accelerator
     # accelerator_options = AcceleratorOptions(

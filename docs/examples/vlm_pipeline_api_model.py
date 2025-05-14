@@ -69,8 +69,8 @@ def watsonx_vlm_options(model: str, prompt: str):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    # input_doc_path = Path(__file__) / "../../tests/data/pdf/2206.01062.pdf"
-    input_doc_path = Path(__file__) / "../../tests/data/pdf/2305.03393v1-pg9.pdf"
+    # input_doc_path = Path(__file__).parent / "../../tests/data/pdf/2206.01062.pdf"
+    input_doc_path = Path(__file__).parent / "../../tests/data/pdf/2305.03393v1-pg9.pdf"
 
     pipeline_options = VlmPipelineOptions(
         enable_remote_services=True  # <-- this is required!

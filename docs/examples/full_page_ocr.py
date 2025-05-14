@@ -9,7 +9,7 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path(__file__) / "../../tests/data/pdf/2206.01062.pdf"
+    input_doc = Path(__file__).parent / "../../tests/data/pdf/2206.01062.pdf"
 
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
