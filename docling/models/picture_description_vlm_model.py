@@ -21,6 +21,7 @@ class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
     def __init__(
         self,
         enabled: bool,
+        description_type: str,
         enable_remote_services: bool,
         artifacts_path: Optional[Union[Path, str]],
         options: PictureDescriptionVlmOptions,
@@ -28,6 +29,7 @@ class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
     ):
         super().__init__(
             enabled=enabled,
+            description_type=description_type,
             enable_remote_services=enable_remote_services,
             artifacts_path=artifacts_path,
             options=options,
@@ -57,9 +59,7 @@ class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
                 artifacts_path,
                 torch_dtype=torch.bfloat16,
                 _attn_implementation=(
-                    "flash_attention_2"
-                    if self.device.startswith("cuda")
-                    and accelerator_options.cuda_use_flash_attention2
+                    "flash_attention_2" if self.device.startswith("cuda") and accelerator_options.cuda_use_flash_attention2
                     else "eager"
                 ),
             ).to(self.device)
