@@ -225,6 +225,7 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
     headers: Dict[str, str] = {}
     params: Dict[str, Any] = {}
     timeout: float = 20
+    concurrency: int = 1
 
     prompt: str = "Describe this image in a few sentences. Extract semantic components from the image (objects, actions, colors, etc.) and generate a star-structure graph with the image as the central node. Link surrounding nodes with labeled relationships to form a unique ontology-style concept map and add this to the description of the image."
     provenance: str = ""
@@ -295,6 +296,7 @@ class ApiVlmOptions(BaseVlmOptions):
     params: Dict[str, Any] = {}
     scale: float = 2.0
     timeout: float = 60
+    concurrency: int = 1
     response_format: ResponseFormat
 
 
