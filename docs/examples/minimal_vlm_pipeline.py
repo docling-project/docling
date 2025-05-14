@@ -49,6 +49,7 @@ pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
 vlm_conversion_options = pixtral_vlm_conversion_options
 """
 
+"""
 pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
     repo_id="mistral-community/pixtral-12b",
     prompt="OCR this image and export it in MarkDown.",
@@ -56,6 +57,7 @@ pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
     inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
 )
 vlm_conversion_options = pixtral_vlm_conversion_options
+"""
 
 """
 phi_vlm_conversion_options = HuggingFaceVlmOptions(
@@ -68,15 +70,13 @@ phi_vlm_conversion_options = HuggingFaceVlmOptions(
 vlm_conversion_options = phi_vlm_conversion_options
 """
 
-"""
 pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
     repo_id="mlx-community/pixtral-12b-bf16",
-    prompt="Convert this full page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
 )
 vlm_conversion_options = pixtral_vlm_conversion_options
-"""
 
 """
 qwen_vlm_conversion_options = HuggingFaceVlmOptions(

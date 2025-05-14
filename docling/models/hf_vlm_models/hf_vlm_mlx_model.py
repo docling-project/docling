@@ -40,22 +40,29 @@ class HuggingFaceMlxModel(BasePageModel):
                 )
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
+            print(f"model init: {repo_cache_folder}")
+
             self.apply_chat_template = apply_chat_template
             self.stream_generate = stream_generate
 
             # PARAMETERS:
             if artifacts_path is None:
+                print(f"before HuggingFaceVlmModel.download_models: {self.vlm_options.repo_id}")
                 # artifacts_path = self.download_models(self.vlm_options.repo_id)
                 artifacts_path = HuggingFaceVlmModel.download_models(
-                    self.vlm_options.repo_id
+                    self.vlm_options.repo_id, progress=True,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
+            print(f"downloaded model: {artifacts_path}")
+                
             self.param_question = vlm_options.prompt  # "Perform Layout Analysis."
 
             ## Load the model
+            print("start loading model ...")
             self.vlm_model, self.processor = load(artifacts_path)
+            print("loaded model ...")
             self.config = load_config(artifacts_path)
 
     """
@@ -110,6 +117,8 @@ class HuggingFaceMlxModel(BasePageModel):
                     )
 
                     start_time = time.time()
+                    print("start generating ...")
+                    
                     # Call model to generate:
                     output = ""
                     for token in self.stream_generate(
@@ -120,6 +129,7 @@ class HuggingFaceMlxModel(BasePageModel):
                         max_tokens=4096,
                         verbose=False,
                     ):
+                        print(token.text, end="", flush=True)
                         output += token.text
                         if "</doctag>" in token.text:
                             break
