@@ -29,7 +29,7 @@ class HuggingFaceMlxModel(BasePageModel):
 
         self.vlm_options = vlm_options
         self.max_tokens = vlm_options.max_new_tokens
-        
+
         if self.enabled:
             try:
                 from mlx_vlm import generate, load  # type: ignore
@@ -60,7 +60,7 @@ class HuggingFaceMlxModel(BasePageModel):
             self.param_question = vlm_options.prompt
 
             ## Load the model
-            self.vlm_model, self.processor = load(artifacts_path)            
+            self.vlm_model, self.processor = load(artifacts_path)
             self.config = load_config(artifacts_path)
 
     def __call__(
@@ -94,8 +94,8 @@ class HuggingFaceMlxModel(BasePageModel):
                     _log.debug("start generating ...")
 
                     # Call model to generate:
-                    tokens:list[VlmPredictionToken] = []
-                    
+                    tokens: list[VlmPredictionToken] = []
+
                     output = ""
                     for token in self.stream_generate(
                         self.vlm_model,
@@ -105,25 +105,40 @@ class HuggingFaceMlxModel(BasePageModel):
                         max_tokens=4096,
                         verbose=False,
                     ):
-                        if len(token.logprobs.shape)==1:
-                            tokens.append(VlmPredictionToken(text=token.text,
-                                                             token=token.token,
-                                                             logprob=token.logprobs[token.token]))
-                        elif len(token.logprobs.shape)==2 and token.logprobs.shape[0]==1:
-                            tokens.append(VlmPredictionToken(text=token.text,
-                                                             token=token.token,
-                                                             logprob=token.logprobs[0, token.token]))
-                        
-                        output += token.text                        
+                        if len(token.logprobs.shape) == 1:
+                            tokens.append(
+                                VlmPredictionToken(
+                                    text=token.text,
+                                    token=token.token,
+                                    logprob=token.logprobs[token.token],
+                                )
+                            )
+                        elif (
+                            len(token.logprobs.shape) == 2
+                            and token.logprobs.shape[0] == 1
+                        ):
+                            tokens.append(
+                                VlmPredictionToken(
+                                    text=token.text,
+                                    token=token.token,
+                                    logprob=token.logprobs[0, token.token],
+                                )
+                            )
+
+                        output += token.text
                         if "</doctag>" in token.text:
                             break
 
                     generation_time = time.time() - start_time
                     page_tags = output
-                    
-                    _log.debug(f"{generation_time:.2f} seconds for {len(tokens)} tokens ({len(tokens)/generation_time} tokens/sec).")
-                    page.predictions.vlm_response = VlmPrediction(text=page_tags,
-                                                                  generation_time=generation_time,
-                                                                  generated_tokens=tokens)
+
+                    _log.debug(
+                        f"{generation_time:.2f} seconds for {len(tokens)} tokens ({len(tokens) / generation_time} tokens/sec)."
+                    )
+                    page.predictions.vlm_response = VlmPrediction(
+                        text=page_tags,
+                        generation_time=generation_time,
+                        generated_tokens=tokens,
+                    )
 
                 yield page

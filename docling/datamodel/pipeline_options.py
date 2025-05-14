@@ -16,6 +16,12 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import deprecated
 
+from docling.datamodel.pipeline_model_specializations import (
+    ApiVlmOptions,
+    HuggingFaceVlmOptions,
+    smoldocling_vlm_conversion_options,
+)
+
 _log = logging.getLogger(__name__)
 
 
@@ -121,23 +127,21 @@ class RapidOcrOptions(OcrOptions):
     lang: List[str] = [
         "english",
         "chinese",
-    ]  # However, language as a parameter is not supported by rapidocr yet and hence changing this options doesn't affect anything.
-    # For more details on supported languages by RapidOCR visit https://rapidai.github.io/RapidOCRDocs/blog/2022/09/28/%E6%94%AF%E6%8C%81%E8%AF%86%E5%88%AB%E8%AF%AD%E8%A8%80/
+    ]
+    # However, language as a parameter is not supported by rapidocr yet
+    # and hence changing this options doesn't affect anything.
 
-    # For more details on the following options visit https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
+    # For more details on supported languages by RapidOCR visit
+    # https://rapidai.github.io/RapidOCRDocs/blog/2022/09/28/%E6%94%AF%E6%8C%81%E8%AF%86%E5%88%AB%E8%AF%AD%E8%A8%80/
+
+    # For more details on the following options visit
+    # https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
+
     text_score: float = 0.5  # same default as rapidocr
 
     use_det: Optional[bool] = None  # same default as rapidocr
     use_cls: Optional[bool] = None  # same default as rapidocr
     use_rec: Optional[bool] = None  # same default as rapidocr
-
-    # class Device(Enum):
-    #     CPU = "CPU"
-    #     CUDA = "CUDA"
-    #     DIRECTML = "DIRECTML"
-    #     AUTO = "AUTO"
-
-    # device: Device = Device.AUTO  # Default value is AUTO
 
     print_verbose: bool = False  # same default as rapidocr
 
@@ -243,108 +247,16 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
         return self.repo_id.replace("/", "--")
 
 
+# SmolVLM
 smolvlm_picture_description = PictureDescriptionVlmOptions(
     repo_id="HuggingFaceTB/SmolVLM-256M-Instruct"
 )
-# phi_picture_description = PictureDescriptionVlmOptions(repo_id="microsoft/Phi-3-vision-128k-instruct")
+
+# GraniteVision
 granite_picture_description = PictureDescriptionVlmOptions(
     repo_id="ibm-granite/granite-vision-3.1-2b-preview",
     prompt="What is shown in this image?",
 )
-
-
-class BaseVlmOptions(BaseModel):
-    kind: str
-    prompt: str
-
-
-class ResponseFormat(str, Enum):
-    DOCTAGS = "doctags"
-    MARKDOWN = "markdown"
-    HTML = "html"
-
-
-class InferenceFramework(str, Enum):
-    MLX = "mlx"
-    TRANSFORMERS = "transformers"
-    OPENAI = "openai"
-    TRANSFORMERS_AutoModelForVision2Seq = "transformers-AutoModelForVision2Seq"
-    TRANSFORMERS_AutoModelForCausalLM = "transformers-AutoModelForCausalLM"
-    TRANSFORMERS_LlavaForConditionalGeneration = (
-        "transformers-LlavaForConditionalGeneration"
-    )
-
-
-class HuggingFaceVlmOptions(BaseVlmOptions):
-    kind: Literal["hf_model_options"] = "hf_model_options"
-
-    repo_id: str
-    load_in_8bit: bool = True
-    llm_int8_threshold: float = 6.0
-    quantized: bool = False
-
-    inference_framework: InferenceFramework
-    response_format: ResponseFormat
-
-    scale: float = 2.0
-    
-    use_kv_cache: bool = True
-    max_new_tokens: int = 4096
-    
-    @property
-    def repo_cache_folder(self) -> str:
-        return self.repo_id.replace("/", "--")
-
-
-class ApiVlmOptions(BaseVlmOptions):
-    kind: Literal["api_model_options"] = "api_model_options"
-
-    url: AnyUrl = AnyUrl(
-        "http://localhost:11434/v1/chat/completions"
-    )  # Default to ollama
-    headers: Dict[str, str] = {}
-    params: Dict[str, Any] = {}
-    scale: float = 2.0
-    timeout: float = 60
-    response_format: ResponseFormat
-
-
-smoldocling_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
-    repo_id="ds4sd/SmolDocling-256M-preview-mlx-bf16",
-    prompt="Convert this page to docling.",
-    response_format=ResponseFormat.DOCTAGS,
-    inference_framework=InferenceFramework.MLX,
-)
-
-
-smoldocling_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="ds4sd/SmolDocling-256M-preview",
-    prompt="Convert this page to docling.",
-    response_format=ResponseFormat.DOCTAGS,
-    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
-)
-
-granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="ibm-granite/granite-vision-3.1-2b-preview",
-    prompt="OCR the full page to markdown.",
-    response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
-)
-
-granite_vision_vlm_ollama_conversion_options = ApiVlmOptions(
-    url=AnyUrl("http://localhost:11434/v1/chat/completions"),
-    params={"model": "granite3.2-vision:2b"},
-    prompt="OCR the full page to markdown.",
-    scale=1.0,
-    timeout=120,
-    response_format=ResponseFormat.MARKDOWN,
-)
-
-
-class VlmModelType(str, Enum):
-    SMOLDOCLING = "smoldocling"
-    GRANITE_VISION = "granite_vision"
-    GRANITE_VISION_OLLAMA = "granite_vision_ollama"
 
 
 # Define an enum for the backend options

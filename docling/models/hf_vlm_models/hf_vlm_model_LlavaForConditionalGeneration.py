@@ -39,10 +39,15 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
             )
 
             self.device = decide_device(accelerator_options.device)
-            self.device = "cpu"  # FIXME
 
-            self.use_cache = True
-            self.max_new_tokens = 64  # FIXME
+            if self.device == "mlx":
+                _log.warning(
+                    "Mapping mlx to cpu for LlavaForConditionalGeneration, use MLX framework!"
+                )
+                self.device = "cpu"
+
+            self.use_cache = vlm_options.use_kv_cache
+            self.max_new_tokens = vlm_options.max_new_tokens
 
             _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
@@ -53,9 +58,6 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
-
-            model_path = artifacts_path
-            _log.debug(f"model: {model_path}")
 
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
@@ -98,12 +100,11 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                     images = [hi_res_image]
 
                     # Define prompt structure
-                    # prompt = "<s>[INST]Describe the images.\n[IMG][/INST]"
                     prompt = self.formulate_prompt()
 
                     inputs = self.processor(
                         text=prompt, images=images, return_tensors="pt"
-                    ).to(self.device)  # .to("cuda")
+                    ).to(self.device)
 
                     # Generate response
                     start_time = time.time()
@@ -113,8 +114,6 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                         use_cache=self.use_cache,  # Enables KV caching which can improve performance
                     )
 
-                    print(generate_ids)
-                    
                     num_tokens = len(generate_ids[0])
                     generation_time = time.time() - start_time
 
@@ -123,10 +122,12 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                         skip_special_tokens=True,
                         clean_up_tokenization_spaces=False,
                     )[0]
-                    
-                    page.predictions.vlm_response = VlmPrediction(text=response,
-                                                                  generated_tokens=num_tokens,
-                                                                  generation_time=generation_time)
+
+                    page.predictions.vlm_response = VlmPrediction(
+                        text=response,
+                        generated_tokens=num_tokens,
+                        generation_time=generation_time,
+                    )
 
                 yield page
 

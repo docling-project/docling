@@ -11,10 +11,15 @@ from docling.datamodel.pipeline_options import (
     InferenceFramework,
     ResponseFormat,
     VlmPipelineOptions,
-    smoldocling_vlm_mlx_conversion_options,
-    smoldocling_vlm_conversion_options,
     granite_vision_vlm_conversion_options,
+    granite_vision_vlm_mlx_conversion_options,
     granite_vision_vlm_ollama_conversion_options,
+    phi_vlm_conversion_options,
+    pixtral_12b_vlm_conversion_options,
+    pixtral_12b_vlm_mlx_conversion_options,
+    qwen25_vl_3b_vlm_mlx_conversion_options,
+    smoldocling_vlm_conversion_options,
+    smoldocling_vlm_mlx_conversion_options,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -28,6 +33,7 @@ sources = [
 pipeline_options = VlmPipelineOptions()
 # If force_backend_text = True, text from backend will be used instead of generated text
 pipeline_options.force_backend_text = False
+pipeline_options.generate_page_images = True
 
 ## On GPU systems, enable flash_attention_2 with CUDA:
 # pipeline_options.accelerator_options.device = AcceleratorDevice.CUDA
@@ -37,10 +43,12 @@ pipeline_options.force_backend_text = False
 # pipeline_options.vlm_options = smoldocling_vlm_conversion_options
 
 ## Pick a VLM model. Fast Apple Silicon friendly implementation for SmolDocling-256M via MLX
-pipeline_options.vlm_options = smoldocling_vlm_mlx_conversion_options
+# pipeline_options.vlm_options = smoldocling_vlm_mlx_conversion_options
 
 ## Alternative VLM models:
 # pipeline_options.vlm_options = granite_vision_vlm_conversion_options
+
+pipeline_options.vlm_options = phi_vlm_conversion_options
 
 """
 pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
@@ -105,7 +113,7 @@ converter = DocumentConverter(
             pipeline_cls=VlmPipeline,
             pipeline_options=pipeline_options,
         ),
-    }
+    },
 )
 
 out_path = Path("scratch")
@@ -121,39 +129,44 @@ for source in sources:
     res = converter.convert(source)
 
     print("")
-    #print(res.document.export_to_markdown())
+    # print(res.document.export_to_markdown())
 
-    for i,page in enumerate(res.pages):
+    model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
+    fname = f"{model_id}-{res.input.file.stem}"
+
+    for i, page in enumerate(res.pages):
         print("")
-        print(f" ---------- Predicted page {i} in {pipeline_options.vlm_options.response_format}:")
+        print(
+            f" ---------- Predicted page {i} in {pipeline_options.vlm_options.response_format}:"
+        )
         print(page.predictions.vlm_response.text)
-        print(f" ---------- ")
+        print(" ---------- ")
 
     print("===== Final output of the converted document =======")
-    
-    with (out_path / f"{res.input.file.stem}.json").open("w") as fp:
+
+    with (out_path / f"{fname}.json").open("w") as fp:
         fp.write(json.dumps(res.document.export_to_dict()))
 
     res.document.save_as_json(
-        out_path / f"{res.input.file.stem}.json",
+        out_path / f"{fname}.json",
         image_mode=ImageRefMode.PLACEHOLDER,
     )
-    print(f" => produced {out_path / res.input.file.stem}.json")
-    
+    print(f" => produced {out_path / fname}.json")
+
     res.document.save_as_markdown(
-        out_path / f"{res.input.file.stem}.md",
+        out_path / f"{fname}.md",
         image_mode=ImageRefMode.PLACEHOLDER,
     )
-    print(f" => produced {out_path / res.input.file.stem}.md")
-    
+    print(f" => produced {out_path / fname}.md")
+
     res.document.save_as_html(
-        out_path / f"{res.input.file.stem}.html",
+        out_path / f"{fname}.html",
         image_mode=ImageRefMode.EMBEDDED,
         labels=[*DEFAULT_EXPORT_LABELS, DocItemLabel.FOOTNOTE],
-        # split_page_view=True,
+        split_page_view=True,
     )
-    print(f" => produced {out_path / res.input.file.stem}.html")
-    
+    print(f" => produced {out_path / fname}.html")
+
     pg_num = res.document.num_pages()
     print("")
     inference_time = time.time() - start_time
@@ -161,4 +174,3 @@ for source in sources:
         f"Total document prediction time: {inference_time:.2f} seconds, pages: {pg_num}"
     )
     print("====================================================")
-    

@@ -43,17 +43,18 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
             self.device = decide_device(accelerator_options.device)
 
-            if self.device=="mlx":
-                _log.warning(f"Mapping mlx to cpu for AutoModelForCausalLM")
-                self.device = cpu
-            
+            if self.device == "mlx":
+                _log.warning(
+                    "Mapping mlx to cpu for AutoModelForCausalLM, use MLX framework!"
+                )
+                self.device = "cpu"
+
             self.use_cache = vlm_options.use_kv_cache
             self.max_new_tokens = vlm_options.max_new_tokens
 
             _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
-            # PARAMETERS:
             if artifacts_path is None:
                 artifacts_path = HuggingFaceVlmModel.download_models(
                     self.vlm_options.repo_id
@@ -117,8 +118,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=self.vlm_options.scale)  # 144dpi
-                    # hi_res_image = page.get_image(scale=1.0)  # 72dpi
+                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
@@ -157,14 +157,6 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
-
-                    # inference_time = time.time() - start_time
-                    # tokens_per_second = num_tokens / generation_time
-                    # print("")
-                    # print(f"Page Inference Time: {inference_time:.2f} seconds")
-                    # print(f"Total tokens on page: {num_tokens:.2f}")
-                    # print(f"Tokens/sec: {tokens_per_second:.2f}")
-                    # print("")
                     page.predictions.vlm_response = VlmPrediction(text=response)
 
                 yield page
@@ -172,11 +164,12 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
     def formulate_prompt(self) -> str:
         """Formulate a prompt for the VLM."""
         if self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
+            # more info here: https://huggingface.co/microsoft/Phi-4-multimodal-instruct#loading-the-model-locally
+
             user_prompt = "<|user|>"
             assistant_prompt = "<|assistant|>"
             prompt_suffix = "<|end|>"
 
-            # prompt = f"{user_prompt}<|image_1|>Convert this image into MarkDown and only return the bare MarkDown!{prompt_suffix}{assistant_prompt}"
             prompt = f"{user_prompt}<|image_1|>{self.vlm_options.prompt}{prompt_suffix}{assistant_prompt}"
             _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
 

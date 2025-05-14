@@ -38,10 +38,8 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                 BitsAndBytesConfig,
             )
 
-            device = decide_device(accelerator_options.device)
-            self.device = device
-
-            _log.debug(f"Available device for HuggingFace VLM: {device}")
+            self.device = decide_device(accelerator_options.device)
+            _log.debug(f"Available device for HuggingFace VLM: {self.device}")
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -54,7 +52,7 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
-            self.param_question = vlm_options.prompt  # "Perform Layout Analysis."
+            # self.param_question = vlm_options.prompt  # "Perform Layout Analysis."
             self.param_quantization_config = BitsAndBytesConfig(
                 load_in_8bit=vlm_options.load_in_8bit,  # True,
                 llm_int8_threshold=vlm_options.llm_int8_threshold,  # 6.0
@@ -68,7 +66,7 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
             if not self.param_quantized:
                 self.vlm_model = AutoModelForVision2Seq.from_pretrained(
                     artifacts_path,
-                    device_map=device,
+                    device_map=self.device,
                     torch_dtype=torch.bfloat16,
                     _attn_implementation=(
                         "flash_attention_2"
@@ -82,7 +80,7 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
             else:
                 self.vlm_model = AutoModelForVision2Seq.from_pretrained(
                     artifacts_path,
-                    device_map=device,
+                    device_map=self.device,
                     torch_dtype="auto",
                     quantization_config=self.param_quantization_config,
                     _attn_implementation=(
@@ -93,29 +91,6 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                     ),
                     # trust_remote_code=True,
                 )  # .to(self.device)
-
-    """
-    @staticmethod
-    def download_models(
-        repo_id: str,
-        local_dir: Optional[Path] = None,
-        force: bool = False,
-        progress: bool = False,
-    ) -> Path:
-        from huggingface_hub import snapshot_download
-        from huggingface_hub.utils import disable_progress_bars
-
-        if not progress:
-            disable_progress_bars()
-        download_path = snapshot_download(
-            repo_id=repo_id,
-            force_download=force,
-            local_dir=local_dir,
-            # revision="v0.0.1",
-        )
-
-        return Path(download_path)
-    """
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -128,8 +103,7 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=2.0)  # 144dpi
-                    # hi_res_image = page.get_image(scale=1.0)  # 72dpi
+                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
@@ -141,22 +115,9 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
-                    messages = [
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": "This is a page from a document.",
-                                },
-                                {"type": "image"},
-                                {"type": "text", "text": self.param_question},
-                            ],
-                        }
-                    ]
-                    prompt = self.processor.apply_chat_template(
-                        messages, add_generation_prompt=False
-                    )
+                    # Define prompt structure
+                    prompt = self.formulate_prompt()
+
                     inputs = self.processor(
                         text=prompt, images=[hi_res_image], return_tensors="pt"
                     )
@@ -180,14 +141,26 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
-
-                    # inference_time = time.time() - start_time
-                    # tokens_per_second = num_tokens / generation_time
-                    # print("")
-                    # print(f"Page Inference Time: {inference_time:.2f} seconds")
-                    # print(f"Total tokens on page: {num_tokens:.2f}")
-                    # print(f"Tokens/sec: {tokens_per_second:.2f}")
-                    # print("")
                     page.predictions.vlm_response = VlmPrediction(text=page_tags)
 
                 yield page
+
+    def formulate_prompt(self) -> str:
+        """Formulate a prompt for the VLM."""
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "This is a page from a document.",
+                    },
+                    {"type": "image"},
+                    {"type": "text", "text": self.vlm_options.prompt},
+                ],
+            }
+        ]
+        prompt = self.processor.apply_chat_template(
+            messages, add_generation_prompt=False
+        )
+        return prompt
