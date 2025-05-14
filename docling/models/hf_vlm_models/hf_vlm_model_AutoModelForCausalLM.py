@@ -44,6 +44,9 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             self.device = decide_device(accelerator_options.device)
             self.device = "cpu"  # FIXME
 
+            self.use_cache = True
+            self.max_new_tokens = 64  # FIXME
+            
             _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -102,29 +105,6 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(model_path)
 
-    """
-    @staticmethod
-    def download_models(
-        repo_id: str,
-        local_dir: Optional[Path] = None,
-        force: bool = False,
-        progress: bool = False,
-    ) -> Path:
-        from huggingface_hub import snapshot_download
-        from huggingface_hub.utils import disable_progress_bars
-
-        if not progress:
-            disable_progress_bars()
-        download_path = snapshot_download(
-            repo_id=repo_id,
-            force_download=force,
-            local_dir=local_dir,
-            # revision="v0.0.1",
-        )
-
-        return Path(download_path)
-    """
-
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -147,13 +127,8 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                             hi_res_image = hi_res_image.convert("RGB")
 
                     # Define prompt structure
-                    user_prompt = "<|user|>"
-                    assistant_prompt = "<|assistant|>"
-                    prompt_suffix = "<|end|>"
-
-                    # Part 1: Image Processing
-                    prompt = f"{user_prompt}<|image_1|>Convert this image into MarkDown and only return the bare MarkDown!{prompt_suffix}{assistant_prompt}"
-
+                    prompt = self.formulate_prompt()
+                    
                     inputs = self.processor(
                         text=prompt, images=hi_res_image, return_tensors="pt"
                     ).to(self.device)
@@ -162,7 +137,8 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     start_time = time.time()
                     generate_ids = self.vlm_model.generate(
                         **inputs,
-                        max_new_tokens=128,
+                        max_new_tokens=self.max_new_tokens,
+                        use_cache=self.use_cache,  # Enables KV caching which can improve performance
                         generation_config=self.generation_config,
                         num_logits_to_keep=1,
                     )
@@ -191,3 +167,22 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     page.predictions.vlm_response = VlmPrediction(text=response)
 
                 yield page
+
+    def formulate_prompt(self) -> str:
+        """Formulate a prompt for the VLM."""        
+        if self.vlm_options.repo_id=="microsoft/Phi-4-multimodal-instruct":
+            user_prompt = "<|user|>"
+            assistant_prompt = "<|assistant|>"
+            prompt_suffix = "<|end|>"
+
+            # prompt = f"{user_prompt}<|image_1|>Convert this image into MarkDown and only return the bare MarkDown!{prompt_suffix}{assistant_prompt}"
+            prompt = f"{user_prompt}<|image_1|>{self.vlm_options.prompt}{prompt_suffix}{assistant_prompt}"
+            _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
+            
+            return prompt
+        else:
+            raise ValueError(f"No prompt template for {self.vlm_options.repo_id}")
+
+
+        return ""
+                
