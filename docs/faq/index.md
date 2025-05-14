@@ -137,7 +137,7 @@ This is a collection of FAQ collected from the user questions on <https://github
     ### Some images are missing from MS Word and Powerpoint
 
     The image processing library used by Docling is able to handle embedded WMF images only on Windows platform.
-    If you are on other operaring systems, these images will be ignored.
+    If you are on other operating systems, these images will be ignored.
 
 
 ??? question "`HybridChunker` triggers warning: 'Token indices sequence length is longer than the specified maximum sequence length for this model'"

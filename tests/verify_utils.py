@@ -293,6 +293,7 @@ def verify_conversion_result_v1(
     generate: bool = False,
     ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
+    indent: int = 2,
 ):
     PageList = TypeAdapter(List[Page])
 
@@ -323,11 +324,13 @@ def verify_conversion_result_v1(
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
         with open(pages_path, "w") as fw:
-            fw.write(json.dumps(doc_pred_pages, default=pydantic_encoder))
+            fw.write(
+                json.dumps(doc_pred_pages, default=pydantic_encoder, indent=indent)
+            )
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
         with open(json_path, "w") as fw:
-            fw.write(json.dumps(doc_pred, default=pydantic_encoder))
+            fw.write(json.dumps(doc_pred, default=pydantic_encoder, indent=indent))
 
         md_path.parent.mkdir(parents=True, exist_ok=True)
         with open(md_path, "w") as fw:
@@ -377,6 +380,7 @@ def verify_conversion_result_v2(
     generate: bool = False,
     ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
+    indent: int = 2,
 ):
     PageList = TypeAdapter(List[Page])
 
@@ -405,11 +409,13 @@ def verify_conversion_result_v2(
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
         with open(pages_path, "w") as fw:
-            fw.write(json.dumps(doc_pred_pages, default=pydantic_encoder))
+            fw.write(
+                json.dumps(doc_pred_pages, default=pydantic_encoder, indent=indent)
+            )
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
         with open(json_path, "w") as fw:
-            fw.write(json.dumps(doc_pred, default=pydantic_encoder))
+            fw.write(json.dumps(doc_pred, default=pydantic_encoder, indent=indent))
 
         md_path.parent.mkdir(parents=True, exist_ok=True)
         with open(md_path, "w") as fw:

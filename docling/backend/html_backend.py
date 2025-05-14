@@ -1,4 +1,5 @@
 import logging
+import traceback
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
@@ -26,6 +27,8 @@ _log = logging.getLogger(__name__)
 
 # tags that generate NodeItem elements
 TAGS_FOR_NODE_ITEMS: Final = [
+    "address",
+    "details",
     "h1",
     "h2",
     "h3",
@@ -38,6 +41,7 @@ TAGS_FOR_NODE_ITEMS: Final = [
     "ul",
     "ol",
     "li",
+    "summary",
     "table",
     "figure",
     "img",
@@ -134,7 +138,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     self.analyze_tag(cast(Tag, element), doc)
                 except Exception as exc_child:
                     _log.error(
-                        f"Error processing child from tag {tag.name}: {exc_child!r}"
+                        f"Error processing child from tag {tag.name}:\n{traceback.format_exc()}"
                     )
                     raise exc_child
             elif isinstance(element, NavigableString) and not isinstance(
@@ -163,7 +167,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def analyze_tag(self, tag: Tag, doc: DoclingDocument) -> None:
         if tag.name in ["h1", "h2", "h3", "h4", "h5", "h6"]:
             self.handle_header(tag, doc)
-        elif tag.name in ["p"]:
+        elif tag.name in ["p", "address", "summary"]:
             self.handle_paragraph(tag, doc)
         elif tag.name in ["pre", "code"]:
             self.handle_code(tag, doc)
@@ -177,6 +181,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.handle_figure(tag, doc)
         elif tag.name == "img":
             self.handle_image(tag, doc)
+        elif tag.name == "details":
+            self.handle_details(tag, doc)
         else:
             self.walk(tag, doc)
 
@@ -200,6 +206,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 result.extend(self.extract_text_recursively(child))
 
         return ["".join(result) + " "]
+
+    def handle_details(self, element: Tag, doc: DoclingDocument) -> None:
+        """Handle details tag (details) and its content."""
+
+        self.parents[self.level + 1] = doc.add_group(
+            name="details",
+            label=GroupLabel.SECTION,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+        )
+
+        self.level += 1
+        self.walk(element, doc)
+        self.parents[self.level + 1] = None
+        self.level -= 1
 
     def handle_header(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles header tags (h1, h2, etc.)."""
@@ -258,7 +279,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def handle_paragraph(self, element: Tag, doc: DoclingDocument) -> None:
-        """Handles paragraph tags (p)."""
+        """Handles paragraph tags (p) or equivalent ones."""
         if element.text is None:
             return
         text = element.text.strip()
@@ -370,46 +391,64 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"list-item has no text: {element}")
 
     @staticmethod
-    def parse_table_data(element: Tag) -> Optional[TableData]:
+    def parse_table_data(element: Tag) -> Optional[TableData]:  # noqa: C901
         nested_tables = element.find("table")
         if nested_tables is not None:
             _log.debug("Skipping nested table.")
             return None
 
-        # Count the number of rows (number of <tr> elements)
-        num_rows = len(element("tr"))
-
-        # Find the number of columns (taking into account colspan)
+        # Find the number of rows and columns (taking into account spans)
+        num_rows = 0
         num_cols = 0
         for row in element("tr"):
             col_count = 0
+            is_row_header = True
             if not isinstance(row, Tag):
                 continue
             for cell in row(["td", "th"]):
                 if not isinstance(row, Tag):
                     continue
-                val = cast(Tag, cell).get("colspan", "1")
+                cell_tag = cast(Tag, cell)
+                val = cell_tag.get("colspan", "1")
                 colspan = int(val) if (isinstance(val, str) and val.isnumeric()) else 1
                 col_count += colspan
+                if cell_tag.name == "td" or cell_tag.get("rowspan") is None:
+                    is_row_header = False
             num_cols = max(num_cols, col_count)
+            if not is_row_header:
+                num_rows += 1
+
+        _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
 
         grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
 
         data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
 
         # Iterate over the rows in the table
-        for row_idx, row in enumerate(element("tr")):
+        start_row_span = 0
+        row_idx = -1
+        for row in element("tr"):
             if not isinstance(row, Tag):
                 continue
 
             # For each row, find all the column cells (both <td> and <th>)
             cells = row(["td", "th"])
 
-            # Check if each cell in the row is a header -> means it is a column header
+            # Check if cell is in a column header or row header
             col_header = True
+            row_header = True
             for html_cell in cells:
-                if isinstance(html_cell, Tag) and html_cell.name == "td":
-                    col_header = False
+                if isinstance(html_cell, Tag):
+                    if html_cell.name == "td":
+                        col_header = False
+                        row_header = False
+                    elif html_cell.get("rowspan") is None:
+                        row_header = False
+            if not row_header:
+                row_idx += 1
+                start_row_span = 0
+            else:
+                start_row_span += 1
 
             # Extract the text content of each cell
             col_idx = 0
@@ -440,19 +479,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if isinstance(row_val, str) and row_val.isnumeric()
                     else 1
                 )
-
-                while grid[row_idx][col_idx] is not None:
+                if row_header:
+                    row_span -= 1
+                while (
+                    col_idx < num_cols
+                    and grid[row_idx + start_row_span][col_idx] is not None
+                ):
                     col_idx += 1
-                for r in range(row_span):
+                for r in range(start_row_span, start_row_span + row_span):
                     for c in range(col_span):
-                        grid[row_idx + r][col_idx + c] = text
+                        if row_idx + r < num_rows and col_idx + c < num_cols:
+                            grid[row_idx + r][col_idx + c] = text
 
                 table_cell = TableCell(
                     text=text,
                     row_span=row_span,
                     col_span=col_span,
-                    start_row_offset_idx=row_idx,
-                    end_row_offset_idx=row_idx + row_span,
+                    start_row_offset_idx=start_row_span + row_idx,
+                    end_row_offset_idx=start_row_span + row_idx + row_span,
                     start_col_offset_idx=col_idx,
                     end_col_offset_idx=col_idx + col_span,
                     column_header=col_header,

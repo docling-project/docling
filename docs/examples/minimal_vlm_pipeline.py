@@ -80,7 +80,7 @@ for source in sources:
         fp.write(json.dumps(res.document.export_to_dict()))
 
     res.document.save_as_json(
-        out_path / f"{res.input.file.stem}.md",
+        out_path / f"{res.input.file.stem}.json",
         image_mode=ImageRefMode.PLACEHOLDER,
     )
 

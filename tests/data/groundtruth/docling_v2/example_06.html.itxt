@@ -4,4 +4,7 @@ item-0 at level 0: unspecified: group _root_
   item-3 at level 1: text: This is a regular paragraph.
   item-4 at level 1: text: This is a third div
 with a new line.
-  item-5 at level 1: text: This is a fourth div with a bold paragraph.
+  item-5 at level 1: section: group details
+    item-6 at level 2: text: Heading for the details element
+    item-7 at level 2: text: Description of the details element.
+  item-8 at level 1: text: This is a fourth div with a bold paragraph.

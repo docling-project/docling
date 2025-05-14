@@ -1,6 +1,6 @@
 """Backend to parse patents from the United States Patent Office (USPTO).
 
-The parsers included in this module can handle patent grants pubished since 1976 and
+The parsers included in this module can handle patent grants published since 1976 and
 patent applications since 2001.
 The original files can be found in https://bulkdata.uspto.gov.
 """
@@ -440,7 +440,7 @@ class PatentUsptoIce(PatentUspto):
                     )
 
             elif name == self.Element.PARAGRAPH.value and text:
-                # remmove blank spaces added in paragraphs
+                # remove blank spaces added in paragraphs
                 text = re.sub("\\s+", " ", text)
                 if self.Element.ABSTRACT.value in self.property:
                     self.abstract = (
@@ -1697,7 +1697,7 @@ class XmlTable:
 class HtmlEntity:
     """Provide utility functions to get the HTML entities of styled characters.
 
-    This class has been developped from:
+    This class has been developed from:
     https://unicode-table.com/en/html-entities/
     https://www.w3.org/TR/WD-math-970515/table03.html
     """
@@ -1896,7 +1896,7 @@ class HtmlEntity:
         """Get an HTML entity of a greek letter in ISO 8879.
 
         Args:
-            The text to transform, as an ISO 8879 entitiy.
+            The text to transform, as an ISO 8879 entity.
 
         Returns:
             The HTML entity representing a greek letter. If the input text is not

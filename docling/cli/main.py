@@ -421,7 +421,7 @@ def convert(  # noqa: C901
         logging.basicConfig(level=logging.WARNING)
     elif verbose == 1:
         logging.basicConfig(level=logging.INFO)
-    elif verbose == 2:
+    else:
         logging.basicConfig(level=logging.DEBUG)
 
     settings.debug.visualize_cells = debug_visualize_cells
@@ -521,7 +521,7 @@ def convert(  # noqa: C901
             if image_export_mode != ImageRefMode.PLACEHOLDER:
                 pipeline_options.generate_page_images = True
                 pipeline_options.generate_picture_images = (
-                    True  # FIXME: to be deprecated in verson 3
+                    True  # FIXME: to be deprecated in version 3
                 )
                 pipeline_options.images_scale = 2
 

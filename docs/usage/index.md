@@ -200,7 +200,7 @@ You can limit the CPU threads used by Docling by setting the environment variabl
     using a `DocumentConverter` (high-level API) as discussed in the sections above
     should suffice — and is the recommended way.
 
-By default, Docling will try to identify the document format to apply the appropriate conversion backend (see the list of [supported formats](../supported_formats.md)).
+By default, Docling will try to identify the document format to apply the appropriate conversion backend (see the list of [supported formats](supported_formats.md)).
 You can restrict the `DocumentConverter` to a set of allowed document formats, as shown in the [Multi-format conversion](../examples/run_with_formats.py) example.
 Alternatively, you can also use the specific backend that matches your document content. For instance, you can use `HTMLDocumentBackend` for HTML pages:
 

@@ -4,12 +4,15 @@ from typing import Optional
 
 from docling.datamodel.pipeline_options import (
     granite_picture_description,
+    smoldocling_vlm_conversion_options,
+    smoldocling_vlm_mlx_conversion_options,
     smolvlm_picture_description,
 )
 from docling.datamodel.settings import settings
 from docling.models.code_formula_model import CodeFormulaModel
 from docling.models.document_picture_classifier import DocumentPictureClassifier
 from docling.models.easyocr_model import EasyOcrModel
+from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.models.layout_model import LayoutModel
 from docling.models.picture_description_vlm_model import PictureDescriptionVlmModel
 from docling.models.table_structure_model import TableStructureModel
@@ -27,6 +30,8 @@ def download_models(
     with_code_formula: bool = True,
     with_picture_classifier: bool = True,
     with_smolvlm: bool = False,
+    with_smoldocling: bool = False,
+    with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
     with_easyocr: bool = True,
 ):
@@ -73,6 +78,25 @@ def download_models(
         PictureDescriptionVlmModel.download_models(
             repo_id=smolvlm_picture_description.repo_id,
             local_dir=output_dir / smolvlm_picture_description.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_smoldocling:
+        _log.info("Downloading SmolDocling model...")
+        HuggingFaceVlmModel.download_models(
+            repo_id=smoldocling_vlm_conversion_options.repo_id,
+            local_dir=output_dir / smoldocling_vlm_conversion_options.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_smoldocling_mlx:
+        _log.info("Downloading SmolDocling MLX model...")
+        HuggingFaceVlmModel.download_models(
+            repo_id=smoldocling_vlm_mlx_conversion_options.repo_id,
+            local_dir=output_dir
+            / smoldocling_vlm_mlx_conversion_options.repo_cache_folder,
             force=force,
             progress=progress,
         )
