@@ -45,13 +45,13 @@ def test_e2e_pptx_conversions():
         doc: DoclingDocument = conv_result.document
 
         pred_md: str = doc.export_to_markdown()
-        assert verify_export(pred_md, str(gt_path) + ".md", generate=True), "export to md"
+        assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
         assert verify_export(
-            pred_itxt, str(gt_path) + ".itxt", generate=True
+            pred_itxt, str(gt_path) + ".itxt"
         ), "export to indented-text"
 
         assert verify_document(
