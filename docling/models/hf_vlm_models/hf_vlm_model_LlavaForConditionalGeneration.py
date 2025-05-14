@@ -4,8 +4,6 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional
 
-from transformers import AutoProcessor, LlavaForConditionalGeneration
-
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -35,7 +33,6 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
         self.vlm_options = vlm_options
 
         if self.enabled:
-            import torch
             from transformers import (  # type: ignore
                 AutoProcessor,
                 LlavaForConditionalGeneration,
@@ -103,7 +100,7 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                     # Define prompt structure
                     # prompt = "<s>[INST]Describe the images.\n[IMG][/INST]"
                     prompt = self.formulate_prompt()
-                    
+
                     inputs = self.processor(
                         text=prompt, images=images, return_tensors="pt"
                     ).to(self.device)  # .to("cuda")
@@ -116,46 +113,39 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                         use_cache=self.use_cache,  # Enables KV caching which can improve performance
                     )
 
+                    print(generate_ids)
+                    
                     num_tokens = len(generate_ids[0])
                     generation_time = time.time() - start_time
-                    
+
                     response = self.processor.batch_decode(
                         generate_ids,
                         skip_special_tokens=True,
                         clean_up_tokenization_spaces=False,
                     )[0]
                     
-                    """
-                    _log.debug(
-                        f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
-                    )
-                    """
-                    # inference_time = time.time() - start_time
-                    # tokens_per_second = num_tokens / generation_time
-                    # print("")
-                    # print(f"Page Inference Time: {inference_time:.2f} seconds")
-                    # print(f"Total tokens on page: {num_tokens:.2f}")
-                    # print(f"Tokens/sec: {tokens_per_second:.2f}")
-                    # print("")
-                    page.predictions.vlm_response = VlmPrediction(text=response)
+                    page.predictions.vlm_response = VlmPrediction(text=response,
+                                                                  generated_tokens=num_tokens,
+                                                                  generation_time=generation_time)
 
                 yield page
 
     def formulate_prompt(self) -> str:
-        """Formulate a prompt for the VLM."""        
-        if self.vlm_options.repo_id=="mistral-community/pixtral-12b":
-            #prompt = f"<s>[INST]{self.vlm_options.prompt}\n[IMG][/INST]"
+        """Formulate a prompt for the VLM."""
+        if self.vlm_options.repo_id == "mistral-community/pixtral-12b":
+            # prompt = f"<s>[INST]{self.vlm_options.prompt}\n[IMG][/INST]"
             chat = [
                 {
-                    "role": "user", "content": [
-                        {"type": "text", "content": self.vlm_options.prompt}, 
-                        {"type": "image"}, 
-                    ]
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "content": self.vlm_options.prompt},
+                        {"type": "image"},
+                    ],
                 }
             ]
             prompt = self.processor.apply_chat_template(chat)
             _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
-            
+
             return prompt
         else:
             raise ValueError(f"No prompt template for {self.vlm_options.repo_id}")

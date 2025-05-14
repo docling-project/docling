@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional
 
-from docling.datamodel.base_models import Page, VlmPrediction
+from docling.datamodel.base_models import Page, VlmPrediction, VlmPredictionToken
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorOptions,
@@ -29,6 +29,8 @@ class HuggingFaceMlxModel(BasePageModel):
 
         self.vlm_options = vlm_options
 
+        self.max_tokens=4096
+        
         if self.enabled:
             try:
                 from mlx_vlm import generate, load  # type: ignore
@@ -40,29 +42,32 @@ class HuggingFaceMlxModel(BasePageModel):
                 )
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
-            print(f"model init: {repo_cache_folder}")
+            _log.debug(f"model init: {repo_cache_folder}")
 
             self.apply_chat_template = apply_chat_template
             self.stream_generate = stream_generate
 
             # PARAMETERS:
             if artifacts_path is None:
-                print(f"before HuggingFaceVlmModel.download_models: {self.vlm_options.repo_id}")
+                _log.debug(
+                    f"before HuggingFaceVlmModel.download_models: {self.vlm_options.repo_id}"
+                )
                 # artifacts_path = self.download_models(self.vlm_options.repo_id)
                 artifacts_path = HuggingFaceVlmModel.download_models(
-                    self.vlm_options.repo_id, progress=True,
+                    self.vlm_options.repo_id,
+                    progress=True,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
-            print(f"downloaded model: {artifacts_path}")
-                
+            _log.debug(f"downloaded model: {artifacts_path}")
+
             self.param_question = vlm_options.prompt  # "Perform Layout Analysis."
 
             ## Load the model
-            print("start loading model ...")
+            _log.debug("start loading model ...")
             self.vlm_model, self.processor = load(artifacts_path)
-            print("loaded model ...")
+            _log.debug("loaded model ...")
             self.config = load_config(artifacts_path)
 
     """
@@ -117,9 +122,11 @@ class HuggingFaceMlxModel(BasePageModel):
                     )
 
                     start_time = time.time()
-                    print("start generating ...")
-                    
+                    _log.debug("start generating ...")
+
                     # Call model to generate:
+                    tokens:list[VlmPredictionToken] = []
+                    
                     output = ""
                     for token in self.stream_generate(
                         self.vlm_model,
@@ -129,23 +136,31 @@ class HuggingFaceMlxModel(BasePageModel):
                         max_tokens=4096,
                         verbose=False,
                     ):
-                        print(token.text, end="", flush=True)
+                        print(token.logprobs.shape)
+                        if len(token.logprobs.shape)==1:
+                            tokens.append(VlmPredictionToken(text=token.text,
+                                                             token=token.token,
+                                                             logprob=token.logprobs[token.token]))
+                        elif len(token.logprobs.shape)==2 and token.logprobs.shape[0]==1:
+                            tokens.append(VlmPredictionToken(text=token.text,
+                                                             token=token.token,
+                                                             logprob=token.logprobs[0, token.token]))
+                            
+                        
+                        # print(token.text, end="", flush=True)
                         output += token.text
+                        
                         if "</doctag>" in token.text:
                             break
 
                     generation_time = time.time() - start_time
                     page_tags = output
 
+                    print(tokens)
+                    
                     _log.debug(f"Generation time {generation_time:.2f} seconds.")
-
-                    # inference_time = time.time() - start_time
-                    # tokens_per_second = num_tokens / generation_time
-                    # print("")
-                    # print(f"Page Inference Time: {inference_time:.2f} seconds")
-                    # print(f"Total tokens on page: {num_tokens:.2f}")
-                    # print(f"Tokens/sec: {tokens_per_second:.2f}")
-                    # print("")
-                    page.predictions.vlm_response = VlmPrediction(text=page_tags)
+                    page.predictions.vlm_response = VlmPrediction(text=page_tags,
+                                                                  generation_time=generation_time,
+                                                                  generated_tokens=tokens)
 
                 yield page

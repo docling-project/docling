@@ -1,6 +1,10 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
+from docling_core.types.io import (
+    DocumentStream,
+)
+
 from docling_core.types.doc import (
     BoundingBox,
     DocItemLabel,
@@ -12,9 +16,6 @@ from docling_core.types.doc import (
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 
 # DO NOT REMOVE; explicitly exposed from this location
-from docling_core.types.io import (
-    DocumentStream,
-)
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict
 
@@ -127,12 +128,6 @@ class ErrorItem(BaseModel):
     error_message: str
 
 
-# class Cell(BaseModel):
-#    id: int
-#    text: str
-#    bbox: BoundingBox
-
-
 class Cluster(BaseModel):
     id: int
     label: DocItemLabel
@@ -153,9 +148,15 @@ class BasePageElement(BaseModel):
 class LayoutPrediction(BaseModel):
     clusters: List[Cluster] = []
 
-
+class VlmPredictionToken(BaseModel):
+    text: str = ""
+    token: int = -1
+    logprob: float = -1
+    
 class VlmPrediction(BaseModel):
     text: str = ""
+    generated_tokens: list[VlmPredictionToken] = -1
+    generation_time: float = -1
 
 
 class ContainerElement(

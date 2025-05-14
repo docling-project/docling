@@ -46,7 +46,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
             self.use_cache = True
             self.max_new_tokens = 64  # FIXME
-            
+
             _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -128,7 +128,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
                     # Define prompt structure
                     prompt = self.formulate_prompt()
-                    
+
                     inputs = self.processor(
                         text=prompt, images=hi_res_image, return_tensors="pt"
                     ).to(self.device)
@@ -169,8 +169,8 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 yield page
 
     def formulate_prompt(self) -> str:
-        """Formulate a prompt for the VLM."""        
-        if self.vlm_options.repo_id=="microsoft/Phi-4-multimodal-instruct":
+        """Formulate a prompt for the VLM."""
+        if self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
             user_prompt = "<|user|>"
             assistant_prompt = "<|assistant|>"
             prompt_suffix = "<|end|>"
@@ -178,11 +178,9 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             # prompt = f"{user_prompt}<|image_1|>Convert this image into MarkDown and only return the bare MarkDown!{prompt_suffix}{assistant_prompt}"
             prompt = f"{user_prompt}<|image_1|>{self.vlm_options.prompt}{prompt_suffix}{assistant_prompt}"
             _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
-            
+
             return prompt
         else:
             raise ValueError(f"No prompt template for {self.vlm_options.repo_id}")
 
-
         return ""
-                

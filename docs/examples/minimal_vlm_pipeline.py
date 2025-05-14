@@ -11,7 +11,6 @@ from docling.datamodel.pipeline_options import (
     InferenceFramework,
     ResponseFormat,
     VlmPipelineOptions,
-    smoldocling_vlm_mlx_conversion_options,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
