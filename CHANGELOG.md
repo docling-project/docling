@@ -1,3 +1,26 @@
+## [v2.32.0](https://github.com/docling-project/docling/releases/tag/v2.32.0) - 2025-05-14
+
+### Feature
+
+* Improve parallelization for remote services API calls ([#1548](https://github.com/docling-project/docling/issues/1548)) ([`3a04f2a`](https://github.com/docling-project/docling/commit/3a04f2a367e32913f91faa2325f928b85112e632))
+* Support image/webp file type ([#1415](https://github.com/docling-project/docling/issues/1415)) ([`12dab0a`](https://github.com/docling-project/docling/commit/12dab0a1e8d181d99e4711ffdbbc33d158234fb4))
+
+### Fix
+
+* **ocr:** Orig field in TesseractOcrCliModel as str ([#1553](https://github.com/docling-project/docling/issues/1553)) ([`9f8b479`](https://github.com/docling-project/docling/commit/9f8b479f17bbfaf79c3c897980ad15742ec86568))
+* **settings:** Fix nested settings load via environment variables ([#1551](https://github.com/docling-project/docling/issues/1551)) ([`2efb7a7`](https://github.com/docling-project/docling/commit/2efb7a7c06a8e51516cc9b93e5dbcdea69f562fa))
+
+### Documentation
+
+* Add advanced chunking & serialization example ([#1589](https://github.com/docling-project/docling/issues/1589)) ([`9f28abf`](https://github.com/docling-project/docling/commit/9f28abf0610560645b40352dfdfc3525fa86c28d))
+
+## [v2.31.2](https://github.com/docling-project/docling/releases/tag/v2.31.2) - 2025-05-13
+
+### Fix
+
+* AsciiDoc header identification (#1562) ([#1563](https://github.com/docling-project/docling/issues/1563)) ([`4046d0b`](https://github.com/docling-project/docling/commit/4046d0b2f38254679de5fc78aaf2fe630d6bb61c))
+* Restrict click version and update lock file ([#1582](https://github.com/docling-project/docling/issues/1582)) ([`8baa85a`](https://github.com/docling-project/docling/commit/8baa85a49d3a456d198c52aac8e0b4ac70c92e72))
+
 ## [v2.31.1](https://github.com/docling-project/docling/releases/tag/v2.31.1) - 2025-05-12
 
 ### Fix

@@ -90,6 +90,7 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
         "image/tiff",
         "image/gif",
         "image/bmp",
+        "image/webp",
     ],
     InputFormat.PDF: ["application/pdf"],
     InputFormat.ASCIIDOC: ["text/asciidoc"],

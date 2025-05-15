@@ -683,26 +683,10 @@ description = "Composable command line interface toolkit"
 optional = false
 python-versions = ">=3.7"
 groups = ["main", "dev", "docs"]
-markers = "sys_platform != \"darwin\" and python_version == \"3.9\" or platform_machine == \"aarch64\" and python_version < \"3.10\" and platform_system == \"Linux\" or platform_machine != \"x86_64\" and python_version == \"3.9\" or sys_platform == \"darwin\" and platform_machine == \"x86_64\" and python_version < \"3.10\""
+markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
     {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
     {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
-name = "click"
-version = "8.2.0"
-description = "Composable command line interface toolkit"
-optional = false
-python-versions = ">=3.10"
-groups = ["main", "dev", "docs"]
-markers = "python_version >= \"3.10\""
-files = [
-    {file = "click-8.2.0-py3-none-any.whl", hash = "sha256:6b303f0b2aa85f1cb4e5303078fadcbcd4e476f114fab9b5007005711839325c"},
-    {file = "click-8.2.0.tar.gz", hash = "sha256:f5452aeddd9988eefa20f90f05ab66f17fce1ee2a36907fd30b05bbb5953814d"},
 ]
 
 [package.dependencies]
@@ -1108,15 +1092,15 @@ files = [
 
 [[package]]
 name = "docling-core"
-version = "2.30.0"
+version = "2.30.1"
 description = "A python library to define and validate data types in Docling."
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
-    {file = "docling_core-2.30.0-py3-none-any.whl", hash = "sha256:976648b95b44d1a0f5540b949a38aee284e9f078b4411385f8a31cd50b17573e"},
-    {file = "docling_core-2.30.0.tar.gz", hash = "sha256:5f064f80584803ae1e7b2818d6977ef2df7cd2e20168c7065443b07cc9de435f"},
+    {file = "docling_core-2.30.1-py3-none-any.whl", hash = "sha256:28f39a8745ef36fffc2de2b9e414e42e34e7b8e9610864daaae40fc74c61edef"},
+    {file = "docling_core-2.30.1.tar.gz", hash = "sha256:1620367f8fad976625bb381dce14d70cb50491a07b643f5025ec525df7713599"},
 ]
 
 [package.dependencies]
@@ -1759,28 +1743,6 @@ files = [
 ]
 
 [[package]]
-name = "hf-xet"
-version = "1.1.0"
-description = ""
-optional = false
-python-versions = ">=3.8"
-groups = ["main", "examples", "lm"]
-markers = "platform_machine == \"x86_64\" or platform_machine == \"aarch64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or python_version >= \"3.10\" and (platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\")"
-files = [
-    {file = "hf_xet-1.1.0-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:0322c42551e275fcb7949c083a54a81b2898e50787c9aa74284fcb8d2c58c12c"},
-    {file = "hf_xet-1.1.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:667153a0304ac2debf2af95a8ff7687186f885b493f4cd16344869af270cd110"},
-    {file = "hf_xet-1.1.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:995eeffb119636ea617b96c7d7bf3c3f5ea8727fa57974574e25d700b8532d48"},
-    {file = "hf_xet-1.1.0-cp37-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:3aee847da362393331f515c4010d0aaa1c2669acfcca1f4b28946d6949cc0086"},
-    {file = "hf_xet-1.1.0-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:68c5813a6074aa36e12ef5983230e3b03148cce61e0fcdd294096493795565b4"},
-    {file = "hf_xet-1.1.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:4ee9222bf9274b1c198b88a929de0b5a49349c4962d89c5b3b2f0f7f47d9761c"},
-    {file = "hf_xet-1.1.0-cp37-abi3-win_amd64.whl", hash = "sha256:73153eab9abf3d6973b21e94a67ccba5d595c3e12feb8c0bf50be02964e7f126"},
-    {file = "hf_xet-1.1.0.tar.gz", hash = "sha256:a7c2a4c2b6eee9ce0a1a367a82b60d95ba634420ef1c250addad7aa4af419cf4"},
-]
-
-[package.extras]
-tests = ["pytest"]
-
-[[package]]
 name = "httpcore"
 version = "1.0.9"
 description = "A minimal low-level HTTP client."
@@ -1831,21 +1793,20 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "huggingface-hub"
-version = "0.31.1"
+version = "0.31.2"
 description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 optional = false
 python-versions = ">=3.8.0"
 groups = ["main", "examples", "lm"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
-    {file = "huggingface_hub-0.31.1-py3-none-any.whl", hash = "sha256:43f73124819b48b42d140cbc0d7a2e6bd15b2853b1b9d728d4d55ad1750cac5b"},
-    {file = "huggingface_hub-0.31.1.tar.gz", hash = "sha256:492bb5f545337aa9e2f59b75ef4c5f535a371e8958a6ce90af056387e67f1180"},
+    {file = "huggingface_hub-0.31.2-py3-none-any.whl", hash = "sha256:8138cd52aa2326b4429bb00a4a1ba8538346b7b8a808cdce30acb6f1f1bdaeec"},
+    {file = "huggingface_hub-0.31.2.tar.gz", hash = "sha256:7053561376ed7f6ffdaecf09cc54d70dc784ac6315fa4bb9b93e19662b029675"},
 ]
 
 [package.dependencies]
 filelock = "*"
 fsspec = ">=2023.5.0"
-hf-xet = {version = ">=1.1.0,<2.0.0", markers = "platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\""}
 packaging = ">=20.9"
 pyyaml = ">=5.1"
 requests = "*"
@@ -1858,7 +1819,7 @@ cli = ["InquirerPy (==0.3.4)"]
 dev = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio (>=4.0.0)", "jedi", "libcst (==1.4.0)", "mypy (==1.5.1)", "numpy", "pytest (>=8.1.1,<8.2.2)", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-mock", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "ruff (>=0.9.0)", "soundfile", "types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)", "urllib3 (<2.0)"]
 fastai = ["fastai (>=2.4)", "fastcore (>=1.3.27)", "toml"]
 hf-transfer = ["hf-transfer (>=0.1.4)"]
-hf-xet = ["hf-xet (>=1.1.0,<2.0.0)"]
+hf-xet = ["hf-xet (>=1.1.1,<2.0.0)"]
 inference = ["aiohttp"]
 quality = ["libcst (==1.4.0)", "mypy (==1.5.1)", "ruff (>=0.9.0)"]
 tensorflow = ["graphviz", "pydot", "tensorflow"]
@@ -3239,15 +3200,15 @@ pygments = ">2.12.0"
 
 [[package]]
 name = "mkdocs-material"
-version = "9.6.13"
+version = "9.6.14"
 description = "Documentation that simply works"
 optional = false
 python-versions = ">=3.8"
 groups = ["docs"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
-    {file = "mkdocs_material-9.6.13-py3-none-any.whl", hash = "sha256:3730730314e065f422cc04eacbc8c6084530de90f4654a1482472283a38e30d3"},
-    {file = "mkdocs_material-9.6.13.tar.gz", hash = "sha256:7bde7ebf33cfd687c1c86c08ed8f6470d9a5ba737bd89e7b3e5d9f94f8c72c16"},
+    {file = "mkdocs_material-9.6.14-py3-none-any.whl", hash = "sha256:3b9cee6d3688551bf7a8e8f41afda97a3c39a12f0325436d76c86706114b721b"},
+    {file = "mkdocs_material-9.6.14.tar.gz", hash = "sha256:39d795e90dce6b531387c255bd07e866e027828b7346d3eba5ac3de265053754"},
 ]
 
 [package.dependencies]
@@ -5176,21 +5137,21 @@ files = [
 
 [[package]]
 name = "protobuf"
-version = "6.30.2"
+version = "6.31.0"
 description = ""
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "examples"]
 files = [
-    {file = "protobuf-6.30.2-cp310-abi3-win32.whl", hash = "sha256:b12ef7df7b9329886e66404bef5e9ce6a26b54069d7f7436a0853ccdeb91c103"},
-    {file = "protobuf-6.30.2-cp310-abi3-win_amd64.whl", hash = "sha256:7653c99774f73fe6b9301b87da52af0e69783a2e371e8b599b3e9cb4da4b12b9"},
-    {file = "protobuf-6.30.2-cp39-abi3-macosx_10_9_universal2.whl", hash = "sha256:0eb523c550a66a09a0c20f86dd554afbf4d32b02af34ae53d93268c1f73bc65b"},
-    {file = "protobuf-6.30.2-cp39-abi3-manylinux2014_aarch64.whl", hash = "sha256:50f32cc9fd9cb09c783ebc275611b4f19dfdfb68d1ee55d2f0c7fa040df96815"},
-    {file = "protobuf-6.30.2-cp39-abi3-manylinux2014_x86_64.whl", hash = "sha256:4f6c687ae8efae6cf6093389a596548214467778146b7245e886f35e1485315d"},
-    {file = "protobuf-6.30.2-cp39-cp39-win32.whl", hash = "sha256:524afedc03b31b15586ca7f64d877a98b184f007180ce25183d1a5cb230ee72b"},
-    {file = "protobuf-6.30.2-cp39-cp39-win_amd64.whl", hash = "sha256:acec579c39c88bd8fbbacab1b8052c793efe83a0a5bd99db4a31423a25c0a0e2"},
-    {file = "protobuf-6.30.2-py3-none-any.whl", hash = "sha256:ae86b030e69a98e08c77beab574cbcb9fff6d031d57209f574a5aea1445f4b51"},
-    {file = "protobuf-6.30.2.tar.gz", hash = "sha256:35c859ae076d8c56054c25b59e5e59638d86545ed6e2b6efac6be0b6ea3ba048"},
+    {file = "protobuf-6.31.0-cp310-abi3-win32.whl", hash = "sha256:10bd62802dfa0588649740a59354090eaf54b8322f772fbdcca19bc78d27f0d6"},
+    {file = "protobuf-6.31.0-cp310-abi3-win_amd64.whl", hash = "sha256:3e987c99fd634be8347246a02123250f394ba20573c953de133dc8b2c107dd71"},
+    {file = "protobuf-6.31.0-cp39-abi3-macosx_10_9_universal2.whl", hash = "sha256:2c812f0f96ceb6b514448cefeb1df54ec06dde456783f5099c0e2f8a0f2caa89"},
+    {file = "protobuf-6.31.0-cp39-abi3-manylinux2014_aarch64.whl", hash = "sha256:67ce50195e4e584275623b8e6bc6d3d3dfd93924bf6116b86b3b8975ab9e4571"},
+    {file = "protobuf-6.31.0-cp39-abi3-manylinux2014_x86_64.whl", hash = "sha256:5353e38844168a327acd2b2aa440044411cd8d1b6774d5701008bd1dba067c79"},
+    {file = "protobuf-6.31.0-cp39-cp39-win32.whl", hash = "sha256:96d8da25c83b11db5fe9e0376351ce25e7205e13224d939e097b6f82a72af824"},
+    {file = "protobuf-6.31.0-cp39-cp39-win_amd64.whl", hash = "sha256:00a873c06efdfb854145d9ded730b09cf57d206075c38132674093370e2edabb"},
+    {file = "protobuf-6.31.0-py3-none-any.whl", hash = "sha256:6ac2e82556e822c17a8d23aa1190bbc1d06efb9c261981da95c71c9da09e9e23"},
+    {file = "protobuf-6.31.0.tar.gz", hash = "sha256:314fab1a6a316469dc2dd46f993cbbe95c861ea6807da910becfe7475bc26ffe"},
 ]
 markers = {main = "extra == \"rapidocr\"", examples = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""}
 
@@ -6278,15 +6239,15 @@ files = [
 
 [[package]]
 name = "pyyaml-env-tag"
-version = "1.0"
+version = "1.1"
 description = "A custom YAML tag for referencing environment variables in YAML files."
 optional = false
 python-versions = ">=3.9"
 groups = ["docs"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
-    {file = "pyyaml_env_tag-1.0-py3-none-any.whl", hash = "sha256:37f081041b8dca44ed8eb931ce0056f97de17251450f0ed08773dc2bcaf9e683"},
-    {file = "pyyaml_env_tag-1.0.tar.gz", hash = "sha256:bc952534a872b583f66f916e2dd83e7a7b9087847f4afca6d9c957c48b258ed2"},
+    {file = "pyyaml_env_tag-1.1-py3-none-any.whl", hash = "sha256:17109e1a528561e32f026364712fee1264bc2ea6715120891174ed1b980d2e04"},
+    {file = "pyyaml_env_tag-1.1.tar.gz", hash = "sha256:2eb38b75a2d21ee0475d6d97ec19c63287a7e140231e4214969d0eac923cd7ff"},
 ]
 
 [package.dependencies]
@@ -7176,14 +7137,14 @@ train = ["accelerate (>=0.20.3)", "datasets"]
 
 [[package]]
 name = "setuptools"
-version = "80.4.0"
+version = "80.7.1"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "examples", "lm", "mac_intel"]
 files = [
-    {file = "setuptools-80.4.0-py3-none-any.whl", hash = "sha256:6cdc8cb9a7d590b237dbe4493614a9b75d0559b888047c1f67d49ba50fc3edb2"},
-    {file = "setuptools-80.4.0.tar.gz", hash = "sha256:5a78f61820bc088c8e4add52932ae6b8cf423da2aff268c23f813cfbb13b4006"},
+    {file = "setuptools-80.7.1-py3-none-any.whl", hash = "sha256:ca5cc1069b85dc23070a6628e6bcecb3292acac802399c7f8edc0100619f9009"},
+    {file = "setuptools-80.7.1.tar.gz", hash = "sha256:f6ffc5f0142b1bd8d0ca94ee91b30c0ca862ffd50826da1ea85258a06fd94552"},
 ]
 markers = {main = "sys_platform != \"darwin\" and platform_system == \"Linux\" and platform_machine == \"x86_64\" or sys_platform != \"darwin\" and python_version >= \"3.12\" or platform_machine != \"x86_64\" and python_version >= \"3.12\"", examples = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\"", lm = "sys_platform != \"darwin\" and platform_system == \"Linux\" and platform_machine == \"x86_64\" or sys_platform != \"darwin\" and python_version >= \"3.12\" or platform_machine != \"x86_64\" and python_version >= \"3.12\"", mac_intel = "sys_platform != \"darwin\" and platform_system == \"Linux\" and platform_machine == \"x86_64\" or sys_platform != \"darwin\" and python_version >= \"3.12\" or platform_machine != \"x86_64\" and python_version >= \"3.12\""}
 
@@ -8287,19 +8248,19 @@ urllib3 = ">=1.26.0"
 
 [[package]]
 name = "typer"
-version = "0.15.3"
+version = "0.15.4"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
-    {file = "typer-0.15.3-py3-none-any.whl", hash = "sha256:c86a65ad77ca531f03de08d1b9cb67cd09ad02ddddf4b34745b5008f43b239bd"},
-    {file = "typer-0.15.3.tar.gz", hash = "sha256:818873625d0569653438316567861899f7e9972f2e6e0c16dab608345ced713c"},
+    {file = "typer-0.15.4-py3-none-any.whl", hash = "sha256:eb0651654dcdea706780c466cf06d8f174405a659ffff8f163cfbfee98c0e173"},
+    {file = "typer-0.15.4.tar.gz", hash = "sha256:89507b104f9b6a0730354f27c39fae5b63ccd0c95b1ce1f1a6ba0cfd329997c3"},
 ]
 
 [package.dependencies]
-click = ">=8.0.0"
+click = ">=8.0.0,<8.2"
 rich = ">=10.11.0"
 shellingham = ">=1.3.0"
 typing-extensions = ">=3.7.4.3"
@@ -8332,15 +8293,15 @@ files = [
 
 [[package]]
 name = "types-requests"
-version = "2.32.0.20250328"
+version = "2.32.0.20250515"
 description = "Typing stubs for requests"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
-    {file = "types_requests-2.32.0.20250328-py3-none-any.whl", hash = "sha256:72ff80f84b15eb3aa7a8e2625fffb6a93f2ad5a0c20215fc1dcfa61117bcb2a2"},
-    {file = "types_requests-2.32.0.20250328.tar.gz", hash = "sha256:c9e67228ea103bd811c96984fac36ed2ae8da87a36a633964a21f199d60baf32"},
+    {file = "types_requests-2.32.0.20250515-py3-none-any.whl", hash = "sha256:f8eba93b3a892beee32643ff836993f15a785816acca21ea0ffa006f05ef0fb2"},
+    {file = "types_requests-2.32.0.20250515.tar.gz", hash = "sha256:09c8b63c11318cb2460813871aaa48b671002e59fda67ca909e9883777787581"},
 ]
 
 [package.dependencies]
@@ -8348,15 +8309,15 @@ urllib3 = ">=2"
 
 [[package]]
 name = "types-tqdm"
-version = "4.67.0.20250417"
+version = "4.67.0.20250513"
 description = "Typing stubs for tqdm"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
-    {file = "types_tqdm-4.67.0.20250417-py3-none-any.whl", hash = "sha256:d43fc9a295be1f94083c744a09099c033c4dea293ff9a07bab9f34bfbffaaf80"},
-    {file = "types_tqdm-4.67.0.20250417.tar.gz", hash = "sha256:bfcc4099d8d48df54e53f3ea64708cbcc1d1c4039ca7619594189da8c03c7be2"},
+    {file = "types_tqdm-4.67.0.20250513-py3-none-any.whl", hash = "sha256:73d2bdac28bab49235d8660aece6c415636a0fb406f7a24b39737dfc6bf6a5dd"},
+    {file = "types_tqdm-4.67.0.20250513.tar.gz", hash = "sha256:907028c8d0a8fc20072132cd0cee72a3b6c72abf32f5ff914a7749e7d13b351e"},
 ]
 
 [package.dependencies]
@@ -9020,4 +8981,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "e768140b51251b4389be716e100ef12063c9186c4b9fdd3b8376ceaa7b87172e"
+content-hash = "0476bc946feb1593633972b76c2aeb941951693e3501d742a33e88c9ad81a750"

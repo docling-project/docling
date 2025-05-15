@@ -229,6 +229,7 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
     headers: Dict[str, str] = {}
     params: Dict[str, Any] = {}
     timeout: float = 20
+    concurrency: int = 1
 
     prompt: str = "Describe this image in a few sentences."
     provenance: str = ""

@@ -88,10 +88,10 @@ nav:
       - "Simple translation": examples/translate.py
       - examples/backend_csv.ipynb
       - examples/backend_xml_rag.ipynb
-    - 📤 Serialization:
+    - ✂️ Serialization & chunking:
       - examples/serialization.ipynb
-    - ✂️ Chunking:
       - examples/hybrid_chunking.ipynb
+      - examples/advanced_chunking_and_serialization.ipynb
     - 🤖 RAG with AI dev frameworks:
       - examples/rag_haystack.ipynb
       - examples/rag_langchain.ipynb
