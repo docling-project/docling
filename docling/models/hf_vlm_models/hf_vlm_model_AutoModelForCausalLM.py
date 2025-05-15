@@ -73,21 +73,8 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 artifacts_path,
                 trust_remote_code=self.trust_remote_code,
             )
-            if not self.param_quantized:
-                self.vlm_model = AutoModelForCausalLM.from_pretrained(
-                    artifacts_path,
-                    device_map=self.device,
-                    torch_dtype=torch.bfloat16,
-                    _attn_implementation=(
-                        "flash_attention_2"
-                        if self.device.startswith("cuda")
-                        and accelerator_options.cuda_use_flash_attention2
-                        else "eager"
-                    ),
-                    trust_remote_code=self.trust_remote_code,
-                ).to(self.device)
-
-            else:
+            if self.param_quantized:
+                print("using quantized")
                 self.vlm_model = AutoModelForCausalLM.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
@@ -100,7 +87,21 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                         else "eager"
                     ),
                     trust_remote_code=self.trust_remote_code,
-                ).to(self.device)
+                )  # .to(self.device)
+            else:
+                print("using original")
+                self.vlm_model = AutoModelForCausalLM.from_pretrained(
+                    artifacts_path,
+                    device_map=self.device,
+                    torch_dtype="auto",  # torch.bfloat16,
+                    _attn_implementation=(
+                        "flash_attention_2"
+                        if self.device.startswith("cuda")
+                        and accelerator_options.cuda_use_flash_attention2
+                        else "eager"
+                    ),
+                    trust_remote_code=self.trust_remote_code,
+                )  # .to(self.device)
 
             model_path = artifacts_path
 
@@ -118,7 +119,8 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
+                    hi_res_image = page.get_image(scale=2)  # self.vlm_options.scale)
+                    # hi_res_image.show()
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
@@ -129,6 +131,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
                     # Define prompt structure
                     prompt = self.formulate_prompt()
+                    print(f"prompt: '{prompt}', size: {im_width}, {im_height}")
 
                     inputs = self.processor(
                         text=prompt, images=hi_res_image, return_tensors="pt"
@@ -138,8 +141,8 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     start_time = time.time()
                     generate_ids = self.vlm_model.generate(
                         **inputs,
-                        max_new_tokens=self.max_new_tokens,
-                        use_cache=self.use_cache,  # Enables KV caching which can improve performance
+                        max_new_tokens=4096,  # self.max_new_tokens,
+                        # use_cache=self.use_cache,  # Enables KV caching which can improve performance
                         generation_config=self.generation_config,
                         num_logits_to_keep=1,
                     )

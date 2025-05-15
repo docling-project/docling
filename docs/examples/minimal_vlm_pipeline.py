@@ -6,13 +6,11 @@ from docling_core.types.doc import DocItemLabel, ImageRefMode
 from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import (
+from docling.datamodel.pipeline_model_specializations import (
     HuggingFaceVlmOptions,
     InferenceFramework,
     ResponseFormat,
-    VlmPipelineOptions,
     granite_vision_vlm_conversion_options,
-    granite_vision_vlm_mlx_conversion_options,
     granite_vision_vlm_ollama_conversion_options,
     phi_vlm_conversion_options,
     pixtral_12b_vlm_conversion_options,
@@ -20,6 +18,9 @@ from docling.datamodel.pipeline_options import (
     qwen25_vl_3b_vlm_mlx_conversion_options,
     smoldocling_vlm_conversion_options,
     smoldocling_vlm_mlx_conversion_options,
+)
+from docling.datamodel.pipeline_options import (
+    VlmPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -49,6 +50,7 @@ pipeline_options.generate_page_images = True
 # pipeline_options.vlm_options = granite_vision_vlm_conversion_options
 
 pipeline_options.vlm_options = phi_vlm_conversion_options
+# pipeline_options.vlm_options = qwen25_vl_3b_vlm_mlx_conversion_options
 
 """
 pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
