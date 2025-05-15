@@ -166,7 +166,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         if lang not in self._tesseract_languages:
 
             fallback = [
-                fb for fb in self.options.fall_back_lang
+                fb for fb in self.options.fallback_lang
                 if fb in self._tesseract_languages
             ]
 
