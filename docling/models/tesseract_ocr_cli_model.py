@@ -164,9 +164,24 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         # Check if the detected language has been installed
         if lang not in self._tesseract_languages:
-            msg = f"Tesseract detected the script '{script}' and language '{lang}'."
-            msg += " However this language is not installed in your system and will be ignored."
-            _log.warning(msg)
+
+            fallback = [
+                fb for fb in self.options.fall_back_lang
+                if fb in self._tesseract_languages
+            ]
+
+            if fallback:
+                _log.warning(
+                    f"Tesseract detected the script '{script}' and language '{lang}', "
+                    f"but it is not installed. Falling back to: {', '.join(fallback)}"
+                )
+
+                return "+".join(fallback)
+
+            _log.warning(
+                f"Tesseract detected the script '{script}' and language '{lang}', "
+                "but it is not installed and no fall-back languages are available."
+            )
             return None
 
         _log.debug(

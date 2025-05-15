@@ -176,6 +176,7 @@ class TesseractCliOcrOptions(OcrOptions):
 
     kind: ClassVar[Literal["tesseract"]] = "tesseract"
     lang: List[str] = ["fra", "deu", "spa", "eng"]
+    fall_back_lang: List[str] = ["osd"]
     tesseract_cmd: str = "tesseract"
     path: Optional[str] = None
 
