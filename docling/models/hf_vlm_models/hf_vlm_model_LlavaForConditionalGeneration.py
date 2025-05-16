@@ -39,16 +39,12 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
             )
 
             self.device = decide_device(accelerator_options.device)
-
-            if self.device == "mlx":
-                _log.warning(
-                    "Mapping mlx to cpu for LlavaForConditionalGeneration, use MLX framework!"
-                )
-                self.device = "cpu"
+            self.device = HuggingFaceVlmMode.map_device_to_cpu_if_mlx(self.device)
 
             self.use_cache = vlm_options.use_kv_cache
             self.max_new_tokens = vlm_options.max_new_tokens
-
+            self.temperature = vlm_options.temperature
+            
             _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -93,10 +89,12 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
 
+                    """
                     if hi_res_image:
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
-
+                    """
+                    
                     images = [hi_res_image]
 
                     # Define prompt structure
@@ -112,9 +110,10 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
                         **inputs,
                         max_new_tokens=self.max_new_tokens,
                         use_cache=self.use_cache,  # Enables KV caching which can improve performance
+                        temperature=self.temperature,
                     )
 
-                    num_tokens = len(generate_ids[0])
+                    #num_tokens = len(generate_ids[0])
                     generation_time = time.time() - start_time
 
                     response = self.processor.batch_decode(
@@ -125,7 +124,7 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
 
                     page.predictions.vlm_response = VlmPrediction(
                         text=response,
-                        generated_tokens=num_tokens,
+                        #generated_tokens=num_tokens,
                         generation_time=generation_time,
                     )
 
@@ -134,7 +133,6 @@ class HuggingFaceVlmModel_LlavaForConditionalGeneration(BasePageModel):
     def formulate_prompt(self) -> str:
         """Formulate a prompt for the VLM."""
         if self.vlm_options.repo_id == "mistral-community/pixtral-12b":
-            # prompt = f"<s>[INST]{self.vlm_options.prompt}\n[IMG][/INST]"
             chat = [
                 {
                     "role": "user",

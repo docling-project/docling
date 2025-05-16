@@ -39,8 +39,14 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
             )
 
             self.device = decide_device(accelerator_options.device)
+            self.device = HuggingFaceVlmMode.map_device_to_cpu_if_mlx(self.device)
+
             _log.debug(f"Available device for HuggingFace VLM: {self.device}")
 
+            self.use_cache = vlm_options.use_kv_cache
+            self.max_new_tokens = vlm_options.max_new_tokens
+            self.temperature = vlm_options.temperature
+            
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             # PARAMETERS:
@@ -111,10 +117,12 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                     # populate page_tags with predicted doc tags
                     page_tags = ""
 
+                    """
                     if hi_res_image:
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
-
+                    """
+                    
                     # Define prompt structure
                     prompt = self.formulate_prompt()
 
@@ -126,7 +134,10 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                     start_time = time.time()
                     # Call model to generate:
                     generated_ids = self.vlm_model.generate(
-                        **inputs, max_new_tokens=4096, use_cache=True
+                        **inputs,
+                        max_new_tokens=self.max_new_tokens,
+                        use_cache=self.use_cache,
+                        temperature=self.temperature,
                     )
 
                     generation_time = time.time() - start_time

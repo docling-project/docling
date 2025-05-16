@@ -29,7 +29,8 @@ class HuggingFaceMlxModel(BasePageModel):
 
         self.vlm_options = vlm_options
         self.max_tokens = vlm_options.max_new_tokens
-
+        self.temperature = vlm_options.temperature
+        
         if self.enabled:
             try:
                 from mlx_vlm import generate, load  # type: ignore
@@ -103,8 +104,9 @@ class HuggingFaceMlxModel(BasePageModel):
                         self.processor,
                         prompt,
                         [hi_res_image],
-                        max_tokens=4096,
+                        max_tokens=self.max_tokens,
                         verbose=False,
+                        temp=self.temperature,
                     ):
                         if len(token.logprobs.shape) == 1:
                             tokens.append(

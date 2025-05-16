@@ -84,6 +84,7 @@ smoldocling_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.MLX,
     scale=2.0,
+    temperature=0.0,
 )
 
 smoldocling_vlm_conversion_options = HuggingFaceVlmOptions(
@@ -92,6 +93,7 @@ smoldocling_vlm_conversion_options = HuggingFaceVlmOptions(
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
     scale=2.0,
+    temperature=0.0,
 )
 
 # GraniteVision
@@ -101,6 +103,7 @@ granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
     scale=2.0,
+    temperature=0.0,
 )
 
 granite_vision_vlm_ollama_conversion_options = ApiVlmOptions(
@@ -110,6 +113,7 @@ granite_vision_vlm_ollama_conversion_options = ApiVlmOptions(
     scale=1.0,
     timeout=120,
     response_format=ResponseFormat.MARKDOWN,
+    temperature=0.0,
 )
 
 # Pixtral
@@ -119,6 +123,7 @@ pixtral_12b_vlm_conversion_options = HuggingFaceVlmOptions(
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
     scale=2.0,
+    temperature=0.0,
 )
 
 pixtral_12b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
@@ -127,6 +132,7 @@ pixtral_12b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
     scale=2.0,
+    temperature=0.0,
 )
 
 # Phi4
@@ -135,6 +141,8 @@ phi_vlm_conversion_options = HuggingFaceVlmOptions(
     prompt="Convert this page to MarkDown. Do not miss any text and only output the bare MarkDown",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForCausalLM,
+    scale=2.0,
+    temperature=0.0,
 )
 
 # Qwen
@@ -143,4 +151,6 @@ qwen25_vl_3b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
     prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
+    scale=2.0,
+    temperature=0.0,
 )

@@ -187,9 +187,9 @@ if __name__ == "__main__":
     rows = []
     for vlm_options in [
             # smoldocling_vlm_conversion_options, \
-            # smoldocling_vlm_mlx_conversion_options, \
+            smoldocling_vlm_mlx_conversion_options, \
             # granite_vision_vlm_conversion_options, \
-            phi_vlm_conversion_options, \
+            # phi_vlm_conversion_options, \
             # qwen25_vl_3b_vlm_mlx_conversion_options, \
             # pixtral_12b_vlm_mlx_conversion_options,
             # pixtral_12b_vlm_conversion_options,

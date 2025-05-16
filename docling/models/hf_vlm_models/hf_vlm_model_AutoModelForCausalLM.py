@@ -42,19 +42,13 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             )
 
             self.device = decide_device(accelerator_options.device)
-
-            if self.device == "mps":
-                _log.warning(
-                    "Mapping mlx to cpu for AutoModelForCausalLM, use MLX framework!"
-                )
-                self.device = "cpu"
-
-            print("device: ", self.device)
-                
+            self.device = HuggingFaceVlmMode.map_device_to_cpu_if_mlx(self.device)
+            _log.debug(f"Available device for VLM: {self.device}")
+            
             self.use_cache = vlm_options.use_kv_cache
             self.max_new_tokens = vlm_options.max_new_tokens
+            self.temperature = vlm_options.temperature
 
-            _log.debug(f"Available device for VLM: {self.device}")
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
@@ -126,12 +120,6 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
-
-                    """
-                    if hi_res_image:
-                        if hi_res_image.mode != "RGB":
-                            hi_res_image = hi_res_image.convert("RGB")
-                    """
                     
                     # Define prompt structure
                     prompt = self.formulate_prompt()
@@ -147,9 +135,9 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                         **inputs,
                         max_new_tokens=self.max_new_tokens,
                         use_cache=self.use_cache,  # Enables KV caching which can improve performance
+                        temperature=self.temperature,
                         generation_config=self.generation_config,
                         num_logits_to_keep=1,
-                        # temperature=0.0,
                     )
                     generate_ids = generate_ids[:, inputs["input_ids"].shape[1] :]
 
@@ -162,8 +150,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                         clean_up_tokenization_spaces=False,
                     )[0]
 
-                    #_log.debug(
-                    print(
+                    _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
                     page.predictions.vlm_response = VlmPrediction(text=response, generation_time=generation_time)
