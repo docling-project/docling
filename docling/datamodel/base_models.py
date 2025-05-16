@@ -34,11 +34,12 @@ class ConversionStatus(str, Enum):
 class InputFormat(str, Enum):
     """A document format supported by document backend parsers."""
 
+    PDF = "pdf"
     DOCX = "docx"
+    XLSM = "xlsm"
     PPTX = "pptx"
     HTML = "html"
     IMAGE = "image"
-    PDF = "pdf"
     ASCIIDOC = "asciidoc"
     MD = "md"
     CSV = "csv"

@@ -126,6 +126,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XLSX: FormatOption(
             pipeline_cls=SimplePipeline, backend=MsExcelDocumentBackend
         ),
+        InputFormat.XLSM: FormatOption(
+            pipeline_cls=SimplePipeline, backend=MsExcelDocumentBackend
+        ),
         InputFormat.DOCX: FormatOption(
             pipeline_cls=SimplePipeline, backend=MsWordDocumentBackend
         ),
