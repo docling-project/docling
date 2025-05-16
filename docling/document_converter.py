@@ -19,6 +19,7 @@ from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.wav_backend import WavDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.base_models import (
@@ -33,7 +34,7 @@ from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,
 )
-from docling.datamodel.pipeline_options import PipelineOptions
+from docling.datamodel.pipeline_options import AsrPipelineOptions, PipelineOptions
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -41,6 +42,7 @@ from docling.datamodel.settings import (
     settings,
 )
 from docling.exceptions import ConversionError
+from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
@@ -118,6 +120,10 @@ class PdfFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
 
 
+class AsrFormatOption(FormatOption):
+    pipeline_cls: Type = AsrPipeline
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: FormatOption(
@@ -155,6 +161,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         ),
         InputFormat.JSON_DOCLING: FormatOption(
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
+        ),
+        InputFormat.WAV: FormatOption(
+            pipeline_cls=AsrPipeline, backend=WavDocumentBackend
         ),
     }
     if (options := format_to_default_options.get(format)) is not None:
@@ -292,7 +301,10 @@ class DocumentConverter:
         """Retrieve or initialize a pipeline, reusing instances based on class and options."""
         fopt = self.format_to_options.get(doc_format)
 
+        print(self.format_to_options)
+
         if fopt is None or fopt.pipeline_options is None:
+            _log.warning(f"fopt ({fopt}) or its options are None for {doc_format}")
             return None
 
         pipeline_class = fopt.pipeline_cls
@@ -345,6 +357,7 @@ class DocumentConverter:
     ) -> ConversionResult:
         if in_doc.valid:
             pipeline = self._get_pipeline(in_doc.format)
+            print(f"_execute_pipeline: {pipeline}")
             if pipeline is not None:
                 conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
             else:
