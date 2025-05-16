@@ -180,8 +180,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Let\u2019s swim!",
-      "text": "Let\u2019s swim!",
+      "orig": "Let’s swim!",
+      "text": "Let’s swim!",
       "level": 1
     },
     {
@@ -247,8 +247,8 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "Also, don\u2019t forget:",
-      "text": "Also, don\u2019t forget:"
+      "orig": "Also, don’t forget:",
+      "text": "Also, don’t forget:"
     },
     {
       "self_ref": "#/texts/10",
@@ -273,8 +273,8 @@
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Don\u2019t forget to drink water",
-      "text": "Don\u2019t forget to drink water",
+      "orig": "Don’t forget to drink water",
+      "text": "Don’t forget to drink water",
       "enumerated": false,
       "marker": "-"
     },
@@ -301,8 +301,8 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "Hmm, what else\u2026",
-      "text": "Hmm, what else\u2026"
+      "orig": "Hmm, what else…",
+      "text": "Hmm, what else…"
     },
     {
       "self_ref": "#/texts/14",
@@ -335,8 +335,8 @@
       "content_layer": "body",
       "label": "section_header",
       "prov": [],
-      "orig": "Let\u2019s eat",
-      "text": "Let\u2019s eat",
+      "orig": "Let’s eat",
+      "text": "Let’s eat",
       "level": 2
     },
     {
@@ -348,8 +348,8 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "After we had a good day of swimming in the lake, it\u2019s important to eat something nice",
-      "text": "After we had a good day of swimming in the lake, it\u2019s important to eat something nice"
+      "orig": "After we had a good day of swimming in the lake, it’s important to eat something nice",
+      "text": "After we had a good day of swimming in the lake, it’s important to eat something nice"
     },
     {
       "self_ref": "#/texts/16",
@@ -396,8 +396,8 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "And let\u2019s add another list in the end:",
-      "text": "And let\u2019s add another list in the end:"
+      "orig": "And let’s add another list in the end:",
+      "text": "And let’s add another list in the end:"
     },
     {
       "self_ref": "#/texts/20",
