@@ -75,7 +75,8 @@ class HuggingFaceMlxModel(BasePageModel):
                     assert page.size is not None
 
                     hi_res_image = page.get_image(scale=self.vlm_options.scale)
-
+                    hi_res_image.save("./scratch/page.png")
+                    
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
 
