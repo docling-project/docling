@@ -29,6 +29,13 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_model_specializations import (
+    VlmModelType,
+    granite_vision_vlm_conversion_options,
+    granite_vision_vlm_ollama_conversion_options,
+    smoldocling_vlm_conversion_options,
+    smoldocling_vlm_mlx_conversion_options,
+)
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
@@ -39,12 +46,7 @@ from docling.datamodel.pipeline_options import (
     PdfPipeline,
     PdfPipelineOptions,
     TableFormerMode,
-    VlmModelType,
     VlmPipelineOptions,
-    granite_vision_vlm_conversion_options,
-    granite_vision_vlm_ollama_conversion_options,
-    smoldocling_vlm_conversion_options,
-    smoldocling_vlm_mlx_conversion_options,
 )
 from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
