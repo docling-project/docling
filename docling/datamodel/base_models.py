@@ -1,6 +1,9 @@
+import math
+from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Optional, Union
 
+import numpy as np
 from docling_core.types.doc import (
     BoundingBox,
     DocItemLabel,
@@ -16,7 +19,7 @@ from docling_core.types.io import (
     DocumentStream,
 )
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
@@ -298,3 +301,97 @@ class OpenAiApiResponse(BaseModel):
     choices: List[OpenAiResponseChoice]
     created: int
     usage: OpenAiResponseUsage
+
+
+# Create a type alias for score values
+ScoreValue = float
+
+
+class QualityGrade(str, Enum):
+    POOR = "poor"
+    FAIR = "fair"
+    GOOD = "good"
+    EXCELLENT = "excellent"
+    UNSPECIFIED = "unspecified"
+
+
+class PageConfidenceScores(BaseModel):
+    parse_score: ScoreValue = np.nan
+    layout_score: ScoreValue = np.nan
+    table_score: ScoreValue = np.nan
+    ocr_score: ScoreValue = np.nan
+
+    def _score_to_grade(self, score: ScoreValue) -> QualityGrade:
+        if score < 0.5:
+            return QualityGrade.POOR
+        elif score < 0.8:
+            return QualityGrade.FAIR
+        elif score < 0.9:
+            return QualityGrade.GOOD
+        elif score >= 0.9:
+            return QualityGrade.EXCELLENT
+
+        return QualityGrade.UNSPECIFIED
+
+    @computed_field  # type: ignore
+    @property
+    def mean_grade(self) -> QualityGrade:
+        return self._score_to_grade(self.mean_score)
+
+    @computed_field  # type: ignore
+    @property
+    def low_grade(self) -> QualityGrade:
+        return self._score_to_grade(self.low_score)
+
+    @computed_field  # type: ignore
+    @property
+    def mean_score(self) -> ScoreValue:
+        return ScoreValue(
+            np.nanmean(
+                [
+                    self.ocr_score,
+                    self.table_score,
+                    self.layout_score,
+                    self.parse_score,
+                ]
+            )
+        )
+
+    @computed_field  # type: ignore
+    @property
+    def low_score(self) -> ScoreValue:
+        return ScoreValue(
+            np.nanquantile(
+                [
+                    self.ocr_score,
+                    self.table_score,
+                    self.layout_score,
+                    self.parse_score,
+                ],
+                q=0.05,
+            )
+        )
+
+
+class ConfidenceReport(PageConfidenceScores):
+    pages: Dict[int, PageConfidenceScores] = Field(
+        default_factory=lambda: defaultdict(PageConfidenceScores)
+    )
+
+    @computed_field  # type: ignore
+    @property
+    def mean_score(self) -> ScoreValue:
+        return ScoreValue(
+            np.nanmean(
+                [c.mean_score for c in self.pages.values()],
+            )
+        )
+
+    @computed_field  # type: ignore
+    @property
+    def low_score(self) -> ScoreValue:
+        return ScoreValue(
+            np.nanmean(
+                [c.low_score for c in self.pages.values()],
+            )
+        )
