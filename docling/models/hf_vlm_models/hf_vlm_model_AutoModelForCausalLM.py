@@ -42,9 +42,9 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             )
 
             self.device = decide_device(accelerator_options.device)
-            self.device = HuggingFaceVlmMode.map_device_to_cpu_if_mlx(self.device)
+            self.device = HuggingFaceVlmModel.map_device_to_cpu_if_mlx(self.device)
             _log.debug(f"Available device for VLM: {self.device}")
-            
+
             self.use_cache = vlm_options.use_kv_cache
             self.max_new_tokens = vlm_options.max_new_tokens
             self.temperature = vlm_options.temperature
@@ -120,14 +120,14 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
-                    
+
                     # Define prompt structure
                     prompt = self.formulate_prompt()
                     print(f"prompt: '{prompt}', size: {im_width}, {im_height}")
 
                     inputs = self.processor(
                         text=prompt, images=hi_res_image, return_tensors="pt"
-                    ) #.to(self.device)
+                    )  # .to(self.device)
 
                     # Generate response
                     start_time = time.time()
@@ -153,7 +153,9 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
-                    page.predictions.vlm_response = VlmPrediction(text=response, generation_time=generation_time)
+                    page.predictions.vlm_response = VlmPrediction(
+                        text=response, generation_time=generation_time
+                    )
 
                 yield page
 

@@ -6,7 +6,6 @@ _log = logging.getLogger(__name__)
 
 
 class HuggingFaceVlmModel:
-
     @staticmethod
     def map_device_to_cpu_if_mlx(device: str) -> str:
         if device == "mps":
@@ -16,7 +15,7 @@ class HuggingFaceVlmModel:
             return "cpu"
 
         return device
-        
+
     @staticmethod
     def download_models(
         repo_id: str,

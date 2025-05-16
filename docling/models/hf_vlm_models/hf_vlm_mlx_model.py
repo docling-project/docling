@@ -30,7 +30,7 @@ class HuggingFaceMlxModel(BasePageModel):
         self.vlm_options = vlm_options
         self.max_tokens = vlm_options.max_new_tokens
         self.temperature = vlm_options.temperature
-        
+
         if self.enabled:
             try:
                 from mlx_vlm import generate, load  # type: ignore
@@ -76,8 +76,6 @@ class HuggingFaceMlxModel(BasePageModel):
                     assert page.size is not None
 
                     hi_res_image = page.get_image(scale=self.vlm_options.scale)
-                    hi_res_image.save("./scratch/page.png")
-                    
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
 
@@ -128,8 +126,10 @@ class HuggingFaceMlxModel(BasePageModel):
                                 )
                             )
                         else:
-                            _log.warning(f"incompatible shape for logprobs: {token.logprobs.shape}")
-                            
+                            _log.warning(
+                                f"incompatible shape for logprobs: {token.logprobs.shape}"
+                            )
+
                         output += token.text
                         if "</doctag>" in token.text:
                             break

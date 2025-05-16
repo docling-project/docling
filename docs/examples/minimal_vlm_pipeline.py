@@ -4,6 +4,7 @@ from pathlib import Path
 
 from docling_core.types.doc import DocItemLabel, ImageRefMode
 from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
+from tabulate import tabulate
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_model_specializations import (
@@ -24,8 +25,6 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
-
-from tabulate import tabulate
 
 ## Use experimental VlmPipeline
 pipeline_options = VlmPipelineOptions()
@@ -101,19 +100,20 @@ qwen_vlm_conversion_options = HuggingFaceVlmOptions(
 pipeline_options.vlm_options = qwen_vlm_conversion_options
 """
 
+
 def convert(sources: list[Path], converter):
     for source in sources:
-        #start_time = time.time()
+        # start_time = time.time()
         print("================================================")
         print(f"Processing... {source}")
         print("================================================")
         print("")
 
         res = converter.convert(source)
-        
+
         print("")
         # print(res.document.export_to_markdown())
-        
+
         model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
         framework = pipeline_options.vlm_options.inference_framework
         fname = f"{res.input.file.stem}-{model_id}-{framework}"
@@ -127,7 +127,7 @@ def convert(sources: list[Path], converter):
             )
             print(page.predictions.vlm_response.text)
             print(" ---------- ")
-            
+
         print("===== Final output of the converted document =======")
 
         with (out_path / f"{fname}.json").open("w") as fp:
@@ -152,7 +152,7 @@ def convert(sources: list[Path], converter):
             split_page_view=True,
         )
         print(f" => produced {out_path / fname}.html")
-        
+
         pg_num = res.document.num_pages()
         print("")
         print(
@@ -161,18 +161,24 @@ def convert(sources: list[Path], converter):
         print("====================================================")
 
         # return [source, f"{out_path / fname}.html", model_id, framework, inference_time, ]
-        return [source, model_id, framework, pg_num, inference_time, ]
-        
-if __name__ == "__main__":
+        return [
+            source,
+            model_id,
+            framework,
+            pg_num,
+            inference_time,
+        ]
 
+
+if __name__ == "__main__":
     sources = [
         # "tests/data/2305.03393v1-pg9-img.png",
         "tests/data/pdf/2305.03393v1-pg9.pdf",
     ]
-    
+
     out_path = Path("scratch")
     out_path.mkdir(parents=True, exist_ok=True)
-    
+
     ## Use VlmPipeline
     pipeline_options = VlmPipelineOptions()
 
@@ -186,16 +192,16 @@ if __name__ == "__main__":
 
     rows = []
     for vlm_options in [
-            # smoldocling_vlm_conversion_options, \
-            smoldocling_vlm_mlx_conversion_options, \
-            # granite_vision_vlm_conversion_options, \
-            # phi_vlm_conversion_options, \
-            # qwen25_vl_3b_vlm_mlx_conversion_options, \
-            # pixtral_12b_vlm_mlx_conversion_options,
-            # pixtral_12b_vlm_conversion_options,
+        # smoldocling_vlm_conversion_options, \
+        smoldocling_vlm_mlx_conversion_options,
+        # granite_vision_vlm_conversion_options, \
+        # phi_vlm_conversion_options, \
+        # qwen25_vl_3b_vlm_mlx_conversion_options, \
+        # pixtral_12b_vlm_mlx_conversion_options,
+        # pixtral_12b_vlm_conversion_options,
     ]:
         pipeline_options.vlm_options = vlm_options
-        
+
         ## Set up pipeline for PDF or image inputs
         converter = DocumentConverter(
             format_options={
@@ -209,12 +215,12 @@ if __name__ == "__main__":
                 ),
             },
         )
-        
+
         row = convert(sources=sources, converter=converter)
         print("pipelines: \n", converter._get_initialized_pipelines())
-        
+
         rows.append(row)
-        
+
         print(tabulate(rows))
 
         print("see if memory gets released ...")

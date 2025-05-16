@@ -44,11 +44,11 @@ class HuggingFaceVlmOptions(BaseVlmOptions):
     inference_framework: InferenceFramework
     response_format: ResponseFormat
 
-    scale: float = 2.0 
+    scale: float = 2.0
 
     temperature: float = 0.0
     stop_strings: list[str] = []
-    
+
     use_kv_cache: bool = True
     max_new_tokens: int = 4096
 
