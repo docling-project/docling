@@ -1,0 +1,109 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.3.0",
+  "name": "ocr_test_rotated_90",
+  "origin": {
+    "mimetype": "application/pdf",
+    "binary_hash": 6989291015361162334,
+    "filename": "ocr_test_rotated_90.pdf",
+    "uri": null
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "parent": null,
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "parent": null,
+    "children": [
+      {
+        "cref": "#/texts/0"
+      },
+      {
+        "cref": "#/texts/1"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "page_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 77.10171546422428,
+            "t": 506.07735421856773,
+            "r": 124.91101654503161,
+            "b": 71.88562244773436,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            86
+          ]
+        }
+      ],
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 131.21306574279092,
+            "t": 154.19400205373182,
+            "r": 152.19606490864376,
+            "b": 74.12495603322407,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            7
+          ]
+        }
+      ],
+      "orig": "package",
+      "text": "package",
+      "formatting": null,
+      "hyperlink": null
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 841.9216918945312,
+        "height": 595.201171875
+      },
+      "image": null,
+      "page_no": 1
+    }
+  }
+}

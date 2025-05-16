@@ -366,29 +366,6 @@
       "$ref": "#/figures/2"
     },
     {
-      "prov": [
-        {
-          "bbox": [
-            308.862,
-            232.72709999999995,
-            545.11517,
-            277.49963
-          ],
-          "page": 1,
-          "span": [
-            0,
-            220
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 1: Picture of a table with subtle, complex features such as (1) multi-column headers, (2) cell with multi-row text and (3) cells with no content. Image from PubTabNet evaluation set, filename: 'PMC2944238 004 02'.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
-    },
-    {
       "name": "Table",
       "type": "table",
       "$ref": "#/tables/1"
@@ -932,29 +909,6 @@
         {
           "bbox": [
             308.862,
-            503.3020900000001,
-            545.11511,
-            524.16364
-          ],
-          "page": 3,
-          "span": [
-            0,
-            104
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 2: Distribution of the tables across different table dimensions in PubTabNet + FinTabNet datasets",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            308.862,
             465.62009,
             437.27002,
             474.52664
@@ -1329,55 +1283,9 @@
       "$ref": "#/figures/4"
     },
     {
-      "prov": [
-        {
-          "bbox": [
-            50.111992,
-            567.03308,
-            545.10846,
-            588.01422
-          ],
-          "page": 5,
-          "span": [
-            0,
-            212
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 3: TableFormer takes in an image of the PDF and creates bounding box and HTML structure predictions that are synchronized. The bounding boxes grabs the content from the PDF and inserts it in the structure.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
-    },
-    {
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/5"
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            50.112,
-            111.72906,
-            286.36597,
-            264.2171900000001
-          ],
-          "page": 5,
-          "span": [
-            0,
-            745
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 4: Given an input image of a table, the Encoder produces fixed-length features that represent the input image. The features are then passed to both the Structure Decoder and Cell BBox Decoder . During training, the Structure Decoder receives 'tokenized tags' of the HTML code that represent the table structure. Afterwards, a transformer encoder and decoder architecture is employed to produce features that are received by a linear layer, and the Cell BBox Decoder. The linear layer is applied to the features to predict the tags. Simultaneously, the Cell BBox Decoder selects features referring to the data cells (' < td > ', ' < ') and passes them through an attention network, an MLP, and a linear layer to predict the bounding boxes.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
     },
     {
       "prov": [
@@ -2307,29 +2215,6 @@
       "$ref": "#/figures/7"
     },
     {
-      "prov": [
-        {
-          "bbox": [
-            53.811783000000005,
-            575.89355,
-            385.93451,
-            583.76672
-          ],
-          "page": 8,
-          "span": [
-            0,
-            79
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "b. Structure predicted by TableFormer, with superimposed matched PDF cell text:",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
-    },
-    {
       "name": "Table",
       "type": "table",
       "$ref": "#/tables/6"
@@ -2368,55 +2253,9 @@
       "$ref": "#/figures/8"
     },
     {
-      "prov": [
-        {
-          "bbox": [
-            62.595001,
-            324.36508,
-            532.63049,
-            333.27164
-          ],
-          "page": 8,
-          "span": [
-            0,
-            112
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 6: An example of TableFormer predictions (bounding boxes and structure) from generated SynthTabNet table.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
-    },
-    {
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/9"
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            50.112,
-            426.35013,
-            545.11377,
-            471.12265
-          ],
-          "page": 8,
-          "span": [
-            0,
-            397
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 5: One of the benefits of TableFormer is that it is language agnostic, as an example, the left part of the illustration demonstrates TableFormer predictions on previously unseen language (Japanese). Additionally, we see that TableFormer is robust to variability in style and content, right side of the illustration shows the example of the TableFormer prediction from the FinTabNet dataset.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
     },
     {
       "name": "Picture",
@@ -3872,29 +3711,6 @@
       "prov": [
         {
           "bbox": [
-            50.112,
-            605.63605,
-            545.11371,
-            626.49762
-          ],
-          "page": 12,
-          "span": [
-            0,
-            245
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 7: Distribution of the tables across different dimensions per dataset. Simple vs complex tables per dataset and split, strict vs non strict html structures per dataset and table complexity, missing bboxes per dataset and table complexity.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
             61.569,
             560.20703,
             286.36511,
@@ -4702,29 +4518,6 @@
       "$ref": "#/figures/16"
     },
     {
-      "prov": [
-        {
-          "bbox": [
-            315.79001,
-            411.40909,
-            538.18524,
-            420.31564
-          ],
-          "page": 14,
-          "span": [
-            0,
-            55
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 13: Table predictions example on colorful table.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
-    },
-    {
       "name": "Table",
       "type": "table",
       "$ref": "#/tables/27"
@@ -4882,29 +4675,6 @@
       "name": "Picture",
       "type": "figure",
       "$ref": "#/figures/23"
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            50.112,
-            262.80108999999993,
-            545.11383,
-            283.66263
-          ],
-          "page": 16,
-          "span": [
-            0,
-            153
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Figure 17: Example of long table. End-to-end example from initial PDF cells to prediction of bounding boxes, post processing and prediction of structure.",
-      "type": "caption",
-      "payload": null,
-      "name": "Caption",
-      "font": null
     }
   ],
   "figures": [
@@ -5550,9 +5320,9 @@
           {
             "bbox": [
               347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              437.5936,
+              465.88101,
+              447.724
             ],
             "spans": [
               [
@@ -5590,9 +5360,9 @@
           {
             "bbox": [
               347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              437.5936,
+              465.88101,
+              447.724
             ],
             "spans": [
               [
@@ -5630,9 +5400,9 @@
           {
             "bbox": [
               347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              437.5936,
+              465.88101,
+              447.724
             ],
             "spans": [
               [
@@ -5670,9 +5440,9 @@
           {
             "bbox": [
               347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              437.5936,
+              465.88101,
+              447.724
             ],
             "spans": [
               [
@@ -5854,9 +5624,9 @@
           {
             "bbox": [
               318.77316,
-              473.70425,
-              323.16565,
-              482.4892
+              473.32291,
+              337.90903,
+              483.45331
             ],
             "spans": [
               [
@@ -7362,8 +7132,8 @@
             "bbox": [
               211.2,
               414.71237,
-              236.10649,
-              423.61893
+              247.74349999999998,
+              435.57391000000007
             ],
             "spans": [
               [
@@ -9404,10 +9174,10 @@
           },
           {
             "bbox": [
-              449.03400000000005,
+              448.6951,
               546.25537,
-              473.94049000000007,
-              555.16193
+              485.07849,
+              567.11693
             ],
             "spans": [
               [
@@ -10355,7 +10125,7 @@
             "bbox": [
               175.36609,
               229.66594999999995,
-              196.1071,
+              201.29247,
               233.84735
             ],
             "spans": [
@@ -10836,8 +10606,8 @@
           {
             "bbox": [
               55.53052099999999,
-              249.79845999999998,
-              97.013,
+              249.58942000000002,
+              128.96027,
               253.97986000000003
             ],
             "spans": [
@@ -11006,8 +10776,8 @@
           {
             "bbox": [
               55.53052099999999,
-              257.28369,
-              91.827637,
+              257.07465,
+              129.88177,
               261.46509000000003
             ],
             "spans": [
@@ -11176,8 +10946,8 @@
           {
             "bbox": [
               55.53052099999999,
-              264.5108,
-              60.715424,
+              264.30175999999994,
+              129.88177,
               268.69219999999996
             ],
             "spans": [
@@ -11346,8 +11116,8 @@
           {
             "bbox": [
               55.53052099999999,
-              271.73785,
-              107.38374,
+              271.52881,
+              127.32454000000001,
               275.91925000000003
             ],
             "spans": [
@@ -11517,8 +11287,8 @@
             "bbox": [
               55.53052099999999,
               279.01392,
-              68.68605,
-              283.37183
+              110.16829999999999,
+              283.40436
             ],
             "spans": [
               [
@@ -11960,7 +11730,7 @@
               459.04861,
               221.62415,
               542.00018,
-              226.68933000000004
+              232.89935000000003
             ],
             "spans": [
               [
@@ -11992,7 +11762,7 @@
               459.04861,
               221.62415,
               542.00018,
-              226.68933000000004
+              232.89935000000003
             ],
             "spans": [
               [
@@ -12036,7 +11806,7 @@
             "bbox": [
               393.2442,
               236.74712999999997,
-              400.74588,
+              407.34631,
               241.81232
             ],
             "spans": [
@@ -12150,7 +11920,7 @@
             "bbox": [
               306.11493,
               244.61084000000005,
-              355.6532,
+              364.65607,
               249.67602999999997
             ],
             "spans": [
@@ -12178,7 +11948,7 @@
             "bbox": [
               396.24661,
               244.91327,
-              400.75238,
+              403.75531,
               249.97844999999995
             ],
             "spans": [
@@ -12234,7 +12004,7 @@
             "bbox": [
               465.52859,
               244.91327,
-              478.40103,
+              483.55001999999996,
               249.97844999999995
             ],
             "spans": [
@@ -12320,7 +12090,7 @@
             "bbox": [
               396.24661,
               253.68451000000005,
-              400.75238,
+              403.75531,
               258.74969
             ],
             "spans": [
@@ -12462,7 +12232,7 @@
             "bbox": [
               394.43222,
               261.54822,
-              400.73563,
+              405.53625,
               266.61339999999996
             ],
             "spans": [
@@ -12604,7 +12374,7 @@
             "bbox": [
               394.43222,
               270.31946000000005,
-              400.73563,
+              405.53625,
               275.38464
             ],
             "spans": [

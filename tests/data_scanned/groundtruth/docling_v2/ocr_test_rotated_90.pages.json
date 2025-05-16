@@ -1,0 +1,446 @@
+[
+  {
+    "page_no": 0,
+    "size": {
+      "width": 841.9216918945312,
+      "height": 595.201171875
+    },
+    "cells": [
+      {
+        "index": 0,
+        "rgba": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 255
+        },
+        "rect": {
+          "r_x0": 77.10171546422428,
+          "r_y0": 520.7638577050515,
+          "r_x1": 96.6831586150625,
+          "r_y1": 520.7638577050515,
+          "r_x2": 96.6831586150625,
+          "r_y2": 89.23887398109309,
+          "r_x3": 77.10171546422428,
+          "r_y3": 89.23887398109309,
+          "coord_origin": "TOPLEFT"
+        },
+        "text": "Docling bundles PDF document conversion to",
+        "orig": "Docling bundles PDF document conversion to",
+        "text_direction": "left_to_right",
+        "confidence": 1.0,
+        "from_ocr": true
+      },
+      {
+        "index": 1,
+        "rgba": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 255
+        },
+        "rect": {
+          "r_x0": 100.55299576256091,
+          "r_y0": 523.3155494272656,
+          "r_x1": 124.91101654503161,
+          "r_y1": 523.3155494272656,
+          "r_x2": 124.91101654503161,
+          "r_y2": 89.12381765643227,
+          "r_x3": 100.55299576256091,
+          "r_y3": 89.12381765643227,
+          "coord_origin": "TOPLEFT"
+        },
+        "text": "JSON and Markdown in an easy self contained",
+        "orig": "JSON and Markdown in an easy self contained",
+        "text_direction": "left_to_right",
+        "confidence": 1.0,
+        "from_ocr": true
+      },
+      {
+        "index": 2,
+        "rgba": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 255
+        },
+        "rect": {
+          "r_x0": 131.21306574279092,
+          "r_y0": 521.0762158417759,
+          "r_x1": 152.19606490864376,
+          "r_y1": 521.0762158417759,
+          "r_x2": 152.19606490864376,
+          "r_y2": 441.0071698212682,
+          "r_x3": 131.21306574279092,
+          "r_y3": 441.0071698212682,
+          "coord_origin": "TOPLEFT"
+        },
+        "text": "package",
+        "orig": "package",
+        "text_direction": "left_to_right",
+        "confidence": 1.0,
+        "from_ocr": true
+      }
+    ],
+    "parsed_page": null,
+    "predictions": {
+      "layout": {
+        "clusters": [
+          {
+            "id": 0,
+            "label": "page_header",
+            "bbox": {
+              "l": 77.10171546422428,
+              "t": 89.12381765643227,
+              "r": 124.91101654503161,
+              "b": 523.3155494272656,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.6016772389411926,
+            "cells": [
+              {
+                "index": 0,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 77.10171546422428,
+                  "r_y0": 520.7638577050515,
+                  "r_x1": 96.6831586150625,
+                  "r_y1": 520.7638577050515,
+                  "r_x2": 96.6831586150625,
+                  "r_y2": 89.23887398109309,
+                  "r_x3": 77.10171546422428,
+                  "r_y3": 89.23887398109309,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "Docling bundles PDF document conversion to",
+                "orig": "Docling bundles PDF document conversion to",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              },
+              {
+                "index": 1,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 100.55299576256091,
+                  "r_y0": 523.3155494272656,
+                  "r_x1": 124.91101654503161,
+                  "r_y1": 523.3155494272656,
+                  "r_x2": 124.91101654503161,
+                  "r_y2": 89.12381765643227,
+                  "r_x3": 100.55299576256091,
+                  "r_y3": 89.12381765643227,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "JSON and Markdown in an easy self contained",
+                "orig": "JSON and Markdown in an easy self contained",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              }
+            ],
+            "children": []
+          },
+          {
+            "id": 1,
+            "label": "text",
+            "bbox": {
+              "l": 131.21306574279092,
+              "t": 441.0071698212682,
+              "r": 152.19606490864376,
+              "b": 521.0762158417759,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.5234212875366211,
+            "cells": [
+              {
+                "index": 2,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 131.21306574279092,
+                  "r_y0": 521.0762158417759,
+                  "r_x1": 152.19606490864376,
+                  "r_y1": 521.0762158417759,
+                  "r_x2": 152.19606490864376,
+                  "r_y2": 441.0071698212682,
+                  "r_x3": 131.21306574279092,
+                  "r_y3": 441.0071698212682,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "package",
+                "orig": "package",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              }
+            ],
+            "children": []
+          }
+        ]
+      },
+      "tablestructure": {
+        "table_map": {}
+      },
+      "figures_classification": null,
+      "equations_prediction": null,
+      "vlm_response": null
+    },
+    "assembled": {
+      "elements": [
+        {
+          "label": "page_header",
+          "id": 0,
+          "page_no": 0,
+          "cluster": {
+            "id": 0,
+            "label": "page_header",
+            "bbox": {
+              "l": 77.10171546422428,
+              "t": 89.12381765643227,
+              "r": 124.91101654503161,
+              "b": 523.3155494272656,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.6016772389411926,
+            "cells": [
+              {
+                "index": 0,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 77.10171546422428,
+                  "r_y0": 520.7638577050515,
+                  "r_x1": 96.6831586150625,
+                  "r_y1": 520.7638577050515,
+                  "r_x2": 96.6831586150625,
+                  "r_y2": 89.23887398109309,
+                  "r_x3": 77.10171546422428,
+                  "r_y3": 89.23887398109309,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "Docling bundles PDF document conversion to",
+                "orig": "Docling bundles PDF document conversion to",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              },
+              {
+                "index": 1,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 100.55299576256091,
+                  "r_y0": 523.3155494272656,
+                  "r_x1": 124.91101654503161,
+                  "r_y1": 523.3155494272656,
+                  "r_x2": 124.91101654503161,
+                  "r_y2": 89.12381765643227,
+                  "r_x3": 100.55299576256091,
+                  "r_y3": 89.12381765643227,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "JSON and Markdown in an easy self contained",
+                "orig": "JSON and Markdown in an easy self contained",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              }
+            ],
+            "children": []
+          },
+          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
+        },
+        {
+          "label": "text",
+          "id": 1,
+          "page_no": 0,
+          "cluster": {
+            "id": 1,
+            "label": "text",
+            "bbox": {
+              "l": 131.21306574279092,
+              "t": 441.0071698212682,
+              "r": 152.19606490864376,
+              "b": 521.0762158417759,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.5234212875366211,
+            "cells": [
+              {
+                "index": 2,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 131.21306574279092,
+                  "r_y0": 521.0762158417759,
+                  "r_x1": 152.19606490864376,
+                  "r_y1": 521.0762158417759,
+                  "r_x2": 152.19606490864376,
+                  "r_y2": 441.0071698212682,
+                  "r_x3": 131.21306574279092,
+                  "r_y3": 441.0071698212682,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "package",
+                "orig": "package",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              }
+            ],
+            "children": []
+          },
+          "text": "package"
+        }
+      ],
+      "body": [
+        {
+          "label": "text",
+          "id": 1,
+          "page_no": 0,
+          "cluster": {
+            "id": 1,
+            "label": "text",
+            "bbox": {
+              "l": 131.21306574279092,
+              "t": 441.0071698212682,
+              "r": 152.19606490864376,
+              "b": 521.0762158417759,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.5234212875366211,
+            "cells": [
+              {
+                "index": 2,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 131.21306574279092,
+                  "r_y0": 521.0762158417759,
+                  "r_x1": 152.19606490864376,
+                  "r_y1": 521.0762158417759,
+                  "r_x2": 152.19606490864376,
+                  "r_y2": 441.0071698212682,
+                  "r_x3": 131.21306574279092,
+                  "r_y3": 441.0071698212682,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "package",
+                "orig": "package",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              }
+            ],
+            "children": []
+          },
+          "text": "package"
+        }
+      ],
+      "headers": [
+        {
+          "label": "page_header",
+          "id": 0,
+          "page_no": 0,
+          "cluster": {
+            "id": 0,
+            "label": "page_header",
+            "bbox": {
+              "l": 77.10171546422428,
+              "t": 89.12381765643227,
+              "r": 124.91101654503161,
+              "b": 523.3155494272656,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.6016772389411926,
+            "cells": [
+              {
+                "index": 0,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 77.10171546422428,
+                  "r_y0": 520.7638577050515,
+                  "r_x1": 96.6831586150625,
+                  "r_y1": 520.7638577050515,
+                  "r_x2": 96.6831586150625,
+                  "r_y2": 89.23887398109309,
+                  "r_x3": 77.10171546422428,
+                  "r_y3": 89.23887398109309,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "Docling bundles PDF document conversion to",
+                "orig": "Docling bundles PDF document conversion to",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              },
+              {
+                "index": 1,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 100.55299576256091,
+                  "r_y0": 523.3155494272656,
+                  "r_x1": 124.91101654503161,
+                  "r_y1": 523.3155494272656,
+                  "r_x2": 124.91101654503161,
+                  "r_y2": 89.12381765643227,
+                  "r_x3": 100.55299576256091,
+                  "r_y3": 89.12381765643227,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "JSON and Markdown in an easy self contained",
+                "orig": "JSON and Markdown in an easy self contained",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              }
+            ],
+            "children": []
+          },
+          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
+        }
+      ]
+    }
+  }
+]
