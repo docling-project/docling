@@ -5951,7 +5951,7 @@
               "b": 465.596681609368,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.93938809633255,
+            "confidence": 0.9393879771232605,
             "cells": [
               {
                 "index": 77,
@@ -7406,7 +7406,7 @@
               "b": 534.1167018462124,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.5769621729850769,
+            "confidence": 0.5769620537757874,
             "cells": [
               {
                 "index": 134,
@@ -8046,7 +8046,7 @@
               "b": 650.6431884765625,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.6444893479347229,
+            "confidence": 0.6444889903068542,
             "cells": [],
             "children": []
           }
@@ -10042,7 +10042,7 @@
               "b": 465.596681609368,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.93938809633255,
+            "confidence": 0.9393879771232605,
             "cells": [
               {
                 "index": 77,
@@ -11509,7 +11509,7 @@
               "b": 534.1167018462124,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.5769621729850769,
+            "confidence": 0.5769620537757874,
             "cells": [
               {
                 "index": 134,
@@ -12155,7 +12155,7 @@
               "b": 650.6431884765625,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.6444893479347229,
+            "confidence": 0.6444889903068542,
             "cells": [],
             "children": []
           },
@@ -14148,7 +14148,7 @@
               "b": 465.596681609368,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.93938809633255,
+            "confidence": 0.9393879771232605,
             "cells": [
               {
                 "index": 77,
@@ -15615,7 +15615,7 @@
               "b": 534.1167018462124,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.5769621729850769,
+            "confidence": 0.5769620537757874,
             "cells": [
               {
                 "index": 134,
@@ -16261,7 +16261,7 @@
               "b": 650.6431884765625,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.6444893479347229,
+            "confidence": 0.6444889903068542,
             "cells": [],
             "children": []
           },

@@ -133,7 +133,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.1",
-      "text": "Paragraph 1.1"
+      "text": "Paragraph 1.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/5",
@@ -157,7 +163,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.2",
-      "text": "Paragraph 1.2"
+      "text": "Paragraph 1.2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/7",
@@ -222,7 +234,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.1.1",
-      "text": "Paragraph 1.1.1"
+      "text": "Paragraph 1.1.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/11",
@@ -246,7 +264,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.1.2",
-      "text": "Paragraph 1.1.2"
+      "text": "Paragraph 1.1.2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/13",
@@ -314,7 +338,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.1.1",
-      "text": "Paragraph 1.1.1"
+      "text": "Paragraph 1.1.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/17",
@@ -338,7 +368,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.1.2",
-      "text": "Paragraph 1.1.2"
+      "text": "Paragraph 1.1.2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/19",
@@ -406,7 +442,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.2.3.1",
-      "text": "Paragraph 1.2.3.1"
+      "text": "Paragraph 1.2.3.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/23",
@@ -430,7 +472,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 1.2.3.1",
-      "text": "Paragraph 1.2.3.1"
+      "text": "Paragraph 1.2.3.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/25",
@@ -513,7 +561,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 2.1",
-      "text": "Paragraph 2.1"
+      "text": "Paragraph 2.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/30",
@@ -537,7 +591,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 2.2",
-      "text": "Paragraph 2.2"
+      "text": "Paragraph 2.2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/32",
@@ -602,7 +662,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 2.1.1.1",
-      "text": "Paragraph 2.1.1.1"
+      "text": "Paragraph 2.1.1.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/36",
@@ -626,7 +692,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 2.1.1.1",
-      "text": "Paragraph 2.1.1.1"
+      "text": "Paragraph 2.1.1.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/38",
@@ -694,7 +766,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 2.1.1",
-      "text": "Paragraph 2.1.1"
+      "text": "Paragraph 2.1.1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/42",
@@ -718,7 +796,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Paragraph 2.1.2",
-      "text": "Paragraph 2.1.2"
+      "text": "Paragraph 2.1.2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/44",

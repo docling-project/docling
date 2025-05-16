@@ -1171,7 +1171,7 @@
               "b": 295.08200000000005,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9547481536865234,
+            "confidence": 0.9547483325004578,
             "cells": [
               {
                 "index": 17,
@@ -1311,7 +1311,7 @@
               "b": 350.522,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9672118425369263,
+            "confidence": 0.9672117233276367,
             "cells": [
               {
                 "index": 22,
@@ -1971,7 +1971,7 @@
               "b": 295.08200000000005,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9547481536865234,
+            "confidence": 0.9547483325004578,
             "cells": [
               {
                 "index": 17,
@@ -2117,7 +2117,7 @@
               "b": 350.522,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9672118425369263,
+            "confidence": 0.9672117233276367,
             "cells": [
               {
                 "index": 22,
@@ -2770,7 +2770,7 @@
               "b": 295.08200000000005,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9547481536865234,
+            "confidence": 0.9547483325004578,
             "cells": [
               {
                 "index": 17,
@@ -2916,7 +2916,7 @@
               "b": 350.522,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.9672118425369263,
+            "confidence": 0.9672117233276367,
             "cells": [
               {
                 "index": 22,
