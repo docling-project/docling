@@ -249,7 +249,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                             cell = TextCell(
                                 index=ix,
                                 text=str(text),
-                                orig=text,
+                                orig=str(text),
                                 from_ocr=True,
                                 confidence=conf / 100.0,
                                 rect=BoundingRectangle.from_bounding_box(

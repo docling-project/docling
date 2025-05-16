@@ -31,7 +31,7 @@ The `BaseChunker` base class API defines that any chunker should provide the fol
 
 - `def chunk(self, dl_doc: DoclingDocument, **kwargs) -> Iterator[BaseChunk]`:
   Returning the chunks for the provided document.
-- `def serialize(self, chunk: BaseChunk) -> str`:
+- `def contextualize(self, chunk: BaseChunk) -> str`:
   Returning the potentially metadata-enriched serialization of the chunk, typically
   used to feed an embedding model (or generation model).
 
@@ -44,9 +44,13 @@ The `BaseChunker` base class API defines that any chunker should provide the fol
         from docling.chunking import HybridChunker
         ```
     - If you are only using the `docling-core` package, you must ensure to install
-        the `chunking` extra, e.g.
+        the `chunking` extra if you want to use HuggingFace tokenizers, e.g.
         ```shell
         pip install 'docling-core[chunking]'
+        ```
+        or the `chunking-openai` extra if you prefer Open AI tokenizers (tiktoken), e.g.
+        ```shell
+        pip install 'docling-core[chunking-openai]'
         ```
         and then you
         can import as follows:
@@ -67,7 +71,10 @@ tokens), &
 chunks with same headings & captions) — users can opt out of this step via param
 `merge_peers` (by default `True`)
 
-👉 Example: see  [here](../examples/hybrid_chunking.ipynb).
+👉 Usage examples:
+
+- [Hybrid chunking](../examples/hybrid_chunking.ipynb)
+- [Advanced chunking & serialization](../examples/advanced_chunking_and_serialization.ipynb)
 
 ## Hierarchical Chunker
 

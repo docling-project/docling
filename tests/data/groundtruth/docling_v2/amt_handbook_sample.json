@@ -1,1 +1,989 @@
-{"schema_name": "DoclingDocument", "version": "1.3.0", "name": "amt_handbook_sample", "origin": {"mimetype": "application/pdf", "binary_hash": 10189692113572347872, "filename": "amt_handbook_sample.pdf", "uri": null}, "furniture": {"self_ref": "#/furniture", "parent": null, "children": [], "content_layer": "furniture", "name": "_root_", "label": "unspecified"}, "body": {"self_ref": "#/body", "parent": null, "children": [{"cref": "#/texts/0"}, {"cref": "#/texts/1"}, {"cref": "#/texts/2"}, {"cref": "#/texts/3"}, {"cref": "#/texts/4"}, {"cref": "#/texts/5"}, {"cref": "#/texts/6"}, {"cref": "#/pictures/0"}, {"cref": "#/texts/13"}, {"cref": "#/texts/14"}, {"cref": "#/texts/15"}, {"cref": "#/texts/16"}, {"cref": "#/texts/17"}, {"cref": "#/texts/18"}, {"cref": "#/pictures/1"}, {"cref": "#/texts/26"}], "content_layer": "body", "name": "_root_", "label": "unspecified"}, "groups": [], "texts": [{"self_ref": "#/texts/0", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 71.992126, "t": 730.31635, "r": 314.11212, "b": 681.34637, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 244]}], "orig": "pulleys, provided the inner race of the bearing is clamped to the supporting structure by the nut and bolt. Plates must be attached to the structure in a positive manner to eliminate rotation or misalignment when tightening the bolts or screws.", "text": "pulleys, provided the inner race of the bearing is clamped to the supporting structure by the nut and bolt. Plates must be attached to the structure in a positive manner to eliminate rotation or misalignment when tightening the bolts or screws.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/1", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 71.992302, "t": 667.81635, "r": 313.1546, "b": 593.84637, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 376]}], "orig": "The two general types of self-locking nuts currently in use are the all-metal type and the fiber lock type. For the sake of simplicity, only three typical kinds of self-locking nuts are considered in this handbook: the Boots self-locking and the stainless steel self-locking nuts, representing the all-metal types; and the elastic stop nut, representing the fiber insert type.", "text": "The two general types of self-locking nuts currently in use are the all-metal type and the fiber lock type. For the sake of simplicity, only three typical kinds of self-locking nuts are considered in this handbook: the Boots self-locking and the stainless steel self-locking nuts, representing the all-metal types; and the elastic stop nut, representing the fiber insert type.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/2", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "section_header", "prov": [{"page_no": 1, "bbox": {"l": 71.992302, "t": 580.1864, "r": 167.27231, "b": 568.84637, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 22]}], "orig": "Boots Self-Locking Nut", "text": "Boots Self-Locking Nut", "formatting": null, "hyperlink": null, "level": 1}, {"self_ref": "#/texts/3", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 71.992294, "t": 565.81635, "r": 318.49225, "b": 491.84637000000004, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 319]}], "orig": "The Boots self-locking nut is of one piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.", "text": "The Boots self-locking nut is of one piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/4", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 71.992294, "t": 478.31638000000004, "r": 316.65729, "b": 404.34637000000004, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 332]}], "orig": "The spring keeps the locking and load-carrying sections such a distance apart that the two sets of threads are out of phase or spaced so that a bolt, which has been screwed through the load-carrying section, must push the locking section outward against the force of the spring to engage the threads of the locking section properly.", "text": "The spring keeps the locking and load-carrying sections such a distance apart that the two sets of threads are out of phase or spaced so that a bolt, which has been screwed through the load-carrying section, must push the locking section outward against the force of the spring to engage the threads of the locking section properly.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/5", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 71.992294, "t": 390.81638000000004, "r": 318.81229, "b": 291.84637, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 477]}], "orig": "The spring, through the medium of the locking section, exerts a constant locking force on the bolt in the same direction as a force that would tighten the nut. In this nut, the load-carrying section has the thread strength of a standard nut of comparable size, while the locking section presses against the threads of the bolt and locks the nut firmly in position. Only a wrench applied to the nut loosens it. The nut can be removed and reused without impairing its efficiency.", "text": "The spring, through the medium of the locking section, exerts a constant locking force on the bolt in the same direction as a force that would tighten the nut. In this nut, the load-carrying section has the thread strength of a standard nut of comparable size, while the locking section presses against the threads of the bolt and locks the nut firmly in position. Only a wrench applied to the nut loosens it. The nut can be removed and reused without impairing its efficiency.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/6", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 71.992294, "t": 278.31638, "r": 313.91229, "b": 254.34636999999998, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 122]}], "orig": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is", "text": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/7", "parent": {"cref": "#/pictures/0"}, "children": [], "content_layer": "body", "label": "caption", "prov": [{"page_no": 1, "bbox": {"l": 72.0, "t": 71.80239900000004, "r": 184.14828, "b": 60.99040200000002, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 31]}], "orig": "Figure 7-26. Self-locking nuts.", "text": "Figure 7-26. Self-locking nuts.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/8", "parent": {"cref": "#/pictures/0"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 102.4155, "t": 186.23509, "r": 161.3187, "b": 176.61909000000003, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 18]}], "orig": "Boots aircraft nut", "text": "Boots aircraft nut", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/9", "parent": {"cref": "#/pictures/0"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 91.685997, "t": 94.690201, "r": 129.77399, "b": 85.07420300000001, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 11]}], "orig": "Flexloc nut", "text": "Flexloc nut", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/10", "parent": {"cref": "#/pictures/0"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 162.48109, "t": 94.690201, "r": 207.85629, "b": 85.07420300000001, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 13]}], "orig": "Fiber locknut", "text": "Fiber locknut", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/11", "parent": {"cref": "#/pictures/0"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 237.31379999999996, "t": 94.690201, "r": 289.561, "b": 85.07420300000001, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 16]}], "orig": "Elastic stop nut", "text": "Elastic stop nut", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/12", "parent": {"cref": "#/pictures/0"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 216.9326, "t": 186.23509, "r": 277.7966, "b": 176.61909000000003, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 18]}], "orig": "Elastic anchor nut", "text": "Elastic anchor nut", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/13", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 320.99231, "t": 730.31635, "r": 561.80835, "b": 656.34637, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 368]}], "orig": "the most common ranges in size for No. 6 up to 1 / 4 inch, the Rol-top ranges from 1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.", "text": "the most common ranges in size for No. 6 up to 1 / 4 inch, the Rol-top ranges from 1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/14", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 320.99542, "t": 655.31635, "r": 325.99542, "b": 643.84637, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 1]}], "orig": ".", "text": ".", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/15", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "section_header", "prov": [{"page_no": 1, "bbox": {"l": 320.99542, "t": 642.6864, "r": 450.99542, "b": 631.34637, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 32]}], "orig": "Stainless Steel Self-Locking Nut", "text": "Stainless Steel Self-Locking Nut", "formatting": null, "hyperlink": null, "level": 1}, {"self_ref": "#/texts/16", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 320.99542, "t": 628.31635, "r": 568.00439, "b": 416.84637000000004, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 1015]}], "orig": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt easily, because the threaded insert is the proper size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.", "text": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt easily, because the threaded insert is the proper size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/17", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "section_header", "prov": [{"page_no": 1, "bbox": {"l": 320.99542, "t": 403.18636999999995, "r": 388.50543, "b": 391.84637000000004, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 16]}], "orig": "Elastic Stop Nut", "text": "Elastic Stop Nut", "formatting": null, "hyperlink": null, "level": 1}, {"self_ref": "#/texts/18", "parent": {"cref": "#/body"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 320.99542, "t": 388.81638000000004, "r": 552.35132, "b": 364.84637000000004, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 108]}], "orig": "The elastic stop nut is a standard nut with the height increased to accommodate a fiber locking collar. This", "text": "The elastic stop nut is a standard nut with the height increased to accommodate a fiber locking collar. This", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/19", "parent": {"cref": "#/pictures/1"}, "children": [], "content_layer": "body", "label": "caption", "prov": [{"page_no": 1, "bbox": {"l": 321.0, "t": 73.82240300000001, "r": 481.64931999999993, "b": 63.010403, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 46]}], "orig": "Figure 7-27. Stainless steel self-locking nut.", "text": "Figure 7-27. Stainless steel self-locking nut.", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/20", "parent": {"cref": "#/pictures/1"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 479.1354999999999, "t": 101.2654, "r": 531.16748, "b": 91.35340099999996, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 13]}], "orig": "Tightened nut", "text": "Tightened nut", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/21", "parent": {"cref": "#/pictures/1"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 474.3699, "t": 242.1082, "r": 535.23389, "b": 232.1962000000001, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 15]}], "orig": "Untightened nut", "text": "Untightened nut", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/22", "parent": {"cref": "#/pictures/1"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 456.7558900000001, "t": 342.00259, "r": 487.08388999999994, "b": 332.3866, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 8]}], "orig": "Nut case", "text": "Nut case", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/23", "parent": {"cref": "#/pictures/1"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 434.62299, "t": 196.17650000000003, "r": 497.47183000000007, "b": 186.56050000000005, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 17]}], "orig": "Threaded nut core", "text": "Threaded nut core", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/24", "parent": {"cref": "#/pictures/1"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 448.55081, "t": 220.6794, "r": 507.686, "b": 211.0634, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 16]}], "orig": "Locking shoulder", "text": "Locking shoulder", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/25", "parent": {"cref": "#/pictures/1"}, "children": [], "content_layer": "body", "label": "text", "prov": [{"page_no": 1, "bbox": {"l": 424.78421, "t": 109.88840000000005, "r": 452.10339000000005, "b": 100.27240000000006, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 6]}], "orig": "Keyway", "text": "Keyway", "formatting": null, "hyperlink": null}, {"self_ref": "#/texts/26", "parent": {"cref": "#/body"}, "children": [], "content_layer": "furniture", "label": "page_footer", "prov": [{"page_no": 1, "bbox": {"l": 537.98541, "t": 46.019698999999946, "r": 560.77539, "b": 33.70970199999999, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 4]}], "orig": "7-45", "text": "7-45", "formatting": null, "hyperlink": null}], "pictures": [{"self_ref": "#/pictures/0", "parent": {"cref": "#/body"}, "children": [{"cref": "#/texts/7"}, {"cref": "#/texts/8"}, {"cref": "#/texts/9"}, {"cref": "#/texts/10"}, {"cref": "#/texts/11"}, {"cref": "#/texts/12"}], "content_layer": "body", "label": "picture", "prov": [{"page_no": 1, "bbox": {"l": 70.59269714355469, "t": 242.77777099609375, "r": 309.863037109375, "b": 79.6090087890625, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 0]}], "captions": [{"cref": "#/texts/7"}], "references": [], "footnotes": [], "image": null, "annotations": []}, {"self_ref": "#/pictures/1", "parent": {"cref": "#/body"}, "children": [{"cref": "#/texts/19"}, {"cref": "#/texts/20"}, {"cref": "#/texts/21"}, {"cref": "#/texts/22"}, {"cref": "#/texts/23"}, {"cref": "#/texts/24"}, {"cref": "#/texts/25"}], "content_layer": "body", "label": "picture", "prov": [{"page_no": 1, "bbox": {"l": 320.4467468261719, "t": 352.359375, "r": 558.8576049804688, "b": 81.689208984375, "coord_origin": "BOTTOMLEFT"}, "charspan": [0, 0]}], "captions": [{"cref": "#/texts/19"}], "references": [], "footnotes": [], "image": null, "annotations": []}], "tables": [], "key_value_items": [], "form_items": [], "pages": {"1": {"size": {"width": 594.0, "height": 774.0}, "image": null, "page_no": 1}}}
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.3.0",
+  "name": "amt_handbook_sample",
+  "origin": {
+    "mimetype": "application/pdf",
+    "binary_hash": 10189692113572347872,
+    "filename": "amt_handbook_sample.pdf",
+    "uri": null
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "parent": null,
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "parent": null,
+    "children": [
+      {
+        "cref": "#/texts/0"
+      },
+      {
+        "cref": "#/texts/1"
+      },
+      {
+        "cref": "#/texts/2"
+      },
+      {
+        "cref": "#/texts/3"
+      },
+      {
+        "cref": "#/texts/4"
+      },
+      {
+        "cref": "#/texts/5"
+      },
+      {
+        "cref": "#/texts/6"
+      },
+      {
+        "cref": "#/pictures/0"
+      },
+      {
+        "cref": "#/texts/13"
+      },
+      {
+        "cref": "#/texts/14"
+      },
+      {
+        "cref": "#/texts/15"
+      },
+      {
+        "cref": "#/texts/16"
+      },
+      {
+        "cref": "#/texts/17"
+      },
+      {
+        "cref": "#/texts/18"
+      },
+      {
+        "cref": "#/pictures/1"
+      },
+      {
+        "cref": "#/texts/26"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 71.992126,
+            "t": 730.31635,
+            "r": 314.11212,
+            "b": 681.34637,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            244
+          ]
+        }
+      ],
+      "orig": "pulleys, provided the inner race of the bearing is clamped to the supporting structure by the nut and bolt. Plates must be attached to the structure in a positive manner to eliminate rotation or misalignment when tightening the bolts or screws.",
+      "text": "pulleys, provided the inner race of the bearing is clamped to the supporting structure by the nut and bolt. Plates must be attached to the structure in a positive manner to eliminate rotation or misalignment when tightening the bolts or screws.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 71.992302,
+            "t": 667.81635,
+            "r": 313.1546,
+            "b": 593.84637,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            376
+          ]
+        }
+      ],
+      "orig": "The two general types of self-locking nuts currently in use are the all-metal type and the fiber lock type. For the sake of simplicity, only three typical kinds of self-locking nuts are considered in this handbook: the Boots self-locking and the stainless steel self-locking nuts, representing the all-metal types; and the elastic stop nut, representing the fiber insert type.",
+      "text": "The two general types of self-locking nuts currently in use are the all-metal type and the fiber lock type. For the sake of simplicity, only three typical kinds of self-locking nuts are considered in this handbook: the Boots self-locking and the stainless steel self-locking nuts, representing the all-metal types; and the elastic stop nut, representing the fiber insert type.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 71.992302,
+            "t": 580.1864,
+            "r": 167.27231,
+            "b": 568.84637,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            22
+          ]
+        }
+      ],
+      "orig": "Boots Self-Locking Nut",
+      "text": "Boots Self-Locking Nut",
+      "formatting": null,
+      "hyperlink": null,
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 71.992294,
+            "t": 565.81635,
+            "r": 318.49225,
+            "b": 491.84637000000004,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            319
+          ]
+        }
+      ],
+      "orig": "The Boots self-locking nut is of one piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.",
+      "text": "The Boots self-locking nut is of one piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 71.992294,
+            "t": 478.31638000000004,
+            "r": 316.65729,
+            "b": 404.34637000000004,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            332
+          ]
+        }
+      ],
+      "orig": "The spring keeps the locking and load-carrying sections such a distance apart that the two sets of threads are out of phase or spaced so that a bolt, which has been screwed through the load-carrying section, must push the locking section outward against the force of the spring to engage the threads of the locking section properly.",
+      "text": "The spring keeps the locking and load-carrying sections such a distance apart that the two sets of threads are out of phase or spaced so that a bolt, which has been screwed through the load-carrying section, must push the locking section outward against the force of the spring to engage the threads of the locking section properly.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 71.992294,
+            "t": 390.81638000000004,
+            "r": 318.81229,
+            "b": 291.84637,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            477
+          ]
+        }
+      ],
+      "orig": "The spring, through the medium of the locking section, exerts a constant locking force on the bolt in the same direction as a force that would tighten the nut. In this nut, the load-carrying section has the thread strength of a standard nut of comparable size, while the locking section presses against the threads of the bolt and locks the nut firmly in position. Only a wrench applied to the nut loosens it. The nut can be removed and reused without impairing its efficiency.",
+      "text": "The spring, through the medium of the locking section, exerts a constant locking force on the bolt in the same direction as a force that would tighten the nut. In this nut, the load-carrying section has the thread strength of a standard nut of comparable size, while the locking section presses against the threads of the bolt and locks the nut firmly in position. Only a wrench applied to the nut loosens it. The nut can be removed and reused without impairing its efficiency.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 71.992294,
+            "t": 278.31638,
+            "r": 313.91229,
+            "b": 254.34636999999998,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            122
+          ]
+        }
+      ],
+      "orig": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is",
+      "text": "Boots self-locking nuts are made with three different spring styles and in various shapes and sizes. The wing type that is",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "cref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 72.0,
+            "t": 71.80239900000004,
+            "r": 184.14828,
+            "b": 60.99040200000002,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            31
+          ]
+        }
+      ],
+      "orig": "Figure 7-26. Self-locking nuts.",
+      "text": "Figure 7-26. Self-locking nuts.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "cref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 102.4155,
+            "t": 186.23509,
+            "r": 161.3187,
+            "b": 176.61909000000003,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
+      "orig": "Boots aircraft nut",
+      "text": "Boots aircraft nut",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "cref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 91.685997,
+            "t": 94.690201,
+            "r": 129.77399,
+            "b": 85.07420300000001,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            11
+          ]
+        }
+      ],
+      "orig": "Flexloc nut",
+      "text": "Flexloc nut",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "cref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 162.48109,
+            "t": 94.690201,
+            "r": 207.85629,
+            "b": 85.07420300000001,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
+      "orig": "Fiber locknut",
+      "text": "Fiber locknut",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "cref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 237.31379999999996,
+            "t": 94.690201,
+            "r": 289.561,
+            "b": 85.07420300000001,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "Elastic stop nut",
+      "text": "Elastic stop nut",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "cref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 216.9326,
+            "t": 186.23509,
+            "r": 277.7966,
+            "b": 176.61909000000003,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            18
+          ]
+        }
+      ],
+      "orig": "Elastic anchor nut",
+      "text": "Elastic anchor nut",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.99231,
+            "t": 730.31635,
+            "r": 561.80835,
+            "b": 656.34637,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            368
+          ]
+        }
+      ],
+      "orig": "the most common ranges in size for No. 6 up to 1 / 4 inch, the Rol-top ranges from 1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.",
+      "text": "the most common ranges in size for No. 6 up to 1 / 4 inch, the Rol-top ranges from 1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.99542,
+            "t": 655.31635,
+            "r": 325.99542,
+            "b": 643.84637,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": ".",
+      "text": ".",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.99542,
+            "t": 642.6864,
+            "r": 450.99542,
+            "b": 631.34637,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            32
+          ]
+        }
+      ],
+      "orig": "Stainless Steel Self-Locking Nut",
+      "text": "Stainless Steel Self-Locking Nut",
+      "formatting": null,
+      "hyperlink": null,
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.99542,
+            "t": 628.31635,
+            "r": 568.00439,
+            "b": 416.84637000000004,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            1015
+          ]
+        }
+      ],
+      "orig": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt easily, because the threaded insert is the proper size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.",
+      "text": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt easily, because the threaded insert is the proper size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.99542,
+            "t": 403.18636999999995,
+            "r": 388.50543,
+            "b": 391.84637000000004,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "Elastic Stop Nut",
+      "text": "Elastic Stop Nut",
+      "formatting": null,
+      "hyperlink": null,
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.99542,
+            "t": 388.81638000000004,
+            "r": 552.35132,
+            "b": 364.84637000000004,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            108
+          ]
+        }
+      ],
+      "orig": "The elastic stop nut is a standard nut with the height increased to accommodate a fiber locking collar. This",
+      "text": "The elastic stop nut is a standard nut with the height increased to accommodate a fiber locking collar. This",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "cref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "caption",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 321.0,
+            "t": 73.82240300000001,
+            "r": 481.64931999999993,
+            "b": 63.010403,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            46
+          ]
+        }
+      ],
+      "orig": "Figure 7-27. Stainless steel self-locking nut.",
+      "text": "Figure 7-27. Stainless steel self-locking nut.",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "cref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 479.1354999999999,
+            "t": 101.2654,
+            "r": 531.16748,
+            "b": 91.35340099999996,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
+      "orig": "Tightened nut",
+      "text": "Tightened nut",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "cref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 474.3699,
+            "t": 242.1082,
+            "r": 535.23389,
+            "b": 232.1962000000001,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            15
+          ]
+        }
+      ],
+      "orig": "Untightened nut",
+      "text": "Untightened nut",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "cref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 456.7558900000001,
+            "t": 342.00259,
+            "r": 487.08388999999994,
+            "b": 332.3866,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
+      "orig": "Nut case",
+      "text": "Nut case",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "cref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 434.62299,
+            "t": 196.17650000000003,
+            "r": 497.47183000000007,
+            "b": 186.56050000000005,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            17
+          ]
+        }
+      ],
+      "orig": "Threaded nut core",
+      "text": "Threaded nut core",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "cref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 448.55081,
+            "t": 220.6794,
+            "r": 507.686,
+            "b": 211.0634,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            16
+          ]
+        }
+      ],
+      "orig": "Locking shoulder",
+      "text": "Locking shoulder",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "cref": "#/pictures/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 424.78421,
+            "t": 109.88840000000005,
+            "r": 452.10339000000005,
+            "b": 100.27240000000006,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            6
+          ]
+        }
+      ],
+      "orig": "Keyway",
+      "text": "Keyway",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "page_footer",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 537.98541,
+            "t": 46.019698999999946,
+            "r": 560.77539,
+            "b": 33.70970199999999,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            4
+          ]
+        }
+      ],
+      "orig": "7-45",
+      "text": "7-45",
+      "formatting": null,
+      "hyperlink": null
+    }
+  ],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [
+        {
+          "cref": "#/texts/7"
+        },
+        {
+          "cref": "#/texts/8"
+        },
+        {
+          "cref": "#/texts/9"
+        },
+        {
+          "cref": "#/texts/10"
+        },
+        {
+          "cref": "#/texts/11"
+        },
+        {
+          "cref": "#/texts/12"
+        }
+      ],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 70.59269714355469,
+            "t": 242.77777099609375,
+            "r": 309.863037109375,
+            "b": 79.6090087890625,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "captions": [
+        {
+          "cref": "#/texts/7"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "image": null,
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/1",
+      "parent": {
+        "cref": "#/body"
+      },
+      "children": [
+        {
+          "cref": "#/texts/19"
+        },
+        {
+          "cref": "#/texts/20"
+        },
+        {
+          "cref": "#/texts/21"
+        },
+        {
+          "cref": "#/texts/22"
+        },
+        {
+          "cref": "#/texts/23"
+        },
+        {
+          "cref": "#/texts/24"
+        },
+        {
+          "cref": "#/texts/25"
+        }
+      ],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 320.4467468261719,
+            "t": 352.359375,
+            "r": 558.8576049804688,
+            "b": 81.689208984375,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "captions": [
+        {
+          "cref": "#/texts/19"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "image": null,
+      "annotations": []
+    }
+  ],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 594.0,
+        "height": 774.0
+      },
+      "image": null,
+      "page_no": 1
+    }
+  }
+}
