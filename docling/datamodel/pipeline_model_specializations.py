@@ -64,6 +64,7 @@ class ApiVlmOptions(BaseVlmOptions):
     params: Dict[str, Any] = {}
     scale: float = 2.0
     timeout: float = 60
+    concurrency: int = 1
     response_format: ResponseFormat
 
 

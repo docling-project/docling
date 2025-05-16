@@ -25,10 +25,7 @@ from docling.datamodel.pipeline_options import (
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
-sources = [
-    # "tests/data/2305.03393v1-pg9-img.png",
-    "tests/data/pdf/2305.03393v1-pg9.pdf",
-]
+from tabulate import tabulate
 
 ## Use experimental VlmPipeline
 pipeline_options = VlmPipelineOptions()
@@ -104,75 +101,120 @@ qwen_vlm_conversion_options = HuggingFaceVlmOptions(
 pipeline_options.vlm_options = qwen_vlm_conversion_options
 """
 
-## Set up pipeline for PDF or image inputs
-converter = DocumentConverter(
-    format_options={
-        InputFormat.PDF: PdfFormatOption(
-            pipeline_cls=VlmPipeline,
-            pipeline_options=pipeline_options,
-        ),
-        InputFormat.IMAGE: PdfFormatOption(
-            pipeline_cls=VlmPipeline,
-            pipeline_options=pipeline_options,
-        ),
-    },
-)
+def convert(sources: list[Path], converter):
+    for source in sources:
+        #start_time = time.time()
+        print("================================================")
+        print(f"Processing... {source}")
+        print("================================================")
+        print("")
 
-out_path = Path("scratch")
-out_path.mkdir(parents=True, exist_ok=True)
+        res = converter.convert(source)
+        
+        print("")
+        # print(res.document.export_to_markdown())
+        
+        model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
+        framework = pipeline_options.vlm_options.inference_framework
+        fname = f"{res.input.file.stem}-{model_id}-{framework}"
 
-for source in sources:
-    start_time = time.time()
-    print("================================================")
-    print(f"Processing... {source}")
-    print("================================================")
-    print("")
+        inference_time = 0.0
+        for i, page in enumerate(res.pages):
+            inference_time += page.predictions.vlm_response.generation_time
+            print("")
+            print(
+                f" ---------- Predicted page {i} in {pipeline_options.vlm_options.response_format} in {page.predictions.vlm_response.generation_time} [sec]:"
+            )
+            print(page.predictions.vlm_response.text)
+            print(" ---------- ")
+            
+        print("===== Final output of the converted document =======")
 
-    res = converter.convert(source)
+        with (out_path / f"{fname}.json").open("w") as fp:
+            fp.write(json.dumps(res.document.export_to_dict()))
 
-    print("")
-    # print(res.document.export_to_markdown())
+        res.document.save_as_json(
+            out_path / f"{fname}.json",
+            image_mode=ImageRefMode.PLACEHOLDER,
+        )
+        print(f" => produced {out_path / fname}.json")
 
-    model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
-    fname = f"{model_id}-{res.input.file.stem}"
+        res.document.save_as_markdown(
+            out_path / f"{fname}.md",
+            image_mode=ImageRefMode.PLACEHOLDER,
+        )
+        print(f" => produced {out_path / fname}.md")
 
-    for i, page in enumerate(res.pages):
+        res.document.save_as_html(
+            out_path / f"{fname}.html",
+            image_mode=ImageRefMode.EMBEDDED,
+            labels=[*DEFAULT_EXPORT_LABELS, DocItemLabel.FOOTNOTE],
+            split_page_view=True,
+        )
+        print(f" => produced {out_path / fname}.html")
+        
+        pg_num = res.document.num_pages()
         print("")
         print(
-            f" ---------- Predicted page {i} in {pipeline_options.vlm_options.response_format}:"
+            f"Total document prediction time: {inference_time:.2f} seconds, pages: {pg_num}"
         )
-        print(page.predictions.vlm_response.text)
-        print(" ---------- ")
+        print("====================================================")
 
-    print("===== Final output of the converted document =======")
+        # return [source, f"{out_path / fname}.html", model_id, framework, inference_time, ]
+        return [source, model_id, framework, pg_num, inference_time, ]
+        
+if __name__ == "__main__":
 
-    with (out_path / f"{fname}.json").open("w") as fp:
-        fp.write(json.dumps(res.document.export_to_dict()))
+    sources = [
+        # "tests/data/2305.03393v1-pg9-img.png",
+        "tests/data/pdf/2305.03393v1-pg9.pdf",
+    ]
+    
+    out_path = Path("scratch")
+    out_path.mkdir(parents=True, exist_ok=True)
+    
+    ## Use VlmPipeline
+    pipeline_options = VlmPipelineOptions()
 
-    res.document.save_as_json(
-        out_path / f"{fname}.json",
-        image_mode=ImageRefMode.PLACEHOLDER,
-    )
-    print(f" => produced {out_path / fname}.json")
+    # If force_backend_text = True, text from backend will be used instead of generated text
+    pipeline_options.force_backend_text = False
+    pipeline_options.generate_page_images = True
 
-    res.document.save_as_markdown(
-        out_path / f"{fname}.md",
-        image_mode=ImageRefMode.PLACEHOLDER,
-    )
-    print(f" => produced {out_path / fname}.md")
+    ## On GPU systems, enable flash_attention_2 with CUDA:
+    # pipeline_options.accelerator_options.device = AcceleratorDevice.CUDA
+    # pipeline_options.accelerator_options.cuda_use_flash_attention2 = True
 
-    res.document.save_as_html(
-        out_path / f"{fname}.html",
-        image_mode=ImageRefMode.EMBEDDED,
-        labels=[*DEFAULT_EXPORT_LABELS, DocItemLabel.FOOTNOTE],
-        split_page_view=True,
-    )
-    print(f" => produced {out_path / fname}.html")
+    rows = []
+    for vlm_options in [
+            # smoldocling_vlm_conversion_options, \
+            smoldocling_vlm_mlx_conversion_options, \
+            granite_vision_vlm_conversion_options, \
+            # phi_vlm_conversion_options, \
+            qwen25_vl_3b_vlm_mlx_conversion_options, \
+            pixtral_12b_vlm_mlx_conversion_options,
+    ]:
+        pipeline_options.vlm_options = vlm_options
+        
+        ## Set up pipeline for PDF or image inputs
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_cls=VlmPipeline,
+                    pipeline_options=pipeline_options,
+                ),
+                InputFormat.IMAGE: PdfFormatOption(
+                    pipeline_cls=VlmPipeline,
+                    pipeline_options=pipeline_options,
+                ),
+            },
+        )
+        
+        row = convert(sources=sources, converter=converter)
+        print("pipelines: \n", converter._get_initialized_pipelines())
+        
+        rows.append(row)
+        
+        print(tabulate(rows))
 
-    pg_num = res.document.num_pages()
-    print("")
-    inference_time = time.time() - start_time
-    print(
-        f"Total document prediction time: {inference_time:.2f} seconds, pages: {pg_num}"
-    )
-    print("====================================================")
+        print("see if memory gets released ...")
+        time.sleep(10)

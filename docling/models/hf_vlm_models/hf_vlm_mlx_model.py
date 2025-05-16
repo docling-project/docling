@@ -71,7 +71,7 @@ class HuggingFaceMlxModel(BasePageModel):
             if not page._backend.is_valid():
                 yield page
             else:
-                with TimeRecorder(conv_res, "vlm"):
+                with TimeRecorder(conv_res, f"vlm-mlx-{self.vlm_options.repo_id}"):
                     assert page.size is not None
 
                     hi_res_image = page.get_image(scale=self.vlm_options.scale)
@@ -124,7 +124,9 @@ class HuggingFaceMlxModel(BasePageModel):
                                     logprob=token.logprobs[0, token.token],
                                 )
                             )
-
+                        else:
+                            _log.warning(f"incompatible shape for logprobs: {token.logprobs.shape}")
+                            
                         output += token.text
                         if "</doctag>" in token.text:
                             break

@@ -141,7 +141,10 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
-                    page.predictions.vlm_response = VlmPrediction(text=page_tags)
+                    page.predictions.vlm_response = VlmPrediction(
+                        text=page_tags,
+                        generation_time=generation_time,
+                    )
 
                 yield page
 
