@@ -154,17 +154,6 @@ else
     echo "Warning: No build files directory found. Some tools may be unavailable."
 fi
 
-# Copy Python processor script to tools directory
-PYTHON_SCRIPT_PATH="$(dirname "$0")/docling_processor.py"
-if [ -f "$PYTHON_SCRIPT_PATH" ]; then
-    echo "Copying Python processor script to tools directory..."
-    cp "$PYTHON_SCRIPT_PATH" "$TOOLS_DIR/"
-    chmod +x "$TOOLS_DIR/docling_processor.py"
-else
-    echo "ERROR: Python processor script not found at $PYTHON_SCRIPT_PATH"
-    exit 1
-fi
-
 # Check OCR directories and ensure they're writable
 echo "Checking OCR directory permissions..."
 OCR_DIR="/opt/app-root/src/.EasyOCR"
