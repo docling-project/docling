@@ -11,6 +11,7 @@ from docling.datamodel.pipeline_model_specializations import (
     HuggingFaceVlmOptions,
     InferenceFramework,
     ResponseFormat,
+    gemma_3_12b_mlx_conversion_options,
     granite_vision_vlm_conversion_options,
     granite_vision_vlm_ollama_conversion_options,
     phi_vlm_conversion_options,
@@ -199,6 +200,7 @@ if __name__ == "__main__":
         # qwen25_vl_3b_vlm_mlx_conversion_options, \
         # pixtral_12b_vlm_mlx_conversion_options,
         # pixtral_12b_vlm_conversion_options,
+        gemma_3_12b_mlx_conversion_options,
     ]:
         pipeline_options.vlm_options = vlm_options
 

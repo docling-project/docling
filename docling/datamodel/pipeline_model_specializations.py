@@ -154,3 +154,22 @@ qwen25_vl_3b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
     scale=2.0,
     temperature=0.0,
 )
+
+# Gemma-3
+gemma_3_12b_mlx_conversion_options = HuggingFaceVlmOptions(
+    repo_id="mlx-community/gemma-3-12b-it-bf16",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    scale=2.0,
+    temperature=0.0,
+)
+
+gemma_3_27b_mlx_conversion_options = HuggingFaceVlmOptions(
+    repo_id="mlx-community/gemma-3-27b-it-bf16",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    response_format=ResponseFormat.MARKDOWN,
+    inference_framework=InferenceFramework.MLX,
+    scale=2.0,
+    temperature=0.0,
+)
