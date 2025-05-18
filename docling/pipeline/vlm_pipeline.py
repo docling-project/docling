@@ -237,7 +237,9 @@ class VlmPipeline(PaginatedPipeline):
         doctags_doc = DocTagsDocument.from_doctags_and_image_pairs(
             doctags_list_c, image_list_c
         )
-        conv_res.document.load_from_doctags(doctags_doc)
+        conv_res.document = DoclingDocument.load_from_doctags(
+            doctag_document=doctags_doc
+        )
 
         # If forced backend text, replace model predicted text with backend one
         if page.size:
