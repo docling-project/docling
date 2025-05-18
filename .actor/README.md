@@ -14,7 +14,7 @@ This Actor (specification v1) wraps the [Docling project](https://github.com/doc
 2. [Usage](#usage)
 3. [Input Parameters](#input-parameters)
 4. [Output](#output)
-5. [Performance & Resources](#performance--resources)
+5. [Performance and Resources](#performance-and-resources)
 6. [Troubleshooting](#troubleshooting)
 7. [Local Development](#local-development)
 8. [Architecture](#architecture)
@@ -190,7 +190,7 @@ Access logs via:
 apify key-value-stores get-record DOCLING_LOG
 ```
 
-## Performance & Resources
+## Performance and Resources
 
 - **Docker Image Size**: ~4GB
 - **Memory Requirements**:
