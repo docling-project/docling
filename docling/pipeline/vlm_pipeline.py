@@ -22,6 +22,7 @@ from docling_core.types.doc.document import DocTagsDocument
 from PIL import Image as PILImage
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import InputFormat, Page
@@ -172,47 +173,6 @@ class VlmPipeline(PaginatedPipeline):
                 self.pipeline_options.vlm_options.response_format
                 == ResponseFormat.DOCTAGS
             ):
-                """
-                doctags_list = []
-                image_list = []
-                for page in conv_res.pages:
-                    predicted_doctags = ""
-                    img = PILImage.new("RGB", (1, 1), "rgb(255,255,255)")
-                    if page.predictions.vlm_response:
-                        predicted_doctags = page.predictions.vlm_response.text
-                    if page.image:
-                        img = page.image
-                    image_list.append(img)
-                    doctags_list.append(predicted_doctags)
-
-                doctags_list_c = cast(List[Union[Path, str]], doctags_list)
-                image_list_c = cast(List[Union[Path, PILImage.Image]], image_list)
-                doctags_doc = DocTagsDocument.from_doctags_and_image_pairs(
-                    doctags_list_c, image_list_c
-                )
-                conv_res.document.load_from_doctags(doctags_doc)
-
-                # If forced backend text, replace model predicted text with backend one
-                if page.size:
-                    if self.force_backend_text:
-                        scale = self.pipeline_options.images_scale
-                        for element, _level in conv_res.document.iterate_items():
-                            if (
-                                not isinstance(element, TextItem)
-                                or len(element.prov) == 0
-                            ):
-                                continue
-                            crop_bbox = (
-                                element.prov[0]
-                                .bbox.scaled(scale=scale)
-                                .to_top_left_origin(
-                                    page_height=page.size.height * scale
-                                )
-                            )
-                            txt = self.extract_text_from_backend(page, crop_bbox)
-                            element.text = txt
-                            element.orig = txt
-                """
                 conv_res.document = self._turn_dt_into_doc(conv_res)
 
             elif (
@@ -220,6 +180,11 @@ class VlmPipeline(PaginatedPipeline):
                 == ResponseFormat.MARKDOWN
             ):
                 conv_res.document = self._turn_md_into_doc(conv_res)
+
+            elif (
+                self.pipeline_options.vlm_options.response_format == ResponseFormat.HTML
+            ):
+                conv_res.document = self._turn_html_into_doc(conv_res)
 
             else:
                 raise RuntimeError(
@@ -292,26 +257,6 @@ class VlmPipeline(PaginatedPipeline):
 
         return conv_res.document
 
-    """
-    def _turn_md_into_doc(self, conv_res):
-        predicted_text = ""
-        for pg_idx, page in enumerate(conv_res.pages):
-            if page.predictions.vlm_response:
-                predicted_text += page.predictions.vlm_response.text + "\n\n"
-        response_bytes = BytesIO(predicted_text.encode("utf8"))
-        out_doc = InputDocument(
-            path_or_stream=response_bytes,
-            filename=conv_res.input.file.name,
-            format=InputFormat.MD,
-            backend=MarkdownDocumentBackend,
-        )
-        backend = MarkdownDocumentBackend(
-            in_doc=out_doc,
-            path_or_stream=response_bytes,
-        )
-        return backend.convert()
-    """
-
     def _turn_md_into_doc(self, conv_res):
         def _extract_markdown_code(text):
             """
@@ -379,12 +324,90 @@ class VlmPipeline(PaginatedPipeline):
                 item.prov = [
                     ProvenanceItem(
                         page_no=pg_idx + 1,
-                        bbox=BoundingBox(t=0.0, b=0.0, l=0.0, r=0.0),
+                        bbox=BoundingBox(
+                            t=0.0, b=0.0, l=0.0, r=0.0
+                        ),  # FIXME: would be nice not to have to "fake" it
                         charspan=[0, 0],
                     )
                 ]
                 conv_res.document.append_child_item(child=item)
-                print(item)
+
+        return conv_res.document
+
+    def _turn_html_into_doc(self, conv_res):
+        def _extract_html_code(text):
+            """
+            Extracts text from markdown code blocks (enclosed in triple backticks).
+            If no code blocks are found, returns the original text.
+
+            Args:
+                text (str): Input text that may contain markdown code blocks
+
+            Returns:
+                str: Extracted code if code blocks exist, otherwise original text
+            """
+            # Regex pattern to match content between triple backticks
+            # This handles multiline content and optional language specifier
+            pattern = r"^```(?:\w*\n)?(.*?)```(\n)*$"
+
+            # Search with DOTALL flag to match across multiple lines
+            mtch = re.search(pattern, text, re.DOTALL)
+
+            if mtch:
+                # Return only the content of the first capturing group
+                return mtch.group(1)
+            else:
+                # No code blocks found, return original text
+                return text
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            page_no = pg_idx + 1  # FIXME: might be incorrect
+
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text + "\n\n"
+
+            predicted_text = _extract_html_code(text=predicted_text)
+
+            response_bytes = BytesIO(predicted_text.encode("utf8"))
+            out_doc = InputDocument(
+                path_or_stream=response_bytes,
+                filename=conv_res.input.file.name,
+                format=InputFormat.MD,
+                backend=HTMLDocumentBackend,
+            )
+            backend = HTMLDocumentBackend(
+                in_doc=out_doc,
+                path_or_stream=response_bytes,
+            )
+            page_doc = backend.convert()
+
+            if page.image is not None:
+                pg_width = page.image.width
+                pg_height = page.image.height
+            else:
+                pg_width = 1
+                pg_height = 1
+
+            conv_res.document.add_page(
+                page_no=page_no,
+                size=Size(width=pg_width, height=pg_height),
+                image=ImageRef.from_pil(image=page.image, dpi=72)
+                if page.image
+                else None,
+            )
+
+            for item, level in page_doc.iterate_items():
+                item.prov = [
+                    ProvenanceItem(
+                        page_no=pg_idx + 1,
+                        bbox=BoundingBox(
+                            t=0.0, b=0.0, l=0.0, r=0.0
+                        ),  # FIXME: would be nice not to have to "fake" it
+                        charspan=[0, 0],
+                    )
+                ]
+                conv_res.document.append_child_item(child=item)
 
         return conv_res.document
 
