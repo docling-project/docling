@@ -570,6 +570,16 @@ def convert(  # noqa: C901
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
             )
+        elif pipeline == PdfPipeline.ASR:
+            pipeline_options = AsrPipelineOptions()
+            pipeline_options.asr_options = asr_nemo_conversion_options
+
+            asr_format_option = AsrFormatOption(
+                pipeline_cls=AsrPipeline, pipeline_options=pipeline_options
+            )
+
+        else:
+            _log.error(f"Did not find the correct pipeline: {pipeline}")
 
         if artifacts_path is not None:
             pipeline_options.artifacts_path = artifacts_path
