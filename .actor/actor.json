@@ -4,7 +4,7 @@
   "version": "1.0",
   "environmentVariables": {},
   "dockerFile": "./Dockerfile",
-  "input": "./input_schema.json",
+  "inputSchema": "./input_schema.json",
   "scripts": {
     "run": "./actor.sh"
   }
