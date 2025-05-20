@@ -54,6 +54,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         self._version: Optional[str] = None
         self._tesseract_languages: Optional[List[str]] = None
         self._script_prefix: Optional[str] = None
+        self._is_auto: bool
 
         if self.enabled:
             try:
@@ -103,7 +104,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         Run tesseract CLI
         """
         cmd = [self.options.tesseract_cmd]
-        if "auto" in self.options.lang:
+        if self._is_auto:
             lang = self._parse_language(osd)
             if lang is not None:
                 cmd.append("-l")
@@ -191,6 +192,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         decoded_data = output.stdout.decode("utf-8")
         df_list = pd.read_csv(io.StringIO(decoded_data), header=None)
         self._tesseract_languages = df_list[0].tolist()[1:]
+        self._is_auto = "auto" in self._tesseract_languages
 
         # Decide the script prefix
         if any(lang.startswith("script/") for lang in self._tesseract_languages):
@@ -207,7 +209,7 @@ class TesseractOcrCliModel(BaseOcrModel):
             yield from page_batch
             return
 
-        for page in page_batch:
+        for page_i, page in enumerate(page_batch):
             assert page._backend is not None
             if not page._backend.is_valid():
                 yield page
@@ -216,7 +218,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                     ocr_rects = self.get_ocr_rects(page)
 
                     all_ocr_cells = []
-                    for ocr_rect in ocr_rects:
+                    for ocr_rect_i, ocr_rect in enumerate(ocr_rects):
                         # Skip zero area boxes
                         if ocr_rect.area() == 0:
                             continue
@@ -234,10 +236,17 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 df_osd = self._perform_osd(fname)
                                 doc_orientation = _parse_orientation(df_osd)
                             except subprocess.CalledProcessError as exc:
-                                # Here we just log the error and proceed to OCR in the
-                                # hope OCR will succeed while OSD failed
+                                if self._is_auto:
+                                    # OSD is required in auto mode, skipping
+                                    continue
+                                # Proceed to OCR in the hope OCR will succeed while
+                                # OSD failed
                                 _log.error(
-                                    "OSD failed for: %s with error:\n %s",
+                                    "OSD failed (doc %s, page: %s, "
+                                    "OCR rectangle: %s, processed image file %s):\n %s",
+                                    conv_res.input.file,
+                                    page_i,
+                                    ocr_rect_i,
                                     image_file,
                                     exc.stderr,
                                 )
@@ -250,7 +259,11 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 df_result = self._run_tesseract(fname, df_osd)
                             except subprocess.CalledProcessError as exc:
                                 _log.error(
-                                    "tesseract OCR failed for: %s with error:\n %s",
+                                    "tesseract OCR failed (doc %s, page: %s, "
+                                    "OCR rectangle: %s, processed image file %s):\n %s",
+                                    conv_res.input.file,
+                                    page_i,
+                                    ocr_rect_i,
                                     image_file,
                                     exc.stderr,
                                 )

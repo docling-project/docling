@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Type
+from typing import Iterable, Optional, Type
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
@@ -77,6 +76,8 @@ class TesseractOcrModel(BaseOcrModel):
             if not self._tesserocr_languages:
                 raise ImportError(missing_langs_errmsg)
 
+            self._is_auto: bool = "auto" in self._tesserocr_languages
+
             # Initialize the tesseractAPI
             _log.debug("Initializing TesserOCR: %s", tesseract_version)
             lang = "+".join(self.options.lang)
@@ -122,7 +123,7 @@ class TesseractOcrModel(BaseOcrModel):
             yield from page_batch
             return
 
-        for page in page_batch:
+        for page_i, page in enumerate(page_batch):
             assert page._backend is not None
             if not page._backend.is_valid():
                 yield page
@@ -135,7 +136,7 @@ class TesseractOcrModel(BaseOcrModel):
                     ocr_rects = self.get_ocr_rects(page)
 
                     all_ocr_cells = []
-                    for ocr_rect in ocr_rects:
+                    for ocr_rect_i, ocr_rect in enumerate(ocr_rects):
                         # Skip zero area boxes
                         if ocr_rect.area() == 0:
                             continue
@@ -146,15 +147,26 @@ class TesseractOcrModel(BaseOcrModel):
                         local_reader = self.reader
                         self.osd_reader.SetImage(high_res_image)
                         osd = self.osd_reader.DetectOrientationScript()
-                        # No text, probably
+                        # No text, or Orientation and Script detection failure
                         if osd is None:
-                            continue
+                            if self._is_auto:
+                                # OSD is required in auto mode, skipping
+                                continue
+                            # Proceed to OCR in the hope OCR will succeed while
+                            # OSD failed
+                            _log.error(
+                                "OSD failed for doc (doc %s, page: %s, "
+                                "OCR rectangle: %s)",
+                                conv_res.input.file,
+                                page_i,
+                                ocr_rect_i,
+                            )
                         doc_orientation = parse_tesseract_orientation(osd["orient_deg"])
                         if doc_orientation != 0:
                             high_res_image = high_res_image.rotate(
                                 -doc_orientation, expand=True
                             )
-                        if "auto" in self.options.lang:
+                        if self._is_auto:
                             script = osd["script_name"]
                             script = map_tesseract_script(script)
                             lang = f"{self.script_prefix}{script}"
