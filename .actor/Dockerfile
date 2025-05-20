@@ -64,7 +64,6 @@ ENV EASYOCR_MODULE_PATH=/tmp/easyocr-models
 COPY --chown=1000:1000 .actor/actor.sh .actor/actor.sh
 COPY --chown=1000:1000 .actor/actor.json .actor/actor.json
 COPY --chown=1000:1000 .actor/input_schema.json .actor/input_schema.json
-COPY --chown=1000:1000 .actor/docling_processor.py .actor/docling_processor.py
 RUN chmod +x .actor/actor.sh
 
 # Copy the build files from builder
