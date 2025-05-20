@@ -54,7 +54,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         self._version: Optional[str] = None
         self._tesseract_languages: Optional[List[str]] = None
         self._script_prefix: Optional[str] = None
-        self._is_auto: bool
+        self._is_auto: bool = False
 
         if self.enabled:
             try:
