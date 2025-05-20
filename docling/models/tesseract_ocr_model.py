@@ -41,7 +41,7 @@ class TesseractOcrModel(BaseOcrModel):
             accelerator_options=accelerator_options,
         )
         self.options: TesseractOcrOptions
-
+        self._is_auto: bool = "auto" in self.options.lang
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
         self.reader = None
         self.script_readers: dict[str, tesserocr.PyTessBaseAPI] = {}
@@ -75,8 +75,6 @@ class TesseractOcrModel(BaseOcrModel):
             _, self._tesserocr_languages = tesserocr.get_languages()
             if not self._tesserocr_languages:
                 raise ImportError(missing_langs_errmsg)
-
-            self._is_auto: bool = "auto" in self._tesserocr_languages
 
             # Initialize the tesseractAPI
             _log.debug("Initializing TesserOCR: %s", tesseract_version)

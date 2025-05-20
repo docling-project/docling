@@ -54,7 +54,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         self._version: Optional[str] = None
         self._tesseract_languages: Optional[List[str]] = None
         self._script_prefix: Optional[str] = None
-        self._is_auto: bool = False
+        self._is_auto: bool = "auto" in self.options.lang
 
         if self.enabled:
             try:
@@ -192,7 +192,6 @@ class TesseractOcrCliModel(BaseOcrModel):
         decoded_data = output.stdout.decode("utf-8")
         df_list = pd.read_csv(io.StringIO(decoded_data), header=None)
         self._tesseract_languages = df_list[0].tolist()[1:]
-        self._is_auto = "auto" in self._tesseract_languages
 
         # Decide the script prefix
         if any(lang.startswith("script/") for lang in self._tesseract_languages):
