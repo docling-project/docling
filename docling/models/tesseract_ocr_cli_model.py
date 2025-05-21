@@ -235,11 +235,6 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 df_osd = self._perform_osd(fname)
                                 doc_orientation = _parse_orientation(df_osd)
                             except subprocess.CalledProcessError as exc:
-                                if self._is_auto:
-                                    # OSD is required in auto mode, skipping
-                                    continue
-                                # Proceed to OCR in the hope OCR will succeed while
-                                # OSD failed
                                 _log.error(
                                     "OSD failed (doc %s, page: %s, "
                                     "OCR rectangle: %s, processed image file %s):\n %s",
@@ -249,6 +244,10 @@ class TesseractOcrCliModel(BaseOcrModel):
                                     image_file,
                                     exc.stderr,
                                 )
+                                # Skipping if OSD fail when in auto mode, otherwise proceed
+                                # to OCR in the hope OCR will succeed while OSD failed
+                                if self._is_auto:
+                                    continue
                             if doc_orientation != 0:
                                 high_res_image = high_res_image.rotate(
                                     -doc_orientation, expand=True

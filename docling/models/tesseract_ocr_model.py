@@ -147,11 +147,6 @@ class TesseractOcrModel(BaseOcrModel):
                         osd = self.osd_reader.DetectOrientationScript()
                         # No text, or Orientation and Script detection failure
                         if osd is None:
-                            if self._is_auto:
-                                # OSD is required in auto mode, skipping
-                                continue
-                            # Proceed to OCR in the hope OCR will succeed while
-                            # OSD failed
                             _log.error(
                                 "OSD failed for doc (doc %s, page: %s, "
                                 "OCR rectangle: %s)",
@@ -159,6 +154,10 @@ class TesseractOcrModel(BaseOcrModel):
                                 page_i,
                                 ocr_rect_i,
                             )
+                            # Skipping if OSD fail when in auto mode, otherwise proceed
+                            # to OCR in the hope OCR will succeed while OSD failed
+                            if self._is_auto:
+                                continue
                         doc_orientation = parse_tesseract_orientation(osd["orient_deg"])
                         if doc_orientation != 0:
                             high_res_image = high_res_image.rotate(
