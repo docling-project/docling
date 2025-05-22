@@ -253,9 +253,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     self._handle_tables(element, docx_obj, doc)
                 except Exception:
                     _log.debug("could not parse a table, broken docx table")
-
+            # Check for Image
             elif drawing_blip:
                 self._handle_pictures(docx_obj, drawing_blip, doc)
+                # Check for Text after the Image
+                if (
+                    tag_name in ["p"]
+                    or element.find(".//w:p", namespaces=namespaces) is not None
+                ):
+                    self._handle_text_elements(element, docx_obj, doc)
             # Check for the sdt containers, like table of contents
             elif tag_name in ["sdt"]:
                 sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
