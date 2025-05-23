@@ -74,6 +74,12 @@
       "prov": [],
       "orig": "Hello world1",
       "text": "Hello world1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      },
       "enumerated": false,
       "marker": "-"
     },
@@ -88,6 +94,12 @@
       "prov": [],
       "orig": "Hello2",
       "text": "Hello2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      },
       "enumerated": false,
       "marker": "-"
     },
@@ -113,7 +125,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Some text before",
-      "text": "Some text before"
+      "text": "Some text before",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/4",
@@ -149,7 +167,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "Some text after",
-      "text": "Some text after"
+      "text": "Some text after",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     }
   ],
   "pictures": [],

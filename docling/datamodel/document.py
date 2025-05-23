@@ -25,7 +25,7 @@ from docling_core.types.doc import (
 )
 from docling_core.utils.file import resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
@@ -34,6 +34,7 @@ from docling.backend.abstract_backend import (
 )
 from docling.datamodel.base_models import (
     AssembledUnit,
+    ConfidenceReport,
     ConversionStatus,
     DocumentStream,
     ErrorItem,
@@ -179,6 +180,7 @@ class ConversionResult(BaseModel):
     pages: List[Page] = []
     assembled: AssembledUnit = AssembledUnit()
     timings: Dict[str, ProfilingItem] = {}
+    confidence: ConfidenceReport = Field(default_factory=ConfidenceReport)
 
     document: DoclingDocument = _EMPTY_DOCLING_DOC
 
@@ -280,7 +282,7 @@ class _DocumentConversionInput(BaseModel):
                     if ("." in obj.name and not obj.name.startswith("."))
                     else ""
                 )
-                mime = _DocumentConversionInput._mime_from_extension(ext)
+                mime = _DocumentConversionInput._mime_from_extension(ext.lower())
             if mime is not None and mime.lower() == "application/zip":
                 objname = obj.name.lower()
                 if objname.endswith(".xlsx"):
@@ -354,6 +356,13 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.JSON_DOCLING][0]
         elif ext in FormatToExtensions[InputFormat.PDF]:
             mime = FormatToMimeType[InputFormat.PDF][0]
+        elif ext in FormatToExtensions[InputFormat.DOCX]:
+            mime = FormatToMimeType[InputFormat.DOCX][0]
+        elif ext in FormatToExtensions[InputFormat.PPTX]:
+            mime = FormatToMimeType[InputFormat.PPTX][0]
+        elif ext in FormatToExtensions[InputFormat.XLSX]:
+            mime = FormatToMimeType[InputFormat.XLSX][0]
+
         return mime
 
     @staticmethod
