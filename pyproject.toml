@@ -151,6 +151,11 @@ torchvision = [
   { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~0.17.2" },
 ]
 
+
+[tool.poetry.group.lm.dependencies]
+peft = "^0.15.2"
+backoff = "^2.2.1"
+
 [tool.poetry.extras]
 tesserocr = ["tesserocr"]
 ocrmac = ["ocrmac"]
