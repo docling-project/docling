@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Union, cast
 
-# from docling_core.types import DoclingDocument
+from docling_core.types import DoclingDocument
 from docling_core.types.doc import BoundingBox, DocItem, ImageRef, PictureItem, TextItem
 from docling_core.types.doc.document import DocTagsDocument
 from PIL import Image as PILImage
@@ -133,28 +133,26 @@ class VlmPipeline(PaginatedPipeline):
                 doctags_doc = DocTagsDocument.from_doctags_and_image_pairs(
                     doctags_list_c, image_list_c
                 )
-                conv_res.document.load_from_doctags(doctags_doc)
+                conv_res.document = DoclingDocument.load_from_doctags(doctags_doc)
 
                 # If forced backend text, replace model predicted text with backend one
-                if page.size:
-                    if self.force_backend_text:
-                        scale = self.pipeline_options.images_scale
-                        for element, _level in conv_res.document.iterate_items():
-                            if (
-                                not isinstance(element, TextItem)
-                                or len(element.prov) == 0
-                            ):
-                                continue
-                            crop_bbox = (
-                                element.prov[0]
-                                .bbox.scaled(scale=scale)
-                                .to_top_left_origin(
-                                    page_height=page.size.height * scale
-                                )
-                            )
-                            txt = self.extract_text_from_backend(page, crop_bbox)
-                            element.text = txt
-                            element.orig = txt
+                if self.force_backend_text:
+                    scale = self.pipeline_options.images_scale
+                    for element, _level in conv_res.document.iterate_items():
+                        if not isinstance(element, TextItem) or len(element.prov) == 0:
+                            continue
+                        page_ix = element.prov[0].page_no - 1
+                        page = conv_res.pages[page_ix]
+                        if not page.size:
+                            continue
+                        crop_bbox = (
+                            element.prov[0]
+                            .bbox.scaled(scale=scale)
+                            .to_top_left_origin(page_height=page.size.height * scale)
+                        )
+                        txt = self.extract_text_from_backend(page, crop_bbox)
+                        element.text = txt
+                        element.orig = txt
             elif (
                 self.pipeline_options.vlm_options.response_format
                 == ResponseFormat.MARKDOWN

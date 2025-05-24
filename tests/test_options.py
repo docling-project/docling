@@ -7,7 +7,7 @@ from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
@@ -163,3 +163,11 @@ def test_parser_backends(test_doc_path):
         doc_result: ConversionResult = converter.convert(test_doc_path)
 
         assert doc_result.status == ConversionStatus.SUCCESS
+
+
+def test_confidence(test_doc_path):
+    converter = DocumentConverter()
+    doc_result: ConversionResult = converter.convert(test_doc_path, page_range=(6, 9))
+
+    assert doc_result.confidence.mean_grade == QualityGrade.EXCELLENT
+    assert doc_result.confidence.low_grade == QualityGrade.EXCELLENT

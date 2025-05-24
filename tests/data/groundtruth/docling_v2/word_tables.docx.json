@@ -114,7 +114,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "A uniform table",
-      "text": "A uniform table"
+      "text": "A uniform table",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/2",
@@ -138,7 +144,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "A non-uniform table with horizontal spans",
-      "text": "A non-uniform table with horizontal spans"
+      "text": "A non-uniform table with horizontal spans",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/4",
@@ -162,7 +174,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "A non-uniform table with horizontal spans in inner columns",
-      "text": "A non-uniform table with horizontal spans in inner columns"
+      "text": "A non-uniform table with horizontal spans in inner columns",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/6",
@@ -186,7 +204,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "A non-uniform table with vertical spans",
-      "text": "A non-uniform table with vertical spans"
+      "text": "A non-uniform table with vertical spans",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/8",
@@ -210,7 +234,13 @@
       "label": "paragraph",
       "prov": [],
       "orig": "A non-uniform table with all kinds of spans and empty cells",
-      "text": "A non-uniform table with all kinds of spans and empty cells"
+      "text": "A non-uniform table with all kinds of spans and empty cells",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
     },
     {
       "self_ref": "#/texts/10",

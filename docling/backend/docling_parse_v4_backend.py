@@ -46,7 +46,7 @@ class DoclingParseV4PageBackend(PdfPageBackend):
                 .scaled(scale)
             )
 
-            overlap_frac = cell_bbox.intersection_area_with(bbox) / cell_bbox.area()
+            overlap_frac = cell_bbox.intersection_over_self(bbox)
 
             if overlap_frac > 0.5:
                 if len(text_piece) > 0:
