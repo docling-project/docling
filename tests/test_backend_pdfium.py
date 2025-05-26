@@ -75,3 +75,16 @@ def test_crop_page_image(test_doc_path):
 def test_num_pages(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
     doc_backend.page_count() == 9
+
+
+def test_merge_row():
+    pdf_doc = Path("./tests/data/pdf/multi_page.pdf")
+
+    doc_backend = _get_backend(pdf_doc)
+    page_backend: PyPdfiumPageBackend = doc_backend.load_page(4)
+    cell = page_backend.get_text_cells()[0]
+
+    assert (
+        cell.text
+        == "The journey of the word processor—from clunky typewriters to AI-powered platforms—"
+    )

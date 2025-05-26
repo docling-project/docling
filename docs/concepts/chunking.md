@@ -71,7 +71,10 @@ tokens), &
 chunks with same headings & captions) — users can opt out of this step via param
 `merge_peers` (by default `True`)
 
-👉 Example: see  [here](../examples/hybrid_chunking.ipynb).
+👉 Usage examples:
+
+- [Hybrid chunking](../examples/hybrid_chunking.ipynb)
+- [Advanced chunking & serialization](../examples/advanced_chunking_and_serialization.ipynb)
 
 ## Hierarchical Chunker
 

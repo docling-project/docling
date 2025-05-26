@@ -175,13 +175,18 @@ class PyPdfiumPageBackend(PdfPageBackend):
                 if len(group) == 1:
                     return group[0]
 
-                merged_text = "".join(cell.text for cell in group)
                 merged_bbox = BoundingBox(
                     l=min(cell.rect.to_bounding_box().l for cell in group),
                     t=min(cell.rect.to_bounding_box().t for cell in group),
                     r=max(cell.rect.to_bounding_box().r for cell in group),
                     b=max(cell.rect.to_bounding_box().b for cell in group),
                 )
+
+                assert self._ppage is not None
+                self.text_page = self._ppage.get_textpage()
+                bbox = merged_bbox.to_bottom_left_origin(page_size.height)
+                merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
+
                 return TextCell(
                     index=group[0].index,
                     text=merged_text,
