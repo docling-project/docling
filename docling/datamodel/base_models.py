@@ -37,12 +37,11 @@ class ConversionStatus(str, Enum):
 class InputFormat(str, Enum):
     """A document format supported by document backend parsers."""
 
-    PDF = "pdf"
     DOCX = "docx"
-    XLSM = "xlsm"
     PPTX = "pptx"
     HTML = "html"
     IMAGE = "image"
+    PDF = "pdf"
     ASCIIDOC = "asciidoc"
     MD = "md"
     CSV = "csv"
@@ -71,7 +70,7 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
-    InputFormat.XLSX: ["xlsx"],
+    InputFormat.XLSX: ["xlsx","xlsm"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.JSON_DOCLING: ["json"],
 }
