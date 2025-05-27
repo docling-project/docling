@@ -213,9 +213,11 @@ def export_documents(
                         fw.write(ser_res.text)
                 else:
                     conv_res.document.save_as_html(
-                        filename=fname, image_mode=image_export_mode, split_page_view=True
+                        filename=fname,
+                        image_mode=image_export_mode,
+                        split_page_view=True,
                     )
-                    
+
             # Export Text format:
             if export_txt:
                 fname = output_dir / f"{doc_filename}.txt"
@@ -276,7 +278,8 @@ def convert(  # noqa: C901
     show_localization: Annotated[
         bool,
         typer.Option(
-            ..., help="If enabled, the page images will show the bounding-boxes of the items."
+            ...,
+            help="If enabled, the page images will show the bounding-boxes of the items.",
         ),
     ] = False,
     headers: str = typer.Option(
