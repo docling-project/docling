@@ -2,10 +2,12 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from docling.datamodel.pipeline_options import (
-    granite_picture_description,
+from docling.datamodel.pipeline_model_specializations import (
     smoldocling_vlm_conversion_options,
     smoldocling_vlm_mlx_conversion_options,
+)
+from docling.datamodel.pipeline_options import (
+    granite_picture_description,
     smolvlm_picture_description,
 )
 from docling.datamodel.settings import settings

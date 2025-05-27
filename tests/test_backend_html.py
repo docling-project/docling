@@ -2,6 +2,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc.document import SectionHeaderItem
 
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -9,7 +10,7 @@ from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
     InputDocument,
-    SectionHeaderItem,
+    # SectionHeaderItem,
 )
 from docling.document_converter import DocumentConverter
 
