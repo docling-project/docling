@@ -992,7 +992,7 @@ version = "0.3.8"
 description = "serialize all of Python"
 optional = false
 python-versions = ">=3.8"
-groups = ["dev", "examples"]
+groups = ["main", "dev", "examples"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
     {file = "dill-0.3.8-py3-none-any.whl", hash = "sha256:c36ca9ffb54365bdd2f8eb3eff7d2a21237f8452b57ace88b1ac615b7e815bd7"},
@@ -1037,7 +1037,9 @@ pandas = ">=2.1.4,<3.0.0"
 pillow = ">=10.0.0,<12.0.0"
 pydantic = ">=2.6.0,<2.10.0 || >2.10.0,<2.10.1 || >2.10.1,<2.10.2 || >2.10.2,<3.0.0"
 pyyaml = ">=5.1,<7.0.0"
+semchunk = {version = ">=2.2.0,<3.0.0", optional = true, markers = "extra == \"chunking\" or extra == \"chunking-openai\""}
 tabulate = ">=0.9.0,<0.10.0"
+transformers = {version = ">=4.34.0,<5.0.0", optional = true, markers = "extra == \"chunking\""}
 typer = ">=0.12.5,<0.16.0"
 typing-extensions = ">=4.12.2,<5.0.0"
 
@@ -1673,7 +1675,7 @@ description = ""
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "examples"]
-markers = "platform_machine == \"x86_64\" or platform_machine == \"aarch64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or python_version >= \"3.10\" and (platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\")"
+markers = "platform_machine == \"x86_64\" or platform_machine == \"aarch64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\")"
 files = [
     {file = "hf_xet-1.1.1-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:e39a8513f0854656116c837d387d9a41e9d78430b1a181442f04c223cbc4e8f8"},
     {file = "hf_xet-1.1.1-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:c60cd67be384cb9e592fa6dfd29a10fddffa1feb2f3b31f53e980630d1ca0fd6"},
@@ -3162,6 +3164,34 @@ files = [
 ]
 
 [[package]]
+name = "mpire"
+version = "2.10.2"
+description = "A Python package for easy multiprocessing, but faster than multiprocessing"
+optional = false
+python-versions = "*"
+groups = ["main"]
+markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
+files = [
+    {file = "mpire-2.10.2-py3-none-any.whl", hash = "sha256:d627707f7a8d02aa4c7f7d59de399dec5290945ddf7fbd36cbb1d6ebb37a51fb"},
+    {file = "mpire-2.10.2.tar.gz", hash = "sha256:f66a321e93fadff34585a4bfa05e95bd946cf714b442f51c529038eb45773d97"},
+]
+
+[package.dependencies]
+multiprocess = [
+    {version = "*", optional = true, markers = "python_version < \"3.11\" and extra == \"dill\""},
+    {version = ">=0.70.15", optional = true, markers = "python_version >= \"3.11\" and extra == \"dill\""},
+]
+pygments = ">=2.0"
+pywin32 = {version = ">=301", markers = "platform_system == \"Windows\""}
+tqdm = ">=4.27"
+
+[package.extras]
+dashboard = ["flask"]
+dill = ["multiprocess (>=0.70.15) ; python_version >= \"3.11\"", "multiprocess ; python_version < \"3.11\""]
+docs = ["docutils (==0.17.1)", "sphinx (==3.2.1)", "sphinx-autodoc-typehints (==1.11.0)", "sphinx-rtd-theme (==0.5.0)", "sphinx-versions (==1.0.1)", "sphinxcontrib-images (==0.9.2)"]
+testing = ["ipywidgets", "multiprocess (>=0.70.15) ; python_version >= \"3.11\"", "multiprocess ; python_version < \"3.11\"", "numpy", "pywin32 (>=301) ; platform_system == \"Windows\"", "rich"]
+
+[[package]]
 name = "mpmath"
 version = "1.3.0"
 description = "Python library for arbitrary-precision floating-point arithmetic"
@@ -3304,7 +3334,7 @@ version = "0.70.16"
 description = "better multiprocessing and multithreading in Python"
 optional = false
 python-versions = ">=3.8"
-groups = ["examples"]
+groups = ["main", "examples"]
 markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
     {file = "multiprocess-0.70.16-pp310-pypy310_pp73-macosx_10_13_x86_64.whl", hash = "sha256:476887be10e2f59ff183c006af746cb6f1fd0eadcfd4ef49e605cbe2659920ee"},
@@ -5918,7 +5948,7 @@ files = [
     {file = "pywin32-310-cp39-cp39-win32.whl", hash = "sha256:851c8d927af0d879221e616ae1f66145253537bbdd321a77e8ef701b443a9a1a"},
     {file = "pywin32-310-cp39-cp39-win_amd64.whl", hash = "sha256:96867217335559ac619f00ad70e513c0fcf84b8a3af9fc2bba3b59b97da70475"},
 ]
-markers = {main = "sys_platform == \"win32\"", dev = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\" and platform_system == \"Linux\" and platform_machine == \"aarch64\"", docs = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\" and platform_system == \"Linux\" and platform_machine == \"aarch64\""}
+markers = {main = "sys_platform == \"win32\" or platform_system == \"Windows\"", dev = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\" and platform_system == \"Linux\" and platform_machine == \"aarch64\"", docs = "sys_platform == \"win32\" and platform_python_implementation != \"PyPy\" and platform_system == \"Linux\" and platform_machine == \"aarch64\""}
 
 [[package]]
 name = "pywin32-ctypes"
@@ -6189,6 +6219,7 @@ description = "Alternative regular expression module, to replace re."
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "examples"]
+markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
 files = [
     {file = "regex-2024.11.6-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ff590880083d60acc0433f9c3f713c51f7ac6ebb9adf889c79a261ecf541aa91"},
     {file = "regex-2024.11.6-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:658f90550f38270639e83ce492f27d2c8d2cd63805c65a13a14d36ca126753f0"},
@@ -6285,7 +6316,6 @@ files = [
     {file = "regex-2024.11.6-cp39-cp39-win_amd64.whl", hash = "sha256:b2837718570f95dd41675328e111345f9b7095d821bac435aac173ac80b19983"},
     {file = "regex-2024.11.6.tar.gz", hash = "sha256:7ab159b063c52a0333c884e4679f8d7a85112ee3078fe3d9004b2dd875585519"},
 ]
-markers = {main = "(sys_platform != \"darwin\" or platform_machine != \"x86_64\" or python_version == \"3.10\" or python_version == \"3.11\" or python_version == \"3.12\" or extra == \"vlm\") and python_version >= \"3.10\" or sys_platform != \"darwin\" and python_version == \"3.9\" or platform_machine == \"aarch64\" and python_version < \"3.10\" and platform_system == \"Linux\" or platform_machine != \"x86_64\" and python_version == \"3.9\" or sys_platform == \"darwin\" and platform_machine == \"x86_64\" and python_version < \"3.10\"", examples = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""}
 
 [[package]]
 name = "requests"
@@ -6785,6 +6815,23 @@ cryptography = ">=2.0"
 jeepney = ">=0.6"
 
 [[package]]
+name = "semchunk"
+version = "2.2.2"
+description = "A fast and lightweight Python library for splitting text into semantically meaningful chunks."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "platform_system == \"Linux\" and sys_platform == \"darwin\" and (platform_machine == \"aarch64\" or platform_machine == \"x86_64\") or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine == \"x86_64\" and sys_platform == \"darwin\""
+files = [
+    {file = "semchunk-2.2.2-py3-none-any.whl", hash = "sha256:94ca19020c013c073abdfd06d79a7c13637b91738335f3b8cdb5655ee7cc94d2"},
+    {file = "semchunk-2.2.2.tar.gz", hash = "sha256:940e89896e64eeb01de97ba60f51c8c7b96c6a3951dfcf574f25ce2146752f52"},
+]
+
+[package.dependencies]
+mpire = {version = "*", extras = ["dill"]}
+tqdm = "*"
+
+[[package]]
 name = "semver"
 version = "2.13.0"
 description = "Python helper for Semantic Versioning (http://semver.org/)"
@@ -7161,6 +7208,7 @@ description = ""
 optional = false
 python-versions = ">=3.7"
 groups = ["main", "examples"]
+markers = "sys_platform == \"darwin\" and platform_machine == \"x86_64\""
 files = [
     {file = "tokenizers-0.19.1-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:952078130b3d101e05ecfc7fc3640282d74ed26bcf691400f872563fca15ac97"},
     {file = "tokenizers-0.19.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:82c8b8063de6c0468f08e82c4e198763e7b97aabfe573fd4cf7b33930ca4df77"},
@@ -7263,7 +7311,6 @@ files = [
     {file = "tokenizers-0.19.1-pp39-pypy39_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:f8a9c828277133af13f3859d1b6bf1c3cb6e9e1637df0e45312e6b7c2e622b1f"},
     {file = "tokenizers-0.19.1.tar.gz", hash = "sha256:ee59e6680ed0fdbe6b724cf38bd70400a0c1dd623b07ac729087270caeac88e3"},
 ]
-markers = {main = "sys_platform == \"darwin\" and platform_machine == \"x86_64\" and (python_version <= \"3.12\" or extra == \"vlm\")", examples = "sys_platform == \"darwin\" and platform_machine == \"x86_64\""}
 
 [package.dependencies]
 huggingface-hub = ">=0.16.4,<1.0"
@@ -7280,6 +7327,7 @@ description = ""
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "examples"]
+markers = "sys_platform != \"darwin\" or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine != \"x86_64\" or python_version >= \"3.13\""
 files = [
     {file = "tokenizers-0.21.1-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:e78e413e9e668ad790a29456e677d9d3aa50a9ad311a40905d6861ba7692cf41"},
     {file = "tokenizers-0.21.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:cd51cd0a91ecc801633829fcd1fda9cf8682ed3477c6243b9a095539de4aecf3"},
@@ -7297,7 +7345,6 @@ files = [
     {file = "tokenizers-0.21.1-cp39-abi3-win_amd64.whl", hash = "sha256:0f0dcbcc9f6e13e675a66d7a5f2f225a736745ce484c1a4e07476a89ccdad382"},
     {file = "tokenizers-0.21.1.tar.gz", hash = "sha256:a1bb04dc5b448985f86ecd4b05407f5a8d97cb2c0532199b2a302a604a0165ab"},
 ]
-markers = {main = "sys_platform != \"darwin\" or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine != \"x86_64\"", examples = "sys_platform != \"darwin\" or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine != \"x86_64\" or python_version >= \"3.13\""}
 
 [package.dependencies]
 huggingface-hub = ">=0.16.4,<1.0"
@@ -7643,11 +7690,11 @@ description = "State-of-the-art Machine Learning for JAX, PyTorch and TensorFlow
 optional = false
 python-versions = ">=3.8.0"
 groups = ["main", "examples"]
+markers = "sys_platform == \"darwin\" and platform_machine == \"x86_64\""
 files = [
     {file = "transformers-4.42.4-py3-none-any.whl", hash = "sha256:6d59061392d0f1da312af29c962df9017ff3c0108c681a56d1bc981004d16d24"},
     {file = "transformers-4.42.4.tar.gz", hash = "sha256:f956e25e24df851f650cb2c158b6f4352dfae9d702f04c113ed24fc36ce7ae2d"},
 ]
-markers = {main = "sys_platform == \"darwin\" and platform_machine == \"x86_64\" and (python_version <= \"3.12\" or extra == \"vlm\")", examples = "sys_platform == \"darwin\" and platform_machine == \"x86_64\""}
 
 [package.dependencies]
 filelock = "*"
@@ -7713,11 +7760,11 @@ description = "State-of-the-art Machine Learning for JAX, PyTorch and TensorFlow
 optional = false
 python-versions = ">=3.9.0"
 groups = ["main", "examples"]
+markers = "sys_platform != \"darwin\" or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine != \"x86_64\" or python_version >= \"3.13\""
 files = [
     {file = "transformers-4.51.3-py3-none-any.whl", hash = "sha256:fd3279633ceb2b777013234bbf0b4f5c2d23c4626b05497691f00cfda55e8a83"},
     {file = "transformers-4.51.3.tar.gz", hash = "sha256:e292fcab3990c6defe6328f0f7d2004283ca81a7a07b2de9a46d67fd81ea1409"},
 ]
-markers = {main = "sys_platform != \"darwin\" or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine != \"x86_64\"", examples = "sys_platform != \"darwin\" or platform_machine == \"aarch64\" and platform_system == \"Linux\" or platform_machine != \"x86_64\" or python_version >= \"3.13\""}
 
 [package.dependencies]
 filelock = "*"
@@ -8590,4 +8637,4 @@ vlm = ["accelerate", "transformers", "transformers"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "44b047c73dc4a1b102302b8e86f9235b260730b5a04c5d6bb743db4c1bb14e9a"
+content-hash = "6e09692aaf6c33d67952eb51d2a6db189aa8f6f56e7403225f3083dcb3831971"
