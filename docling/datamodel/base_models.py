@@ -70,7 +70,7 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
-    InputFormat.XLSX: ["xlsx","xlsm"],
+    InputFormat.XLSX: ["xlsx", "xlsm"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.JSON_DOCLING: ["json"],
 }
