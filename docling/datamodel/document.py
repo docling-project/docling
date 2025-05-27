@@ -334,9 +334,9 @@ class _DocumentConversionInput(BaseModel):
     ) -> Optional[InputFormat]:
         """Guess the input format of a document by checking part of its content."""
         input_format: Optional[InputFormat] = None
-        content_str = content.decode("utf-8")
 
         if mime == "application/xml":
+            content_str = content.decode("utf-8")
             match_doctype = re.search(r"<!DOCTYPE [^>]+>", content_str)
             if match_doctype:
                 xml_doctype = match_doctype.group()
@@ -358,6 +358,7 @@ class _DocumentConversionInput(BaseModel):
                     input_format = InputFormat.XML_JATS
 
         elif mime == "text/plain":
+            content_str = content.decode("utf-8")
             if InputFormat.XML_USPTO in formats and content_str.startswith("PATN\r\n"):
                 input_format = InputFormat.XML_USPTO
 
