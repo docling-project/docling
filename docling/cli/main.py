@@ -162,7 +162,7 @@ def export_documents(
     export_json: bool,
     export_html: bool,
     export_html_split_page: bool,
-    show_localization: bool,
+    show_layout: bool,
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
@@ -196,7 +196,7 @@ def export_documents(
             if export_html_split_page:
                 fname = output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
-                if show_localization:
+                if show_layout:
                     ser = HTMLDocSerializer(
                         doc=conv_res.document,
                         params=HTMLParams(
@@ -275,7 +275,7 @@ def convert(  # noqa: C901
     to_formats: List[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
     ),
-    show_localization: Annotated[
+    show_layout: Annotated[
         bool,
         typer.Option(
             ...,
@@ -628,7 +628,7 @@ def convert(  # noqa: C901
             export_json=export_json,
             export_html=export_html,
             export_html_split_page=export_html_split_page,
-            show_localization=show_localization,
+            show_layout=show_layout,
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,
