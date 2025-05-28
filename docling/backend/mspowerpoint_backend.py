@@ -20,6 +20,7 @@ from docling_core.types.doc.document import ContentLayer
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+from pptx.util import Mm
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
@@ -416,8 +417,21 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                             groupedshape, parent_slide, slide_ind, doc, slide_size
                         )
 
-            # Loop through each shape in the slide
-            for shape in slide.shapes:
+            # Generate sort keys for shapes based on their top (cluster 3mm) and left positions.
+            # Manually positioned boxes with a deviation of less than 3mm in their top position
+            # will be sorted on the same line.
+            def gen_sort_keys(shapes, max_top_distance=Mm(3)):
+                top = None
+                for shape in sorted(shapes, key=lambda s: s.top):
+                    if top is None or abs(top - shape.top) > max_top_distance:
+                        top = shape.top
+                    yield (shape, (top, shape.left))
+
+            # Loop through each shapes on the slide and sort them by top cluster and left
+            for shape, sort in sorted(
+                gen_sort_keys(slide.shapes),
+                key=lambda s: s[1],
+            ):
                 handle_shapes(shape, parent_slide, slide_ind, doc, slide_size)
 
             # Handle notes slide
