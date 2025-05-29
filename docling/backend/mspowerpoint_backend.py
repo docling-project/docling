@@ -339,7 +339,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         col_span = int(col_span)
 
                     icell = TableCell(
-                        text=cell.text.strip(),
+                        text=cell.text.replace("\n", "<br>").strip(),
                         row_span=row_span,
                         col_span=col_span,
                         start_row_offset_idx=row_idx,
