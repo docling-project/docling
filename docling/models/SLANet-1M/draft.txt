@@ -1,0 +1,3 @@
+### Add SLANet-1M Model Integration
+
+This PR introduces initial support for the SLANet-1M model as part of the Docling model collection.
