@@ -39,7 +39,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 ## Get started
 
 <div class="grid">
-  <a href="concepts/" class="card"><b>Concepts</b><br />Learn Docling fundamendals</a>
+  <a href="concepts/" class="card"><b>Concepts</b><br />Learn Docling fundamentals</a>
   <a href="examples/" class="card"><b>Examples</b><br />Try out recipes for various use cases, including conversion, RAG, and more</a>
   <a href="integrations/" class="card"><b>Integrations</b><br />Check out integrations with popular frameworks and tools</a>
   <a href="reference/document_converter/" class="card"><b>Reference</b><br />See more API details</a>
