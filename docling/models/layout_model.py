@@ -24,8 +24,8 @@ _log = logging.getLogger(__name__)
 
 
 class LayoutModel(BasePageModel):
-    _model_repo_folder = "ds4sd--docling-models"
-    _model_path = "model_artifacts/layout"
+    _model_repo_folder = "ds4sd--docling-layout-heron"
+    _model_path = ""
 
     TEXT_ELEM_LABELS = [
         DocItemLabel.TEXT,
@@ -89,10 +89,12 @@ class LayoutModel(BasePageModel):
         if not progress:
             disable_progress_bars()
         download_path = snapshot_download(
-            repo_id="ds4sd/docling-models",
+            # repo_id="ds4sd/docling-models",
+            repo_id="ds4sd/docling-layout-heron",
             force_download=force,
             local_dir=local_dir,
-            revision="v2.1.0",
+            # revision="v2.1.0",
+            revision="main",
         )
 
         return Path(download_path)
