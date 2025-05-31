@@ -12,6 +12,12 @@ from typing import Annotated, Dict, List, Optional, Type
 
 import rich.table
 import typer
+from docling_core.transforms.serializer.html import (
+    HTMLDocSerializer,
+    HTMLOutputStyle,
+    HTMLParams,
+)
+from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
@@ -156,6 +162,7 @@ def export_documents(
     export_json: bool,
     export_html: bool,
     export_html_split_page: bool,
+    show_layout: bool,
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
@@ -189,9 +196,27 @@ def export_documents(
             if export_html_split_page:
                 fname = output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
-                conv_res.document.save_as_html(
-                    filename=fname, image_mode=image_export_mode, split_page_view=True
-                )
+                if show_layout:
+                    ser = HTMLDocSerializer(
+                        doc=conv_res.document,
+                        params=HTMLParams(
+                            image_mode=image_export_mode,
+                            output_style=HTMLOutputStyle.SPLIT_PAGE,
+                        ),
+                    )
+                    visualizer = LayoutVisualizer()
+                    visualizer.params.show_label = False
+                    ser_res = ser.serialize(
+                        visualizer=visualizer,
+                    )
+                    with open(fname, "w") as fw:
+                        fw.write(ser_res.text)
+                else:
+                    conv_res.document.save_as_html(
+                        filename=fname,
+                        image_mode=image_export_mode,
+                        split_page_view=True,
+                    )
 
             # Export Text format:
             if export_txt:
@@ -250,6 +275,13 @@ def convert(  # noqa: C901
     to_formats: List[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
     ),
+    show_layout: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, the page images will show the bounding-boxes of the items.",
+        ),
+    ] = False,
     headers: str = typer.Option(
         None,
         "--headers",
@@ -596,6 +628,7 @@ def convert(  # noqa: C901
             export_json=export_json,
             export_html=export_html,
             export_html_split_page=export_html_split_page,
+            show_layout=show_layout,
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,

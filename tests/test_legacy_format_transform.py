@@ -38,17 +38,15 @@ def get_converter():
 
 def test_compare_legacy_output(test_doc_paths):
     converter = get_converter()
-
     res = converter.convert_all(test_doc_paths, raises_on_error=True)
-
     for conv_res in res:
         print(f"Results for {conv_res.input.file}")
-        print(
-            json.dumps(
-                conv_res.legacy_document.model_dump(
-                    mode="json", by_alias=True, exclude_none=True
+        with pytest.warns(DeprecationWarning, match="Use document instead"):
+            print(
+                json.dumps(
+                    conv_res.legacy_document.model_dump(
+                        mode="json", by_alias=True, exclude_none=True
+                    )
                 )
             )
-        )
-
     # assert res.legacy_output == res.legacy_output_transformed

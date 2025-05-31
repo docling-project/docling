@@ -4,6 +4,7 @@ import warnings
 from pathlib import Path
 from typing import List, Optional
 
+import pytest
 from docling_core.types.doc import (
     DocItem,
     DoclingDocument,
@@ -302,9 +303,8 @@ def verify_conversion_result_v1(
     )
 
     doc_pred_pages: List[Page] = doc_result.pages
-    doc_pred: DsDocument = doc_result.legacy_document
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
+    with pytest.warns(DeprecationWarning, match="Use document instead"):
+        doc_pred: DsDocument = doc_result.legacy_document
         doc_pred_md = doc_result.legacy_document.export_to_markdown()
         doc_pred_dt = doc_result.legacy_document.export_to_document_tokens()
 
@@ -391,7 +391,7 @@ def verify_conversion_result_v2(
     doc_pred_pages: List[Page] = doc_result.pages
     doc_pred: DoclingDocument = doc_result.document
     doc_pred_md = doc_result.document.export_to_markdown()
-    doc_pred_dt = doc_result.document.export_to_document_tokens()
+    doc_pred_dt = doc_result.document.export_to_doctags()
 
     engine_suffix = "" if ocr_engine is None else f".{ocr_engine}"
 
