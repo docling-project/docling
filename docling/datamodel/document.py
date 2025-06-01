@@ -20,8 +20,30 @@ import filetype
 
 # DO NOT REMOVE; explicitly exposed from this location
 from docling_core.types.doc import (
+    DocItem,
     DocItemLabel,
     DoclingDocument,
+    PictureItem,
+    SectionHeaderItem,
+    TableItem,
+    TextItem,
+)
+from docling_core.types.doc.document import ListItem
+from docling_core.types.legacy_doc.base import (
+    BaseText,
+    Figure,
+    GlmTableCell,
+    PageDimensions,
+    PageReference,
+    Prov,
+    Ref,
+    Table as DsSchemaTable,
+    TableCell,
+)
+from docling_core.types.legacy_doc.document import (
+    CCSDocumentDescription as DsDocumentDescription,
+    CCSFileInfoObject as DsFileInfoObject,
+    ExportedCCSDocument as DsDocument,
 )
 from docling_core.utils.file import resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy

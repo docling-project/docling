@@ -1,14 +1,12 @@
 from pathlib import Path
 
-from docling_core.types.doc.document import SectionHeaderItem
-
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
     InputDocument,
-    # SectionHeaderItem,
+    SectionHeaderItem,
 )
 from docling.document_converter import DocumentConverter
 
