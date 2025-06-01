@@ -9,7 +9,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import HuggingFaceVlmOptions
+from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BasePageModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.utils.profiling import TimeRecorder
@@ -23,7 +23,7 @@ class HuggingFaceMlxModel(BasePageModel):
         enabled: bool,
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
-        vlm_options: HuggingFaceVlmOptions,
+        vlm_options: InlineVlmOptions,
     ):
         self.enabled = enabled
 

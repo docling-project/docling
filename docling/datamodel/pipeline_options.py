@@ -19,8 +19,8 @@ from typing_extensions import deprecated
 # Import the following for backwards compatibility
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
-    HuggingFaceVlmOptions,
     InferenceFramework,
+    InlineVlmOptions,
     ResponseFormat,
 )
 from docling.datamodel.vlm_model_spec import (
@@ -317,7 +317,7 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         False  # (To be used with vlms, or other generative models)
     )
     # If True, text from backend will be used instead of generated text
-    vlm_options: Union[HuggingFaceVlmOptions, ApiVlmOptions] = (
+    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = (
         smoldocling_vlm_conversion_options
     )
 

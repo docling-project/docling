@@ -31,8 +31,8 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
-    HuggingFaceVlmOptions,
     InferenceFramework,
+    InlineVlmOptions,
     ResponseFormat,
 )
 from docling.datamodel.settings import settings
@@ -86,8 +86,8 @@ class VlmPipeline(PaginatedPipeline):
                     vlm_options=cast(ApiVlmOptions, self.pipeline_options.vlm_options),
                 ),
             ]
-        elif isinstance(self.pipeline_options.vlm_options, HuggingFaceVlmOptions):
-            vlm_options = cast(HuggingFaceVlmOptions, self.pipeline_options.vlm_options)
+        elif isinstance(self.pipeline_options.vlm_options, InlineVlmOptions):
+            vlm_options = cast(InlineVlmOptions, self.pipeline_options.vlm_options)
             if vlm_options.inference_framework == InferenceFramework.MLX:
                 self.build_pipe = [
                     HuggingFaceMlxModel(
@@ -100,6 +100,7 @@ class VlmPipeline(PaginatedPipeline):
             elif (
                 vlm_options.inference_framework
                 == InferenceFramework.TRANSFORMERS_VISION2SEQ
+                or vlm_options.inference_framework == InferenceFramework.TRANSFORMERS
             ):
                 self.build_pipe = [
                     HuggingFaceVlmModel_AutoModelForVision2Seq(

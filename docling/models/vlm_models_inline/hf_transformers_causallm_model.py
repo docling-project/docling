@@ -9,7 +9,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import HuggingFaceVlmOptions
+from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BasePageModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.utils.accelerator_utils import decide_device
@@ -24,11 +24,9 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
         enabled: bool,
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
-        vlm_options: HuggingFaceVlmOptions,
+        vlm_options: InlineVlmOptions,
     ):
         self.enabled = enabled
-
-        self.trust_remote_code = True
 
         self.vlm_options = vlm_options
 
@@ -58,51 +56,33 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
-            self.param_question = vlm_options.prompt  # "Perform Layout Analysis."
-            self.param_quantization_config = BitsAndBytesConfig(
-                load_in_8bit=vlm_options.load_in_8bit,  # True,
-                llm_int8_threshold=vlm_options.llm_int8_threshold,  # 6.0
-            )
-            self.param_quantized = vlm_options.quantized  # False
+            self.param_quantization_config: Optional[BitsAndBytesConfig] = None
+            if vlm_options.quantized:
+                self.param_quantization_config = BitsAndBytesConfig(
+                    load_in_8bit=vlm_options.load_in_8bit,
+                    llm_int8_threshold=vlm_options.llm_int8_threshold,
+                )
 
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
-                trust_remote_code=self.trust_remote_code,
+                trust_remote_code=vlm_options.trust_remote_code,
             )
-            if self.param_quantized:
-                print("using quantized")
-                self.vlm_model = AutoModelForCausalLM.from_pretrained(
-                    artifacts_path,
-                    device_map=self.device,
-                    torch_dtype="auto",
-                    quantization_config=self.param_quantization_config,
-                    _attn_implementation=(
-                        "flash_attention_2"
-                        if self.device.startswith("cuda")
-                        and accelerator_options.cuda_use_flash_attention2
-                        else "eager"
-                    ),
-                    trust_remote_code=self.trust_remote_code,
-                )  # .to(self.device)
-            else:
-                print("using original")
-                self.vlm_model = AutoModelForCausalLM.from_pretrained(
-                    artifacts_path,
-                    device_map=self.device,
-                    torch_dtype="auto",  # torch.bfloat16,
-                    _attn_implementation=(
-                        "flash_attention_2"
-                        if self.device.startswith("cuda")
-                        and accelerator_options.cuda_use_flash_attention2
-                        else "eager"
-                    ),
-                    trust_remote_code=self.trust_remote_code,
-                )  # .to(self.device)
-
-            model_path = artifacts_path
+            self.vlm_model = AutoModelForCausalLM.from_pretrained(
+                artifacts_path,
+                device_map=self.device,
+                torch_dtype="auto",
+                quantization_config=self.param_quantization_config,
+                _attn_implementation=(
+                    "flash_attention_2"
+                    if self.device.startswith("cuda")
+                    and accelerator_options.cuda_use_flash_attention2
+                    else "eager"
+                ),
+                trust_remote_code=vlm_options.trust_remote_code,
+            )
 
             # Load generation config
-            self.generation_config = GenerationConfig.from_pretrained(model_path)
+            self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -161,6 +141,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
     def formulate_prompt(self) -> str:
         """Formulate a prompt for the VLM."""
         if self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
+            _log.debug("Using specialized prompt for Phi-4")
             # more info here: https://huggingface.co/microsoft/Phi-4-multimodal-instruct#loading-the-model-locally
 
             user_prompt = "<|user|>"
@@ -171,7 +152,22 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
 
             return prompt
-        else:
-            raise ValueError(f"No prompt template for {self.vlm_options.repo_id}")
 
-        return ""
+        _log.debug("Using default prompt for CasualLM using apply_chat_template")
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "This is a page from a document.",
+                    },
+                    {"type": "image"},
+                    {"type": "text", "text": self.vlm_options.prompt},
+                ],
+            }
+        ]
+        prompt = self.processor.apply_chat_template(
+            messages, add_generation_prompt=False
+        )
+        return prompt

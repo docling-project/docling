@@ -7,8 +7,8 @@ from pydantic import (
 
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
-    HuggingFaceVlmOptions,
     InferenceFramework,
+    InlineVlmOptions,
     ResponseFormat,
 )
 
@@ -16,7 +16,7 @@ _log = logging.getLogger(__name__)
 
 
 # SmolDocling
-SMOLDOCLING_MLX = HuggingFaceVlmOptions(
+SMOLDOCLING_MLX = InlineVlmOptions(
     repo_id="ds4sd/SmolDocling-256M-preview-mlx-bf16",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
@@ -25,7 +25,7 @@ SMOLDOCLING_MLX = HuggingFaceVlmOptions(
     temperature=0.0,
 )
 
-SMOLDOCLING_TRANSFORMERS = HuggingFaceVlmOptions(
+SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
     repo_id="ds4sd/SmolDocling-256M-preview",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
@@ -35,7 +35,7 @@ SMOLDOCLING_TRANSFORMERS = HuggingFaceVlmOptions(
 )
 
 # GraniteVision
-GRANITE_VISION_TRANSFORMERS = HuggingFaceVlmOptions(
+GRANITE_VISION_TRANSFORMERS = InlineVlmOptions(
     repo_id="ibm-granite/granite-vision-3.2-2b",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
     response_format=ResponseFormat.MARKDOWN,
@@ -55,7 +55,7 @@ GRANITE_VISION_OLLAMA = ApiVlmOptions(
 )
 
 # Pixtral
-PIXTRAL_12B_TRANSFORMERS = HuggingFaceVlmOptions(
+PIXTRAL_12B_TRANSFORMERS = InlineVlmOptions(
     repo_id="mistral-community/pixtral-12b",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
@@ -64,7 +64,7 @@ PIXTRAL_12B_TRANSFORMERS = HuggingFaceVlmOptions(
     temperature=0.0,
 )
 
-PIXTRAL_12B_MLX = HuggingFaceVlmOptions(
+PIXTRAL_12B_MLX = InlineVlmOptions(
     repo_id="mlx-community/pixtral-12b-bf16",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
@@ -74,7 +74,7 @@ PIXTRAL_12B_MLX = HuggingFaceVlmOptions(
 )
 
 # Phi4
-PHI4_TRANSFORMERS = HuggingFaceVlmOptions(
+PHI4_TRANSFORMERS = InlineVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",
     prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
     response_format=ResponseFormat.MARKDOWN,
@@ -84,7 +84,7 @@ PHI4_TRANSFORMERS = HuggingFaceVlmOptions(
 )
 
 # Qwen
-QWEN25_VL_3B_MLX = HuggingFaceVlmOptions(
+QWEN25_VL_3B_MLX = InlineVlmOptions(
     repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
@@ -94,7 +94,7 @@ QWEN25_VL_3B_MLX = HuggingFaceVlmOptions(
 )
 
 # Gemma-3
-GEMMA3_12B_MLX = HuggingFaceVlmOptions(
+GEMMA3_12B_MLX = InlineVlmOptions(
     repo_id="mlx-community/gemma-3-12b-it-bf16",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
@@ -103,7 +103,7 @@ GEMMA3_12B_MLX = HuggingFaceVlmOptions(
     temperature=0.0,
 )
 
-GEMMA3_27B_MLX = HuggingFaceVlmOptions(
+GEMMA3_27B_MLX = InlineVlmOptions(
     repo_id="mlx-community/gemma-3-27b-it-bf16",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,

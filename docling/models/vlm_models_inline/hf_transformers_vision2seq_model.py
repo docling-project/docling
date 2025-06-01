@@ -9,7 +9,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import HuggingFaceVlmOptions
+from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BasePageModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.utils.accelerator_utils import decide_device
@@ -24,7 +24,7 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
         enabled: bool,
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
-        vlm_options: HuggingFaceVlmOptions,
+        vlm_options: InlineVlmOptions,
     ):
         self.enabled = enabled
 
@@ -57,45 +57,29 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
-            # self.param_question = vlm_options.prompt  # "Perform Layout Analysis."
-            self.param_quantization_config = BitsAndBytesConfig(
-                load_in_8bit=vlm_options.load_in_8bit,  # True,
-                llm_int8_threshold=vlm_options.llm_int8_threshold,  # 6.0
-            )
-            self.param_quantized = vlm_options.quantized  # False
+            self.param_quantization_config: Optional[BitsAndBytesConfig] = None
+            if vlm_options.quantized:
+                self.param_quantization_config = BitsAndBytesConfig(
+                    load_in_8bit=vlm_options.load_in_8bit,
+                    llm_int8_threshold=vlm_options.llm_int8_threshold,
+                )
 
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
-                # trust_remote_code=True,
+                trust_remote_code=vlm_options.trust_remote_code,
             )
-            if not self.param_quantized:
-                self.vlm_model = AutoModelForVision2Seq.from_pretrained(
-                    artifacts_path,
-                    device_map=self.device,
-                    # torch_dtype=torch.bfloat16,
-                    _attn_implementation=(
-                        "flash_attention_2"
-                        if self.device.startswith("cuda")
-                        and accelerator_options.cuda_use_flash_attention2
-                        else "eager"
-                    ),
-                    # trust_remote_code=True,
-                )  # .to(self.device)
-
-            else:
-                self.vlm_model = AutoModelForVision2Seq.from_pretrained(
-                    artifacts_path,
-                    device_map=self.device,
-                    torch_dtype="auto",
-                    quantization_config=self.param_quantization_config,
-                    _attn_implementation=(
-                        "flash_attention_2"
-                        if self.device.startswith("cuda")
-                        and accelerator_options.cuda_use_flash_attention2
-                        else "eager"
-                    ),
-                    # trust_remote_code=True,
-                )  # .to(self.device)
+            self.vlm_model = AutoModelForVision2Seq.from_pretrained(
+                artifacts_path,
+                device_map=self.device,
+                # torch_dtype=torch.bfloat16,
+                _attn_implementation=(
+                    "flash_attention_2"
+                    if self.device.startswith("cuda")
+                    and accelerator_options.cuda_use_flash_attention2
+                    else "eager"
+                ),
+                trust_remote_code=vlm_options.trust_remote_code,
+            )
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]

@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Any, Dict, Literal
 
 from pydantic import AnyUrl, BaseModel
+from typing_extensions import deprecated
 
 
 class BaseVlmOptions(BaseModel):
@@ -17,15 +18,16 @@ class ResponseFormat(str, Enum):
 
 class InferenceFramework(str, Enum):
     MLX = "mlx"
-    TRANSFORMERS = "transformers"
+    TRANSFORMERS = "transformers"  # TODO: how to flag this as outdated?
     TRANSFORMERS_VISION2SEQ = "transformers-vision2seq"
     TRANSFORMERS_CAUSALLM = "transformers-causallm"
 
 
-class HuggingFaceVlmOptions(BaseVlmOptions):
-    kind: Literal["hf_model_options"] = "hf_model_options"
+class InlineVlmOptions(BaseVlmOptions):
+    kind: Literal["inline_model_options"] = "inline_model_options"
 
     repo_id: str
+    trust_remote_code: bool = False
     load_in_8bit: bool = True
     llm_int8_threshold: float = 6.0
     quantized: bool = False
@@ -44,6 +46,11 @@ class HuggingFaceVlmOptions(BaseVlmOptions):
     @property
     def repo_cache_folder(self) -> str:
         return self.repo_id.replace("/", "--")
+
+
+@deprecated("Use InlineVlmOptions instead.")
+class HuggingFaceVlmOptions(InlineVlmOptions):
+    pass
 
 
 class ApiVlmOptions(BaseVlmOptions):
