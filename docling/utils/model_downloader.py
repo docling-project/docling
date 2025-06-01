@@ -6,11 +6,11 @@ from docling.datamodel.pipeline_options import (
     granite_picture_description,
     smolvlm_picture_description,
 )
-from docling.datamodel.pipeline_vlm_model_spec import (
+from docling.datamodel.settings import settings
+from docling.datamodel.vlm_model_spec import (
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
 )
-from docling.datamodel.settings import settings
 from docling.models.code_formula_model import CodeFormulaModel
 from docling.models.document_picture_classifier import DocumentPictureClassifier
 from docling.models.easyocr_model import EasyOcrModel

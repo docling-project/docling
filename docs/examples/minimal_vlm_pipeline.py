@@ -2,7 +2,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
-from docling.datamodel.pipeline_vlm_model_spec import SMOLDOCLING_MLX
+from docling.datamodel.vlm_model_spec import SMOLDOCLING_MLX
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 

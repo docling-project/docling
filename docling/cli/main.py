@@ -41,14 +41,14 @@ from docling.datamodel.pipeline_options import (
     TableFormerMode,
     VlmPipelineOptions,
 )
-from docling.datamodel.pipeline_vlm_model_spec import (
+from docling.datamodel.settings import settings
+from docling.datamodel.vlm_model_spec import (
     GRANITE_VISION_OLLAMA,
     GRANITE_VISION_TRANSFORMERS,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
     VlmModelType,
 )
-from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
 from docling.models.factories import get_ocr_factory
 from docling.pipeline.vlm_pipeline import VlmPipeline
