@@ -16,10 +16,13 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import deprecated
 
-from docling.datamodel.pipeline_model_specializations import (
-    ApiVlmOptions,
-    HuggingFaceVlmOptions,
-    smoldocling_vlm_conversion_options,
+# Import the following for backwards compatibility
+from docling.datamodel.pipeline_vlm_model_spec import (
+    GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
+    GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
+    SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
+    SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
+    VlmModelType,
 )
 
 _log = logging.getLogger(__name__)
@@ -300,6 +303,65 @@ class PaginatedPipelineOptions(PipelineOptions):
     images_scale: float = 1.0
     generate_page_images: bool = False
     generate_picture_images: bool = False
+
+
+class BaseVlmOptions(BaseModel):
+    kind: str
+    prompt: str
+
+
+class ResponseFormat(str, Enum):
+    DOCTAGS = "doctags"
+    MARKDOWN = "markdown"
+    HTML = "html"
+
+
+class InferenceFramework(str, Enum):
+    MLX = "mlx"
+    TRANSFORMERS = "transformers"
+    TRANSFORMERS_AutoModelForVision2Seq = "transformers-AutoModelForVision2Seq"
+    TRANSFORMERS_AutoModelForCausalLM = "transformers-AutoModelForCausalLM"
+    TRANSFORMERS_LlavaForConditionalGeneration = (
+        "transformers-LlavaForConditionalGeneration"
+    )
+
+
+class HuggingFaceVlmOptions(BaseVlmOptions):
+    kind: Literal["hf_model_options"] = "hf_model_options"
+
+    repo_id: str
+    load_in_8bit: bool = True
+    llm_int8_threshold: float = 6.0
+    quantized: bool = False
+
+    inference_framework: InferenceFramework
+    response_format: ResponseFormat
+
+    scale: float = 2.0
+
+    temperature: float = 0.0
+    stop_strings: list[str] = []
+
+    use_kv_cache: bool = True
+    max_new_tokens: int = 4096
+
+    @property
+    def repo_cache_folder(self) -> str:
+        return self.repo_id.replace("/", "--")
+
+
+class ApiVlmOptions(BaseVlmOptions):
+    kind: Literal["api_model_options"] = "api_model_options"
+
+    url: AnyUrl = AnyUrl(
+        "http://localhost:11434/v1/chat/completions"
+    )  # Default to ollama
+    headers: Dict[str, str] = {}
+    params: Dict[str, Any] = {}
+    scale: float = 2.0
+    timeout: float = 60
+    concurrency: int = 1
+    response_format: ResponseFormat
 
 
 class VlmPipelineOptions(PaginatedPipelineOptions):

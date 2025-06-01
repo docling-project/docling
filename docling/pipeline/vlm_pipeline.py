@@ -27,13 +27,11 @@ from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import InputFormat, Page
 from docling.datamodel.document import ConversionResult, InputDocument
-from docling.datamodel.pipeline_model_specializations import (
+from docling.datamodel.pipeline_options import (
     ApiVlmOptions,
     HuggingFaceVlmOptions,
     InferenceFramework,
     ResponseFormat,
-)
-from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings

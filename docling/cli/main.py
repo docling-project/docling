@@ -29,13 +29,6 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_model_specializations import (
-    VlmModelType,
-    granite_vision_vlm_conversion_options,
-    granite_vision_vlm_ollama_conversion_options,
-    smoldocling_vlm_conversion_options,
-    smoldocling_vlm_mlx_conversion_options,
-)
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
@@ -47,6 +40,13 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
     VlmPipelineOptions,
+)
+from docling.datamodel.pipeline_vlm_model_spec import (
+    GRANITE_VISION_OLLAMA,
+    GRANITE_VISION_TRANSFORMERS,
+    SMOLDOCLING_MLX,
+    SMOLDOCLING_TRANSFORMERS,
+    VlmModelType,
 )
 from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
@@ -549,20 +549,16 @@ def convert(  # noqa: C901
             )
 
             if vlm_model == VlmModelType.GRANITE_VISION:
-                pipeline_options.vlm_options = granite_vision_vlm_conversion_options
+                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = (
-                    granite_vision_vlm_ollama_conversion_options
-                )
+                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
             elif vlm_model == VlmModelType.SMOLDOCLING:
-                pipeline_options.vlm_options = smoldocling_vlm_conversion_options
+                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":
                     try:
                         import mlx_vlm
 
-                        pipeline_options.vlm_options = (
-                            smoldocling_vlm_mlx_conversion_options
-                        )
+                        pipeline_options.vlm_options = SMOLDOCLING_MLX
                     except ImportError:
                         _log.warning(
                             "To run SmolDocling faster, please install mlx-vlm:\n"

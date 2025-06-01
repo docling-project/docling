@@ -2,13 +2,13 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from docling.datamodel.pipeline_model_specializations import (
-    smoldocling_vlm_conversion_options,
-    smoldocling_vlm_mlx_conversion_options,
-)
 from docling.datamodel.pipeline_options import (
     granite_picture_description,
     smolvlm_picture_description,
+)
+from docling.datamodel.pipeline_vlm_model_spec import (
+    SMOLDOCLING_MLX,
+    SMOLDOCLING_TRANSFORMERS,
 )
 from docling.datamodel.settings import settings
 from docling.models.code_formula_model import CodeFormulaModel
@@ -87,8 +87,8 @@ def download_models(
     if with_smoldocling:
         _log.info("Downloading SmolDocling model...")
         HuggingFaceVlmModel.download_models(
-            repo_id=smoldocling_vlm_conversion_options.repo_id,
-            local_dir=output_dir / smoldocling_vlm_conversion_options.repo_cache_folder,
+            repo_id=SMOLDOCLING_TRANSFORMERS.repo_id,
+            local_dir=output_dir / SMOLDOCLING_TRANSFORMERS.repo_cache_folder,
             force=force,
             progress=progress,
         )
@@ -96,9 +96,8 @@ def download_models(
     if with_smoldocling_mlx:
         _log.info("Downloading SmolDocling MLX model...")
         HuggingFaceVlmModel.download_models(
-            repo_id=smoldocling_vlm_mlx_conversion_options.repo_id,
-            local_dir=output_dir
-            / smoldocling_vlm_mlx_conversion_options.repo_cache_folder,
+            repo_id=SMOLDOCLING_MLX.repo_id,
+            local_dir=output_dir / SMOLDOCLING_MLX.repo_cache_folder,
             force=force,
             progress=progress,
         )

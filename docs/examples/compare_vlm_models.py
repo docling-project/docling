@@ -13,19 +13,19 @@ from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 from tabulate import tabulate
 
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_model_specializations import (
-    gemma_3_12b_mlx_conversion_options,
-    granite_vision_vlm_conversion_options,
-    granite_vision_vlm_ollama_conversion_options,
-    phi_vlm_conversion_options,
-    pixtral_12b_vlm_conversion_options,
-    pixtral_12b_vlm_mlx_conversion_options,
-    qwen25_vl_3b_vlm_mlx_conversion_options,
-    smoldocling_vlm_conversion_options,
-    smoldocling_vlm_mlx_conversion_options,
-)
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
+)
+from docling.datamodel.pipeline_vlm_model_spec import (
+    GEMMA3_12B_MLX,
+    GRANITE_VISION_OLLAMA,
+    GRANITE_VISION_TRANSFORMERS,
+    PHI4_TRANSFORMERS,
+    PIXTRAL_12B_MLX,
+    PIXTRAL_12B_TRANSFORMERS,
+    QWEN25_VL_3B_MLX,
+    SMOLDOCLING_MLX,
+    SMOLDOCLING_TRANSFORMERS,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -120,16 +120,16 @@ if __name__ == "__main__":
     rows = []
     for vlm_options in [
         ## DocTags / SmolDocling models
-        smoldocling_vlm_conversion_options,
-        # smoldocling_vlm_mlx_conversion_options,
+        SMOLDOCLING_TRANSFORMERS,
+        SMOLDOCLING_MLX,
         ## Markdown models (using MLX framework)
-        # qwen25_vl_3b_vlm_mlx_conversion_options,
-        # pixtral_12b_vlm_mlx_conversion_options,
-        # gemma_3_12b_mlx_conversion_options,
+        QWEN25_VL_3B_MLX,
+        PIXTRAL_12B_MLX,
+        GEMMA3_12B_MLX,
         ## Markdown models (using Transformers framework)
-        # granite_vision_vlm_conversion_options,
-        phi_vlm_conversion_options,
-        pixtral_12b_vlm_conversion_options,
+        GRANITE_VISION_TRANSFORMERS,
+        PHI4_TRANSFORMERS,
+        PIXTRAL_12B_TRANSFORMERS,
     ]:
         pipeline_options.vlm_options = vlm_options
 
