@@ -116,7 +116,6 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                     assert page.size is not None
 
                     hi_res_image = page.get_image(scale=2)  # self.vlm_options.scale)
-                    print(hi_res_image)
 
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
@@ -127,7 +126,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
 
                     inputs = self.processor(
                         text=prompt, images=hi_res_image, return_tensors="pt"
-                    )  # .to(self.device)
+                    ).to(self.device)
 
                     # Generate response
                     start_time = time.time()

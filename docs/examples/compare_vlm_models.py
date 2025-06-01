@@ -1,3 +1,9 @@
+# Compare VLM models
+# ==================
+#
+# This example runs the VLM pipeline with different vision-language models.
+# Their runtime as well output quality is compared.
+
 import json
 import time
 from pathlib import Path
@@ -8,9 +14,6 @@ from tabulate import tabulate
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_model_specializations import (
-    HuggingFaceVlmOptions,
-    InferenceFramework,
-    ResponseFormat,
     gemma_3_12b_mlx_conversion_options,
     granite_vision_vlm_conversion_options,
     granite_vision_vlm_ollama_conversion_options,
@@ -27,96 +30,24 @@ from docling.datamodel.pipeline_options import (
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
-## Use experimental VlmPipeline
-pipeline_options = VlmPipelineOptions()
-# If force_backend_text = True, text from backend will be used instead of generated text
-pipeline_options.force_backend_text = False
-pipeline_options.generate_page_images = True
 
-## On GPU systems, enable flash_attention_2 with CUDA:
-# pipeline_options.accelerator_options.device = AcceleratorDevice.CUDA
-# pipeline_options.accelerator_options.cuda_use_flash_attention2 = True
-
-## Pick a VLM model. We choose SmolDocling-256M by default
-# pipeline_options.vlm_options = smoldocling_vlm_conversion_options
-
-## Pick a VLM model. Fast Apple Silicon friendly implementation for SmolDocling-256M via MLX
-# pipeline_options.vlm_options = smoldocling_vlm_mlx_conversion_options
-
-## Alternative VLM models:
-# pipeline_options.vlm_options = granite_vision_vlm_conversion_options
-
-pipeline_options.vlm_options = phi_vlm_conversion_options
-# pipeline_options.vlm_options = qwen25_vl_3b_vlm_mlx_conversion_options
-
-"""
-pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
-     repo_id="mistralai/Pixtral-12B-Base-2409",
-     prompt="OCR this image and export it in MarkDown.",
-     response_format=ResponseFormat.MARKDOWN,
-     inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
-)
-pipeline_options.vlm_options = pixtral_vlm_conversion_options
-"""
-
-"""
-pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="mistral-community/pixtral-12b",
-    prompt="OCR this image and export it in MarkDown.",
-    response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
-)
-pipeline_options.vlm_options = pixtral_vlm_conversion_options
-"""
-
-"""
-phi_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="microsoft/Phi-4-multimodal-instruct",
-    # prompt="OCR the full page to markdown.",
-    prompt="OCR this image and export it in MarkDown.",
-    response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForCausalLM,
-)
-pipeline_options.vlm_options = phi_vlm_conversion_options
-"""
-
-"""
-pixtral_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="mlx-community/pixtral-12b-bf16",
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
-    response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.MLX,
-    scale=1.0,
-)
-pipeline_options.vlm_options = pixtral_vlm_conversion_options
-"""
-
-"""
-qwen_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16",
-    prompt="Convert this full page to markdown. Do not miss any text and only output the bare MarkDown!",
-    response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.MLX,
-)
-pipeline_options.vlm_options = qwen_vlm_conversion_options
-"""
-
-
-def convert(sources: list[Path], converter):
+def convert(sources: list[Path], converter: DocumentConverter):
+    model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
+    framework = pipeline_options.vlm_options.inference_framework
     for source in sources:
-        # start_time = time.time()
         print("================================================")
-        print(f"Processing... {source}")
+        print("Processing...")
+        print(f"Source: {source}")
+        print("---")
+        print(f"Model: {model_id}")
+        print(f"Framework: {framework}")
         print("================================================")
         print("")
 
         res = converter.convert(source)
 
         print("")
-        # print(res.document.export_to_markdown())
 
-        model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
-        framework = pipeline_options.vlm_options.inference_framework
         fname = f"{res.input.file.stem}-{model_id}-{framework}"
 
         inference_time = 0.0
@@ -161,11 +92,10 @@ def convert(sources: list[Path], converter):
         )
         print("====================================================")
 
-        # return [source, f"{out_path / fname}.html", model_id, framework, inference_time, ]
         return [
             source,
             model_id,
-            framework,
+            str(framework),
             pg_num,
             inference_time,
         ]
@@ -173,7 +103,6 @@ def convert(sources: list[Path], converter):
 
 if __name__ == "__main__":
     sources = [
-        # "tests/data/2305.03393v1-pg9-img.png",
         "tests/data/pdf/2305.03393v1-pg9.pdf",
     ]
 
@@ -182,9 +111,6 @@ if __name__ == "__main__":
 
     ## Use VlmPipeline
     pipeline_options = VlmPipelineOptions()
-
-    # If force_backend_text = True, text from backend will be used instead of generated text
-    pipeline_options.force_backend_text = False
     pipeline_options.generate_page_images = True
 
     ## On GPU systems, enable flash_attention_2 with CUDA:
@@ -193,14 +119,17 @@ if __name__ == "__main__":
 
     rows = []
     for vlm_options in [
-        # smoldocling_vlm_conversion_options, \
-        smoldocling_vlm_mlx_conversion_options,
-        # granite_vision_vlm_conversion_options, \
-        # phi_vlm_conversion_options, \
-        # qwen25_vl_3b_vlm_mlx_conversion_options, \
+        ## DocTags / SmolDocling models
+        smoldocling_vlm_conversion_options,
+        # smoldocling_vlm_mlx_conversion_options,
+        ## Markdown models (using MLX framework)
+        # qwen25_vl_3b_vlm_mlx_conversion_options,
         # pixtral_12b_vlm_mlx_conversion_options,
-        # pixtral_12b_vlm_conversion_options,
-        gemma_3_12b_mlx_conversion_options,
+        # gemma_3_12b_mlx_conversion_options,
+        ## Markdown models (using Transformers framework)
+        # granite_vision_vlm_conversion_options,
+        phi_vlm_conversion_options,
+        pixtral_12b_vlm_conversion_options,
     ]:
         pipeline_options.vlm_options = vlm_options
 
@@ -219,11 +148,13 @@ if __name__ == "__main__":
         )
 
         row = convert(sources=sources, converter=converter)
-        print("pipelines: \n", converter._get_initialized_pipelines())
-
         rows.append(row)
 
-        print(tabulate(rows))
+        print(
+            tabulate(
+                rows, headers=["source", "model_id", "framework", "num_pages", "time"]
+            )
+        )
 
         print("see if memory gets released ...")
         time.sleep(10)

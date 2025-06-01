@@ -40,7 +40,6 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
 
             self.device = decide_device(accelerator_options.device)
             self.device = HuggingFaceVlmModel.map_device_to_cpu_if_mlx(self.device)
-
             _log.debug(f"Available device for HuggingFace VLM: {self.device}")
 
             self.use_cache = vlm_options.use_kv_cache
@@ -73,7 +72,7 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                 self.vlm_model = AutoModelForVision2Seq.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
-                    torch_dtype=torch.bfloat16,
+                    # torch_dtype=torch.bfloat16,
                     _attn_implementation=(
                         "flash_attention_2"
                         if self.device.startswith("cuda")

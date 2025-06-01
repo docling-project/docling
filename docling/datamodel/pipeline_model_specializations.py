@@ -119,16 +119,16 @@ granite_vision_vlm_ollama_conversion_options = ApiVlmOptions(
 # Pixtral
 pixtral_12b_vlm_conversion_options = HuggingFaceVlmOptions(
     repo_id="mistral-community/pixtral-12b",
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration,
+    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
     scale=2.0,
     temperature=0.0,
 )
 
 pixtral_12b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
     repo_id="mlx-community/pixtral-12b-bf16",
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
     scale=2.0,
@@ -138,7 +138,7 @@ pixtral_12b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
 # Phi4
 phi_vlm_conversion_options = HuggingFaceVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",
-    prompt="Convert this page to MarkDown. Do not miss any text and only output the bare MarkDown",
+    prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForCausalLM,
     scale=2.0,
@@ -148,7 +148,7 @@ phi_vlm_conversion_options = HuggingFaceVlmOptions(
 # Qwen
 qwen25_vl_3b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
     repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16",
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
     scale=2.0,
@@ -158,7 +158,7 @@ qwen25_vl_3b_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
 # Gemma-3
 gemma_3_12b_mlx_conversion_options = HuggingFaceVlmOptions(
     repo_id="mlx-community/gemma-3-12b-it-bf16",
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
     scale=2.0,
@@ -167,7 +167,7 @@ gemma_3_12b_mlx_conversion_options = HuggingFaceVlmOptions(
 
 gemma_3_27b_mlx_conversion_options = HuggingFaceVlmOptions(
     repo_id="mlx-community/gemma-3-27b-it-bf16",
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
     scale=2.0,
