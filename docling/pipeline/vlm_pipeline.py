@@ -4,7 +4,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Union, cast
 
-# from docling_core.types import DoclingDocument
 from docling_core.types.doc import (
     BoundingBox,
     DocItem,
@@ -28,11 +27,13 @@ from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import InputFormat, Page
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
+    VlmPipelineOptions,
+)
+from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     HuggingFaceVlmOptions,
     InferenceFramework,
     ResponseFormat,
-    VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
 from docling.models.api_vlm_model import ApiVlmModel
@@ -42,8 +43,6 @@ from docling.models.vlm_models_inline.hf_transformers_causallm_model import (
 from docling.models.vlm_models_inline.hf_transformers_vision2seq_model import (
     HuggingFaceVlmModel_AutoModelForVision2Seq,
 )
-
-# from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder

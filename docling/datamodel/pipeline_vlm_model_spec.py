@@ -5,7 +5,7 @@ from pydantic import (
     AnyUrl,
 )
 
-from docling.datamodel.pipeline_options import (
+from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     HuggingFaceVlmOptions,
     InferenceFramework,

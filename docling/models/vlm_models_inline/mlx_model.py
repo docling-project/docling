@@ -8,8 +8,8 @@ from docling.datamodel.base_models import Page, VlmPrediction, VlmPredictionToke
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AcceleratorOptions,
-    HuggingFaceVlmOptions,
 )
+from docling.datamodel.pipeline_options_vlm_model import HuggingFaceVlmOptions
 from docling.models.base_model import BasePageModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.utils.profiling import TimeRecorder
