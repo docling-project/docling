@@ -13,11 +13,10 @@ from docling_core.types.doc.page import (
 from docling_ibm_models.tableformer.data_management.tf_predictor import TFPredictor
 from PIL import ImageDraw
 
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page, Table, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
-    AcceleratorOptions,
     TableFormerMode,
     TableStructureOptions,
 )

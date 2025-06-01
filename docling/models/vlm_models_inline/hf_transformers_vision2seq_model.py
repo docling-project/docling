@@ -4,11 +4,11 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional
 
-from docling.datamodel.base_models import Page, VlmPrediction
-from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import (
+from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
+from docling.datamodel.base_models import Page, VlmPrediction
+from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BasePageModel
 from docling.models.hf_vlm_model import HuggingFaceVlmModel
@@ -38,9 +38,11 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
                 BitsAndBytesConfig,
             )
 
-            self.device = decide_device(accelerator_options.device)
-            self.device = HuggingFaceVlmModel.map_device_to_cpu_if_mlx(self.device)
-            _log.debug(f"Available device for HuggingFace VLM: {self.device}")
+            self.device = decide_device(
+                accelerator_options.device,
+                supported_devices=vlm_options.supported_devices,
+            )
+            _log.debug(f"Available device for VLM: {self.device}")
 
             self.use_cache = vlm_options.use_kv_cache
             self.max_new_tokens = vlm_options.max_new_tokens

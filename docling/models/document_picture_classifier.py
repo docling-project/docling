@@ -13,7 +13,7 @@ from docling_core.types.doc import (
 from PIL import Image
 from pydantic import BaseModel
 
-from docling.datamodel.pipeline_options import AcceleratorOptions
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.models.base_model import BaseEnrichmentModel
 from docling.utils.accelerator_utils import decide_device
 

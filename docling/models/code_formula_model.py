@@ -16,8 +16,8 @@ from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image, ImageOps
 from pydantic import BaseModel
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
-from docling.datamodel.pipeline_options import AcceleratorOptions
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.utils.accelerator_utils import decide_device
 

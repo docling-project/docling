@@ -5,6 +5,7 @@ from pydantic import (
     AnyUrl,
 )
 
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -21,6 +22,7 @@ SMOLDOCLING_MLX = InlineVlmOptions(
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
     scale=2.0,
     temperature=0.0,
 )
@@ -30,6 +32,11 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+    ],
     scale=2.0,
     temperature=0.0,
 )
@@ -40,6 +47,7 @@ GRANITE_VISION_TRANSFORMERS = InlineVlmOptions(
     prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
+    supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
     scale=2.0,
     temperature=0.0,
 )
@@ -60,6 +68,7 @@ PIXTRAL_12B_TRANSFORMERS = InlineVlmOptions(
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
+    supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
     scale=2.0,
     temperature=0.0,
 )
@@ -69,6 +78,7 @@ PIXTRAL_12B_MLX = InlineVlmOptions(
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
     scale=2.0,
     temperature=0.0,
 )
@@ -77,8 +87,10 @@ PIXTRAL_12B_MLX = InlineVlmOptions(
 PHI4_TRANSFORMERS = InlineVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",
     prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
+    trust_remote_code=True,
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_CAUSALLM,
+    supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
     scale=2.0,
     temperature=0.0,
 )
@@ -89,6 +101,7 @@ QWEN25_VL_3B_MLX = InlineVlmOptions(
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
     scale=2.0,
     temperature=0.0,
 )
@@ -99,6 +112,7 @@ GEMMA3_12B_MLX = InlineVlmOptions(
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
     scale=2.0,
     temperature=0.0,
 )
@@ -108,6 +122,7 @@ GEMMA3_27B_MLX = InlineVlmOptions(
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
     scale=2.0,
     temperature=0.0,
 )

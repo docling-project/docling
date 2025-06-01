@@ -1,8 +1,10 @@
 from enum import Enum
-from typing import Any, Dict, Literal
+from typing import Any, Dict, List, Literal
 
 from pydantic import AnyUrl, BaseModel
 from typing_extensions import deprecated
+
+from docling.datamodel.accelerator_options import AcceleratorDevice
 
 
 class BaseVlmOptions(BaseModel):
@@ -34,6 +36,12 @@ class InlineVlmOptions(BaseVlmOptions):
 
     inference_framework: InferenceFramework
     response_format: ResponseFormat
+
+    supported_devices: List[AcceleratorDevice] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+    ]
 
     scale: float = 2.0
 

@@ -7,10 +7,10 @@ from typing import Iterable, Optional, Type
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorOptions,
     OcrOptions,
     TesseractOcrOptions,
 )

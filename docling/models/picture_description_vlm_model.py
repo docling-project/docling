@@ -4,8 +4,8 @@ from typing import Optional, Type, Union
 
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
-    AcceleratorOptions,
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmOptions,
 )

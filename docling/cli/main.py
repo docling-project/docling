@@ -22,6 +22,7 @@ from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBacke
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -30,8 +31,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
-    AcceleratorOptions,
     EasyOcrOptions,
     OcrOptions,
     PaginatedPipelineOptions,

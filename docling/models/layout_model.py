@@ -10,9 +10,9 @@ from docling_core.types.doc import DocItemLabel
 from docling_ibm_models.layoutmodel.layout_predictor import LayoutPredictor
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import AcceleratorOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.utils.accelerator_utils import decide_device
