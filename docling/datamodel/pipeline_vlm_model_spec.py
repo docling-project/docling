@@ -29,7 +29,7 @@ SMOLDOCLING_TRANSFORMERS = HuggingFaceVlmOptions(
     repo_id="ds4sd/SmolDocling-256M-preview",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
-    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
+    inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
     scale=2.0,
     temperature=0.0,
 )
@@ -39,7 +39,7 @@ GRANITE_VISION_TRANSFORMERS = HuggingFaceVlmOptions(
     repo_id="ibm-granite/granite-vision-3.2-2b",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
+    inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
     scale=2.0,
     temperature=0.0,
 )
@@ -59,7 +59,7 @@ PIXTRAL_12B_TRANSFORMERS = HuggingFaceVlmOptions(
     repo_id="mistral-community/pixtral-12b",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq,
+    inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
     scale=2.0,
     temperature=0.0,
 )
@@ -78,7 +78,7 @@ PHI4_TRANSFORMERS = HuggingFaceVlmOptions(
     repo_id="microsoft/Phi-4-multimodal-instruct",
     prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_AutoModelForCausalLM,
+    inference_framework=InferenceFramework.TRANSFORMERS_CAUSALLM,
     scale=2.0,
     temperature=0.0,
 )

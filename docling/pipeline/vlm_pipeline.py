@@ -36,18 +36,15 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.api_vlm_model import ApiVlmModel
-
-# from docling.models.hf_vlm_model import HuggingFaceVlmModel
-from docling.models.hf_vlm_models.hf_vlm_mlx_model import HuggingFaceMlxModel
-from docling.models.hf_vlm_models.hf_vlm_model_AutoModelForCausalLM import (
+from docling.models.vlm_models_inline.hf_transformers_causallm_model import (
     HuggingFaceVlmModel_AutoModelForCausalLM,
 )
-from docling.models.hf_vlm_models.hf_vlm_model_AutoModelForVision2Seq import (
+from docling.models.vlm_models_inline.hf_transformers_vision2seq_model import (
     HuggingFaceVlmModel_AutoModelForVision2Seq,
 )
-from docling.models.hf_vlm_models.hf_vlm_model_LlavaForConditionalGeneration import (
-    HuggingFaceVlmModel_LlavaForConditionalGeneration,
-)
+
+# from docling.models.hf_vlm_model import HuggingFaceVlmModel
+from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -103,7 +100,7 @@ class VlmPipeline(PaginatedPipeline):
                 ]
             elif (
                 vlm_options.inference_framework
-                == InferenceFramework.TRANSFORMERS_AutoModelForVision2Seq
+                == InferenceFramework.TRANSFORMERS_VISION2SEQ
             ):
                 self.build_pipe = [
                     HuggingFaceVlmModel_AutoModelForVision2Seq(
@@ -115,22 +112,10 @@ class VlmPipeline(PaginatedPipeline):
                 ]
             elif (
                 vlm_options.inference_framework
-                == InferenceFramework.TRANSFORMERS_AutoModelForCausalLM
+                == InferenceFramework.TRANSFORMERS_CAUSALLM
             ):
                 self.build_pipe = [
                     HuggingFaceVlmModel_AutoModelForCausalLM(
-                        enabled=True,  # must be always enabled for this pipeline to make sense.
-                        artifacts_path=artifacts_path,
-                        accelerator_options=pipeline_options.accelerator_options,
-                        vlm_options=vlm_options,
-                    ),
-                ]
-            elif (
-                vlm_options.inference_framework
-                == InferenceFramework.TRANSFORMERS_LlavaForConditionalGeneration
-            ):
-                self.build_pipe = [
-                    HuggingFaceVlmModel_LlavaForConditionalGeneration(
                         enabled=True,  # must be always enabled for this pipeline to make sense.
                         artifacts_path=artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,

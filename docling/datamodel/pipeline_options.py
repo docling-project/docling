@@ -319,11 +319,8 @@ class ResponseFormat(str, Enum):
 class InferenceFramework(str, Enum):
     MLX = "mlx"
     TRANSFORMERS = "transformers"
-    TRANSFORMERS_AutoModelForVision2Seq = "transformers-AutoModelForVision2Seq"
-    TRANSFORMERS_AutoModelForCausalLM = "transformers-AutoModelForCausalLM"
-    TRANSFORMERS_LlavaForConditionalGeneration = (
-        "transformers-LlavaForConditionalGeneration"
-    )
+    TRANSFORMERS_VISION2SEQ = "transformers-vision2seq"
+    TRANSFORMERS_CAUSALLM = "transformers-causallm"
 
 
 class HuggingFaceVlmOptions(BaseVlmOptions):
