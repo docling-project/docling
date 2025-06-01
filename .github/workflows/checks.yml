@@ -51,7 +51,7 @@ jobs:
         run: |
           for file in docs/examples/*.py; do
             # Skip batch_convert.py
-            if [[ "$(basename "$file")" =~ ^(batch_convert|compare_vlm_models|minimal|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model).py ]]; then
+            if [[ "$(basename "$file")" =~ ^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model).py ]]; then
                 echo "Skipping $file"
                 continue
             fi
