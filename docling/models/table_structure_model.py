@@ -22,6 +22,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
+from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
@@ -89,19 +90,13 @@ class TableStructureModel(BasePageModel):
     def download_models(
         local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
     ) -> Path:
-        from huggingface_hub import snapshot_download
-        from huggingface_hub.utils import disable_progress_bars
-
-        if not progress:
-            disable_progress_bars()
-        download_path = snapshot_download(
+        return download_hf_model(
             repo_id="ds4sd/docling-models",
-            force_download=force,
-            local_dir=local_dir,
             revision="v2.2.0",
+            local_dir=local_dir,
+            force=force,
+            progress=progress,
         )
-
-        return Path(download_path)
 
     def draw_table_and_cells(
         self,

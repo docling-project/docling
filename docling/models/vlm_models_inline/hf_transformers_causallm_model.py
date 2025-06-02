@@ -12,14 +12,18 @@ from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BasePageModel
-from docling.models.hf_vlm_model import HuggingFaceVlmModel
+from docling.models.utils.hf_model_download import (
+    HuggingFaceModelDownloadMixin,
+)
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
 
 
-class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
+class HuggingFaceVlmModel_AutoModelForCausalLM(
+    BasePageModel, HuggingFaceModelDownloadMixin
+):
     def __init__(
         self,
         enabled: bool,
@@ -62,9 +66,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = HuggingFaceVlmModel.download_models(
-                    self.vlm_options.repo_id
-                )
+                artifacts_path = self.download_models(self.vlm_options.repo_id)
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
@@ -128,7 +130,7 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                         use_cache=self.use_cache,  # Enables KV caching which can improve performance
                         temperature=self.temperature,
                         generation_config=self.generation_config,
-                        num_logits_to_keep=1,
+                        **self.vlm_options.extra_generation_config,
                     )
                     generate_ids = generate_ids[:, inputs["input_ids"].shape[1] :]
 

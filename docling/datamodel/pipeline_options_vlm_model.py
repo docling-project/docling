@@ -46,7 +46,8 @@ class InlineVlmOptions(BaseVlmOptions):
     scale: float = 2.0
 
     temperature: float = 0.0
-    stop_strings: list[str] = []
+    stop_strings: List[str] = []
+    extra_generation_config: Dict[str, Any] = {}
 
     use_kv_cache: bool = True
     max_new_tokens: int = 4096

@@ -11,14 +11,18 @@ from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BasePageModel
-from docling.models.hf_vlm_model import HuggingFaceVlmModel
+from docling.models.utils.hf_model_download import (
+    HuggingFaceModelDownloadMixin,
+)
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
 
 
-class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
+class HuggingFaceVlmModel_AutoModelForVision2Seq(
+    BasePageModel, HuggingFaceModelDownloadMixin
+):
     def __init__(
         self,
         enabled: bool,
@@ -52,10 +56,7 @@ class HuggingFaceVlmModel_AutoModelForVision2Seq(BasePageModel):
 
             # PARAMETERS:
             if artifacts_path is None:
-                # artifacts_path = self.download_models(self.vlm_options.repo_id)
-                artifacts_path = HuggingFaceVlmModel.download_models(
-                    self.vlm_options.repo_id
-                )
+                artifacts_path = self.download_models(self.vlm_options.repo_id)
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 

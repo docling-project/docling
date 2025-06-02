@@ -97,6 +97,7 @@ PHI4_TRANSFORMERS = InlineVlmOptions(
     supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
     scale=2.0,
     temperature=0.0,
+    extra_generation_config=dict(num_logits_to_keep=0),
 )
 
 # Qwen
