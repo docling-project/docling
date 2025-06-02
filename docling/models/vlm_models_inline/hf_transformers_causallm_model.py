@@ -1,3 +1,4 @@
+import importlib.metadata
 import logging
 import time
 from collections.abc import Iterable
@@ -38,6 +39,15 @@ class HuggingFaceVlmModel_AutoModelForCausalLM(BasePageModel):
                 BitsAndBytesConfig,
                 GenerationConfig,
             )
+
+            transformers_version = importlib.metadata.version("transformers")
+            if (
+                self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct"
+                and transformers_version >= "4.52.0"
+            ):
+                raise NotImplementedError(
+                    f"Phi 4 only works with transformers<4.52.0 but you have {transformers_version=}. Please downgrage running pip install -U 'transformers<4.52.0'."
+                )
 
             self.device = decide_device(
                 accelerator_options.device,
