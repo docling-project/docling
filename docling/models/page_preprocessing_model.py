@@ -1,4 +1,5 @@
 import re
+import warnings
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional
@@ -7,7 +8,7 @@ import numpy as np
 from PIL import ImageDraw
 from pydantic import BaseModel
 
-from docling.datamodel.base_models import Page, ScoreValue
+from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
@@ -76,11 +77,15 @@ class PagePreprocessingModel(BasePageModel):
             score = self.rate_text_quality(c.text)
             text_scores.append(score)
 
-        conv_res.confidence.pages[page.page_no].parse_score = float(
-            np.nanquantile(
-                text_scores, q=0.10
-            )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "Mean of empty slice", RuntimeWarning, "numpy"
+            )
+            conv_res.confidence.pages[page.page_no].parse_score = float(
+                np.nanquantile(
+                    text_scores, q=0.10
+                )  # To emphasise problems in the parse_score, we take the 10% percentile score of all text cells.
+            )
 
         # DEBUG code:
         def draw_text_boxes(image, cells, show: bool = False):
