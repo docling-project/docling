@@ -99,7 +99,6 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             self.vlm_model = model_cls.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
-                torch_dtype="auto",
                 _attn_implementation=(
                     "flash_attention_2"
                     if self.device.startswith("cuda")
