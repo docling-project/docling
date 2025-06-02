@@ -20,9 +20,13 @@ class ResponseFormat(str, Enum):
 
 class InferenceFramework(str, Enum):
     MLX = "mlx"
-    TRANSFORMERS = "transformers"  # TODO: how to flag this as outdated?
-    TRANSFORMERS_VISION2SEQ = "transformers-vision2seq"
-    TRANSFORMERS_CAUSALLM = "transformers-causallm"
+    TRANSFORMERS = "transformers"
+
+
+class TransformersModelType(str, Enum):
+    AUTOMODEL = "automodel"
+    AUTOMODEL_VISION2SEQ = "automodel-vision2seq"
+    AUTOMODEL_CAUSALLM = "automodel-causallm"
 
 
 class InlineVlmOptions(BaseVlmOptions):
@@ -35,6 +39,7 @@ class InlineVlmOptions(BaseVlmOptions):
     quantized: bool = False
 
     inference_framework: InferenceFramework
+    transformers_model_type: TransformersModelType = TransformersModelType.AUTOMODEL
     response_format: ResponseFormat
 
     supported_devices: List[AcceleratorDevice] = [

@@ -37,11 +37,8 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.settings import settings
 from docling.models.api_vlm_model import ApiVlmModel
-from docling.models.vlm_models_inline.hf_transformers_causallm_model import (
-    HuggingFaceVlmModel_AutoModelForCausalLM,
-)
-from docling.models.vlm_models_inline.hf_transformers_vision2seq_model import (
-    HuggingFaceVlmModel_AutoModelForVision2Seq,
+from docling.models.vlm_models_inline.hf_transformers_model import (
+    HuggingFaceTransformersVlmModel,
 )
 from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
@@ -97,25 +94,9 @@ class VlmPipeline(PaginatedPipeline):
                         vlm_options=vlm_options,
                     ),
                 ]
-            elif (
-                vlm_options.inference_framework
-                == InferenceFramework.TRANSFORMERS_VISION2SEQ
-                or vlm_options.inference_framework == InferenceFramework.TRANSFORMERS
-            ):
+            elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
                 self.build_pipe = [
-                    HuggingFaceVlmModel_AutoModelForVision2Seq(
-                        enabled=True,  # must be always enabled for this pipeline to make sense.
-                        artifacts_path=artifacts_path,
-                        accelerator_options=pipeline_options.accelerator_options,
-                        vlm_options=vlm_options,
-                    ),
-                ]
-            elif (
-                vlm_options.inference_framework
-                == InferenceFramework.TRANSFORMERS_CAUSALLM
-            ):
-                self.build_pipe = [
-                    HuggingFaceVlmModel_AutoModelForCausalLM(
+                    HuggingFaceTransformersVlmModel(
                         enabled=True,  # must be always enabled for this pipeline to make sense.
                         artifacts_path=artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,

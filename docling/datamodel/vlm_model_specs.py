@@ -11,6 +11,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InferenceFramework,
     InlineVlmOptions,
     ResponseFormat,
+    TransformersModelType,
 )
 
 _log = logging.getLogger(__name__)
@@ -31,7 +32,8 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
     repo_id="ds4sd/SmolDocling-256M-preview",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
-    inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_VISION2SEQ,
     supported_devices=[
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
@@ -46,7 +48,8 @@ GRANITE_VISION_TRANSFORMERS = InlineVlmOptions(
     repo_id="ibm-granite/granite-vision-3.2-2b",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_VISION2SEQ,
     supported_devices=[
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
@@ -71,7 +74,8 @@ PIXTRAL_12B_TRANSFORMERS = InlineVlmOptions(
     repo_id="mistral-community/pixtral-12b",
     prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_VISION2SEQ,
     supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
     scale=2.0,
     temperature=0.0,
@@ -93,7 +97,8 @@ PHI4_TRANSFORMERS = InlineVlmOptions(
     prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
     trust_remote_code=True,
     response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS_CAUSALLM,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_CAUSALLM,
     supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
     scale=2.0,
     temperature=0.0,
