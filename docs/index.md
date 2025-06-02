@@ -27,7 +27,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 🔒 Local execution capabilities for sensitive data and air-gapped environments
 * 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
 * 🔍 Extensive OCR support for scanned PDFs and images
-* 🥚 Support of Visual Language Models ([SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview)) 🆕🔥
+* 🥚 Support of several Visual Language Models ([SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview)) 🔥
 * 💻 Simple and convenient CLI
 
 ### Coming soon
