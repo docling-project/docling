@@ -44,10 +44,14 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
 # GraniteVision
 GRANITE_VISION_TRANSFORMERS = InlineVlmOptions(
     repo_id="ibm-granite/granite-vision-3.2-2b",
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     response_format=ResponseFormat.MARKDOWN,
     inference_framework=InferenceFramework.TRANSFORMERS_VISION2SEQ,
-    supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+    ],
     scale=2.0,
     temperature=0.0,
 )
@@ -55,7 +59,7 @@ GRANITE_VISION_TRANSFORMERS = InlineVlmOptions(
 GRANITE_VISION_OLLAMA = ApiVlmOptions(
     url=AnyUrl("http://localhost:11434/v1/chat/completions"),
     params={"model": "granite3.2-vision:2b"},
-    prompt="Convert this page to markdown. Do not miss any text and only output the bare MarkDown!",
+    prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
     scale=1.0,
     timeout=120,
     response_format=ResponseFormat.MARKDOWN,

@@ -16,7 +16,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
-from docling.datamodel.vlm_model_spec import (
+from docling.datamodel.vlm_model_specs import (
     GEMMA3_12B_MLX,
     GRANITE_VISION_OLLAMA,
     GRANITE_VISION_TRANSFORMERS,

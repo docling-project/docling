@@ -47,7 +47,7 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
-from docling.datamodel.vlm_model_spec import (
+from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA,
     GRANITE_VISION_TRANSFORMERS,
     SMOLDOCLING_MLX,

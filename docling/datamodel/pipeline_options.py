@@ -19,7 +19,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.vlm_model_spec import (
+from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
     SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
