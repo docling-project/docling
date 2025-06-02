@@ -5,6 +5,7 @@
 # Their runtime as well output quality is compared.
 
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -12,21 +13,12 @@ from docling_core.types.doc import DocItemLabel, ImageRefMode
 from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 from tabulate import tabulate
 
+from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
-from docling.datamodel.vlm_model_specs import (
-    GEMMA3_12B_MLX,
-    GRANITE_VISION_OLLAMA,
-    GRANITE_VISION_TRANSFORMERS,
-    PHI4_TRANSFORMERS,
-    PIXTRAL_12B_MLX,
-    PIXTRAL_12B_TRANSFORMERS,
-    QWEN25_VL_3B_MLX,
-    SMOLDOCLING_MLX,
-    SMOLDOCLING_TRANSFORMERS,
-)
+from docling.datamodel.pipeline_options_vlm_model import InferenceFramework
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
@@ -117,20 +109,28 @@ if __name__ == "__main__":
     # pipeline_options.accelerator_options.device = AcceleratorDevice.CUDA
     # pipeline_options.accelerator_options.cuda_use_flash_attention2 = True
 
-    rows = []
-    for vlm_options in [
+    vlm_models = [
         ## DocTags / SmolDocling models
-        SMOLDOCLING_TRANSFORMERS,
-        SMOLDOCLING_MLX,
+        vlm_model_specs.SMOLDOCLING_MLX,
+        vlm_model_specs.SMOLDOCLING_TRANSFORMERS,
         ## Markdown models (using MLX framework)
-        QWEN25_VL_3B_MLX,
-        PIXTRAL_12B_MLX,
-        GEMMA3_12B_MLX,
+        vlm_model_specs.QWEN25_VL_3B_MLX,
+        vlm_model_specs.PIXTRAL_12B_MLX,
+        vlm_model_specs.GEMMA3_12B_MLX,
         ## Markdown models (using Transformers framework)
-        GRANITE_VISION_TRANSFORMERS,
-        PHI4_TRANSFORMERS,
-        PIXTRAL_12B_TRANSFORMERS,
-    ]:
+        vlm_model_specs.GRANITE_VISION_TRANSFORMERS,
+        vlm_model_specs.PHI4_TRANSFORMERS,
+        vlm_model_specs.PIXTRAL_12B_TRANSFORMERS,
+    ]
+
+    # Remove MLX models if not on Mac
+    if sys.platform != "darwin":
+        vlm_models = [
+            m for m in vlm_models if m.inference_framework != InferenceFramework.MLX
+        ]
+
+    rows = []
+    for vlm_options in vlm_models:
         pipeline_options.vlm_options = vlm_options
 
         ## Set up pipeline for PDF or image inputs
