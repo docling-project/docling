@@ -47,7 +47,11 @@ packages = [{ include = "docling" }]
 python = "^3.9"
 pydantic = "^2.0.0"
 docling-core = {version = "^2.31.2", extras = ["chunking"]}
-docling-ibm-models = "^3.4.0"
+
+# Nikos: Pinpoint to the docling-ibm-models@nli/layout_dfine
+# docling-ibm-models = "^3.4.0"
+docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models.git", branch = "nli/layout_dfine" }
+
 docling-parse = "^4.0.0"
 filetype = "^1.2.0"
 pypdfium2 = "^4.30.0"
@@ -79,10 +83,13 @@ onnxruntime = [
   { version = "^1.7.0", optional = true, markers = "python_version >= '3.10'" },
 ]
 
-transformers = [
-  { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^4.46.0", optional = true },
-  { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~4.42.0", optional = true },
-]
+# Nikos: To make it work with docling-ibm-models@nli/layout_dfine
+# transformers = [
+#   { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^4.46.0", optional = true },
+#   { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~4.42.0", optional = true },
+# ]
+transformers = { git = "https://github.com/huggingface/transformers.git" }
+
 accelerate = [
   { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^1.2.1", optional = true },
 ]
