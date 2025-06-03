@@ -4,16 +4,18 @@ on:
   release:
     types: [published]
 
+env:
+  UV_FROZEN: "1"
+
 permissions:
   contents: read
-
-env:
-  # disable keyring (https://github.com/actions/runner-images/issues/6185):
-  PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
     environment:
       name: pypi
       url: https://pypi.org/p/docling
@@ -21,9 +23,15 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-poetry
-      - name: Build and publish
-        run: poetry build
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --all-extras
+      - name: Build package
+        run: uv build
       - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

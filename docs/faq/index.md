@@ -44,6 +44,23 @@ This is a collection of FAQ collected from the user questions on <https://github
     Source: Issue [#283](https://github.com/docling-project/docling/issues/283#issuecomment-2465035868)
 
 
+??? question "Is macOS x86_64 supported?"
+
+    ### Is macOS x86_64 supported?
+
+    Yes, Docling (still) supports running the standard pipeline on macOS x86_64.
+
+    However, users might get into a combination of incompatible dependencies on a fresh install.
+    Because Docling depends on PyTorch which dropped support for macOS x86_64 after the 2.2.2 release,
+    and this old version of PyTorch works only with NumPy 1.x, users **must** ensure the correct NumPy version is running.
+
+    ```shell
+    pip install docling "numpy<2.0.0"
+    ```
+
+    Source: Issue [#1694](https://github.com/docling-project/docling/issues/1694).
+
+
 ??? question "Are text styles (bold, underline, etc) supported?"
 
     ### Are text styles (bold, underline, etc) supported?

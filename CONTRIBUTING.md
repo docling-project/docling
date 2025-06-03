@@ -6,70 +6,52 @@ For more details on the contributing guidelines head to the Docling Project [com
 
 ## Developing
 
-### Usage of Poetry
+### Usage of uv
 
-We use Poetry to manage dependencies.
+We use [uv](https://docs.astral.sh/uv/) as package and project manager.
 
 #### Installation
 
-To install Poetry, follow the documentation here: https://python-poetry.org/docs/master/#installing-with-the-official-installer
+To install `uv`, check the documentation on [Installing uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-1. Install Poetry globally on your machine:
-    ```bash
-    curl -sSL https://install.python-poetry.org | python3 -
-    ```
-    The installation script will print the installation bin folder `POETRY_BIN` which you need in the next steps.
+#### Create an environment and sync it
 
-2. Make sure Poetry is in your `$PATH`:
-    - for `zsh`:
-        ```sh
-        echo 'export PATH="POETRY_BIN:$PATH"' >> ~/.zshrc
-        ```
-    - for `bash`:
-        ```sh
-        echo 'export PATH="POETRY_BIN:$PATH"' >> ~/.bashrc
-        ```
-
-3. The official guidelines linked above include useful details on configuring autocomplete for most shell environments, e.g., Bash and Zsh.
-
-#### Create a Virtual Environment and Install Dependencies
-
-To activate the Virtual Environment, run:
+You can use the `uv sync` to create a project virtual environment (if it does not already exist) and sync
+the project's dependencies with the environment.
 
 ```bash
-poetry shell
+uv sync
 ```
 
-This will spawn a shell with the Virtual Environment activated. If the Virtual Environment doesn't exist, Poetry will create one for you. Then, to install dependencies, run:
+#### Use a specific Python version (optional)
+
+If you need to work with a specific version of Python, you can create a new virtual environment for that version
+and run the sync command:
 
 ```bash
-poetry install
+uv venv --python 3.12
+uv sync
 ```
 
-**(Advanced) Use a Specific Python Version**
+More detailed options are described on the [Using Python environments](https://docs.astral.sh/uv/pip/environments/) documentation.
 
-If you need to work with a specific (older) version of Python, run:
+#### Add a new dependency
 
-```bash
-poetry env use $(which python3.8)
-```
-
-This creates a Virtual Environment with Python 3.8. For other versions, replace `$(which python3.8)` with the path to the interpreter (e.g., `/usr/bin/python3.8`) or use `$(which pythonX.Y)`.
-
-#### Add a New Dependency
+Simply use the `uv add` command. The `pyproject.toml` and `uv.lock` files will be updated.
 
 ```bash
-poetry add NAME
+uv add [OPTIONS] <PACKAGES|--requirements <REQUIREMENTS>>
 ```
 
 ## Coding Style Guidelines
 
 We use the following tools to enforce code style:
 
-- iSort, to sort imports
-- Black, to format code
+- [Ruff](https://docs.astral.sh/ruff/), as linter and code formatter
+- [MyPy](https://mypy.readthedocs.io), as static type checker
 
-We run a series of checks on the codebase on every commit using `pre-commit`. To install the hooks, run:
+A set of styling checks, as well as regression tests, are defined and managed through the [pre-commit](https://pre-commit.com/) framework.
+To ensure that those scripts run automatically before a commit is finalized, install `pre-commit` on your local repository:
 
 ```bash
 pre-commit install
@@ -81,7 +63,7 @@ To run the checks on-demand, run:
 pre-commit run --all-files
 ```
 
-Note: Checks like `Black` and `isort` will "fail" if they modify files. This is because `pre-commit` doesn't like to see files modified by its hooks. In these cases, `git add` the modified files and `git commit` again.
+Note: Checks like `Ruff` will "fail" if they modify files. This is because `pre-commit` doesn't like to see files modified by its hooks. In these cases, `git add` the modified files and `git commit` again.
 
 ## Tests
 
@@ -94,7 +76,7 @@ When a change improves the conversion results, multiple reference documents must
 The reference data can be regenerated with
 
 ```sh
-DOCLING_GEN_TEST_DATA=1 poetry run pytest
+DOCLING_GEN_TEST_DATA=1 uv run pytest
 ```
 
 All PRs modifying the reference test data require a double review to guarantee we don't miss edge cases.

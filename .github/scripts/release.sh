@@ -10,11 +10,12 @@ fi
 CHGLOG_FILE="${CHGLOG_FILE:-CHANGELOG.md}"
 
 # update package version
-poetry version "${TARGET_VERSION}"
+uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "${TARGET_VERSION}"
+UV_FROZEN=0 uv lock --upgrade-package docling
 
 # collect release notes
 REL_NOTES=$(mktemp)
-poetry run semantic-release changelog --unreleased >> "${REL_NOTES}"
+uv run --no-sync semantic-release changelog --unreleased >> "${REL_NOTES}"
 
 # update changelog
 TMP_CHGLOG=$(mktemp)
@@ -30,7 +31,7 @@ mv "${TMP_CHGLOG}" "${CHGLOG_FILE}"
 # push changes
 git config --global user.name 'github-actions[bot]'
 git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-git add pyproject.toml "${CHGLOG_FILE}"
+git add pyproject.toml uv.lock "${CHGLOG_FILE}"
 COMMIT_MSG="chore: bump version to ${TARGET_VERSION} [skip ci]"
 git commit -m "${COMMIT_MSG}"
 git push origin main

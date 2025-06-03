@@ -129,5 +129,5 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
 To develop Docling features, bugfixes etc., install as follows from your local clone's root dir:
 
 ```bash
-poetry install --all-extras
+uv sync --all-extras
 ```

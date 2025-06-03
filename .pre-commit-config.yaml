@@ -17,12 +17,11 @@ repos:
     hooks:
       - id: mypy
         name: MyPy
-        entry: poetry run mypy docling
+        entry: uv run --no-sync mypy docling
         pass_filenames: false
         language: system
         files: '\.py$'
-      - id: poetry
-        name: Poetry check
-        entry: poetry check --lock
-        pass_filenames: false
-        language: system
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.7.8
+    hooks:
+      - id: uv-lock

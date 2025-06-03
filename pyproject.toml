@@ -1,20 +1,8 @@
-[tool.poetry]
+[project]
 name = "docling"
-version = "2.34.0"  # DO NOT EDIT, updated automatically
+version = "2.34.0" # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
-authors = [
-  "Christoph Auer <cau@zurich.ibm.com>",
-  "Michele Dolfi <dol@zurich.ibm.com>",
-  "Maxim Lysak <mly@zurich.ibm.com>",
-  "Nikos Livathinos <nli@zurich.ibm.com>",
-  "Ahmed Nassar <ahn@zurich.ibm.com>",
-  "Panos Vagenas <pva@zurich.ibm.com>",
-  "Peter Staar <taa@zurich.ibm.com>",
-]
 license = "MIT"
-readme = "README.md"
-repository = "https://github.com/docling-project/docling"
-homepage = "https://github.com/docling-project/docling"
 keywords = [
   "docling",
   "convert",
@@ -29,144 +17,132 @@ keywords = [
   "table former",
 ]
 classifiers = [
-  "License :: OSI Approved :: MIT License",
   "Operating System :: MacOS :: MacOS X",
   "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
-packages = [{ include = "docling" }]
-
-[tool.poetry.dependencies]
-######################
-# actual dependencies:
-######################
-python = "^3.9"
-pydantic = "^2.0.0"
-docling-core = {version = "^2.29.0", extras = ["chunking"]}
-docling-ibm-models = "^3.4.0"
-docling-parse = "^4.0.0"
-filetype = "^1.2.0"
-pypdfium2 = "^4.30.0"
-pydantic-settings = "^2.3.0"
-huggingface_hub = ">=0.23,<1"
-requests = "^2.32.2"
-easyocr = "^1.7"
-tesserocr = { version = "^2.7.1", optional = true }
-certifi = ">=2024.7.4"
-rtree = "^1.3.0"
-scipy = [
-  { version = "^1.6.0", markers = "python_version >= '3.10'" },
-  { version = ">=1.6.0,<1.14.0", markers = "python_version < '3.10'" },
+readme = "README.md"
+authors = [
+  { name = "Christoph Auer", email = "cau@zurich.ibm.com" },
+  { name = "Michele Dolfi", email = "dol@zurich.ibm.com" },
+  { name = "Maxim Lysak", email = "mly@zurich.ibm.com" },
+  { name = "Nikos Livathinos", email = "nli@zurich.ibm.com" },
+  { name = "Ahmed Nassar", email = "ahn@zurich.ibm.com" },
+  { name = "Panos Vagenas", email = "pva@zurich.ibm.com" },
+  { name = "Peter Staar", email = "taa@zurich.ibm.com" },
 ]
-typer = ">=0.12.5,<0.16.0"
-python-docx = "^1.1.2"
-python-pptx = "^1.0.2"
-beautifulsoup4 = "^4.12.3"
-pandas = "^2.1.4"
-marko = "^2.1.2"
-openpyxl = "^3.1.5"
-lxml = ">=4.0.0,<6.0.0"
-ocrmac = { version = "^1.0.0", markers = "sys_platform == 'darwin'", optional = true }
-rapidocr-onnxruntime = { version = "^1.4.0", optional = true, markers = "python_version < '3.13'" }
-onnxruntime = [
-  # 1.19.2 is the last version with python3.9 support,
-  # see https://github.com/microsoft/onnxruntime/releases/tag/v1.20.0
-  { version = ">=1.7.0,<1.20.0", optional = true, markers = "python_version < '3.10'" },
-  { version = "^1.7.0", optional = true, markers = "python_version >= '3.10'" },
-]
-
-transformers = [
-  { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^4.46.0", optional = true },
-  { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~4.42.0", optional = true },
-]
-accelerate = [
-  { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^1.2.1", optional = true },
-]
-pillow = ">=10.0.0,<12.0.0"
-tqdm = "^4.65.0"
-pluggy = "^1.0.0"
-pylatexenc = "^2.10"
-click = "<8.2.0"
-
-[tool.poetry.group.dev.dependencies]
-python = "^3.9.2"
-black = { extras = ["jupyter"], version = "^24.4.2" }
-pytest = "^7.2.2"
-pre-commit = "^3.7.1"
-mypy = "^1.10.1"
-isort = "^5.10.1"
-python-semantic-release = "^7.32.2"
-flake8 = "^6.0.0"
-pyproject-flake8 = "^6.0.0"
-pytest-xdist = "^3.3.1"
-types-requests = "^2.31.0.2"
-flake8-pyproject = "^1.2.3"
-pylint = "^2.17.5"
-pandas-stubs = "^2.1.4.231227"
-ipykernel = "^6.29.5"
-ipywidgets = "^8.1.5"
-nbqa = "^1.9.0"
-types-openpyxl = "^3.1.5.20241114"
-types-tqdm = "^4.67.0.20241221"
-coverage = "^7.6.2"
-pytest-cov = "^6.0.0"
-
-[tool.poetry.group.docs.dependencies]
-mkdocs-material = "^9.5.40"
-mkdocs-jupyter = "^0.25.0"
-mkdocs-click = "^0.8.1"
-mkdocstrings = { extras = ["python"], version = "^0.27.0" }
-griffe-pydantic = "^1.1.0"
-
-[tool.poetry.group.examples.dependencies]
-datasets = "^2.21.0"
-python-dotenv = "^1.0.1"
-langchain-huggingface = "^0.0.3"
-langchain-milvus = "^0.1.4"
-langchain-text-splitters = "^0.2.4"
-
-[tool.poetry.group.constraints]
-optional = true
-
-[tool.poetry.group.constraints.dependencies]
-numpy = [
-  { version = ">=1.24.4,<3.0.0", markers = 'python_version >= "3.10"' },
-  { version = ">=1.24.4,<2.1.0", markers = 'python_version < "3.10"' },
+requires-python = '>=3.9,<4.0'
+dependencies = [
+  'pydantic (>=2.0.0,<3.0.0)',
+  'docling-core[chunking] (>=2.29.0,<3.0.0)',
+  'docling-ibm-models (>=3.4.4,<4.0.0)',
+  'docling-parse (>=4.0.0,<5.0.0)',
+  'filetype (>=1.2.0,<2.0.0)',
+  'pypdfium2 (>=4.30.0,<5.0.0)',
+  'pydantic-settings (>=2.3.0,<3.0.0)',
+  'huggingface_hub (>=0.23,<1)',
+  'requests (>=2.32.2,<3.0.0)',
+  'easyocr (>=1.7,<2.0)',
+  'certifi (>=2024.7.4)',
+  'rtree (>=1.3.0,<2.0.0)',
+  'typer (>=0.12.5,<0.16.0)',
+  'python-docx (>=1.1.2,<2.0.0)',
+  'python-pptx (>=1.0.2,<2.0.0)',
+  'beautifulsoup4 (>=4.12.3,<5.0.0)',
+  'pandas (>=2.1.4,<3.0.0)',
+  'marko (>=2.1.2,<3.0.0)',
+  'openpyxl (>=3.1.5,<4.0.0)',
+  'lxml (>=4.0.0,<6.0.0)',
+  'pillow (>=10.0.0,<12.0.0)',
+  'tqdm (>=4.65.0,<5.0.0)',
+  'pluggy (>=1.0.0,<2.0.0)',
+  'pylatexenc (>=2.10,<3.0)',
+  'click (<8.2.0)',
+  'scipy (>=1.6.0,<2.0.0)',
+  # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
+  # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
 ]
 
-[tool.poetry.group.mac_intel]
-optional = true
+[project.urls]
+homepage = "https://github.com/docling-project/docling"
+repository = "https://github.com/docling-project/docling"
+issues = "https://github.com/docling-project/docling/issues"
+changelog = "https://github.com/docling-project/docling/blob/main/CHANGELOG.md"
 
-[tool.poetry.group.mac_intel.dependencies]
-torch = [
-  { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^2.2.2" },
-  { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~2.2.2" },
-]
-torchvision = [
-  { markers = "sys_platform != 'darwin' or platform_machine != 'x86_64'", version = "^0" },
-  { markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", version = "~0.17.2" },
-]
+[project.entry-points.docling]
+"docling_defaults" = "docling.models.plugins.defaults"
 
-[tool.poetry.extras]
-tesserocr = ["tesserocr"]
-ocrmac = ["ocrmac"]
-vlm = ["transformers", "accelerate"]
-rapidocr = ["rapidocr-onnxruntime", "onnxruntime"]
-
-[tool.poetry.scripts]
+[project.scripts]
 docling = "docling.cli.main:app"
 docling-tools = "docling.cli.tools:app"
 
-[tool.poetry.plugins."docling"]
-"docling_defaults" = "docling.models.plugins.defaults"
+[project.optional-dependencies]
+tesserocr = ['tesserocr (>=2.7.1,<3.0.0)']
+ocrmac = ['ocrmac (>=1.0.0,<2.0.0) ; sys_platform == "darwin"']
+vlm = [
+  'transformers (>=4.46.0,<5.0.0)',
+  'accelerate (>=1.2.1,<2.0.0)',
+  'mlx-vlm >=0.1.22 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+]
+rapidocr = [
+  'rapidocr-onnxruntime (>=1.4.0,<2.0.0) ; python_version < "3.13"',
+  'onnxruntime (>=1.7.0,<2.0.0)',
+  # 'onnxruntime (>=1.7.0,<2.0.0) ; python_version >= "3.10"',
+  # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
+]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "pre-commit~=3.7",
+    "mypy~=1.10",
+    "types-setuptools~=70.3",
+    "pandas-stubs~=2.1",
+    "types-openpyxl~=3.1",
+    "types-requests~=2.31",
+    "boto3-stubs~=1.37",
+    "types-urllib3~=1.26",
+    "types-tqdm~=4.67",
+    "coverage~=7.6",
+    "pytest~=8.3",
+    "pytest-cov>=6.1.1",
+    "pytest-dependency~=0.6",
+    "pytest-xdist~=3.3",
+    "ipykernel~=6.29",
+    "ipywidgets~=8.1",
+    "nbqa~=1.9",
+    "python-semantic-release~=7.32",
+]
+docs = [
+  "mkdocs-material~=9.5",
+  "mkdocs-jupyter~=0.25",
+  "mkdocs-click~=0.8",
+  "mkdocstrings[python]~=0.27",
+  "griffe-pydantic~=1.1",
+]
+examples = [
+  "datasets~=2.21",
+  "python-dotenv~=1.0",
+  "langchain-huggingface>=0.0.3",
+  "langchain-milvus~=0.1",
+  "langchain-text-splitters~=0.2",
+]
+
+[tool.uv]
+package = true
+default-groups = "all"
+
+[tool.setuptools.packages.find]
+include = ["docling*"]
 
 [tool.ruff]
 target-version = "py39"
@@ -182,51 +158,51 @@ skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 select = [
-    # "B",  # flake8-bugbear
-    "C",  # flake8-comprehensions
-    "C9",  # mccabe
-    # "D",  # flake8-docstrings
-    "E",  # pycodestyle errors (default)
-    "F",  # pyflakes (default)
-    "I",  # isort
-    "PD", # pandas-vet
-    "PIE", # pie
-    # "PTH", # pathlib
-    "Q",  # flake8-quotes
-    # "RET", # return
-    "RUF", # Enable all ruff-specific checks
-    # "SIM", # simplify
-    "S307", # eval
-    # "T20",  # (disallow print statements) keep debugging statements out of the codebase
-    "W",  # pycodestyle warnings
-    "ASYNC", # async
-    "UP", # pyupgrade
+  # "B",  # flake8-bugbear
+  "C",  # flake8-comprehensions
+  "C9", # mccabe
+  # "D",  # flake8-docstrings
+  "E",   # pycodestyle errors (default)
+  "F",   # pyflakes (default)
+  "I",   # isort
+  "PD",  # pandas-vet
+  "PIE", # pie
+  # "PTH", # pathlib
+  "Q", # flake8-quotes
+  # "RET", # return
+  "RUF", # Enable all ruff-specific checks
+  # "SIM", # simplify
+  "S307", # eval
+  # "T20",  # (disallow print statements) keep debugging statements out of the codebase
+  "W",     # pycodestyle warnings
+  "ASYNC", # async
+  "UP",    # pyupgrade
 ]
 
 ignore = [
-    "C408",  # Unnecessary `dict()` call (rewrite as a literal)
-    "E501",  # Line too long, handled by ruff formatter
-    "D107", # "Missing docstring in __init__",
-    "F401",  # imported but unused; consider using `importlib.util.find_spec` to test for "
-    "F811", # "redefinition of the same function"
-    "PL", # Pylint
-    "RUF012", # Mutable Class Attributes
-    "UP006",  # List vs list, etc
-    "UP007", # Option and Union
-    "UP035",  # `typing.Set` is deprecated, use `set` instead"
+  "C408",   # Unnecessary `dict()` call (rewrite as a literal)
+  "E501",   # Line too long, handled by ruff formatter
+  "D107",   # "Missing docstring in __init__",
+  "F401",   # imported but unused; consider using `importlib.util.find_spec` to test for "
+  "F811",   # "redefinition of the same function"
+  "PL",     # Pylint
+  "RUF012", # Mutable Class Attributes
+  "UP006",  # List vs list, etc
+  "UP007",  # Option and Union
+  "UP035",  # `typing.Set` is deprecated, use `set` instead"
 ]
 
 #extend-select = []
 
 [tool.ruff.lint.pep8-naming]
 classmethod-decorators = [
-    # Allow Pydantic's `@validator` decorator to trigger class method treatment.
-    "pydantic.validator",
+  # Allow Pydantic's `@validator` decorator to trigger class method treatment.
+  "pydantic.validator",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401"]
-"tests/*.py" = ["ASYNC"] # Disable ASYNC check for tests
+"tests/*.py" = ["ASYNC"]         # Disable ASYNC check for tests
 
 [tool.ruff.lint.mccabe]
 max-complexity = 20
