@@ -4,18 +4,20 @@ from typing import Optional
 
 from docling.datamodel.pipeline_options import (
     granite_picture_description,
-    smoldocling_vlm_conversion_options,
-    smoldocling_vlm_mlx_conversion_options,
     smolvlm_picture_description,
 )
 from docling.datamodel.settings import settings
+from docling.datamodel.vlm_model_specs import (
+    SMOLDOCLING_MLX,
+    SMOLDOCLING_TRANSFORMERS,
+)
 from docling.models.code_formula_model import CodeFormulaModel
 from docling.models.document_picture_classifier import DocumentPictureClassifier
 from docling.models.easyocr_model import EasyOcrModel
-from docling.models.hf_vlm_model import HuggingFaceVlmModel
 from docling.models.layout_model import LayoutModel
 from docling.models.picture_description_vlm_model import PictureDescriptionVlmModel
 from docling.models.table_structure_model import TableStructureModel
+from docling.models.utils.hf_model_download import download_hf_model
 
 _log = logging.getLogger(__name__)
 
@@ -75,7 +77,7 @@ def download_models(
 
     if with_smolvlm:
         _log.info("Downloading SmolVlm model...")
-        PictureDescriptionVlmModel.download_models(
+        download_hf_model(
             repo_id=smolvlm_picture_description.repo_id,
             local_dir=output_dir / smolvlm_picture_description.repo_cache_folder,
             force=force,
@@ -84,26 +86,25 @@ def download_models(
 
     if with_smoldocling:
         _log.info("Downloading SmolDocling model...")
-        HuggingFaceVlmModel.download_models(
-            repo_id=smoldocling_vlm_conversion_options.repo_id,
-            local_dir=output_dir / smoldocling_vlm_conversion_options.repo_cache_folder,
+        download_hf_model(
+            repo_id=SMOLDOCLING_TRANSFORMERS.repo_id,
+            local_dir=output_dir / SMOLDOCLING_TRANSFORMERS.repo_cache_folder,
             force=force,
             progress=progress,
         )
 
     if with_smoldocling_mlx:
         _log.info("Downloading SmolDocling MLX model...")
-        HuggingFaceVlmModel.download_models(
-            repo_id=smoldocling_vlm_mlx_conversion_options.repo_id,
-            local_dir=output_dir
-            / smoldocling_vlm_mlx_conversion_options.repo_cache_folder,
+        download_hf_model(
+            repo_id=SMOLDOCLING_MLX.repo_id,
+            local_dir=output_dir / SMOLDOCLING_MLX.repo_cache_folder,
             force=force,
             progress=progress,
         )
 
     if with_granite_vision:
         _log.info("Downloading Granite Vision model...")
-        PictureDescriptionVlmModel.download_models(
+        download_hf_model(
             repo_id=granite_picture_description.repo_id,
             local_dir=output_dir / granite_picture_description.repo_cache_folder,
             force=force,

@@ -1,6 +1,4 @@
 import logging
-import os
-import re
 from enum import Enum
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
@@ -10,71 +8,26 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_validator,
-    model_validator,
 )
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import deprecated
 
+# Import the following for backwards compatibility
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.pipeline_options_vlm_model import (
+    ApiVlmOptions,
+    InferenceFramework,
+    InlineVlmOptions,
+    ResponseFormat,
+)
+from docling.datamodel.vlm_model_specs import (
+    GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
+    GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
+    SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
+    SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
+    VlmModelType,
+)
+
 _log = logging.getLogger(__name__)
-
-
-class AcceleratorDevice(str, Enum):
-    """Devices to run model inference"""
-
-    AUTO = "auto"
-    CPU = "cpu"
-    CUDA = "cuda"
-    MPS = "mps"
-
-
-class AcceleratorOptions(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_prefix="DOCLING_", env_nested_delimiter="_", populate_by_name=True
-    )
-
-    num_threads: int = 4
-    device: Union[str, AcceleratorDevice] = "auto"
-    cuda_use_flash_attention2: bool = False
-
-    @field_validator("device")
-    def validate_device(cls, value):
-        # "auto", "cpu", "cuda", "mps", or "cuda:N"
-        if value in {d.value for d in AcceleratorDevice} or re.match(
-            r"^cuda(:\d+)?$", value
-        ):
-            return value
-        raise ValueError(
-            "Invalid device option. Use 'auto', 'cpu', 'mps', 'cuda', or 'cuda:N'."
-        )
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_alternative_envvars(cls, data: Any) -> Any:
-        r"""
-        Set num_threads from the "alternative" envvar OMP_NUM_THREADS.
-        The alternative envvar is used only if it is valid and the regular envvar is not set.
-
-        Notice: The standard pydantic settings mechanism with parameter "aliases" does not provide
-        the same functionality. In case the alias envvar is set and the user tries to override the
-        parameter in settings initialization, Pydantic treats the parameter provided in __init__()
-        as an extra input instead of simply overwriting the evvar value for that parameter.
-        """
-        if isinstance(data, dict):
-            input_num_threads = data.get("num_threads")
-            # Check if to set the num_threads from the alternative envvar
-            if input_num_threads is None:
-                docling_num_threads = os.getenv("DOCLING_NUM_THREADS")
-                omp_num_threads = os.getenv("OMP_NUM_THREADS")
-                if docling_num_threads is None and omp_num_threads is not None:
-                    try:
-                        data["num_threads"] = int(omp_num_threads)
-                    except ValueError:
-                        _log.error(
-                            "Ignoring misformatted envvar OMP_NUM_THREADS '%s'",
-                            omp_num_threads,
-                        )
-        return data
 
 
 class BaseOptions(BaseModel):
@@ -121,23 +74,21 @@ class RapidOcrOptions(OcrOptions):
     lang: List[str] = [
         "english",
         "chinese",
-    ]  # However, language as a parameter is not supported by rapidocr yet and hence changing this options doesn't affect anything.
-    # For more details on supported languages by RapidOCR visit https://rapidai.github.io/RapidOCRDocs/blog/2022/09/28/%E6%94%AF%E6%8C%81%E8%AF%86%E5%88%AB%E8%AF%AD%E8%A8%80/
+    ]
+    # However, language as a parameter is not supported by rapidocr yet
+    # and hence changing this options doesn't affect anything.
 
-    # For more details on the following options visit https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
+    # For more details on supported languages by RapidOCR visit
+    # https://rapidai.github.io/RapidOCRDocs/blog/2022/09/28/%E6%94%AF%E6%8C%81%E8%AF%86%E5%88%AB%E8%AF%AD%E8%A8%80/
+
+    # For more details on the following options visit
+    # https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
+
     text_score: float = 0.5  # same default as rapidocr
 
     use_det: Optional[bool] = None  # same default as rapidocr
     use_cls: Optional[bool] = None  # same default as rapidocr
     use_rec: Optional[bool] = None  # same default as rapidocr
-
-    # class Device(Enum):
-    #     CPU = "CPU"
-    #     CUDA = "CUDA"
-    #     DIRECTML = "DIRECTML"
-    #     AUTO = "AUTO"
-
-    # device: Device = Device.AUTO  # Default value is AUTO
 
     print_verbose: bool = False  # same default as rapidocr
 
@@ -244,99 +195,16 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
         return self.repo_id.replace("/", "--")
 
 
+# SmolVLM
 smolvlm_picture_description = PictureDescriptionVlmOptions(
     repo_id="HuggingFaceTB/SmolVLM-256M-Instruct"
 )
-# phi_picture_description = PictureDescriptionVlmOptions(repo_id="microsoft/Phi-3-vision-128k-instruct")
+
+# GraniteVision
 granite_picture_description = PictureDescriptionVlmOptions(
     repo_id="ibm-granite/granite-vision-3.1-2b-preview",
     prompt="What is shown in this image?",
 )
-
-
-class BaseVlmOptions(BaseModel):
-    kind: str
-    prompt: str
-
-
-class ResponseFormat(str, Enum):
-    DOCTAGS = "doctags"
-    MARKDOWN = "markdown"
-
-
-class InferenceFramework(str, Enum):
-    MLX = "mlx"
-    TRANSFORMERS = "transformers"
-    OPENAI = "openai"
-
-
-class HuggingFaceVlmOptions(BaseVlmOptions):
-    kind: Literal["hf_model_options"] = "hf_model_options"
-
-    repo_id: str
-    load_in_8bit: bool = True
-    llm_int8_threshold: float = 6.0
-    quantized: bool = False
-
-    inference_framework: InferenceFramework
-    response_format: ResponseFormat
-
-    @property
-    def repo_cache_folder(self) -> str:
-        return self.repo_id.replace("/", "--")
-
-
-class ApiVlmOptions(BaseVlmOptions):
-    kind: Literal["api_model_options"] = "api_model_options"
-
-    url: AnyUrl = AnyUrl(
-        "http://localhost:11434/v1/chat/completions"
-    )  # Default to ollama
-    headers: Dict[str, str] = {}
-    params: Dict[str, Any] = {}
-    scale: float = 2.0
-    timeout: float = 60
-    concurrency: int = 1
-    response_format: ResponseFormat
-
-
-smoldocling_vlm_mlx_conversion_options = HuggingFaceVlmOptions(
-    repo_id="ds4sd/SmolDocling-256M-preview-mlx-bf16",
-    prompt="Convert this page to docling.",
-    response_format=ResponseFormat.DOCTAGS,
-    inference_framework=InferenceFramework.MLX,
-)
-
-
-smoldocling_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="ds4sd/SmolDocling-256M-preview",
-    prompt="Convert this page to docling.",
-    response_format=ResponseFormat.DOCTAGS,
-    inference_framework=InferenceFramework.TRANSFORMERS,
-)
-
-granite_vision_vlm_conversion_options = HuggingFaceVlmOptions(
-    repo_id="ibm-granite/granite-vision-3.1-2b-preview",
-    # prompt="OCR the full page to markdown.",
-    prompt="OCR this image.",
-    response_format=ResponseFormat.MARKDOWN,
-    inference_framework=InferenceFramework.TRANSFORMERS,
-)
-
-granite_vision_vlm_ollama_conversion_options = ApiVlmOptions(
-    url=AnyUrl("http://localhost:11434/v1/chat/completions"),
-    params={"model": "granite3.2-vision:2b"},
-    prompt="OCR the full page to markdown.",
-    scale=1.0,
-    timeout=120,
-    response_format=ResponseFormat.MARKDOWN,
-)
-
-
-class VlmModelType(str, Enum):
-    SMOLDOCLING = "smoldocling"
-    GRANITE_VISION = "granite_vision"
-    GRANITE_VISION_OLLAMA = "granite_vision_ollama"
 
 
 # Define an enum for the backend options
@@ -387,7 +255,7 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         False  # (To be used with vlms, or other generative models)
     )
     # If True, text from backend will be used instead of generated text
-    vlm_options: Union[HuggingFaceVlmOptions, ApiVlmOptions] = (
+    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = (
         smoldocling_vlm_conversion_options
     )
 

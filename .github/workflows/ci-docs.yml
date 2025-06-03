@@ -8,6 +8,9 @@ on:
       - "**"
       - "!gh-pages"
 
+env:
+  UV_FROZEN: "1"
+
 jobs:
   build-docs:
     if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name != 'docling-project/docling' && github.event.pull_request.head.repo.full_name != 'docling-project/docling') }}

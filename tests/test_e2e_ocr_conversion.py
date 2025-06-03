@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import List, Tuple
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
     EasyOcrOptions,
     OcrMacOptions,
     OcrOptions,

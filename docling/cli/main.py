@@ -28,6 +28,7 @@ from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBacke
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -36,8 +37,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
-    AcceleratorOptions,
     EasyOcrOptions,
     OcrOptions,
     PaginatedPipelineOptions,
@@ -45,14 +44,16 @@ from docling.datamodel.pipeline_options import (
     PdfPipeline,
     PdfPipelineOptions,
     TableFormerMode,
-    VlmModelType,
     VlmPipelineOptions,
-    granite_vision_vlm_conversion_options,
-    granite_vision_vlm_ollama_conversion_options,
-    smoldocling_vlm_conversion_options,
-    smoldocling_vlm_mlx_conversion_options,
 )
 from docling.datamodel.settings import settings
+from docling.datamodel.vlm_model_specs import (
+    GRANITE_VISION_OLLAMA,
+    GRANITE_VISION_TRANSFORMERS,
+    SMOLDOCLING_MLX,
+    SMOLDOCLING_TRANSFORMERS,
+    VlmModelType,
+)
 from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
 from docling.models.factories import get_ocr_factory
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -579,20 +580,16 @@ def convert(  # noqa: C901
             )
 
             if vlm_model == VlmModelType.GRANITE_VISION:
-                pipeline_options.vlm_options = granite_vision_vlm_conversion_options
+                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = (
-                    granite_vision_vlm_ollama_conversion_options
-                )
+                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
             elif vlm_model == VlmModelType.SMOLDOCLING:
-                pipeline_options.vlm_options = smoldocling_vlm_conversion_options
+                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":
                     try:
                         import mlx_vlm
 
-                        pipeline_options.vlm_options = (
-                            smoldocling_vlm_mlx_conversion_options
-                        )
+                        pipeline_options.vlm_options = SMOLDOCLING_MLX
                     except ImportError:
                         _log.warning(
                             "To run SmolDocling faster, please install mlx-vlm:\n"

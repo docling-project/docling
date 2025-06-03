@@ -186,6 +186,11 @@ class DocumentConverter:
             Tuple[Type[BasePipeline], str], BasePipeline
         ] = {}
 
+    def _get_initialized_pipelines(
+        self,
+    ) -> dict[tuple[Type[BasePipeline], str], BasePipeline]:
+        return self.initialized_pipelines
+
     def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:
         """Generate a hash of pipeline options to use as part of the cache key."""
         options_str = str(pipeline_options.model_dump())
