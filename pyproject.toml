@@ -136,6 +136,10 @@ examples = [
   "langchain-milvus~=0.1",
   "langchain-text-splitters~=0.2",
 ]
+constraints = [
+  "onnxruntime (>=1.7.0,<1.20.0) ; python_version < '3.10'",
+]
+
 
 [tool.uv]
 package = true
