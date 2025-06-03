@@ -613,7 +613,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Mark this paragraph as processed
             processed_paragraphs.add(paragraph_id)
 
-            # Process the paragraph
             self._handle_text_elements(p, docx_obj, doc)
 
         # Restore original parent
