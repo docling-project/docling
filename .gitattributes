@@ -1,0 +1,3 @@
+tests/data/** linguist-vendored
+tests/data_scanned/** linguist-vendored
+docs/** linguist-vendored

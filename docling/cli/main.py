@@ -12,6 +12,12 @@ from typing import Annotated, Dict, List, Optional, Type
 
 import rich.table
 import typer
+from docling_core.transforms.serializer.html import (
+    HTMLDocSerializer,
+    HTMLOutputStyle,
+    HTMLParams,
+)
+from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
@@ -22,6 +28,7 @@ from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBacke
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -30,8 +37,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
-    AcceleratorDevice,
-    AcceleratorOptions,
     EasyOcrOptions,
     OcrOptions,
     PaginatedPipelineOptions,
@@ -39,14 +44,16 @@ from docling.datamodel.pipeline_options import (
     PdfPipeline,
     PdfPipelineOptions,
     TableFormerMode,
-    VlmModelType,
     VlmPipelineOptions,
-    granite_vision_vlm_conversion_options,
-    granite_vision_vlm_ollama_conversion_options,
-    smoldocling_vlm_conversion_options,
-    smoldocling_vlm_mlx_conversion_options,
 )
 from docling.datamodel.settings import settings
+from docling.datamodel.vlm_model_specs import (
+    GRANITE_VISION_OLLAMA,
+    GRANITE_VISION_TRANSFORMERS,
+    SMOLDOCLING_MLX,
+    SMOLDOCLING_TRANSFORMERS,
+    VlmModelType,
+)
 from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
 from docling.models.factories import get_ocr_factory
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -156,6 +163,7 @@ def export_documents(
     export_json: bool,
     export_html: bool,
     export_html_split_page: bool,
+    show_layout: bool,
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
@@ -189,9 +197,27 @@ def export_documents(
             if export_html_split_page:
                 fname = output_dir / f"{doc_filename}.html"
                 _log.info(f"writing HTML output to {fname}")
-                conv_res.document.save_as_html(
-                    filename=fname, image_mode=image_export_mode, split_page_view=True
-                )
+                if show_layout:
+                    ser = HTMLDocSerializer(
+                        doc=conv_res.document,
+                        params=HTMLParams(
+                            image_mode=image_export_mode,
+                            output_style=HTMLOutputStyle.SPLIT_PAGE,
+                        ),
+                    )
+                    visualizer = LayoutVisualizer()
+                    visualizer.params.show_label = False
+                    ser_res = ser.serialize(
+                        visualizer=visualizer,
+                    )
+                    with open(fname, "w") as fw:
+                        fw.write(ser_res.text)
+                else:
+                    conv_res.document.save_as_html(
+                        filename=fname,
+                        image_mode=image_export_mode,
+                        split_page_view=True,
+                    )
 
             # Export Text format:
             if export_txt:
@@ -250,6 +276,13 @@ def convert(  # noqa: C901
     to_formats: List[OutputFormat] = typer.Option(
         None, "--to", help="Specify output formats. Defaults to Markdown."
     ),
+    show_layout: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, the page images will show the bounding-boxes of the items.",
+        ),
+    ] = False,
     headers: str = typer.Option(
         None,
         "--headers",
@@ -547,20 +580,16 @@ def convert(  # noqa: C901
             )
 
             if vlm_model == VlmModelType.GRANITE_VISION:
-                pipeline_options.vlm_options = granite_vision_vlm_conversion_options
+                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = (
-                    granite_vision_vlm_ollama_conversion_options
-                )
+                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
             elif vlm_model == VlmModelType.SMOLDOCLING:
-                pipeline_options.vlm_options = smoldocling_vlm_conversion_options
+                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":
                     try:
                         import mlx_vlm
 
-                        pipeline_options.vlm_options = (
-                            smoldocling_vlm_mlx_conversion_options
-                        )
+                        pipeline_options.vlm_options = SMOLDOCLING_MLX
                     except ImportError:
                         _log.warning(
                             "To run SmolDocling faster, please install mlx-vlm:\n"
@@ -596,6 +625,7 @@ def convert(  # noqa: C901
             export_json=export_json,
             export_html=export_html,
             export_html_split_page=export_html_split_page,
+            show_layout=show_layout,
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,

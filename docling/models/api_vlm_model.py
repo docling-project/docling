@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import ApiVlmOptions
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BasePageModel
 from docling.utils.api_image_request import api_image_request

@@ -11,9 +11,10 @@ from PIL import Image, ImageDraw
 from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import AcceleratorOptions, OcrOptions
+from docling.datamodel.pipeline_options import OcrOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 

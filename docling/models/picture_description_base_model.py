@@ -13,8 +13,8 @@ from docling_core.types.doc.document import (  # TODO: move import to docling_co
 )
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
-    AcceleratorOptions,
     PictureDescriptionBaseOptions,
 )
 from docling.models.base_model import (

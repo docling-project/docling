@@ -39,8 +39,15 @@ def test_e2e_valid_csv_conversions():
         print(f"converting {csv_path}")
 
         gt_path = csv_path.parent.parent / "groundtruth" / "docling_v2" / csv_path.name
-
-        conv_result: ConversionResult = converter.convert(csv_path)
+        if csv_path.stem in (
+            "csv-too-few-columns",
+            "csv-too-many-columns",
+            "csv-inconsistent-header",
+        ):
+            with warns(UserWarning, match="Inconsistent column lengths"):
+                conv_result: ConversionResult = converter.convert(csv_path)
+        else:
+            conv_result: ConversionResult = converter.convert(csv_path)
 
         doc: DoclingDocument = conv_result.document
 
