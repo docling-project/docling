@@ -81,7 +81,6 @@ def get_converter():
 
 
 def _test_e2e_docx_conversions_impl(docx_paths: list[Path]):
-    docx_paths = get_docx_paths()
     converter = get_converter()
 
     for docx_path in docx_paths:
