@@ -220,7 +220,7 @@ This is a collection of FAQ collected from the user questions on <https://github
     )
     ```
 
-    This requires having the []() package installed. Below are two alternative ways for installing it:
+    This requires having the [flash-attn](https://pypi.org/project/flash-attn/) package installed. Below are two alternative ways for installing it:
 
     ```shell
     # Building from sources (required the CUDA dev environment)
