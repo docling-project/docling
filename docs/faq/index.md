@@ -194,3 +194,38 @@ This is a collection of FAQ collected from the user questions on <https://github
     Also see [docling#725](https://github.com/docling-project/docling/issues/725).
 
     Source: Issue [docling-core#119](https://github.com/docling-project/docling-core/issues/119)
+
+
+??? question "How to use flash attention?"
+
+    ### How to use flash attention?
+
+    When running models in Docling on CUDA devices, you can enable the usage of the Flash Attention2 library.
+
+    Using environment variables:
+
+    ```
+    DOCLING_CUDA_USE_FLASH_ATTENTION2=1
+    ```
+
+    Using code:
+
+    ```python
+    from docling.datamodel.accelerator_options import (
+        AcceleratorOptions,
+    )
+
+    pipeline_options = VlmPipelineOptions(
+        accelerator_options=AcceleratorOptions(cuda_use_flash_attention2=True)
+    )
+    ```
+
+    This requires having the []() package installed. Below are two alternative ways for installing it:
+
+    ```shell
+    # Building from sources (required the CUDA dev environment)
+    pip install flash-attn
+
+    # Using pre-built wheels (not available in all possible setups)
+    FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE pip install flash-attn
+    ```
