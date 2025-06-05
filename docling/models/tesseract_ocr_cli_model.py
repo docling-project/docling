@@ -231,6 +231,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 fname = image_file.name
                                 high_res_image.save(image_file)
                             doc_orientation = 0
+                            df_osd=None
                             try:
                                 df_osd = self._perform_osd(fname)
                                 doc_orientation = _parse_orientation(df_osd)
