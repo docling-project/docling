@@ -1,5 +1,4 @@
 import logging
-import time
 from pathlib import Path
 
 from docling_core.types.doc import ImageRefMode, TableItem, TextItem

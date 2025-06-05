@@ -4,16 +4,21 @@ from typing import Optional, Type, Union
 
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
-    AcceleratorOptions,
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmOptions,
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.models.utils.hf_model_download import (
+    HuggingFaceModelDownloadMixin,
+)
 from docling.utils.accelerator_utils import decide_device
 
 
-class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
+class PictureDescriptionVlmModel(
+    PictureDescriptionBaseModel, HuggingFaceModelDownloadMixin
+):
     @classmethod
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         return PictureDescriptionVlmOptions
@@ -65,26 +70,6 @@ class PictureDescriptionVlmModel(PictureDescriptionBaseModel):
             ).to(self.device)
 
             self.provenance = f"{self.options.repo_id}"
-
-    @staticmethod
-    def download_models(
-        repo_id: str,
-        local_dir: Optional[Path] = None,
-        force: bool = False,
-        progress: bool = False,
-    ) -> Path:
-        from huggingface_hub import snapshot_download
-        from huggingface_hub.utils import disable_progress_bars
-
-        if not progress:
-            disable_progress_bars()
-        download_path = snapshot_download(
-            repo_id=repo_id,
-            force_download=force,
-            local_dir=local_dir,
-        )
-
-        return Path(download_path)
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         from transformers import GenerationConfig

@@ -412,7 +412,11 @@ class _DocumentConversionInput(BaseModel):
             else:
                 return "application/xml"
 
-        if re.match(r"<!doctype\s+html|<html|<head|<body", content_str):
+        if re.match(
+            r"(<script.*?>.*?</script>\s*)?(<!doctype\s+html|<html|<head|<body)",
+            content_str,
+            re.DOTALL,
+        ):
             return "text/html"
 
         p = re.compile(

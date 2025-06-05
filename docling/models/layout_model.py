@@ -10,11 +10,12 @@ from docling_core.types.doc import DocItemLabel
 from docling_ibm_models.layoutmodel.layout_predictor import LayoutPredictor
 from PIL import Image
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import AcceleratorOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
+from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.layout_postprocessor import LayoutPostprocessor
 from docling.utils.profiling import TimeRecorder
@@ -83,19 +84,13 @@ class LayoutModel(BasePageModel):
         force: bool = False,
         progress: bool = False,
     ) -> Path:
-        from huggingface_hub import snapshot_download
-        from huggingface_hub.utils import disable_progress_bars
-
-        if not progress:
-            disable_progress_bars()
-        download_path = snapshot_download(
+        return download_hf_model(
             repo_id="ds4sd/docling-models",
-            force_download=force,
+            revision="v2.2.0",
             local_dir=local_dir,
-            revision="v2.1.0",
+            force=force,
+            progress=progress,
         )
-
-        return Path(download_path)
 
     def draw_clusters_and_cells_side_by_side(
         self, conv_res, page, clusters, mode_prefix: str, show: bool = False
@@ -185,13 +180,23 @@ class LayoutModel(BasePageModel):
                     ).postprocess()
                     # processed_clusters, processed_cells = clusters, page.cells
 
-                    conv_res.confidence.pages[page.page_no].layout_score = float(
-                        np.mean([c.confidence for c in processed_clusters])
-                    )
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore",
+                            "Mean of empty slice|invalid value encountered in scalar divide",
+                            RuntimeWarning,
+                            "numpy",
+                        )
 
-                    conv_res.confidence.pages[page.page_no].ocr_score = float(
-                        np.mean([c.confidence for c in processed_cells if c.from_ocr])
-                    )
+                        conv_res.confidence.pages[page.page_no].layout_score = float(
+                            np.mean([c.confidence for c in processed_clusters])
+                        )
+
+                        conv_res.confidence.pages[page.page_no].ocr_score = float(
+                            np.mean(
+                                [c.confidence for c in processed_cells if c.from_ocr]
+                            )
+                        )
 
                     page.cells = processed_cells
                     page.predictions.layout = LayoutPrediction(

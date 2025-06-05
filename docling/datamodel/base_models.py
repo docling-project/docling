@@ -13,11 +13,11 @@ from docling_core.types.doc import (
     TableCell,
 )
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-
-# DO NOT REMOVE; explicitly exposed from this location
 from docling_core.types.io import (
     DocumentStream,
 )
+
+# DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
@@ -67,7 +67,7 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.MD: ["md"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
-    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp"],
+    InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
@@ -131,12 +131,6 @@ class ErrorItem(BaseModel):
     error_message: str
 
 
-# class Cell(BaseModel):
-#    id: int
-#    text: str
-#    bbox: BoundingBox
-
-
 class Cluster(BaseModel):
     id: int
     label: DocItemLabel
@@ -158,8 +152,16 @@ class LayoutPrediction(BaseModel):
     clusters: List[Cluster] = []
 
 
+class VlmPredictionToken(BaseModel):
+    text: str = ""
+    token: int = -1
+    logprob: float = -1
+
+
 class VlmPrediction(BaseModel):
     text: str = ""
+    generated_tokens: list[VlmPredictionToken] = []
+    generation_time: float = -1
 
 
 class ContainerElement(

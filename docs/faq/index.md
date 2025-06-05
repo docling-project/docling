@@ -44,6 +44,23 @@ This is a collection of FAQ collected from the user questions on <https://github
     Source: Issue [#283](https://github.com/docling-project/docling/issues/283#issuecomment-2465035868)
 
 
+??? question "Is macOS x86_64 supported?"
+
+    ### Is macOS x86_64 supported?
+
+    Yes, Docling (still) supports running the standard pipeline on macOS x86_64.
+
+    However, users might get into a combination of incompatible dependencies on a fresh install.
+    Because Docling depends on PyTorch which dropped support for macOS x86_64 after the 2.2.2 release,
+    and this old version of PyTorch works only with NumPy 1.x, users **must** ensure the correct NumPy version is running.
+
+    ```shell
+    pip install docling "numpy<2.0.0"
+    ```
+
+    Source: Issue [#1694](https://github.com/docling-project/docling/issues/1694).
+
+
 ??? question "Are text styles (bold, underline, etc) supported?"
 
     ### Are text styles (bold, underline, etc) supported?
@@ -177,3 +194,38 @@ This is a collection of FAQ collected from the user questions on <https://github
     Also see [docling#725](https://github.com/docling-project/docling/issues/725).
 
     Source: Issue [docling-core#119](https://github.com/docling-project/docling-core/issues/119)
+
+
+??? question "How to use flash attention?"
+
+    ### How to use flash attention?
+
+    When running models in Docling on CUDA devices, you can enable the usage of the Flash Attention2 library.
+
+    Using environment variables:
+
+    ```
+    DOCLING_CUDA_USE_FLASH_ATTENTION2=1
+    ```
+
+    Using code:
+
+    ```python
+    from docling.datamodel.accelerator_options import (
+        AcceleratorOptions,
+    )
+
+    pipeline_options = VlmPipelineOptions(
+        accelerator_options=AcceleratorOptions(cuda_use_flash_attention2=True)
+    )
+    ```
+
+    This requires having the [flash-attn](https://pypi.org/project/flash-attn/) package installed. Below are two alternative ways for installing it:
+
+    ```shell
+    # Building from sources (required the CUDA dev environment)
+    pip install flash-attn
+
+    # Using pre-built wheels (not available in all possible setups)
+    FLASH_ATTENTION_SKIP_CUDA_BUILD=TRUE pip install flash-attn
+    ```

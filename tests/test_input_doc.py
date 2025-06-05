@@ -132,6 +132,13 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/html/wiki_duck.html")
     assert dci._guess_format(doc_path) == InputFormat.HTML
 
+    html_str = (  # HTML starting with a script
+        "<script>\nconsole.log('foo');\n</script>"
+        '<!doctype html>\n<html lang="en-us class="no-js"></html>'
+    )
+    stream = DocumentStream(name="lorem_ipsum", stream=BytesIO(f"{html_str}".encode()))
+    assert dci._guess_format(stream) == InputFormat.HTML
+
     # Valid MD
     buf = BytesIO(Path("./tests/data/md/wiki.md").open("rb").read())
     stream = DocumentStream(name="wiki.md", stream=buf)

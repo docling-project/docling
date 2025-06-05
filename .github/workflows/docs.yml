@@ -6,14 +6,21 @@ on:
                 description: "If true, the docs will be deployed."
                 default: false
 
+env:
+  UV_FROZEN: "1"
+
 jobs:
     run-docs:
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@v4
-        - uses: ./.github/actions/setup-poetry
+        - name: Install uv and set the python version
+          uses: astral-sh/setup-uv@v5
+          with:
+            python-version: ${{ matrix.python-version }}
+            enable-cache: true
         - name: Build docs
-          run: poetry run mkdocs build --verbose --clean
+          run: uv run mkdocs build --verbose --clean
         - name: Build and push docs
           if: inputs.deploy
-          run: poetry run mkdocs gh-deploy --force
+          run: uv run --no-sync mkdocs gh-deploy --force

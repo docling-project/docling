@@ -13,8 +13,9 @@ from docling_core.types.doc import (
 from PIL import Image
 from pydantic import BaseModel
 
-from docling.datamodel.pipeline_options import AcceleratorOptions
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.models.base_model import BaseEnrichmentModel
+from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
 
@@ -105,19 +106,13 @@ class DocumentPictureClassifier(BaseEnrichmentModel):
     def download_models(
         local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
     ) -> Path:
-        from huggingface_hub import snapshot_download
-        from huggingface_hub.utils import disable_progress_bars
-
-        if not progress:
-            disable_progress_bars()
-        download_path = snapshot_download(
+        return download_hf_model(
             repo_id="ds4sd/DocumentFigureClassifier",
-            force_download=force,
-            local_dir=local_dir,
             revision="v1.0.1",
+            local_dir=local_dir,
+            force=force,
+            progress=progress,
         )
-
-        return Path(download_path)
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """

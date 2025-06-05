@@ -7,10 +7,9 @@ from dotenv import load_dotenv
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
-    ApiVlmOptions,
-    ResponseFormat,
     VlmPipelineOptions,
 )
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
