@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.3.0",
-  "name": "powerpoint_sample",
+  "name": "powerpoint_sample_unordered",
   "origin": {
     "mimetype": "application/vnd.ms-powerpoint",
-    "binary_hash": 15572290240354948364,
-    "filename": "powerpoint_sample.pptx"
+    "binary_hash": 7336652625934663018,
+    "filename": "powerpoint_sample_unordered.pptx"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -234,9 +234,9 @@
           "page_no": 1,
           "bbox": {
             "l": 1524000.0,
-            "t": 1576935.0,
+            "t": 1945640.0,
             "r": 10668000.0,
-            "b": 644526.0,
+            "b": 1122363.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
