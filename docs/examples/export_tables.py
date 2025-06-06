@@ -40,12 +40,11 @@ def main():
         element_html_filename = output_dir / f"{doc_filename}-table-{table_ix + 1}.html"
         _log.info(f"Saving HTML table to {element_html_filename}")
         with element_html_filename.open("w") as fp:
-            fp.write(table.export_to_html(doc=conv_res.document))
+            fp.write(table.export_to_html())
 
     end_time = time.time() - start_time
 
     _log.info(f"Document converted and tables exported in {end_time:.2f} seconds.")
-
 
 if __name__ == "__main__":
     main()
