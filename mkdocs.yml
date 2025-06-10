@@ -133,6 +133,7 @@ nav:
       - "DocETL": integrations/docetl.md
       - "Kotaemon": integrations/kotaemon.md
       - "OpenContracts": integrations/opencontracts.md
+      - "Open WebUI": integrations/openwebui.md
       - "Vectara": integrations/vectara.md
   - Reference:
     - Python API:

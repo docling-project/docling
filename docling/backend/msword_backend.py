@@ -60,8 +60,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
         self.processed_textbox_elements: List[int] = []
-        # Track content hash of processed paragraphs to avoid duplicate content
-        self.processed_paragraph_content: List[str] = []
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -593,9 +591,29 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Add the sorted paragraphs to our processing list
             all_paragraphs.extend(sorted_container_paragraphs)
 
+        # Track processed paragraphs to avoid duplicates (same content and position)
+        processed_paragraphs = set()
+
         # Process all the paragraphs
-        for p, _ in all_paragraphs:
-            self._handle_text_elements(p, docx_obj, doc, is_from_textbox=True)
+        for p, position in all_paragraphs:
+            # Create paragraph object to get text content
+            paragraph = Paragraph(p, docx_obj)
+            text_content = paragraph.text
+
+            # Create a unique identifier based on content and position
+            paragraph_id = (text_content, position)
+
+            # Skip if this paragraph (same content and position) was already processed
+            if paragraph_id in processed_paragraphs:
+                _log.debug(
+                    f"Skipping duplicate paragraph: content='{text_content[:50]}...', position={position}"
+                )
+                continue
+
+            # Mark this paragraph as processed
+            processed_paragraphs.add(paragraph_id)
+
+            self._handle_text_elements(p, docx_obj, doc)
 
         # Restore original parent
         self.parents[level] = original_parent
@@ -669,22 +687,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         element: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-        is_from_textbox: bool = False,
     ) -> None:
         paragraph = Paragraph(element, docx_obj)
 
-        # Skip if from a textbox and this exact paragraph content was already processed
-        # Skip if from a textbox and this exact paragraph content was already processed
-        raw_text = paragraph.text
-        if is_from_textbox and raw_text:
-            # Create a simple hash of content to detect duplicates
-            content_hash = f"{len(raw_text)}:{raw_text[:50]}"
-            if content_hash in self.processed_paragraph_content:
-                _log.debug(f"Skipping duplicate paragraph content: {content_hash}")
-                return
-            self.processed_paragraph_content.append(content_hash)
-
-        text, equations = self._handle_equations_in_text(element=element, text=raw_text)
+        text, equations = self._handle_equations_in_text(
+            element=element, text=paragraph.text
+        )
 
         if text is None:
             return
@@ -750,7 +758,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_header(doc, p_level, text, is_numbered_style)
 
         elif len(equations) > 0:
-            if (raw_text is None or len(raw_text.strip()) == 0) and len(text) > 0:
+            if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
+                text
+            ) > 0:
                 # Standalone equation
                 level = self._get_level()
                 doc.add_text(
