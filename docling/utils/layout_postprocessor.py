@@ -196,8 +196,7 @@ class LayoutPostprocessor:
 
     def __init__(self, page, clusters: List[Cluster]):
         """Initialize processor with page and clusters."""
-        # Get cells from best available source (prefer parsed_page)
-        self.cells = self._get_page_cells(page)
+        self.cells = page.cells
         self.page = page
         self.page_size = page.size
         self.all_clusters = clusters
@@ -214,24 +213,6 @@ class LayoutPostprocessor:
         self.wrapper_index = SpatialClusterIndex(
             [c for c in self.special_clusters if c.label in self.WRAPPER_TYPES]
         )
-
-    def _get_page_cells(self, page):
-        """Get cells from best available source (prefer parsed_page)."""
-        return (
-            page.parsed_page.textline_cells
-            if page.parsed_page is not None
-            else page.cells
-        )
-
-    def _update_page_structures(self, final_cells):
-        """Update both page structures efficiently."""
-        if self.page.parsed_page is not None:
-            # Update parsed_page as primary source
-            self.page.parsed_page.textline_cells = final_cells
-            self.page.parsed_page.has_lines = len(final_cells) > 0
-
-        # Legacy fallback: only page.cells available
-        self.page.cells = final_cells
 
     def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
         """Main processing pipeline."""
@@ -259,8 +240,9 @@ class LayoutPostprocessor:
             for child in cluster.children:
                 child.cells = self._sort_cells(child.cells)
 
-        # Update page structures with processed cells
-        self._update_page_structures(self.cells)
+        assert self.page.parsed_page is not None
+        self.page.parsed_page.textline_cells = self.cells
+        self.page.parsed_page.has_lines = len(self.cells) > 0
 
         return final_clusters, self.cells
 

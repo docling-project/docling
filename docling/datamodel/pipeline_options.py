@@ -292,7 +292,9 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         ),
     )
 
-    generate_parsed_pages: bool = False
+    generate_parsed_pages: Literal[True] = (
+        True  # Always True since parsed_page is now mandatory
+    )
 
 
 class PdfPipeline(str, Enum):

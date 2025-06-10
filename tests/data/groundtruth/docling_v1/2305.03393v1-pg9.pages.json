@@ -5,2634 +5,2693 @@
       "width": 612.0,
       "height": 792.0
     },
-    "cells": [
-      {
-        "index": 0,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 194.478,
-          "r_y0": 102.78223000000003,
-          "r_x1": 447.54476999999997,
-          "r_y1": 102.78223000000003,
-          "r_x2": 447.54476999999997,
-          "r_y2": 91.49352999999996,
-          "r_x3": 194.478,
-          "r_y3": 91.49352999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Optimized Table Tokenization for Table Structure Recognition",
-        "orig": "Optimized Table Tokenization for Table Structure Recognition",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 1,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 475.98441,
-          "r_y0": 102.78223000000003,
-          "r_x1": 480.59314,
-          "r_y1": 102.78223000000003,
-          "r_x2": 480.59314,
-          "r_y2": 91.49352999999996,
-          "r_x3": 475.98441,
-          "r_y3": 91.49352999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "9",
-        "orig": "9",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 2,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 128.99597000000006,
-          "r_x1": 480.59067,
-          "r_y1": 128.99597000000006,
-          "r_x2": 480.59067,
-          "r_y2": 116.46301000000005,
-          "r_x3": 134.765,
-          "r_y3": 116.46301000000005,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "order to compute the TED score. Inference timing results for all experiments",
-        "orig": "order to compute the TED score. Inference timing results for all experiments",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 3,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 140.95099000000005,
-          "r_x1": 480.59665,
-          "r_y1": 140.95099000000005,
-          "r_x2": 480.59665,
-          "r_y2": 128.41803000000004,
-          "r_x3": 134.765,
-          "r_y3": 128.41803000000004,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "were obtained from the same machine on a single core with AMD EPYC 7763",
-        "orig": "were obtained from the same machine on a single core with AMD EPYC 7763",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 4,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 152.90697999999998,
-          "r_x1": 210.78761,
-          "r_y1": 152.90697999999998,
-          "r_x2": 210.78761,
-          "r_y2": 140.37401999999997,
-          "r_x3": 134.765,
-          "r_y3": 140.37401999999997,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "CPU @2.45 GHz.",
-        "orig": "CPU @2.45 GHz.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 5,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 179.20818999999995,
-          "r_x1": 149.40306,
-          "r_y1": 179.20818999999995,
-          "r_x2": 149.40306,
-          "r_y2": 166.70514000000003,
-          "r_x3": 134.765,
-          "r_y3": 166.70514000000003,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "5.1",
-        "orig": "5.1",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 6,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 160.85905,
-          "r_y0": 179.20818999999995,
-          "r_x1": 318.45145,
-          "r_y1": 179.20818999999995,
-          "r_x2": 318.45145,
-          "r_y2": 166.70514000000003,
-          "r_x3": 160.85905,
-          "r_y3": 166.70514000000003,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Hyper Parameter Optimization",
-        "orig": "Hyper Parameter Optimization",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 7,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 195.64801,
-          "r_x1": 479.74982000000006,
-          "r_y1": 195.64801,
-          "r_x2": 479.74982000000006,
-          "r_y2": 183.11505,
-          "r_x3": 134.765,
-          "r_y3": 183.11505,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "We have chosen the PubTabNet data set to perform HPO, since it includes a",
-        "orig": "We have chosen the PubTabNet data set to perform HPO, since it includes a",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 8,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 207.60303,
-          "r_x1": 480.58765,
-          "r_y1": 207.60303,
-          "r_x2": 480.58765,
-          "r_y2": 195.07007,
-          "r_x3": 134.765,
-          "r_y3": 195.07007,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "highly diverse set of tables. Also we report TED scores separately for simple and",
-        "orig": "highly diverse set of tables. Also we report TED scores separately for simple and",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 9,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 219.55798000000004,
-          "r_x1": 480.58859000000007,
-          "r_y1": 219.55798000000004,
-          "r_x2": 480.58859000000007,
-          "r_y2": 207.02502000000004,
-          "r_x3": 134.765,
-          "r_y3": 207.02502000000004,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "complex tables (tables with cell spans). Results are presented in Table. 1. It is",
-        "orig": "complex tables (tables with cell spans). Results are presented in Table. 1. It is",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 10,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 231.51300000000003,
-          "r_x1": 480.59567,
-          "r_y1": 231.51300000000003,
-          "r_x2": 480.59567,
-          "r_y2": 218.98004000000003,
-          "r_x3": 134.765,
-          "r_y3": 218.98004000000003,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "evident that with OTSL, our model achieves the same TED score and slightly",
-        "orig": "evident that with OTSL, our model achieves the same TED score and slightly",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 11,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 243.46802000000002,
-          "r_x1": 440.9425,
-          "r_y1": 243.46802000000002,
-          "r_x2": 440.9425,
-          "r_y2": 230.93506000000002,
-          "r_x3": 134.765,
-          "r_y3": 230.93506000000002,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "better mAP scores in comparison to HTML. However OTSL yields a",
-        "orig": "better mAP scores in comparison to HTML. However OTSL yields a",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 12,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 444.86800999999997,
-          "r_y0": 243.46802000000002,
-          "r_x1": 480.58792,
-          "r_y1": 243.46802000000002,
-          "r_x2": 480.58792,
-          "r_y2": 230.98486000000003,
-          "r_x3": 444.86800999999997,
-          "r_y3": 230.98486000000003,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "2x speed",
-        "orig": "2x speed",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 13,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 255.42400999999995,
-          "r_x1": 145.19585,
-          "r_y1": 255.42400999999995,
-          "r_x2": 145.19585,
-          "r_y2": 242.94086000000004,
-          "r_x3": 134.765,
-          "r_y3": 242.94086000000004,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "up",
-        "orig": "up",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 14,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 149.149,
-          "r_y0": 255.42400999999995,
-          "r_x1": 311.22256,
-          "r_y1": 255.42400999999995,
-          "r_x2": 311.22256,
-          "r_y2": 242.89104999999995,
-          "r_x3": 149.149,
-          "r_y3": 242.89104999999995,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "in the inference runtime over HTML.",
-        "orig": "in the inference runtime over HTML.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 15,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 284.1999799999999,
-          "r_x1": 159.22983,
-          "r_y1": 284.1999799999999,
-          "r_x2": 159.22983,
-          "r_y2": 272.79474000000005,
-          "r_x3": 134.765,
-          "r_y3": 272.79474000000005,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Table",
-        "orig": "Table",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 16,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 167.34442,
-          "r_y0": 284.1999799999999,
-          "r_x1": 174.71301,
-          "r_y1": 284.1999799999999,
-          "r_x2": 174.71301,
-          "r_y2": 272.79474000000005,
-          "r_x3": 167.34442,
-          "r_y3": 272.79474000000005,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1.",
-        "orig": "1.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 17,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 188.133,
-          "r_y0": 284.14618,
-          "r_x1": 480.58101999999997,
-          "r_y1": 284.14618,
-          "r_x2": 480.58101999999997,
-          "r_y2": 272.85748,
-          "r_x3": 188.133,
-          "r_y3": 272.85748,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "HPO performed in OTSL and HTML representation on the same",
-        "orig": "HPO performed in OTSL and HTML representation on the same",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 18,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 295.10516000000007,
-          "r_x1": 480.59890999999993,
-          "r_y1": 295.10516000000007,
-          "r_x2": 480.59890999999993,
-          "r_y2": 283.81647,
-          "r_x3": 134.765,
-          "r_y3": 283.81647,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Ef-",
-        "orig": "transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Ef-",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 19,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 306.06418,
-          "r_x1": 480.59887999999995,
-          "r_y1": 306.06418,
-          "r_x2": 480.59887999999995,
-          "r_y2": 294.77547999999996,
-          "r_x3": 134.765,
-          "r_y3": 294.77547999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "fects of reducing the # of layers in encoder and decoder stages of the model show that",
-        "orig": "fects of reducing the # of layers in encoder and decoder stages of the model show that",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 20,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 317.02316,
-          "r_x1": 480.59180000000003,
-          "r_y1": 317.02316,
-          "r_x2": 480.59180000000003,
-          "r_y2": 305.73447,
-          "r_x3": 134.765,
-          "r_y3": 305.73447,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "smaller models trained on OTSL perform better, especially in recognizing complex",
-        "orig": "smaller models trained on OTSL perform better, especially in recognizing complex",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 21,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 327.98218,
-          "r_x1": 480.58471999999995,
-          "r_y1": 327.98218,
-          "r_x2": 480.58471999999995,
-          "r_y2": 316.69348,
-          "r_x3": 134.765,
-          "r_y3": 316.69348,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "table structures, and maintain a much higher mAP score than the HTML counterpart.",
-        "orig": "table structures, and maintain a much higher mAP score than the HTML counterpart.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 22,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 160.37,
-          "r_y0": 350.74619,
-          "r_x1": 168.04523,
-          "r_y1": 350.74619,
-          "r_x2": 168.04523,
-          "r_y2": 339.45749,
-          "r_x3": 160.37,
-          "r_y3": 339.45749,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "#",
-        "orig": "#",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 23,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 144.592,
-          "r_y0": 363.69717,
-          "r_x1": 183.82895,
-          "r_y1": 363.69717,
-          "r_x2": 183.82895,
-          "r_y2": 352.40848,
-          "r_x3": 144.592,
-          "r_y3": 352.40848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "enc-layers",
-        "orig": "enc-layers",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 24,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 207.974,
-          "r_y0": 350.74619,
-          "r_x1": 215.64923000000002,
-          "r_y1": 350.74619,
-          "r_x2": 215.64923000000002,
-          "r_y2": 339.45749,
-          "r_x3": 207.974,
-          "r_y3": 339.45749,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "#",
-        "orig": "#",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 25,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 192.19501,
-          "r_y0": 363.69717,
-          "r_x1": 231.42303,
-          "r_y1": 363.69717,
-          "r_x2": 231.42303,
-          "r_y2": 352.40848,
-          "r_x3": 192.19501,
-          "r_y3": 352.40848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "dec-layers",
-        "orig": "dec-layers",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 26,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 239.79799999999997,
-          "r_y0": 356.22519000000005,
-          "r_x1": 278.3338,
-          "r_y1": 356.22519000000005,
-          "r_x2": 278.3338,
-          "r_y2": 344.93649,
-          "r_x3": 239.79799999999997,
-          "r_y3": 344.93649,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Language",
-        "orig": "Language",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 27,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 324.67001,
-          "r_y0": 350.74619,
-          "r_x1": 348.26419,
-          "r_y1": 350.74619,
-          "r_x2": 348.26419,
-          "r_y2": 339.45749,
-          "r_x3": 324.67001,
-          "r_y3": 339.45749,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "TEDs",
-        "orig": "TEDs",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 28,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 396.271,
-          "r_y0": 350.74619,
-          "r_x1": 417.12595,
-          "r_y1": 350.74619,
-          "r_x2": 417.12595,
-          "r_y2": 339.45749,
-          "r_x3": 396.271,
-          "r_y3": 339.45749,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "mAP",
-        "orig": "mAP",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 29,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 394.927,
-          "r_y0": 361.70517,
-          "r_x1": 418.46921,
-          "r_y1": 361.70517,
-          "r_x2": 418.46921,
-          "r_y2": 350.41647,
-          "r_x3": 394.927,
-          "r_y3": 350.41647,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "(0.75)",
-        "orig": "(0.75)",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 30,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 430.771,
-          "r_y0": 350.74619,
-          "r_x1": 467.14142000000004,
-          "r_y1": 350.74619,
-          "r_x2": 467.14142000000004,
-          "r_y2": 339.45749,
-          "r_x3": 430.771,
-          "r_y3": 339.45749,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Inference",
-        "orig": "Inference",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 31,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 427.14801,
-          "r_y0": 361.70517,
-          "r_x1": 470.76955999999996,
-          "r_y1": 361.70517,
-          "r_x2": 470.76955999999996,
-          "r_y2": 350.41647,
-          "r_x3": 427.14801,
-          "r_y3": 350.41647,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "time (secs)",
-        "orig": "time (secs)",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 32,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 286.686,
-          "r_y0": 363.69717,
-          "r_x1": 312.32812,
-          "r_y1": 363.69717,
-          "r_x2": 312.32812,
-          "r_y2": 352.40848,
-          "r_x3": 286.686,
-          "r_y3": 352.40848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "simple",
-        "orig": "simple",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 33,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.702,
-          "r_y0": 363.69717,
-          "r_x1": 353.71539,
-          "r_y1": 363.69717,
-          "r_x2": 353.71539,
-          "r_y2": 352.40848,
-          "r_x3": 320.702,
-          "r_y3": 352.40848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "complex",
-        "orig": "complex",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 34,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 369.306,
-          "r_y0": 363.69717,
-          "r_x1": 379.02914,
-          "r_y1": 363.69717,
-          "r_x2": 379.02914,
-          "r_y2": 352.40848,
-          "r_x3": 369.306,
-          "r_y3": 352.40848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "all",
-        "orig": "all",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 35,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 161.90601,
-          "r_y0": 382.52719,
-          "r_x1": 166.51474,
-          "r_y1": 382.52719,
-          "r_x2": 166.51474,
-          "r_y2": 371.23849,
-          "r_x3": 161.90601,
-          "r_y3": 371.23849,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "6",
-        "orig": "6",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 36,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 209.509,
-          "r_y0": 382.52719,
-          "r_x1": 214.11774,
-          "r_y1": 382.52719,
-          "r_x2": 214.11774,
-          "r_y2": 371.23849,
-          "r_x3": 209.509,
-          "r_y3": 371.23849,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "6",
-        "orig": "6",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 37,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 246.71000999999998,
-          "r_y0": 377.04717999999997,
-          "r_x1": 271.41064,
-          "r_y1": 377.04717999999997,
-          "r_x2": 271.41064,
-          "r_y2": 365.75848,
-          "r_x3": 246.71000999999998,
-          "r_y3": 365.75848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "OTSL",
-        "orig": "OTSL",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 38,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 377.04717999999997,
-          "r_x1": 310.00732,
-          "r_y1": 377.04717999999997,
-          "r_x2": 310.00732,
-          "r_y2": 365.75848,
-          "r_x3": 289.017,
-          "r_y3": 365.75848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.965",
-        "orig": "0.965",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 39,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 326.71701,
-          "r_y0": 377.04717999999997,
-          "r_x1": 347.70734,
-          "r_y1": 377.04717999999997,
-          "r_x2": 347.70734,
-          "r_y2": 365.75848,
-          "r_x3": 326.71701,
-          "r_y3": 365.75848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.934",
-        "orig": "0.934",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 40,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 363.67599,
-          "r_y0": 377.04717999999997,
-          "r_x1": 384.66632,
-          "r_y1": 377.04717999999997,
-          "r_x2": 384.66632,
-          "r_y2": 365.75848,
-          "r_x3": 363.67599,
-          "r_y3": 365.75848,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.955",
-        "orig": "0.955",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 41,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 397.26999,
-          "r_y0": 377.10098000000005,
-          "r_x1": 416.12634,
-          "r_y1": 377.10098000000005,
-          "r_x2": 416.12634,
-          "r_y2": 365.69571,
-          "r_x3": 397.26999,
-          "r_y3": 365.69571,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.88",
-        "orig": "0.88",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 42,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 439.52701,
-          "r_y0": 377.10098000000005,
-          "r_x1": 458.38336,
-          "r_y1": 377.10098000000005,
-          "r_x2": 458.38336,
-          "r_y2": 365.69571,
-          "r_x3": 439.52701,
-          "r_y3": 365.69571,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "2.73",
-        "orig": "2.73",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 43,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 245.17598999999998,
-          "r_y0": 389.99917999999997,
-          "r_x1": 272.94495,
-          "r_y1": 389.99917999999997,
-          "r_x2": 272.94495,
-          "r_y2": 378.71048,
-          "r_x3": 245.17598999999998,
-          "r_y3": 378.71048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "HTML",
-        "orig": "HTML",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 44,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 389.99917999999997,
-          "r_x1": 310.00732,
-          "r_y1": 389.99917999999997,
-          "r_x2": 310.00732,
-          "r_y2": 378.71048,
-          "r_x3": 289.017,
-          "r_y3": 378.71048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.969",
-        "orig": "0.969",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 45,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 326.71701,
-          "r_y0": 389.99917999999997,
-          "r_x1": 347.70734,
-          "r_y1": 389.99917999999997,
-          "r_x2": 347.70734,
-          "r_y2": 378.71048,
-          "r_x3": 326.71701,
-          "r_y3": 378.71048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.927",
-        "orig": "0.927",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 46,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 363.67599,
-          "r_y0": 389.99917999999997,
-          "r_x1": 384.66632,
-          "r_y1": 389.99917999999997,
-          "r_x2": 384.66632,
-          "r_y2": 378.71048,
-          "r_x3": 363.67599,
-          "r_y3": 378.71048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.955",
-        "orig": "0.955",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 47,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 396.20599,
-          "r_y0": 389.99917999999997,
-          "r_x1": 417.19632,
-          "r_y1": 389.99917999999997,
-          "r_x2": 417.19632,
-          "r_y2": 378.71048,
-          "r_x3": 396.20599,
-          "r_y3": 378.71048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.857",
-        "orig": "0.857",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 48,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 440.767,
-          "r_y0": 389.99917999999997,
-          "r_x1": 457.15039,
-          "r_y1": 389.99917999999997,
-          "r_x2": 457.15039,
-          "r_y2": 378.71048,
-          "r_x3": 440.767,
-          "r_y3": 378.71048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "5.39",
-        "orig": "5.39",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 49,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 161.90601,
-          "r_y0": 408.82819,
-          "r_x1": 166.51474,
-          "r_y1": 408.82819,
-          "r_x2": 166.51474,
-          "r_y2": 397.53949,
-          "r_x3": 161.90601,
-          "r_y3": 397.53949,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "4",
-        "orig": "4",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 50,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 209.509,
-          "r_y0": 408.82819,
-          "r_x1": 214.11774,
-          "r_y1": 408.82819,
-          "r_x2": 214.11774,
-          "r_y2": 397.53949,
-          "r_x3": 209.509,
-          "r_y3": 397.53949,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "4",
-        "orig": "4",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 51,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 246.71000999999998,
-          "r_y0": 403.34918,
-          "r_x1": 271.41064,
-          "r_y1": 403.34918,
-          "r_x2": 271.41064,
-          "r_y2": 392.06049,
-          "r_x3": 246.71000999999998,
-          "r_y3": 392.06049,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "OTSL",
-        "orig": "OTSL",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 52,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 403.34918,
-          "r_x1": 310.00732,
-          "r_y1": 403.34918,
-          "r_x2": 310.00732,
-          "r_y2": 392.06049,
-          "r_x3": 289.017,
-          "r_y3": 392.06049,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.938",
-        "orig": "0.938",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 53,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 326.71701,
-          "r_y0": 403.34918,
-          "r_x1": 347.70734,
-          "r_y1": 403.34918,
-          "r_x2": 347.70734,
-          "r_y2": 392.06049,
-          "r_x3": 326.71701,
-          "r_y3": 392.06049,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.904",
-        "orig": "0.904",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 54,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 363.67599,
-          "r_y0": 403.34918,
-          "r_x1": 384.66632,
-          "r_y1": 403.34918,
-          "r_x2": 384.66632,
-          "r_y2": 392.06049,
-          "r_x3": 363.67599,
-          "r_y3": 392.06049,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.927",
-        "orig": "0.927",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 55,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 394.61801,
-          "r_y0": 403.40298,
-          "r_x1": 418.77798,
-          "r_y1": 403.40298,
-          "r_x2": 418.77798,
-          "r_y2": 391.99771,
-          "r_x3": 394.61801,
-          "r_y3": 391.99771,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.853",
-        "orig": "0.853",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 56,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 439.52701,
-          "r_y0": 403.40298,
-          "r_x1": 458.38336,
-          "r_y1": 403.40298,
-          "r_x2": 458.38336,
-          "r_y2": 391.99771,
-          "r_x3": 439.52701,
-          "r_y3": 391.99771,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1.97",
-        "orig": "1.97",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 57,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 245.17598999999998,
-          "r_y0": 416.30017,
-          "r_x1": 272.94495,
-          "r_y1": 416.30017,
-          "r_x2": 272.94495,
-          "r_y2": 405.01147,
-          "r_x3": 245.17598999999998,
-          "r_y3": 405.01147,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "HTML",
-        "orig": "HTML",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 58,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 416.30017,
-          "r_x1": 310.00732,
-          "r_y1": 416.30017,
-          "r_x2": 310.00732,
-          "r_y2": 405.01147,
-          "r_x3": 289.017,
-          "r_y3": 405.01147,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.952",
-        "orig": "0.952",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 59,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 326.71701,
-          "r_y0": 416.30017,
-          "r_x1": 347.70734,
-          "r_y1": 416.30017,
-          "r_x2": 347.70734,
-          "r_y2": 405.01147,
-          "r_x3": 326.71701,
-          "r_y3": 405.01147,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.909",
-        "orig": "0.909",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 60,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 362.08801,
-          "r_y0": 416.35397,
-          "r_x1": 386.24799,
-          "r_y1": 416.35397,
-          "r_x2": 386.24799,
-          "r_y2": 404.9486999999999,
-          "r_x3": 362.08801,
-          "r_y3": 404.9486999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.938",
-        "orig": "0.938",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 61,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 396.20599,
-          "r_y0": 416.30017,
-          "r_x1": 417.19632,
-          "r_y1": 416.30017,
-          "r_x2": 417.19632,
-          "r_y2": 405.01147,
-          "r_x3": 396.20599,
-          "r_y3": 405.01147,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.843",
-        "orig": "0.843",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 62,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 440.767,
-          "r_y0": 416.30017,
-          "r_x1": 457.15039,
-          "r_y1": 416.30017,
-          "r_x2": 457.15039,
-          "r_y2": 405.01147,
-          "r_x3": 440.767,
-          "r_y3": 405.01147,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "3.77",
-        "orig": "3.77",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 63,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 161.90601,
-          "r_y0": 435.12918,
-          "r_x1": 166.51474,
-          "r_y1": 435.12918,
-          "r_x2": 166.51474,
-          "r_y2": 423.84048,
-          "r_x3": 161.90601,
-          "r_y3": 423.84048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "2",
-        "orig": "2",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 64,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 209.509,
-          "r_y0": 435.12918,
-          "r_x1": 214.11774,
-          "r_y1": 435.12918,
-          "r_x2": 214.11774,
-          "r_y2": 423.84048,
-          "r_x3": 209.509,
-          "r_y3": 423.84048,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "4",
-        "orig": "4",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 65,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 246.71000999999998,
-          "r_y0": 429.65018,
-          "r_x1": 271.41064,
-          "r_y1": 429.65018,
-          "r_x2": 271.41064,
-          "r_y2": 418.3614799999999,
-          "r_x3": 246.71000999999998,
-          "r_y3": 418.3614799999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "OTSL",
-        "orig": "OTSL",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 66,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 429.65018,
-          "r_x1": 310.00732,
-          "r_y1": 429.65018,
-          "r_x2": 310.00732,
-          "r_y2": 418.3614799999999,
-          "r_x3": 289.017,
-          "r_y3": 418.3614799999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.923",
-        "orig": "0.923",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 67,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 326.71701,
-          "r_y0": 429.65018,
-          "r_x1": 347.70734,
-          "r_y1": 429.65018,
-          "r_x2": 347.70734,
-          "r_y2": 418.3614799999999,
-          "r_x3": 326.71701,
-          "r_y3": 418.3614799999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.897",
-        "orig": "0.897",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 68,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 363.67599,
-          "r_y0": 429.65018,
-          "r_x1": 384.66632,
-          "r_y1": 429.65018,
-          "r_x2": 384.66632,
-          "r_y2": 418.3614799999999,
-          "r_x3": 363.67599,
-          "r_y3": 418.3614799999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.915",
-        "orig": "0.915",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 69,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 394.61801,
-          "r_y0": 429.70398,
-          "r_x1": 418.77798,
-          "r_y1": 429.70398,
-          "r_x2": 418.77798,
-          "r_y2": 418.29871,
-          "r_x3": 394.61801,
-          "r_y3": 418.29871,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.859",
-        "orig": "0.859",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 70,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 439.52701,
-          "r_y0": 429.70398,
-          "r_x1": 458.38336,
-          "r_y1": 429.70398,
-          "r_x2": 458.38336,
-          "r_y2": 418.29871,
-          "r_x3": 439.52701,
-          "r_y3": 418.29871,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1.91",
-        "orig": "1.91",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 71,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 245.17598999999998,
-          "r_y0": 442.60117,
-          "r_x1": 272.94495,
-          "r_y1": 442.60117,
-          "r_x2": 272.94495,
-          "r_y2": 431.31246999999996,
-          "r_x3": 245.17598999999998,
-          "r_y3": 431.31246999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "HTML",
-        "orig": "HTML",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 72,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 442.60117,
-          "r_x1": 310.00732,
-          "r_y1": 442.60117,
-          "r_x2": 310.00732,
-          "r_y2": 431.31246999999996,
-          "r_x3": 289.017,
-          "r_y3": 431.31246999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.945",
-        "orig": "0.945",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 73,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 326.71701,
-          "r_y0": 442.60117,
-          "r_x1": 347.70734,
-          "r_y1": 442.60117,
-          "r_x2": 347.70734,
-          "r_y2": 431.31246999999996,
-          "r_x3": 326.71701,
-          "r_y3": 431.31246999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.901",
-        "orig": "0.901",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 74,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 362.08801,
-          "r_y0": 442.65497,
-          "r_x1": 386.24799,
-          "r_y1": 442.65497,
-          "r_x2": 386.24799,
-          "r_y2": 431.24969,
-          "r_x3": 362.08801,
-          "r_y3": 431.24969,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.931",
-        "orig": "0.931",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 75,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 396.20599,
-          "r_y0": 442.60117,
-          "r_x1": 417.19632,
-          "r_y1": 442.60117,
-          "r_x2": 417.19632,
-          "r_y2": 431.31246999999996,
-          "r_x3": 396.20599,
-          "r_y3": 431.31246999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.834",
-        "orig": "0.834",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 76,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 440.767,
-          "r_y0": 442.60117,
-          "r_x1": 457.15039,
-          "r_y1": 442.60117,
-          "r_x2": 457.15039,
-          "r_y2": 431.31246999999996,
-          "r_x3": 440.767,
-          "r_y3": 431.31246999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "3.81",
-        "orig": "3.81",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 77,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 161.90601,
-          "r_y0": 461.43118,
-          "r_x1": 166.51474,
-          "r_y1": 461.43118,
-          "r_x2": 166.51474,
-          "r_y2": 450.14248999999995,
-          "r_x3": 161.90601,
-          "r_y3": 450.14248999999995,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "4",
-        "orig": "4",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 78,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 209.509,
-          "r_y0": 461.43118,
-          "r_x1": 214.11774,
-          "r_y1": 461.43118,
-          "r_x2": 214.11774,
-          "r_y2": 450.14248999999995,
-          "r_x3": 209.509,
-          "r_y3": 450.14248999999995,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "2",
-        "orig": "2",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 79,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 246.71000999999998,
-          "r_y0": 455.95117,
-          "r_x1": 271.41064,
-          "r_y1": 455.95117,
-          "r_x2": 271.41064,
-          "r_y2": 444.66248,
-          "r_x3": 246.71000999999998,
-          "r_y3": 444.66248,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "OTSL",
-        "orig": "OTSL",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 80,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 455.95117,
-          "r_x1": 310.00732,
-          "r_y1": 455.95117,
-          "r_x2": 310.00732,
-          "r_y2": 444.66248,
-          "r_x3": 289.017,
-          "r_y3": 444.66248,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.952",
-        "orig": "0.952",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 81,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 329.021,
-          "r_y0": 455.95117,
-          "r_x1": 345.40439,
-          "r_y1": 455.95117,
-          "r_x2": 345.40439,
-          "r_y2": 444.66248,
-          "r_x3": 329.021,
-          "r_y3": 444.66248,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.92",
-        "orig": "0.92",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 82,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 362.08801,
-          "r_y0": 456.00497,
-          "r_x1": 386.24799,
-          "r_y1": 456.00497,
-          "r_x2": 386.24799,
-          "r_y2": 444.5996999999999,
-          "r_x3": 362.08801,
-          "r_y3": 444.5996999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.942",
-        "orig": "0.942",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 83,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 394.61801,
-          "r_y0": 456.00497,
-          "r_x1": 418.77798,
-          "r_y1": 456.00497,
-          "r_x2": 418.77798,
-          "r_y2": 444.5996999999999,
-          "r_x3": 394.61801,
-          "r_y3": 444.5996999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.857",
-        "orig": "0.857",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 84,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 439.52701,
-          "r_y0": 456.00497,
-          "r_x1": 458.38336,
-          "r_y1": 456.00497,
-          "r_x2": 458.38336,
-          "r_y2": 444.5996999999999,
-          "r_x3": 439.52701,
-          "r_y3": 444.5996999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1.22",
-        "orig": "1.22",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 85,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 245.17598999999998,
-          "r_y0": 468.90317,
-          "r_x1": 272.94495,
-          "r_y1": 468.90317,
-          "r_x2": 272.94495,
-          "r_y2": 457.61447,
-          "r_x3": 245.17598999999998,
-          "r_y3": 457.61447,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "HTML",
-        "orig": "HTML",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 86,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 289.017,
-          "r_y0": 468.90317,
-          "r_x1": 310.00732,
-          "r_y1": 468.90317,
-          "r_x2": 310.00732,
-          "r_y2": 457.61447,
-          "r_x3": 289.017,
-          "r_y3": 457.61447,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.944",
-        "orig": "0.944",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 87,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 326.71701,
-          "r_y0": 468.90317,
-          "r_x1": 347.70734,
-          "r_y1": 468.90317,
-          "r_x2": 347.70734,
-          "r_y2": 457.61447,
-          "r_x3": 326.71701,
-          "r_y3": 457.61447,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.903",
-        "orig": "0.903",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 88,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 363.67599,
-          "r_y0": 468.90317,
-          "r_x1": 384.66632,
-          "r_y1": 468.90317,
-          "r_x2": 384.66632,
-          "r_y2": 457.61447,
-          "r_x3": 363.67599,
-          "r_y3": 457.61447,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.931",
-        "orig": "0.931",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 89,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 396.20599,
-          "r_y0": 468.90317,
-          "r_x1": 417.19632,
-          "r_y1": 468.90317,
-          "r_x2": 417.19632,
-          "r_y2": 457.61447,
-          "r_x3": 396.20599,
-          "r_y3": 457.61447,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "0.824",
-        "orig": "0.824",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 90,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 446.65302,
-          "r_y0": 468.90317,
-          "r_x1": 451.26175,
-          "r_y1": 468.90317,
-          "r_x2": 451.26175,
-          "r_y2": 457.61447,
-          "r_x3": 446.65302,
-          "r_y3": 457.61447,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "2",
-        "orig": "2",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 91,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 518.17419,
-          "r_x1": 149.40306,
-          "r_y1": 518.17419,
-          "r_x2": 149.40306,
-          "r_y2": 505.67111,
-          "r_x3": 134.765,
-          "r_y3": 505.67111,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "5.2",
-        "orig": "5.2",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 92,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 160.85905,
-          "r_y0": 518.17419,
-          "r_x1": 264.40829,
-          "r_y1": 518.17419,
-          "r_x2": 264.40829,
-          "r_y2": 505.67111,
-          "r_x3": 160.85905,
-          "r_y3": 505.67111,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Quantitative Results",
-        "orig": "Quantitative Results",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 93,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 534.61301,
-          "r_x1": 479.72983,
-          "r_y1": 534.61301,
-          "r_x2": 479.72983,
-          "r_y2": 522.08005,
-          "r_x3": 134.765,
-          "r_y3": 522.08005,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "We picked the model parameter configuration that produced the best prediction",
-        "orig": "We picked the model parameter configuration that produced the best prediction",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 94,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 546.569,
-          "r_x1": 480.5897499999999,
-          "r_y1": 546.569,
-          "r_x2": 480.5897499999999,
-          "r_y2": 534.03604,
-          "r_x3": 134.765,
-          "r_y3": 534.03604,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently",
-        "orig": "quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 95,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 558.524,
-          "r_x1": 480.72003,
-          "r_y1": 558.524,
-          "r_x2": 480.72003,
-          "r_y2": 545.99104,
-          "r_x3": 134.765,
-          "r_y3": 545.99104,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "trained and evaluated it on three publicly available data sets: PubTabNet (395k",
-        "orig": "trained and evaluated it on three publicly available data sets: PubTabNet (395k",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 96,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 570.479,
-          "r_x1": 480.60577,
-          "r_y1": 570.479,
-          "r_x2": 480.60577,
-          "r_y2": 557.94604,
-          "r_x3": 134.765,
-          "r_y3": 557.94604,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).",
-        "orig": "samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 97,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 582.43399,
-          "r_x1": 480.5936899999999,
-          "r_y1": 582.43399,
-          "r_x2": 480.5936899999999,
-          "r_y2": 569.90103,
-          "r_x3": 134.765,
-          "r_y3": 569.90103,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Performance results are presented in Table. 2. It is clearly evident that the model",
-        "orig": "Performance results are presented in Table. 2. It is clearly evident that the model",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 98,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 594.38899,
-          "r_x1": 480.59158,
-          "r_y1": 594.38899,
-          "r_x2": 480.59158,
-          "r_y2": 581.85603,
-          "r_x3": 134.765,
-          "r_y3": 581.85603,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "trained on OTSL outperforms HTML across the board, keeping high TEDs and",
-        "orig": "trained on OTSL outperforms HTML across the board, keeping high TEDs and",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 99,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 606.345,
-          "r_x1": 480.58080999999993,
-          "r_y1": 606.345,
-          "r_x2": 480.58080999999993,
-          "r_y2": 593.81204,
-          "r_x3": 134.765,
-          "r_y3": 593.81204,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "mAP scores even on difficult financial tables (FinTabNet) that contain sparse",
-        "orig": "mAP scores even on difficult financial tables (FinTabNet) that contain sparse",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 100,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 618.3,
-          "r_x1": 206.79959,
-          "r_y1": 618.3,
-          "r_x2": 206.79959,
-          "r_y2": 605.76704,
-          "r_x3": 134.765,
-          "r_y3": 605.76704,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "and large tables.",
-        "orig": "and large tables.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 101,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 149.709,
-          "r_y0": 630.255,
-          "r_x1": 480.59479,
-          "r_y1": 630.255,
-          "r_x2": 480.59479,
-          "r_y2": 617.72205,
-          "r_x3": 149.709,
-          "r_y3": 617.72205,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Additionally, the results show that OTSL has an advantage over HTML",
-        "orig": "Additionally, the results show that OTSL has an advantage over HTML",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 102,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 642.2099900000001,
-          "r_x1": 480.59857000000005,
-          "r_y1": 642.2099900000001,
-          "r_x2": 480.59857000000005,
-          "r_y2": 629.6770300000001,
-          "r_x3": 134.765,
-          "r_y3": 629.6770300000001,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "when applied on a bigger data set like PubTables-1M and achieves significantly",
-        "orig": "when applied on a bigger data set like PubTables-1M and achieves significantly",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 103,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 654.16499,
-          "r_x1": 480.59384000000006,
-          "r_y1": 654.16499,
-          "r_x2": 480.59384000000006,
-          "r_y2": 641.63203,
-          "r_x3": 134.765,
-          "r_y3": 641.63203,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "improved scores. Finally, OTSL achieves faster inference due to fewer decoding",
-        "orig": "improved scores. Finally, OTSL achieves faster inference due to fewer decoding",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 104,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 134.765,
-          "r_y0": 666.12,
-          "r_x1": 405.7995,
-          "r_y1": 666.12,
-          "r_x2": 405.7995,
-          "r_y2": 653.58704,
-          "r_x3": 134.765,
-          "r_y3": 653.58704,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "steps which is a result of the reduced sequence representation.",
-        "orig": "steps which is a result of the reduced sequence representation.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      }
-    ],
-    "parsed_page": null,
+    "parsed_page": {
+      "dimension": {
+        "angle": 0.0,
+        "rect": {
+          "r_x0": 0.0,
+          "r_y0": 0.0,
+          "r_x1": 612.0,
+          "r_y1": 0.0,
+          "r_x2": 612.0,
+          "r_y2": 792.0,
+          "r_x3": 0.0,
+          "r_y3": 792.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "boundary_type": "crop_box",
+        "art_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "bleed_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "crop_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "media_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "trim_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        }
+      },
+      "bitmap_resources": [],
+      "char_cells": [],
+      "word_cells": [],
+      "textline_cells": [
+        {
+          "index": 0,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 194.478,
+            "r_y0": 102.78223000000003,
+            "r_x1": 447.54476999999997,
+            "r_y1": 102.78223000000003,
+            "r_x2": 447.54476999999997,
+            "r_y2": 91.49352999999996,
+            "r_x3": 194.478,
+            "r_y3": 91.49352999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Optimized Table Tokenization for Table Structure Recognition",
+          "orig": "Optimized Table Tokenization for Table Structure Recognition",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 1,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 475.98441,
+            "r_y0": 102.78223000000003,
+            "r_x1": 480.59314,
+            "r_y1": 102.78223000000003,
+            "r_x2": 480.59314,
+            "r_y2": 91.49352999999996,
+            "r_x3": 475.98441,
+            "r_y3": 91.49352999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "9",
+          "orig": "9",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 2,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 128.99597000000006,
+            "r_x1": 480.59067,
+            "r_y1": 128.99597000000006,
+            "r_x2": 480.59067,
+            "r_y2": 116.46301000000005,
+            "r_x3": 134.765,
+            "r_y3": 116.46301000000005,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "order to compute the TED score. Inference timing results for all experiments",
+          "orig": "order to compute the TED score. Inference timing results for all experiments",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 3,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 140.95099000000005,
+            "r_x1": 480.59665,
+            "r_y1": 140.95099000000005,
+            "r_x2": 480.59665,
+            "r_y2": 128.41803000000004,
+            "r_x3": 134.765,
+            "r_y3": 128.41803000000004,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "were obtained from the same machine on a single core with AMD EPYC 7763",
+          "orig": "were obtained from the same machine on a single core with AMD EPYC 7763",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 4,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 152.90697999999998,
+            "r_x1": 210.78761,
+            "r_y1": 152.90697999999998,
+            "r_x2": 210.78761,
+            "r_y2": 140.37401999999997,
+            "r_x3": 134.765,
+            "r_y3": 140.37401999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "CPU @2.45 GHz.",
+          "orig": "CPU @2.45 GHz.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 5,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 179.20818999999995,
+            "r_x1": 149.40306,
+            "r_y1": 179.20818999999995,
+            "r_x2": 149.40306,
+            "r_y2": 166.70514000000003,
+            "r_x3": 134.765,
+            "r_y3": 166.70514000000003,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "5.1",
+          "orig": "5.1",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 6,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 160.85905,
+            "r_y0": 179.20818999999995,
+            "r_x1": 318.45145,
+            "r_y1": 179.20818999999995,
+            "r_x2": 318.45145,
+            "r_y2": 166.70514000000003,
+            "r_x3": 160.85905,
+            "r_y3": 166.70514000000003,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Hyper Parameter Optimization",
+          "orig": "Hyper Parameter Optimization",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 7,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 195.64801,
+            "r_x1": 479.74982000000006,
+            "r_y1": 195.64801,
+            "r_x2": 479.74982000000006,
+            "r_y2": 183.11505,
+            "r_x3": 134.765,
+            "r_y3": 183.11505,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "We have chosen the PubTabNet data set to perform HPO, since it includes a",
+          "orig": "We have chosen the PubTabNet data set to perform HPO, since it includes a",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 8,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 207.60303,
+            "r_x1": 480.58765,
+            "r_y1": 207.60303,
+            "r_x2": 480.58765,
+            "r_y2": 195.07007,
+            "r_x3": 134.765,
+            "r_y3": 195.07007,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "highly diverse set of tables. Also we report TED scores separately for simple and",
+          "orig": "highly diverse set of tables. Also we report TED scores separately for simple and",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 9,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 219.55798000000004,
+            "r_x1": 480.58859000000007,
+            "r_y1": 219.55798000000004,
+            "r_x2": 480.58859000000007,
+            "r_y2": 207.02502000000004,
+            "r_x3": 134.765,
+            "r_y3": 207.02502000000004,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "complex tables (tables with cell spans). Results are presented in Table. 1. It is",
+          "orig": "complex tables (tables with cell spans). Results are presented in Table. 1. It is",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 10,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 231.51300000000003,
+            "r_x1": 480.59567,
+            "r_y1": 231.51300000000003,
+            "r_x2": 480.59567,
+            "r_y2": 218.98004000000003,
+            "r_x3": 134.765,
+            "r_y3": 218.98004000000003,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "evident that with OTSL, our model achieves the same TED score and slightly",
+          "orig": "evident that with OTSL, our model achieves the same TED score and slightly",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 11,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 243.46802000000002,
+            "r_x1": 440.9425,
+            "r_y1": 243.46802000000002,
+            "r_x2": 440.9425,
+            "r_y2": 230.93506000000002,
+            "r_x3": 134.765,
+            "r_y3": 230.93506000000002,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "better mAP scores in comparison to HTML. However OTSL yields a",
+          "orig": "better mAP scores in comparison to HTML. However OTSL yields a",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 12,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 444.86800999999997,
+            "r_y0": 243.46802000000002,
+            "r_x1": 480.58792,
+            "r_y1": 243.46802000000002,
+            "r_x2": 480.58792,
+            "r_y2": 230.98486000000003,
+            "r_x3": 444.86800999999997,
+            "r_y3": 230.98486000000003,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "2x speed",
+          "orig": "2x speed",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 13,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 255.42400999999995,
+            "r_x1": 145.19585,
+            "r_y1": 255.42400999999995,
+            "r_x2": 145.19585,
+            "r_y2": 242.94086000000004,
+            "r_x3": 134.765,
+            "r_y3": 242.94086000000004,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "up",
+          "orig": "up",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 14,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 149.149,
+            "r_y0": 255.42400999999995,
+            "r_x1": 311.22256,
+            "r_y1": 255.42400999999995,
+            "r_x2": 311.22256,
+            "r_y2": 242.89104999999995,
+            "r_x3": 149.149,
+            "r_y3": 242.89104999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "in the inference runtime over HTML.",
+          "orig": "in the inference runtime over HTML.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 15,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 284.1999799999999,
+            "r_x1": 159.22983,
+            "r_y1": 284.1999799999999,
+            "r_x2": 159.22983,
+            "r_y2": 272.79474000000005,
+            "r_x3": 134.765,
+            "r_y3": 272.79474000000005,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Table",
+          "orig": "Table",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 16,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 167.34442,
+            "r_y0": 284.1999799999999,
+            "r_x1": 174.71301,
+            "r_y1": 284.1999799999999,
+            "r_x2": 174.71301,
+            "r_y2": 272.79474000000005,
+            "r_x3": 167.34442,
+            "r_y3": 272.79474000000005,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1.",
+          "orig": "1.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 17,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 188.133,
+            "r_y0": 284.14618,
+            "r_x1": 480.58101999999997,
+            "r_y1": 284.14618,
+            "r_x2": 480.58101999999997,
+            "r_y2": 272.85748,
+            "r_x3": 188.133,
+            "r_y3": 272.85748,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "HPO performed in OTSL and HTML representation on the same",
+          "orig": "HPO performed in OTSL and HTML representation on the same",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 18,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 295.10516000000007,
+            "r_x1": 480.59890999999993,
+            "r_y1": 295.10516000000007,
+            "r_x2": 480.59890999999993,
+            "r_y2": 283.81647,
+            "r_x3": 134.765,
+            "r_y3": 283.81647,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Ef-",
+          "orig": "transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Ef-",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 19,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 306.06418,
+            "r_x1": 480.59887999999995,
+            "r_y1": 306.06418,
+            "r_x2": 480.59887999999995,
+            "r_y2": 294.77547999999996,
+            "r_x3": 134.765,
+            "r_y3": 294.77547999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "fects of reducing the # of layers in encoder and decoder stages of the model show that",
+          "orig": "fects of reducing the # of layers in encoder and decoder stages of the model show that",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 20,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 317.02316,
+            "r_x1": 480.59180000000003,
+            "r_y1": 317.02316,
+            "r_x2": 480.59180000000003,
+            "r_y2": 305.73447,
+            "r_x3": 134.765,
+            "r_y3": 305.73447,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "smaller models trained on OTSL perform better, especially in recognizing complex",
+          "orig": "smaller models trained on OTSL perform better, especially in recognizing complex",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 21,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 327.98218,
+            "r_x1": 480.58471999999995,
+            "r_y1": 327.98218,
+            "r_x2": 480.58471999999995,
+            "r_y2": 316.69348,
+            "r_x3": 134.765,
+            "r_y3": 316.69348,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "table structures, and maintain a much higher mAP score than the HTML counterpart.",
+          "orig": "table structures, and maintain a much higher mAP score than the HTML counterpart.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 22,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 160.37,
+            "r_y0": 350.74619,
+            "r_x1": 168.04523,
+            "r_y1": 350.74619,
+            "r_x2": 168.04523,
+            "r_y2": 339.45749,
+            "r_x3": 160.37,
+            "r_y3": 339.45749,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "#",
+          "orig": "#",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 23,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 144.592,
+            "r_y0": 363.69717,
+            "r_x1": 183.82895,
+            "r_y1": 363.69717,
+            "r_x2": 183.82895,
+            "r_y2": 352.40848,
+            "r_x3": 144.592,
+            "r_y3": 352.40848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "enc-layers",
+          "orig": "enc-layers",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 24,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 207.974,
+            "r_y0": 350.74619,
+            "r_x1": 215.64923000000002,
+            "r_y1": 350.74619,
+            "r_x2": 215.64923000000002,
+            "r_y2": 339.45749,
+            "r_x3": 207.974,
+            "r_y3": 339.45749,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "#",
+          "orig": "#",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 25,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 192.19501,
+            "r_y0": 363.69717,
+            "r_x1": 231.42303,
+            "r_y1": 363.69717,
+            "r_x2": 231.42303,
+            "r_y2": 352.40848,
+            "r_x3": 192.19501,
+            "r_y3": 352.40848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "dec-layers",
+          "orig": "dec-layers",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 26,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 239.79799999999997,
+            "r_y0": 356.22519000000005,
+            "r_x1": 278.3338,
+            "r_y1": 356.22519000000005,
+            "r_x2": 278.3338,
+            "r_y2": 344.93649,
+            "r_x3": 239.79799999999997,
+            "r_y3": 344.93649,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Language",
+          "orig": "Language",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 27,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 324.67001,
+            "r_y0": 350.74619,
+            "r_x1": 348.26419,
+            "r_y1": 350.74619,
+            "r_x2": 348.26419,
+            "r_y2": 339.45749,
+            "r_x3": 324.67001,
+            "r_y3": 339.45749,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "TEDs",
+          "orig": "TEDs",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 28,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 396.271,
+            "r_y0": 350.74619,
+            "r_x1": 417.12595,
+            "r_y1": 350.74619,
+            "r_x2": 417.12595,
+            "r_y2": 339.45749,
+            "r_x3": 396.271,
+            "r_y3": 339.45749,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "mAP",
+          "orig": "mAP",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 29,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 394.927,
+            "r_y0": 361.70517,
+            "r_x1": 418.46921,
+            "r_y1": 361.70517,
+            "r_x2": 418.46921,
+            "r_y2": 350.41647,
+            "r_x3": 394.927,
+            "r_y3": 350.41647,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "(0.75)",
+          "orig": "(0.75)",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 30,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 430.771,
+            "r_y0": 350.74619,
+            "r_x1": 467.14142000000004,
+            "r_y1": 350.74619,
+            "r_x2": 467.14142000000004,
+            "r_y2": 339.45749,
+            "r_x3": 430.771,
+            "r_y3": 339.45749,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Inference",
+          "orig": "Inference",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 31,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 427.14801,
+            "r_y0": 361.70517,
+            "r_x1": 470.76955999999996,
+            "r_y1": 361.70517,
+            "r_x2": 470.76955999999996,
+            "r_y2": 350.41647,
+            "r_x3": 427.14801,
+            "r_y3": 350.41647,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "time (secs)",
+          "orig": "time (secs)",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 32,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 286.686,
+            "r_y0": 363.69717,
+            "r_x1": 312.32812,
+            "r_y1": 363.69717,
+            "r_x2": 312.32812,
+            "r_y2": 352.40848,
+            "r_x3": 286.686,
+            "r_y3": 352.40848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "simple",
+          "orig": "simple",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 33,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.702,
+            "r_y0": 363.69717,
+            "r_x1": 353.71539,
+            "r_y1": 363.69717,
+            "r_x2": 353.71539,
+            "r_y2": 352.40848,
+            "r_x3": 320.702,
+            "r_y3": 352.40848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "complex",
+          "orig": "complex",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 34,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 369.306,
+            "r_y0": 363.69717,
+            "r_x1": 379.02914,
+            "r_y1": 363.69717,
+            "r_x2": 379.02914,
+            "r_y2": 352.40848,
+            "r_x3": 369.306,
+            "r_y3": 352.40848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "all",
+          "orig": "all",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 35,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 161.90601,
+            "r_y0": 382.52719,
+            "r_x1": 166.51474,
+            "r_y1": 382.52719,
+            "r_x2": 166.51474,
+            "r_y2": 371.23849,
+            "r_x3": 161.90601,
+            "r_y3": 371.23849,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "6",
+          "orig": "6",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 36,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 209.509,
+            "r_y0": 382.52719,
+            "r_x1": 214.11774,
+            "r_y1": 382.52719,
+            "r_x2": 214.11774,
+            "r_y2": 371.23849,
+            "r_x3": 209.509,
+            "r_y3": 371.23849,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "6",
+          "orig": "6",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 37,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 246.71000999999998,
+            "r_y0": 377.04717999999997,
+            "r_x1": 271.41064,
+            "r_y1": 377.04717999999997,
+            "r_x2": 271.41064,
+            "r_y2": 365.75848,
+            "r_x3": 246.71000999999998,
+            "r_y3": 365.75848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "OTSL",
+          "orig": "OTSL",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 38,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 377.04717999999997,
+            "r_x1": 310.00732,
+            "r_y1": 377.04717999999997,
+            "r_x2": 310.00732,
+            "r_y2": 365.75848,
+            "r_x3": 289.017,
+            "r_y3": 365.75848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.965",
+          "orig": "0.965",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 39,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 326.71701,
+            "r_y0": 377.04717999999997,
+            "r_x1": 347.70734,
+            "r_y1": 377.04717999999997,
+            "r_x2": 347.70734,
+            "r_y2": 365.75848,
+            "r_x3": 326.71701,
+            "r_y3": 365.75848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.934",
+          "orig": "0.934",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 40,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 363.67599,
+            "r_y0": 377.04717999999997,
+            "r_x1": 384.66632,
+            "r_y1": 377.04717999999997,
+            "r_x2": 384.66632,
+            "r_y2": 365.75848,
+            "r_x3": 363.67599,
+            "r_y3": 365.75848,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.955",
+          "orig": "0.955",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 41,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 397.26999,
+            "r_y0": 377.10098000000005,
+            "r_x1": 416.12634,
+            "r_y1": 377.10098000000005,
+            "r_x2": 416.12634,
+            "r_y2": 365.69571,
+            "r_x3": 397.26999,
+            "r_y3": 365.69571,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.88",
+          "orig": "0.88",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 42,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 439.52701,
+            "r_y0": 377.10098000000005,
+            "r_x1": 458.38336,
+            "r_y1": 377.10098000000005,
+            "r_x2": 458.38336,
+            "r_y2": 365.69571,
+            "r_x3": 439.52701,
+            "r_y3": 365.69571,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "2.73",
+          "orig": "2.73",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 43,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 245.17598999999998,
+            "r_y0": 389.99917999999997,
+            "r_x1": 272.94495,
+            "r_y1": 389.99917999999997,
+            "r_x2": 272.94495,
+            "r_y2": 378.71048,
+            "r_x3": 245.17598999999998,
+            "r_y3": 378.71048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "HTML",
+          "orig": "HTML",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 44,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 389.99917999999997,
+            "r_x1": 310.00732,
+            "r_y1": 389.99917999999997,
+            "r_x2": 310.00732,
+            "r_y2": 378.71048,
+            "r_x3": 289.017,
+            "r_y3": 378.71048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.969",
+          "orig": "0.969",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 45,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 326.71701,
+            "r_y0": 389.99917999999997,
+            "r_x1": 347.70734,
+            "r_y1": 389.99917999999997,
+            "r_x2": 347.70734,
+            "r_y2": 378.71048,
+            "r_x3": 326.71701,
+            "r_y3": 378.71048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.927",
+          "orig": "0.927",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 46,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 363.67599,
+            "r_y0": 389.99917999999997,
+            "r_x1": 384.66632,
+            "r_y1": 389.99917999999997,
+            "r_x2": 384.66632,
+            "r_y2": 378.71048,
+            "r_x3": 363.67599,
+            "r_y3": 378.71048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.955",
+          "orig": "0.955",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 47,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 396.20599,
+            "r_y0": 389.99917999999997,
+            "r_x1": 417.19632,
+            "r_y1": 389.99917999999997,
+            "r_x2": 417.19632,
+            "r_y2": 378.71048,
+            "r_x3": 396.20599,
+            "r_y3": 378.71048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.857",
+          "orig": "0.857",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 48,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 440.767,
+            "r_y0": 389.99917999999997,
+            "r_x1": 457.15039,
+            "r_y1": 389.99917999999997,
+            "r_x2": 457.15039,
+            "r_y2": 378.71048,
+            "r_x3": 440.767,
+            "r_y3": 378.71048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "5.39",
+          "orig": "5.39",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 49,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 161.90601,
+            "r_y0": 408.82819,
+            "r_x1": 166.51474,
+            "r_y1": 408.82819,
+            "r_x2": 166.51474,
+            "r_y2": 397.53949,
+            "r_x3": 161.90601,
+            "r_y3": 397.53949,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "4",
+          "orig": "4",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 50,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 209.509,
+            "r_y0": 408.82819,
+            "r_x1": 214.11774,
+            "r_y1": 408.82819,
+            "r_x2": 214.11774,
+            "r_y2": 397.53949,
+            "r_x3": 209.509,
+            "r_y3": 397.53949,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "4",
+          "orig": "4",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 51,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 246.71000999999998,
+            "r_y0": 403.34918,
+            "r_x1": 271.41064,
+            "r_y1": 403.34918,
+            "r_x2": 271.41064,
+            "r_y2": 392.06049,
+            "r_x3": 246.71000999999998,
+            "r_y3": 392.06049,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "OTSL",
+          "orig": "OTSL",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 52,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 403.34918,
+            "r_x1": 310.00732,
+            "r_y1": 403.34918,
+            "r_x2": 310.00732,
+            "r_y2": 392.06049,
+            "r_x3": 289.017,
+            "r_y3": 392.06049,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.938",
+          "orig": "0.938",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 53,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 326.71701,
+            "r_y0": 403.34918,
+            "r_x1": 347.70734,
+            "r_y1": 403.34918,
+            "r_x2": 347.70734,
+            "r_y2": 392.06049,
+            "r_x3": 326.71701,
+            "r_y3": 392.06049,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.904",
+          "orig": "0.904",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 54,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 363.67599,
+            "r_y0": 403.34918,
+            "r_x1": 384.66632,
+            "r_y1": 403.34918,
+            "r_x2": 384.66632,
+            "r_y2": 392.06049,
+            "r_x3": 363.67599,
+            "r_y3": 392.06049,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.927",
+          "orig": "0.927",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 55,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 394.61801,
+            "r_y0": 403.40298,
+            "r_x1": 418.77798,
+            "r_y1": 403.40298,
+            "r_x2": 418.77798,
+            "r_y2": 391.99771,
+            "r_x3": 394.61801,
+            "r_y3": 391.99771,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.853",
+          "orig": "0.853",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 56,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 439.52701,
+            "r_y0": 403.40298,
+            "r_x1": 458.38336,
+            "r_y1": 403.40298,
+            "r_x2": 458.38336,
+            "r_y2": 391.99771,
+            "r_x3": 439.52701,
+            "r_y3": 391.99771,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1.97",
+          "orig": "1.97",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 57,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 245.17598999999998,
+            "r_y0": 416.30017,
+            "r_x1": 272.94495,
+            "r_y1": 416.30017,
+            "r_x2": 272.94495,
+            "r_y2": 405.01147,
+            "r_x3": 245.17598999999998,
+            "r_y3": 405.01147,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "HTML",
+          "orig": "HTML",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 58,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 416.30017,
+            "r_x1": 310.00732,
+            "r_y1": 416.30017,
+            "r_x2": 310.00732,
+            "r_y2": 405.01147,
+            "r_x3": 289.017,
+            "r_y3": 405.01147,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.952",
+          "orig": "0.952",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 59,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 326.71701,
+            "r_y0": 416.30017,
+            "r_x1": 347.70734,
+            "r_y1": 416.30017,
+            "r_x2": 347.70734,
+            "r_y2": 405.01147,
+            "r_x3": 326.71701,
+            "r_y3": 405.01147,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.909",
+          "orig": "0.909",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 60,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 362.08801,
+            "r_y0": 416.35397,
+            "r_x1": 386.24799,
+            "r_y1": 416.35397,
+            "r_x2": 386.24799,
+            "r_y2": 404.9486999999999,
+            "r_x3": 362.08801,
+            "r_y3": 404.9486999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.938",
+          "orig": "0.938",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 61,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 396.20599,
+            "r_y0": 416.30017,
+            "r_x1": 417.19632,
+            "r_y1": 416.30017,
+            "r_x2": 417.19632,
+            "r_y2": 405.01147,
+            "r_x3": 396.20599,
+            "r_y3": 405.01147,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.843",
+          "orig": "0.843",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 62,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 440.767,
+            "r_y0": 416.30017,
+            "r_x1": 457.15039,
+            "r_y1": 416.30017,
+            "r_x2": 457.15039,
+            "r_y2": 405.01147,
+            "r_x3": 440.767,
+            "r_y3": 405.01147,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "3.77",
+          "orig": "3.77",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 63,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 161.90601,
+            "r_y0": 435.12918,
+            "r_x1": 166.51474,
+            "r_y1": 435.12918,
+            "r_x2": 166.51474,
+            "r_y2": 423.84048,
+            "r_x3": 161.90601,
+            "r_y3": 423.84048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "2",
+          "orig": "2",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 64,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 209.509,
+            "r_y0": 435.12918,
+            "r_x1": 214.11774,
+            "r_y1": 435.12918,
+            "r_x2": 214.11774,
+            "r_y2": 423.84048,
+            "r_x3": 209.509,
+            "r_y3": 423.84048,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "4",
+          "orig": "4",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 65,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 246.71000999999998,
+            "r_y0": 429.65018,
+            "r_x1": 271.41064,
+            "r_y1": 429.65018,
+            "r_x2": 271.41064,
+            "r_y2": 418.3614799999999,
+            "r_x3": 246.71000999999998,
+            "r_y3": 418.3614799999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "OTSL",
+          "orig": "OTSL",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 66,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 429.65018,
+            "r_x1": 310.00732,
+            "r_y1": 429.65018,
+            "r_x2": 310.00732,
+            "r_y2": 418.3614799999999,
+            "r_x3": 289.017,
+            "r_y3": 418.3614799999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.923",
+          "orig": "0.923",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 67,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 326.71701,
+            "r_y0": 429.65018,
+            "r_x1": 347.70734,
+            "r_y1": 429.65018,
+            "r_x2": 347.70734,
+            "r_y2": 418.3614799999999,
+            "r_x3": 326.71701,
+            "r_y3": 418.3614799999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.897",
+          "orig": "0.897",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 68,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 363.67599,
+            "r_y0": 429.65018,
+            "r_x1": 384.66632,
+            "r_y1": 429.65018,
+            "r_x2": 384.66632,
+            "r_y2": 418.3614799999999,
+            "r_x3": 363.67599,
+            "r_y3": 418.3614799999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.915",
+          "orig": "0.915",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 69,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 394.61801,
+            "r_y0": 429.70398,
+            "r_x1": 418.77798,
+            "r_y1": 429.70398,
+            "r_x2": 418.77798,
+            "r_y2": 418.29871,
+            "r_x3": 394.61801,
+            "r_y3": 418.29871,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.859",
+          "orig": "0.859",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 70,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 439.52701,
+            "r_y0": 429.70398,
+            "r_x1": 458.38336,
+            "r_y1": 429.70398,
+            "r_x2": 458.38336,
+            "r_y2": 418.29871,
+            "r_x3": 439.52701,
+            "r_y3": 418.29871,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1.91",
+          "orig": "1.91",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 71,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 245.17598999999998,
+            "r_y0": 442.60117,
+            "r_x1": 272.94495,
+            "r_y1": 442.60117,
+            "r_x2": 272.94495,
+            "r_y2": 431.31246999999996,
+            "r_x3": 245.17598999999998,
+            "r_y3": 431.31246999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "HTML",
+          "orig": "HTML",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 72,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 442.60117,
+            "r_x1": 310.00732,
+            "r_y1": 442.60117,
+            "r_x2": 310.00732,
+            "r_y2": 431.31246999999996,
+            "r_x3": 289.017,
+            "r_y3": 431.31246999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.945",
+          "orig": "0.945",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 73,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 326.71701,
+            "r_y0": 442.60117,
+            "r_x1": 347.70734,
+            "r_y1": 442.60117,
+            "r_x2": 347.70734,
+            "r_y2": 431.31246999999996,
+            "r_x3": 326.71701,
+            "r_y3": 431.31246999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.901",
+          "orig": "0.901",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 74,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 362.08801,
+            "r_y0": 442.65497,
+            "r_x1": 386.24799,
+            "r_y1": 442.65497,
+            "r_x2": 386.24799,
+            "r_y2": 431.24969,
+            "r_x3": 362.08801,
+            "r_y3": 431.24969,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.931",
+          "orig": "0.931",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 75,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 396.20599,
+            "r_y0": 442.60117,
+            "r_x1": 417.19632,
+            "r_y1": 442.60117,
+            "r_x2": 417.19632,
+            "r_y2": 431.31246999999996,
+            "r_x3": 396.20599,
+            "r_y3": 431.31246999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.834",
+          "orig": "0.834",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 76,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 440.767,
+            "r_y0": 442.60117,
+            "r_x1": 457.15039,
+            "r_y1": 442.60117,
+            "r_x2": 457.15039,
+            "r_y2": 431.31246999999996,
+            "r_x3": 440.767,
+            "r_y3": 431.31246999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "3.81",
+          "orig": "3.81",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 77,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 161.90601,
+            "r_y0": 461.43118,
+            "r_x1": 166.51474,
+            "r_y1": 461.43118,
+            "r_x2": 166.51474,
+            "r_y2": 450.14248999999995,
+            "r_x3": 161.90601,
+            "r_y3": 450.14248999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "4",
+          "orig": "4",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 78,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 209.509,
+            "r_y0": 461.43118,
+            "r_x1": 214.11774,
+            "r_y1": 461.43118,
+            "r_x2": 214.11774,
+            "r_y2": 450.14248999999995,
+            "r_x3": 209.509,
+            "r_y3": 450.14248999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "2",
+          "orig": "2",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 79,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 246.71000999999998,
+            "r_y0": 455.95117,
+            "r_x1": 271.41064,
+            "r_y1": 455.95117,
+            "r_x2": 271.41064,
+            "r_y2": 444.66248,
+            "r_x3": 246.71000999999998,
+            "r_y3": 444.66248,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "OTSL",
+          "orig": "OTSL",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 80,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 455.95117,
+            "r_x1": 310.00732,
+            "r_y1": 455.95117,
+            "r_x2": 310.00732,
+            "r_y2": 444.66248,
+            "r_x3": 289.017,
+            "r_y3": 444.66248,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.952",
+          "orig": "0.952",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 81,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 329.021,
+            "r_y0": 455.95117,
+            "r_x1": 345.40439,
+            "r_y1": 455.95117,
+            "r_x2": 345.40439,
+            "r_y2": 444.66248,
+            "r_x3": 329.021,
+            "r_y3": 444.66248,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.92",
+          "orig": "0.92",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 82,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 362.08801,
+            "r_y0": 456.00497,
+            "r_x1": 386.24799,
+            "r_y1": 456.00497,
+            "r_x2": 386.24799,
+            "r_y2": 444.5996999999999,
+            "r_x3": 362.08801,
+            "r_y3": 444.5996999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.942",
+          "orig": "0.942",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 83,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 394.61801,
+            "r_y0": 456.00497,
+            "r_x1": 418.77798,
+            "r_y1": 456.00497,
+            "r_x2": 418.77798,
+            "r_y2": 444.5996999999999,
+            "r_x3": 394.61801,
+            "r_y3": 444.5996999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.857",
+          "orig": "0.857",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 84,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 439.52701,
+            "r_y0": 456.00497,
+            "r_x1": 458.38336,
+            "r_y1": 456.00497,
+            "r_x2": 458.38336,
+            "r_y2": 444.5996999999999,
+            "r_x3": 439.52701,
+            "r_y3": 444.5996999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1.22",
+          "orig": "1.22",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 85,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 245.17598999999998,
+            "r_y0": 468.90317,
+            "r_x1": 272.94495,
+            "r_y1": 468.90317,
+            "r_x2": 272.94495,
+            "r_y2": 457.61447,
+            "r_x3": 245.17598999999998,
+            "r_y3": 457.61447,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "HTML",
+          "orig": "HTML",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 86,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 289.017,
+            "r_y0": 468.90317,
+            "r_x1": 310.00732,
+            "r_y1": 468.90317,
+            "r_x2": 310.00732,
+            "r_y2": 457.61447,
+            "r_x3": 289.017,
+            "r_y3": 457.61447,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.944",
+          "orig": "0.944",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 87,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 326.71701,
+            "r_y0": 468.90317,
+            "r_x1": 347.70734,
+            "r_y1": 468.90317,
+            "r_x2": 347.70734,
+            "r_y2": 457.61447,
+            "r_x3": 326.71701,
+            "r_y3": 457.61447,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.903",
+          "orig": "0.903",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 88,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 363.67599,
+            "r_y0": 468.90317,
+            "r_x1": 384.66632,
+            "r_y1": 468.90317,
+            "r_x2": 384.66632,
+            "r_y2": 457.61447,
+            "r_x3": 363.67599,
+            "r_y3": 457.61447,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.931",
+          "orig": "0.931",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 89,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 396.20599,
+            "r_y0": 468.90317,
+            "r_x1": 417.19632,
+            "r_y1": 468.90317,
+            "r_x2": 417.19632,
+            "r_y2": 457.61447,
+            "r_x3": 396.20599,
+            "r_y3": 457.61447,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "0.824",
+          "orig": "0.824",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 90,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 446.65302,
+            "r_y0": 468.90317,
+            "r_x1": 451.26175,
+            "r_y1": 468.90317,
+            "r_x2": 451.26175,
+            "r_y2": 457.61447,
+            "r_x3": 446.65302,
+            "r_y3": 457.61447,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "2",
+          "orig": "2",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 91,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 518.17419,
+            "r_x1": 149.40306,
+            "r_y1": 518.17419,
+            "r_x2": 149.40306,
+            "r_y2": 505.67111,
+            "r_x3": 134.765,
+            "r_y3": 505.67111,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "5.2",
+          "orig": "5.2",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 92,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 160.85905,
+            "r_y0": 518.17419,
+            "r_x1": 264.40829,
+            "r_y1": 518.17419,
+            "r_x2": 264.40829,
+            "r_y2": 505.67111,
+            "r_x3": 160.85905,
+            "r_y3": 505.67111,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Quantitative Results",
+          "orig": "Quantitative Results",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 93,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 534.61301,
+            "r_x1": 479.72983,
+            "r_y1": 534.61301,
+            "r_x2": 479.72983,
+            "r_y2": 522.08005,
+            "r_x3": 134.765,
+            "r_y3": 522.08005,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "We picked the model parameter configuration that produced the best prediction",
+          "orig": "We picked the model parameter configuration that produced the best prediction",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 94,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 546.569,
+            "r_x1": 480.5897499999999,
+            "r_y1": 546.569,
+            "r_x2": 480.5897499999999,
+            "r_y2": 534.03604,
+            "r_x3": 134.765,
+            "r_y3": 534.03604,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently",
+          "orig": "quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 95,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 558.524,
+            "r_x1": 480.72003,
+            "r_y1": 558.524,
+            "r_x2": 480.72003,
+            "r_y2": 545.99104,
+            "r_x3": 134.765,
+            "r_y3": 545.99104,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "trained and evaluated it on three publicly available data sets: PubTabNet (395k",
+          "orig": "trained and evaluated it on three publicly available data sets: PubTabNet (395k",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 96,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 570.479,
+            "r_x1": 480.60577,
+            "r_y1": 570.479,
+            "r_x2": 480.60577,
+            "r_y2": 557.94604,
+            "r_x3": 134.765,
+            "r_y3": 557.94604,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).",
+          "orig": "samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 97,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 582.43399,
+            "r_x1": 480.5936899999999,
+            "r_y1": 582.43399,
+            "r_x2": 480.5936899999999,
+            "r_y2": 569.90103,
+            "r_x3": 134.765,
+            "r_y3": 569.90103,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Performance results are presented in Table. 2. It is clearly evident that the model",
+          "orig": "Performance results are presented in Table. 2. It is clearly evident that the model",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 98,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 594.38899,
+            "r_x1": 480.59158,
+            "r_y1": 594.38899,
+            "r_x2": 480.59158,
+            "r_y2": 581.85603,
+            "r_x3": 134.765,
+            "r_y3": 581.85603,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "trained on OTSL outperforms HTML across the board, keeping high TEDs and",
+          "orig": "trained on OTSL outperforms HTML across the board, keeping high TEDs and",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 99,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 606.345,
+            "r_x1": 480.58080999999993,
+            "r_y1": 606.345,
+            "r_x2": 480.58080999999993,
+            "r_y2": 593.81204,
+            "r_x3": 134.765,
+            "r_y3": 593.81204,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "mAP scores even on difficult financial tables (FinTabNet) that contain sparse",
+          "orig": "mAP scores even on difficult financial tables (FinTabNet) that contain sparse",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 100,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 618.3,
+            "r_x1": 206.79959,
+            "r_y1": 618.3,
+            "r_x2": 206.79959,
+            "r_y2": 605.76704,
+            "r_x3": 134.765,
+            "r_y3": 605.76704,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "and large tables.",
+          "orig": "and large tables.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 101,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 149.709,
+            "r_y0": 630.255,
+            "r_x1": 480.59479,
+            "r_y1": 630.255,
+            "r_x2": 480.59479,
+            "r_y2": 617.72205,
+            "r_x3": 149.709,
+            "r_y3": 617.72205,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Additionally, the results show that OTSL has an advantage over HTML",
+          "orig": "Additionally, the results show that OTSL has an advantage over HTML",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 102,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 642.2099900000001,
+            "r_x1": 480.59857000000005,
+            "r_y1": 642.2099900000001,
+            "r_x2": 480.59857000000005,
+            "r_y2": 629.6770300000001,
+            "r_x3": 134.765,
+            "r_y3": 629.6770300000001,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "when applied on a bigger data set like PubTables-1M and achieves significantly",
+          "orig": "when applied on a bigger data set like PubTables-1M and achieves significantly",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 103,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 654.16499,
+            "r_x1": 480.59384000000006,
+            "r_y1": 654.16499,
+            "r_x2": 480.59384000000006,
+            "r_y2": 641.63203,
+            "r_x3": 134.765,
+            "r_y3": 641.63203,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "improved scores. Finally, OTSL achieves faster inference due to fewer decoding",
+          "orig": "improved scores. Finally, OTSL achieves faster inference due to fewer decoding",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 104,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 134.765,
+            "r_y0": 666.12,
+            "r_x1": 405.7995,
+            "r_y1": 666.12,
+            "r_x2": 405.7995,
+            "r_y2": 653.58704,
+            "r_x3": 134.765,
+            "r_y3": 653.58704,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "steps which is a result of the reduced sequence representation.",
+          "orig": "steps which is a result of the reduced sequence representation.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        }
+      ],
+      "has_chars": false,
+      "has_words": false,
+      "has_lines": true,
+      "image": null,
+      "lines": []
+    },
     "predictions": {
       "layout": {
         "clusters": [

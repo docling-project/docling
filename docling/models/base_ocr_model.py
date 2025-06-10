@@ -133,20 +133,19 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def post_process_cells(self, ocr_cells, page):
         r"""
         Post-process the OCR cells and update the page object.
-        Treats page.parsed_page as authoritative when available, with page.cells for compatibility.
+        Updates parsed_page.textline_cells directly since page.cells is now read-only.
         """
-        # Get existing cells (prefer parsed_page, fallback to page.cells)
-        existing_cells = self._get_existing_cells(page)
+        # Get existing cells from the read-only property
+        existing_cells = page.cells
 
         # Combine existing and OCR cells with overlap filtering
         final_cells = self._combine_cells(existing_cells, ocr_cells)
 
-        # Update both structures efficiently
-        self._update_page_structures(page, final_cells)
+        assert page.parsed_page is not None
 
-    def _get_existing_cells(self, page):
-        """Get existing cells, preferring parsed_page when available."""
-        return page.parsed_page.textline_cells if page.parsed_page else page.cells
+        # Update parsed_page.textline_cells directly
+        page.parsed_page.textline_cells = final_cells
+        page.parsed_page.has_lines = bool(final_cells)
 
     def _combine_cells(self, existing_cells, ocr_cells):
         """Combine existing and OCR cells with filtering and re-indexing."""
@@ -161,18 +160,6 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             cell.index = i
 
         return combined
-
-    def _update_page_structures(self, page, final_cells):
-        """Update both page structures efficiently."""
-        if page.parsed_page:
-            # Update parsed_page as primary source
-            page.parsed_page.textline_cells = final_cells
-            page.parsed_page.has_lines = bool(final_cells)
-            # Sync to page.cells for compatibility
-            page.cells = final_cells
-        else:
-            # Legacy fallback: only page.cells available
-            page.cells = final_cells
 
     def draw_ocr_rects_and_cells(self, conv_res, page, ocr_rects, show: bool = False):
         image = copy.deepcopy(page.image)

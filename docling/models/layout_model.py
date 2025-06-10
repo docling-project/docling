@@ -198,7 +198,6 @@ class LayoutModel(BasePageModel):
                             )
                         )
 
-                    # page.cells is already updated by LayoutPostprocessor
                     page.predictions.layout = LayoutPrediction(
                         clusters=processed_clusters
                     )

@@ -5,2459 +5,2518 @@
       "width": 594.0,
       "height": 774.0
     },
-    "cells": [
-      {
-        "index": 0,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992126,
-          "r_y0": 55.15363000000002,
-          "r_x1": 300.23203,
-          "r_y1": 55.15363000000002,
-          "r_x2": 300.23203,
-          "r_y2": 43.68364999999994,
-          "r_x3": 71.992126,
-          "r_y3": 43.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "pulleys, provided the inner race of the bearing is clamped ",
-        "orig": "pulleys, provided the inner race of the bearing is clamped ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 1,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992126,
-          "r_y0": 67.65363000000002,
-          "r_x1": 302.00214,
-          "r_y1": 67.65363000000002,
-          "r_x2": 302.00214,
-          "r_y2": 56.18364999999994,
-          "r_x3": 71.992126,
-          "r_y3": 56.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "to the supporting structure by the nut and bolt. Plates must ",
-        "orig": "to the supporting structure by the nut and bolt. Plates must ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 2,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992126,
-          "r_y0": 80.15363000000002,
-          "r_x1": 309.82214,
-          "r_y1": 80.15363000000002,
-          "r_x2": 309.82214,
-          "r_y2": 68.68364999999994,
-          "r_x3": 71.992126,
-          "r_y3": 68.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "be attached to the structure in a positive manner to eliminate ",
-        "orig": "be attached to the structure in a positive manner to eliminate ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 3,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992126,
-          "r_y0": 92.65363000000002,
-          "r_x1": 314.11212,
-          "r_y1": 92.65363000000002,
-          "r_x2": 314.11212,
-          "r_y2": 81.18364999999994,
-          "r_x3": 71.992126,
-          "r_y3": 81.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "rotation or misalignment when tightening the bolts or screws. ",
-        "orig": "rotation or misalignment when tightening the bolts or screws. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 4,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992302,
-          "r_y0": 117.65363000000002,
-          "r_x1": 305.15311,
-          "r_y1": 117.65363000000002,
-          "r_x2": 305.15311,
-          "r_y2": 106.18364999999994,
-          "r_x3": 71.992302,
-          "r_y3": 106.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "The two general types of self-locking nuts currently in use ",
-        "orig": "The two general types of self-locking nuts currently in use ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 5,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.993103,
-          "r_y0": 130.15363000000002,
-          "r_x1": 309.98309,
-          "r_y1": 130.15363000000002,
-          "r_x2": 309.98309,
-          "r_y2": 118.68364999999994,
-          "r_x3": 71.993103,
-          "r_y3": 118.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "are the all-metal type and the fiber lock type. For the sake of ",
-        "orig": "are the all-metal type and the fiber lock type. For the sake of ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 6,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.993103,
-          "r_y0": 142.65363000000002,
-          "r_x1": 302.44312,
-          "r_y1": 142.65363000000002,
-          "r_x2": 302.44312,
-          "r_y2": 131.18364999999994,
-          "r_x3": 71.993103,
-          "r_y3": 131.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "simplicity, only three typical kinds of self-locking nuts are ",
-        "orig": "simplicity, only three typical kinds of self-locking nuts are ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 7,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.993103,
-          "r_y0": 155.15363000000002,
-          "r_x1": 306.25311,
-          "r_y1": 155.15363000000002,
-          "r_x2": 306.25311,
-          "r_y2": 143.68364999999994,
-          "r_x3": 71.993103,
-          "r_y3": 143.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "considered in this handbook: the Boots self-locking and the ",
-        "orig": "considered in this handbook: the Boots self-locking and the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 8,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.993103,
-          "r_y0": 167.65363000000002,
-          "r_x1": 303.9931,
-          "r_y1": 167.65363000000002,
-          "r_x2": 303.9931,
-          "r_y2": 156.18364999999994,
-          "r_x3": 71.993103,
-          "r_y3": 156.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "stainless steel self-locking nuts, representing the all-metal ",
-        "orig": "stainless steel self-locking nuts, representing the all-metal ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 9,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.993103,
-          "r_y0": 180.15363000000002,
-          "r_x1": 238.6723,
-          "r_y1": 180.15363000000002,
-          "r_x2": 238.6723,
-          "r_y2": 168.68364999999994,
-          "r_x3": 71.993103,
-          "r_y3": 168.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "types; and the elastic stop nut, representing ",
-        "orig": "types; and the elastic stop nut, representing ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 10,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 234.26460000000003,
-          "r_y0": 180.15363000000002,
-          "r_x1": 313.1546,
-          "r_y1": 180.15363000000002,
-          "r_x2": 313.1546,
-          "r_y2": 168.68364999999994,
-          "r_x3": 234.26460000000003,
-          "r_y3": 168.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "the fiber insert type. ",
-        "orig": "the fiber insert type. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 11,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992302,
-          "r_y0": 205.15363000000002,
-          "r_x1": 167.27231,
-          "r_y1": 205.15363000000002,
-          "r_x2": 167.27231,
-          "r_y2": 193.81359999999995,
-          "r_x3": 71.992302,
-          "r_y3": 193.81359999999995,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Boots Self-Locking Nut ",
-        "orig": "Boots Self-Locking Nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 12,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992302,
-          "r_y0": 219.65363000000002,
-          "r_x1": 302.27719,
-          "r_y1": 219.65363000000002,
-          "r_x2": 302.27719,
-          "r_y2": 208.18364999999994,
-          "r_x3": 71.992302,
-          "r_y3": 208.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "The Boots self-locking nut is of one piece, all-metal ",
-        "orig": "The Boots self-locking nut is of one piece, all-metal ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 13,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 232.15363000000002,
-          "r_x1": 313.33026,
-          "r_y1": 232.15363000000002,
-          "r_x2": 313.33026,
-          "r_y2": 220.68364999999994,
-          "r_x3": 71.992294,
-          "r_y3": 220.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "construction designed to hold tight despite severe vibration. ",
-        "orig": "construction designed to hold tight despite severe vibration. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 14,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 244.65363000000002,
-          "r_x1": 104.12231,
-          "r_y1": 244.65363000000002,
-          "r_x2": 104.12231,
-          "r_y2": 233.18364999999994,
-          "r_x3": 71.992294,
-          "r_y3": 233.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Note in ",
-        "orig": "Note in ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 15,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 104.12231,
-          "r_y0": 244.65363000000002,
-          "r_x1": 152.05231,
-          "r_y1": 244.65363000000002,
-          "r_x2": 152.05231,
-          "r_y2": 233.31359999999995,
-          "r_x3": 104.12231,
-          "r_y3": 233.31359999999995,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Figure 7-26",
-        "orig": "Figure 7-26",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 16,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 152.05231,
-          "r_y0": 244.65363000000002,
-          "r_x1": 318.49225,
-          "r_y1": 244.65363000000002,
-          "r_x2": 318.49225,
-          "r_y2": 233.18364999999994,
-          "r_x3": 152.05231,
-          "r_y3": 233.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": " that it has two sections and is essentially ",
-        "orig": " that it has two sections and is essentially ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 17,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 257.15363,
-          "r_x1": 309.42929,
-          "r_y1": 257.15363,
-          "r_x2": 309.42929,
-          "r_y2": 245.68364999999994,
-          "r_x3": 71.992294,
-          "r_y3": 245.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "two nuts in one: a locking nut and a load-carrying nut. The ",
-        "orig": "two nuts in one: a locking nut and a load-carrying nut. The ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 18,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 269.65362999999996,
-          "r_x1": 317.76227,
-          "r_y1": 269.65362999999996,
-          "r_x2": 317.76227,
-          "r_y2": 258.18364999999994,
-          "r_x3": 71.992294,
-          "r_y3": 258.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "two sections are connected with a spring, which is an integral ",
-        "orig": "two sections are connected with a spring, which is an integral ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 19,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 282.15362999999996,
-          "r_x1": 133.3723,
-          "r_y1": 282.15362999999996,
-          "r_x2": 133.3723,
-          "r_y2": 270.68361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 270.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "part of the nut. ",
-        "orig": "part of the nut. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 20,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 307.15362999999996,
-          "r_x1": 316.41028,
-          "r_y1": 307.15362999999996,
-          "r_x2": 316.41028,
-          "r_y2": 295.68361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 295.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "The spring keeps the locking and load-carrying sections such ",
-        "orig": "The spring keeps the locking and load-carrying sections such ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 21,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 319.65362999999996,
-          "r_x1": 312.20731,
-          "r_y1": 319.65362999999996,
-          "r_x2": 312.20731,
-          "r_y2": 308.18361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 308.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "a distance apart that the two sets of threads are out of phase ",
-        "orig": "a distance apart that the two sets of threads are out of phase ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 22,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 332.15362999999996,
-          "r_x1": 316.65729,
-          "r_y1": 332.15362999999996,
-          "r_x2": 316.65729,
-          "r_y2": 320.68361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 320.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "or spaced so that a bolt, which has been screwed through the ",
-        "orig": "or spaced so that a bolt, which has been screwed through the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 23,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 344.65362999999996,
-          "r_x1": 315.91229,
-          "r_y1": 344.65362999999996,
-          "r_x2": 315.91229,
-          "r_y2": 333.18361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 333.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "load-carrying section, must push the locking section outward ",
-        "orig": "load-carrying section, must push the locking section outward ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 24,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 357.15362999999996,
-          "r_x1": 306.34927,
-          "r_y1": 357.15362999999996,
-          "r_x2": 306.34927,
-          "r_y2": 345.68361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 345.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "against the force of the spring to engage the threads of the ",
-        "orig": "against the force of the spring to engage the threads of the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 25,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 369.65362999999996,
-          "r_x1": 174.2023,
-          "r_y1": 369.65362999999996,
-          "r_x2": 174.2023,
-          "r_y2": 358.18361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 358.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "locking section properly. ",
-        "orig": "locking section properly. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 26,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 394.65362999999996,
-          "r_x1": 317.07227,
-          "r_y1": 394.65362999999996,
-          "r_x2": 317.07227,
-          "r_y2": 383.18361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 383.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "The spring, through the medium of the locking section, exerts ",
-        "orig": "The spring, through the medium of the locking section, exerts ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 27,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 407.15362999999996,
-          "r_x1": 318.81229,
-          "r_y1": 407.15362999999996,
-          "r_x2": 318.81229,
-          "r_y2": 395.68361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 395.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "a constant locking force on the bolt in the same direction as a ",
-        "orig": "a constant locking force on the bolt in the same direction as a ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 28,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 419.65362999999996,
-          "r_x1": 317.5123,
-          "r_y1": 419.65362999999996,
-          "r_x2": 317.5123,
-          "r_y2": 408.18361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 408.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "force that would tighten the nut. In this nut, the load-carrying ",
-        "orig": "force that would tighten the nut. In this nut, the load-carrying ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 29,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 432.15362999999996,
-          "r_x1": 317.31229,
-          "r_y1": 432.15362999999996,
-          "r_x2": 317.31229,
-          "r_y2": 420.68361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 420.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "section has the thread strength of a standard nut of comparable ",
-        "orig": "section has the thread strength of a standard nut of comparable ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 30,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 444.65363,
-          "r_x1": 314.45929,
-          "r_y1": 444.65363,
-          "r_x2": 314.45929,
-          "r_y2": 433.18361999999996,
-          "r_x3": 71.992294,
-          "r_y3": 433.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "size, while the locking section presses against the threads of ",
-        "orig": "size, while the locking section presses against the threads of ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 31,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 457.15363,
-          "r_x1": 311.7023,
-          "r_y1": 457.15363,
-          "r_x2": 311.7023,
-          "r_y2": 445.68362,
-          "r_x3": 71.992294,
-          "r_y3": 445.68362,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "the bolt and locks the nut firmly in position. Only a wrench ",
-        "orig": "the bolt and locks the nut firmly in position. Only a wrench ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 32,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 469.65363,
-          "r_x1": 303.35229,
-          "r_y1": 469.65363,
-          "r_x2": 303.35229,
-          "r_y2": 458.18362,
-          "r_x3": 71.992294,
-          "r_y3": 458.18362,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "applied to the nut loosens it. The nut can be removed and ",
-        "orig": "applied to the nut loosens it. The nut can be removed and ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 33,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 482.15363,
-          "r_x1": 231.97228999999996,
-          "r_y1": 482.15363,
-          "r_x2": 231.97228999999996,
-          "r_y2": 470.68362,
-          "r_x3": 71.992294,
-          "r_y3": 470.68362,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "reused without impairing its efficiency. ",
-        "orig": "reused without impairing its efficiency. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 34,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 507.15363,
-          "r_x1": 313.34229,
-          "r_y1": 507.15363,
-          "r_x2": 313.34229,
-          "r_y2": 495.68362,
-          "r_x3": 71.992294,
-          "r_y3": 495.68362,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Boots self-locking nuts are made with three different spring ",
-        "orig": "Boots self-locking nuts are made with three different spring ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 35,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 71.992294,
-          "r_y0": 519.65363,
-          "r_x1": 313.91229,
-          "r_y1": 519.65363,
-          "r_x2": 313.91229,
-          "r_y2": 508.18362,
-          "r_x3": 71.992294,
-          "r_y3": 508.18362,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "styles and in various shapes and sizes. The wing type that is ",
-        "orig": "styles and in various shapes and sizes. The wing type that is ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 36,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99231,
-          "r_y0": 55.15363000000002,
-          "r_x1": 513.74628,
-          "r_y1": 55.15363000000002,
-          "r_x2": 513.74628,
-          "r_y2": 43.68364999999994,
-          "r_x3": 320.99231,
-          "r_y3": 43.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "the most common ranges in size for No. 6 up to ",
-        "orig": "the most common ranges in size for No. 6 up to ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 37,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 514.06342,
-          "r_y0": 50.828610000000026,
-          "r_x1": 516.81342,
-          "r_y1": 50.828610000000026,
-          "r_x2": 516.81342,
-          "r_y2": 44.52013999999997,
-          "r_x3": 514.06342,
-          "r_y3": 44.52013999999997,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1",
-        "orig": "1",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 38,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 516.81342,
-          "r_y0": 55.15363000000002,
-          "r_x1": 518.4834,
-          "r_y1": 55.15363000000002,
-          "r_x2": 518.4834,
-          "r_y2": 43.68364999999994,
-          "r_x3": 516.81342,
-          "r_y3": 43.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "\u2044",
-        "orig": "\u2044",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 39,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 518.25842,
-          "r_y0": 54.02863000000002,
-          "r_x1": 523.00525,
-          "r_y1": 54.02863000000002,
-          "r_x2": 523.00525,
-          "r_y2": 47.72014999999999,
-          "r_x3": 518.25842,
-          "r_y3": 47.72014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "4",
-        "orig": "4",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 40,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 525.37872,
-          "r_y0": 54.02863000000002,
-          "r_x1": 560.44843,
-          "r_y1": 54.02863000000002,
-          "r_x2": 560.44843,
-          "r_y2": 47.72014999999999,
-          "r_x3": 525.37872,
-          "r_y3": 47.72014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "inch, the ",
-        "orig": "inch, the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 41,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99841,
-          "r_y0": 67.65363000000002,
-          "r_x1": 404.58441,
-          "r_y1": 67.65363000000002,
-          "r_x2": 404.58441,
-          "r_y2": 56.18364999999994,
-          "r_x3": 320.99841,
-          "r_y3": 56.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Rol-top ranges from ",
-        "orig": "Rol-top ranges from ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 42,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 404.48981,
-          "r_y0": 63.328610000000026,
-          "r_x1": 407.23981,
-          "r_y1": 63.328610000000026,
-          "r_x2": 407.23981,
-          "r_y2": 57.02013999999997,
-          "r_x3": 404.48981,
-          "r_y3": 57.02013999999997,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1",
-        "orig": "1",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 43,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 407.23981,
-          "r_y0": 67.65363000000002,
-          "r_x1": 408.90982,
-          "r_y1": 67.65363000000002,
-          "r_x2": 408.90982,
-          "r_y2": 56.18364999999994,
-          "r_x3": 407.23981,
-          "r_y3": 56.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "\u2044",
-        "orig": "\u2044",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 44,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 408.68481,
-          "r_y0": 66.52863000000002,
-          "r_x1": 413.38376,
-          "r_y1": 66.52863000000002,
-          "r_x2": 413.38376,
-          "r_y2": 60.22014999999999,
-          "r_x3": 408.68481,
-          "r_y3": 60.22014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "4",
-        "orig": "4",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 45,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 415.73322,
-          "r_y0": 66.52863000000002,
-          "r_x1": 443.92681999999996,
-          "r_y1": 66.52863000000002,
-          "r_x2": 443.92681999999996,
-          "r_y2": 60.22014999999999,
-          "r_x3": 415.73322,
-          "r_y3": 60.22014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "inch to ",
-        "orig": "inch to ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 46,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 443.82598999999993,
-          "r_y0": 63.328610000000026,
-          "r_x1": 446.57598999999993,
-          "r_y1": 63.328610000000026,
-          "r_x2": 446.57598999999993,
-          "r_y2": 57.02013999999997,
-          "r_x3": 443.82598999999993,
-          "r_y3": 57.02013999999997,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1",
-        "orig": "1",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 47,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 446.57598999999993,
-          "r_y0": 67.65363000000002,
-          "r_x1": 448.24600000000004,
-          "r_y1": 67.65363000000002,
-          "r_x2": 448.24600000000004,
-          "r_y2": 56.18364999999994,
-          "r_x3": 446.57598999999993,
-          "r_y3": 56.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "\u2044",
-        "orig": "\u2044",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 48,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 448.22588999999994,
-          "r_y0": 66.52863000000002,
-          "r_x1": 453.12659,
-          "r_y1": 66.52863000000002,
-          "r_x2": 453.12659,
-          "r_y2": 60.22014999999999,
-          "r_x3": 448.22588999999994,
-          "r_y3": 60.22014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "6",
-        "orig": "6",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 49,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 455.57697,
-          "r_y0": 66.52863000000002,
-          "r_x1": 560.6579,
-          "r_y1": 66.52863000000002,
-          "r_x2": 560.6579,
-          "r_y2": 60.22014999999999,
-          "r_x3": 455.57697,
-          "r_y3": 60.22014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "inch, and the bellows type ",
-        "orig": "inch, and the bellows type ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 50,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99591,
-          "r_y0": 80.15363000000002,
-          "r_x1": 447.36591000000004,
-          "r_y1": 80.15363000000002,
-          "r_x2": 447.36591000000004,
-          "r_y2": 68.68364999999994,
-          "r_x3": 320.99591,
-          "r_y3": 68.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "ranges in size from No. 8 up to ",
-        "orig": "ranges in size from No. 8 up to ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 51,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 448.79668999999996,
-          "r_y0": 75.82861000000003,
-          "r_x1": 451.54668999999996,
-          "r_y1": 75.82861000000003,
-          "r_x2": 451.54668999999996,
-          "r_y2": 69.52013999999997,
-          "r_x3": 448.79668999999996,
-          "r_y3": 69.52013999999997,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "3",
-        "orig": "3",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 52,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 451.50549,
-          "r_y0": 80.15363000000002,
-          "r_x1": 453.17551,
-          "r_y1": 80.15363000000002,
-          "r_x2": 453.17551,
-          "r_y2": 68.68364999999994,
-          "r_x3": 451.50549,
-          "r_y3": 68.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "\u2044",
-        "orig": "\u2044",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 53,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 453.17542000000003,
-          "r_y0": 79.02863000000002,
-          "r_x1": 458.07175000000007,
-          "r_y1": 79.02863000000002,
-          "r_x2": 458.07175000000007,
-          "r_y2": 72.72014999999999,
-          "r_x3": 453.17542000000003,
-          "r_y3": 72.72014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "8",
-        "orig": "8",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 54,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 460.51993,
-          "r_y0": 79.02863000000002,
-          "r_x1": 559.78839,
-          "r_y1": 79.02863000000002,
-          "r_x2": 559.78839,
-          "r_y2": 72.72014999999999,
-          "r_x3": 460.51993,
-          "r_y3": 72.72014999999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "inch. Wing-type nuts are ",
-        "orig": "inch. Wing-type nuts are ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 55,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 92.65363000000002,
-          "r_x1": 559.77844,
-          "r_y1": 92.65363000000002,
-          "r_x2": 559.77844,
-          "r_y2": 81.18364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 81.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "made of anodized aluminum alloy, cadmium-plated carbon ",
-        "orig": "made of anodized aluminum alloy, cadmium-plated carbon ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 56,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 105.15363000000002,
-          "r_x1": 557.87738,
-          "r_y1": 105.15363000000002,
-          "r_x2": 557.87738,
-          "r_y2": 93.68364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 93.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "steel, or stainless steel. The Rol-top nut is cadmium-plated ",
-        "orig": "steel, or stainless steel. The Rol-top nut is cadmium-plated ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 57,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 117.65363000000002,
-          "r_x1": 561.80835,
-          "r_y1": 117.65363000000002,
-          "r_x2": 561.80835,
-          "r_y2": 106.18364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 106.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "steel, and the bellows type is made of aluminum alloy only. ",
-        "orig": "steel, and the bellows type is made of aluminum alloy only. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 58,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 130.15363000000002,
-          "r_x1": 325.99542,
-          "r_y1": 130.15363000000002,
-          "r_x2": 325.99542,
-          "r_y2": 118.68364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 118.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": ". ",
-        "orig": ". ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 59,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 142.65363000000002,
-          "r_x1": 450.99542,
-          "r_y1": 142.65363000000002,
-          "r_x2": 450.99542,
-          "r_y2": 131.31359999999995,
-          "r_x3": 320.99542,
-          "r_y3": 131.31359999999995,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Stainless Steel Self-Locking Nut ",
-        "orig": "Stainless Steel Self-Locking Nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 60,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 157.15363000000002,
-          "r_x1": 558.39838,
-          "r_y1": 157.15363000000002,
-          "r_x2": 558.39838,
-          "r_y2": 145.68364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 145.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "The stainless steel self-locking nut may be spun on and off ",
-        "orig": "The stainless steel self-locking nut may be spun on and off ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 61,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 169.65363000000002,
-          "r_x1": 547.92542,
-          "r_y1": 169.65363000000002,
-          "r_x2": 547.92542,
-          "r_y2": 158.18364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 158.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "by hand as its locking action takes places only when the ",
-        "orig": "by hand as its locking action takes places only when the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 62,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 182.15363000000002,
-          "r_x1": 556.50842,
-          "r_y1": 182.15363000000002,
-          "r_x2": 556.50842,
-          "r_y2": 170.68364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 170.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "nut is seated against a solid surface and tightened. The nut ",
-        "orig": "nut is seated against a solid surface and tightened. The nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 63,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 194.65363000000002,
-          "r_x1": 565.11346,
-          "r_y1": 194.65363000000002,
-          "r_x2": 565.11346,
-          "r_y2": 183.18364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 183.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "consists of two parts: a case with a beveled locking shoulder ",
-        "orig": "consists of two parts: a case with a beveled locking shoulder ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 64,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 207.15363000000002,
-          "r_x1": 547.93744,
-          "r_y1": 207.15363000000002,
-          "r_x2": 547.93744,
-          "r_y2": 195.68364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 195.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "and key and a thread insert with a locking shoulder and ",
-        "orig": "and key and a thread insert with a locking shoulder and ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 65,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 219.65363000000002,
-          "r_x1": 549.00647,
-          "r_y1": 219.65363000000002,
-          "r_x2": 549.00647,
-          "r_y2": 208.18364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 208.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "slotted keyway. Until the nut is tightened, it spins on the ",
-        "orig": "slotted keyway. Until the nut is tightened, it spins on the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 66,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 232.15363000000002,
-          "r_x1": 549.0755,
-          "r_y1": 232.15363000000002,
-          "r_x2": 549.0755,
-          "r_y2": 220.68364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 220.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "bolt easily, because the threaded insert is the proper size ",
-        "orig": "bolt easily, because the threaded insert is the proper size ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 67,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 244.65363000000002,
-          "r_x1": 562.60242,
-          "r_y1": 244.65363000000002,
-          "r_x2": 562.60242,
-          "r_y2": 233.18364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 233.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "for the bolt. However, when the nut is seated against a solid ",
-        "orig": "for the bolt. However, when the nut is seated against a solid ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 68,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 257.15363,
-          "r_x1": 555.11243,
-          "r_y1": 257.15363,
-          "r_x2": 555.11243,
-          "r_y2": 245.68364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 245.68364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "surface and tightened, the locking shoulder of the insert is ",
-        "orig": "surface and tightened, the locking shoulder of the insert is ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 69,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 269.65362999999996,
-          "r_x1": 558.74146,
-          "r_y1": 269.65362999999996,
-          "r_x2": 558.74146,
-          "r_y2": 258.18364999999994,
-          "r_x3": 320.99542,
-          "r_y3": 258.18364999999994,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "pulled downward and wedged against the locking shoulder ",
-        "orig": "pulled downward and wedged against the locking shoulder ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 70,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 282.15362999999996,
-          "r_x1": 557.88538,
-          "r_y1": 282.15362999999996,
-          "r_x2": 557.88538,
-          "r_y2": 270.68361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 270.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "of the case. This action compresses the threaded insert and ",
-        "orig": "of the case. This action compresses the threaded insert and ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 71,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 294.65362999999996,
-          "r_x1": 562.3114,
-          "r_y1": 294.65362999999996,
-          "r_x2": 562.3114,
-          "r_y2": 283.18361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 283.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "causes it to clench the bolt tightly. The cross-sectional view ",
-        "orig": "causes it to clench the bolt tightly. The cross-sectional view ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 72,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 307.15362999999996,
-          "r_x1": 331.27542,
-          "r_y1": 307.15362999999996,
-          "r_x2": 331.27542,
-          "r_y2": 295.68361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 295.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "in ",
-        "orig": "in ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 73,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 331.81543,
-          "r_y0": 307.15362999999996,
-          "r_x1": 379.86542,
-          "r_y1": 307.15362999999996,
-          "r_x2": 379.86542,
-          "r_y2": 295.81363000000005,
-          "r_x3": 331.81543,
-          "r_y3": 295.81363000000005,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Figure 7-27",
-        "orig": "Figure 7-27",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 74,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 379.86542,
-          "r_y0": 307.15362999999996,
-          "r_x1": 554.56543,
-          "r_y1": 307.15362999999996,
-          "r_x2": 554.56543,
-          "r_y2": 295.68361999999996,
-          "r_x3": 379.86542,
-          "r_y3": 295.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": " shows how the key of the case fits into the ",
-        "orig": " shows how the key of the case fits into the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 75,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 319.65362999999996,
-          "r_x1": 561.16339,
-          "r_y1": 319.65362999999996,
-          "r_x2": 561.16339,
-          "r_y2": 308.18361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 308.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "slotted keyway of the insert so that when the case is turned, ",
-        "orig": "slotted keyway of the insert so that when the case is turned, ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 76,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 332.15362999999996,
-          "r_x1": 568.00439,
-          "r_y1": 332.15362999999996,
-          "r_x2": 568.00439,
-          "r_y2": 320.68361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 320.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "the threaded insert is turned with it. Note that the slot is wider ",
-        "orig": "the threaded insert is turned with it. Note that the slot is wider ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 77,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 344.65362999999996,
-          "r_x1": 553.46545,
-          "r_y1": 344.65362999999996,
-          "r_x2": 553.46545,
-          "r_y2": 333.18361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 333.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "than the key. This permits the slot to be narrowed and the ",
-        "orig": "than the key. This permits the slot to be narrowed and the ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 78,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 357.15362999999996,
-          "r_x1": 523.19543,
-          "r_y1": 357.15362999999996,
-          "r_x2": 523.19543,
-          "r_y2": 345.68361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 345.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "insert to be compressed when the nut is tightened. ",
-        "orig": "insert to be compressed when the nut is tightened. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 79,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 382.15362999999996,
-          "r_x1": 388.50543,
-          "r_y1": 382.15362999999996,
-          "r_x2": 388.50543,
-          "r_y2": 370.81363000000005,
-          "r_x3": 320.99542,
-          "r_y3": 370.81363000000005,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Elastic Stop Nut ",
-        "orig": "Elastic Stop Nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 80,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 396.65362999999996,
-          "r_x1": 548.72437,
-          "r_y1": 396.65362999999996,
-          "r_x2": 548.72437,
-          "r_y2": 385.18361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 385.18361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "The elastic stop nut is a standard nut with the height ",
-        "orig": "The elastic stop nut is a standard nut with the height ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 81,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 320.99542,
-          "r_y0": 409.15362999999996,
-          "r_x1": 552.35132,
-          "r_y1": 409.15362999999996,
-          "r_x2": 552.35132,
-          "r_y2": 397.68361999999996,
-          "r_x3": 320.99542,
-          "r_y3": 397.68361999999996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "increased to accommodate a fiber locking collar. This ",
-        "orig": "increased to accommodate a fiber locking collar. This ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 82,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 479.1354999999999,
-          "r_y0": 682.646599,
-          "r_x1": 531.16748,
-          "r_y1": 682.646599,
-          "r_x2": 531.16748,
-          "r_y2": 672.7346,
-          "r_x3": 479.1354999999999,
-          "r_y3": 672.7346,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Tightened nut ",
-        "orig": "Tightened nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 83,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 474.3699,
-          "r_y0": 541.8037999999999,
-          "r_x1": 535.23389,
-          "r_y1": 541.8037999999999,
-          "r_x2": 535.23389,
-          "r_y2": 531.8918,
-          "r_x3": 474.3699,
-          "r_y3": 531.8918,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Untightened nut ",
-        "orig": "Untightened nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 84,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 456.7558900000001,
-          "r_y0": 441.6134,
-          "r_x1": 487.08388999999994,
-          "r_y1": 441.6134,
-          "r_x2": 487.08388999999994,
-          "r_y2": 431.99741,
-          "r_x3": 456.7558900000001,
-          "r_y3": 431.99741,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Nut case ",
-        "orig": "Nut case ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 85,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 434.62299,
-          "r_y0": 587.4395,
-          "r_x1": 497.47183000000007,
-          "r_y1": 587.4395,
-          "r_x2": 497.47183000000007,
-          "r_y2": 577.8235,
-          "r_x3": 434.62299,
-          "r_y3": 577.8235,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Threaded nut core ",
-        "orig": "Threaded nut core ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 86,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 448.55081,
-          "r_y0": 562.9366,
-          "r_x1": 507.686,
-          "r_y1": 562.9366,
-          "r_x2": 507.686,
-          "r_y2": 553.3206,
-          "r_x3": 448.55081,
-          "r_y3": 553.3206,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Locking shoulder ",
-        "orig": "Locking shoulder ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 87,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 424.78421,
-          "r_y0": 673.7275999999999,
-          "r_x1": 452.10339000000005,
-          "r_y1": 673.7275999999999,
-          "r_x2": 452.10339000000005,
-          "r_y2": 664.1116,
-          "r_x3": 424.78421,
-          "r_y3": 664.1116,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Keyway ",
-        "orig": "Keyway ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 88,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 102.4155,
-          "r_y0": 597.38091,
-          "r_x1": 161.3187,
-          "r_y1": 597.38091,
-          "r_x2": 161.3187,
-          "r_y2": 587.76491,
-          "r_x3": 102.4155,
-          "r_y3": 587.76491,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Boots aircraft nut ",
-        "orig": "Boots aircraft nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 89,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 91.685997,
-          "r_y0": 688.925797,
-          "r_x1": 129.77399,
-          "r_y1": 688.925797,
-          "r_x2": 129.77399,
-          "r_y2": 679.309799,
-          "r_x3": 91.685997,
-          "r_y3": 679.309799,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Flexloc nut ",
-        "orig": "Flexloc nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 90,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 162.48109,
-          "r_y0": 688.925797,
-          "r_x1": 207.85629,
-          "r_y1": 688.925797,
-          "r_x2": 207.85629,
-          "r_y2": 679.309799,
-          "r_x3": 162.48109,
-          "r_y3": 679.309799,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Fiber locknut ",
-        "orig": "Fiber locknut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 91,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 237.31379999999996,
-          "r_y0": 688.925797,
-          "r_x1": 289.561,
-          "r_y1": 688.925797,
-          "r_x2": 289.561,
-          "r_y2": 679.309799,
-          "r_x3": 237.31379999999996,
-          "r_y3": 679.309799,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Elastic stop nut ",
-        "orig": "Elastic stop nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 92,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 216.9326,
-          "r_y0": 597.38091,
-          "r_x1": 277.7966,
-          "r_y1": 597.38091,
-          "r_x2": 277.7966,
-          "r_y2": 587.76491,
-          "r_x3": 216.9326,
-          "r_y3": 587.76491,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Elastic anchor nut ",
-        "orig": "Elastic anchor nut ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 93,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 72.0,
-          "r_y0": 713.009598,
-          "r_x1": 119.12800000000001,
-          "r_y1": 713.009598,
-          "r_x2": 119.12800000000001,
-          "r_y2": 702.457596,
-          "r_x3": 72.0,
-          "r_y3": 702.457596,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Figure 7-26. ",
-        "orig": "Figure 7-26. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 94,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 119.4023,
-          "r_y0": 712.403599,
-          "r_x1": 184.14828,
-          "r_y1": 712.403599,
-          "r_x2": 184.14828,
-          "r_y2": 702.197601,
-          "r_x3": 119.4023,
-          "r_y3": 702.197601,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Self-locking nuts. ",
-        "orig": "Self-locking nuts. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 95,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 321.0,
-          "r_y0": 710.989597,
-          "r_x1": 368.12799,
-          "r_y1": 710.989597,
-          "r_x2": 368.12799,
-          "r_y2": 700.437599,
-          "r_x3": 321.0,
-          "r_y3": 700.437599,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Figure 7-27. ",
-        "orig": "Figure 7-27. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 96,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 368.40231,
-          "r_y0": 710.383598,
-          "r_x1": 481.64931999999993,
-          "r_y1": 710.383598,
-          "r_x2": 481.64931999999993,
-          "r_y2": 700.177597,
-          "r_x3": 368.40231,
-          "r_y3": 700.177597,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Stainless steel self-locking nut. ",
-        "orig": "Stainless steel self-locking nut. ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 97,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 537.98541,
-          "r_y0": 740.290298,
-          "r_x1": 560.77539,
-          "r_y1": 740.290298,
-          "r_x2": 560.77539,
-          "r_y2": 727.980301,
-          "r_x3": 537.98541,
-          "r_y3": 727.980301,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "7-45 ",
-        "orig": "7-45 ",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      }
-    ],
-    "parsed_page": null,
+    "parsed_page": {
+      "dimension": {
+        "angle": 0.0,
+        "rect": {
+          "r_x0": 0.0,
+          "r_y0": 0.0,
+          "r_x1": 594.0,
+          "r_y1": 0.0,
+          "r_x2": 594.0,
+          "r_y2": 774.0,
+          "r_x3": 0.0,
+          "r_y3": 774.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "boundary_type": "crop_box",
+        "art_bbox": {
+          "l": 0.0,
+          "t": 774.0,
+          "r": 594.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "bleed_bbox": {
+          "l": 0.0,
+          "t": 774.0,
+          "r": 594.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "crop_bbox": {
+          "l": 0.0,
+          "t": 774.0,
+          "r": 594.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "media_bbox": {
+          "l": 0.0,
+          "t": 774.0,
+          "r": 594.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "trim_bbox": {
+          "l": 0.0,
+          "t": 774.0,
+          "r": 594.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        }
+      },
+      "bitmap_resources": [],
+      "char_cells": [],
+      "word_cells": [],
+      "textline_cells": [
+        {
+          "index": 0,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992126,
+            "r_y0": 55.15363000000002,
+            "r_x1": 300.23203,
+            "r_y1": 55.15363000000002,
+            "r_x2": 300.23203,
+            "r_y2": 43.68364999999994,
+            "r_x3": 71.992126,
+            "r_y3": 43.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "pulleys, provided the inner race of the bearing is clamped ",
+          "orig": "pulleys, provided the inner race of the bearing is clamped ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 1,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992126,
+            "r_y0": 67.65363000000002,
+            "r_x1": 302.00214,
+            "r_y1": 67.65363000000002,
+            "r_x2": 302.00214,
+            "r_y2": 56.18364999999994,
+            "r_x3": 71.992126,
+            "r_y3": 56.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "to the supporting structure by the nut and bolt. Plates must ",
+          "orig": "to the supporting structure by the nut and bolt. Plates must ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 2,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992126,
+            "r_y0": 80.15363000000002,
+            "r_x1": 309.82214,
+            "r_y1": 80.15363000000002,
+            "r_x2": 309.82214,
+            "r_y2": 68.68364999999994,
+            "r_x3": 71.992126,
+            "r_y3": 68.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "be attached to the structure in a positive manner to eliminate ",
+          "orig": "be attached to the structure in a positive manner to eliminate ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 3,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992126,
+            "r_y0": 92.65363000000002,
+            "r_x1": 314.11212,
+            "r_y1": 92.65363000000002,
+            "r_x2": 314.11212,
+            "r_y2": 81.18364999999994,
+            "r_x3": 71.992126,
+            "r_y3": 81.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "rotation or misalignment when tightening the bolts or screws. ",
+          "orig": "rotation or misalignment when tightening the bolts or screws. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 4,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992302,
+            "r_y0": 117.65363000000002,
+            "r_x1": 305.15311,
+            "r_y1": 117.65363000000002,
+            "r_x2": 305.15311,
+            "r_y2": 106.18364999999994,
+            "r_x3": 71.992302,
+            "r_y3": 106.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "The two general types of self-locking nuts currently in use ",
+          "orig": "The two general types of self-locking nuts currently in use ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 5,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.993103,
+            "r_y0": 130.15363000000002,
+            "r_x1": 309.98309,
+            "r_y1": 130.15363000000002,
+            "r_x2": 309.98309,
+            "r_y2": 118.68364999999994,
+            "r_x3": 71.993103,
+            "r_y3": 118.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "are the all-metal type and the fiber lock type. For the sake of ",
+          "orig": "are the all-metal type and the fiber lock type. For the sake of ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 6,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.993103,
+            "r_y0": 142.65363000000002,
+            "r_x1": 302.44312,
+            "r_y1": 142.65363000000002,
+            "r_x2": 302.44312,
+            "r_y2": 131.18364999999994,
+            "r_x3": 71.993103,
+            "r_y3": 131.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "simplicity, only three typical kinds of self-locking nuts are ",
+          "orig": "simplicity, only three typical kinds of self-locking nuts are ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 7,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.993103,
+            "r_y0": 155.15363000000002,
+            "r_x1": 306.25311,
+            "r_y1": 155.15363000000002,
+            "r_x2": 306.25311,
+            "r_y2": 143.68364999999994,
+            "r_x3": 71.993103,
+            "r_y3": 143.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "considered in this handbook: the Boots self-locking and the ",
+          "orig": "considered in this handbook: the Boots self-locking and the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 8,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.993103,
+            "r_y0": 167.65363000000002,
+            "r_x1": 303.9931,
+            "r_y1": 167.65363000000002,
+            "r_x2": 303.9931,
+            "r_y2": 156.18364999999994,
+            "r_x3": 71.993103,
+            "r_y3": 156.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "stainless steel self-locking nuts, representing the all-metal ",
+          "orig": "stainless steel self-locking nuts, representing the all-metal ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 9,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.993103,
+            "r_y0": 180.15363000000002,
+            "r_x1": 238.6723,
+            "r_y1": 180.15363000000002,
+            "r_x2": 238.6723,
+            "r_y2": 168.68364999999994,
+            "r_x3": 71.993103,
+            "r_y3": 168.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "types; and the elastic stop nut, representing ",
+          "orig": "types; and the elastic stop nut, representing ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 10,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 234.26460000000003,
+            "r_y0": 180.15363000000002,
+            "r_x1": 313.1546,
+            "r_y1": 180.15363000000002,
+            "r_x2": 313.1546,
+            "r_y2": 168.68364999999994,
+            "r_x3": 234.26460000000003,
+            "r_y3": 168.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "the fiber insert type. ",
+          "orig": "the fiber insert type. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 11,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992302,
+            "r_y0": 205.15363000000002,
+            "r_x1": 167.27231,
+            "r_y1": 205.15363000000002,
+            "r_x2": 167.27231,
+            "r_y2": 193.81359999999995,
+            "r_x3": 71.992302,
+            "r_y3": 193.81359999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Boots Self-Locking Nut ",
+          "orig": "Boots Self-Locking Nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 12,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992302,
+            "r_y0": 219.65363000000002,
+            "r_x1": 302.27719,
+            "r_y1": 219.65363000000002,
+            "r_x2": 302.27719,
+            "r_y2": 208.18364999999994,
+            "r_x3": 71.992302,
+            "r_y3": 208.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "The Boots self-locking nut is of one piece, all-metal ",
+          "orig": "The Boots self-locking nut is of one piece, all-metal ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 13,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 232.15363000000002,
+            "r_x1": 313.33026,
+            "r_y1": 232.15363000000002,
+            "r_x2": 313.33026,
+            "r_y2": 220.68364999999994,
+            "r_x3": 71.992294,
+            "r_y3": 220.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "construction designed to hold tight despite severe vibration. ",
+          "orig": "construction designed to hold tight despite severe vibration. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 14,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 244.65363000000002,
+            "r_x1": 104.12231,
+            "r_y1": 244.65363000000002,
+            "r_x2": 104.12231,
+            "r_y2": 233.18364999999994,
+            "r_x3": 71.992294,
+            "r_y3": 233.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Note in ",
+          "orig": "Note in ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 15,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 104.12231,
+            "r_y0": 244.65363000000002,
+            "r_x1": 152.05231,
+            "r_y1": 244.65363000000002,
+            "r_x2": 152.05231,
+            "r_y2": 233.31359999999995,
+            "r_x3": 104.12231,
+            "r_y3": 233.31359999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Figure 7-26",
+          "orig": "Figure 7-26",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 16,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 152.05231,
+            "r_y0": 244.65363000000002,
+            "r_x1": 318.49225,
+            "r_y1": 244.65363000000002,
+            "r_x2": 318.49225,
+            "r_y2": 233.18364999999994,
+            "r_x3": 152.05231,
+            "r_y3": 233.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": " that it has two sections and is essentially ",
+          "orig": " that it has two sections and is essentially ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 17,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 257.15363,
+            "r_x1": 309.42929,
+            "r_y1": 257.15363,
+            "r_x2": 309.42929,
+            "r_y2": 245.68364999999994,
+            "r_x3": 71.992294,
+            "r_y3": 245.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "two nuts in one: a locking nut and a load-carrying nut. The ",
+          "orig": "two nuts in one: a locking nut and a load-carrying nut. The ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 18,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 269.65362999999996,
+            "r_x1": 317.76227,
+            "r_y1": 269.65362999999996,
+            "r_x2": 317.76227,
+            "r_y2": 258.18364999999994,
+            "r_x3": 71.992294,
+            "r_y3": 258.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "two sections are connected with a spring, which is an integral ",
+          "orig": "two sections are connected with a spring, which is an integral ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 19,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 282.15362999999996,
+            "r_x1": 133.3723,
+            "r_y1": 282.15362999999996,
+            "r_x2": 133.3723,
+            "r_y2": 270.68361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 270.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "part of the nut. ",
+          "orig": "part of the nut. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 20,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 307.15362999999996,
+            "r_x1": 316.41028,
+            "r_y1": 307.15362999999996,
+            "r_x2": 316.41028,
+            "r_y2": 295.68361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 295.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "The spring keeps the locking and load-carrying sections such ",
+          "orig": "The spring keeps the locking and load-carrying sections such ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 21,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 319.65362999999996,
+            "r_x1": 312.20731,
+            "r_y1": 319.65362999999996,
+            "r_x2": 312.20731,
+            "r_y2": 308.18361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 308.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "a distance apart that the two sets of threads are out of phase ",
+          "orig": "a distance apart that the two sets of threads are out of phase ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 22,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 332.15362999999996,
+            "r_x1": 316.65729,
+            "r_y1": 332.15362999999996,
+            "r_x2": 316.65729,
+            "r_y2": 320.68361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 320.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "or spaced so that a bolt, which has been screwed through the ",
+          "orig": "or spaced so that a bolt, which has been screwed through the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 23,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 344.65362999999996,
+            "r_x1": 315.91229,
+            "r_y1": 344.65362999999996,
+            "r_x2": 315.91229,
+            "r_y2": 333.18361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 333.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "load-carrying section, must push the locking section outward ",
+          "orig": "load-carrying section, must push the locking section outward ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 24,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 357.15362999999996,
+            "r_x1": 306.34927,
+            "r_y1": 357.15362999999996,
+            "r_x2": 306.34927,
+            "r_y2": 345.68361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 345.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "against the force of the spring to engage the threads of the ",
+          "orig": "against the force of the spring to engage the threads of the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 25,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 369.65362999999996,
+            "r_x1": 174.2023,
+            "r_y1": 369.65362999999996,
+            "r_x2": 174.2023,
+            "r_y2": 358.18361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 358.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "locking section properly. ",
+          "orig": "locking section properly. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 26,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 394.65362999999996,
+            "r_x1": 317.07227,
+            "r_y1": 394.65362999999996,
+            "r_x2": 317.07227,
+            "r_y2": 383.18361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 383.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "The spring, through the medium of the locking section, exerts ",
+          "orig": "The spring, through the medium of the locking section, exerts ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 27,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 407.15362999999996,
+            "r_x1": 318.81229,
+            "r_y1": 407.15362999999996,
+            "r_x2": 318.81229,
+            "r_y2": 395.68361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 395.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "a constant locking force on the bolt in the same direction as a ",
+          "orig": "a constant locking force on the bolt in the same direction as a ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 28,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 419.65362999999996,
+            "r_x1": 317.5123,
+            "r_y1": 419.65362999999996,
+            "r_x2": 317.5123,
+            "r_y2": 408.18361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 408.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "force that would tighten the nut. In this nut, the load-carrying ",
+          "orig": "force that would tighten the nut. In this nut, the load-carrying ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 29,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 432.15362999999996,
+            "r_x1": 317.31229,
+            "r_y1": 432.15362999999996,
+            "r_x2": 317.31229,
+            "r_y2": 420.68361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 420.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "section has the thread strength of a standard nut of comparable ",
+          "orig": "section has the thread strength of a standard nut of comparable ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 30,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 444.65363,
+            "r_x1": 314.45929,
+            "r_y1": 444.65363,
+            "r_x2": 314.45929,
+            "r_y2": 433.18361999999996,
+            "r_x3": 71.992294,
+            "r_y3": 433.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "size, while the locking section presses against the threads of ",
+          "orig": "size, while the locking section presses against the threads of ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 31,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 457.15363,
+            "r_x1": 311.7023,
+            "r_y1": 457.15363,
+            "r_x2": 311.7023,
+            "r_y2": 445.68362,
+            "r_x3": 71.992294,
+            "r_y3": 445.68362,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "the bolt and locks the nut firmly in position. Only a wrench ",
+          "orig": "the bolt and locks the nut firmly in position. Only a wrench ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 32,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 469.65363,
+            "r_x1": 303.35229,
+            "r_y1": 469.65363,
+            "r_x2": 303.35229,
+            "r_y2": 458.18362,
+            "r_x3": 71.992294,
+            "r_y3": 458.18362,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "applied to the nut loosens it. The nut can be removed and ",
+          "orig": "applied to the nut loosens it. The nut can be removed and ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 33,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 482.15363,
+            "r_x1": 231.97228999999996,
+            "r_y1": 482.15363,
+            "r_x2": 231.97228999999996,
+            "r_y2": 470.68362,
+            "r_x3": 71.992294,
+            "r_y3": 470.68362,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "reused without impairing its efficiency. ",
+          "orig": "reused without impairing its efficiency. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 34,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 507.15363,
+            "r_x1": 313.34229,
+            "r_y1": 507.15363,
+            "r_x2": 313.34229,
+            "r_y2": 495.68362,
+            "r_x3": 71.992294,
+            "r_y3": 495.68362,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Boots self-locking nuts are made with three different spring ",
+          "orig": "Boots self-locking nuts are made with three different spring ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 35,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 71.992294,
+            "r_y0": 519.65363,
+            "r_x1": 313.91229,
+            "r_y1": 519.65363,
+            "r_x2": 313.91229,
+            "r_y2": 508.18362,
+            "r_x3": 71.992294,
+            "r_y3": 508.18362,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "styles and in various shapes and sizes. The wing type that is ",
+          "orig": "styles and in various shapes and sizes. The wing type that is ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 36,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99231,
+            "r_y0": 55.15363000000002,
+            "r_x1": 513.74628,
+            "r_y1": 55.15363000000002,
+            "r_x2": 513.74628,
+            "r_y2": 43.68364999999994,
+            "r_x3": 320.99231,
+            "r_y3": 43.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "the most common ranges in size for No. 6 up to ",
+          "orig": "the most common ranges in size for No. 6 up to ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 37,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 514.06342,
+            "r_y0": 50.828610000000026,
+            "r_x1": 516.81342,
+            "r_y1": 50.828610000000026,
+            "r_x2": 516.81342,
+            "r_y2": 44.52013999999997,
+            "r_x3": 514.06342,
+            "r_y3": 44.52013999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1",
+          "orig": "1",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 38,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 516.81342,
+            "r_y0": 55.15363000000002,
+            "r_x1": 518.4834,
+            "r_y1": 55.15363000000002,
+            "r_x2": 518.4834,
+            "r_y2": 43.68364999999994,
+            "r_x3": 516.81342,
+            "r_y3": 43.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "\u2044",
+          "orig": "\u2044",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 39,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 518.25842,
+            "r_y0": 54.02863000000002,
+            "r_x1": 523.00525,
+            "r_y1": 54.02863000000002,
+            "r_x2": 523.00525,
+            "r_y2": 47.72014999999999,
+            "r_x3": 518.25842,
+            "r_y3": 47.72014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "4",
+          "orig": "4",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 40,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 525.37872,
+            "r_y0": 54.02863000000002,
+            "r_x1": 560.44843,
+            "r_y1": 54.02863000000002,
+            "r_x2": 560.44843,
+            "r_y2": 47.72014999999999,
+            "r_x3": 525.37872,
+            "r_y3": 47.72014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "inch, the ",
+          "orig": "inch, the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 41,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99841,
+            "r_y0": 67.65363000000002,
+            "r_x1": 404.58441,
+            "r_y1": 67.65363000000002,
+            "r_x2": 404.58441,
+            "r_y2": 56.18364999999994,
+            "r_x3": 320.99841,
+            "r_y3": 56.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Rol-top ranges from ",
+          "orig": "Rol-top ranges from ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 42,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 404.48981,
+            "r_y0": 63.328610000000026,
+            "r_x1": 407.23981,
+            "r_y1": 63.328610000000026,
+            "r_x2": 407.23981,
+            "r_y2": 57.02013999999997,
+            "r_x3": 404.48981,
+            "r_y3": 57.02013999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1",
+          "orig": "1",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 43,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 407.23981,
+            "r_y0": 67.65363000000002,
+            "r_x1": 408.90982,
+            "r_y1": 67.65363000000002,
+            "r_x2": 408.90982,
+            "r_y2": 56.18364999999994,
+            "r_x3": 407.23981,
+            "r_y3": 56.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "\u2044",
+          "orig": "\u2044",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 44,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 408.68481,
+            "r_y0": 66.52863000000002,
+            "r_x1": 413.38376,
+            "r_y1": 66.52863000000002,
+            "r_x2": 413.38376,
+            "r_y2": 60.22014999999999,
+            "r_x3": 408.68481,
+            "r_y3": 60.22014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "4",
+          "orig": "4",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 45,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 415.73322,
+            "r_y0": 66.52863000000002,
+            "r_x1": 443.92681999999996,
+            "r_y1": 66.52863000000002,
+            "r_x2": 443.92681999999996,
+            "r_y2": 60.22014999999999,
+            "r_x3": 415.73322,
+            "r_y3": 60.22014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "inch to ",
+          "orig": "inch to ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 46,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 443.82598999999993,
+            "r_y0": 63.328610000000026,
+            "r_x1": 446.57598999999993,
+            "r_y1": 63.328610000000026,
+            "r_x2": 446.57598999999993,
+            "r_y2": 57.02013999999997,
+            "r_x3": 443.82598999999993,
+            "r_y3": 57.02013999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1",
+          "orig": "1",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 47,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 446.57598999999993,
+            "r_y0": 67.65363000000002,
+            "r_x1": 448.24600000000004,
+            "r_y1": 67.65363000000002,
+            "r_x2": 448.24600000000004,
+            "r_y2": 56.18364999999994,
+            "r_x3": 446.57598999999993,
+            "r_y3": 56.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "\u2044",
+          "orig": "\u2044",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 48,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 448.22588999999994,
+            "r_y0": 66.52863000000002,
+            "r_x1": 453.12659,
+            "r_y1": 66.52863000000002,
+            "r_x2": 453.12659,
+            "r_y2": 60.22014999999999,
+            "r_x3": 448.22588999999994,
+            "r_y3": 60.22014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "6",
+          "orig": "6",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 49,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 455.57697,
+            "r_y0": 66.52863000000002,
+            "r_x1": 560.6579,
+            "r_y1": 66.52863000000002,
+            "r_x2": 560.6579,
+            "r_y2": 60.22014999999999,
+            "r_x3": 455.57697,
+            "r_y3": 60.22014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "inch, and the bellows type ",
+          "orig": "inch, and the bellows type ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 50,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99591,
+            "r_y0": 80.15363000000002,
+            "r_x1": 447.36591000000004,
+            "r_y1": 80.15363000000002,
+            "r_x2": 447.36591000000004,
+            "r_y2": 68.68364999999994,
+            "r_x3": 320.99591,
+            "r_y3": 68.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ranges in size from No. 8 up to ",
+          "orig": "ranges in size from No. 8 up to ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 51,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 448.79668999999996,
+            "r_y0": 75.82861000000003,
+            "r_x1": 451.54668999999996,
+            "r_y1": 75.82861000000003,
+            "r_x2": 451.54668999999996,
+            "r_y2": 69.52013999999997,
+            "r_x3": 448.79668999999996,
+            "r_y3": 69.52013999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "3",
+          "orig": "3",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 52,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 451.50549,
+            "r_y0": 80.15363000000002,
+            "r_x1": 453.17551,
+            "r_y1": 80.15363000000002,
+            "r_x2": 453.17551,
+            "r_y2": 68.68364999999994,
+            "r_x3": 451.50549,
+            "r_y3": 68.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "\u2044",
+          "orig": "\u2044",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 53,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 453.17542000000003,
+            "r_y0": 79.02863000000002,
+            "r_x1": 458.07175000000007,
+            "r_y1": 79.02863000000002,
+            "r_x2": 458.07175000000007,
+            "r_y2": 72.72014999999999,
+            "r_x3": 453.17542000000003,
+            "r_y3": 72.72014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "8",
+          "orig": "8",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 54,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 460.51993,
+            "r_y0": 79.02863000000002,
+            "r_x1": 559.78839,
+            "r_y1": 79.02863000000002,
+            "r_x2": 559.78839,
+            "r_y2": 72.72014999999999,
+            "r_x3": 460.51993,
+            "r_y3": 72.72014999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "inch. Wing-type nuts are ",
+          "orig": "inch. Wing-type nuts are ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 55,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 92.65363000000002,
+            "r_x1": 559.77844,
+            "r_y1": 92.65363000000002,
+            "r_x2": 559.77844,
+            "r_y2": 81.18364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 81.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "made of anodized aluminum alloy, cadmium-plated carbon ",
+          "orig": "made of anodized aluminum alloy, cadmium-plated carbon ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 56,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 105.15363000000002,
+            "r_x1": 557.87738,
+            "r_y1": 105.15363000000002,
+            "r_x2": 557.87738,
+            "r_y2": 93.68364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 93.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "steel, or stainless steel. The Rol-top nut is cadmium-plated ",
+          "orig": "steel, or stainless steel. The Rol-top nut is cadmium-plated ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 57,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 117.65363000000002,
+            "r_x1": 561.80835,
+            "r_y1": 117.65363000000002,
+            "r_x2": 561.80835,
+            "r_y2": 106.18364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 106.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "steel, and the bellows type is made of aluminum alloy only. ",
+          "orig": "steel, and the bellows type is made of aluminum alloy only. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 58,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 130.15363000000002,
+            "r_x1": 325.99542,
+            "r_y1": 130.15363000000002,
+            "r_x2": 325.99542,
+            "r_y2": 118.68364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 118.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": ". ",
+          "orig": ". ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 59,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 142.65363000000002,
+            "r_x1": 450.99542,
+            "r_y1": 142.65363000000002,
+            "r_x2": 450.99542,
+            "r_y2": 131.31359999999995,
+            "r_x3": 320.99542,
+            "r_y3": 131.31359999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Stainless Steel Self-Locking Nut ",
+          "orig": "Stainless Steel Self-Locking Nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 60,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 157.15363000000002,
+            "r_x1": 558.39838,
+            "r_y1": 157.15363000000002,
+            "r_x2": 558.39838,
+            "r_y2": 145.68364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 145.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "The stainless steel self-locking nut may be spun on and off ",
+          "orig": "The stainless steel self-locking nut may be spun on and off ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 61,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 169.65363000000002,
+            "r_x1": 547.92542,
+            "r_y1": 169.65363000000002,
+            "r_x2": 547.92542,
+            "r_y2": 158.18364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 158.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "by hand as its locking action takes places only when the ",
+          "orig": "by hand as its locking action takes places only when the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 62,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 182.15363000000002,
+            "r_x1": 556.50842,
+            "r_y1": 182.15363000000002,
+            "r_x2": 556.50842,
+            "r_y2": 170.68364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 170.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "nut is seated against a solid surface and tightened. The nut ",
+          "orig": "nut is seated against a solid surface and tightened. The nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 63,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 194.65363000000002,
+            "r_x1": 565.11346,
+            "r_y1": 194.65363000000002,
+            "r_x2": 565.11346,
+            "r_y2": 183.18364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 183.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "consists of two parts: a case with a beveled locking shoulder ",
+          "orig": "consists of two parts: a case with a beveled locking shoulder ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 64,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 207.15363000000002,
+            "r_x1": 547.93744,
+            "r_y1": 207.15363000000002,
+            "r_x2": 547.93744,
+            "r_y2": 195.68364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 195.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "and key and a thread insert with a locking shoulder and ",
+          "orig": "and key and a thread insert with a locking shoulder and ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 65,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 219.65363000000002,
+            "r_x1": 549.00647,
+            "r_y1": 219.65363000000002,
+            "r_x2": 549.00647,
+            "r_y2": 208.18364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 208.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "slotted keyway. Until the nut is tightened, it spins on the ",
+          "orig": "slotted keyway. Until the nut is tightened, it spins on the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 66,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 232.15363000000002,
+            "r_x1": 549.0755,
+            "r_y1": 232.15363000000002,
+            "r_x2": 549.0755,
+            "r_y2": 220.68364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 220.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "bolt easily, because the threaded insert is the proper size ",
+          "orig": "bolt easily, because the threaded insert is the proper size ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 67,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 244.65363000000002,
+            "r_x1": 562.60242,
+            "r_y1": 244.65363000000002,
+            "r_x2": 562.60242,
+            "r_y2": 233.18364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 233.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "for the bolt. However, when the nut is seated against a solid ",
+          "orig": "for the bolt. However, when the nut is seated against a solid ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 68,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 257.15363,
+            "r_x1": 555.11243,
+            "r_y1": 257.15363,
+            "r_x2": 555.11243,
+            "r_y2": 245.68364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 245.68364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "surface and tightened, the locking shoulder of the insert is ",
+          "orig": "surface and tightened, the locking shoulder of the insert is ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 69,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 269.65362999999996,
+            "r_x1": 558.74146,
+            "r_y1": 269.65362999999996,
+            "r_x2": 558.74146,
+            "r_y2": 258.18364999999994,
+            "r_x3": 320.99542,
+            "r_y3": 258.18364999999994,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "pulled downward and wedged against the locking shoulder ",
+          "orig": "pulled downward and wedged against the locking shoulder ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 70,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 282.15362999999996,
+            "r_x1": 557.88538,
+            "r_y1": 282.15362999999996,
+            "r_x2": 557.88538,
+            "r_y2": 270.68361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 270.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "of the case. This action compresses the threaded insert and ",
+          "orig": "of the case. This action compresses the threaded insert and ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 71,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 294.65362999999996,
+            "r_x1": 562.3114,
+            "r_y1": 294.65362999999996,
+            "r_x2": 562.3114,
+            "r_y2": 283.18361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 283.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "causes it to clench the bolt tightly. The cross-sectional view ",
+          "orig": "causes it to clench the bolt tightly. The cross-sectional view ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 72,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 307.15362999999996,
+            "r_x1": 331.27542,
+            "r_y1": 307.15362999999996,
+            "r_x2": 331.27542,
+            "r_y2": 295.68361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 295.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "in ",
+          "orig": "in ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 73,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 331.81543,
+            "r_y0": 307.15362999999996,
+            "r_x1": 379.86542,
+            "r_y1": 307.15362999999996,
+            "r_x2": 379.86542,
+            "r_y2": 295.81363000000005,
+            "r_x3": 331.81543,
+            "r_y3": 295.81363000000005,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Figure 7-27",
+          "orig": "Figure 7-27",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 74,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 379.86542,
+            "r_y0": 307.15362999999996,
+            "r_x1": 554.56543,
+            "r_y1": 307.15362999999996,
+            "r_x2": 554.56543,
+            "r_y2": 295.68361999999996,
+            "r_x3": 379.86542,
+            "r_y3": 295.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": " shows how the key of the case fits into the ",
+          "orig": " shows how the key of the case fits into the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 75,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 319.65362999999996,
+            "r_x1": 561.16339,
+            "r_y1": 319.65362999999996,
+            "r_x2": 561.16339,
+            "r_y2": 308.18361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 308.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "slotted keyway of the insert so that when the case is turned, ",
+          "orig": "slotted keyway of the insert so that when the case is turned, ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 76,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 332.15362999999996,
+            "r_x1": 568.00439,
+            "r_y1": 332.15362999999996,
+            "r_x2": 568.00439,
+            "r_y2": 320.68361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 320.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "the threaded insert is turned with it. Note that the slot is wider ",
+          "orig": "the threaded insert is turned with it. Note that the slot is wider ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 77,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 344.65362999999996,
+            "r_x1": 553.46545,
+            "r_y1": 344.65362999999996,
+            "r_x2": 553.46545,
+            "r_y2": 333.18361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 333.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "than the key. This permits the slot to be narrowed and the ",
+          "orig": "than the key. This permits the slot to be narrowed and the ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 78,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 357.15362999999996,
+            "r_x1": 523.19543,
+            "r_y1": 357.15362999999996,
+            "r_x2": 523.19543,
+            "r_y2": 345.68361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 345.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "insert to be compressed when the nut is tightened. ",
+          "orig": "insert to be compressed when the nut is tightened. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 79,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 382.15362999999996,
+            "r_x1": 388.50543,
+            "r_y1": 382.15362999999996,
+            "r_x2": 388.50543,
+            "r_y2": 370.81363000000005,
+            "r_x3": 320.99542,
+            "r_y3": 370.81363000000005,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Elastic Stop Nut ",
+          "orig": "Elastic Stop Nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 80,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 396.65362999999996,
+            "r_x1": 548.72437,
+            "r_y1": 396.65362999999996,
+            "r_x2": 548.72437,
+            "r_y2": 385.18361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 385.18361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "The elastic stop nut is a standard nut with the height ",
+          "orig": "The elastic stop nut is a standard nut with the height ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 81,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 320.99542,
+            "r_y0": 409.15362999999996,
+            "r_x1": 552.35132,
+            "r_y1": 409.15362999999996,
+            "r_x2": 552.35132,
+            "r_y2": 397.68361999999996,
+            "r_x3": 320.99542,
+            "r_y3": 397.68361999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "increased to accommodate a fiber locking collar. This ",
+          "orig": "increased to accommodate a fiber locking collar. This ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 82,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 479.1354999999999,
+            "r_y0": 682.646599,
+            "r_x1": 531.16748,
+            "r_y1": 682.646599,
+            "r_x2": 531.16748,
+            "r_y2": 672.7346,
+            "r_x3": 479.1354999999999,
+            "r_y3": 672.7346,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Tightened nut ",
+          "orig": "Tightened nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 83,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 474.3699,
+            "r_y0": 541.8037999999999,
+            "r_x1": 535.23389,
+            "r_y1": 541.8037999999999,
+            "r_x2": 535.23389,
+            "r_y2": 531.8918,
+            "r_x3": 474.3699,
+            "r_y3": 531.8918,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Untightened nut ",
+          "orig": "Untightened nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 84,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 456.7558900000001,
+            "r_y0": 441.6134,
+            "r_x1": 487.08388999999994,
+            "r_y1": 441.6134,
+            "r_x2": 487.08388999999994,
+            "r_y2": 431.99741,
+            "r_x3": 456.7558900000001,
+            "r_y3": 431.99741,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Nut case ",
+          "orig": "Nut case ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 85,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 434.62299,
+            "r_y0": 587.4395,
+            "r_x1": 497.47183000000007,
+            "r_y1": 587.4395,
+            "r_x2": 497.47183000000007,
+            "r_y2": 577.8235,
+            "r_x3": 434.62299,
+            "r_y3": 577.8235,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Threaded nut core ",
+          "orig": "Threaded nut core ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 86,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 448.55081,
+            "r_y0": 562.9366,
+            "r_x1": 507.686,
+            "r_y1": 562.9366,
+            "r_x2": 507.686,
+            "r_y2": 553.3206,
+            "r_x3": 448.55081,
+            "r_y3": 553.3206,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Locking shoulder ",
+          "orig": "Locking shoulder ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 87,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 424.78421,
+            "r_y0": 673.7275999999999,
+            "r_x1": 452.10339000000005,
+            "r_y1": 673.7275999999999,
+            "r_x2": 452.10339000000005,
+            "r_y2": 664.1116,
+            "r_x3": 424.78421,
+            "r_y3": 664.1116,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Keyway ",
+          "orig": "Keyway ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 88,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 102.4155,
+            "r_y0": 597.38091,
+            "r_x1": 161.3187,
+            "r_y1": 597.38091,
+            "r_x2": 161.3187,
+            "r_y2": 587.76491,
+            "r_x3": 102.4155,
+            "r_y3": 587.76491,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Boots aircraft nut ",
+          "orig": "Boots aircraft nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 89,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 91.685997,
+            "r_y0": 688.925797,
+            "r_x1": 129.77399,
+            "r_y1": 688.925797,
+            "r_x2": 129.77399,
+            "r_y2": 679.309799,
+            "r_x3": 91.685997,
+            "r_y3": 679.309799,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Flexloc nut ",
+          "orig": "Flexloc nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 90,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 162.48109,
+            "r_y0": 688.925797,
+            "r_x1": 207.85629,
+            "r_y1": 688.925797,
+            "r_x2": 207.85629,
+            "r_y2": 679.309799,
+            "r_x3": 162.48109,
+            "r_y3": 679.309799,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Fiber locknut ",
+          "orig": "Fiber locknut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 91,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 237.31379999999996,
+            "r_y0": 688.925797,
+            "r_x1": 289.561,
+            "r_y1": 688.925797,
+            "r_x2": 289.561,
+            "r_y2": 679.309799,
+            "r_x3": 237.31379999999996,
+            "r_y3": 679.309799,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Elastic stop nut ",
+          "orig": "Elastic stop nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 92,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 216.9326,
+            "r_y0": 597.38091,
+            "r_x1": 277.7966,
+            "r_y1": 597.38091,
+            "r_x2": 277.7966,
+            "r_y2": 587.76491,
+            "r_x3": 216.9326,
+            "r_y3": 587.76491,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Elastic anchor nut ",
+          "orig": "Elastic anchor nut ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 93,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 72.0,
+            "r_y0": 713.009598,
+            "r_x1": 119.12800000000001,
+            "r_y1": 713.009598,
+            "r_x2": 119.12800000000001,
+            "r_y2": 702.457596,
+            "r_x3": 72.0,
+            "r_y3": 702.457596,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Figure 7-26. ",
+          "orig": "Figure 7-26. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 94,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 119.4023,
+            "r_y0": 712.403599,
+            "r_x1": 184.14828,
+            "r_y1": 712.403599,
+            "r_x2": 184.14828,
+            "r_y2": 702.197601,
+            "r_x3": 119.4023,
+            "r_y3": 702.197601,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Self-locking nuts. ",
+          "orig": "Self-locking nuts. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 95,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 321.0,
+            "r_y0": 710.989597,
+            "r_x1": 368.12799,
+            "r_y1": 710.989597,
+            "r_x2": 368.12799,
+            "r_y2": 700.437599,
+            "r_x3": 321.0,
+            "r_y3": 700.437599,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Figure 7-27. ",
+          "orig": "Figure 7-27. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 96,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 368.40231,
+            "r_y0": 710.383598,
+            "r_x1": 481.64931999999993,
+            "r_y1": 710.383598,
+            "r_x2": 481.64931999999993,
+            "r_y2": 700.177597,
+            "r_x3": 368.40231,
+            "r_y3": 700.177597,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Stainless steel self-locking nut. ",
+          "orig": "Stainless steel self-locking nut. ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        },
+        {
+          "index": 97,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 537.98541,
+            "r_y0": 740.290298,
+            "r_x1": 560.77539,
+            "r_y1": 740.290298,
+            "r_x2": 560.77539,
+            "r_y2": 727.980301,
+            "r_x3": 537.98541,
+            "r_y3": 727.980301,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "7-45 ",
+          "orig": "7-45 ",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        }
+      ],
+      "has_chars": false,
+      "has_words": false,
+      "has_lines": true,
+      "image": null,
+      "lines": []
+    },
     "predictions": {
       "layout": {
         "clusters": [

@@ -8,7 +8,13 @@ from typing import TYPE_CHECKING, List, Optional, Union
 import pypdfium2 as pdfium
 import pypdfium2.raw as pdfium_c
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import BoundingRectangle, SegmentedPdfPage, TextCell
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfPageBoundaryType,
+    PdfPageGeometry,
+    SegmentedPdfPage,
+    TextCell,
+)
 from PIL import Image, ImageDraw
 from pypdfium2 import PdfTextPage
 from pypdfium2._helpers.misc import PdfiumError
@@ -41,38 +47,8 @@ class PyPdfiumPageBackend(PdfPageBackend):
     def is_valid(self) -> bool:
         return self.valid
 
-    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
-        AREA_THRESHOLD = 0  # 32 * 32
-        page_size = self.get_size()
-        with pypdfium2_lock:
-            for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
-                pos = obj.get_pos()
-                cropbox = BoundingBox.from_tuple(
-                    pos, origin=CoordOrigin.BOTTOMLEFT
-                ).to_top_left_origin(page_height=page_size.height)
-
-                if cropbox.area() > AREA_THRESHOLD:
-                    cropbox = cropbox.scaled(scale=scale)
-
-                    yield cropbox
-
-    def get_text_in_rect(self, bbox: BoundingBox) -> str:
-        with pypdfium2_lock:
-            if not self.text_page:
-                self.text_page = self._ppage.get_textpage()
-
-        if bbox.coord_origin != CoordOrigin.BOTTOMLEFT:
-            bbox = bbox.to_bottom_left_origin(self.get_size().height)
-
-        with pypdfium2_lock:
-            text_piece = self.text_page.get_text_bounded(*bbox.as_tuple())
-
-        return text_piece
-
-    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
-        return None
-
-    def get_text_cells(self) -> Iterable[TextCell]:
+    def _compute_text_cells(self) -> List[TextCell]:
+        """Compute text cells from pypdfium."""
         with pypdfium2_lock:
             if not self.text_page:
                 self.text_page = self._ppage.get_textpage()
@@ -203,30 +179,76 @@ class PyPdfiumPageBackend(PdfPageBackend):
 
             return merged_cells
 
-        def draw_clusters_and_cells():
-            image = (
-                self.get_page_image()
-            )  # make new image to avoid drawing on the saved ones
-            draw = ImageDraw.Draw(image)
-            for c in cells:
-                x0, y0, x1, y1 = c.rect.to_bounding_box().as_tuple()
-                cell_color = (
-                    random.randint(30, 140),
-                    random.randint(30, 140),
-                    random.randint(30, 140),
-                )
-                draw.rectangle([(x0, y0), (x1, y1)], outline=cell_color)
-            image.show()
+        return merge_horizontal_cells(cells)
 
-        # before merge:
-        # draw_clusters_and_cells()
+    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        AREA_THRESHOLD = 0  # 32 * 32
+        page_size = self.get_size()
+        with pypdfium2_lock:
+            for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
+                pos = obj.get_pos()
+                cropbox = BoundingBox.from_tuple(
+                    pos, origin=CoordOrigin.BOTTOMLEFT
+                ).to_top_left_origin(page_height=page_size.height)
 
-        cells = merge_horizontal_cells(cells)
+                if cropbox.area() > AREA_THRESHOLD:
+                    cropbox = cropbox.scaled(scale=scale)
 
-        # after merge:
-        # draw_clusters_and_cells()
+                    yield cropbox
 
-        return cells
+    def get_text_in_rect(self, bbox: BoundingBox) -> str:
+        with pypdfium2_lock:
+            if not self.text_page:
+                self.text_page = self._ppage.get_textpage()
+
+        if bbox.coord_origin != CoordOrigin.BOTTOMLEFT:
+            bbox = bbox.to_bottom_left_origin(self.get_size().height)
+
+        with pypdfium2_lock:
+            text_piece = self.text_page.get_text_bounded(*bbox.as_tuple())
+
+        return text_piece
+
+    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+        if not self.valid:
+            return None
+
+        page_size = self.get_size()
+        text_cells = self._compute_text_cells()
+
+        # Create page geometry
+        crop_bbox = BoundingBox(
+            l=0,
+            r=page_size.width,
+            t=0,
+            b=page_size.height,
+            coord_origin=CoordOrigin.TOPLEFT,
+        ).to_bottom_left_origin(page_size.height)
+
+        dimension = PdfPageGeometry(
+            angle=0.0,
+            rect=BoundingRectangle.from_bounding_box(crop_bbox),
+            boundary_type=PdfPageBoundaryType.CROP_BOX,
+            art_bbox=crop_bbox,
+            bleed_bbox=crop_bbox,
+            crop_bbox=crop_bbox,
+            media_bbox=crop_bbox,
+            trim_bbox=crop_bbox,
+        )
+
+        # Create SegmentedPdfPage
+        return SegmentedPdfPage(
+            dimension=dimension,
+            textline_cells=text_cells,
+            char_cells=[],
+            word_cells=[],
+            has_lines=len(text_cells) > 0,
+            has_words=False,
+            has_chars=False,
+        )
+
+    def get_text_cells(self) -> Iterable[TextCell]:
+        return self._compute_text_cells()
 
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
