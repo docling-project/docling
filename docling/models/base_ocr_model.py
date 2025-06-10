@@ -130,19 +130,49 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ]
         return filtered_ocr_cells
 
-    def post_process_cells(self, ocr_cells, programmatic_cells):
+    def post_process_cells(self, ocr_cells, page):
         r"""
-        Post-process the ocr and programmatic cells and return the final list of of cells
+        Post-process the OCR cells and update the page object.
+        Treats page.parsed_page as authoritative when available, with page.cells for compatibility.
         """
-        if self.options.force_full_page_ocr:
-            # If a full page OCR is forced, use only the OCR cells
-            cells = ocr_cells
-            return cells
+        # Get existing cells (prefer parsed_page, fallback to page.cells)
+        existing_cells = self._get_existing_cells(page)
 
-        ## Remove OCR cells which overlap with programmatic cells.
-        filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, programmatic_cells)
-        programmatic_cells.extend(filtered_ocr_cells)
-        return programmatic_cells
+        # Combine existing and OCR cells with overlap filtering
+        final_cells = self._combine_cells(existing_cells, ocr_cells)
+
+        # Update both structures efficiently
+        self._update_page_structures(page, final_cells)
+
+    def _get_existing_cells(self, page):
+        """Get existing cells, preferring parsed_page when available."""
+        return page.parsed_page.textline_cells if page.parsed_page else page.cells
+
+    def _combine_cells(self, existing_cells, ocr_cells):
+        """Combine existing and OCR cells with filtering and re-indexing."""
+        if self.options.force_full_page_ocr:
+            combined = ocr_cells
+        else:
+            filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, existing_cells)
+            combined = list(existing_cells) + filtered_ocr_cells
+
+        # Re-index in-place
+        for i, cell in enumerate(combined):
+            cell.index = i
+
+        return combined
+
+    def _update_page_structures(self, page, final_cells):
+        """Update both page structures efficiently."""
+        if page.parsed_page:
+            # Update parsed_page as primary source
+            page.parsed_page.textline_cells = final_cells
+            page.parsed_page.has_lines = bool(final_cells)
+            # Sync to page.cells for compatibility
+            page.cells = final_cells
+        else:
+            # Legacy fallback: only page.cells available
+            page.cells = final_cells
 
     def draw_ocr_rects_and_cells(self, conv_res, page, ocr_rects, show: bool = False):
         image = copy.deepcopy(page.image)

@@ -176,9 +176,9 @@ class LayoutModel(BasePageModel):
                     # Apply postprocessing
 
                     processed_clusters, processed_cells = LayoutPostprocessor(
-                        page.cells, clusters, page.size
+                        page, clusters
                     ).postprocess()
-                    # processed_clusters, processed_cells = clusters, page.cells
+                    # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
 
                     with warnings.catch_warnings():
                         warnings.filterwarnings(
@@ -198,7 +198,7 @@ class LayoutModel(BasePageModel):
                             )
                         )
 
-                    page.cells = processed_cells
+                    # page.cells is already updated by LayoutPostprocessor
                     page.predictions.layout = LayoutPrediction(
                         clusters=processed_clusters
                     )
