@@ -79,30 +79,21 @@ def test_pages(documents) -> None:
         documents: The paths and converted documents.
     """
     # number of pages from the backend method
-    # Logic to handle multiple files
-    file_stems = ["sample_sales_data","test-01"]
-    for stem in file_stems:
-        path = next(item for item in get_excel_paths() if item.stem == stem)
-        in_doc = InputDocument(
-            path_or_stream=path,
-            format=InputFormat.XLSX,
-            filename=path.stem,
-            backend=MsExcelDocumentBackend,
-        )
-        backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
-        # Update the expected page count based on actual content
-        expected_page_count = 3 # Adjust this value based on the actual number of worksheets this needs to be adjusted for each xlsm and xlsx files independently
-        assert backend.page_count() == expected_page_count
+    path = next(item for item in get_excel_paths() if item.stem == "test-01")
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
+    assert backend.page_count() == 3
 
-        # number of pages from the converted document
-        doc = next(item for path, item in documents if path.stem == stem)
-        assert len(doc.pages) == 3
+    # number of pages from the converted document
+    doc = next(item for path, item in documents if path.stem == "test-01")
+    assert len(doc.pages) == 3
 
-        # page sizes as number of cells
-
-        # for xlsm file just adjust this wrt the xlsm files for test xlsm enable this:
-        #assert doc.pages.get(1).size.as_tuple() == (4.0, 21.0)
-        # for xlsx file:
-        assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
-        assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
-        assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
+    # page sizes as number of cells
+    assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
+    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
