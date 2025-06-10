@@ -428,7 +428,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     if notes_text:
                         bbox = BoundingBox(l=0, t=0, r=0, b=0)
                         prov = ProvenanceItem(
-                            page_no=slide_ind + 1, charspan=[0, len(notes_text)], bbox=bbox
+                            page_no=slide_ind + 1,
+                            charspan=[0, len(notes_text)],
+                            bbox=bbox,
                         )
                         doc.add_text(
                             label=DocItemLabel.TEXT,
