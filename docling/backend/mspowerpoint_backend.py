@@ -423,18 +423,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             # Handle notes slide
             if slide.has_notes_slide:
                 notes_slide = slide.notes_slide
-                notes_text = notes_slide.notes_text_frame.text.strip()
-                if notes_text:
-                    bbox = BoundingBox(l=0, t=0, r=0, b=0)
-                    prov = ProvenanceItem(
-                        page_no=slide_ind + 1, charspan=[0, len(notes_text)], bbox=bbox
-                    )
-                    doc.add_text(
-                        label=DocItemLabel.TEXT,
-                        parent=parent_slide,
-                        text=notes_text,
-                        prov=prov,
-                        content_layer=ContentLayer.FURNITURE,
-                    )
+                if notes_slide.notes_text_frame is not None:
+                    notes_text = notes_slide.notes_text_frame.text.strip()
+                    if notes_text:
+                        bbox = BoundingBox(l=0, t=0, r=0, b=0)
+                        prov = ProvenanceItem(
+                            page_no=slide_ind + 1, charspan=[0, len(notes_text)], bbox=bbox
+                        )
+                        doc.add_text(
+                            label=DocItemLabel.TEXT,
+                            parent=parent_slide,
+                            text=notes_text,
+                            prov=prov,
+                            content_layer=ContentLayer.FURNITURE,
+                        )
 
         return doc
