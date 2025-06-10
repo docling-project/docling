@@ -99,12 +99,12 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         return name, version
 
-    def _run_tesseract(self, ifilename: str, osd: pd.DataFrame):
+    def _run_tesseract(self, ifilename: str, osd: Optional[pd.DataFrame]):
         r"""
         Run tesseract CLI
         """
         cmd = [self.options.tesseract_cmd]
-        if self._is_auto:
+        if self._is_auto and osd is not None:
             lang = self._parse_language(osd)
             if lang is not None:
                 cmd.append("-l")
@@ -231,6 +231,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 fname = image_file.name
                                 high_res_image.save(image_file)
                             doc_orientation = 0
+                            df_osd: Optional[pd.DataFrame] = None
                             try:
                                 df_osd = self._perform_osd(fname)
                                 doc_orientation = _parse_orientation(df_osd)

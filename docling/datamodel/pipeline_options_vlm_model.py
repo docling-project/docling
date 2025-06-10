@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import AnyUrl, BaseModel
 from typing_extensions import deprecated
@@ -42,6 +42,7 @@ class InlineVlmOptions(BaseVlmOptions):
     transformers_model_type: TransformersModelType = TransformersModelType.AUTOMODEL
     response_format: ResponseFormat
 
+    torch_dtype: Optional[str] = None
     supported_devices: List[AcceleratorDevice] = [
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
