@@ -145,7 +145,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
         # Update parsed_page.textline_cells directly
         page.parsed_page.textline_cells = final_cells
-        page.parsed_page.has_lines = bool(final_cells)
+        page.parsed_page.has_lines = len(final_cells) > 0
 
     def _combine_cells(self, existing_cells, ocr_cells):
         """Combine existing and OCR cells with filtering and re-indexing."""

@@ -9,8 +9,6 @@ import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
 from docling_core.types.doc.page import (
     BoundingRectangle,
-    PdfPageBoundaryType,
-    PdfPageGeometry,
     SegmentedPdfPage,
     TextCell,
 )
@@ -19,6 +17,7 @@ from PIL import Image, ImageDraw
 from pypdfium2 import PdfPage
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.pypdfium2_backend import get_pdf_page_geometry
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
@@ -124,28 +123,10 @@ class DoclingParsePageBackend(PdfPageBackend):
         if not self.valid:
             return None
 
-        page_size = self.get_size()
         text_cells = self._compute_text_cells()
 
-        # Create page geometry
-        crop_bbox = BoundingBox(
-            l=0,
-            r=page_size.width,
-            t=0,
-            b=page_size.height,
-            coord_origin=CoordOrigin.TOPLEFT,
-        ).to_bottom_left_origin(page_size.height)
-
-        dimension = PdfPageGeometry(
-            angle=0.0,
-            rect=BoundingRectangle.from_bounding_box(crop_bbox),
-            boundary_type=PdfPageBoundaryType.CROP_BOX,
-            art_bbox=crop_bbox,
-            bleed_bbox=crop_bbox,
-            crop_bbox=crop_bbox,
-            media_bbox=crop_bbox,
-            trim_bbox=crop_bbox,
-        )
+        # Get the PDF page geometry from pypdfium2
+        dimension = get_pdf_page_geometry(self._ppage)
 
         # Create SegmentedPdfPage
         return SegmentedPdfPage(

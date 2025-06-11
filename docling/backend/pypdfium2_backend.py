@@ -22,6 +22,75 @@ from pypdfium2._helpers.misc import PdfiumError
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
 from docling.utils.locks import pypdfium2_lock
 
+
+def get_pdf_page_geometry(
+    ppage: pdfium.PdfPage,
+    angle: float = 0.0,
+    boundary_type: PdfPageBoundaryType = PdfPageBoundaryType.CROP_BOX,
+) -> PdfPageGeometry:
+    """
+    Create PdfPageGeometry from a pypdfium2 PdfPage object.
+
+    Args:
+        ppage: pypdfium2 PdfPage object
+        angle: Page rotation angle in degrees (default: 0.0)
+        boundary_type: The boundary type for the page (default: CROP_BOX)
+
+    Returns:
+        PdfPageGeometry with all the different bounding boxes properly set
+    """
+    # Get the main bounding box (intersection of crop_box and media_box)
+    bbox_tuple = ppage.get_bbox()
+    bbox = BoundingBox.from_tuple(bbox_tuple, CoordOrigin.BOTTOMLEFT)
+
+    # Get all the different page boxes from pypdfium2
+    media_box_tuple = ppage.get_mediabox()
+    crop_box_tuple = ppage.get_cropbox()
+    art_box_tuple = ppage.get_artbox()
+    bleed_box_tuple = ppage.get_bleedbox()
+    trim_box_tuple = ppage.get_trimbox()
+
+    # Convert to BoundingBox objects using existing from_tuple method
+    # pypdfium2 returns (x0, y0, x1, y1) in PDF coordinate system (bottom-left origin)
+    # Use bbox as fallback when specific box types are not defined
+    media_bbox = (
+        BoundingBox.from_tuple(media_box_tuple, CoordOrigin.BOTTOMLEFT)
+        if media_box_tuple
+        else bbox
+    )
+    crop_bbox = (
+        BoundingBox.from_tuple(crop_box_tuple, CoordOrigin.BOTTOMLEFT)
+        if crop_box_tuple
+        else bbox
+    )
+    art_bbox = (
+        BoundingBox.from_tuple(art_box_tuple, CoordOrigin.BOTTOMLEFT)
+        if art_box_tuple
+        else bbox
+    )
+    bleed_bbox = (
+        BoundingBox.from_tuple(bleed_box_tuple, CoordOrigin.BOTTOMLEFT)
+        if bleed_box_tuple
+        else bbox
+    )
+    trim_bbox = (
+        BoundingBox.from_tuple(trim_box_tuple, CoordOrigin.BOTTOMLEFT)
+        if trim_box_tuple
+        else bbox
+    )
+
+    return PdfPageGeometry(
+        angle=angle,
+        rect=BoundingRectangle.from_bounding_box(bbox),
+        boundary_type=boundary_type,
+        art_bbox=art_bbox,
+        bleed_bbox=bleed_bbox,
+        crop_bbox=crop_bbox,
+        media_bbox=media_bbox,
+        trim_bbox=trim_bbox,
+    )
+
+
 if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
@@ -213,28 +282,11 @@ class PyPdfiumPageBackend(PdfPageBackend):
         if not self.valid:
             return None
 
-        page_size = self.get_size()
         text_cells = self._compute_text_cells()
 
-        # Create page geometry
-        crop_bbox = BoundingBox(
-            l=0,
-            r=page_size.width,
-            t=0,
-            b=page_size.height,
-            coord_origin=CoordOrigin.TOPLEFT,
-        ).to_bottom_left_origin(page_size.height)
-
-        dimension = PdfPageGeometry(
-            angle=0.0,
-            rect=BoundingRectangle.from_bounding_box(crop_bbox),
-            boundary_type=PdfPageBoundaryType.CROP_BOX,
-            art_bbox=crop_bbox,
-            bleed_bbox=crop_bbox,
-            crop_bbox=crop_bbox,
-            media_bbox=crop_bbox,
-            trim_bbox=crop_bbox,
-        )
+        # Get the PDF page geometry from pypdfium2
+        with pypdfium2_lock:
+            dimension = get_pdf_page_geometry(self._ppage)
 
         # Create SegmentedPdfPage
         return SegmentedPdfPage(
