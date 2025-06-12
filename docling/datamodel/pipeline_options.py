@@ -13,6 +13,13 @@ from typing_extensions import deprecated
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.asr_model_specs import (
+    WHISPER_TINY as whisper_tiny,
+    AsrModelType,
+)
+from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -260,6 +267,11 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
     )
 
 
+class AsrPipelineOptions(PipelineOptions):
+    asr_options: Union[InlineAsrOptions] = whisper_tiny
+    artifacts_path: Optional[Union[Path, str]] = None
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Options for the PDF pipeline."""
 
@@ -295,6 +307,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     generate_parsed_pages: bool = False
 
 
-class PdfPipeline(str, Enum):
+class ProcessingPipeline(str, Enum):
     STANDARD = "standard"
     VLM = "vlm"
+    ASR = "asr"
