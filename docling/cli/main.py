@@ -542,7 +542,41 @@ def convert(  # noqa: C901
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
         pipeline_options: PaginatedPipelineOptions
 
-        if pipeline == ProcessingPipeline.STANDARD:
+        format_options: Dict[InputFormat, FormatOption] = {}
+        
+        if pipeline == ProcessingPipeline.VLM:
+            pipeline_options = VlmPipelineOptions(
+                enable_remote_services=enable_remote_services,
+            )
+
+            if vlm_model == VlmModelType.GRANITE_VISION:
+                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
+            elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
+                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
+            elif vlm_model == VlmModelType.SMOLDOCLING:
+                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
+                if sys.platform == "darwin":
+                    try:
+                        import mlx_vlm
+
+                        pipeline_options.vlm_options = SMOLDOCLING_MLX
+                    except ImportError:
+                        _log.warning(
+                            "To run SmolDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
+
+            pdf_format_option = PdfFormatOption(
+                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+            )
+
+            format_options: Dict[InputFormat, FormatOption] = {
+                InputFormat.PDF: pdf_format_option,
+                InputFormat.IMAGE: pdf_format_option,
+            }
+            
+        elif pipeline == ProcessingPipeline.STANDARD:
+            
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
@@ -584,40 +618,28 @@ def convert(  # noqa: C901
                 pipeline_options=pipeline_options,
                 backend=backend,  # pdf_backend
             )
-        elif pipeline == ProcessingPipeline.VLM:
-            pipeline_options = VlmPipelineOptions(
-                enable_remote_services=enable_remote_services,
-            )
 
-            if vlm_model == VlmModelType.GRANITE_VISION:
-                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
-            elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
-            elif vlm_model == VlmModelType.SMOLDOCLING:
-                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
-                if sys.platform == "darwin":
-                    try:
-                        import mlx_vlm
-
-                        pipeline_options.vlm_options = SMOLDOCLING_MLX
-                    except ImportError:
-                        _log.warning(
-                            "To run SmolDocling faster, please install mlx-vlm:\n"
-                            "pip install mlx-vlm"
-                        )
-
-            pdf_format_option = PdfFormatOption(
-                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
-            )
+            format_options: Dict[InputFormat, FormatOption] = {
+                InputFormat.PDF: pdf_format_option,
+                InputFormat.IMAGE: pdf_format_option,
+            }
+            
         elif pipeline == ProcessingPipeline.ASR:
             audio_pipeline_options = AsrPipelineOptions(
                 # enable_remote_services=enable_remote_services,
+                artifacts_path = artifacts_path
             )
 
             audio_format_option = PdfFormatOption(
-                pipeline_cls=AsrPipeline, pipeline_options=audio_pipeline_options
+                pipeline_cls=AsrPipeline,
+                pipeline_options=audio_pipeline_options,
+                # backend = FIXME
             )
 
+            format_options: Dict[InputFormat, FormatOption] = {
+                InputFormat.AUDIO_WAV: audio_format_option,
+            }
+            
             """
             if asr_model == AsrModelType.WHISPER_TINY:
                 pipeline_options.asr_options = WHISPER_TINY:
@@ -627,11 +649,6 @@ def convert(  # noqa: C901
             pipeline_options.artifacts_path = artifacts_path
             # audio_pipeline_options.artifacts_path = artifacts_path
 
-        format_options: Dict[InputFormat, FormatOption] = {
-            InputFormat.PDF: pdf_format_option,
-            InputFormat.IMAGE: pdf_format_option,
-            InputFormat.AUDIO: audio_format_option,
-        }
         doc_converter = DocumentConverter(
             allowed_formats=from_formats,
             format_options=format_options,
