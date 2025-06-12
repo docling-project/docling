@@ -13,6 +13,12 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
+### Example of PictureDescriptionApiOptions definitions
+
+#### Using vLLM
+# Models can be launched via:
+# $ vllm serve MODEL_NAME
+
 
 def vllm_local_options(model: str):
     options = PictureDescriptionApiOptions(
@@ -26,6 +32,26 @@ def vllm_local_options(model: str):
         timeout=90,
     )
     return options
+
+
+#### Using LM Studio
+
+
+def lms_local_options(model: str):
+    options = PictureDescriptionApiOptions(
+        url="http://localhost:1234/v1/chat/completions",
+        params=dict(
+            model=model,
+            seed=42,
+            max_completion_tokens=200,
+        ),
+        prompt="Describe the image in three sentences. Be consise and accurate.",
+        timeout=90,
+    )
+    return options
+
+
+#### Using a cloud service like IBM watsonx.ai
 
 
 def watsonx_vlm_options():
@@ -49,7 +75,7 @@ def watsonx_vlm_options():
     options = PictureDescriptionApiOptions(
         url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
         params=dict(
-            model_id="meta-llama/llama-3-2-11b-vision-instruct",
+            model_id="ibm/granite-vision-3-2-2b",
             project_id=project_id,
             parameters=dict(
                 max_new_tokens=400,
@@ -62,6 +88,9 @@ def watsonx_vlm_options():
         timeout=60,
     )
     return options
+
+
+### Usage and conversion
 
 
 def main():
@@ -80,20 +109,28 @@ def main():
     # One possibility is self-hosting model, e.g. via VLLM.
     # $ vllm serve MODEL_NAME
     # Then PictureDescriptionApiOptions can point to the localhost endpoint.
-    #
-    # Example for the Granite Vision model: (uncomment the following lines)
+
+    # Example for the Granite Vision model:
+    # (uncomment the following lines)
     # pipeline_options.picture_description_options = vllm_local_options(
     #     model="ibm-granite/granite-vision-3.1-2b-preview"
     # )
-    #
-    # Example for the SmolVLM model: (uncomment the following lines)
-    pipeline_options.picture_description_options = vllm_local_options(
-        model="HuggingFaceTB/SmolVLM-256M-Instruct"
+
+    # Example for the SmolVLM model:
+    # (uncomment the following lines)
+    # pipeline_options.picture_description_options = vllm_local_options(
+    #     model="HuggingFaceTB/SmolVLM-256M-Instruct"
+    # )
+
+    # For using models on LM Studio using the built-in GGUF or MLX runtimes, e.g. the SmolVLM model:
+    # (uncomment the following lines)
+    pipeline_options.picture_description_options = lms_local_options(
+        model="smolvlm-256m-instruct"
     )
-    #
+
     # Another possibility is using online services, e.g. watsonx.ai.
     # Using requires setting the env variables WX_API_KEY and WX_PROJECT_ID.
-    # Uncomment the following line for this option:
+    # (uncomment the following lines)
     # pipeline_options.picture_description_options = watsonx_vlm_options()
 
     doc_converter = DocumentConverter(
