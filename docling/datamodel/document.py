@@ -322,7 +322,7 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or "text/plain"
         formats = MimeTypeToFormat.get(mime, [])
         print(formats)
-        
+
         if formats:
             if len(formats) == 1 and mime not in ("text/plain"):
                 return formats[0]

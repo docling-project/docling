@@ -5,7 +5,11 @@ from pydantic import AnyUrl, BaseModel
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
-from docling.datamodel.pipeline_options_vlm_model import InferenceFramework, TransformersModelType
+from docling.datamodel.pipeline_options_vlm_model import (
+    InferenceFramework,
+    TransformersModelType,
+)
+
 
 class BaseAsrOptions(BaseModel):
     kind: str
@@ -15,7 +19,7 @@ class BaseAsrOptions(BaseModel):
 class AsrResponseFormat(str, Enum):
     WHISPER = "whisper"
 
-    
+
 class InlineAsrOptions(BaseAsrOptions):
     kind: Literal["inline_model_options"] = "inline_model_options"
 
@@ -46,5 +50,3 @@ class InlineAsrOptions(BaseAsrOptions):
     @property
     def repo_cache_folder(self) -> str:
         return self.repo_id.replace("/", "--")
-
-    

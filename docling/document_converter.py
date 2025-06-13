@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, model_validator, validate_call
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
+from docling.backend.audio_backend import AudioBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -41,6 +42,7 @@ from docling.datamodel.settings import (
     settings,
 )
 from docling.exceptions import ConversionError
+from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
@@ -118,6 +120,11 @@ class PdfFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
 
 
+class AudioFormatOption(FormatOption):
+    pipeline_cls: Type = AsrPipeline
+    backend: Type[AbstractDocumentBackend] = AudioBackend
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: FormatOption(
@@ -155,6 +162,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         ),
         InputFormat.JSON_DOCLING: FormatOption(
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
+        ),
+        InputFormat.AUDIO_WAV: FormatOption(
+            pipeline_cls=AsrPipeline, backend=AudioBackend
         ),
     }
     if (options := format_to_default_options.get(format)) is not None:

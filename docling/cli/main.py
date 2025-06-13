@@ -23,6 +23,7 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
+from docling.backend.audio_backend import AudioBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -59,7 +60,12 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS,
     VlmModelType,
 )
-from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
+from docling.document_converter import (
+    AudioFormatOption,
+    DocumentConverter,
+    FormatOption,
+    PdfFormatOption,
+)
 from docling.models.factories import get_ocr_factory
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -543,40 +549,8 @@ def convert(  # noqa: C901
         pipeline_options: PaginatedPipelineOptions
 
         format_options: Dict[InputFormat, FormatOption] = {}
-        
-        if pipeline == ProcessingPipeline.VLM:
-            pipeline_options = VlmPipelineOptions(
-                enable_remote_services=enable_remote_services,
-            )
 
-            if vlm_model == VlmModelType.GRANITE_VISION:
-                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
-            elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
-            elif vlm_model == VlmModelType.SMOLDOCLING:
-                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
-                if sys.platform == "darwin":
-                    try:
-                        import mlx_vlm
-
-                        pipeline_options.vlm_options = SMOLDOCLING_MLX
-                    except ImportError:
-                        _log.warning(
-                            "To run SmolDocling faster, please install mlx-vlm:\n"
-                            "pip install mlx-vlm"
-                        )
-
-            pdf_format_option = PdfFormatOption(
-                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
-            )
-
-            format_options: Dict[InputFormat, FormatOption] = {
-                InputFormat.PDF: pdf_format_option,
-                InputFormat.IMAGE: pdf_format_option,
-            }
-            
-        elif pipeline == ProcessingPipeline.STANDARD:
-            
+        if pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
@@ -623,23 +597,59 @@ def convert(  # noqa: C901
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: pdf_format_option,
             }
-            
-        elif pipeline == ProcessingPipeline.ASR:
-            audio_pipeline_options = AsrPipelineOptions(
-                # enable_remote_services=enable_remote_services,
-                artifacts_path = artifacts_path
+
+        elif pipeline == ProcessingPipeline.VLM:
+            pipeline_options = VlmPipelineOptions(
+                enable_remote_services=enable_remote_services,
             )
 
-            audio_format_option = PdfFormatOption(
+            if vlm_model == VlmModelType.GRANITE_VISION:
+                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
+            elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
+                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
+            elif vlm_model == VlmModelType.SMOLDOCLING:
+                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
+                if sys.platform == "darwin":
+                    try:
+                        import mlx_vlm
+
+                        pipeline_options.vlm_options = SMOLDOCLING_MLX
+                    except ImportError:
+                        _log.warning(
+                            "To run SmolDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
+
+            pdf_format_option = PdfFormatOption(
+                pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
+            )
+
+            format_options: Dict[InputFormat, FormatOption] = {
+                InputFormat.PDF: pdf_format_option,
+                InputFormat.IMAGE: pdf_format_option,
+            }
+
+        elif pipeline == ProcessingPipeline.ASR:
+            pipeline_options = AsrPipelineOptions(
+                # enable_remote_services=enable_remote_services,
+                # artifacts_path = artifacts_path
+            )
+
+            if asr_model == AsrModelType.WHISPER_TINY:
+                pipeline_options.asr_options = WHISPER_TINY
+            else:
+                pipeline_options.asr_options = WHISPER_TINY
+
+            audio_format_option = AudioFormatOption(
                 pipeline_cls=AsrPipeline,
-                pipeline_options=audio_pipeline_options,
-                # backend = FIXME
+                pipeline_options=pipeline_options,
+                backend=AudioBackend,
             )
 
             format_options: Dict[InputFormat, FormatOption] = {
                 InputFormat.AUDIO_WAV: audio_format_option,
             }
-            
+
             """
             if asr_model == AsrModelType.WHISPER_TINY:
                 pipeline_options.asr_options = WHISPER_TINY:
@@ -656,6 +666,7 @@ def convert(  # noqa: C901
 
         start_time = time.time()
 
+        _log.info(f"paths: {input_doc_paths}")
         conv_results = doc_converter.convert_all(
             input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
         )
