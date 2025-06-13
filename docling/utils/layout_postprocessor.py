@@ -8,7 +8,7 @@ from docling_core.types.doc import DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
 from rtree import index
 
-from docling.datamodel.base_models import BoundingBox, Cluster
+from docling.datamodel.base_models import BoundingBox, Cluster, Page
 
 _log = logging.getLogger(__name__)
 
@@ -194,7 +194,7 @@ class LayoutPostprocessor:
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
     }
 
-    def __init__(self, page, clusters: List[Cluster]):
+    def __init__(self, page: Page, clusters: List[Cluster]) -> None:
         """Initialize processor with page and clusters."""
         self.cells = page.cells
         self.page = page
@@ -305,6 +305,7 @@ class LayoutPostprocessor:
         special_clusters = self._handle_cross_type_overlaps(special_clusters)
 
         # Calculate page area from known page size
+        assert self.page_size is not None
         page_area = self.page_size.width * self.page_size.height
         if page_area > 0:
             # Filter out full-page pictures
