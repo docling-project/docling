@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Set, Union
+from typing import Final, Set, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -21,6 +21,9 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+DEFAULT_IMAGE_WIDTH: Final = 128
+DEFAULT_IMAGE_HEIGHT: Final = 128
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
@@ -200,9 +203,11 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
                 item = self._parse_picture(line)
 
-                size = None
+                size: Size
                 if "width" in item and "height" in item:
                     size = Size(width=int(item["width"]), height=int(item["height"]))
+                else:
+                    size = Size(width=DEFAULT_IMAGE_WIDTH, height=DEFAULT_IMAGE_HEIGHT)
 
                 uri = None
                 if (
@@ -264,14 +269,16 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _get_current_level(self, parents):
+    @staticmethod
+    def _get_current_level(parents):
         for k, v in parents.items():
             if v is None and k > 0:
                 return k - 1
 
         return 0
 
-    def _get_current_parent(self, parents):
+    @staticmethod
+    def _get_current_parent(parents):
         for k, v in parents.items():
             if v is None and k > 0:
                 return parents[k - 1]
@@ -279,17 +286,21 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return None
 
     #   =========   Title
-    def _is_title(self, line):
+    @staticmethod
+    def _is_title(line):
         return re.match(r"^= ", line)
 
-    def _parse_title(self, line):
+    @staticmethod
+    def _parse_title(line):
         return {"type": "title", "text": line[2:].strip(), "level": 0}
 
     #   =========   Section headers
-    def _is_section_header(self, line):
+    @staticmethod
+    def _is_section_header(line):
         return re.match(r"^==+\s+", line)
 
-    def _parse_section_header(self, line):
+    @staticmethod
+    def _parse_section_header(line):
         match = re.match(r"^(=+)\s+(.*)", line)
 
         marker = match.group(1)  # The list marker (e.g., "*", "-", "1.")
@@ -303,10 +314,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         }
 
     #   =========   Lists
-    def _is_list_item(self, line):
+    @staticmethod
+    def _is_list_item(line):
         return re.match(r"^(\s)*(\*|-|\d+\.|\w+\.) ", line)
 
-    def _parse_list_item(self, line):
+    @staticmethod
+    def _parse_list_item(line):
         """Extract the item marker (number or bullet symbol) and the text of the item."""
 
         match = re.match(r"^(\s*)(\*|-|\d+\.)\s+(.*)", line)
@@ -342,14 +355,17 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
             }
 
     #   =========   Tables
-    def _is_table_line(self, line):
+    @staticmethod
+    def _is_table_line(line):
         return re.match(r"^\|.*\|", line)
 
-    def _parse_table_line(self, line):
+    @staticmethod
+    def _parse_table_line(line):
         # Split table cells and trim extra spaces
         return [cell.strip() for cell in line.split("|") if cell.strip()]
 
-    def _populate_table_as_grid(self, table_data):
+    @staticmethod
+    def _populate_table_as_grid(table_data):
         num_rows = len(table_data)
 
         # Adjust the table data into a grid format
@@ -380,10 +396,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return data
 
     #   =========   Pictures
-    def _is_picture(self, line):
+    @staticmethod
+    def _is_picture(line):
         return re.match(r"^image::", line)
 
-    def _parse_picture(self, line):
+    @staticmethod
+    def _parse_picture(line):
         """
         Parse an image macro, extracting its path and attributes.
         Syntax: image::path/to/image.png[Alt Text, width=200, height=150, align=center]
@@ -406,10 +424,12 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return {"type": "picture", "uri": line}
 
     #   =========   Captions
-    def _is_caption(self, line):
+    @staticmethod
+    def _is_caption(line):
         return re.match(r"^\.(.+)", line)
 
-    def _parse_caption(self, line):
+    @staticmethod
+    def _parse_caption(line):
         mtch = re.match(r"^\.(.+)", line)
         if mtch:
             text = mtch.group(1)
@@ -418,5 +438,6 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return {"type": "caption", "text": ""}
 
     #   =========   Plain text
-    def _parse_text(self, line):
+    @staticmethod
+    def _parse_text(line):
         return {"type": "text", "text": line.strip()}
