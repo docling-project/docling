@@ -29,6 +29,8 @@ from docling.datamodel.settings import settings
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
+import librosa
+
 _log = logging.getLogger(__name__)
 
 
@@ -85,6 +87,9 @@ class _WhisperModel:
             "openai/whisper-tiny"
         )
 
+        # FIXME
+        self.max_new_tokens = 256
+        
         _log.info(f"model is loaded: {self.model_repo}")
 
     def run(self, conv_res: ConversionResult):
@@ -112,6 +117,13 @@ class _WhisperModel:
                 f"read the file .. (sampling-rate: {sampling_rate}, array: {array.shape})"
             )
 
+            array, sampling_rate = librosa.load(fpath, sr=16000)
+
+            _log.info(
+                f"read the file .. (sampling-rate: {sampling_rate}, array: {array.shape})"
+            )
+
+            
             processed_input = self.processor(
                 array,
                 sampling_rate=self.processor.feature_extractor.sampling_rate,  # sampling_rate,
@@ -125,10 +137,11 @@ class _WhisperModel:
             ).input_features
 
             _log.info(f"got input-features: {input_features.shape}")
+            _log.info(f"max new tokens: {self.max_new_tokens}")
 
             # generate token ids by running model forward sequentially
             predicted_ids = self.model.generate(
-                input_features, max_new_tokens=256, return_timestamps=True
+                input_features, max_new_tokens=self.max_new_tokens, return_timestamps=True
             )
 
             _log.info("ran model ..")
