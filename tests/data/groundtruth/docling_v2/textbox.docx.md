@@ -40,6 +40,12 @@ The Health Bureau will handle **reporting and specimen collection** .
 
 No
 
+Yes
+
+Yes
+
 **Case closed.**
 
 The Health Bureau will carry out subsequent related epidemic prevention measures and follow-up, and will request assistance from the Centers for Disease Control if necessary.
+
+No

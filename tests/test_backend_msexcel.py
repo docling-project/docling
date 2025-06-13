@@ -16,13 +16,13 @@ _log = logging.getLogger(__name__)
 GENERATE = GEN_TEST_DATA
 
 
-def get_xlsx_paths():
+def get_excel_paths():
     # Define the directory you want to search
     directory = Path("./tests/data/xlsx/")
 
-    # List all PDF files in the directory and its subdirectories
-    pdf_files = sorted(directory.rglob("*.xlsx"))
-    return pdf_files
+    # List all Excel files in the directory and its subdirectories
+    excel_files = sorted(directory.rglob("*.xlsx")) + sorted(directory.rglob("*.xlsm"))
+    return excel_files
 
 
 def get_converter():
@@ -35,17 +35,17 @@ def get_converter():
 def documents() -> list[tuple[Path, DoclingDocument]]:
     documents: list[dict[Path, DoclingDocument]] = []
 
-    xlsx_paths = get_xlsx_paths()
+    excel_paths = get_excel_paths()
     converter = get_converter()
 
-    for xlsx_path in xlsx_paths:
-        _log.debug(f"converting {xlsx_path}")
+    for excel_path in excel_paths:
+        _log.debug(f"converting {excel_path}")
 
         gt_path = (
-            xlsx_path.parent.parent / "groundtruth" / "docling_v2" / xlsx_path.name
+            excel_path.parent.parent / "groundtruth" / "docling_v2" / excel_path.name
         )
 
-        conv_result: ConversionResult = converter.convert(xlsx_path)
+        conv_result: ConversionResult = converter.convert(excel_path)
 
         doc: DoclingDocument = conv_result.document
 
@@ -55,7 +55,7 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
     return documents
 
 
-def test_e2e_xlsx_conversions(documents) -> None:
+def test_e2e_excel_conversions(documents) -> None:
     for gt_path, doc in documents:
         pred_md: str = doc.export_to_markdown()
         assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
@@ -79,7 +79,7 @@ def test_pages(documents) -> None:
         documents: The paths and converted documents.
     """
     # number of pages from the backend method
-    path = next(item for item in get_xlsx_paths() if item.stem == "test-01")
+    path = next(item for item in get_excel_paths() if item.stem == "test-01")
     in_doc = InputDocument(
         path_or_stream=path,
         format=InputFormat.XLSX,

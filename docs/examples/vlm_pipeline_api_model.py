@@ -13,6 +13,27 @@ from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, Response
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
+### Example of ApiVlmOptions definitions
+
+#### Using LM Studio
+
+
+def lms_vlm_options(model: str, prompt: str, format: ResponseFormat):
+    options = ApiVlmOptions(
+        url="http://localhost:1234/v1/chat/completions",  # the default LM Studio
+        params=dict(
+            model=model,
+        ),
+        prompt=prompt,
+        timeout=90,
+        scale=1.0,
+        response_format=format,
+    )
+    return options
+
+
+#### Using Ollama
+
 
 def ollama_vlm_options(model: str, prompt: str):
     options = ApiVlmOptions(
@@ -26,6 +47,9 @@ def ollama_vlm_options(model: str, prompt: str):
         response_format=ResponseFormat.MARKDOWN,
     )
     return options
+
+
+#### Using a cloud service like IBM watsonx.ai
 
 
 def watsonx_vlm_options(model: str, prompt: str):
@@ -65,6 +89,9 @@ def watsonx_vlm_options(model: str, prompt: str):
     return options
 
 
+### Usage and conversion
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
 
@@ -78,16 +105,34 @@ def main():
     # The ApiVlmOptions() allows to interface with APIs supporting
     # the multi-modal chat interface. Here follow a few example on how to configure those.
 
-    # One possibility is self-hosting model, e.g. via Ollama.
-    # Example using the Granite Vision  model: (uncomment the following lines)
-    pipeline_options.vlm_options = ollama_vlm_options(
-        model="granite3.2-vision:2b",
-        prompt="OCR the full page to markdown.",
+    # One possibility is self-hosting model, e.g. via LM Studio, Ollama or others.
+
+    # Example using the SmolDocling model with LM Studio:
+    # (uncomment the following lines)
+    pipeline_options.vlm_options = lms_vlm_options(
+        model="smoldocling-256m-preview-mlx-docling-snap",
+        prompt="Convert this page to docling.",
+        format=ResponseFormat.DOCTAGS,
     )
+
+    # Example using the Granite Vision model with LM Studio:
+    # (uncomment the following lines)
+    # pipeline_options.vlm_options = lms_vlm_options(
+    #     model="granite-vision-3.2-2b",
+    #     prompt="OCR the full page to markdown.",
+    #     format=ResponseFormat.MARKDOWN,
+    # )
+
+    # Example using the Granite Vision model with Ollama:
+    # (uncomment the following lines)
+    # pipeline_options.vlm_options = ollama_vlm_options(
+    #     model="granite3.2-vision:2b",
+    #     prompt="OCR the full page to markdown.",
+    # )
 
     # Another possibility is using online services, e.g. watsonx.ai.
     # Using requires setting the env variables WX_API_KEY and WX_PROJECT_ID.
-    # Uncomment the following line for this option:
+    # (uncomment the following lines)
     # pipeline_options.vlm_options = watsonx_vlm_options(
     #     model="ibm/granite-vision-3-2-2b", prompt="OCR the full page to markdown."
     # )
