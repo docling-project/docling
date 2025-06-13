@@ -9,6 +9,7 @@ from docling.datamodel.document import (
     DoclingDocument,
     InputDocument,
     SectionHeaderItem,
+    TextItem,
 )
 from docling.document_converter import DocumentConverter
 
@@ -131,3 +132,42 @@ def test_e2e_docx_conversions():
 @pytest.mark.xfail(strict=False)
 def test_textbox_conversion():
     _test_e2e_docx_conversions_impl(docx_paths=[flaky_path])
+
+
+def test_text_after_image_anchors():
+    """
+    Test to analyse whether text gets parsed after image anchors.
+    """
+
+    in_path = Path("tests/data/docx/word_image_anchors.docx")
+    in_doc = InputDocument(
+        path_or_stream=in_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = MsWordDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=in_path,
+    )
+    doc = backend.convert()
+
+    found_text_after_anchor_1 = found_text_after_anchor_2 = (
+        found_text_after_anchor_3
+    ) = found_text_after_anchor_4 = False
+    for item, _ in doc.iterate_items():
+        if isinstance(item, TextItem):
+            if item.text == "This is test 1":
+                found_text_after_anchor_1 = True
+            elif item.text == "0:08\nCorrect, he is not.":
+                found_text_after_anchor_2 = True
+            elif item.text == "This is test 2":
+                found_text_after_anchor_3 = True
+            elif item.text == "0:16\nYeah, exactly.":
+                found_text_after_anchor_4 = True
+
+    assert (
+        found_text_after_anchor_1
+        and found_text_after_anchor_2
+        and found_text_after_anchor_3
+        and found_text_after_anchor_4
+    )
