@@ -23,12 +23,17 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
+from docling.backend.audio_backend import AudioBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.asr_model_specs import (
+    WHISPER_TINY,
+    AsrModelType,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -37,12 +42,13 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    AsrPipelineOptions,
     EasyOcrOptions,
     OcrOptions,
     PaginatedPipelineOptions,
     PdfBackend,
-    PdfPipeline,
     PdfPipelineOptions,
+    ProcessingPipeline,
     TableFormerMode,
     VlmPipelineOptions,
 )
@@ -54,8 +60,14 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS,
     VlmModelType,
 )
-from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
+from docling.document_converter import (
+    AudioFormatOption,
+    DocumentConverter,
+    FormatOption,
+    PdfFormatOption,
+)
 from docling.models.factories import get_ocr_factory
+from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -296,13 +308,17 @@ def convert(  # noqa: C901
         ),
     ] = ImageRefMode.EMBEDDED,
     pipeline: Annotated[
-        PdfPipeline,
+        ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
-    ] = PdfPipeline.STANDARD,
+    ] = ProcessingPipeline.STANDARD,
     vlm_model: Annotated[
         VlmModelType,
         typer.Option(..., help="Choose the VLM model to use with PDF or image files."),
     ] = VlmModelType.SMOLDOCLING,
+    asr_model: Annotated[
+        AsrModelType,
+        typer.Option(..., help="Choose the ASR model to use with audio/video files."),
+    ] = AsrModelType.WHISPER_TINY,
     ocr: Annotated[
         bool,
         typer.Option(
@@ -532,7 +548,9 @@ def convert(  # noqa: C901
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
         pipeline_options: PaginatedPipelineOptions
 
-        if pipeline == PdfPipeline.STANDARD:
+        format_options: Dict[InputFormat, FormatOption] = {}
+
+        if pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
@@ -574,7 +592,13 @@ def convert(  # noqa: C901
                 pipeline_options=pipeline_options,
                 backend=backend,  # pdf_backend
             )
-        elif pipeline == PdfPipeline.VLM:
+
+            format_options: Dict[InputFormat, FormatOption] = {
+                InputFormat.PDF: pdf_format_option,
+                InputFormat.IMAGE: pdf_format_option,
+            }
+
+        elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
                 enable_remote_services=enable_remote_services,
             )
@@ -600,13 +624,41 @@ def convert(  # noqa: C901
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
             )
 
+            format_options: Dict[InputFormat, FormatOption] = {
+                InputFormat.PDF: pdf_format_option,
+                InputFormat.IMAGE: pdf_format_option,
+            }
+
+        elif pipeline == ProcessingPipeline.ASR:
+            pipeline_options = AsrPipelineOptions(
+                # enable_remote_services=enable_remote_services,
+                # artifacts_path = artifacts_path
+            )
+
+            if asr_model == AsrModelType.WHISPER_TINY:
+                pipeline_options.asr_options = WHISPER_TINY
+            else:
+                pipeline_options.asr_options = WHISPER_TINY
+
+            audio_format_option = AudioFormatOption(
+                pipeline_cls=AsrPipeline,
+                pipeline_options=pipeline_options,
+                backend=AudioBackend,
+            )
+
+            format_options: Dict[InputFormat, FormatOption] = {
+                InputFormat.AUDIO_WAV: audio_format_option,
+            }
+
+            """
+            if asr_model == AsrModelType.WHISPER_TINY:
+                pipeline_options.asr_options = WHISPER_TINY:
+            """
+
         if artifacts_path is not None:
             pipeline_options.artifacts_path = artifacts_path
+            # audio_pipeline_options.artifacts_path = artifacts_path
 
-        format_options: Dict[InputFormat, FormatOption] = {
-            InputFormat.PDF: pdf_format_option,
-            InputFormat.IMAGE: pdf_format_option,
-        }
         doc_converter = DocumentConverter(
             allowed_formats=from_formats,
             format_options=format_options,
@@ -614,6 +666,7 @@ def convert(  # noqa: C901
 
         start_time = time.time()
 
+        _log.info(f"paths: {input_doc_paths}")
         conv_results = doc_converter.convert_all(
             input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
         )
