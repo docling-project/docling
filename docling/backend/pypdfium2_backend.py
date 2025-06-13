@@ -39,56 +39,57 @@ def get_pdf_page_geometry(
     Returns:
         PdfPageGeometry with all the different bounding boxes properly set
     """
-    # Get the main bounding box (intersection of crop_box and media_box)
-    bbox_tuple = ppage.get_bbox()
-    bbox = BoundingBox.from_tuple(bbox_tuple, CoordOrigin.BOTTOMLEFT)
+    with pypdfium2_lock:
+        # Get the main bounding box (intersection of crop_box and media_box)
+        bbox_tuple = ppage.get_bbox()
+        bbox = BoundingBox.from_tuple(bbox_tuple, CoordOrigin.BOTTOMLEFT)
 
-    # Get all the different page boxes from pypdfium2
-    media_box_tuple = ppage.get_mediabox()
-    crop_box_tuple = ppage.get_cropbox()
-    art_box_tuple = ppage.get_artbox()
-    bleed_box_tuple = ppage.get_bleedbox()
-    trim_box_tuple = ppage.get_trimbox()
+        # Get all the different page boxes from pypdfium2
+        media_box_tuple = ppage.get_mediabox()
+        crop_box_tuple = ppage.get_cropbox()
+        art_box_tuple = ppage.get_artbox()
+        bleed_box_tuple = ppage.get_bleedbox()
+        trim_box_tuple = ppage.get_trimbox()
 
-    # Convert to BoundingBox objects using existing from_tuple method
-    # pypdfium2 returns (x0, y0, x1, y1) in PDF coordinate system (bottom-left origin)
-    # Use bbox as fallback when specific box types are not defined
-    media_bbox = (
-        BoundingBox.from_tuple(media_box_tuple, CoordOrigin.BOTTOMLEFT)
-        if media_box_tuple
-        else bbox
-    )
-    crop_bbox = (
-        BoundingBox.from_tuple(crop_box_tuple, CoordOrigin.BOTTOMLEFT)
-        if crop_box_tuple
-        else bbox
-    )
-    art_bbox = (
-        BoundingBox.from_tuple(art_box_tuple, CoordOrigin.BOTTOMLEFT)
-        if art_box_tuple
-        else bbox
-    )
-    bleed_bbox = (
-        BoundingBox.from_tuple(bleed_box_tuple, CoordOrigin.BOTTOMLEFT)
-        if bleed_box_tuple
-        else bbox
-    )
-    trim_bbox = (
-        BoundingBox.from_tuple(trim_box_tuple, CoordOrigin.BOTTOMLEFT)
-        if trim_box_tuple
-        else bbox
-    )
+        # Convert to BoundingBox objects using existing from_tuple method
+        # pypdfium2 returns (x0, y0, x1, y1) in PDF coordinate system (bottom-left origin)
+        # Use bbox as fallback when specific box types are not defined
+        media_bbox = (
+            BoundingBox.from_tuple(media_box_tuple, CoordOrigin.BOTTOMLEFT)
+            if media_box_tuple
+            else bbox
+        )
+        crop_bbox = (
+            BoundingBox.from_tuple(crop_box_tuple, CoordOrigin.BOTTOMLEFT)
+            if crop_box_tuple
+            else bbox
+        )
+        art_bbox = (
+            BoundingBox.from_tuple(art_box_tuple, CoordOrigin.BOTTOMLEFT)
+            if art_box_tuple
+            else bbox
+        )
+        bleed_bbox = (
+            BoundingBox.from_tuple(bleed_box_tuple, CoordOrigin.BOTTOMLEFT)
+            if bleed_box_tuple
+            else bbox
+        )
+        trim_bbox = (
+            BoundingBox.from_tuple(trim_box_tuple, CoordOrigin.BOTTOMLEFT)
+            if trim_box_tuple
+            else bbox
+        )
 
-    return PdfPageGeometry(
-        angle=angle,
-        rect=BoundingRectangle.from_bounding_box(bbox),
-        boundary_type=boundary_type,
-        art_bbox=art_bbox,
-        bleed_bbox=bleed_bbox,
-        crop_bbox=crop_bbox,
-        media_bbox=media_bbox,
-        trim_bbox=trim_bbox,
-    )
+        return PdfPageGeometry(
+            angle=angle,
+            rect=BoundingRectangle.from_bounding_box(bbox),
+            boundary_type=boundary_type,
+            art_bbox=art_bbox,
+            bleed_bbox=bleed_bbox,
+            crop_bbox=crop_bbox,
+            media_bbox=media_bbox,
+            trim_bbox=trim_bbox,
+        )
 
 
 if TYPE_CHECKING:
@@ -285,8 +286,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
         text_cells = self._compute_text_cells()
 
         # Get the PDF page geometry from pypdfium2
-        with pypdfium2_lock:
-            dimension = get_pdf_page_geometry(self._ppage)
+        dimension = get_pdf_page_geometry(self._ppage)
 
         # Create SegmentedPdfPage
         return SegmentedPdfPage(
@@ -294,7 +294,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
             textline_cells=text_cells,
             char_cells=[],
             word_cells=[],
-            has_lines=len(text_cells) > 0,
+            has_textlines=len(text_cells) > 0,
             has_words=False,
             has_chars=False,
         )

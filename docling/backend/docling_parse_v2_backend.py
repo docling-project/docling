@@ -143,8 +143,7 @@ class DoclingParseV2PageBackend(PdfPageBackend):
         text_cells = self._compute_text_cells()
 
         # Get the PDF page geometry from pypdfium2
-        with pypdfium2_lock:
-            dimension = get_pdf_page_geometry(self._ppage)
+        dimension = get_pdf_page_geometry(self._ppage)
 
         # Create SegmentedPdfPage
         return SegmentedPdfPage(
@@ -152,7 +151,7 @@ class DoclingParseV2PageBackend(PdfPageBackend):
             textline_cells=text_cells,
             char_cells=[],
             word_cells=[],
-            has_lines=len(text_cells) > 0,
+            has_textlines=len(text_cells) > 0,
             has_words=False,
             has_chars=False,
         )
