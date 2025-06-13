@@ -247,7 +247,24 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._process_inline_text(parent_item, doc)
             _log.debug(" - List item")
 
-            snippet_text = str(first_child.children[0].children)  # type: ignore
+            snippet_text = (
+                (lambda extractor:
+                 (lambda node: extractor(extractor, node))
+                 )
+                    (
+                    lambda self, node: (
+                        node.children
+                        if hasattr(node, 'children') and isinstance(node.children, str)
+                        else ''.join(
+                            self(self, child)
+                            for child in node.children
+                        )
+                        if hasattr(node, 'children')
+                        else str(node)
+                    )
+                )
+            )(first_child)  # type: ignore
+
             is_numbered = False
             if (
                 parent_item is not None
