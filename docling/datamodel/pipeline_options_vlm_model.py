@@ -27,6 +27,7 @@ class TransformersModelType(str, Enum):
     AUTOMODEL = "automodel"
     AUTOMODEL_VISION2SEQ = "automodel-vision2seq"
     AUTOMODEL_CAUSALLM = "automodel-causallm"
+    AUTOMODEL_FORIMAGETEXTTOTEXT = "automodel-forimagetexttotext"
 
 
 class InlineVlmOptions(BaseVlmOptions):
