@@ -86,7 +86,7 @@ class BaseItemAndImageEnrichmentModel(
             coord_origin=bbox.coord_origin,
         )
 
-        page_ix = element_prov.page_no - 1
+        page_ix = element_prov.page_no - conv_res.pages[0].page_no - 1
         cropped_image = conv_res.pages[page_ix].get_image(
             scale=self.images_scale, cropbox=expanded_bbox
         )
