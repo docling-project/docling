@@ -70,6 +70,8 @@ dependencies = [
   'scipy (>=1.6.0,<2.0.0)',
   # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
   # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
+  "pydub[asr]>=0.25.1",
+  "pyannote-audio[asr]>=1.1.2",
 ]
 
 [project.urls]

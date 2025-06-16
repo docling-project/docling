@@ -48,6 +48,7 @@ from docling.datamodel.pipeline_options import (
     PaginatedPipelineOptions,
     PdfBackend,
     PdfPipelineOptions,
+    PipelineOptions,
     ProcessingPipeline,
     TableFormerMode,
     VlmPipelineOptions,
@@ -466,12 +467,14 @@ def convert(  # noqa: C901
         ),
     ] = None,
 ):
+    log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
+
     if verbose == 0:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.WARNING, format=log_format)
     elif verbose == 1:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.INFO, format=log_format)
     else:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG, format=log_format)
 
     settings.debug.visualize_cells = debug_visualize_cells
     settings.debug.visualize_layout = debug_visualize_layout
@@ -546,7 +549,8 @@ def convert(  # noqa: C901
             ocr_options.lang = ocr_lang_list
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-        pipeline_options: PaginatedPipelineOptions
+        # pipeline_options: PaginatedPipelineOptions
+        pipeline_options: PipelineOptions
 
         format_options: Dict[InputFormat, FormatOption] = {}
 
@@ -593,7 +597,7 @@ def convert(  # noqa: C901
                 backend=backend,  # pdf_backend
             )
 
-            format_options: Dict[InputFormat, FormatOption] = {
+            format_options = {
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: pdf_format_option,
             }
@@ -624,7 +628,7 @@ def convert(  # noqa: C901
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
             )
 
-            format_options: Dict[InputFormat, FormatOption] = {
+            format_options = {
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: pdf_format_option,
             }
@@ -638,6 +642,7 @@ def convert(  # noqa: C901
             if asr_model == AsrModelType.WHISPER_TINY:
                 pipeline_options.asr_options = WHISPER_TINY
             else:
+                _log.warning("falling back in base ASR model: WHISPER_TINY")
                 pipeline_options.asr_options = WHISPER_TINY
 
             audio_format_option = AudioFormatOption(
@@ -646,14 +651,9 @@ def convert(  # noqa: C901
                 backend=AudioBackend,
             )
 
-            format_options: Dict[InputFormat, FormatOption] = {
+            format_options = {
                 InputFormat.AUDIO_WAV: audio_format_option,
             }
-
-            """
-            if asr_model == AsrModelType.WHISPER_TINY:
-                pipeline_options.asr_options = WHISPER_TINY:
-            """
 
         if artifacts_path is not None:
             pipeline_options.artifacts_path = artifacts_path
