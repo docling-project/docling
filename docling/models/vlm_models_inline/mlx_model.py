@@ -73,7 +73,9 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
                 with TimeRecorder(conv_res, f"vlm-mlx-{self.vlm_options.repo_id}"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
+                    hi_res_image = page.get_image(
+                        scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
+                    )
                     if hi_res_image is not None:
                         im_width, im_height = hi_res_image.size
 

@@ -10,6 +10,8 @@ from docling.datamodel.accelerator_options import AcceleratorDevice
 class BaseVlmOptions(BaseModel):
     kind: str
     prompt: str
+    scale: float = 2.0
+    max_size: Optional[int] = None
 
 
 class ResponseFormat(str, Enum):
@@ -49,8 +51,6 @@ class InlineVlmOptions(BaseVlmOptions):
         AcceleratorDevice.MPS,
     ]
 
-    scale: float = 2.0
-
     temperature: float = 0.0
     stop_strings: List[str] = []
     extra_generation_config: Dict[str, Any] = {}
@@ -76,7 +76,6 @@ class ApiVlmOptions(BaseVlmOptions):
     )  # Default to ollama
     headers: Dict[str, str] = {}
     params: Dict[str, Any] = {}
-    scale: float = 2.0
     timeout: float = 60
     concurrency: int = 1
     response_format: ResponseFormat
