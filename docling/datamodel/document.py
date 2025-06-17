@@ -280,12 +280,9 @@ class _DocumentConversionInput(BaseModel):
 
         if isinstance(obj, Path):
             mime = filetype.guess_mime(str(obj))
-            print(f"mime: {mime}")
             if mime is None:
                 ext = obj.suffix[1:]
-                print(f"ext: {ext}")
                 mime = _DocumentConversionInput._mime_from_extension(ext)
-                print(f"mime: {mime}")
             if mime is None:  # must guess from
                 with obj.open("rb") as f:
                     content = f.read(1024)  # Read first 1KB
@@ -321,7 +318,7 @@ class _DocumentConversionInput(BaseModel):
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
         formats = MimeTypeToFormat.get(mime, [])
-        print(formats)
+        _log.info(f"detected formats: {formats}")
 
         if formats:
             if len(formats) == 1 and mime not in ("text/plain"):

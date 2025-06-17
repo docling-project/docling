@@ -163,9 +163,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.JSON_DOCLING: FormatOption(
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
-        InputFormat.AUDIO_WAV: FormatOption(
-            pipeline_cls=AsrPipeline, backend=AudioBackend
-        ),
+        InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=AudioBackend),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

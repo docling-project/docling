@@ -53,7 +53,7 @@ class AudioBackend(DeclarativeDocumentBackend):
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:
-        return {InputFormat.AUDIO_WAV}
+        return {InputFormat.AUDIO}
 
     def convert(self) -> DoclingDocument:
         """

@@ -652,7 +652,7 @@ def convert(  # noqa: C901
             )
 
             format_options = {
-                InputFormat.AUDIO_WAV: audio_format_option,
+                InputFormat.AUDIO: audio_format_option,
             }
 
         if artifacts_path is not None:
