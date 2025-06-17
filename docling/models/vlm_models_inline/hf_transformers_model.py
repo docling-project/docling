@@ -41,8 +41,8 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             from transformers import (
                 AutoModel,
                 AutoModelForCausalLM,
-                AutoModelForVision2Seq,
                 AutoModelForImageTextToText,
+                AutoModelForVision2Seq,
                 AutoProcessor,
                 BitsAndBytesConfig,
                 GenerationConfig,
@@ -92,8 +92,10 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 == TransformersModelType.AUTOMODEL_VISION2SEQ
             ):
                 model_cls = AutoModelForVision2Seq
-            elif (self.vlm_options.transformers_model_type
-                  == TransformersModelType.AUTOMODEL_FORIMAGETEXTTOTEXT):
+            elif (
+                self.vlm_options.transformers_model_type
+                == TransformersModelType.AUTOMODEL_FORIMAGETEXTTOTEXT
+            ):
                 model_cls = AutoModelForImageTextToText
 
             self.processor = AutoProcessor.from_pretrained(
