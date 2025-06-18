@@ -874,7 +874,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             current_level = curr_level
             parent_level = curr_level - 1
-            add_level = curr_level
+            add_level = curr_level - 1
         else:
             current_level = self.level
             parent_level = self.level - 1
