@@ -128,7 +128,11 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                     )
 
                     # Define prompt structure
-                    prompt = self.formulate_prompt()
+                    if callable(self.vlm_options.prompt):
+                        user_prompt = self.vlm_options.prompt(page)
+                    else:
+                        user_prompt = self.vlm_options.prompt
+                    prompt = self.formulate_prompt(user_prompt)
 
                     inputs = self.processor(
                         text=prompt, images=[hi_res_image], return_tensors="pt"
@@ -162,7 +166,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
 
                 yield page
 
-    def formulate_prompt(self) -> str:
+    def formulate_prompt(self, user_prompt: str) -> str:
         """Formulate a prompt for the VLM."""
 
         if self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
@@ -173,7 +177,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             assistant_prompt = "<|assistant|>"
             prompt_suffix = "<|end|>"
 
-            prompt = f"{user_prompt}<|image_1|>{self.vlm_options.prompt}{prompt_suffix}{assistant_prompt}"
+            prompt = f"{user_prompt}<|image_1|>{user_prompt}{prompt_suffix}{assistant_prompt}"
             _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
 
             return prompt
@@ -187,7 +191,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                         "text": "This is a page from a document.",
                     },
                     {"type": "image"},
-                    {"type": "text", "text": self.vlm_options.prompt},
+                    {"type": "text", "text": user_prompt},
                 ],
             }
         ]

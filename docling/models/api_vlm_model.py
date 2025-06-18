@@ -29,9 +29,6 @@ class ApiVlmModel(BasePageModel):
 
             self.timeout = self.vlm_options.timeout
             self.concurrency = self.vlm_options.concurrency
-            self.prompt_content = (
-                f"This is a page from a document.\n{self.vlm_options.prompt}"
-            )
             self.params = {
                 **self.vlm_options.params,
                 "temperature": self.vlm_options.temperature,
@@ -56,9 +53,14 @@ class ApiVlmModel(BasePageModel):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
+                    if callable(self.vlm_options.prompt):
+                        prompt = self.vlm_options.prompt(page)
+                    else:
+                        prompt = self.vlm_options.prompt
+
                     page_tags = api_image_request(
                         image=hi_res_image,
-                        prompt=self.prompt_content,
+                        prompt=prompt,
                         url=self.vlm_options.url,
                         timeout=self.timeout,
                         headers=self.vlm_options.headers,
