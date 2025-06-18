@@ -7,9 +7,9 @@ from pydantic import (
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.pipeline_options_asr_model import (
-    AsrResponseFormat,
+    # AsrResponseFormat,
     # ApiAsrOptions,
-    InferenceFramework,
+    InferenceAsrFramework,
     InlineAsrOptions,
     TransformersModelType,
 )
@@ -18,11 +18,77 @@ _log = logging.getLogger(__name__)
 
 # SmolDocling
 WHISPER_TINY = InlineAsrOptions(
-    repo_id="openai/whisper-tiny",
-    inference_framework=InferenceFramework.TRANSFORMERS,
-    response_format=AsrResponseFormat.WHISPER,
+    repo_id="tiny",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperatue=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+
+WHISPER_SMALL = InlineAsrOptions(
+    repo_id="small",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperatue=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_MEDIUM = InlineAsrOptions(
+    repo_id="medium",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperatue=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_BASE = InlineAsrOptions(
+    repo_id="base",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperatue=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_LARGE = InlineAsrOptions(
+    repo_id="large",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperatue=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
+)
+
+WHISPER_TURBO = InlineAsrOptions(
+    repo_id="turbo",
+    inference_framework=InferenceAsrFramework.WHISPER,
+    verbose=True,
+    timestamps=True,
+    word_timestamps=True,
+    temperatue=0.0,
+    max_new_tokens=256,
+    max_time_chunk=30.0,
 )
 
 
 class AsrModelType(str, Enum):
     WHISPER_TINY = "whisper_tiny"
+    WHISPER_SMALL = "whisper_small"
+    WHISPER_MEDIUM = "whisper_medium"
+    WHISPER_BASE = "whisper_base"
+    WHISPER_LARGE = "whisper_large"
+    WHISPER_TURBO = "whisper_turbo"

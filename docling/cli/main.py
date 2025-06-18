@@ -32,6 +32,11 @@ from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_TINY,
+    WHISPER_SMALL,
+    WHISPER_MEDIUM,
+    WHISPER_BASE,
+    WHISPER_LARGE,
+    WHISPER_TURBO,
     AsrModelType,
 )
 from docling.datamodel.base_models import (
@@ -641,10 +646,22 @@ def convert(  # noqa: C901
 
             if asr_model == AsrModelType.WHISPER_TINY:
                 pipeline_options.asr_options = WHISPER_TINY
+            elif asr_model == AsrModelType.WHISPER_SMALL:
+                pipeline_options.asr_options = WHISPER_SMALL
+            elif asr_model == AsrModelType.WHISPER_MEDIUM:
+                pipeline_options.asr_options = WHISPER_MEDIUM
+            elif asr_model == AsrModelType.WHISPER_BASE:
+                pipeline_options.asr_options = WHISPER_BASE
+            elif asr_model == AsrModelType.WHISPER_LARGE:
+                pipeline_options.asr_options = WHISPER_LARGE                
+            elif asr_model == AsrModelType.WHISPER_TURBO:
+                pipeline_options.asr_options = WHISPER_TURBO                
             else:
-                _log.warning("falling back in base ASR model: WHISPER_TINY")
-                pipeline_options.asr_options = WHISPER_TINY
+                _log.error(f"{asr_model} is not known")
+                raise ValueError(f"{asr_model} is not known")
 
+            _log.info(f"pipeline_options: {pipeline_options}")
+            
             audio_format_option = AudioFormatOption(
                 pipeline_cls=AsrPipeline,
                 pipeline_options=pipeline_options,

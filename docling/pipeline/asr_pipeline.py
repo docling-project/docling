@@ -5,18 +5,21 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Union, cast
 
-import whisper  # type: ignore
-
+# import whisper  # type: ignore
 # import librosa
 # import numpy as np
 # import soundfile as sf  # type: ignore
 from docling_core.types.doc.labels import DocItemLabel
 from pydantic import BaseModel, Field, validator
 
-# from pydub import AudioSegment  # type: ignore
-# from transformers import WhisperForConditionalGeneration, WhisperProcessor, pipeline
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.audio_backend import AudioBackend
+
+# from pydub import AudioSegment  # type: ignore
+# from transformers import WhisperForConditionalGeneration, WhisperProcessor, pipeline
+from docling.datamodel.accelerator_options import (
+    AcceleratorOptions,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
 )
@@ -25,7 +28,7 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
 )
 from docling.datamodel.pipeline_options_asr_model import (
-    AsrResponseFormat,
+    # AsrResponseFormat,
     InlineAsrOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -88,15 +91,41 @@ class _ConversationItem(BaseModel):
 
 
 class _NativeWhisperModel:
-    def __init__(self, model_name: str = "medium"):
+    def __init__(
+        self,
+        enabled: bool,
+        artifacts_path: Optional[Path],
+        accelerator_options: AcceleratorOptions,
+        asr_options: InlineAsrOptions,
+        # model_name: str = "medium",
+    ):
         """
         Transcriber using native Whisper.
         """
+        self.enabled = enabled
+        
+        _log.info(f"artifacts-path: {artifacts_path}")
+        _log.info(f"accelerator_options: {accelerator_options}")
+        
+        if self.enabled:
+            try:
+                import whisper  # type: ignore
+            except ImportError:
+                raise ImportError(
+                    "whisper is not installed. Please install it via `pip install openai-whisper`."
+                )
+            self.asr_options = asr_options
+            self.max_tokens = asr_options.max_new_tokens
+            self.temperature = asr_options.temperature
 
-        self.model = whisper.load_model(model_name)
+            
+            self.model_name = asr_options.repo_id
+            _log.info(f"loading _NativeWhisperModel({self.model_name})")
+            self.model = whisper.load_model(self.model_name)
 
-        self.verbose = True
-        self.word_timestamps = True
+            self.verbose = asr_options.verbose
+            self.timestamps = asr_options.timestamps
+            self.word_timestamps = asr_options.word_timestamps
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         audio_path: Path = Path(conv_res.input.file).resolve()
@@ -126,15 +155,16 @@ class _NativeWhisperModel:
             item = _ConversationItem(
                 start_time=_["start"], end_time=_["end"], text=_["text"], words=[]
             )
-            item.words = []
-            for __ in _["words"]:
-                item.words.append(
-                    _ConversationWord(
-                        start_time=__["start"],
-                        end_time=__["end"],
-                        text=__["word"],
+            if "words" in _ and self.word_timestamps:
+                item.words = []
+                for __ in _["words"]:
+                    item.words.append(
+                        _ConversationWord(
+                            start_time=__["start"],
+                            end_time=__["end"],
+                            text=__["word"],
+                        )
                     )
-                )
             convo.append(item)
 
         return convo
@@ -159,8 +189,15 @@ class AsrPipeline(BasePipeline):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-        # self._model = _WhisperModel()
-        self._model = _NativeWhisperModel()
+        if isinstance(self.pipeline_options.asr_options, InlineAsrOptions):
+            self._model = _NativeWhisperModel(
+                enabled=True,  # must be always enabled for this pipeline to make sense.
+                artifacts_path=artifacts_path,
+                accelerator_options=pipeline_options.accelerator_options,
+                asr_options=pipeline_options.asr_options
+            )
+        else:
+            _log.error("")
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         status = ConversionStatus.SUCCESS
@@ -171,10 +208,9 @@ class AsrPipeline(BasePipeline):
         return AsrPipelineOptions()
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+        _log.info(f"start _build_document in AsrPipeline: {conv_res.input.file}")
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
-            _log.info(f"do something: {conv_res.input.file}")
             self._model.run(conv_res=conv_res)
-            _log.info(f"finished doing something: {conv_res.input.file}")
 
         return conv_res
 
