@@ -12,6 +12,7 @@ class BaseVlmOptions(BaseModel):
     prompt: str
     scale: float = 2.0
     max_size: Optional[int] = None
+    temperature: float = 0.0
 
 
 class ResponseFormat(str, Enum):
@@ -51,7 +52,6 @@ class InlineVlmOptions(BaseVlmOptions):
         AcceleratorDevice.MPS,
     ]
 
-    temperature: float = 0.0
     stop_strings: List[str] = []
     extra_generation_config: Dict[str, Any] = {}
 

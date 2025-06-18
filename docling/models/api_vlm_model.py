@@ -34,7 +34,7 @@ class ApiVlmModel(BasePageModel):
             )
             self.params = {
                 **self.vlm_options.params,
-                "temperature": 0,
+                "temperature": self.vlm_options.temperature,
             }
 
     def __call__(
