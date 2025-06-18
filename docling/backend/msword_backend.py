@@ -878,7 +878,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         else:
             current_level = self.level
             parent_level = self.level - 1
-            add_level = 1
+            add_level = max(0, self.level - 1)
 
         if is_numbered_style:
             if add_level in self.numbered_headers:
