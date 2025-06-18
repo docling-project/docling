@@ -28,6 +28,7 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
 )
 from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrNativeWhisperOptions,
     # AsrResponseFormat,
     InlineAsrOptions,
 )
@@ -36,6 +37,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.settings import settings
 from docling.pipeline.base_pipeline import BasePipeline
+from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -96,17 +98,16 @@ class _NativeWhisperModel:
         enabled: bool,
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
-        asr_options: InlineAsrOptions,
-        # model_name: str = "medium",
+        asr_options: InlineAsrNativeWhisperOptions,
     ):
         """
         Transcriber using native Whisper.
         """
         self.enabled = enabled
-        
+
         _log.info(f"artifacts-path: {artifacts_path}")
         _log.info(f"accelerator_options: {accelerator_options}")
-        
+
         if self.enabled:
             try:
                 import whisper  # type: ignore
@@ -118,10 +119,25 @@ class _NativeWhisperModel:
             self.max_tokens = asr_options.max_new_tokens
             self.temperature = asr_options.temperature
 
-            
+            self.device = decide_device(
+                accelerator_options.device,
+                supported_devices=asr_options.supported_devices,
+            )
+            _log.info(f"Available device for Whisper: {self.device}")
+
             self.model_name = asr_options.repo_id
             _log.info(f"loading _NativeWhisperModel({self.model_name})")
-            self.model = whisper.load_model(self.model_name)
+            if artifacts_path is not None:
+                _log.info(f"loading {self.model_name} from {artifacts_path}")
+                self.model = whisper.load_model(
+                    name=self.model_name,
+                    device=self.device,
+                    download_root=str(artifacts_path),
+                )
+            else:
+                self.model = whisper.load_model(
+                    name=self.model_name, device=self.device
+                )
 
             self.verbose = asr_options.verbose
             self.timestamps = asr_options.timestamps
@@ -189,15 +205,18 @@ class AsrPipeline(BasePipeline):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-        if isinstance(self.pipeline_options.asr_options, InlineAsrOptions):
+        if isinstance(self.pipeline_options.asr_options, InlineAsrNativeWhisperOptions):
+            asr_options: InlineAsrNativeWhisperOptions = (
+                self.pipeline_options.asr_options
+            )
             self._model = _NativeWhisperModel(
                 enabled=True,  # must be always enabled for this pipeline to make sense.
                 artifacts_path=artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
-                asr_options=pipeline_options.asr_options
+                asr_options=asr_options,
             )
         else:
-            _log.error("")
+            _log.error(f"No model support for {self.pipeline_options.asr_options}")
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         status = ConversionStatus.SUCCESS

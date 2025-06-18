@@ -27,11 +27,8 @@ class InlineAsrOptions(BaseAsrOptions):
 
     repo_id: str
 
-    inference_framework: InferenceAsrFramework
-
     verbose: bool = False
     timestamps: bool = True
-    word_timestamps: bool = True
 
     temperature: float = 0.0
     max_new_tokens: int = 256
@@ -44,25 +41,17 @@ class InlineAsrOptions(BaseAsrOptions):
         AcceleratorDevice.MPS,
     ]
 
-    """
-    repo_id: str
-    trust_remote_code: bool = False
-    load_in_8bit: bool = True
-    llm_int8_threshold: float = 6.0
-    quantized: bool = False
-
-    inference_framework: InferenceFramework
-    transformers_model_type: TransformersModelType = TransformersModelType.AUTOMODEL
-    response_format: AsrResponseFormat
-
-    temperature: float = 0.0
-    stop_strings: List[str] = []
-    extra_generation_config: Dict[str, Any] = {}
-
-    use_kv_cache: bool = True
-    max_new_tokens: int = 4096
-    """
-
     @property
     def repo_cache_folder(self) -> str:
         return self.repo_id.replace("/", "--")
+
+
+class InlineAsrNativeWhisperOptions(InlineAsrOptions):
+    inference_framework: InferenceAsrFramework = InferenceAsrFramework.WHISPER
+
+    language: str = "en"
+    supported_devices: List[AcceleratorDevice] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+    ]
+    word_timestamps: bool = True

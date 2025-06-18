@@ -31,11 +31,11 @@ from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
-    WHISPER_TINY,
-    WHISPER_SMALL,
-    WHISPER_MEDIUM,
     WHISPER_BASE,
     WHISPER_LARGE,
+    WHISPER_MEDIUM,
+    WHISPER_SMALL,
+    WHISPER_TINY,
     WHISPER_TURBO,
     AsrModelType,
 )
@@ -653,15 +653,15 @@ def convert(  # noqa: C901
             elif asr_model == AsrModelType.WHISPER_BASE:
                 pipeline_options.asr_options = WHISPER_BASE
             elif asr_model == AsrModelType.WHISPER_LARGE:
-                pipeline_options.asr_options = WHISPER_LARGE                
+                pipeline_options.asr_options = WHISPER_LARGE
             elif asr_model == AsrModelType.WHISPER_TURBO:
-                pipeline_options.asr_options = WHISPER_TURBO                
+                pipeline_options.asr_options = WHISPER_TURBO
             else:
                 _log.error(f"{asr_model} is not known")
                 raise ValueError(f"{asr_model} is not known")
 
             _log.info(f"pipeline_options: {pipeline_options}")
-            
+
             audio_format_option = AudioFormatOption(
                 pipeline_cls=AsrPipeline,
                 pipeline_options=pipeline_options,
