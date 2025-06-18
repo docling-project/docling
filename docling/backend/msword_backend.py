@@ -852,65 +852,67 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _add_header(
         self,
         doc: DoclingDocument,
-        curr_level: Optional[int],
+        curr_level: Optional[int],      # 1‑based if Word style contains a digit
         text: str,
         is_numbered_style: bool = False,
     ) -> None:
-        level = self._get_level()
-        if isinstance(curr_level, int):
-            if curr_level > level:
-                # add invisible group
-                for i in range(level, curr_level):
-                    self.parents[i] = doc.add_group(
-                        parent=self.parents[i - 1],
-                        label=GroupLabel.SECTION,
-                        name=f"header-{i}",
-                    )
-            elif curr_level < level:
-                # remove the tail
-                for key in range(len(self.parents)):
-                    if key >= curr_level:
-                        self.parents[key] = None
 
-            current_level = curr_level
-            parent_level = curr_level - 1
-            add_level = curr_level - 1
-        else:
-            current_level = self.level
-            parent_level = self.level - 1
-            add_level = max(0, self.level - 1)
+        # ------------------------------------------------------------------ #
+        # 1. Decide the *zero‑based* level we want to store in the model     #
+        # ------------------------------------------------------------------ #
+        if curr_level is not None:                   # ≙ “Heading 2”, “Heading 3”, …
+            target_level = max(curr_level - 1, 0)    # zero‑base
+        else:                                        # ≙ “Heading” (no number)
+            # If no explicit number, keep current depth; if none yet, go to 1
+            target_level = max(self.level, 1)
 
+        # ------------------------------------------------------------------ #
+        # 2. Extend or trim the parents chain to that depth                  #
+        # ------------------------------------------------------------------ #
+        if target_level > self.level:                # need extra invisible groups
+            for i in range(self.level + 1, target_level + 1):
+                self.parents[i] = doc.add_group(
+                    parent=self.parents[i - 1],
+                    label=GroupLabel.SECTION,
+                    name=f"header-{i}",
+                )
+        elif target_level < self.level:              # heading went “back up”
+            for i in range(target_level + 1, len(self.parents)):
+                self.parents[i] = None
+
+        # Update current depth
+        self.level = target_level
+        parent = self.parents[target_level - 1] if target_level > 0 else None
+
+        # ------------------------------------------------------------------ #
+        # 3. Apply automatic numbering (unchanged logic, but uses new level)  #
+        # ------------------------------------------------------------------ #
         if is_numbered_style:
-            if add_level in self.numbered_headers:
-                self.numbered_headers[add_level] += 1
-            else:
-                self.numbered_headers[add_level] = 1
-            text = f"{self.numbered_headers[add_level]} {text}"
+            self.numbered_headers[target_level] = (
+                self.numbered_headers.get(target_level, 0) + 1
+            )
 
-            # Reset deeper levels
-            next_level = add_level + 1
-            while next_level in self.numbered_headers:
-                self.numbered_headers[next_level] = 0
-                next_level += 1
+            # build prefix (e.g. “2.3.”) from higher levels
+            prefix_parts = []
+            for l in range(target_level):
+                if self.numbered_headers.get(l, 0) == 0:
+                    self.numbered_headers[l] = 1         # fill skipped level
+                prefix_parts.append(str(self.numbered_headers[l]))
+            prefix_parts.append(str(self.numbered_headers[target_level]))
+            text = " ".join([".".join(prefix_parts), text])
 
-            # Scan upper levels
-            previous_level = add_level - 1
-            while previous_level in self.numbered_headers:
-                # MSWord convention: no empty sublevels
-                # I.e., sub-sub section (2.0.1) without a sub-section (2.1)
-                # is processed as 2.1.1
-                if self.numbered_headers[previous_level] == 0:
-                    self.numbered_headers[previous_level] += 1
+            # reset deeper levels
+            for l in range(target_level + 1, len(self.parents)):
+                self.numbered_headers[l] = 0
 
-                text = f"{self.numbered_headers[previous_level]}.{text}"
-                previous_level -= 1
-
-        self.parents[current_level] = doc.add_heading(
-            parent=self.parents[parent_level],
+        # ------------------------------------------------------------------ #
+        # 4. Finally create the visible heading node                         #
+        # ------------------------------------------------------------------ #
+        self.parents[target_level] = doc.add_heading(
+            parent=parent,
             text=text,
-            level=add_level,
+            level=target_level,         # always zero‑based now
         )
-        return
 
     def _add_list_item(
         self,
