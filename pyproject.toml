@@ -70,9 +70,6 @@ dependencies = [
   'scipy (>=1.6.0,<2.0.0)',
   # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
   # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
-  "pydub[asr]>=0.25.1",
-  "pyannote-audio[asr]>=1.1.2",
-  "openai-whisper[asr]>=20240930",
 ]
 
 [project.urls]
@@ -150,6 +147,9 @@ constraints = [
 [tool.uv]
 package = true
 default-groups = "all"
+
+[tool.uv.sources]
+openai-whisper = { git = "https://github.com/openai/whisper.git", rev = "dd985ac4b90cafeef8712f2998d62c59c3e62d22" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]
