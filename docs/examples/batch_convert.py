@@ -121,14 +121,15 @@ def export_documents(
 def main():
     logging.basicConfig(level=logging.INFO)
 
+    data_folder = Path(__file__).parent / "../../tests/data"
     input_doc_paths = [
-        Path("./tests/data/pdf/2206.01062.pdf"),
-        Path("./tests/data/pdf/2203.01017v2.pdf"),
-        Path("./tests/data/pdf/2305.03393v1.pdf"),
-        Path("./tests/data/pdf/redp5110_sampled.pdf"),
+        data_folder / "pdf/2206.01062.pdf",
+        data_folder / "pdf/2203.01017v2.pdf",
+        data_folder / "pdf/2305.03393v1.pdf",
+        data_folder / "pdf/redp5110_sampled.pdf",
     ]
 
-    # buf = BytesIO(Path("./test/data/2206.01062.pdf").open("rb").read())
+    # buf = BytesIO((data_folder / "pdf/2206.01062.pdf").open("rb").read())
     # docs = [DocumentStream(name="my_doc.pdf", stream=buf)]
     # input = DocumentConversionInput.from_streams(docs)
 

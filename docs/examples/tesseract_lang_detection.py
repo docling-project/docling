@@ -9,7 +9,8 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path("./tests/data/pdf/2206.01062.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
 
     # Set lang=["auto"] with a tesseract OCR engine: TesseractOcrOptions, TesseractCliOcrOptions
     # ocr_options = TesseractOcrOptions(lang=["auto"])
@@ -27,7 +28,7 @@ def main():
         }
     )
 
-    doc = converter.convert(input_doc).document
+    doc = converter.convert(input_doc_path).document
     md = doc.export_to_markdown()
     print(md)
 
