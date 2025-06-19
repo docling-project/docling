@@ -1,8 +1,11 @@
 import logging
+import re
 import traceback
+from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
 from bs4.element import PreformattedString
@@ -17,6 +20,7 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
+from pydantic import AnyUrl, BaseModel, ValidationError as PydanticValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -47,10 +51,57 @@ TAGS_FOR_NODE_ITEMS: Final = [
     "img",
 ]
 
+NON_TEXT_TAGS: Final = ["script", "style"]
+
+
+class AnnotatedText(BaseModel):
+    text: str
+    hyperlink: Union[AnyUrl, Path, None] = None
+
+
+class AnnotatedTextList(list):
+    def to_single_text_element(self) -> AnnotatedText:
+        current_h = None
+        current_text = ""
+        for at in self:
+            t = at.text
+            h = at.hyperlink
+            current_text += t.strip() + " "
+            if h is not None and current_h is None:
+                current_h = h
+            elif h is not None and current_h is not None and h != current_h:
+                _log.warning(
+                    f"Clashing hyperlinks: '{h}' and '{current_h}'! Chose '{current_h}'"
+                )
+        return AnnotatedText(text=current_text.strip(), hyperlink=current_h)
+
+    def simplify_text_elements(self) -> "AnnotatedTextList":
+        simplified = AnnotatedTextList()
+        if not self:
+            return self
+        text = self[0].text
+        hyperlink = self[0].hyperlink
+        for i in range(1, len(self)):
+            if hyperlink == self[i].hyperlink:
+                sep = " "
+                text += sep + self[i].text
+            else:
+                simplified.append(AnnotatedText(text=text, hyperlink=hyperlink))
+                text = self[i].text
+                hyperlink = self[i].hyperlink
+        if text:
+            simplified.append(AnnotatedText(text=text, hyperlink=hyperlink))
+        return simplified
+
 
 class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @override
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        original_url: Optional[AnyUrl] = None,
+    ):
         super().__init__(in_doc, path_or_stream)
         self.soup: Optional[Tag] = None
         # HTML file:
@@ -61,6 +112,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
         for i in range(self.max_levels):
             self.parents[i] = None
+        self.hyperlink = None
+        self.original_url = original_url
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -159,6 +212,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             label=DocItemLabel.TEXT,
                             text=text,
                             content_layer=self.content_layer,
+                            hyperlink=self.hyperlink,
                         )
                     text = ""
 
@@ -183,29 +237,73 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.handle_image(tag, doc)
         elif tag.name == "details":
             self.handle_details(tag, doc)
+        elif tag.name == "a":
+            with self.use_hyperlink(tag):
+                self.walk(tag, doc)
         else:
             self.walk(tag, doc)
 
-    def get_text(self, item: PageElement) -> str:
-        """Get the text content of a tag."""
-        parts: list[str] = self.extract_text_recursively(item)
-
-        return "".join(parts) + " "
+    @contextmanager
+    def use_hyperlink(self, tag):
+        this_href = tag.get("href")
+        if this_href is None:
+            yield None
+        else:
+            if this_href:
+                old_hyperlink = self.hyperlink
+                if self.original_url is not None:
+                    this_href = urljoin(self.original_url, this_href)
+                # ugly fix for relative links since pydantic does not support them.
+                try:
+                    AnyUrl(this_href)
+                except PydanticValidationError:
+                    this_href = Path(this_href)
+                self.hyperlink = this_href
+            try:
+                yield None
+            finally:
+                if this_href:
+                    self.hyperlink = old_hyperlink
 
     # Function to recursively extract text from all child nodes
-    def extract_text_recursively(self, item: PageElement) -> list[str]:
-        result: list[str] = []
+    def extract_text_and_hyperlink_recursively(
+        self, item: PageElement, ignore_list=False
+    ) -> AnnotatedTextList:
+        result: AnnotatedTextList = AnnotatedTextList()
 
         if isinstance(item, NavigableString):
-            return [item]
+            text = item.strip()
+            if text:
+                return AnnotatedTextList(
+                    [AnnotatedText(text=text, hyperlink=self.hyperlink)]
+                )
+            return AnnotatedTextList()
 
         tag = cast(Tag, item)
-        if tag.name not in ["ul", "ol"]:
+        if tag.name not in NON_TEXT_TAGS and (
+            not ignore_list or (tag.name not in ["ul", "ol"])
+        ):
             for child in tag:
-                # Recursively get the child's text content
-                result.extend(self.extract_text_recursively(child))
+                if isinstance(child, Tag) and child.name == "a":
+                    with self.use_hyperlink(child):
+                        result.extend(
+                            self.extract_text_and_hyperlink_recursively(
+                                child, ignore_list
+                            )
+                        )
+                else:
+                    # Recursively get the child's text content
+                    result.extend(
+                        self.extract_text_and_hyperlink_recursively(child, ignore_list)
+                    )
+        return result
 
-        return ["".join(result) + " "]
+    def extract_single_text_and_hyperlink(
+        self, element, ignore_list=False
+    ) -> AnnotatedText:
+        return self.extract_text_and_hyperlink_recursively(
+            element, ignore_list
+        ).to_single_text_element()
 
     def handle_details(self, element: Tag, doc: DoclingDocument) -> None:
         """Handle details tag (details) and its content."""
@@ -225,7 +323,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def handle_header(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles header tags (h1, h2, etc.)."""
         hlevel = int(element.name.replace("h", ""))
-        text = element.text.strip()
+        annotated_text = self.extract_single_text_and_hyperlink(element)
 
         self.content_layer = ContentLayer.BODY
 
@@ -237,8 +335,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[self.level] = doc.add_text(
                 parent=self.parents[0],
                 label=DocItemLabel.TITLE,
-                text=text,
+                text=annotated_text.text,
                 content_layer=self.content_layer,
+                hyperlink=annotated_text.hyperlink,
             )
         else:
             if hlevel > self.level:
@@ -261,35 +360,57 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             self.parents[hlevel] = doc.add_heading(
                 parent=self.parents[hlevel - 1],
-                text=text,
+                text=annotated_text.text,
                 level=hlevel - 1,
                 content_layer=self.content_layer,
+                hyperlink=annotated_text.hyperlink,
             )
 
     def handle_code(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles monospace code snippets (pre)."""
         if element.text is None:
             return
-        text = element.text.strip()
-        if text:
+        annotated_text = self.extract_single_text_and_hyperlink(element)
+        if annotated_text.text:
             doc.add_code(
                 parent=self.parents[self.level],
-                text=text,
+                text=annotated_text.text,
                 content_layer=self.content_layer,
+                hyperlink=annotated_text.hyperlink,
             )
 
     def handle_paragraph(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles paragraph tags (p) or equivalent ones."""
         if element.text is None:
             return
-        text = element.text.strip()
-        if text:
-            doc.add_text(
+
+        annotated_texts = self.extract_text_and_hyperlink_recursively(
+            element
+        ).simplify_text_elements()
+
+        if len(annotated_texts) > 1:
+            inline_fmt = doc.add_group(
+                label=GroupLabel.INLINE,
                 parent=self.parents[self.level],
-                label=DocItemLabel.TEXT,
-                text=text,
                 content_layer=self.content_layer,
             )
+            for annotated_text in annotated_texts:
+                doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=annotated_text.text,
+                    parent=inline_fmt,
+                    content_layer=self.content_layer,
+                    hyperlink=annotated_text.hyperlink,
+                )
+        else:
+            for annotated_text in annotated_texts:
+                doc.add_text(
+                    parent=self.parents[self.level],
+                    label=DocItemLabel.TEXT,
+                    text=annotated_text.text.strip(),
+                    content_layer=self.content_layer,
+                    hyperlink=annotated_text.hyperlink,
+                )
 
     def handle_list(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles list tags (ul, ol) and their list items."""
@@ -345,9 +466,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if nested_list:
             # Text in list item can be hidden within hierarchy, hence
             # we need to extract it recursively
-            text: str = self.get_text(element)
+            annotated_text = self.extract_single_text_and_hyperlink(
+                element, ignore_list=True
+            )
             # Flatten text, remove break lines:
-            text = text.replace("\n", "").replace("\r", "")
+            text = annotated_text.text.replace("\n", "").replace("\r", "")
             text = " ".join(text.split()).strip()
 
             marker = ""
@@ -364,6 +487,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     marker=marker,
                     parent=parent,
                     content_layer=self.content_layer,
+                    hyperlink=annotated_text.hyperlink,
                 )
                 self.level += 1
                 self.walk(element, doc)
@@ -373,7 +497,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self.walk(element, doc)
 
         elif element.text.strip():
-            text = element.text.strip()
+            annotated_text = self.extract_single_text_and_hyperlink(element)
 
             marker = ""
             enumerated = False
@@ -381,11 +505,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 marker = f"{index_in_list!s}."
                 enumerated = True
             doc.add_list_item(
-                text=text,
+                text=annotated_text.text,
                 enumerated=enumerated,
                 marker=marker,
                 parent=parent,
                 content_layer=self.content_layer,
+                hyperlink=annotated_text.hyperlink,
             )
         else:
             _log.debug(f"list-item has no text: {element}")
@@ -570,6 +695,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 label=DocItemLabel.CAPTION,
                 text=("".join(texts)).strip(),
                 content_layer=self.content_layer,
+                hyperlink=self.hyperlink,
             )
             doc.add_picture(
                 parent=self.parents[self.level],
