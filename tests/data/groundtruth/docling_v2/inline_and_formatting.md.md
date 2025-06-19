@@ -11,10 +11,10 @@ Create your feature branch: `git checkout -b feature/AmazingFeature` .
 3. Commit your changes ( `git commit -m 'Add some AmazingFeature'` )
 4. Push to the branch ( `git push origin feature/AmazingFeature` )
 5. Open a Pull Request
-6. [&lt;RawText children='Whole list item has same formatting'&gt;]
+6. **Whole list item has same formatting**
 7. List item has *mixed or partial* formatting
 
-# [&lt;RawText children='Whole heading is italic'&gt;]
+*# Whole heading is italic*
 
 Bar
 
