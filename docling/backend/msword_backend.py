@@ -257,7 +257,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for Text after the Image
                 if (
                     tag_name in ["p"]
-                    or element.find(".//w:p", namespaces=namespaces) is not None
+                    and element.find(".//w:t", namespaces=namespaces) is not None
                 ):
                     self._handle_text_elements(element, docx_obj, doc)
             # Check for the sdt containers, like table of contents
