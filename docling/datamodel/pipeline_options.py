@@ -265,7 +265,7 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
 
 
 class AsrPipelineOptions(PipelineOptions):
-    asr_options: Union[InlineAsrOptions] = whisper_tiny
+    asr_options: Union[InlineAsrOptions] = asr_model_specs.WHISPER_TINY
     artifacts_path: Optional[Union[Path, str]] = None
 
 
