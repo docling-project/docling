@@ -5,8 +5,10 @@ body:
   - $ref: '#/groups/0'
   - $ref: '#/groups/1'
   - $ref: '#/groups/2'
-  - $ref: '#/texts/27'
-  - $ref: '#/groups/8'
+  - $ref: '#/texts/32'
+  - $ref: '#/texts/33'
+  - $ref: '#/texts/34'
+  - $ref: '#/texts/37'
   content_layer: body
   label: unspecified
   name: _root_
@@ -47,6 +49,8 @@ groups:
   - $ref: '#/texts/18'
   - $ref: '#/texts/22'
   - $ref: '#/texts/26'
+  - $ref: '#/texts/27'
+  - $ref: '#/texts/28'
   content_layer: body
   label: ordered_list
   name: list
@@ -94,47 +98,28 @@ groups:
     $ref: '#/texts/22'
   self_ref: '#/groups/6'
 - children:
-  - $ref: '#/texts/28'
   - $ref: '#/texts/29'
+  - $ref: '#/texts/30'
+  - $ref: '#/texts/31'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/texts/27'
+    $ref: '#/texts/28'
   self_ref: '#/groups/7'
 - children:
-  - $ref: '#/texts/30'
-  - $ref: '#/texts/33'
-  content_layer: body
-  label: list
-  name: list
-  parent:
-    $ref: '#/body'
-  self_ref: '#/groups/8'
-- children:
-  - $ref: '#/texts/31'
-  - $ref: '#/texts/32'
-  content_layer: body
-  label: inline
-  name: group
-  parent:
-    $ref: '#/texts/30'
-  self_ref: '#/groups/9'
-- children:
-  - $ref: '#/texts/34'
   - $ref: '#/texts/35'
   - $ref: '#/texts/36'
-  - $ref: '#/texts/37'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/texts/33'
-  self_ref: '#/groups/10'
+    $ref: '#/texts/34'
+  self_ref: '#/groups/8'
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 9342273634728023910
+  binary_hash: 13696403111835531717
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
@@ -436,8 +421,81 @@ texts:
   prov: []
   self_ref: '#/texts/26'
   text: Open a Pull Request
+- children: []
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: '-'
+  orig: '[<RawText children=''Whole list item has same formatting''>]'
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/27'
+  text: '[<RawText children=''Whole list item has same formatting''>]'
 - children:
   - $ref: '#/groups/7'
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: '-'
+  orig: ''
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/28'
+  text: ''
+- children: []
+  content_layer: body
+  label: text
+  orig: List item has
+  parent:
+    $ref: '#/groups/7'
+  prov: []
+  self_ref: '#/texts/29'
+  text: List item has
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    strikethrough: false
+    underline: false
+  label: text
+  orig: mixed or partial
+  parent:
+    $ref: '#/groups/7'
+  prov: []
+  self_ref: '#/texts/30'
+  text: mixed or partial
+- children: []
+  content_layer: body
+  label: text
+  orig: formatting
+  parent:
+    $ref: '#/groups/7'
+  prov: []
+  self_ref: '#/texts/31'
+  text: formatting
+- children: []
+  content_layer: body
+  label: title
+  orig: '[<RawText children=''Whole heading is italic''>]'
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/32'
+  text: '[<RawText children=''Whole heading is italic''>]'
+- children: []
+  content_layer: body
+  label: text
+  orig: Bar
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/33'
+  text: Bar
+- children:
+  - $ref: '#/groups/8'
   content_layer: body
   label: section_header
   level: 1
@@ -445,7 +503,7 @@ texts:
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/27'
+  self_ref: '#/texts/34'
   text: ''
 - children: []
   content_layer: body
@@ -455,111 +513,28 @@ texts:
     strikethrough: false
     underline: false
   label: text
-  orig: Second
-  parent:
-    $ref: '#/groups/7'
-  prov: []
-  self_ref: '#/texts/28'
-  text: Second
-- children: []
-  content_layer: body
-  label: text
-  orig: section
-  parent:
-    $ref: '#/groups/7'
-  prov: []
-  self_ref: '#/texts/29'
-  text: section
-- children:
-  - $ref: '#/groups/9'
-  content_layer: body
-  enumerated: false
-  label: list_item
-  marker: '-'
-  orig: ''
+  orig: Partially formatted
   parent:
     $ref: '#/groups/8'
-  prov: []
-  self_ref: '#/texts/30'
-  text: ''
-- children: []
-  content_layer: body
-  formatting:
-    bold: true
-    italic: false
-    strikethrough: false
-    underline: false
-  label: text
-  orig: First
-  parent:
-    $ref: '#/groups/9'
-  prov: []
-  self_ref: '#/texts/31'
-  text: First
-- children: []
-  content_layer: body
-  label: text
-  orig: ': Lorem ipsum.'
-  parent:
-    $ref: '#/groups/9'
-  prov: []
-  self_ref: '#/texts/32'
-  text: ': Lorem ipsum.'
-- children:
-  - $ref: '#/groups/10'
-  content_layer: body
-  enumerated: false
-  label: list_item
-  marker: '-'
-  orig: ''
-  parent:
-    $ref: '#/groups/8'
-  prov: []
-  self_ref: '#/texts/33'
-  text: ''
-- children: []
-  content_layer: body
-  formatting:
-    bold: true
-    italic: false
-    strikethrough: false
-    underline: false
-  label: text
-  orig: Second
-  parent:
-    $ref: '#/groups/10'
-  prov: []
-  self_ref: '#/texts/34'
-  text: Second
-- children: []
-  content_layer: body
-  label: text
-  orig: ': Dolor'
-  parent:
-    $ref: '#/groups/10'
   prov: []
   self_ref: '#/texts/35'
-  text: ': Dolor'
-- captions: []
-  children: []
-  code_language: unknown
-  content_layer: body
-  footnotes: []
-  label: code
-  orig: sit
-  parent:
-    $ref: '#/groups/10'
-  prov: []
-  references: []
-  self_ref: '#/texts/36'
-  text: sit
+  text: Partially formatted
 - children: []
   content_layer: body
   label: text
-  orig: amet.
+  orig: heading
   parent:
-    $ref: '#/groups/10'
+    $ref: '#/groups/8'
+  prov: []
+  self_ref: '#/texts/36'
+  text: heading
+- children: []
+  content_layer: body
+  label: text
+  orig: End
+  parent:
+    $ref: '#/body'
   prov: []
   self_ref: '#/texts/37'
-  text: amet.
+  text: End
 version: 1.3.0
