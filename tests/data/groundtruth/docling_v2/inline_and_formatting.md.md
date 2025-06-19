@@ -12,9 +12,13 @@ Create your feature branch: `git checkout -b feature/AmazingFeature` .
 4. Push to the branch ( `git push origin feature/AmazingFeature` )
 5. Open a Pull Request
 
-## 
+##
 
 *Second* section
 
 - **First** : Lorem ipsum.
 - **Second** : Dolor `sit` amet.
+
+| Bold Heading   | Italic Heading   |
+|----------------|------------------|
+| data a         | data b           |

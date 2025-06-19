@@ -276,7 +276,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f" - Paragraph (raw text): {element.children}")
             snippet_text = element.children.strip()
             # Detect start of the table:
-            if "|" in snippet_text:
+            if "|" in snippet_text or self.in_table:
                 # most likely part of the markdown table
                 self.in_table = True
                 if len(self.md_table_buffer) > 0:

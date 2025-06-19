@@ -7,6 +7,8 @@ body:
   - $ref: '#/groups/2'
   - $ref: '#/texts/27'
   - $ref: '#/groups/8'
+  - $ref: '#/groups/11'
+  - $ref: '#/tables/0'
   content_layer: body
   label: unspecified
   name: _root_
@@ -131,16 +133,158 @@ groups:
   parent:
     $ref: '#/texts/33'
   self_ref: '#/groups/10'
+- children: []
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/11'
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 9342273634728023910
+  binary_hash: 15980020574215496313
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
 pictures: []
 schema_name: DoclingDocument
-tables: []
+tables:
+- captions: []
+  children: []
+  content_layer: body
+  data:
+    grid:
+    - - col_span: 1
+        column_header: true
+        end_col_offset_idx: 1
+        end_row_offset_idx: 1
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 0
+        start_row_offset_idx: 0
+        text: Bold Heading
+      - col_span: 1
+        column_header: true
+        end_col_offset_idx: 2
+        end_row_offset_idx: 1
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 1
+        start_row_offset_idx: 0
+        text: Italic Heading
+    - - col_span: 1
+        column_header: false
+        end_col_offset_idx: 1
+        end_row_offset_idx: 2
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 0
+        start_row_offset_idx: 1
+        text: data a
+      - col_span: 1
+        column_header: false
+        end_col_offset_idx: 2
+        end_row_offset_idx: 2
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 1
+        start_row_offset_idx: 1
+        text: data b
+    num_cols: 2
+    num_rows: 2
+    table_cells:
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 1
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 0
+      text: Bold Heading
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 2
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 0
+      text: Italic Heading
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 1
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 1
+      text: data a
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 2
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 1
+      text: data b
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 1
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 0
+      text: Bold Heading
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 2
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 0
+      text: Italic Heading
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 1
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 1
+      text: data a
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 2
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 1
+      text: data b
+  footnotes: []
+  label: table
+  parent:
+    $ref: '#/body'
+  prov: []
+  references: []
+  self_ref: '#/tables/0'
 texts:
 - children: []
   content_layer: body
