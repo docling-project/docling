@@ -424,14 +424,19 @@ texts:
 - children: []
   content_layer: body
   enumerated: true
+  formatting:
+    bold: true
+    italic: false
+    strikethrough: false
+    underline: false
   label: list_item
   marker: '-'
-  orig: '[<RawText children=''Whole list item has same formatting''>]'
+  orig: Whole list item has same formatting
   parent:
     $ref: '#/groups/2'
   prov: []
   self_ref: '#/texts/27'
-  text: '[<RawText children=''Whole list item has same formatting''>]'
+  text: Whole list item has same formatting
 - children:
   - $ref: '#/groups/7'
   content_layer: body
@@ -478,13 +483,18 @@ texts:
   text: formatting
 - children: []
   content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    strikethrough: false
+    underline: false
   label: title
-  orig: '[<RawText children=''Whole heading is italic''>]'
+  orig: Whole heading is italic
   parent:
     $ref: '#/body'
   prov: []
   self_ref: '#/texts/32'
-  text: '[<RawText children=''Whole heading is italic''>]'
+  text: Whole heading is italic
 - children: []
   content_layer: body
   label: text
