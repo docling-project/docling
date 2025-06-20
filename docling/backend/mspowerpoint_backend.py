@@ -2,8 +2,6 @@ import logging
 from io import BytesIO
 from pathlib import Path
 from typing import Set, Union
-from lxml import etree
-from lxml.etree import XPath
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -19,6 +17,8 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
+from lxml import etree
+from lxml.etree import XPath
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
@@ -315,6 +315,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             doc.add_picture(
                 parent=parent_slide,
                 image=ImageRef.from_pil(image=pil_image, dpi=int(im_dpi)),
+                image=ImageRef.from_pil(image=pil_image, dpi=int(im_dpi)),
                 caption=None,
                 prov=prov,
             )
@@ -416,15 +417,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     drawing_blip = self.xpath_expr(shape.element)
-                    if drawing_blip:  # ensure there is a drawing blip
+                    if drawing_blip:
                         self.handle_pictures(
-                            shape,
-                            parent_slide,
-                            slide_ind,
-                            doc,
-                            slide_size,
-                            drawing_blip,
-                            slide,
+                            shape, parent_slide, slide_ind, doc, drawing_blip, slide
                         )
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
