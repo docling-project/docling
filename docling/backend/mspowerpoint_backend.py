@@ -421,9 +421,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     drawing_blip = self.xpath_expr(shape.element)
+<<<<<<< HEAD
                     if drawing_blip: #ensure there is a drwaing blip
+=======
+                    if drawing_blip:  # ensure there is a drawing blip
+>>>>>>> 4e8bf2c (fix/adding the missing slide size argument in the handle pictures in the mspowerpoint_backend.py file and adding generate=True in the verify export method in the pytest for pptx to ensure the pytest passes appropriately Signed-off-by: Franck Benichou franck.benichou@sciencespo.fr)
                         self.handle_pictures(
-                            shape, parent_slide, slide_ind, doc, drawing_blip, slide
+                            shape, parent_slide, slide_ind, doc, slide_size, drawing_blip, slide
                         )
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
