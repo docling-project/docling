@@ -5,7 +5,7 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import InputFormat, Page
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
@@ -44,6 +44,54 @@ def ollama_vlm_options(model: str, prompt: str):
         prompt=prompt,
         timeout=90,
         scale=1.0,
+        response_format=ResponseFormat.MARKDOWN,
+    )
+    return options
+
+
+#### Using Ollama with OlmOcr
+
+
+def ollama_olmocr_vlm_options(model: str):
+    def _dynamic_olmocr_prompt(page: Page):
+        anchor = [f"Page dimensions: {int(page.size.width)}x{int(page.size.height)}"]
+
+        for cell in page._backend.get_text_cells():
+            if not cell.text.strip():
+                continue
+            bbox = cell.to_bounding_box().to_bottom_left_origin(page.size.height)
+            anchor.append(f"[{int(bbox.l)}x{int(bbox.b)}] {cell.text}")
+
+        for rect in page._backend.get_bitmap_rects():
+            bbox = rect.to_bottom_left_origin(page.size.height)
+            anchor.append(
+                f"[Image {int(bbox.l)}x{int(bbox.b)} to {int(bbox.r)}x{int(bbox.t)}]"
+            )
+
+        if len(anchor) == 1:
+            anchor.append(
+                f"[Image 0x0 to {int(page.size.width)}x{int(page.size.height)}]"
+            )
+
+        base_text = "\n".join(anchor)
+
+        return (
+            f"Below is the image of one page of a document, as well as some raw textual"
+            f" content that was previously extracted for it. Just return the plain text"
+            f" representation of this document as if you were reading it naturally.\n"
+            f"Do not hallucinate.\n"
+            f"RAW_TEXT_START\n{base_text}\nRAW_TEXT_END"
+        )
+
+    options = ApiVlmOptions(
+        url="http://localhost:11434/v1/chat/completions",  # the default Ollama endpoint
+        params=dict(
+            model=model,
+        ),
+        prompt=_dynamic_olmocr_prompt,
+        timeout=90,
+        scale=1.0,
+        max_size=1024,  # from OlmOcr pipeline
         response_format=ResponseFormat.MARKDOWN,
     )
     return options
@@ -128,6 +176,12 @@ def main():
     # pipeline_options.vlm_options = ollama_vlm_options(
     #     model="granite3.2-vision:2b",
     #     prompt="OCR the full page to markdown.",
+    # )
+
+    # Example using the OlmOcr (dynamic prompt) model with Ollama:
+    # (uncomment the following lines)
+    # pipeline_options.vlm_options = ollama_olmocr_vlm_options(
+    #     model="hf.co/mradermacher/olmOCR-7B-0225-preview-GGUF:Q8_0",
     # )
 
     # Another possibility is using online services, e.g. watsonx.ai.
