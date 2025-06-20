@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "code_and_formula",
   "origin": {
     "mimetype": "application/pdf",

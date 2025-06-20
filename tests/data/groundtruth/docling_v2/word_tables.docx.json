@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "word_tables",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -119,7 +119,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -149,7 +150,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -179,7 +181,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -209,7 +212,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -239,7 +243,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -510,7 +515,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/1",
@@ -729,7 +735,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/2",
@@ -1020,7 +1027,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/3",
@@ -1387,7 +1395,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/4",
@@ -2398,7 +2407,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     }
   ],
   "key_value_items": [],

@@ -198,14 +198,14 @@
 <paragraph><location><page_12><loc_22><loc_45><loc_89><loc_55></location>The VERIFY_GROUP_FOR_USER function was added in IBM i 7.2. Although it is primarily intended for use with RCAC permissions and masks, it can be used in other SQL statements. The first parameter must be one of these three special registers: SESSION_USER, USER, or CURRENT_USER. The second and subsequent parameters are a list of user or group profiles. Each of these values must be 1 - 10 characters in length. These values are not validated for their existence, which means that you can specify the names of user profiles that do not exist without receiving any kind of error.</paragraph>
 <paragraph><location><page_12><loc_22><loc_39><loc_89><loc_43></location>If a special register value is in the list of user profiles or it is a member of a group profile included in the list, the function returns a long integer value of 1. Otherwise, it returns a value of 0. It never returns the null value.</paragraph>
 <paragraph><location><page_12><loc_22><loc_36><loc_75><loc_38></location>Here is an example of using the VERIFY_GROUP_FOR_USER function:</paragraph>
-<paragraph><location><page_12><loc_22><loc_34><loc_66><loc_35></location>- 1. There are user profiles for MGR, JANE, JUDY, and TONY.</paragraph>
-<paragraph><location><page_12><loc_22><loc_32><loc_65><loc_33></location>- 2. The user profile JANE specifies a group profile of MGR.</paragraph>
-<paragraph><location><page_12><loc_22><loc_28><loc_88><loc_31></location>- 3. If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:</paragraph>
+<paragraph><location><page_12><loc_22><loc_34><loc_66><loc_35></location>1. There are user profiles for MGR, JANE, JUDY, and TONY.</paragraph>
+<paragraph><location><page_12><loc_22><loc_32><loc_65><loc_33></location>2. The user profile JANE specifies a group profile of MGR.</paragraph>
+<paragraph><location><page_12><loc_22><loc_28><loc_88><loc_31></location>3. If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:</paragraph>
 <paragraph><location><page_12><loc_25><loc_19><loc_74><loc_27></location>VERIFY_GROUP_FOR_USER (CURRENT_USER, 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR', 'STEVE') The following function invocation returns a value of 0: VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JUDY', 'TONY')</paragraph>
 <paragraph><location><page_13><loc_22><loc_90><loc_27><loc_91></location>RETURN</paragraph>
 <paragraph><location><page_13><loc_22><loc_88><loc_26><loc_89></location>CASE</paragraph>
 <paragraph><location><page_13><loc_22><loc_67><loc_85><loc_88></location>WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 9999 || '-' || MONTH ( EMPLOYEES . DATE_OF_BIRTH ) || '-' || DAY (EMPLOYEES.DATE_OF_BIRTH )) ELSE NULL END ENABLE ;</paragraph>
-<paragraph><location><page_13><loc_22><loc_63><loc_89><loc_65></location>- 2. The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:</paragraph>
+<paragraph><location><page_13><loc_22><loc_63><loc_89><loc_65></location>2. The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:</paragraph>
 <paragraph><location><page_13><loc_25><loc_60><loc_77><loc_62></location>- -Human Resources can see the unmasked TAX_ID of the employees.</paragraph>
 <paragraph><location><page_13><loc_25><loc_58><loc_66><loc_59></location>- -Employees can see only their own unmasked TAX_ID.</paragraph>
 <paragraph><location><page_13><loc_25><loc_55><loc_89><loc_57></location>- -Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).</paragraph>
@@ -213,7 +213,7 @@
 <paragraph><location><page_13><loc_25><loc_50><loc_87><loc_51></location>- To implement this column mask, run the SQL statement that is shown in Example 3-9.</paragraph>
 <paragraph><location><page_13><loc_22><loc_14><loc_86><loc_47></location>CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;</paragraph>
 <caption><location><page_13><loc_22><loc_48><loc_58><loc_49></location>Example 3-9 Creating a mask on the TAX_ID column</caption>
-<paragraph><location><page_14><loc_22><loc_90><loc_74><loc_91></location>- 3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.</paragraph>
+<paragraph><location><page_14><loc_22><loc_90><loc_74><loc_91></location>3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.</paragraph>
 <figure>
 <location><page_14><loc_10><loc_79><loc_89><loc_88></location>
 <caption>Figure 3-10 Column masks shown in System i Navigator</caption>
@@ -221,7 +221,7 @@
 <caption><location><page_14><loc_11><loc_77><loc_48><loc_78></location>Figure 3-10 Column masks shown in System i Navigator</caption>
 <subtitle-level-1><location><page_14><loc_11><loc_73><loc_33><loc_74></location>3.6.6 Activating RCAC</subtitle-level-1>
 <paragraph><location><page_14><loc_22><loc_67><loc_89><loc_71></location>Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:</paragraph>
-<paragraph><location><page_14><loc_22><loc_65><loc_67><loc_66></location>- 1. Run the SQL statements that are shown in Example 3-10.</paragraph>
+<paragraph><location><page_14><loc_22><loc_65><loc_67><loc_66></location>1. Run the SQL statements that are shown in Example 3-10.</paragraph>
 <subtitle-level-1><location><page_14><loc_22><loc_62><loc_61><loc_63></location>Example 3-10 Activating RCAC on the EMPLOYEES table</subtitle-level-1>
 <paragraph><location><page_14><loc_22><loc_60><loc_62><loc_61></location>- /* Active Row Access Control (permissions) */</paragraph>
 <paragraph><location><page_14><loc_22><loc_58><loc_58><loc_60></location>- /* Active Column Access Control (masks)</paragraph>
@@ -229,14 +229,14 @@
 <paragraph><location><page_14><loc_22><loc_57><loc_48><loc_58></location>ALTER TABLE HR_SCHEMA.EMPLOYEES</paragraph>
 <paragraph><location><page_14><loc_22><loc_55><loc_44><loc_56></location>ACTIVATE ROW ACCESS CONTROL</paragraph>
 <paragraph><location><page_14><loc_22><loc_54><loc_48><loc_55></location>ACTIVATE COLUMN ACCESS CONTROL;</paragraph>
-<paragraph><location><page_14><loc_22><loc_48><loc_88><loc_52></location>- 2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .</paragraph>
+<paragraph><location><page_14><loc_22><loc_48><loc_88><loc_52></location>2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .</paragraph>
 <figure>
 <location><page_14><loc_10><loc_18><loc_87><loc_46></location>
 <caption>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption>
 </figure>
 <caption><location><page_14><loc_11><loc_17><loc_57><loc_18></location>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption>
-<paragraph><location><page_15><loc_22><loc_87><loc_84><loc_91></location>- 2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</paragraph>
-<paragraph><location><page_15><loc_22><loc_32><loc_89><loc_36></location>- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</paragraph>
+<paragraph><location><page_15><loc_22><loc_87><loc_84><loc_91></location>2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</paragraph>
+<paragraph><location><page_15><loc_22><loc_32><loc_89><loc_36></location>3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</paragraph>
 <figure>
 <location><page_15><loc_22><loc_40><loc_89><loc_85></location>
 <caption>Figure 4-68 Visual Explain with RCAC enabled</caption>

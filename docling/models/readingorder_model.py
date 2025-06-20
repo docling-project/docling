@@ -12,6 +12,9 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
+from docling_ibm_models.list_item_normalizer.list_marker_processor import (
+    ListItemMarkerProcessor,
+)
 from docling_ibm_models.reading_order.reading_order_rb import (
     PageElement as ReadingOrderPageElement,
     ReadingOrderPredictor,
@@ -40,6 +43,7 @@ class ReadingOrderModel:
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
         self.ro_model = ReadingOrderPredictor()
+        self.list_item_processor = ListItemMarkerProcessor()
 
     def _assembled_to_readingorder_elements(
         self, conv_res: ConversionResult
@@ -92,7 +96,8 @@ class ReadingOrderModel:
             )
             if c_label == DocItemLabel.LIST_ITEM:
                 # TODO: Infer if this is a numbered or a bullet list item
-                doc.add_list_item(parent=doc_item, text=c_text, prov=c_prov)
+                l_item = doc.add_list_item(parent=doc_item, text=c_text, prov=c_prov)
+                self.list_item_processor.process_list_item(l_item)
             elif c_label == DocItemLabel.SECTION_HEADER:
                 doc.add_heading(parent=doc_item, text=c_text, prov=c_prov)
             else:
@@ -301,6 +306,8 @@ class ReadingOrderModel:
             new_item = out_doc.add_list_item(
                 text=cap_text, enumerated=False, prov=prov, parent=current_list
             )
+            self.list_item_processor.process_list_item(new_item)
+
         elif label == DocItemLabel.SECTION_HEADER:
             current_list = None
 

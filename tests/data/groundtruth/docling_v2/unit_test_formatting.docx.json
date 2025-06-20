@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "unit_test_formatting",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -182,7 +182,8 @@
         "bold": false,
         "italic": true,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -200,7 +201,8 @@
         "bold": true,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -218,7 +220,8 @@
         "bold": false,
         "italic": false,
         "underline": true,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -236,7 +239,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "hyperlink": "https:/github.com/DS4SD/docling"
     },
@@ -255,7 +259,8 @@
         "bold": true,
         "italic": true,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "hyperlink": "https:/github.com/DS4SD/docling"
     },
@@ -274,7 +279,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -292,7 +298,8 @@
         "bold": false,
         "italic": true,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -310,7 +317,8 @@
         "bold": true,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -328,7 +336,8 @@
         "bold": false,
         "italic": false,
         "underline": true,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -346,7 +355,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -364,7 +374,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "hyperlink": "https:/github.com/DS4SD/docling"
     },
@@ -383,7 +394,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -413,7 +425,8 @@
         "bold": false,
         "italic": true,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
       "marker": "-"
@@ -433,7 +446,8 @@
         "bold": true,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
       "marker": "-"
@@ -453,7 +467,8 @@
         "bold": false,
         "italic": false,
         "underline": true,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
       "marker": "-"
@@ -491,7 +506,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -509,7 +525,8 @@
         "bold": false,
         "italic": true,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -527,7 +544,8 @@
         "bold": true,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -545,7 +563,8 @@
         "bold": false,
         "italic": false,
         "underline": true,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -581,7 +600,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -599,7 +619,8 @@
         "bold": false,
         "italic": true,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -617,7 +638,8 @@
         "bold": true,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {

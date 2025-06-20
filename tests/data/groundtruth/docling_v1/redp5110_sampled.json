@@ -2908,12 +2908,12 @@
           "page": 12,
           "span": [
             0,
-            57
+            54
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 1. There are user profiles for MGR, JANE, JUDY, and TONY.",
+      "text": "1. There are user profiles for MGR, JANE, JUDY, and TONY.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2931,12 +2931,12 @@
           "page": 12,
           "span": [
             0,
-            58
+            55
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 2. The user profile JANE specifies a group profile of MGR.",
+      "text": "2. The user profile JANE specifies a group profile of MGR.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2954,12 +2954,12 @@
           "page": 12,
           "span": [
             0,
-            127
+            124
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3. If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:",
+      "text": "3. If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3069,12 +3069,12 @@
           "page": 13,
           "span": [
             0,
-            136
+            133
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 2. The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:",
+      "text": "2. The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3253,12 +3253,12 @@
           "page": 14,
           "span": [
             0,
-            65
+            62
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.",
+      "text": "3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3350,12 +3350,12 @@
           "page": 14,
           "span": [
             0,
-            57
+            54
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 1. Run the SQL statements that are shown in Example 3-10.",
+      "text": "1. Run the SQL statements that are shown in Example 3-10.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3534,12 +3534,12 @@
           "page": 14,
           "span": [
             0,
-            231
+            228
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA \uf0ae Tables , right-click the EMPLOYEES table, and click Definition .",
+      "text": "2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas \uf0ae HR_SCHEMA \uf0ae Tables , right-click the EMPLOYEES table, and click Definition .",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3585,12 +3585,12 @@
           "page": 15,
           "span": [
             0,
-            228
+            225
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.",
+      "text": "2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3608,12 +3608,12 @@
           "page": 15,
           "span": [
             0,
-            232
+            229
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.",
+      "text": "3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
