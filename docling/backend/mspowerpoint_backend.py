@@ -2,8 +2,6 @@ import logging
 from io import BytesIO
 from pathlib import Path
 from typing import Set, Union
-from lxml import etree
-from lxml.etree import XPath
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -19,6 +17,8 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
+from lxml import etree
+from lxml.etree import XPath
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
