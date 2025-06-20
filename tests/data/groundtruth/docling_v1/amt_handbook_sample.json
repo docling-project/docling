@@ -44,10 +44,10 @@
       "prov": [
         {
           "bbox": [
-            71.992126,
-            681.34637,
-            314.11212,
-            730.31635
+            71.992,
+            682.001,
+            311.412,
+            727.966
           ],
           "page": 1,
           "span": [
@@ -67,20 +67,20 @@
       "prov": [
         {
           "bbox": [
-            71.992302,
-            593.84637,
-            313.1546,
-            667.81635
+            71.992,
+            594.501,
+            311.445,
+            665.466
           ],
           "page": 1,
           "span": [
             0,
-            376
+            382
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "The two general types of self-locking nuts currently in use are the all-metal type and the fiber lock type. For the sake of simplicity, only three typical kinds of self-locking nuts are considered in this handbook: the Boots self-locking and the stainless steel self-locking nuts, representing the all-metal types; and the elastic stop nut, representing the fiber insert type.",
+      "text": "The two general types of self-locking nuts currently in use are the all-metal type and the fiber lock type. For the sake of simplicity, only three typical kinds of self-locking nuts are considered in this handbook: the Boots self-locking and the stainless  steel  self-locking  nuts,  representing  the  all-metal types; and the elastic stop nut, representing the fiber insert type.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -90,10 +90,10 @@
       "prov": [
         {
           "bbox": [
-            71.992302,
-            568.84637,
-            167.27231,
-            580.1864
+            71.992,
+            569.5,
+            167.272,
+            577.876
           ],
           "page": 1,
           "span": [
@@ -113,20 +113,20 @@
       "prov": [
         {
           "bbox": [
-            71.992294,
-            491.84637000000004,
-            318.49225,
-            565.81635
+            71.992,
+            492.501,
+            311.519,
+            563.466
           ],
           "page": 1,
           "span": [
             0,
-            319
+            324
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "The Boots self-locking nut is of one piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.",
+      "text": "The  Boots  self-locking nut is  of  one  piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -136,10 +136,10 @@
       "prov": [
         {
           "bbox": [
-            71.992294,
-            404.34637000000004,
-            316.65729,
-            478.31638000000004
+            71.992,
+            405.001,
+            311.519,
+            475.966
           ],
           "page": 1,
           "span": [
@@ -159,10 +159,10 @@
       "prov": [
         {
           "bbox": [
-            71.992294,
-            291.84637,
-            318.81229,
-            390.81638000000004
+            71.992,
+            292.501,
+            311.492,
+            388.466
           ],
           "page": 1,
           "span": [
@@ -182,10 +182,10 @@
       "prov": [
         {
           "bbox": [
-            71.992294,
-            254.34636999999998,
-            313.91229,
-            278.31638
+            71.992,
+            255.00099999999998,
+            311.502,
+            275.966
           ],
           "page": 1,
           "span": [
@@ -211,9 +211,9 @@
         {
           "bbox": [
             72.0,
-            60.99040200000002,
-            184.14828,
-            71.80239900000004
+            61.71500000000003,
+            184.148,
+            69.72299999999996
           ],
           "page": 1,
           "span": [
@@ -233,20 +233,20 @@
       "prov": [
         {
           "bbox": [
-            320.99231,
-            656.34637,
-            561.80835,
-            730.31635
+            320.992,
+            657.001,
+            560.517,
+            728.187
           ],
           "page": 1,
           "span": [
             0,
-            368
+            370
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "the most common ranges in size for No. 6 up to 1 / 4 inch, the Rol-top ranges from 1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.",
+      "text": "the most common ranges in size for No. 6 up to  1 / 4 inch, the Rol-top ranges from  1 / 4 inch to 1 / 6 inch, and the bellows type ranges in size from No. 8 up to 3 / 8 inch. Wing-type nuts are made of anodized aluminum alloy, cadmium-plated carbon steel, or stainless steel. The Rol-top nut is cadmium-plated steel, and the bellows type is made of aluminum alloy only.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -256,10 +256,10 @@
       "prov": [
         {
           "bbox": [
-            320.99542,
-            643.84637,
-            325.99542,
-            655.31635
+            320.995,
+            644.501,
+            325.995,
+            652.966
           ],
           "page": 1,
           "span": [
@@ -279,10 +279,10 @@
       "prov": [
         {
           "bbox": [
-            320.99542,
-            631.34637,
-            450.99542,
-            642.6864
+            320.995,
+            632.0,
+            450.995,
+            640.376
           ],
           "page": 1,
           "span": [
@@ -302,20 +302,20 @@
       "prov": [
         {
           "bbox": [
-            320.99542,
-            416.84637000000004,
-            568.00439,
-            628.31635
+            320.995,
+            417.501,
+            560.513,
+            625.966
           ],
           "page": 1,
           "span": [
             0,
-            1015
+            1024
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt easily, because the threaded insert is the proper size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.",
+      "text": "The stainless steel self-locking nut may be spun on and off by hand as its locking action takes places only when the nut is seated against a solid surface and tightened. The nut consists of two parts: a case with a beveled locking shoulder and key and a thread insert with a locking shoulder and slotted keyway. Until the nut is tightened, it spins on the bolt  easily,  because  the  threaded  insert  is  the  proper  size for the bolt. However, when the nut is seated against a solid surface and tightened, the locking shoulder of the insert is pulled downward and wedged against the locking shoulder of the case. This action compresses the threaded insert and causes it to clench the bolt tightly. The cross-sectional view in Figure 7-27 shows how the key of the case fits into the slotted keyway of the insert so that when the case is turned, the threaded insert is turned with it. Note that the slot is wider than the key. This permits the slot to be narrowed and the insert to be compressed when the nut is tightened.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -325,10 +325,10 @@
       "prov": [
         {
           "bbox": [
-            320.99542,
-            391.84637000000004,
-            388.50543,
-            403.18636999999995
+            320.995,
+            392.5,
+            388.505,
+            400.876
           ],
           "page": 1,
           "span": [
@@ -348,20 +348,20 @@
       "prov": [
         {
           "bbox": [
-            320.99542,
-            364.84637000000004,
-            552.35132,
-            388.81638000000004
+            320.995,
+            365.501,
+            558.104,
+            386.466
           ],
           "page": 1,
           "span": [
             0,
-            108
+            124
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "The elastic stop nut is a standard nut with the height increased to accommodate a fiber locking collar. This",
+      "text": "The elastic  stop  nut  is  a  standard  nut  with  the  height increased  to  accommodate  a  fiber  locking  collar.  This",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -377,9 +377,9 @@
         {
           "bbox": [
             321.0,
-            63.010403,
-            481.64931999999993,
-            73.82240300000001
+            63.735000000000014,
+            481.649,
+            71.74299999999994
           ],
           "page": 1,
           "span": [

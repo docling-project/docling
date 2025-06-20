@@ -129,10 +129,10 @@
       "prov": [
         {
           "bbox": [
-            287.82001,
-            741.25195,
-            418.83356,
-            763.45197
+            287.82,
+            741.252,
+            418.838,
+            763.452
           ],
           "page": 1,
           "span": [
@@ -157,10 +157,10 @@
       "prov": [
         {
           "bbox": [
-            35.700001,
-            626.15887,
-            584.64288,
-            707.4134500000001
+            35.7,
+            626.159,
+            587.796,
+            707.413
           ],
           "page": 1,
           "span": [
@@ -190,10 +190,10 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            695.95197,
-            168.73441,
-            718.15198
+            64.8,
+            695.952,
+            168.742,
+            718.152
           ],
           "page": 2,
           "span": [
@@ -218,10 +218,10 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            706.41602,
-            235.8624,
-            717.51605
+            64.8,
+            706.416,
+            235.861,
+            717.516
           ],
           "page": 3,
           "span": [
@@ -241,10 +241,10 @@
       "prov": [
         {
           "bbox": [
-            94.132698,
-            636.66357,
-            233.99973,
-            653.54987
+            94.133,
+            636.619,
+            234.0,
+            653.55
           ],
           "page": 3,
           "span": [
@@ -269,10 +269,10 @@
       "prov": [
         {
           "bbox": [
-            144.88921,
-            455.18594,
-            188.74681,
-            464.53836000000007
+            144.889,
+            455.186,
+            188.888,
+            464.538
           ],
           "page": 3,
           "span": [
@@ -292,20 +292,20 @@
       "prov": [
         {
           "bbox": [
-            144.88921,
-            433.31058,
-            242.87389000000002,
-            446.78293
+            144.889,
+            433.329,
+            242.974,
+            448.6
           ],
           "page": 3,
           "span": [
             0,
-            532
+            213
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<g115>GLYPH<g3> GLYPH<g40>GLYPH<g81>GLYPH<g75>GLYPH<g68>GLYPH<g81>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g87>GLYPH<g75>GLYPH<g72>GLYPH<g3> GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g73>GLYPH<g82>GLYPH<g85>GLYPH<g80>GLYPH<g68>GLYPH<g81>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g92>GLYPH<g82>GLYPH<g88>GLYPH<g85> GLYPH<g3> GLYPH<g71>GLYPH<g68>GLYPH<g87>GLYPH<g68>GLYPH<g69>GLYPH<g68>GLYPH<g86>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g86>",
+      "text": "- /g115/g3 /g40/g81/g75/g68/g81/g70/g72/g3 /g87/g75/g72/g3 /g83/g72/g85/g73/g82/g85/g80/g68/g81/g70/g72/g3 /g82/g73/g3 /g92/g82/g88/g85/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g82/g83/g72/g85/g68/g87/g76/g82/g81/g86",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -315,20 +315,20 @@
       "prov": [
         {
           "bbox": [
-            144.88921,
-            402.7627,
-            259.2287,
-            424.06781
+            144.889,
+            402.782,
+            259.329,
+            425.885
           ],
           "page": 3,
           "span": [
             0,
-            876
+            352
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<g115>GLYPH<g3> GLYPH<g40>GLYPH<g68>GLYPH<g85> GLYPH<g81>GLYPH<g3> GLYPH<g74>GLYPH<g85>GLYPH<g72>GLYPH<g68>GLYPH<g87>GLYPH<g72>GLYPH<g85>GLYPH<g3> GLYPH<g85>GLYPH<g72>GLYPH<g87>GLYPH<g88>GLYPH<g85> GLYPH<g81>GLYPH<g3> GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g44>GLYPH<g55>GLYPH<g3> GLYPH<g83>GLYPH<g85>GLYPH<g82>GLYPH<g77>GLYPH<g72>GLYPH<g70>GLYPH<g87>GLYPH<g86> GLYPH<g3> GLYPH<g87>GLYPH<g75>GLYPH<g85>GLYPH<g82>GLYPH<g88>GLYPH<g74>GLYPH<g75>GLYPH<g3> GLYPH<g80>GLYPH<g82>GLYPH<g71>GLYPH<g72>GLYPH<g85> GLYPH<g81>GLYPH<g76>GLYPH<g93>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g71>GLYPH<g68>GLYPH<g87>GLYPH<g68>GLYPH<g69>GLYPH<g68>GLYPH<g86>GLYPH<g72>GLYPH<g3> GLYPH<g68>GLYPH<g81>GLYPH<g71> GLYPH<g3> GLYPH<g68>GLYPH<g83>GLYPH<g83>GLYPH<g79>GLYPH<g76>GLYPH<g70>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g86>",
+      "text": "- /g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85 /g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -338,20 +338,20 @@
       "prov": [
         {
           "bbox": [
-            144.88921,
-            380.04745,
-            249.83562,
-            393.51981
+            144.889,
+            380.066,
+            249.936,
+            395.337
           ],
           "page": 3,
           "span": [
             0,
-            672
+            269
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<g115>GLYPH<g3> GLYPH<g53>GLYPH<g72>GLYPH<g79>GLYPH<g92>GLYPH<g3> GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g44>GLYPH<g37>GLYPH<g48>GLYPH<g3> GLYPH<g72>GLYPH<g91>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g87>GLYPH<g3> GLYPH<g70>GLYPH<g82>GLYPH<g81>GLYPH<g86>GLYPH<g88>GLYPH<g79>GLYPH<g87>GLYPH<g76>GLYPH<g81>GLYPH<g74>GLYPH<g15>GLYPH<g3> GLYPH<g86>GLYPH<g78>GLYPH<g76>GLYPH<g79>GLYPH<g79>GLYPH<g86> GLYPH<g3> GLYPH<g86>GLYPH<g75>GLYPH<g68>GLYPH<g85>GLYPH<g76>GLYPH<g81>GLYPH<g74>GLYPH<g3> GLYPH<g68>GLYPH<g81>GLYPH<g71>GLYPH<g3> GLYPH<g85>GLYPH<g72>GLYPH<g81>GLYPH<g82>GLYPH<g90>GLYPH<g81>GLYPH<g3> GLYPH<g86>GLYPH<g72>GLYPH<g85>GLYPH<g89>GLYPH<g76>GLYPH<g70>GLYPH<g72>GLYPH<g86>",
+      "text": "- /g115/g3 /g53/g72/g79/g92/g3 /g82/g81/g3 /g44/g37/g48/g3 /g72/g91/g83/g72/g85/g87/g3 /g70/g82/g81/g86/g88/g79/g87/g76/g81/g74/g15/g3 /g86/g78/g76/g79/g79/g86/g3 /g86/g75/g68/g85/g76/g81/g74/g3 /g68/g81/g71/g3 /g85/g72/g81/g82/g90/g81/g3 /g86/g72/g85/g89/g76/g70/g72/g86",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -361,20 +361,20 @@
       "prov": [
         {
           "bbox": [
-            144.88921,
-            357.33237,
-            234.25163000000003,
-            370.8047199999999
+            144.889,
+            357.351,
+            234.352,
+            372.622
           ],
           "page": 3,
           "span": [
             0,
-            613
+            246
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<g115>GLYPH<g3> GLYPH<g55> GLYPH<g68>GLYPH<g78>GLYPH<g72>GLYPH<g3> GLYPH<g68>GLYPH<g71>GLYPH<g89>GLYPH<g68>GLYPH<g81>GLYPH<g87>GLYPH<g68>GLYPH<g74>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g68>GLYPH<g70>GLYPH<g70>GLYPH<g72>GLYPH<g86>GLYPH<g86>GLYPH<g3> GLYPH<g87>GLYPH<g82>GLYPH<g3> GLYPH<g68> GLYPH<g3> GLYPH<g90>GLYPH<g82>GLYPH<g85>GLYPH<g79>GLYPH<g71>GLYPH<g90>GLYPH<g76>GLYPH<g71>GLYPH<g72>GLYPH<g3> GLYPH<g86>GLYPH<g82>GLYPH<g88>GLYPH<g85>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g72>GLYPH<g91>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g87>GLYPH<g76>GLYPH<g86>GLYPH<g72>",
+      "text": "- /g115/g3 /g55 /g68/g78/g72/g3 /g68/g71/g89/g68/g81/g87/g68/g74/g72/g3 /g82/g73/g3 /g68/g70/g70/g72/g86/g86/g3 /g87/g82/g3 /g68/g3 /g90/g82/g85/g79/g71/g90/g76/g71/g72/g3 /g86/g82/g88/g85/g70/g72/g3 /g82/g73/g3 /g72/g91/g83/g72/g85/g87/g76/g86/g72",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -389,10 +389,10 @@
       "prov": [
         {
           "bbox": [
-            461.08859000000007,
-            646.57819,
-            506.26178,
-            653.59247
+            461.089,
+            646.578,
+            506.262,
+            653.592
           ],
           "page": 3,
           "span": [
@@ -412,10 +412,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            515.37946,
-            463.80942,
-            552.65735
+            280.24,
+            515.379,
+            464.185,
+            558.391
           ],
           "page": 3,
           "span": [
@@ -435,10 +435,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            504.54041,
-            483.29572,
-            514.40973
+            280.24,
+            503.762,
+            483.405,
+            517.469
           ],
           "page": 3,
           "span": [
@@ -458,10 +458,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            467.10434,
-            443.28210000000007,
-            476.11838000000006
+            280.24,
+            469.144,
+            443.282,
+            476.118
           ],
           "page": 3,
           "span": [
@@ -481,10 +481,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            447.0405,
-            488.15466,
-            464.62405
+            280.24,
+            447.04,
+            488.155,
+            464.624
           ],
           "page": 3,
           "span": [
@@ -504,10 +504,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            427.26999,
-            367.86023,
-            434.6739799999999
+            280.24,
+            427.27,
+            367.86,
+            434.674
           ],
           "page": 3,
           "span": [
@@ -527,10 +527,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            366.77972000000005,
-            500.32104000000004,
-            414.90198000000004
+            280.24,
+            366.78,
+            500.321,
+            414.902
           ],
           "page": 3,
           "span": [
@@ -550,10 +550,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            345.13193,
-            434.83205999999996,
-            354.14597
+            280.24,
+            347.172,
+            434.832,
+            354.146
           ],
           "page": 3,
           "span": [
@@ -573,10 +573,10 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            335.24777,
-            434.56316999999996,
-            342.65175999999997
+            280.24,
+            335.248,
+            434.563,
+            342.652
           ],
           "page": 3,
           "span": [
@@ -596,20 +596,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            315.47775,
-            401.56412,
-            322.88174
+            280.24,
+            315.478,
+            401.639,
+            322.882
           ],
           "page": 3,
           "span": [
             0,
-            38
+            83
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r Database performance and scalability",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database performance and scalability",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -619,20 +619,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            305.29504,
-            424.99646,
-            312.69904
+            280.24,
+            305.295,
+            425.071,
+            312.699
           ],
           "page": 3,
           "span": [
             0,
-            44
+            89
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r Advanced SQL knowledge and skills transfer",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Advanced SQL knowledge and skills transfer",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -642,20 +642,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            295.11246,
-            392.15845,
-            302.51645
+            280.24,
+            295.112,
+            392.233,
+            302.516
           ],
           "page": 3,
           "span": [
             0,
-            37
+            82
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r Business intelligence and analytics",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Business intelligence and analytics",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -665,20 +665,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            284.92975,
-            339.94354,
-            292.33374
+            280.24,
+            284.93,
+            340.018,
+            292.334
           ],
           "page": 3,
           "span": [
             0,
-            15
+            60
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r DB2 Web Query",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> DB2 Web Query",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -688,20 +688,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            274.74716,
-            504.19314999999995,
-            282.15115
+            280.24,
+            274.74700000000007,
+            504.268,
+            282.151
           ],
           "page": 3,
           "span": [
             0,
-            72
+            117
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r Query/400 modernization for better reporting and analysis capabilities",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Query/400 modernization for better reporting and analysis capabilities",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -711,20 +711,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            264.5644500000001,
-            423.0022,
-            271.96844
+            280.24,
+            264.5640000000001,
+            423.077,
+            271.9680000000001
           ],
           "page": 3,
           "span": [
             0,
-            43
+            88
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r Database modernization and re-engineering",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Database modernization and re-engineering",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -734,20 +734,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            254.38187000000005,
-            399.65173,
-            261.78585999999996
+            280.24,
+            254.38200000000006,
+            399.726,
+            261.78600000000006
           ],
           "page": 3,
           "span": [
             0,
-            38
+            83
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r Data-centric architecture and design",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Data-centric architecture and design",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -757,20 +757,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            244.19925999999998,
-            466.77881,
-            251.60325999999998
+            280.24,
+            244.19900000000007,
+            466.853,
+            251.60300000000007
           ],
           "page": 3,
           "span": [
             0,
-            58
+            103
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r Extremely large database and overcoming limits to growth",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> Extremely large database and overcoming limits to growth",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -780,20 +780,20 @@
       "prov": [
         {
           "bbox": [
-            280.24011,
-            234.01656000000003,
-            382.20956,
-            241.42054999999993
+            280.24,
+            234.01700000000005,
+            382.284,
+            241.42100000000005
           ],
           "page": 3,
           "span": [
             0,
-            30
+            75
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- r ISV education and enablement",
+      "text": "- rglyph<c=1,font=/NKDKKL+JansonTextLTStd-Roman> ISV education and enablement",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -803,10 +803,10 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            695.95197,
-            151.46161,
-            718.15198
+            64.8,
+            695.952,
+            151.469,
+            718.152
           ],
           "page": 4,
           "span": [
@@ -826,10 +826,10 @@
       "prov": [
         {
           "bbox": [
-            136.79984,
-            590.13928,
-            547.30823,
-            659.35138
+            136.8,
+            590.139,
+            547.557,
+            659.351
           ],
           "page": 4,
           "span": [
@@ -849,10 +849,10 @@
       "prov": [
         {
           "bbox": [
-            136.79987,
-            532.18005,
-            546.4657,
-            577.39252
+            136.8,
+            532.18,
+            546.415,
+            577.393
           ],
           "page": 4,
           "span": [
@@ -873,9 +873,9 @@
         {
           "bbox": [
             136.8,
-            450.15848,
-            547.23669,
-            471.37128000000007
+            450.158,
+            547.246,
+            471.371
           ],
           "page": 4,
           "span": [
@@ -900,10 +900,10 @@
       "prov": [
         {
           "bbox": [
-            263.39957,
-            275.14026,
-            541.25079,
-            416.35123
+            263.4,
+            275.14,
+            541.74,
+            416.351
           ],
           "page": 4,
           "span": [
@@ -928,10 +928,10 @@
       "prov": [
         {
           "bbox": [
-            263.3996,
-            111.16283999999996,
-            541.27374,
-            264.37347
+            263.4,
+            111.16300000000001,
+            541.582,
+            264.374
           ],
           "page": 4,
           "span": [
@@ -951,10 +951,10 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            488.9364,
-            125.36661,
-            503.6994
+            64.8,
+            488.936,
+            125.338,
+            503.699
           ],
           "page": 4,
           "span": [
@@ -979,10 +979,10 @@
       "prov": [
         {
           "bbox": [
-            500.39999,
-            661.86829,
-            522.61774,
-            698.8312999999999
+            500.4,
+            661.868,
+            522.618,
+            698.831
           ],
           "page": 5,
           "span": [
@@ -1003,9 +1003,9 @@
         {
           "bbox": [
             81.0,
-            517.01929,
-            115.13253,
-            523.45728
+            517.019,
+            115.155,
+            523.457
           ],
           "page": 5,
           "span": [
@@ -1026,9 +1026,9 @@
         {
           "bbox": [
             136.8,
-            482.1218,
-            547.30475,
-            537.11365
+            482.122,
+            549.157,
+            537.114
           ],
           "page": 5,
           "span": [
@@ -1048,20 +1048,20 @@
       "prov": [
         {
           "bbox": [
-            136.79965,
-            362.07886,
-            547.25403,
-            443.29129
+            136.8,
+            362.079,
+            547.503,
+            443.291
           ],
           "page": 5,
           "span": [
             0,
-            648
+            641
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Recent news headlines are filled with reports of data breaches and cyber-attacks impacting global businesses of all sizes. The Identity Theft Resource Center$^{1}$ reports that almost 5000 data breaches have occurred since 2005, exposing over 600 million records of data. The financial cost of these data breaches is skyrocketing. Studies from the Ponemon Institute$^{2}$ revealed that the average cost of a data breach increased in 2013 by 15% globally and resulted in a brand equity loss of $9.4 million per attack. The average cost that is incurred for each lost record containing sensitive information increased more than 9% to $145 per record.",
+      "text": "Recent news headlines are filled with reports of data breaches and cyber-attacks impacting global businesses of all sizes. The Identity Theft Resource Center 1  reports that almost 5000 data breaches have occurred since 2005, exposing over 600 million records of data. The financial cost of these data breaches is skyrocketing. Studies from the Ponemon Institute 2 revealed that the average cost of a data breach increased in 2013 by 15% globally and resulted in a brand equity loss of $9.4 million per attack. The average cost that is incurred for each lost record containing sensitive information increased more than 9% to $145 per record.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1071,10 +1071,10 @@
       "prov": [
         {
           "bbox": [
-            136.80023,
-            304.05984,
-            527.2063,
-            349.2722800000001
+            136.8,
+            304.06,
+            527.156,
+            349.272
           ],
           "page": 5,
           "span": [
@@ -1094,10 +1094,10 @@
       "prov": [
         {
           "bbox": [
-            136.80025,
-            270.10022000000004,
-            547.15515,
-            291.31302
+            136.8,
+            270.1,
+            547.404,
+            291.313
           ],
           "page": 5,
           "span": [
@@ -1117,102 +1117,10 @@
       "prov": [
         {
           "bbox": [
-            136.80025,
-            253.06064000000003,
-            250.23166999999998,
-            262.27365
-          ],
-          "page": 5,
-          "span": [
-            0,
-            37
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "- GLYPH<SM590000> Security fundamentals",
-      "type": "paragraph",
-      "payload": null,
-      "name": "List-item",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            136.80025,
-            241.06083999999998,
-            282.98114,
-            250.27382999999998
-          ],
-          "page": 5,
-          "span": [
-            0,
-            47
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "- GLYPH<SM590000> Current state of IBM i security",
-      "type": "paragraph",
-      "payload": null,
-      "name": "List-item",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            136.80025,
-            229.06104000000005,
-            264.88187,
-            238.27403000000004
-          ],
-          "page": 5,
-          "span": [
-            0,
-            43
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "- GLYPH<SM590000> DB2 for i security controls",
-      "type": "paragraph",
-      "payload": null,
-      "name": "List-item",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
             136.8,
-            67.219559,
-            258.36255,
-            74.24993900000004
-          ],
-          "page": 5,
-          "span": [
-            0,
-            35
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "$^{1 }$http://www.idtheftcenter.org",
-      "type": "footnote",
-      "payload": null,
-      "name": "Footnote",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            136.8,
-            57.02823999999998,
-            234.05881,
-            64.40973699999995
+            253.06100000000004,
+            250.2,
+            262.274
           ],
           "page": 5,
           "span": [
@@ -1222,7 +1130,76 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "$^{2 }$http://www.ponemon.org /",
+      "text": "- /SM590000 Security fundamentals",
+      "type": "paragraph",
+      "payload": null,
+      "name": "List-item",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            136.8,
+            241.06100000000004,
+            282.955,
+            250.274
+          ],
+          "page": 5,
+          "span": [
+            0,
+            41
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "- /SM590000 Current state of IBM i security",
+      "type": "paragraph",
+      "payload": null,
+      "name": "List-item",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            136.8,
+            229.06100000000004,
+            264.868,
+            238.274
+          ],
+          "page": 5,
+          "span": [
+            0,
+            37
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "- /SM590000 DB2 for i security controls",
+      "type": "paragraph",
+      "payload": null,
+      "name": "List-item",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            136.8,
+            67.27999999999997,
+            258.332,
+            76.15999999999997
+          ],
+          "page": 5,
+          "span": [
+            0,
+            30
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "1 http://www.idtheftcenter.org",
       "type": "footnote",
       "payload": null,
       "name": "Footnote",
@@ -1232,20 +1209,43 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            702.8963,
-            267.40582,
-            717.6593
+            136.8,
+            57.02800000000002,
+            234.059,
+            66.42600000000004
           ],
-          "page": 6,
+          "page": 5,
           "span": [
             0,
-            25
+            26
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "1.1 Security fundamentals",
+      "text": "2 http://www.ponemon.org /",
+      "type": "footnote",
+      "payload": null,
+      "name": "Footnote",
+      "font": null
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            64.8,
+            702.896,
+            267.39,
+            717.659
+          ],
+          "page": 6,
+          "span": [
+            0,
+            26
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "1.1  Security fundamentals",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -1256,9 +1256,9 @@
         {
           "bbox": [
             136.8,
-            664.17847,
-            545.00482,
-            685.3913
+            664.178,
+            545.014,
+            685.391
           ],
           "page": 6,
           "span": [
@@ -1279,19 +1279,19 @@
         {
           "bbox": [
             136.8,
-            611.13892,
-            547.16425,
-            656.87512
+            611.139,
+            547.354,
+            656.513
           ],
           "page": 6,
           "span": [
             0,
-            361
+            355
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.",
+      "text": "- /SM590000 First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1301,10 +1301,10 @@
       "prov": [
         {
           "bbox": [
-            151.19946,
-            522.16022,
-            547.26086,
-            603.37213
+            151.199,
+            522.16,
+            547.57,
+            603.372
           ],
           "page": 6,
           "span": [
@@ -1324,10 +1324,10 @@
       "prov": [
         {
           "bbox": [
-            151.19946,
-            505.18042,
-            541.992,
-            514.39343
+            151.199,
+            505.18,
+            542.001,
+            514.393
           ],
           "page": 6,
           "span": [
@@ -1347,20 +1347,20 @@
       "prov": [
         {
           "bbox": [
-            136.7993,
-            416.1394,
-            547.15826,
-            497.87503000000004
+            136.799,
+            416.139,
+            547.407,
+            497.513
           ],
           "page": 6,
           "span": [
             0,
-            573
+            567
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.",
+      "text": "- /SM590000 The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1370,10 +1370,10 @@
       "prov": [
         {
           "bbox": [
-            136.80022,
-            382.17978,
-            535.36169,
-            403.39258
+            136.8,
+            382.18,
+            535.371,
+            403.393
           ],
           "page": 6,
           "span": [
@@ -1393,20 +1393,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            338.93628,
-            323.38391,
-            353.69928
+            64.8,
+            338.936,
+            323.37,
+            353.699
           ],
           "page": 6,
           "span": [
             0,
-            35
+            36
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "1.2 Current state of IBM i security",
+      "text": "1.2  Current state of IBM i security",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -1417,9 +1417,9 @@
         {
           "bbox": [
             136.8,
-            276.15884000000005,
-            547.31824,
-            321.37128
+            276.159,
+            547.567,
+            321.371
           ],
           "page": 6,
           "span": [
@@ -1440,9 +1440,9 @@
         {
           "bbox": [
             136.8,
-            206.14005999999995,
-            547.28442,
-            263.35226
+            206.14,
+            547.593,
+            263.352
           ],
           "page": 6,
           "span": [
@@ -1463,9 +1463,9 @@
         {
           "bbox": [
             136.8,
-            112.12167,
-            547.28326,
-            193.33349999999996
+            112.12199999999996,
+            547.652,
+            193.33299999999997
           ],
           "page": 6,
           "span": [
@@ -1486,9 +1486,9 @@
         {
           "bbox": [
             136.8,
-            639.27942,
-            544.30334,
-            720.49133
+            639.279,
+            544.312,
+            720.491
           ],
           "page": 7,
           "span": [
@@ -1508,20 +1508,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            606.67725,
-            301.46902,
-            618.66528
+            64.8,
+            606.677,
+            301.46,
+            618.665
           ],
           "page": 7,
           "span": [
             0,
-            37
+            38
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "1.3.1 Existing row and column control",
+      "text": "1.3.1  Existing row and column control",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -1531,10 +1531,10 @@
       "prov": [
         {
           "bbox": [
-            136.79999,
-            535.29901,
-            541.56738,
-            592.51129
+            136.8,
+            535.299,
+            541.576,
+            592.511
           ],
           "page": 7,
           "span": [
@@ -1554,10 +1554,10 @@
       "prov": [
         {
           "bbox": [
-            136.79999,
-            477.27997,
-            547.4408,
-            522.49243
+            136.8,
+            477.28,
+            547.69,
+            522.492
           ],
           "page": 7,
           "span": [
@@ -1577,10 +1577,10 @@
       "prov": [
         {
           "bbox": [
-            136.79999,
-            431.26077,
-            547.23267,
-            464.47339
+            136.8,
+            431.261,
+            547.541,
+            464.473
           ],
           "page": 7,
           "span": [
@@ -1606,19 +1606,19 @@
         {
           "bbox": [
             136.8,
-            91.85700199999997,
-            316.44727,
+            91.85699999999997,
+            316.462,
             100.18200000000002
           ],
           "page": 7,
           "span": [
             0,
-            43
+            45
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 1-2 Existing row and column controls",
+      "text": "Figure 1-2   Existing row and column controls",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -1628,20 +1628,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            708.67725,
-            335.49551,
-            720.66528
+            64.8,
+            708.677,
+            335.493,
+            720.665
           ],
           "page": 8,
           "span": [
             0,
-            38
+            39
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "2.1.6 Change Function Usage CL command",
+      "text": "2.1.6  Change Function Usage CL command",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -1652,9 +1652,9 @@
         {
           "bbox": [
             136.8,
-            685.2982799999999,
-            547.28442,
-            694.51129
+            685.298,
+            547.251,
+            694.511
           ],
           "page": 8,
           "span": [
@@ -1675,19 +1675,19 @@
         {
           "bbox": [
             136.8,
-            668.25873,
-            301.51749,
-            677.47174
+            668.259,
+            301.517,
+            677.472
           ],
           "page": 8,
           "span": [
             0,
-            49
+            43
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> Work Function Usage ( WRKFCNUSG )",
+      "text": "- /SM590000 Work Function Usage ( WRKFCNUSG )",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1697,20 +1697,20 @@
       "prov": [
         {
           "bbox": [
-            136.80099,
-            656.25891,
-            313.39777,
-            665.47192
+            136.801,
+            656.259,
+            313.398,
+            665.472
           ],
           "page": 8,
           "span": [
             0,
-            51
+            45
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> Change Function Usage ( CHGFCNUSG )",
+      "text": "- /SM590000 Change Function Usage ( CHGFCNUSG )",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1720,20 +1720,20 @@
       "prov": [
         {
           "bbox": [
-            136.80098,
-            644.25909,
-            310.81711,
-            653.47211
+            136.801,
+            644.259,
+            310.817,
+            653.472
           ],
           "page": 8,
           "span": [
             0,
-            52
+            46
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> Display Function Usage ( DSPFCNUSG )",
+      "text": "- /SM590000 Display Function Usage ( DSPFCNUSG )",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1743,10 +1743,10 @@
       "prov": [
         {
           "bbox": [
-            136.79997,
-            610.2995,
-            512.53802,
-            631.51233
+            136.8,
+            610.299,
+            512.547,
+            631.512
           ],
           "page": 8,
           "span": [
@@ -1766,10 +1766,10 @@
       "prov": [
         {
           "bbox": [
-            136.80096,
-            593.54877,
-            441.59686,
-            602.32355
+            136.801,
+            593.624,
+            441.597,
+            602.025
           ],
           "page": 8,
           "span": [
@@ -1789,20 +1789,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            560.65729,
-            544.47546,
-            572.64532
+            64.8,
+            560.657,
+            544.461,
+            572.645
           ],
           "page": 8,
           "span": [
             0,
-            72
+            73
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view",
+      "text": "2.1.7  Verifying function usage IDs for RCAC with the FUNCTION_USAGE view",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -1813,9 +1813,9 @@
         {
           "bbox": [
             136.8,
-            525.2785,
-            519.51794,
-            546.49133
+            525.278,
+            519.527,
+            546.491
           ],
           "page": 8,
           "span": [
@@ -1841,19 +1841,19 @@
         {
           "bbox": [
             136.8,
-            504.11699999999996,
-            283.96805,
-            512.44202
+            504.117,
+            283.949,
+            512.442
           ],
           "page": 8,
           "span": [
             0,
-            29
+            31
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 2-1 FUNCTION_USAGE view",
+      "text": "Table 2-1   FUNCTION_USAGE view",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -1864,9 +1864,9 @@
         {
           "bbox": [
             136.8,
-            318.27847,
-            547.2804,
-            339.49127000000004
+            318.278,
+            547.589,
+            339.491
           ],
           "page": 8,
           "span": [
@@ -1888,18 +1888,18 @@
           "bbox": [
             136.8,
             297.117,
-            462.35419,
-            305.44202
+            462.374,
+            305.442
           ],
           "page": 8,
           "span": [
             0,
-            74
+            76
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Example 2-1 Query to determine who has authority to define and manage RCAC",
+      "text": "Example 2-1   Query to determine who has authority to define and manage RCAC",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -1910,19 +1910,19 @@
         {
           "bbox": [
             136.8,
-            279.56719999999996,
-            171.26956,
-            288.34198
+            279.64300000000003,
+            251.699,
+            288.043
           ],
           "page": 8,
           "span": [
             0,
-            6
+            23
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "SELECT",
+      "text": "SELECT     function_id,",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1932,33 +1932,10 @@
       "prov": [
         {
           "bbox": [
-            182.75941,
-            279.56719999999996,
-            251.69853,
-            288.34198
-          ],
-          "page": 8,
-          "span": [
-            0,
-            12
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "function_id,",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            166.78244,
-            267.56737999999996,
-            241.73852999999997,
-            276.3421599999999
+            136.8,
+            267.64300000000003,
+            241.739,
+            276.043
           ],
           "page": 8,
           "span": [
@@ -1978,10 +1955,10 @@
       "prov": [
         {
           "bbox": [
-            170.75961,
-            255.56758000000002,
-            221.69901999999996,
-            264.34235
+            136.8,
+            255.64300000000003,
+            221.699,
+            264.044
           ],
           "page": 8,
           "span": [
@@ -2001,10 +1978,10 @@
       "prov": [
         {
           "bbox": [
-            167.53809,
-            243.56777999999997,
-            236.69878,
-            252.34253
+            136.8,
+            243.64300000000003,
+            236.699,
+            252.04399999999998
           ],
           "page": 8,
           "span": [
@@ -2025,42 +2002,19 @@
         {
           "bbox": [
             136.8,
-            231.56798000000003,
-            160.59396,
-            240.34272999999996
+            231.644,
+            261.718,
+            240.04399999999998
           ],
           "page": 8,
           "span": [
             0,
-            4
+            25
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "FROM",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            178.43944,
-            231.56798000000003,
-            261.71829,
-            240.34272999999996
-          ],
-          "page": 8,
-          "span": [
-            0,
-            14
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "function_usage",
+      "text": "FROM       function_usage",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -2071,42 +2025,19 @@
         {
           "bbox": [
             136.8,
-            219.56817999999998,
-            162.44176,
-            228.34293000000002
+            219.644,
+            331.677,
+            228.04399999999998
           ],
           "page": 8,
           "span": [
             0,
-            5
+            39
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "WHERE",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            177.8268,
-            219.56817999999998,
-            331.67731,
-            228.34293000000002
-          ],
-          "page": 8,
-          "span": [
-            0,
-            28
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "function_id=\u2019QIBM_DB_SECADM\u2019",
+      "text": "WHERE      function_id='QIBM_DB_SECADM'",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -2117,19 +2048,19 @@
         {
           "bbox": [
             136.8,
-            207.56836999999996,
-            178.77542,
-            216.34312
+            207.644,
+            241.739,
+            216.04399999999998
           ],
           "page": 8,
           "span": [
             0,
-            8
+            21
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "ORDER BY",
+      "text": "ORDER BY   user_name;",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -2139,43 +2070,20 @@
       "prov": [
         {
           "bbox": [
-            189.26929,
-            207.56836999999996,
-            241.73856,
-            216.34312
+            64.8,
+            157.01599999999996,
+            249.582,
+            171.779
           ],
           "page": 8,
           "span": [
             0,
-            10
+            25
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "user_name;",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            64.800003,
-            157.01637000000005,
-            249.59605000000002,
-            171.77936999999997
-          ],
-          "page": 8,
-          "span": [
-            0,
-            24
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "2.2 Separation of duties",
+      "text": "2.2  Separation of duties",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -2186,9 +2094,9 @@
         {
           "bbox": [
             136.8,
-            82.23904400000004,
-            547.22345,
-            139.45128
+            82.23900000000003,
+            547.592,
+            139.45100000000002
           ],
           "page": 8,
           "span": [
@@ -2208,10 +2116,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            651.27887,
-            542.69434,
-            720.49097
+            136.8,
+            651.279,
+            542.703,
+            720.491
           ],
           "page": 9,
           "span": [
@@ -2231,10 +2139,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            593.25983,
-            547.30396,
-            638.47229
+            136.8,
+            593.26,
+            547.673,
+            638.472
           ],
           "page": 9,
           "span": [
@@ -2254,10 +2162,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            559.30023,
-            538.65076,
-            580.51306
+            136.8,
+            559.3,
+            538.66,
+            580.513
           ],
           "page": 9,
           "span": [
@@ -2277,10 +2185,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            513.28101,
-            545.79602,
-            546.49365
+            136.8,
+            513.281,
+            545.805,
+            546.494
           ],
           "page": 9,
           "span": [
@@ -2300,10 +2208,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            455.26199,
-            539.80713,
-            500.47443
+            136.8,
+            455.262,
+            539.816,
+            500.475
           ],
           "page": 9,
           "span": [
@@ -2323,10 +2231,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            421.30236999999994,
-            543.06714,
-            442.51517
+            136.8,
+            421.303,
+            543.076,
+            442.515
           ],
           "page": 9,
           "span": [
@@ -2351,20 +2259,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            400.13699,
-            391.75464,
-            408.4620100000001
+            64.8,
+            400.137,
+            391.767,
+            408.462
           ],
           "page": 9,
           "span": [
             0,
-            78
+            81
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority",
+      "text": "Table 2-2    Comparison of the different function usage IDs and *JOBCTL authority",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -2374,10 +2282,10 @@
       "prov": [
         {
           "bbox": [
-            136.79956,
-            699.27814,
-            528.73059,
-            720.49097
+            136.8,
+            699.278,
+            528.74,
+            720.491
           ],
           "page": 10,
           "span": [
@@ -2403,19 +2311,19 @@
         {
           "bbox": [
             136.8,
-            369.53699,
-            341.97659,
+            369.537,
+            341.985,
             377.862
           ],
           "page": 10,
           "span": [
             0,
-            42
+            44
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-1 CREATE PERMISSION SQL statement",
+      "text": "Figure 3-1   CREATE PERMISSION SQL statement",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -2426,9 +2334,9 @@
         {
           "bbox": [
             136.8,
-            340.95599,
-            215.37601,
-            352.05600000000004
+            340.956,
+            215.383,
+            352.056
           ],
           "page": 10,
           "span": [
@@ -2449,9 +2357,9 @@
         {
           "bbox": [
             136.8,
-            291.69885,
-            542.76648,
-            336.91128999999995
+            291.699,
+            542.776,
+            336.911
           ],
           "page": 10,
           "span": [
@@ -2471,10 +2379,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            711.2779500000001,
-            412.20758,
-            720.49097
+            136.8,
+            711.278,
+            412.174,
+            720.491
           ],
           "page": 11,
           "span": [
@@ -2501,18 +2409,18 @@
           "bbox": [
             136.8,
             690.177,
-            372.60364,
-            698.50195
+            372.618,
+            698.502
           ],
           "page": 11,
           "span": [
             0,
-            58
+            60
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 3-1 Special registers and their corresponding values",
+      "text": "Table 3-1   Special registers and their corresponding values",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -2523,9 +2431,9 @@
         {
           "bbox": [
             136.8,
-            556.29846,
-            538.4939,
-            577.51129
+            556.298,
+            538.503,
+            577.511
           ],
           "page": 11,
           "span": [
@@ -2546,19 +2454,19 @@
         {
           "bbox": [
             136.8,
-            539.25891,
-            411.36139,
-            548.47192
+            539.259,
+            411.326,
+            548.472
           ],
           "page": 11,
           "span": [
             0,
-            75
+            69
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> A user connects to the server using the user profile ALICE.",
+      "text": "- /SM590000 A user connects to the server using the user profile ALICE.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2569,19 +2477,19 @@
         {
           "bbox": [
             136.8,
-            522.27911,
-            453.2580899999999,
-            531.49213
+            522.279,
+            453.245,
+            531.492
           ],
           "page": 11,
           "span": [
             0,
-            77
+            71
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> USER and CURRENT USER initially have the same value of ALICE.",
+      "text": "- /SM590000 USER and CURRENT USER initially have the same value of ALICE.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2592,19 +2500,19 @@
         {
           "bbox": [
             136.8,
-            493.2995,
-            541.44983,
-            514.51233
+            493.299,
+            541.459,
+            514.512
           ],
           "page": 11,
           "span": [
             0,
-            160
+            154
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.",
+      "text": "- /SM590000 ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2615,19 +2523,19 @@
         {
           "bbox": [
             136.8,
-            452.26028,
-            547.21674,
-            485.4729
+            452.26,
+            547.584,
+            485.473
           ],
           "page": 11,
           "span": [
             0,
-            253
+            247
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.",
+      "text": "- /SM590000 While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2637,20 +2545,20 @@
       "prov": [
         {
           "bbox": [
-            136.80101,
-            423.28066999999993,
-            547.35406,
-            444.49347
+            136.801,
+            423.281,
+            547.483,
+            444.493
           ],
           "page": 11,
           "span": [
             0,
-            133
+            127
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- GLYPH<SM590000> When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.",
+      "text": "- /SM590000 When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2666,19 +2574,19 @@
         {
           "bbox": [
             136.8,
-            186.95709,
-            341.25662,
-            195.2821
+            186.957,
+            341.274,
+            195.28200000000004
           ],
           "page": 11,
           "span": [
             0,
-            50
+            52
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-5 Special registers and adopted authority",
+      "text": "Figure 3-5   Special registers and adopted authority",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -2688,20 +2596,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            154.45727999999997,
-            247.02536,
-            166.44528000000003
+            64.8,
+            154.457,
+            247.016,
+            166.44499999999994
           ],
           "page": 11,
           "span": [
             0,
-            31
+            32
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "3.2.2 Built-in global variables",
+      "text": "3.2.2  Built-in global variables",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -2712,9 +2620,9 @@
         {
           "bbox": [
             136.8,
-            119.07847000000004,
-            518.00116,
-            140.29128000000003
+            119.07799999999997,
+            518.01,
+            140.29099999999994
           ],
           "page": 11,
           "span": [
@@ -2735,9 +2643,9 @@
         {
           "bbox": [
             136.8,
-            73.05927999999994,
-            532.3385,
-            106.27189999999996
+            73.05899999999997,
+            532.347,
+            106.27200000000005
           ],
           "page": 11,
           "span": [
@@ -2758,9 +2666,9 @@
         {
           "bbox": [
             136.8,
-            711.27832,
-            342.54773,
-            720.49133
+            711.278,
+            342.519,
+            720.491
           ],
           "page": 12,
           "span": [
@@ -2785,20 +2693,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
+            64.8,
             690.177,
-            201.18147,
-            698.50195
+            201.196,
+            698.502
           ],
           "page": 12,
           "span": [
             0,
-            35
+            37
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 3-2 Built-in global variables",
+      "text": "Table 3-2   Built-in global variables",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -2808,20 +2716,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            455.03628999999995,
-            384.36389,
-            469.79929
+            64.8,
+            455.036,
+            384.345,
+            469.799
           ],
           "page": 12,
           "span": [
             0,
-            34
+            35
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "3.3 VERIFY_GROUP_FOR_USER function",
+      "text": "3.3  VERIFY_GROUP_FOR_USER function",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -2832,9 +2740,9 @@
         {
           "bbox": [
             136.8,
-            356.25939999999997,
-            547.23474,
-            437.47128
+            356.259,
+            547.543,
+            437.471
           ],
           "page": 12,
           "span": [
@@ -2854,10 +2762,10 @@
       "prov": [
         {
           "bbox": [
-            136.80002,
-            310.29996,
-            547.25739,
-            343.51257
+            136.8,
+            310.3,
+            547.386,
+            343.513
           ],
           "page": 12,
           "span": [
@@ -2877,10 +2785,10 @@
       "prov": [
         {
           "bbox": [
-            136.80002,
-            288.2804,
-            458.44525000000004,
-            297.49338
+            136.8,
+            288.28,
+            458.427,
+            297.493
           ],
           "page": 12,
           "span": [
@@ -2900,10 +2808,10 @@
       "prov": [
         {
           "bbox": [
-            136.80002,
-            271.24081,
-            406.07751,
-            280.4538
+            136.8,
+            271.241,
+            406.048,
+            280.454
           ],
           "page": 12,
           "span": [
@@ -2923,9 +2831,9 @@
       "prov": [
         {
           "bbox": [
-            136.80002,
+            136.8,
             254.26099999999997,
-            396.98816,
+            396.957,
             263.47399999999993
           ],
           "page": 12,
@@ -2946,10 +2854,10 @@
       "prov": [
         {
           "bbox": [
-            136.80002,
-            225.28139,
-            536.5686,
-            246.49419
+            136.8,
+            225.28099999999995,
+            536.577,
+            246.49400000000003
           ],
           "page": 12,
           "span": [
@@ -2969,10 +2877,10 @@
       "prov": [
         {
           "bbox": [
-            151.20018,
-            150.57143999999994,
-            451.01605,
-            217.30542000000003
+            151.2,
+            150.64699999999993,
+            451.016,
+            217.00700000000006
           ],
           "page": 12,
           "span": [
@@ -2992,10 +2900,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            711.56677,
-            166.73935,
-            720.34155
+            136.8,
+            711.642,
+            166.739,
+            720.043
           ],
           "page": 13,
           "span": [
@@ -3015,10 +2923,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            699.56696,
-            156.77934,
-            708.34174
+            136.8,
+            699.643,
+            156.779,
+            708.043
           ],
           "page": 13,
           "span": [
@@ -3038,20 +2946,20 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            531.56952,
-            521.57428,
-            696.3419199999998
+            136.8,
+            531.645,
+            521.574,
+            696.043
           ],
           "page": 13,
           "span": [
             0,
-            437
+            443
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 9999 || '-' || MONTH ( EMPLOYEES . DATE_OF_BIRTH ) || '-' || DAY (EMPLOYEES.DATE_OF_BIRTH )) ELSE NULL END ENABLE ;",
+      "text": "WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 9999 || '-' ||  MONTH ( EMPLOYEES . DATE_OF_BIRTH ) || '-'     || DAY (EMPLOYEES.DATE_OF_BIRTH )) ELSE NULL END ENABLE  ;",
       "type": "paragraph",
       "payload": null,
       "name": "Code",
@@ -3061,10 +2969,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            495.28128000000004,
-            547.21222,
-            516.49408
+            136.8,
+            495.281,
+            547.281,
+            516.494
           ],
           "page": 13,
           "span": [
@@ -3084,10 +2992,10 @@
       "prov": [
         {
           "bbox": [
-            152.0394,
-            478.30147999999997,
-            469.1528,
-            487.51446999999996
+            152.039,
+            478.302,
+            469.118,
+            487.515
           ],
           "page": 13,
           "span": [
@@ -3107,10 +3015,10 @@
       "prov": [
         {
           "bbox": [
-            152.0394,
-            461.2619,
-            403.95953,
-            470.47488
+            152.039,
+            461.262,
+            403.932,
+            470.475
           ],
           "page": 13,
           "span": [
@@ -3130,10 +3038,10 @@
       "prov": [
         {
           "bbox": [
-            152.0394,
-            432.28229,
-            545.16846,
-            453.49509
+            152.039,
+            432.282,
+            545.118,
+            453.495
           ],
           "page": 13,
           "span": [
@@ -3153,10 +3061,10 @@
       "prov": [
         {
           "bbox": [
-            152.0394,
-            415.3024899999999,
-            529.46362,
-            424.51547
+            152.039,
+            415.303,
+            529.442,
+            424.516
           ],
           "page": 13,
           "span": [
@@ -3176,10 +3084,10 @@
       "prov": [
         {
           "bbox": [
-            151.19978,
-            398.26291,
-            530.0603,
-            407.47589
+            151.2,
+            398.263,
+            530.024,
+            407.476
           ],
           "page": 13,
           "span": [
@@ -3200,19 +3108,19 @@
         {
           "bbox": [
             136.8,
-            107.55115999999998,
-            526.55469,
-            368.32189999999997
+            107.62699999999995,
+            526.555,
+            368.023
           ],
           "page": 13,
           "span": [
             0,
-            590
+            607
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;",
+      "text": "CREATE MASK   HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON            HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN    TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE  ;",
       "type": "paragraph",
       "payload": null,
       "name": "Code",
@@ -3223,19 +3131,19 @@
         {
           "bbox": [
             136.8,
-            377.15698,
-            351.9873,
-            385.48199
+            377.157,
+            351.999,
+            385.482
           ],
           "page": 13,
           "span": [
             0,
-            48
+            50
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Example 3-9 Creating a mask on the TAX_ID column",
+      "text": "Example 3-9   Creating a mask on the TAX_ID column",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -3246,9 +3154,9 @@
         {
           "bbox": [
             136.8,
-            711.27832,
-            449.9523899999999,
-            720.49133
+            711.278,
+            449.917,
+            720.491
           ],
           "page": 14,
           "span": [
@@ -3273,20 +3181,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            610.13702,
-            293.13809,
-            618.46198
+            64.8,
+            610.137,
+            293.146,
+            618.462
           ],
           "page": 14,
           "span": [
             0,
-            52
+            54
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-10 Column masks shown in System i Navigator",
+      "text": "Figure 3-10   Column masks shown in System i Navigator",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -3296,20 +3204,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            577.63727,
-            203.98521,
-            589.62531
+            64.8,
+            577.637,
+            203.983,
+            589.625
           ],
           "page": 14,
           "span": [
             0,
-            21
+            22
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "3.6.6 Activating RCAC",
+      "text": "3.6.6  Activating RCAC",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -3320,9 +3228,9 @@
         {
           "bbox": [
             136.8,
-            530.25867,
-            547.22565,
-            563.47131
+            530.259,
+            547.209,
+            563.471
           ],
           "page": 14,
           "span": [
@@ -3343,9 +3251,9 @@
         {
           "bbox": [
             136.8,
-            513.27887,
-            409.47888,
-            522.49188
+            513.279,
+            409.443,
+            522.492
           ],
           "page": 14,
           "span": [
@@ -3366,19 +3274,19 @@
         {
           "bbox": [
             136.8,
-            492.11699999999996,
-            375.29099,
-            500.44202
+            492.117,
+            375.273,
+            500.442
           ],
           "page": 14,
           "span": [
             0,
-            51
+            53
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Example 3-10 Activating RCAC on the EMPLOYEES table",
+      "text": "Example 3-10   Activating RCAC on the EMPLOYEES table",
       "type": "subtitle-level-1",
       "payload": null,
       "name": "Section-header",
@@ -3389,19 +3297,19 @@
         {
           "bbox": [
             136.8,
-            474.56711,
-            376.67661,
-            483.34189
+            474.643,
+            376.677,
+            483.043
           ],
           "page": 14,
           "span": [
             0,
-            45
+            48
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- /* Active Row Access Control (permissions) */",
+      "text": "- /*   Active Row Access Control (permissions)  */",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3412,19 +3320,19 @@
         {
           "bbox": [
             136.8,
-            462.56729,
-            354.86963,
-            471.34207
+            462.643,
+            376.677,
+            471.043
           ],
           "page": 14,
           "span": [
             0,
-            39
+            48
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- /* Active Column Access Control (masks)",
+      "text": "- /*   Active Column Access Control (masks)     */",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3434,33 +3342,10 @@
       "prov": [
         {
           "bbox": [
-            365.77313,
-            462.56729,
-            376.67661,
-            471.34207
-          ],
-          "page": 14,
-          "span": [
-            0,
-            2
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "*/",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
             136.8,
-            450.56747,
-            291.7178,
-            459.34225
+            450.643,
+            291.718,
+            459.043
           ],
           "page": 14,
           "span": [
@@ -3481,9 +3366,9 @@
         {
           "bbox": [
             136.8,
-            438.56765999999993,
-            271.67831,
-            447.34244
+            438.643,
+            271.678,
+            447.044
           ],
           "page": 14,
           "span": [
@@ -3504,9 +3389,9 @@
         {
           "bbox": [
             136.8,
-            426.56784,
-            291.7178,
-            435.34262
+            426.644,
+            291.718,
+            435.044
           ],
           "page": 14,
           "span": [
@@ -3527,9 +3412,9 @@
         {
           "bbox": [
             136.8,
-            378.27979,
-            540.80145,
-            411.4924
+            378.28,
+            540.81,
+            411.492
           ],
           "page": 14,
           "span": [
@@ -3554,20 +3439,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            134.63710000000003,
-            347.43054,
-            142.96210999999994
+            64.8,
+            134.63699999999994,
+            347.441,
+            142.962
           ],
           "page": 14,
           "span": [
             0,
-            65
+            67
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-11 Selecting the EMPLOYEES table from System i Navigator",
+      "text": "Figure 3-11   Selecting the EMPLOYEES table from System i Navigator",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -3577,10 +3462,10 @@
       "prov": [
         {
           "bbox": [
-            136.79959,
-            687.27832,
-            514.04858,
-            720.49097
+            136.8,
+            687.278,
+            514.058,
+            720.491
           ],
           "page": 15,
           "span": [
@@ -3601,9 +3486,9 @@
         {
           "bbox": [
             136.8,
-            252.21875,
-            547.23944,
-            285.43137
+            252.21900000000005,
+            547.308,
+            285.431
           ],
           "page": 15,
           "span": [
@@ -3630,18 +3515,18 @@
           "bbox": [
             136.8,
             303.117,
-            327.09329,
-            311.44202
+            327.111,
+            311.442
           ],
           "page": 15,
           "span": [
             0,
-            44
+            46
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 4-68 Visual Explain with RCAC enabled",
+      "text": "Figure 4-68   Visual Explain with RCAC enabled",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -3656,20 +3541,20 @@
       "prov": [
         {
           "bbox": [
-            64.800003,
-            116.15710000000001,
-            227.10149,
-            124.48209999999995
+            64.8,
+            116.15700000000004,
+            227.119,
+            124.48199999999997
           ],
           "page": 15,
           "span": [
             0,
-            37
+            39
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 4-69 Index advice with no RCAC",
+      "text": "Figure 4-69   Index advice with no RCAC",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -3679,20 +3564,20 @@
       "prov": [
         {
           "bbox": [
-            64.800308,
-            85.39238,
-            500.69727,
-            720.32703
+            64.8,
+            85.46100000000001,
+            500.697,
+            720.057
           ],
           "page": 16,
           "span": [
             0,
-            1998
+            2007
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "THEN C . CUSTOMER_TAX_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( C . CUSTOMER_TAX_ID , 8 , 4 ) ) WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_DRIVERS_LICENSE_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_DRIVERS_LICENSE_NUMBER RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER ELSE '*************' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_LOGIN_ID_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_LOGIN_ID RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_LOGIN_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_LOGIN_ID ELSE '*****' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION ELSE '*****' END ENABLE ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ANSWER_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION_ANSWER RETURN CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER ELSE '*****' END ENABLE ; ALTER TABLE BANK_SCHEMA.CUSTOMERS ACTIVATE ROW ACCESS CONTROL ACTIVATE COLUMN ACCESS CONTROL ;",
+      "text": "THEN C . CUSTOMER_TAX_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( C . CUSTOMER_TAX_ID , 8 , 4 ) ) WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_DRIVERS_LICENSE_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_DRIVERS_LICENSE_NUMBER RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TELLER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_DRIVERS_LICENSE_NUMBER ELSE '*************' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_LOGIN_ID_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_LOGIN_ID RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_LOGIN_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_LOGIN_ID ELSE '*****' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION ELSE '*****' END ENABLE  ; CREATE MASK BANK_SCHEMA.MASK_SECURITY_QUESTION_ANSWER_ON_CUSTOMERS ON BANK_SCHEMA.CUSTOMERS AS C FOR COLUMN CUSTOMER_SECURITY_QUESTION_ANSWER RETURN  CASE WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'ADMIN' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'CUSTOMER' ) = 1 THEN C . CUSTOMER_SECURITY_QUESTION_ANSWER ELSE '*****' END ENABLE  ; ALTER TABLE BANK_SCHEMA.CUSTOMERS ACTIVATE ROW ACCESS CONTROL ACTIVATE COLUMN ACCESS CONTROL ;",
       "type": "paragraph",
       "payload": null,
       "name": "Code",
@@ -3703,9 +3588,9 @@
         {
           "bbox": [
             287.22,
-            741.25195,
-            414.24481,
-            763.45197
+            741.252,
+            414.264,
+            763.452
           ],
           "page": 18,
           "span": [
@@ -3726,9 +3611,9 @@
         {
           "bbox": [
             27.0,
-            651.53998,
-            447.36002,
-            718.3620000000001
+            651.54,
+            447.36,
+            718.362
           ],
           "page": 18,
           "span": [
@@ -3748,9 +3633,9 @@
       "prov": [
         {
           "bbox": [
-            26.700001,
-            525.16803,
-            127.4436,
+            26.7,
+            525.168,
+            127.444,
             549.828
           ],
           "page": 18,
@@ -3771,10 +3656,10 @@
       "prov": [
         {
           "bbox": [
-            26.700001,
-            469.12802,
-            120.28319999999998,
-            507.82803
+            26.7,
+            469.128,
+            120.283,
+            507.828
           ],
           "page": 18,
           "span": [
@@ -3795,9 +3680,9 @@
         {
           "bbox": [
             152.94,
-            468.40811,
-            414.08423,
-            549.27142
+            468.408,
+            414.461,
+            549.271
           ],
           "page": 18,
           "span": [
@@ -3817,10 +3702,10 @@
       "prov": [
         {
           "bbox": [
-            26.700001,
-            413.14801,
-            121.44960000000002,
-            451.84801999999996
+            26.7,
+            413.148,
+            121.45,
+            451.848
           ],
           "page": 18,
           "span": [
@@ -3840,10 +3725,10 @@
       "prov": [
         {
           "bbox": [
-            152.94002,
-            403.42905,
-            414.17383,
-            460.29272
+            152.94,
+            403.429,
+            414.464,
+            460.293
           ],
           "page": 18,
           "span": [
@@ -3873,10 +3758,10 @@
       "prov": [
         {
           "bbox": [
-            467.3399999999999,
-            489.83939,
-            559.80933,
-            544.28168
+            467.34,
+            489.839,
+            559.801,
+            544.282
           ],
           "page": 18,
           "span": [
@@ -3896,10 +3781,10 @@
       "prov": [
         {
           "bbox": [
-            467.3399999999999,
-            405.52802,
-            587.38916,
-            440.20801
+            467.34,
+            405.528,
+            587.779,
+            440.208
           ],
           "page": 18,
           "span": [
@@ -3919,10 +3804,10 @@
       "prov": [
         {
           "bbox": [
-            467.3399999999999,
-            250.36594000000002,
-            587.52051,
-            392.1397099999999
+            467.34,
+            250.36599999999999,
+            587.755,
+            392.14
           ],
           "page": 18,
           "span": [
@@ -3942,10 +3827,10 @@
       "prov": [
         {
           "bbox": [
-            467.3399999999999,
-            190.48810000000003,
+            467.34,
+            190.48800000000006,
             570.948,
-            213.16809
+            213.168
           ],
           "page": 18,
           "span": [
@@ -4151,12 +4036,12 @@
           "page": 7,
           "span": [
             0,
-            43
+            45
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 1-2 Existing row and column controls",
+      "text": "Figure 1-2   Existing row and column controls",
       "type": "figure",
       "payload": null,
       "bounding-box": null
@@ -4173,12 +4058,12 @@
           "page": 10,
           "span": [
             0,
-            42
+            44
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-1 CREATE PERMISSION SQL statement",
+      "text": "Figure 3-1   CREATE PERMISSION SQL statement",
       "type": "figure",
       "payload": null,
       "bounding-box": null
@@ -4195,12 +4080,12 @@
           "page": 11,
           "span": [
             0,
-            50
+            52
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-5 Special registers and adopted authority",
+      "text": "Figure 3-5   Special registers and adopted authority",
       "type": "figure",
       "payload": null,
       "bounding-box": null
@@ -4217,12 +4102,12 @@
           "page": 14,
           "span": [
             0,
-            52
+            54
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-10 Column masks shown in System i Navigator",
+      "text": "Figure 3-10   Column masks shown in System i Navigator",
       "type": "figure",
       "payload": null,
       "bounding-box": null
@@ -4239,12 +4124,12 @@
           "page": 14,
           "span": [
             0,
-            65
+            67
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 3-11 Selecting the EMPLOYEES table from System i Navigator",
+      "text": "Figure 3-11   Selecting the EMPLOYEES table from System i Navigator",
       "type": "figure",
       "payload": null,
       "bounding-box": null
@@ -4261,12 +4146,12 @@
           "page": 15,
           "span": [
             0,
-            44
+            46
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 4-68 Visual Explain with RCAC enabled",
+      "text": "Figure 4-68   Visual Explain with RCAC enabled",
       "type": "figure",
       "payload": null,
       "bounding-box": null
@@ -4283,12 +4168,12 @@
           "page": 15,
           "span": [
             0,
-            37
+            39
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Figure 4-69 Index advice with no RCAC",
+      "text": "Figure 4-69   Index advice with no RCAC",
       "type": "figure",
       "payload": null,
       "bounding-box": null
@@ -4360,15 +4245,15 @@
       "type": "table-of-contents",
       "payload": null,
       "#-cols": 2,
-      "#-rows": 42,
+      "#-rows": 43,
       "data": [
         [
           {
             "bbox": [
-              136.8,
-              132.64862000000005,
-              172.89404,
-              141.86163
+              135.94374886155128,
+              132.649,
+              497.33,
+              144.50941060483456
             ],
             "spans": [
               [
@@ -4376,7 +4261,7 @@
                 0
               ]
             ],
-            "text": "Notices",
+            "text": "Notices . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4393,10 +4278,10 @@
           },
           {
             "bbox": [
-              175.01952,
-              132.64862000000005,
-              547.18982,
-              141.86163
+              533.53178358078,
+              133.24851094931364,
+              547.3264474868774,
+              143.6754745543003
             ],
             "spans": [
               [
@@ -4404,7 +4289,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . vii",
+            "text": ". vii",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -4423,10 +4308,10 @@
         [
           {
             "bbox": [
-              136.79901,
-              145.12847999999997,
-              189.86537,
-              154.34149000000002
+              136.20172747969627,
+              143.80996391177177,
+              497.293,
+              154.52848809957504
             ],
             "spans": [
               [
@@ -4434,7 +4319,7 @@
                 0
               ]
             ],
-            "text": "Trademarks",
+            "text": "Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4451,10 +4336,10 @@
           },
           {
             "bbox": [
-              195.39685,
-              145.12847999999997,
-              547.18286,
-              154.34149000000002
+              532.7206621170044,
+              145.23656752705574,
+              547.2589645385742,
+              156.0130162537098
             ],
             "spans": [
               [
@@ -4462,7 +4347,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . viii",
+            "text": "viii",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -4481,10 +4366,10 @@
         [
           {
             "bbox": [
-              136.79901,
-              167.62811,
-              279.39731,
-              176.84113000000002
+              136.03415894508362,
+              165.30041599273682,
+              497.361,
+              176.841
             ],
             "spans": [
               [
@@ -4492,7 +4377,7 @@
                 0
               ]
             ],
-            "text": "DB2 for i Center of Excellence",
+            "text": "DB2 for i Center of Excellence . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4509,10 +4394,10 @@
           },
           {
             "bbox": [
-              280.61942,
-              167.62811,
-              547.1908,
-              176.84113000000002
+              534.9700691699982,
+              165.17892783880234,
+              547.4746005535126,
+              176.87760919332504
             ],
             "spans": [
               [
@@ -4520,7 +4405,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ix",
+            "text": ". ix",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -4539,10 +4424,10 @@
         [
           {
             "bbox": [
-              136.79901,
-              190.12775,
-              172.84424,
-              199.34076000000005
+              136.01642103493214,
+              188.16546469926834,
+              497.329,
+              199.42118269205093
             ],
             "spans": [
               [
@@ -4550,7 +4435,7 @@
                 0
               ]
             ],
-            "text": "Preface",
+            "text": "Preface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4567,10 +4452,10 @@
           },
           {
             "bbox": [
-              175.01852,
-              190.12775,
-              547.18286,
-              199.34076000000005
+              535.6121640205383,
+              188.050455391407,
+              546.9251842498779,
+              198.5433229804039
             ],
             "spans": [
               [
@@ -4578,7 +4463,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . xi",
+            "text": ". xi",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -4597,10 +4482,10 @@
         [
           {
             "bbox": [
-              136.79803,
-              202.60760000000005,
-              547.18085,
-              211.82061999999996
+              135.95666743814945,
+              200.19580727815628,
+              497.31,
+              211.82100000000003
             ],
             "spans": [
               [
@@ -4608,7 +4493,7 @@
                 0
               ]
             ],
-            "text": "Authors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . xi",
+            "text": "Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4624,24 +4509,41 @@
             ]
           },
           {
-            "bbox": null,
+            "bbox": [
+              533.464,
+              200.0358463525772,
+              547.1677839756012,
+              211.82100000000003
+            ],
             "spans": [
               [
                 4,
                 1
               ]
             ],
-            "text": "",
-            "type": "body"
+            "text": ". xi",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 4,
+            "row-header": false,
+            "row-span": [
+              4,
+              5
+            ]
           }
         ],
         [
           {
             "bbox": [
-              136.79803,
-              215.14721999999995,
-              339.18292,
-              224.36023
+              136.0592931509018,
+              213.47581005096436,
+              497.333,
+              224.36
             ],
             "spans": [
               [
@@ -4649,7 +4551,7 @@
                 0
               ]
             ],
-            "text": "Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4666,10 +4568,10 @@
           },
           {
             "bbox": [
-              535.53925,
-              215.14721999999995,
-              547.13879,
-              224.36023
+              533.8886229991913,
+              213.67101085186005,
+              547.2560422420502,
+              224.11165606975555
             ],
             "spans": [
               [
@@ -4696,10 +4598,10 @@
         [
           {
             "bbox": [
-              136.79803,
-              227.62707999999998,
-              529.99506,
-              236.84009000000003
+              135.36322790384293,
+              225.55643439292908,
+              497.31,
+              236.84000000000003
             ],
             "spans": [
               [
@@ -4707,7 +4609,7 @@
                 0
               ]
             ],
-            "text": "Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4724,10 +4626,10 @@
           },
           {
             "bbox": [
-              535.5495,
-              227.62707999999998,
-              547.19788,
-              236.84009000000003
+              535.8668212890625,
+              226.2412166595459,
+              547.0436477661133,
+              236.61358380317688
             ],
             "spans": [
               [
@@ -4754,10 +4656,10 @@
         [
           {
             "bbox": [
-              136.79807,
-              240.10693000000003,
-              284.02866,
-              249.31994999999995
+              134.9811007976532,
+              238.64000499248505,
+              497.299,
+              249.32000000000005
             ],
             "spans": [
               [
@@ -4765,7 +4667,7 @@
                 0
               ]
             ],
-            "text": "Stay connected to IBM Redbooks",
+            "text": "Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4782,10 +4684,10 @@
           },
           {
             "bbox": [
-              289.54449,
-              240.10693000000003,
-              547.12115,
-              249.31994999999995
+              534.2955343723297,
+              239.20865535736084,
+              546.8662717342377,
+              249.5694136619568
             ],
             "spans": [
               [
@@ -4793,7 +4695,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . xiv",
+            "text": "xiv",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -4812,10 +4714,10 @@
         [
           {
             "bbox": [
-              136.79807,
-              262.60657000000003,
-              373.17566,
-              271.81958
+              134.33124589920044,
+              260.007439494133,
+              497.34,
+              271.82000000000005
             ],
             "spans": [
               [
@@ -4823,7 +4725,7 @@
                 0
               ]
             ],
-            "text": "Chapter 1. Securing and protecting IBM DB2 data",
+            "text": "Chapter 1. Securing and protecting IBM DB2 data . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4840,10 +4742,10 @@
           },
           {
             "bbox": [
-              375.11798,
-              262.60657000000003,
-              547.19781,
-              271.81958
+              533.449,
+              259.78279888629913,
+              547.0428373813629,
+              271.82000000000005
             ],
             "spans": [
               [
@@ -4851,7 +4753,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1",
+            "text": ". 1",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -4870,10 +4772,10 @@
         [
           {
             "bbox": [
-              136.79808,
-              274.60637999999994,
-              150.88702,
-              283.8194
+              135.41773241758347,
+              272.39781272411346,
+              497.331,
+              283.82
             ],
             "spans": [
               [
@@ -4881,7 +4783,7 @@
                 0
               ]
             ],
-            "text": "1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2",
+            "text": "1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4897,24 +4799,41 @@
             ]
           },
           {
-            "bbox": null,
+            "bbox": [
+              533.446,
+              272.25415551662445,
+              546.8551964759827,
+              283.82
+            ],
             "spans": [
               [
                 9,
                 1
               ]
             ],
-            "text": "",
-            "type": "body"
+            "text": ". 2",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 9,
+            "row-header": false,
+            "row-span": [
+              9,
+              10
+            ]
           }
         ],
         [
           {
             "bbox": [
-              136.79807,
-              287.14606000000003,
-              150.62746,
-              296.35904
+              135.5544480085373,
+              285.188081741333,
+              497.328,
+              296.359
             ],
             "spans": [
               [
@@ -4922,7 +4841,7 @@
                 0
               ]
             ],
-            "text": "1.2 Current state of IBM i security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4939,10 +4858,10 @@
           },
           {
             "bbox": [
-              541.66113,
-              287.14606000000003,
-              547.19287,
-              296.35904
+              533.443,
+              284.8059298992157,
+              546.9836547374725,
+              296.359
             ],
             "spans": [
               [
@@ -4950,7 +4869,7 @@
                 1
               ]
             ],
-            "text": "2",
+            "text": ". 2",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -4969,10 +4888,10 @@
         [
           {
             "bbox": [
-              136.79807,
-              299.62595,
-              150.84943,
-              308.83893
+              135.6574159860611,
+              297.91805267333984,
+              497.296,
+              308.839
             ],
             "spans": [
               [
@@ -4980,7 +4899,7 @@
                 0
               ]
             ],
-            "text": "1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3",
+            "text": "1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -4996,24 +4915,41 @@
             ]
           },
           {
-            "bbox": null,
+            "bbox": [
+              533.411,
+              297.4219880104065,
+              547.2056019306183,
+              308.839
+            ],
             "spans": [
               [
                 11,
                 1
               ]
             ],
-            "text": "",
-            "type": "body"
+            "text": ". 3",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 11,
+            "row-header": false,
+            "row-span": [
+              11,
+              12
+            ]
           }
         ],
         [
           {
             "bbox": [
-              151.1972,
-              312.1058300000001,
-              173.38289,
-              321.3188200000001
+              152.1446568965912,
+              311.2221302986145,
+              497.283,
+              321.6398015022278
             ],
             "spans": [
               [
@@ -5021,7 +4957,7 @@
                 0
               ]
             ],
-            "text": "1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5038,10 +4974,10 @@
           },
           {
             "bbox": [
-              541.6015,
-              312.1058300000001,
-              547.14795,
-              321.3188200000001
+              533.398,
+              310.3414249420166,
+              547.2094082832336,
+              321.319
             ],
             "spans": [
               [
@@ -5049,7 +4985,7 @@
                 1
               ]
             ],
-            "text": "4",
+            "text": ". 4",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5068,10 +5004,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              324.64548,
-              173.4189,
-              333.8584599999999
+              146.72867143154144,
+              323.04220843315125,
+              497.312,
+              333.859
             ],
             "spans": [
               [
@@ -5079,7 +5015,7 @@
                 0
               ]
             ],
-            "text": "1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5096,10 +5032,10 @@
           },
           {
             "bbox": [
-              541.6355,
-              324.64548,
-              547.19092,
-              333.8584599999999
+              533.439,
+              323.213504076004,
+              547.5407328605652,
+              333.859
             ],
             "spans": [
               [
@@ -5107,7 +5043,7 @@
                 1
               ]
             ],
-            "text": "5",
+            "text": ". 5",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5126,10 +5062,10 @@
         [
           {
             "bbox": [
-              136.79704,
-              347.14511,
-              336.82071,
-              356.35809
+              137.5340460538864,
+              346.0583243370056,
+              497.337,
+              356.658221244812
             ],
             "spans": [
               [
@@ -5137,7 +5073,7 @@
                 0
               ]
             ],
-            "text": "Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5154,10 +5090,10 @@
           },
           {
             "bbox": [
-              541.64282,
-              347.14511,
-              547.19476,
-              356.35809
+              533.446,
+              344.63919162750244,
+              547.6184561252594,
+              356.358
             ],
             "spans": [
               [
@@ -5165,7 +5101,7 @@
                 1
               ]
             ],
-            "text": "7",
+            "text": ". 7",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5184,10 +5120,10 @@
         [
           {
             "bbox": [
-              136.79704,
-              359.14493,
-              150.644,
-              368.35791
+              136.02702663838863,
+              356.22719740867615,
+              497.308,
+              368.358
             ],
             "spans": [
               [
@@ -5195,7 +5131,7 @@
                 0
               ]
             ],
-            "text": "2.1 Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5212,10 +5148,10 @@
           },
           {
             "bbox": [
-              541.66589,
-              359.14493,
-              547.20471,
-              368.35791
+              535.8173632621765,
+              356.9168529510498,
+              547.5902891159058,
+              367.5323095321655
             ],
             "spans": [
               [
@@ -5223,7 +5159,7 @@
                 1
               ]
             ],
-            "text": "8",
+            "text": ". 8",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5242,10 +5178,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              371.62482,
-              173.60995,
-              380.8378000000001
+              149.0386608839035,
+              369.93525218963623,
+              497.273,
+              380.838
             ],
             "spans": [
               [
@@ -5253,7 +5189,7 @@
                 0
               ]
             ],
-            "text": "2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . . . . . . . . .",
+            "text": "2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5270,10 +5206,10 @@
           },
           {
             "bbox": [
-              541.55585,
-              371.62482,
-              547.15906,
-              380.8378000000001
+              534.9827406406403,
+              369.45137071609497,
+              547.5258758068085,
+              380.02992963790894
             ],
             "spans": [
               [
@@ -5281,7 +5217,7 @@
                 1
               ]
             ],
-            "text": "8",
+            "text": ". 8",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5300,10 +5236,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              384.10470999999995,
-              173.41664,
-              393.31769
+              142.25332164764404,
+              382.9074945449829,
+              497.265,
+              393.56994342803955
             ],
             "spans": [
               [
@@ -5311,7 +5247,7 @@
                 0
               ]
             ],
-            "text": "2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5328,10 +5264,10 @@
           },
           {
             "bbox": [
-              541.59595,
-              384.10470999999995,
-              547.15082,
-              393.31769
+              535.2795379161835,
+              383.2523310184479,
+              547.5873668193817,
+              393.91512799263
             ],
             "spans": [
               [
@@ -5339,7 +5275,7 @@
                 1
               ]
             ],
-            "text": "8",
+            "text": ". 8",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5358,10 +5294,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              396.64435,
-              173.41859,
-              405.85733
+              142.78632152080536,
+              395.06462931632996,
+              497.314,
+              405.857
             ],
             "spans": [
               [
@@ -5369,7 +5305,7 @@
                 0
               ]
             ],
-            "text": "2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5386,10 +5322,10 @@
           },
           {
             "bbox": [
-              541.63025,
-              396.64435,
-              547.18561,
-              405.85733
+              533.435,
+              394.6934423446655,
+              547.5037744045258,
+              405.857
             ],
             "spans": [
               [
@@ -5397,7 +5333,7 @@
                 1
               ]
             ],
-            "text": "9",
+            "text": ". 9",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5416,10 +5352,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              409.12424000000004,
-              173.38629,
-              418.33722
+              149.2152019739151,
+              406.4548671245575,
+              497.307,
+              418.337
             ],
             "spans": [
               [
@@ -5427,7 +5363,7 @@
                 0
               ]
             ],
-            "text": "2.1.4 Database Information function: QIBM_DB_SYSMON",
+            "text": "2.1.4 Database Information function: QIBM_DB_SYSMON . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5444,10 +5380,10 @@
           },
           {
             "bbox": [
-              416.81775,
-              409.12424000000004,
-              536.08411,
-              418.33722
+              535.74857878685,
+              407.55131936073303,
+              547.6742007732391,
+              418.1928827762604
             ],
             "spans": [
               [
@@ -5455,7 +5391,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . 9",
+            "text": ". 9",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5474,10 +5410,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              421.60413,
-              173.44926,
-              430.81711
+              146.28141272068024,
+              419.7202718257904,
+              497.276,
+              430.817
             ],
             "spans": [
               [
@@ -5485,7 +5421,7 @@
                 0
               ]
             ],
-            "text": "2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5502,10 +5438,10 @@
           },
           {
             "bbox": [
-              541.59894,
-              421.60413,
-              547.16193,
-              430.81711
+              535.1738440990448,
+              420.3258285522461,
+              547.732794046402,
+              430.9417028427124
             ],
             "spans": [
               [
@@ -5513,7 +5449,7 @@
                 1
               ]
             ],
-            "text": "9",
+            "text": ". 9",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5532,10 +5468,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              434.1437700000001,
-              173.32208,
-              443.35675
+              148.76853263378143,
+              431.06628465652466,
+              497.309,
+              443.357
             ],
             "spans": [
               [
@@ -5543,7 +5479,7 @@
                 0
               ]
             ],
-            "text": "2.1.6 Change Function Usage CL command . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5560,10 +5496,10 @@
           },
           {
             "bbox": [
-              536.10443,
-              434.1437700000001,
-              547.16687,
-              443.35675
+              533.8136255741119,
+              432.3295421600342,
+              547.749443769455,
+              442.94047355651855
             ],
             "spans": [
               [
@@ -5590,10 +5526,10 @@
         [
           {
             "bbox": [
-              151.1972,
-              446.62366,
-              173.35822,
-              455.83663999999993
+              139.26731169223785,
+              444.17470026016235,
+              497.5708866119385,
+              454.7957262992859
             ],
             "spans": [
               [
@@ -5601,7 +5537,7 @@
                 0
               ]
             ],
-            "text": "2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view . . . . .",
+            "text": "2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5618,10 +5554,10 @@
           },
           {
             "bbox": [
-              536.0755,
-              446.62366,
-              547.15601,
-              455.83663999999993
+              534.5652451515198,
+              445.5872540473938,
+              547.7934255599976,
+              456.2325072288513
             ],
             "spans": [
               [
@@ -5648,10 +5584,10 @@
         [
           {
             "bbox": [
-              136.79704,
-              459.10355,
-              150.85457,
-              468.31653
+              134.74322831630707,
+              456.98626375198364,
+              497.327,
+              468.317
             ],
             "spans": [
               [
@@ -5659,7 +5595,7 @@
                 0
               ]
             ],
-            "text": "2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10",
+            "text": "2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5675,24 +5611,41 @@
             ]
           },
           {
-            "bbox": null,
+            "bbox": [
+              535.5586049556732,
+              457.52256774902344,
+              547.7646691799164,
+              468.1541061401367
+            ],
             "spans": [
               [
                 23,
                 1
               ]
             ],
-            "text": "",
-            "type": "body"
+            "text": "10",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 23,
+            "row-header": false,
+            "row-span": [
+              23,
+              24
+            ]
           }
         ],
         [
           {
             "bbox": [
-              136.79703,
-              481.60318,
-              348.68503,
-              490.81616
+              135.67051720619202,
+              479.2621464729309,
+              497.338,
+              490.816
             ],
             "spans": [
               [
@@ -5700,7 +5653,7 @@
                 0
               ]
             ],
-            "text": "Chapter 3. Row and Column Access Control",
+            "text": "Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5717,10 +5670,10 @@
           },
           {
             "bbox": [
-              350.09741,
-              481.60318,
-              547.1958,
-              490.81616
+              534.7081921100616,
+              480.4736428260803,
+              547.8643219470978,
+              491.093346118927
             ],
             "spans": [
               [
@@ -5728,7 +5681,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13",
+            "text": "13",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -5747,10 +5700,10 @@
         [
           {
             "bbox": [
-              136.79703,
+              136.3625612258911,
               493.603,
-              150.70105,
-              502.81598
+              497.294,
+              510.26272439956665
             ],
             "spans": [
               [
@@ -5758,7 +5711,7 @@
                 0
               ]
             ],
-            "text": "3.1 Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.1 Explanation of RCAC and the concept of access control . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5775,10 +5728,10 @@
           },
           {
             "bbox": [
-              536.04248,
-              493.603,
-              547.16571,
-              502.81598
+              535.4884698390961,
+              494.2248783111572,
+              547.8967864513397,
+              504.83692359924316
             ],
             "spans": [
               [
@@ -5805,10 +5758,10 @@
         [
           {
             "bbox": [
-              151.19719,
-              506.14264,
-              173.35429,
-              515.35562
+              141.05314183235168,
+              503.85596799850464,
+              497.284,
+              515.356
             ],
             "spans": [
               [
@@ -5816,7 +5769,7 @@
                 0
               ]
             ],
-            "text": "3.1.1 Row permission and column mask definitions",
+            "text": "3.1.1 Row permission and column mask definitions . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5833,10 +5786,10 @@
           },
           {
             "bbox": [
-              536.07721,
-              506.14264,
-              547.15576,
-              515.35562
+              534.8730931282043,
+              504.79149770736694,
+              547.9081072807312,
+              515.4061188697815
             ],
             "spans": [
               [
@@ -5863,10 +5816,10 @@
         [
           {
             "bbox": [
-              151.19719,
-              518.62253,
-              173.44292,
-              527.83551
+              146.3821337223053,
+              516.055552482605,
+              497.254,
+              527.836
             ],
             "spans": [
               [
@@ -5874,7 +5827,7 @@
                 0
               ]
             ],
-            "text": "3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.1.2 Enabling and activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5891,10 +5844,10 @@
           },
           {
             "bbox": [
-              535.99622,
-              518.62253,
-              547.11908,
-              527.83551
+              535.7466633319855,
+              517.0453495979309,
+              547.8621118068695,
+              527.6074786186218
             ],
             "spans": [
               [
@@ -5921,10 +5874,10 @@
         [
           {
             "bbox": [
-              136.79703,
-              531.1621700000001,
-              150.64432,
-              540.37517
+              138.4719558954239,
+              528.5372648239136,
+              497.287,
+              540.375
             ],
             "spans": [
               [
@@ -5932,7 +5885,7 @@
                 0
               ]
             ],
-            "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -5949,10 +5902,10 @@
           },
           {
             "bbox": [
-              536.06702,
-              531.1621700000001,
-              547.14484,
-              540.37517
+              534.9077432155609,
+              529.3312954902649,
+              547.7918784618378,
+              539.9977822303772
             ],
             "spans": [
               [
@@ -5979,10 +5932,10 @@
         [
           {
             "bbox": [
-              151.19719,
-              543.64204,
-              173.41321,
-              552.8550399999999
+              144.76317530870438,
+              541.5528445243835,
+              497.302,
+              552.855
             ],
             "spans": [
               [
@@ -5990,7 +5943,7 @@
                 0
               ]
             ],
-            "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6007,10 +5960,10 @@
           },
           {
             "bbox": [
-              536.05188,
-              543.64204,
-              547.15991,
-              552.8550399999999
+              535.5743706226349,
+              541.5879321098328,
+              547.717470407486,
+              552.3002276420593
             ],
             "spans": [
               [
@@ -6037,10 +5990,10 @@
         [
           {
             "bbox": [
-              151.19719,
-              556.12192,
-              173.35269,
-              565.33492
+              147.57656717300415,
+              554.8085374832153,
+              497.312,
+              565.3801345825195
             ],
             "spans": [
               [
@@ -6048,7 +6001,7 @@
                 0
               ]
             ],
-            "text": "3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6065,10 +6018,10 @@
           },
           {
             "bbox": [
-              536.09912,
-              556.12192,
-              547.17688,
-              565.33492
+              535.2329776287079,
+              555.4383387565613,
+              547.6113836765289,
+              566.0521245002747
             ],
             "spans": [
               [
@@ -6095,10 +6048,10 @@
         [
           {
             "bbox": [
-              136.79703,
-              568.66156,
-              150.62514,
-              577.87456
+              136.68155813217163,
+              566.5831027030945,
+              497.238,
+              577.875
             ],
             "spans": [
               [
@@ -6106,7 +6059,7 @@
                 0
               ]
             ],
-            "text": "3.3 VERIFY_GROUP_FOR_USER function . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6123,10 +6076,10 @@
           },
           {
             "bbox": [
-              536.06152,
-              568.66156,
-              547.12402,
-              577.87456
+              534.1381232738495,
+              566.7341046333313,
+              547.6000874042511,
+              577.4091544151306
             ],
             "spans": [
               [
@@ -6153,10 +6106,10 @@
         [
           {
             "bbox": [
-              136.79703,
-              581.14143,
-              150.63004,
-              590.35443
+              135.0494555234909,
+              581.1012177467346,
+              497.321,
+              591.7801661491394
             ],
             "spans": [
               [
@@ -6164,7 +6117,7 @@
                 0
               ]
             ],
-            "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text . . . . . . . . . . . . .",
+            "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6181,10 +6134,10 @@
           },
           {
             "bbox": [
-              536.16315,
-              581.14143,
-              547.22955,
-              590.35443
+              534.6688761711121,
+              580.3193354606628,
+              547.4848408699036,
+              591.0004420280457
             ],
             "spans": [
               [
@@ -6211,10 +6164,10 @@
         [
           {
             "bbox": [
-              156.21107,
-              606.16095,
-              530.56512,
-              615.37395
+              140.70532715320587,
+              602.841805934906,
+              359.84761905670166,
+              613.6218400001526
             ],
             "spans": [
               [
@@ -6222,7 +6175,7 @@
                 0
               ]
             ],
-            "text": "Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": ". . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6252,10 +6205,10 @@
         [
           {
             "bbox": [
-              136.79701,
-              606.16095,
-              150.6642,
-              615.37395
+              140.32391220331192,
+              604.1608972549438,
+              497.348,
+              615.374
             ],
             "spans": [
               [
@@ -6263,7 +6216,7 @@
                 0
               ]
             ],
-            "text": "3.6",
+            "text": "3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6280,10 +6233,10 @@
           },
           {
             "bbox": [
-              536.112,
-              606.16095,
-              547.20575,
-              615.37395
+              534.2966639995575,
+              603.8192110061646,
+              547.1204869747162,
+              614.6591863632202
             ],
             "spans": [
               [
@@ -6310,10 +6263,10 @@
         [
           {
             "bbox": [
-              151.19717,
-              618.64082,
-              173.41692,
-              627.85382
+              146.28911137580872,
+              618.641,
+              497.277,
+              635.7924947738647
             ],
             "spans": [
               [
@@ -6321,7 +6274,7 @@
                 0
               ]
             ],
-            "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . . .",
+            "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6338,10 +6291,10 @@
           },
           {
             "bbox": [
-              536.04633,
-              618.64082,
-              547.15875,
-              640.3336899999999
+              534.4478621482849,
+              618.641,
+              547.162,
+              639.3146548271179
             ],
             "spans": [
               [
@@ -6368,10 +6321,10 @@
         [
           {
             "bbox": [
-              151.19717,
-              631.1206999999999,
-              173.32271,
-              640.3336899999999
+              147.87785840034485,
+              628.8568835258484,
+              497.301,
+              640.3340000000001
             ],
             "spans": [
               [
@@ -6379,7 +6332,7 @@
                 0
               ]
             ],
-            "text": "3.6.2 Creating group profiles for the users and their roles . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6409,10 +6362,10 @@
         [
           {
             "bbox": [
-              151.19717,
-              643.66034,
-              173.32227,
-              652.87334
+              150.04169619083405,
+              641.1288013458252,
+              497.279,
+              652.873
             ],
             "spans": [
               [
@@ -6420,7 +6373,7 @@
                 0
               ]
             ],
-            "text": "3.6.3 Demonstrating data access without RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6437,10 +6390,10 @@
           },
           {
             "bbox": [
-              536.0882,
-              643.66034,
-              547.15076,
-              652.87334
+              533.746609210968,
+              641.6000819206238,
+              547.0057315826416,
+              652.2162346839905
             ],
             "spans": [
               [
@@ -6467,10 +6420,10 @@
         [
           {
             "bbox": [
-              151.19717,
-              656.14021,
-              173.35289,
-              665.35321
+              152.01735895872116,
+              654.2023730278015,
+              497.293,
+              665.353
             ],
             "spans": [
               [
@@ -6478,7 +6431,7 @@
                 0
               ]
             ],
-            "text": "3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6495,10 +6448,10 @@
           },
           {
             "bbox": [
-              536.073,
-              656.14021,
-              547.15088,
-              665.35321
+              533.5257179737091,
+              654.5663719177246,
+              547.0370419025421,
+              664.9678916931152
             ],
             "spans": [
               [
@@ -6525,10 +6478,10 @@
         [
           {
             "bbox": [
-              151.19717,
-              668.62009,
-              173.35289,
-              677.83309
+              153.64246279001236,
+              666.142560005188,
+              497.303,
+              677.833
             ],
             "spans": [
               [
@@ -6536,7 +6489,7 @@
                 0
               ]
             ],
-            "text": "3.6.5 Defining and creating column masks",
+            "text": "3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6553,10 +6506,10 @@
           },
           {
             "bbox": [
-              344.98996,
-              668.62009,
-              547.16089,
-              677.83309
+              534.360021352768,
+              665.3578233718872,
+              546.2935507297516,
+              675.8962821960449
             ],
             "spans": [
               [
@@ -6564,7 +6517,7 @@
                 1
               ]
             ],
-            "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26",
+            "text": "26",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -6583,10 +6536,10 @@
         [
           {
             "bbox": [
-              151.19717,
-              681.15973,
-              173.38359,
-              690.37273
+              157.05304989218712,
+              679.6369042396545,
+              497.316,
+              690.373
             ],
             "spans": [
               [
@@ -6594,7 +6547,7 @@
                 0
               ]
             ],
-            "text": "3.6.6 Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6611,10 +6564,10 @@
           },
           {
             "bbox": [
-              536.08765,
-              681.15973,
-              547.18085,
-              690.37273
+              533.6053321361542,
+              683.0443334579468,
+              546.4654996395111,
+              693.6072282791138
             ],
             "spans": [
               [
@@ -6641,10 +6594,10 @@
         [
           {
             "bbox": [
-              151.19717,
-              706.119492,
-              173.44592,
-              715.332497
+              156.68627405166626,
+              704.8715615272522,
+              386.36561822891235,
+              715.4004826545715
             ],
             "spans": [
               [
@@ -6652,7 +6605,7 @@
                 0
               ]
             ],
-            "text": "3.6.8 Demonstrating data access with a view and RCAC . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Demonstrating data access with a view and",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -6668,15 +6621,56 @@
             ]
           },
           {
-            "bbox": [
-              535.99847,
-              706.119492,
-              547.12286,
-              715.332497
-            ],
+            "bbox": null,
             "spans": [
               [
                 41,
+                1
+              ]
+            ],
+            "text": "",
+            "type": "body"
+          }
+        ],
+        [
+          {
+            "bbox": [
+              155.21645712852478,
+              704.8982253074646,
+              497.251,
+              715.4106469154358
+            ],
+            "spans": [
+              [
+                42,
+                0
+              ]
+            ],
+            "text": "3.6.8 RCAC . . . . . . . . . . . . . . . . .",
+            "type": "row_header",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 42,
+            "row-header": true,
+            "row-span": [
+              42,
+              43
+            ]
+          },
+          {
+            "bbox": [
+              531.633887052536,
+              705.3056659698486,
+              547.0252544879913,
+              716.0672512054443
+            ],
+            "spans": [
+              [
+                42,
                 1
               ]
             ],
@@ -6688,11 +6682,11 @@
               1,
               2
             ],
-            "row": 41,
+            "row": 42,
             "row-header": false,
             "row-span": [
-              41,
-              42
+              42,
+              43
             ]
           }
         ]
@@ -6717,7 +6711,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 2-1 FUNCTION_USAGE view",
+      "text": "Table 2-1   FUNCTION_USAGE view",
       "type": "table",
       "payload": null,
       "#-cols": 3,
@@ -6727,9 +6721,9 @@
           {
             "bbox": [
               142.8,
-              296.5379899999999,
-              202.245,
-              304.86301
+              296.538,
+              176.257,
+              304.863
             ],
             "spans": [
               [
@@ -6754,10 +6748,10 @@
           },
           {
             "bbox": [
-              216.80878999999996,
-              296.5379899999999,
-              257.21069,
-              304.86301
+              216.809,
+              296.538,
+              236.287,
+              304.863
             ],
             "spans": [
               [
@@ -6782,10 +6776,10 @@
           },
           {
             "bbox": [
-              289.47479,
-              296.5379899999999,
-              338.89468,
-              304.86301
+              289.475,
+              296.538,
+              338.903,
+              304.863
             ],
             "spans": [
               [
@@ -6813,9 +6807,9 @@
           {
             "bbox": [
               142.8,
-              315.55771,
-              203.2323,
-              323.88272
+              315.558,
+              203.243,
+              323.883
             ],
             "spans": [
               [
@@ -6840,10 +6834,10 @@
           },
           {
             "bbox": [
-              216.7854,
-              315.55771,
-              276.0036,
-              323.88272
+              216.785,
+              315.558,
+              276.014,
+              323.883
             ],
             "spans": [
               [
@@ -6868,10 +6862,10 @@
           },
           {
             "bbox": [
-              289.4577,
-              315.55771,
-              359.85394,
-              323.88272
+              289.458,
+              315.558,
+              298.447,
+              323.883
             ],
             "spans": [
               [
@@ -6899,9 +6893,9 @@
           {
             "bbox": [
               142.8,
-              334.51801,
-              198.6693,
-              342.84302
+              334.518,
+              198.685,
+              342.843
             ],
             "spans": [
               [
@@ -6926,10 +6920,10 @@
           },
           {
             "bbox": [
-              216.74129999999997,
-              334.51801,
-              275.92349,
-              342.84302
+              216.741,
+              334.518,
+              275.939,
+              342.843
             ],
             "spans": [
               [
@@ -6954,10 +6948,10 @@
           },
           {
             "bbox": [
-              289.38208,
-              334.51801,
-              515.05359,
-              342.84302
+              289.382,
+              334.518,
+              313.391,
+              342.843
             ],
             "spans": [
               [
@@ -6965,7 +6959,7 @@
                 2
               ]
             ],
-            "text": "Name of the user profile that has a usage setting for this  function.",
+            "text": "Name of the user profile that has a usage setting for this function.",
             "type": "body",
             "col": 2,
             "col-header": false,
@@ -6984,10 +6978,10 @@
         [
           {
             "bbox": [
-              142.79999,
-              364.51862,
-              173.98318,
-              372.84363
+              142.8,
+              364.519,
+              173.997,
+              372.844
             ],
             "spans": [
               [
@@ -7012,10 +7006,10 @@
           },
           {
             "bbox": [
-              216.77367999999998,
-              364.51862,
-              270.97977,
-              372.84363
+              216.774,
+              364.519,
+              270.993,
+              372.844
             ],
             "spans": [
               [
@@ -7040,10 +7034,10 @@
           },
           {
             "bbox": [
-              289.41626,
-              364.51862,
-              346.88757,
-              372.84363
+              289.416,
+              364.519,
+              315.417,
+              372.844
             ],
             "spans": [
               [
@@ -7051,7 +7045,7 @@
                 2
               ]
             ],
-            "text": "Usage setting: GLYPH<SM590000> ALLOWED: The user profile is allowed to use the function. GLYPH<SM590000> DENIED: The user profile is not allowed to use the function.",
+            "text": "Usage setting: /SM590000 ALLOWED: The user profile is allowed to use the function. /SM590000 DENIED: The user profile is not allowed to use the function.",
             "type": "body",
             "col": 2,
             "col-header": false,
@@ -7071,9 +7065,9 @@
           {
             "bbox": [
               142.8,
-              405.55865,
-              196.2249,
-              413.88367000000005
+              405.559,
+              196.235,
+              413.884
             ],
             "spans": [
               [
@@ -7098,10 +7092,10 @@
           },
           {
             "bbox": [
-              216.75211,
-              405.55865,
-              270.99872,
-              413.88367000000005
+              216.752,
+              405.559,
+              271.009,
+              413.884
             ],
             "spans": [
               [
@@ -7126,10 +7120,10 @@
           },
           {
             "bbox": [
-              289.43161,
-              405.55865,
-              367.8009,
-              413.88367000000005
+              289.432,
+              405.559,
+              308.369,
+              413.884
             ],
             "spans": [
               [
@@ -7137,7 +7131,7 @@
                 2
               ]
             ],
-            "text": "Type of user profile: GLYPH<SM590000> USER: The user profile is a user. GLYPH<SM590000> GROUP: The user profile is a group.",
+            "text": "Type of user profile: /SM590000 USER: The user profile is a user. /SM590000 GROUP: The user profile is a group.",
             "type": "body",
             "col": 2,
             "col-header": false,
@@ -7174,7 +7168,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 2-2 Comparison of the different function usage IDs and *JOBCTL authority",
+      "text": "Table 2-2    Comparison of the different function usage IDs and *JOBCTL authority",
       "type": "table",
       "payload": null,
       "#-cols": 6,
@@ -7183,10 +7177,10 @@
         [
           {
             "bbox": [
-              70.800301,
-              400.51827999999995,
-              119.78551,
-              408.84329
+              70.8,
+              400.518,
+              90.793,
+              408.843
             ],
             "spans": [
               [
@@ -7211,10 +7205,10 @@
           },
           {
             "bbox": [
-              424.93805,
-              447.52255,
-              433.26297000000005,
-              487.01999
+              424.938,
+              447.561,
+              433.263,
+              487.02
             ],
             "spans": [
               [
@@ -7239,10 +7233,10 @@
           },
           {
             "bbox": [
-              450.13806,
-              401.6000700000001,
-              458.46298,
-              487.01999
+              450.138,
+              401.586,
+              458.463,
+              487.02
             ],
             "spans": [
               [
@@ -7267,10 +7261,10 @@
           },
           {
             "bbox": [
-              475.93835000000007,
-              401.53442,
-              484.26327999999995,
-              487.01999
+              475.938,
+              401.563,
+              484.263,
+              487.02
             ],
             "spans": [
               [
@@ -7295,10 +7289,10 @@
           },
           {
             "bbox": [
-              501.13837,
-              401.6145,
-              509.46329,
-              487.01999
+              501.138,
+              401.611,
+              509.463,
+              487.02
             ],
             "spans": [
               [
@@ -7323,10 +7317,10 @@
           },
           {
             "bbox": [
-              526.39862,
-              432.79944,
-              534.72357,
-              487.02005
+              526.399,
+              475.018,
+              534.724,
+              487.02
             ],
             "spans": [
               [
@@ -7353,10 +7347,10 @@
         [
           {
             "bbox": [
-              70.800003,
-              498.69299,
-              151.6794,
-              506.66699
+              70.8,
+              498.963,
+              84.3,
+              506.597
             ],
             "spans": [
               [
@@ -7364,7 +7358,7 @@
                 0
               ]
             ],
-            "text": "SET CURRENT DEGREE  (SQL statement)",
+            "text": "SET CURRENT DEGREE (SQL statement)",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -7382,8 +7376,8 @@
           {
             "bbox": [
               429.0,
-              498.55798,
-              435.00299000000007,
+              498.558,
+              435.003,
               506.883
             ],
             "spans": [
@@ -7420,9 +7414,9 @@
           },
           {
             "bbox": [
-              480.00031,
-              498.55798,
-              486.0033,
+              480.0,
+              498.558,
+              486.003,
               506.883
             ],
             "spans": [
@@ -7472,10 +7466,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              517.65329,
-              102.23972,
-              525.62729
+              70.8,
+              517.923,
+              102.24,
+              525.557
             ],
             "spans": [
               [
@@ -7483,7 +7477,7 @@
                 0
               ]
             ],
-            "text": "CHGQRYA  command targeting a different user\u2019s job",
+            "text": "CHGQRYA command targeting a different user's job",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -7500,10 +7494,10 @@
           },
           {
             "bbox": [
-              429.00003,
-              517.51828,
-              435.00302000000005,
-              525.84329
+              429.0,
+              517.518,
+              435.003,
+              525.8430000000001
             ],
             "spans": [
               [
@@ -7539,10 +7533,10 @@
           },
           {
             "bbox": [
-              480.00034,
-              517.51828,
-              486.00333,
-              525.84329
+              480.0,
+              517.518,
+              486.003,
+              525.8430000000001
             ],
             "spans": [
               [
@@ -7591,10 +7585,10 @@
         [
           {
             "bbox": [
-              70.800049,
-              536.67299,
-              106.73975,
-              544.64699
+              70.8,
+              536.943,
+              106.74,
+              544.577
             ],
             "spans": [
               [
@@ -7602,7 +7596,7 @@
                 0
               ]
             ],
-            "text": "STRDBMON  or  ENDDBMON  commands targeting a different user\u2019s job",
+            "text": "STRDBMON or ENDDBMON commands targeting a different user's job",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -7619,10 +7613,10 @@
           },
           {
             "bbox": [
-              429.00003,
-              536.5379800000001,
-              435.00302000000005,
-              544.8629900000001
+              429.0,
+              536.538,
+              435.003,
+              544.863
             ],
             "spans": [
               [
@@ -7658,10 +7652,10 @@
           },
           {
             "bbox": [
-              480.00034,
-              536.5379800000001,
-              486.00333,
-              544.8629900000001
+              480.0,
+              536.538,
+              486.003,
+              544.863
             ],
             "spans": [
               [
@@ -7710,10 +7704,10 @@
         [
           {
             "bbox": [
-              70.800049,
-              555.69269,
-              106.73975,
-              563.66669
+              70.8,
+              555.963,
+              106.74,
+              563.596
             ],
             "spans": [
               [
@@ -7721,7 +7715,7 @@
                 0
               ]
             ],
-            "text": "STRDBMON  or  ENDDBMON  commands targeting a job that matches the current user",
+            "text": "STRDBMON or ENDDBMON commands targeting a job that matches the current user",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -7738,10 +7732,10 @@
           },
           {
             "bbox": [
-              429.00003,
-              555.55768,
-              435.00302000000005,
-              563.8826899999999
+              429.0,
+              555.558,
+              435.003,
+              563.883
             ],
             "spans": [
               [
@@ -7777,10 +7771,10 @@
           },
           {
             "bbox": [
-              480.00034,
-              555.55768,
-              486.00333,
-              563.8826899999999
+              480.0,
+              555.558,
+              486.003,
+              563.883
             ],
             "spans": [
               [
@@ -7805,10 +7799,10 @@
           },
           {
             "bbox": [
-              505.26061999999996,
-              555.55768,
-              511.26361,
-              563.8826899999999
+              505.261,
+              555.558,
+              511.264,
+              563.883
             ],
             "spans": [
               [
@@ -7833,10 +7827,10 @@
           },
           {
             "bbox": [
-              530.76031,
-              555.55768,
-              536.76331,
-              563.8826899999999
+              530.76,
+              555.558,
+              536.763,
+              563.883
             ],
             "spans": [
               [
@@ -7863,10 +7857,10 @@
         [
           {
             "bbox": [
-              70.800049,
-              574.51797,
-              359.51736,
-              582.84299
+              70.8,
+              574.518,
+              122.632,
+              582.843
             ],
             "spans": [
               [
@@ -7874,7 +7868,7 @@
                 0
               ]
             ],
-            "text": "QUSRJOBI() API format 900 or System i Navigator\u2019s SQL Details for Job",
+            "text": "QUSRJOBI() API format 900 or System i Navigator's SQL Details for Job",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -7891,10 +7885,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              574.51797,
-              435.00305000000003,
-              582.84299
+              429.0,
+              574.518,
+              435.003,
+              582.843
             ],
             "spans": [
               [
@@ -7930,10 +7924,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              574.51797,
-              486.00335999999993,
-              582.84299
+              480.0,
+              574.518,
+              486.003,
+              582.843
             ],
             "spans": [
               [
@@ -7958,10 +7952,10 @@
           },
           {
             "bbox": [
-              505.2606799999999,
-              574.51797,
-              511.26367,
-              582.84299
+              505.261,
+              574.518,
+              511.264,
+              582.843
             ],
             "spans": [
               [
@@ -7999,10 +7993,10 @@
         [
           {
             "bbox": [
-              70.800079,
-              593.5376699999999,
-              220.75178999999997,
-              601.8626899999999
+              70.8,
+              593.538,
+              95.235,
+              601.863
             ],
             "spans": [
               [
@@ -8027,10 +8021,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              593.5376699999999,
-              435.00305000000003,
-              601.8626899999999
+              429.0,
+              593.538,
+              435.003,
+              601.863
             ],
             "spans": [
               [
@@ -8066,10 +8060,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              593.5376699999999,
-              486.00335999999993,
-              601.8626899999999
+              480.0,
+              593.538,
+              486.003,
+              601.863
             ],
             "spans": [
               [
@@ -8094,10 +8088,10 @@
           },
           {
             "bbox": [
-              505.2606799999999,
-              593.5376699999999,
-              511.26367,
-              601.8626899999999
+              505.261,
+              593.538,
+              511.264,
+              601.863
             ],
             "spans": [
               [
@@ -8122,10 +8116,10 @@
           },
           {
             "bbox": [
-              530.76038,
-              593.5376699999999,
-              536.76337,
-              601.8626899999999
+              530.76,
+              593.538,
+              536.763,
+              601.863
             ],
             "spans": [
               [
@@ -8152,10 +8146,10 @@
         [
           {
             "bbox": [
-              70.800079,
-              612.55737,
-              236.6548,
-              620.88239
+              70.8,
+              612.557,
+              95.208,
+              620.8820000000001
             ],
             "spans": [
               [
@@ -8180,10 +8174,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              612.55737,
-              435.00305000000003,
-              620.88239
+              429.0,
+              612.557,
+              435.003,
+              620.8820000000001
             ],
             "spans": [
               [
@@ -8219,10 +8213,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              612.55737,
-              486.00335999999993,
-              620.88239
+              480.0,
+              612.557,
+              486.003,
+              620.8820000000001
             ],
             "spans": [
               [
@@ -8271,10 +8265,10 @@
         [
           {
             "bbox": [
-              70.800079,
-              631.51767,
-              213.12968,
-              639.84268
+              70.8,
+              631.518,
+              110.502,
+              639.843
             ],
             "spans": [
               [
@@ -8299,10 +8293,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              631.51767,
-              435.00305000000003,
-              639.84268
+              429.0,
+              631.518,
+              435.003,
+              639.843
             ],
             "spans": [
               [
@@ -8338,10 +8332,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              631.51767,
-              486.00335999999993,
-              639.84268
+              480.0,
+              631.518,
+              486.003,
+              639.843
             ],
             "spans": [
               [
@@ -8390,10 +8384,10 @@
         [
           {
             "bbox": [
-              70.800079,
-              650.53737,
-              199.87808,
-              658.86238
+              70.8,
+              650.537,
+              97.264,
+              658.862
             ],
             "spans": [
               [
@@ -8418,10 +8412,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              650.53737,
-              435.00305000000003,
-              658.86238
+              429.0,
+              650.537,
+              435.003,
+              658.862
             ],
             "spans": [
               [
@@ -8457,10 +8451,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              650.53737,
-              486.00335999999993,
-              658.86238
+              480.0,
+              650.537,
+              486.003,
+              658.862
             ],
             "spans": [
               [
@@ -8509,10 +8503,10 @@
         [
           {
             "bbox": [
-              70.800079,
-              669.55708,
-              208.36777,
-              677.88207
+              70.8,
+              669.557,
+              105.779,
+              677.8820000000001
             ],
             "spans": [
               [
@@ -8537,10 +8531,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              669.55708,
-              435.00305000000003,
-              677.88207
+              429.0,
+              669.557,
+              435.003,
+              677.8820000000001
             ],
             "spans": [
               [
@@ -8576,10 +8570,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              669.55708,
-              486.00335999999993,
-              677.88207
+              480.0,
+              669.557,
+              486.003,
+              677.8820000000001
             ],
             "spans": [
               [
@@ -8628,10 +8622,10 @@
         [
           {
             "bbox": [
-              70.800079,
-              688.57677,
-              411.20264,
-              696.9017719999999
+              70.8,
+              688.577,
+              105.756,
+              696.902
             ],
             "spans": [
               [
@@ -8656,10 +8650,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              688.57677,
-              435.00305000000003,
-              696.9017719999999
+              429.0,
+              688.577,
+              435.003,
+              696.902
             ],
             "spans": [
               [
@@ -8695,10 +8689,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              688.57677,
-              486.00335999999993,
-              696.9017719999999
+              480.0,
+              688.577,
+              486.003,
+              696.902
             ],
             "spans": [
               [
@@ -8747,10 +8741,10 @@
         [
           {
             "bbox": [
-              70.800079,
-              707.537071,
-              377.12585,
-              715.862068
+              70.8,
+              707.537,
+              109.253,
+              715.862
             ],
             "spans": [
               [
@@ -8775,10 +8769,10 @@
           },
           {
             "bbox": [
-              429.0000600000001,
-              707.537071,
-              435.00305000000003,
-              715.862068
+              429.0,
+              707.537,
+              435.003,
+              715.862
             ],
             "spans": [
               [
@@ -8814,10 +8808,10 @@
           },
           {
             "bbox": [
-              480.00037,
-              707.537071,
-              486.00335999999993,
-              715.862068
+              480.0,
+              707.537,
+              486.003,
+              715.862
             ],
             "spans": [
               [
@@ -8884,7 +8878,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 3-1 Special registers and their corresponding values",
+      "text": "Table 3-1   Special registers and their corresponding values",
       "type": "table",
       "payload": null,
       "#-cols": 2,
@@ -8894,9 +8888,9 @@
           {
             "bbox": [
               142.8,
-              110.53801999999985,
-              209.67091,
-              118.86298
+              110.53800000000001,
+              174.254,
+              118.86300000000006
             ],
             "spans": [
               [
@@ -8921,10 +8915,10 @@
           },
           {
             "bbox": [
-              230.18912000000003,
-              110.53801999999985,
-              319.93527,
-              118.86298
+              230.189,
+              110.53800000000001,
+              294.629,
+              118.86300000000006
             ],
             "spans": [
               [
@@ -8951,10 +8945,10 @@
         [
           {
             "bbox": [
-              142.80002,
-              129.49834999999996,
-              178.26361,
-              137.82330000000002
+              142.8,
+              129.49800000000005,
+              167.772,
+              137.82299999999998
             ],
             "spans": [
               [
@@ -8979,10 +8973,10 @@
           },
           {
             "bbox": [
-              230.21973000000003,
-              129.49834999999996,
-              467.99069000000003,
-              137.82330000000002
+              230.22,
+              129.49800000000005,
+              245.712,
+              137.82299999999998
             ],
             "spans": [
               [
@@ -9009,10 +9003,10 @@
         [
           {
             "bbox": [
-              142.80003,
-              159.55835000000002,
-              216.63962999999998,
-              167.88329999999996
+              142.8,
+              159.558,
+              216.656,
+              167.88300000000004
             ],
             "spans": [
               [
@@ -9037,10 +9031,10 @@
           },
           {
             "bbox": [
-              230.19814,
-              159.55835000000002,
-              535.65082,
-              167.88329999999996
+              230.198,
+              159.558,
+              245.673,
+              167.88300000000004
             ],
             "spans": [
               [
@@ -9048,7 +9042,7 @@
                 1
               ]
             ],
-            "text": "The effective user of the thread including adopted authority. When no adopted  authority is present, this has the same value as USER.",
+            "text": "The effective user of the thread including adopted authority. When no adopted authority is present, this has the same value as USER.",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -9067,9 +9061,9 @@
         [
           {
             "bbox": [
-              142.8009,
-              189.55804,
-              209.7357,
+              142.801,
+              189.558,
+              209.743,
               197.88300000000004
             ],
             "spans": [
@@ -9095,9 +9089,9 @@
           },
           {
             "bbox": [
-              230.2449,
-              189.55804,
-              425.64569,
+              230.245,
+              189.558,
+              245.737,
               197.88300000000004
             ],
             "spans": [
@@ -9143,7 +9137,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 3-2 Built-in global variables",
+      "text": "Table 3-2   Built-in global variables",
       "type": "table",
       "payload": null,
       "#-cols": 3,
@@ -9152,10 +9146,10 @@
         [
           {
             "bbox": [
-              70.800003,
-              110.53801999999985,
-              134.99071,
-              118.86298
+              70.8,
+              110.53800000000001,
+              98.794,
+              118.86300000000006
             ],
             "spans": [
               [
@@ -9180,10 +9174,10 @@
           },
           {
             "bbox": [
-              202.8894,
-              110.53801999999985,
-              223.34641,
-              118.86298
+              202.889,
+              110.53800000000001,
+              223.349,
+              118.86300000000006
             ],
             "spans": [
               [
@@ -9208,10 +9202,10 @@
           },
           {
             "bbox": [
-              281.8248,
-              110.53801999999985,
-              331.3428,
-              118.86298
+              281.825,
+              110.53800000000001,
+              331.345,
+              118.86300000000006
             ],
             "spans": [
               [
@@ -9238,10 +9232,10 @@
         [
           {
             "bbox": [
-              70.800003,
-              129.49834999999996,
-              132.7209,
-              137.82330000000002
+              70.8,
+              129.49800000000005,
+              132.729,
+              137.82299999999998
             ],
             "spans": [
               [
@@ -9266,10 +9260,10 @@
           },
           {
             "bbox": [
-              202.89029,
-              129.49834999999996,
-              267.07651,
-              137.82330000000002
+              202.89,
+              129.49800000000005,
+              267.085,
+              137.82299999999998
             ],
             "spans": [
               [
@@ -9294,10 +9288,10 @@
           },
           {
             "bbox": [
-              281.84732,
-              129.49834999999996,
-              510.17548,
-              137.82330000000002
+              281.847,
+              129.49800000000005,
+              300.327,
+              137.82299999999998
             ],
             "spans": [
               [
@@ -9324,10 +9318,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              148.51806999999997,
-              140.66522,
-              156.84302000000002
+              70.8,
+              148.51800000000003,
+              140.671,
+              156.84299999999996
             ],
             "spans": [
               [
@@ -9352,10 +9346,10 @@
           },
           {
             "bbox": [
-              202.87231,
-              148.51806999999997,
-              267.07739,
-              156.84302000000002
+              202.872,
+              148.51800000000003,
+              267.083,
+              156.84299999999996
             ],
             "spans": [
               [
@@ -9380,10 +9374,10 @@
           },
           {
             "bbox": [
-              281.84549,
-              148.51806999999997,
-              509.60583,
-              156.84302000000002
+              281.845,
+              148.51800000000003,
+              290.345,
+              156.84299999999996
             ],
             "spans": [
               [
@@ -9410,10 +9404,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              167.53778,
-              134.98264,
-              175.86273000000006
+              70.8,
+              167.538,
+              132.478,
+              175.86300000000006
             ],
             "spans": [
               [
@@ -9438,10 +9432,10 @@
           },
           {
             "bbox": [
-              202.90294,
-              167.53778,
-              242.80084,
-              175.86273000000006
+              202.903,
+              167.538,
+              242.816,
+              175.86300000000006
             ],
             "spans": [
               [
@@ -9466,10 +9460,10 @@
           },
           {
             "bbox": [
-              281.79785,
-              167.53778,
-              527.59222,
-              175.86273000000006
+              281.798,
+              167.538,
+              298.228,
+              175.86300000000006
             ],
             "spans": [
               [
@@ -9496,10 +9490,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              186.5575,
-              143.50925,
-              194.88244999999995
+              70.8,
+              186.55700000000002,
+              143.529,
+              194.88199999999995
             ],
             "spans": [
               [
@@ -9524,10 +9518,10 @@
           },
           {
             "bbox": [
-              202.80576,
-              186.5575,
-              267.06937,
-              194.88244999999995
+              202.806,
+              186.55700000000002,
+              267.089,
+              194.88199999999995
             ],
             "spans": [
               [
@@ -9552,10 +9546,10 @@
           },
           {
             "bbox": [
-              281.85187,
-              186.5575,
-              436.57259999999997,
-              194.88244999999995
+              281.852,
+              186.55700000000002,
+              305.851,
+              194.88199999999995
             ],
             "spans": [
               [
@@ -9582,10 +9576,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              205.51782000000003,
-              156.01654,
-              213.84276999999997
+              70.8,
+              205.51800000000003,
+              156.038,
+              213.84299999999996
             ],
             "spans": [
               [
@@ -9610,10 +9604,10 @@
           },
           {
             "bbox": [
-              202.83545,
-              205.51782000000003,
-              267.08646,
-              213.84276999999997
+              202.835,
+              205.51800000000003,
+              267.108,
+              213.84299999999996
             ],
             "spans": [
               [
@@ -9638,10 +9632,10 @@
           },
           {
             "bbox": [
-              281.87076,
-              205.51782000000003,
-              470.44678,
-              213.84276999999997
+              281.871,
+              205.51800000000003,
+              314.832,
+              213.84299999999996
             ],
             "spans": [
               [
@@ -9668,10 +9662,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              224.53754000000004,
-              157.89932,
-              232.86248999999998
+              70.8,
+              224.53700000000003,
+              157.923,
+              232.86199999999997
             ],
             "spans": [
               [
@@ -9696,10 +9690,10 @@
           },
           {
             "bbox": [
-              202.72472,
-              224.53754000000004,
-              261.98254,
-              232.86248999999998
+              202.725,
+              224.53700000000003,
+              262.006,
+              232.86199999999997
             ],
             "spans": [
               [
@@ -9724,10 +9718,10 @@
           },
           {
             "bbox": [
-              281.74924,
-              224.53754000000004,
-              478.8438100000001,
-              232.86248999999998
+              281.749,
+              224.53700000000003,
+              311.478,
+              232.86199999999997
             ],
             "spans": [
               [
@@ -9754,10 +9748,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              243.55724999999995,
-              154.41992,
-              251.8822
+              70.8,
+              243.55700000000002,
+              154.435,
+              251.88199999999995
             ],
             "spans": [
               [
@@ -9782,10 +9776,10 @@
           },
           {
             "bbox": [
-              202.79312,
-              243.55724999999995,
-              267.09274,
-              251.8822
+              202.793,
+              243.55700000000002,
+              267.108,
+              251.88199999999995
             ],
             "spans": [
               [
@@ -9810,10 +9804,10 @@
           },
           {
             "bbox": [
-              281.87164,
-              243.55724999999995,
-              464.26022,
-              251.8822
+              281.872,
+              243.55700000000002,
+              314.859,
+              251.88199999999995
             ],
             "spans": [
               [
@@ -9840,10 +9834,10 @@
         [
           {
             "bbox": [
-              70.800018,
-              262.51757999999995,
-              188.43991,
-              270.84253
+              70.8,
+              262.51700000000005,
+              188.447,
+              270.842
             ],
             "spans": [
               [
@@ -9868,10 +9862,10 @@
           },
           {
             "bbox": [
-              202.84441,
-              262.51757999999995,
-              267.03693,
-              270.84253
+              202.844,
+              262.51700000000005,
+              267.044,
+              270.842
             ],
             "spans": [
               [
@@ -9896,10 +9890,10 @@
           },
           {
             "bbox": [
-              281.80682,
-              262.51757999999995,
-              430.40045,
-              270.84253
+              281.807,
+              262.51700000000005,
+              305.739,
+              270.842
             ],
             "spans": [
               [
@@ -9926,10 +9920,10 @@
         [
           {
             "bbox": [
-              70.800034,
-              281.53726,
-              139.43135,
-              289.86227
+              70.8,
+              281.537,
+              139.449,
+              289.862
             ],
             "spans": [
               [
@@ -9954,10 +9948,10 @@
           },
           {
             "bbox": [
-              202.74635,
-              281.53726,
-              239.28996000000004,
-              289.86227
+              202.746,
+              281.537,
+              239.308,
+              289.862
             ],
             "spans": [
               [
@@ -9982,10 +9976,10 @@
           },
           {
             "bbox": [
-              281.79065,
-              281.53726,
-              425.09131,
-              289.86227
+              281.791,
+              281.537,
+              300.702,
+              289.862
             ],
             "spans": [
               [

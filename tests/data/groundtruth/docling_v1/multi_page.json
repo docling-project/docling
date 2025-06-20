@@ -64,10 +64,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            756.0480326133338,
-            262.98718097516957,
-            769.3320326592508
+            72.0,
+            756.7139829101563,
+            262.987,
+            766.5839829101562
           ],
           "page": 1,
           "span": [
@@ -87,10 +87,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            714.528022469817,
-            497.51987184482846,
-            741.7319925638493
+            72.0,
+            715.1939829101563,
+            497.52,
+            738.9839829101563
           ],
           "page": 1,
           "span": [
@@ -110,10 +110,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            684.9369523675332,
-            325.8153412081395,
-            699.8150624189605
+            72.0,
+            685.6829829101563,
+            325.815,
+            696.7369829101563
           ],
           "page": 1,
           "span": [
@@ -133,10 +133,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            615.6480121280312,
-            508.1806618843591,
-            670.6920223182946
+            72.0,
+            616.3139829101563,
+            508.181,
+            667.9439829101563
           ],
           "page": 1,
           "span": [
@@ -156,10 +156,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            546.5280218891129,
-            504.5038518707254,
-            601.5720220793764
+            72.0,
+            547.1939829101563,
+            504.504,
+            598.8239829101562
           ],
           "page": 1,
           "span": [
@@ -179,10 +179,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            489.33698169142804,
-            336.7180512485673,
-            504.21506174285514
+            72.0,
+            490.0829829101563,
+            336.718,
+            501.1369829101563
           ],
           "page": 1,
           "span": [
@@ -202,10 +202,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            433.7280314992118,
-            523.1927519400248,
-            474.8520216413597
+            72.0,
+            434.3939829101563,
+            523.193,
+            472.1039829101563
           ],
           "page": 1,
           "span": [
@@ -225,10 +225,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            364.8480212611231,
-            518.011111920811,
-            419.6520414505571
+            90.0,
+            365.5139829101563,
+            518.011,
+            416.9039829101563
           ],
           "page": 1,
           "span": [
@@ -238,7 +238,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
+      "text": "- \u221e IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -248,10 +248,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            323.32800111760616,
-            497.51746184481954,
-            364.45203125975434
+            90.0,
+            323.9939829101563,
+            497.518,
+            361.7039829101563
           ],
           "page": 1,
           "span": [
@@ -261,7 +261,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
+      "text": "- \u221e Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -271,10 +271,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            281.5680209732599,
-            514.4709519076839,
-            309.01202106812207
+            72.0,
+            282.2339829101563,
+            514.471,
+            306.2639829101563
           ],
           "page": 1,
           "span": [
@@ -294,10 +294,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            224.37701077557506,
-            306.7123111373045,
-            239.2550708270021
+            72.0,
+            225.12298291015622,
+            306.712,
+            236.1769829101563
           ],
           "page": 1,
           "span": [
@@ -317,10 +317,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            182.68802063147405,
-            515.5663519117458,
-            210.1320507263364
+            72.0,
+            183.35398291015633,
+            515.566,
+            207.3839829101563
           ],
           "page": 1,
           "span": [
@@ -340,10 +340,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            127.48804044067151,
-            522.527771937559,
-            168.37204058198995
+            90.0,
+            128.1539829101563,
+            522.528,
+            165.62398291015631
           ],
           "page": 1,
           "span": [
@@ -353,7 +353,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
+      "text": "- \u221e WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -363,10 +363,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            85.96801829715457,
-            525.2570219476792,
-            127.09204043930265
+            90.0,
+            86.6339829101563,
+            525.257,
+            124.34398291015623
           ],
           "page": 1,
           "span": [
@@ -376,7 +376,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
+      "text": "- \u221e Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -386,10 +386,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            728.4480025179322,
-            516.5014019152128,
-            769.5720226600804
+            72.0,
+            729.1139829101563,
+            516.502,
+            766.8239829101562
           ],
           "page": 2,
           "span": [
@@ -409,10 +409,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            671.2569623202475,
-            272.1976610093225,
-            686.1350723716746
+            72.0,
+            672.0029829101563,
+            272.198,
+            683.0569829101563
           ],
           "page": 2,
           "span": [
@@ -432,10 +432,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            629.5679921761465,
-            510.8733818943439,
-            656.7720322701791
+            72.0,
+            630.2339829101563,
+            510.874,
+            654.0239829101563
           ],
           "page": 2,
           "span": [
@@ -455,10 +455,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            588.2880220334594,
-            491.2357518215266,
-            615.2520121266623
+            90.0,
+            588.9539829101562,
+            491.236,
+            612.5039829101563
           ],
           "page": 2,
           "span": [
@@ -468,7 +468,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
+      "text": "- \u221e Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -478,10 +478,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            560.6879919380578,
-            517.5377819190559,
-            587.6520420312611
+            90.0,
+            561.3539829101563,
+            517.538,
+            584.9039829101563
           ],
           "page": 2,
           "span": [
@@ -491,7 +491,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
+      "text": "- \u221e OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -501,10 +501,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            518.9280417937117,
-            524.5618919451015,
-            560.0520019358595
+            90.0,
+            519.5939829101563,
+            524.562,
+            557.3039829101563
           ],
           "page": 2,
           "span": [
@@ -514,7 +514,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
+      "text": "- \u221e Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -524,10 +524,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            461.7370015960268,
-            231.71083085919528,
-            476.6150516474538
+            72.0,
+            462.4829829101563,
+            231.711,
+            473.53698291015627
           ],
           "page": 2,
           "span": [
@@ -547,10 +547,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            378.52802130840905,
-            520.5438819302025,
-            447.25201154595834
+            72.0,
+            379.1939829101563,
+            520.544,
+            444.5039829101563
           ],
           "page": 2,
           "span": [
@@ -570,10 +570,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            295.4880110213753,
-            515.5564019117089,
-            336.3720411626939
+            72.0,
+            296.1539829101563,
+            515.556,
+            333.6239829101563
           ],
           "page": 2,
           "span": [
@@ -593,10 +593,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            754.2970026072811,
-            276.7262310261146,
-            769.1750526587082
+            72.0,
+            755.0429829101563,
+            276.726,
+            766.0969829101563
           ],
           "page": 3,
           "span": [
@@ -616,10 +616,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            698.9280424158944,
-            514.6727319084321,
-            740.0520025580424
+            72.0,
+            699.5939829101563,
+            514.673,
+            737.3039829101563
           ],
           "page": 3,
           "span": [
@@ -639,10 +639,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            616.1279921296901,
-            519.5101919263695,
-            684.61200236641
+            90.0,
+            616.7939829101563,
+            519.51,
+            681.8639829101563
           ],
           "page": 3,
           "span": [
@@ -652,7 +652,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
+      "text": "- \u221e Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -662,10 +662,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            560.9280419388876,
-            503.5271318671036,
-            615.7319921283214
+            90.0,
+            561.5939829101563,
+            503.527,
+            612.9839829101563
           ],
           "page": 3,
           "span": [
@@ -675,7 +675,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
+      "text": "- \u221e Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -685,10 +685,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            505.4880417472553,
-            524.4814519448033,
-            560.5319819375186
+            90.0,
+            506.1539829101563,
+            524.482,
+            557.7839829101563
           ],
           "page": 3,
           "span": [
@@ -698,7 +698,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
+      "text": "- \u221e Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -708,10 +708,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            448.2970015495705,
-            340.46878126247515,
-            463.17505160099745
+            72.0,
+            449.0429829101563,
+            340.469,
+            460.09698291015627
           ],
           "page": 3,
           "span": [
@@ -731,10 +731,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            392.92801135818354,
-            514.7196019086059,
-            434.0520015003316
+            72.0,
+            393.5939829101563,
+            514.722,
+            431.30398291015626
           ],
           "page": 3,
           "span": [
@@ -754,10 +754,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            351.4080212146668,
-            509.2687418883938,
-            378.6120313086994
+            90.0,
+            352.0739829101563,
+            509.269,
+            375.86398291015627
           ],
           "page": 3,
           "span": [
@@ -777,10 +777,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            323.8080111192654,
-            516.6022319155867,
-            351.012021213298
+            90.0,
+            324.47398291015634,
+            516.602,
+            348.2639829101563
           ],
           "page": 3,
           "span": [
@@ -800,10 +800,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            296.20801102386406,
-            486.90097180545297,
-            323.4120511178967
+            90.0,
+            296.8739829101563,
+            486.901,
+            320.6639829101563
           ],
           "page": 3,
           "span": [
@@ -823,10 +823,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            268.6080009284626,
-            502.21259186222926,
-            295.81204102249535
+            90.0,
+            269.2739829101563,
+            502.213,
+            293.06398291015626
           ],
           "page": 3,
           "span": [
@@ -846,10 +846,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            227.08801078494582,
-            521.8798819351565,
-            268.212040927094
+            90.0,
+            227.7539829101563,
+            521.88,
+            265.46398291015635
           ],
           "page": 3,
           "span": [
@@ -869,10 +869,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            169.6570105864315,
-            311.9594411567611,
-            184.53506063785858
+            72.0,
+            170.4029829101563,
+            311.959,
+            181.45698291015628
           ],
           "page": 3,
           "span": [
@@ -892,10 +892,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            114.28802039504467,
-            518.9003919241085,
-            155.41205053719273
+            72.0,
+            114.95398291015624,
+            518.9,
+            152.66398291015628
           ],
           "page": 3,
           "span": [
@@ -915,10 +915,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            728.6879925187619,
-            514.5589619080102,
-            769.5720226600804
+            90.0,
+            729.3539829101563,
+            514.559,
+            766.8239829101562
           ],
           "page": 4,
           "span": [
@@ -928,7 +928,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
+      "text": "- \u221e Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -938,10 +938,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            687.4080223760747,
-            521.9014319352365,
-            728.291992517393
+            90.0,
+            688.0739829101562,
+            521.902,
+            725.5439829101563
           ],
           "page": 4,
           "span": [
@@ -951,7 +951,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
+      "text": "- \u221e Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -961,10 +961,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            645.6480122317282,
-            515.8510119128011,
-            686.7720323738763
+            90.0,
+            646.3139829101563,
+            515.851,
+            684.0239829101563
           ],
           "page": 4,
           "span": [
@@ -974,7 +974,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
+      "text": "- \u221e Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -984,10 +984,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            588.4569720340432,
-            295.453431095556,
-            603.3350820854705
+            72.0,
+            589.2029829101563,
+            295.453,
+            600.2569829101562
           ],
           "page": 4,
           "span": [
@@ -1007,10 +1007,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            560.4480019372284,
-            521.214971932691,
-            573.7319919831453
+            72.0,
+            561.1139829101563,
+            521.215,
+            570.9839829101563
           ],
           "page": 4,
           "span": [
@@ -1030,10 +1030,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            491.56802169913976,
-            523.8382019424181,
-            546.3720118885738
+            90.0,
+            492.23398291015627,
+            523.838,
+            543.6239829101563
           ],
           "page": 4,
           "span": [
@@ -1053,10 +1053,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            436.3680415083371,
-            514.5262519078889,
-            491.17200169777095
+            90.0,
+            437.0339829101563,
+            514.526,
+            488.42398291015627
           ],
           "page": 4,
           "span": [
@@ -1076,10 +1076,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            381.1680013175343,
-            502.9175418648432,
-            435.97202150696825
+            90.0,
+            381.8339829101563,
+            502.918,
+            433.2239829101563
           ],
           "page": 4,
           "span": [
@@ -1099,10 +1099,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            339.888001174847,
-            516.9196819167639,
-            380.77203131616557
+            90.0,
+            340.55398291015626,
+            516.92,
+            378.0239829101563
           ],
           "page": 4,
           "span": [
@@ -1122,10 +1122,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            298.1280210305007,
-            510.9070718944688,
-            339.25204117264883
+            90.0,
+            298.7939829101563,
+            510.907,
+            336.5039829101563
           ],
           "page": 4,
           "span": [
@@ -1145,10 +1145,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            240.93701083281587,
-            228.355610846754,
-            255.81506088424294
+            72.0,
+            241.68298291015628,
+            228.356,
+            252.73698291015626
           ],
           "page": 4,
           "span": [
@@ -1168,10 +1168,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            199.24802068871497,
-            515.04700190982,
-            226.45203078274756
+            72.0,
+            199.91398291015628,
+            515.047,
+            223.70398291015636
           ],
           "page": 4,
           "span": [
@@ -1191,10 +1191,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            157.96802054602767,
-            518.2673319217611,
-            184.93204063923076
+            90.0,
+            158.6339829101563,
+            518.268,
+            182.18398291015626
           ],
           "page": 4,
           "span": [
@@ -1204,7 +1204,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
+      "text": "- \u221e Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1214,10 +1214,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            116.44800040251084,
-            525.5181319486474,
-            157.33203054382932
+            90.0,
+            117.11398291015632,
+            525.518,
+            154.58398291015624
           ],
           "page": 4,
           "span": [
@@ -1227,7 +1227,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
+      "text": "- \u221e Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1237,10 +1237,10 @@
       "prov": [
         {
           "bbox": [
-            90.00000033372447,
-            88.60803230627994,
-            518.906741924132,
-            116.05206040114217
+            90.0,
+            89.27398291015629,
+            518.907,
+            113.30398291015626
           ],
           "page": 4,
           "span": [
@@ -1250,7 +1250,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
+      "text": "- \u221e Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1260,10 +1260,10 @@
       "prov": [
         {
           "bbox": [
-            72.00000026697958,
-            673.0080023262999,
-            510.4989618929555,
-            741.7319925638493
+            72.0,
+            673.6739829101563,
+            510.499,
+            738.9839829101563
           ],
           "page": 5,
           "span": [
