@@ -113,7 +113,7 @@ class _NativeWhisperModel:
                 import whisper  # type: ignore
             except ImportError:
                 raise ImportError(
-                    "whisper is not installed. Please install it via `pip install openai-whisper`."
+                    "whisper is not installed. Please install it via `pip install openai-whisper` or do `uv sync --extra asr`."
                 )
             self.asr_options = asr_options
             self.max_tokens = asr_options.max_new_tokens
