@@ -16,3 +16,7 @@ Create your feature branch: `git checkout -b feature/AmazingFeature`.
 
 - **First**: Lorem ipsum.
 - **Second**: Dolor `sit` amet.
+
+| **Bold Heading** | *Italic Heading* |
+|------------------|------------------|
+| data a           | data b           |
