@@ -226,6 +226,9 @@ class ReadingOrderModel:
 
                         tbl.footnotes.append(new_footnote_item.get_ref())
 
+                if tbl.data.num_rows == 0 and tbl.data.num_cols == 0:
+                    self._add_child_elements(element, tbl, out_doc)
+
                 # TODO: Consider adding children of Table.
 
             elif isinstance(element, FigureElement):
