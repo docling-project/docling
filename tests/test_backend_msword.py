@@ -96,18 +96,18 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[Path]):
 
         pred_md: str = doc.export_to_markdown()
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
-            "export to md"
+            f"export to markdown failed on {docx_path}"
         )
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
         assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
-            "export to indented-text"
+            f"export to indented-text failed on {docx_path}"
         )
 
         assert verify_document(doc, str(gt_path) + ".json", generate=GENERATE), (
-            "document document"
+            f"DoclingDocument verification failed on {docx_path}"
         )
 
         if docx_path.name == "word_tables.docx":
@@ -116,7 +116,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[Path]):
                 pred_text=pred_html,
                 gtfile=str(gt_path) + ".html",
                 generate=GENERATE,
-            ), "export to html"
+            ), f"export to html failed on {docx_path}"
 
 
 flaky_path = Path("tests/data/docx/textbox.docx")
