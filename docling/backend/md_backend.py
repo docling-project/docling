@@ -247,7 +247,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._process_inline_text(parent_item, doc)
             _log.debug(" - List item")
 
-            snippet_text = str(first_child.children[0].children)  # type: ignore
+            snippet_text = (
+                marko.md_renderer.MarkdownRenderer().render(first_child).strip()
+            )  # type: ignore
             is_numbered = False
             if (
                 parent_item is not None
