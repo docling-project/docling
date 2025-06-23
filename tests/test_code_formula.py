@@ -60,3 +60,25 @@ def test_code_and_formula_conversion():
     gt = "a ^ { 2 } + 8 = 1 2"
     predicted = formula_blocks[0].text
     assert predicted == gt, f"mismatch in text {predicted=}, {gt=}"
+
+
+def test_formula_conversion_with_page_range():
+    pdf_path = Path("tests/data/pdf/code_and_formula.pdf")
+    converter = get_converter()
+
+    print(f"converting {pdf_path} with page range")
+
+    doc_result: ConversionResult = converter.convert(pdf_path, page_range=(2, 2))
+
+    results = doc_result.document.texts
+
+    formula_blocks = [
+        el
+        for el in results
+        if isinstance(el, TextItem) and el.label == DocItemLabel.FORMULA
+    ]
+    assert len(formula_blocks) == 1
+
+    gt = "a ^ { 2 } + 8 = 1 2"
+    predicted = formula_blocks[0].text
+    assert predicted == gt, f"mismatch in text {predicted=}, {gt=}"

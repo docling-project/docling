@@ -72,7 +72,6 @@ class StandardPdfPipeline(PaginatedPipeline):
             PagePreprocessingModel(
                 options=PagePreprocessingOptions(
                     images_scale=pipeline_options.images_scale,
-                    create_parsed_page=pipeline_options.generate_parsed_pages,
                 )
             ),
             # OCR

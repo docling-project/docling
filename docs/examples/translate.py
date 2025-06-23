@@ -30,7 +30,8 @@ def translate(text: str, src: str = "en", dest: str = "de"):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
     output_dir = Path("scratch")
 
     # Important: For operating with page images, we must keep them, otherwise the DocumentConverter

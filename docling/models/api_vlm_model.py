@@ -48,7 +48,9 @@ class ApiVlmModel(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
+                    hi_res_image = page.get_image(
+                        scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
+                    )
                     assert hi_res_image is not None
                     if hi_res_image:
                         if hi_res_image.mode != "RGB":

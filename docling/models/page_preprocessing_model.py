@@ -2,7 +2,7 @@ import re
 import warnings
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 from PIL import ImageDraw
@@ -17,7 +17,6 @@ from docling.utils.profiling import TimeRecorder
 
 class PagePreprocessingOptions(BaseModel):
     images_scale: Optional[float]
-    create_parsed_page: bool
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -66,10 +65,8 @@ class PagePreprocessingModel(BasePageModel):
     def _parse_page_cells(self, conv_res: ConversionResult, page: Page) -> Page:
         assert page._backend is not None
 
-        page.cells = list(page._backend.get_text_cells())
-
-        if self.options.create_parsed_page:
-            page.parsed_page = page._backend.get_segmented_page()
+        page.parsed_page = page._backend.get_segmented_page()
+        assert page.parsed_page is not None
 
         # Rate the text quality from the PDF parser, and aggregate on page
         text_scores = []

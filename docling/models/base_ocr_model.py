@@ -7,6 +7,7 @@ from typing import List, Optional, Type
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
+from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
 from rtree import index
 from scipy.ndimage import binary_dilation, find_objects, label
@@ -107,7 +108,9 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             return []
 
     # Filters OCR cells by dropping any OCR cell that intersects with an existing programmatic cell.
-    def _filter_ocr_cells(self, ocr_cells, programmatic_cells):
+    def _filter_ocr_cells(
+        self, ocr_cells: List[TextCell], programmatic_cells: List[TextCell]
+    ) -> List[TextCell]:
         # Create R-tree index for programmatic cells
         p = index.Property()
         p.dimension = 2
@@ -130,19 +133,38 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         ]
         return filtered_ocr_cells
 
-    def post_process_cells(self, ocr_cells, programmatic_cells):
+    def post_process_cells(self, ocr_cells: List[TextCell], page: Page) -> None:
         r"""
-        Post-process the ocr and programmatic cells and return the final list of of cells
+        Post-process the OCR cells and update the page object.
+        Updates parsed_page.textline_cells directly since page.cells is now read-only.
         """
-        if self.options.force_full_page_ocr:
-            # If a full page OCR is forced, use only the OCR cells
-            cells = ocr_cells
-            return cells
+        # Get existing cells from the read-only property
+        existing_cells = page.cells
 
-        ## Remove OCR cells which overlap with programmatic cells.
-        filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, programmatic_cells)
-        programmatic_cells.extend(filtered_ocr_cells)
-        return programmatic_cells
+        # Combine existing and OCR cells with overlap filtering
+        final_cells = self._combine_cells(existing_cells, ocr_cells)
+
+        assert page.parsed_page is not None
+
+        # Update parsed_page.textline_cells directly
+        page.parsed_page.textline_cells = final_cells
+        page.parsed_page.has_lines = len(final_cells) > 0
+
+    def _combine_cells(
+        self, existing_cells: List[TextCell], ocr_cells: List[TextCell]
+    ) -> List[TextCell]:
+        """Combine existing and OCR cells with filtering and re-indexing."""
+        if self.options.force_full_page_ocr:
+            combined = ocr_cells
+        else:
+            filtered_ocr_cells = self._filter_ocr_cells(ocr_cells, existing_cells)
+            combined = list(existing_cells) + filtered_ocr_cells
+
+        # Re-index in-place
+        for i, cell in enumerate(combined):
+            cell.index = i
+
+        return combined
 
     def draw_ocr_rects_and_cells(self, conv_res, page, ocr_rects, show: bool = False):
         image = copy.deepcopy(page.image)

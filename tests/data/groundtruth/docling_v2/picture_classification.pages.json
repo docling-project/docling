@@ -5,659 +5,718 @@
       "width": 612.0,
       "height": 792.0
     },
-    "cells": [
-      {
-        "index": 0,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
+    "parsed_page": {
+      "dimension": {
+        "angle": 0.0,
         "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 137.54816000000005,
-          "r_x1": 252.35513,
-          "r_y1": 137.54816000000005,
-          "r_x2": 252.35513,
-          "r_y2": 124.80877999999996,
-          "r_x3": 133.76801,
-          "r_y3": 124.80877999999996,
-          "coord_origin": "TOPLEFT"
+          "r_x0": 0.0,
+          "r_y0": 0.0,
+          "r_x1": 612.0,
+          "r_y1": 0.0,
+          "r_x2": 612.0,
+          "r_y2": 792.0,
+          "r_x3": 0.0,
+          "r_y3": 792.0,
+          "coord_origin": "BOTTOMLEFT"
         },
-        "text": "Figures Example",
-        "orig": "Figures Example",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
+        "boundary_type": "crop_box",
+        "art_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "bleed_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "crop_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "media_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "trim_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        }
       },
-      {
-        "index": 1,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+      "bitmap_resources": [],
+      "char_cells": [],
+      "word_cells": [],
+      "textline_cells": [
+        {
+          "index": 0,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 137.54816000000005,
+            "r_x1": 252.35513,
+            "r_y1": 137.54816000000005,
+            "r_x2": 252.35513,
+            "r_y2": 124.80877999999996,
+            "r_x3": 133.76801,
+            "r_y3": 124.80877999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Figures Example",
+          "orig": "Figures Example",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 158.51873999999998,
-          "r_x1": 477.47971,
-          "r_y1": 158.51873999999998,
-          "r_x2": 477.47971,
-          "r_y2": 149.67193999999995,
-          "r_x3": 133.76801,
-          "r_y3": 149.67193999999995,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 1,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 158.51873999999998,
+            "r_x1": 477.47971,
+            "r_y1": 158.51873999999998,
+            "r_x2": 477.47971,
+            "r_y2": 149.67193999999995,
+            "r_x3": 133.76801,
+            "r_y3": 149.67193999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eir-",
+          "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eir-",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eir-",
-        "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eir-",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 2,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 2,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 170.47375,
+            "r_x1": 477.4806500000001,
+            "r_y1": 170.47375,
+            "r_x2": 477.4806500000001,
+            "r_y2": 161.62694999999997,
+            "r_x3": 133.76801,
+            "r_y3": 161.62694999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "mod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volup-",
+          "orig": "mod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volup-",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 170.47375,
-          "r_x1": 477.4806500000001,
-          "r_y1": 170.47375,
-          "r_x2": 477.4806500000001,
-          "r_y2": 161.62694999999997,
-          "r_x3": 133.76801,
-          "r_y3": 161.62694999999997,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 3,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 182.42877,
+            "r_x1": 477.47571000000005,
+            "r_y1": 182.42877,
+            "r_x2": 477.47571000000005,
+            "r_y2": 173.58196999999996,
+            "r_x3": 133.76801,
+            "r_y3": 173.58196999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "tua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd",
+          "orig": "tua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "mod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volup-",
-        "orig": "mod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volup-",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 3,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 4,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 194.38378999999998,
+            "r_x1": 477.47466999999995,
+            "r_y1": 194.38378999999998,
+            "r_x2": 477.47466999999995,
+            "r_y2": 185.53698999999995,
+            "r_x3": 133.76801,
+            "r_y3": 185.53698999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ip-",
+          "orig": "gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ip-",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 182.42877,
-          "r_x1": 477.47571000000005,
-          "r_y1": 182.42877,
-          "r_x2": 477.47571000000005,
-          "r_y2": 173.58196999999996,
-          "r_x3": 133.76801,
-          "r_y3": 173.58196999999996,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 5,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 206.33880999999997,
+            "r_x1": 477.47668,
+            "r_y1": 206.33880999999997,
+            "r_x2": 477.47668,
+            "r_y2": 197.49199999999996,
+            "r_x3": 133.76801,
+            "r_y3": 197.49199999999996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "sum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor",
+          "orig": "sum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "tua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd",
-        "orig": "tua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 4,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 6,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 218.29381999999998,
+            "r_x1": 477.48068000000006,
+            "r_y1": 218.29381999999998,
+            "r_x2": 477.48068000000006,
+            "r_y2": 209.44701999999995,
+            "r_x3": 133.76801,
+            "r_y3": 209.44701999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero",
+          "orig": "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 194.38378999999998,
-          "r_x1": 477.47466999999995,
-          "r_y1": 194.38378999999998,
-          "r_x2": 477.47466999999995,
-          "r_y2": 185.53698999999995,
-          "r_x3": 133.76801,
-          "r_y3": 185.53698999999995,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 7,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 230.24982,
+            "r_x1": 355.20874,
+            "r_y1": 230.24982,
+            "r_x2": 355.20874,
+            "r_y2": 221.40301999999997,
+            "r_x3": 133.76801,
+            "r_y3": 221.40301999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "eos et accusam et justo duo dolores et ea rebum.",
+          "orig": "eos et accusam et justo duo dolores et ea rebum.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ip-",
-        "orig": "gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ip-",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 5,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 8,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 362.60098,
+            "r_y0": 230.24982,
+            "r_x1": 477.48276,
+            "r_y1": 230.24982,
+            "r_x2": 477.48276,
+            "r_y2": 221.40301999999997,
+            "r_x3": 362.60098,
+            "r_y3": 221.40301999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Stet clita kasd gubergren,",
+          "orig": "Stet clita kasd gubergren,",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 206.33880999999997,
-          "r_x1": 477.47668,
-          "r_y1": 206.33880999999997,
-          "r_x2": 477.47668,
-          "r_y2": 197.49199999999996,
-          "r_x3": 133.76801,
-          "r_y3": 197.49199999999996,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 9,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 242.20483000000002,
+            "r_x1": 477.47772,
+            "r_y1": 242.20483000000002,
+            "r_x2": 477.47772,
+            "r_y2": 233.35802999999999,
+            "r_x3": 133.76801,
+            "r_y3": 233.35802999999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "sum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor",
-        "orig": "sum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 6,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 10,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 254.15985,
+            "r_x1": 477.47971,
+            "r_y1": 254.15985,
+            "r_x2": 477.47971,
+            "r_y2": 245.31304999999998,
+            "r_x3": 133.76801,
+            "r_y3": 245.31304999999998,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 218.29381999999998,
-          "r_x1": 477.48068000000006,
-          "r_y1": 218.29381999999998,
-          "r_x2": 477.48068000000006,
-          "r_y2": 209.44701999999995,
-          "r_x3": 133.76801,
-          "r_y3": 209.44701999999995,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 11,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 266.11487,
+            "r_x1": 477.47473,
+            "r_y1": 266.11487,
+            "r_x2": 477.47473,
+            "r_y2": 257.26806999999997,
+            "r_x3": 133.76801,
+            "r_y3": 257.26806999999997,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
+          "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero",
-        "orig": "invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 7,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 12,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 278.06989,
+            "r_x1": 477.47571000000005,
+            "r_y1": 278.06989,
+            "r_x2": 477.47571000000005,
+            "r_y2": 269.22308,
+            "r_x3": 133.76801,
+            "r_y3": 269.22308,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
+          "orig": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 230.24982,
-          "r_x1": 355.20874,
-          "r_y1": 230.24982,
-          "r_x2": 355.20874,
-          "r_y2": 221.40301999999997,
-          "r_x3": 133.76801,
-          "r_y3": 221.40301999999997,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 13,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 290.02588,
+            "r_x1": 351.48471,
+            "r_y1": 290.02588,
+            "r_x2": 351.48471,
+            "r_y2": 281.17911,
+            "r_x3": 133.76801,
+            "r_y3": 281.17911,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "takimata sanctus est Lorem ipsum dolor sit amet.",
+          "orig": "takimata sanctus est Lorem ipsum dolor sit amet.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "eos et accusam et justo duo dolores et ea rebum.",
-        "orig": "eos et accusam et justo duo dolores et ea rebum.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 8,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 14,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 226.89101,
+            "r_y0": 537.98174,
+            "r_x1": 384.3548,
+            "r_y1": 537.98174,
+            "r_x2": 384.3548,
+            "r_y2": 529.13495,
+            "r_x3": 226.89101,
+            "r_y3": 529.13495,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Figure 1: This is an example image.",
+          "orig": "Figure 1: This is an example image.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 362.60098,
-          "r_y0": 230.24982,
-          "r_x1": 477.48276,
-          "r_y1": 230.24982,
-          "r_x2": 477.48276,
-          "r_y2": 221.40301999999997,
-          "r_x3": 362.60098,
-          "r_y3": 221.40301999999997,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 15,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 148.71201,
+            "r_y0": 561.89174,
+            "r_x1": 477.47786999999994,
+            "r_y1": 561.89174,
+            "r_x2": 477.47786999999994,
+            "r_y2": 553.04495,
+            "r_x3": 148.71201,
+            "r_y3": 553.04495,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
+          "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "Stet clita kasd gubergren,",
-        "orig": "Stet clita kasd gubergren,",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 9,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 16,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 573.84674,
+            "r_x1": 477.47860999999995,
+            "r_y1": 573.84674,
+            "r_x2": 477.47860999999995,
+            "r_y2": 564.99995,
+            "r_x3": 133.76801,
+            "r_y3": 564.99995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
+          "orig": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 242.20483000000002,
-          "r_x1": 477.47772,
-          "r_y1": 242.20483000000002,
-          "r_x2": 477.47772,
-          "r_y2": 233.35802999999999,
-          "r_x3": 133.76801,
-          "r_y3": 233.35802999999999,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 17,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 585.80174,
+            "r_x1": 477.47571000000005,
+            "r_y1": 585.80174,
+            "r_x2": 477.47571000000005,
+            "r_y2": 576.95496,
+            "r_x3": 133.76801,
+            "r_y3": 576.95496,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
+          "orig": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 10,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 18,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 597.75674,
+            "r_x1": 477.47559,
+            "r_y1": 597.75674,
+            "r_x2": 477.47559,
+            "r_y2": 588.90996,
+            "r_x3": 133.76801,
+            "r_y3": 588.90996,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
+          "orig": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 254.15985,
-          "r_x1": 477.47971,
-          "r_y1": 254.15985,
-          "r_x2": 477.47971,
-          "r_y2": 245.31304999999998,
-          "r_x3": 133.76801,
-          "r_y3": 245.31304999999998,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 19,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 609.7127399999999,
+            "r_x1": 477.48169000000007,
+            "r_y1": 609.7127399999999,
+            "r_x2": 477.48169000000007,
+            "r_y2": 600.86595,
+            "r_x3": 133.76801,
+            "r_y3": 600.86595,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
+          "orig": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 11,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 20,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 621.66774,
+            "r_x1": 477.48062,
+            "r_y1": 621.66774,
+            "r_x2": 477.48062,
+            "r_y2": 612.82095,
+            "r_x3": 133.76801,
+            "r_y3": 612.82095,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
+          "orig": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 266.11487,
-          "r_x1": 477.47473,
-          "r_y1": 266.11487,
-          "r_x2": 477.47473,
-          "r_y2": 257.26806999999997,
-          "r_x3": 133.76801,
-          "r_y3": 257.26806999999997,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 21,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 633.62274,
+            "r_x1": 477.48172000000005,
+            "r_y1": 633.62274,
+            "r_x2": 477.48172000000005,
+            "r_y2": 624.7759599999999,
+            "r_x3": 133.76801,
+            "r_y3": 624.7759599999999,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
+          "orig": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
-        "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 12,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 22,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 645.57774,
+            "r_x1": 477.47772,
+            "r_y1": 645.57774,
+            "r_x2": 477.47772,
+            "r_y2": 636.73096,
+            "r_x3": 133.76801,
+            "r_y3": 636.73096,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 278.06989,
-          "r_x1": 477.47571000000005,
-          "r_y1": 278.06989,
-          "r_x2": 477.47571000000005,
-          "r_y2": 269.22308,
-          "r_x3": 133.76801,
-          "r_y3": 269.22308,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 23,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 657.53275,
+            "r_x1": 477.47971,
+            "r_y1": 657.53275,
+            "r_x2": 477.47971,
+            "r_y2": 648.68596,
+            "r_x3": 133.76801,
+            "r_y3": 648.68596,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
-        "orig": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 13,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 24,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 669.48775,
+            "r_x1": 399.57816,
+            "r_y1": 669.48775,
+            "r_x2": 399.57816,
+            "r_y2": 660.64096,
+            "r_x3": 133.76801,
+            "r_y3": 660.64096,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua.",
+          "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 290.02588,
-          "r_x1": 351.48471,
-          "r_y1": 290.02588,
-          "r_x2": 351.48471,
-          "r_y2": 281.17911,
-          "r_x3": 133.76801,
-          "r_y3": 281.17911,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "takimata sanctus est Lorem ipsum dolor sit amet.",
-        "orig": "takimata sanctus est Lorem ipsum dolor sit amet.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 14,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 226.89101,
-          "r_y0": 537.98174,
-          "r_x1": 384.3548,
-          "r_y1": 537.98174,
-          "r_x2": 384.3548,
-          "r_y2": 529.13495,
-          "r_x3": 226.89101,
-          "r_y3": 529.13495,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Figure 1: This is an example image.",
-        "orig": "Figure 1: This is an example image.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 15,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 148.71201,
-          "r_y0": 561.89174,
-          "r_x1": 477.47786999999994,
-          "r_y1": 561.89174,
-          "r_x2": 477.47786999999994,
-          "r_y2": 553.04495,
-          "r_x3": 148.71201,
-          "r_y3": 553.04495,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
-        "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 16,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 573.84674,
-          "r_x1": 477.47860999999995,
-          "r_y1": 573.84674,
-          "r_x2": 477.47860999999995,
-          "r_y2": 564.99995,
-          "r_x3": 133.76801,
-          "r_y3": 564.99995,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
-        "orig": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 17,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 585.80174,
-          "r_x1": 477.47571000000005,
-          "r_y1": 585.80174,
-          "r_x2": 477.47571000000005,
-          "r_y2": 576.95496,
-          "r_x3": 133.76801,
-          "r_y3": 576.95496,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
-        "orig": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 18,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 597.75674,
-          "r_x1": 477.47559,
-          "r_y1": 597.75674,
-          "r_x2": 477.47559,
-          "r_y2": 588.90996,
-          "r_x3": 133.76801,
-          "r_y3": 588.90996,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
-        "orig": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 19,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 609.7127399999999,
-          "r_x1": 477.48169000000007,
-          "r_y1": 609.7127399999999,
-          "r_x2": 477.48169000000007,
-          "r_y2": 600.86595,
-          "r_x3": 133.76801,
-          "r_y3": 600.86595,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
-        "orig": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 20,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 621.66774,
-          "r_x1": 477.48062,
-          "r_y1": 621.66774,
-          "r_x2": 477.48062,
-          "r_y2": 612.82095,
-          "r_x3": 133.76801,
-          "r_y3": 612.82095,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
-        "orig": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 21,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 633.62274,
-          "r_x1": 477.48172000000005,
-          "r_y1": 633.62274,
-          "r_x2": 477.48172000000005,
-          "r_y2": 624.7759599999999,
-          "r_x3": 133.76801,
-          "r_y3": 624.7759599999999,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
-        "orig": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 22,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 645.57774,
-          "r_x1": 477.47772,
-          "r_y1": 645.57774,
-          "r_x2": 477.47772,
-          "r_y2": 636.73096,
-          "r_x3": 133.76801,
-          "r_y3": 636.73096,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 23,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 657.53275,
-          "r_x1": 477.47971,
-          "r_y1": 657.53275,
-          "r_x2": 477.47971,
-          "r_y2": 648.68596,
-          "r_x3": 133.76801,
-          "r_y3": 648.68596,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 24,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 669.48775,
-          "r_x1": 399.57816,
-          "r_y1": 669.48775,
-          "r_x2": 399.57816,
-          "r_y2": 660.64096,
-          "r_x3": 133.76801,
-          "r_y3": 660.64096,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua.",
-        "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 25,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 303.133,
-          "r_y0": 704.567757,
-          "r_x1": 308.11429,
-          "r_y1": 704.567757,
-          "r_x2": 308.11429,
-          "r_y2": 695.720963,
-          "r_x3": 303.133,
-          "r_y3": 695.720963,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "1",
-        "orig": "1",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      }
-    ],
-    "parsed_page": null,
+        {
+          "index": 25,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 303.133,
+            "r_y0": 704.567757,
+            "r_x1": 308.11429,
+            "r_y1": 704.567757,
+            "r_x2": 308.11429,
+            "r_y2": 695.720963,
+            "r_x3": 303.133,
+            "r_y3": 695.720963,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "1",
+          "orig": "1",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        }
+      ],
+      "has_chars": false,
+      "has_words": false,
+      "has_lines": true,
+      "image": null,
+      "lines": []
+    },
     "predictions": {
       "layout": {
         "clusters": [
@@ -2982,634 +3041,693 @@
       "width": 612.0,
       "height": 792.0
     },
-    "cells": [
-      {
-        "index": 0,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
+    "parsed_page": {
+      "dimension": {
+        "angle": 0.0,
         "rect": {
-          "r_x0": 148.71201,
-          "r_y0": 136.69775000000004,
-          "r_x1": 477.47786999999994,
-          "r_y1": 136.69775000000004,
-          "r_x2": 477.47786999999994,
-          "r_y2": 127.85095000000013,
-          "r_x3": 148.71201,
-          "r_y3": 127.85095000000013,
-          "coord_origin": "TOPLEFT"
+          "r_x0": 0.0,
+          "r_y0": 0.0,
+          "r_x1": 612.0,
+          "r_y1": 0.0,
+          "r_x2": 612.0,
+          "r_y2": 792.0,
+          "r_x3": 0.0,
+          "r_y3": 792.0,
+          "coord_origin": "BOTTOMLEFT"
         },
-        "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
-        "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
+        "boundary_type": "crop_box",
+        "art_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "bleed_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "crop_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "media_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "trim_bbox": {
+          "l": 0.0,
+          "t": 792.0,
+          "r": 612.0,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        }
       },
-      {
-        "index": 1,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+      "bitmap_resources": [],
+      "char_cells": [],
+      "word_cells": [],
+      "textline_cells": [
+        {
+          "index": 0,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 148.71201,
+            "r_y0": 136.69775000000004,
+            "r_x1": 477.47786999999994,
+            "r_y1": 136.69775000000004,
+            "r_x2": 477.47786999999994,
+            "r_y2": 127.85095000000013,
+            "r_x3": 148.71201,
+            "r_y3": 127.85095000000013,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
+          "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 148.65277000000003,
-          "r_x1": 477.47860999999995,
-          "r_y1": 148.65277000000003,
-          "r_x2": 477.47860999999995,
-          "r_y2": 139.80597,
-          "r_x3": 133.76801,
-          "r_y3": 139.80597,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 1,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 148.65277000000003,
+            "r_x1": 477.47860999999995,
+            "r_y1": 148.65277000000003,
+            "r_x2": 477.47860999999995,
+            "r_y2": 139.80597,
+            "r_x3": 133.76801,
+            "r_y3": 139.80597,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
+          "orig": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
-        "orig": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 2,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 2,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 160.60779000000002,
+            "r_x1": 477.47571000000005,
+            "r_y1": 160.60779000000002,
+            "r_x2": 477.47571000000005,
+            "r_y2": 151.76099,
+            "r_x3": 133.76801,
+            "r_y3": 151.76099,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
+          "orig": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 160.60779000000002,
-          "r_x1": 477.47571000000005,
-          "r_y1": 160.60779000000002,
-          "r_x2": 477.47571000000005,
-          "r_y2": 151.76099,
-          "r_x3": 133.76801,
-          "r_y3": 151.76099,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 3,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 172.56281,
+            "r_x1": 477.47559,
+            "r_y1": 172.56281,
+            "r_x2": 477.47559,
+            "r_y2": 163.716,
+            "r_x3": 133.76801,
+            "r_y3": 163.716,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
+          "orig": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
-        "orig": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 3,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 4,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 184.51782000000003,
+            "r_x1": 477.48169000000007,
+            "r_y1": 184.51782000000003,
+            "r_x2": 477.48169000000007,
+            "r_y2": 175.67102,
+            "r_x3": 133.76801,
+            "r_y3": 175.67102,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
+          "orig": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 172.56281,
-          "r_x1": 477.47559,
-          "r_y1": 172.56281,
-          "r_x2": 477.47559,
-          "r_y2": 163.716,
-          "r_x3": 133.76801,
-          "r_y3": 163.716,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 5,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 196.47382000000005,
+            "r_x1": 477.48062,
+            "r_y1": 196.47382000000005,
+            "r_x2": 477.48062,
+            "r_y2": 187.62701000000004,
+            "r_x3": 133.76801,
+            "r_y3": 187.62701000000004,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
+          "orig": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
-        "orig": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 4,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 6,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 208.42882999999995,
+            "r_x1": 477.48172000000005,
+            "r_y1": 208.42882999999995,
+            "r_x2": 477.48172000000005,
+            "r_y2": 199.58203000000003,
+            "r_x3": 133.76801,
+            "r_y3": 199.58203000000003,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
+          "orig": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 184.51782000000003,
-          "r_x1": 477.48169000000007,
-          "r_y1": 184.51782000000003,
-          "r_x2": 477.48169000000007,
-          "r_y2": 175.67102,
-          "r_x3": 133.76801,
-          "r_y3": 175.67102,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 7,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 220.38385000000005,
+            "r_x1": 477.47772,
+            "r_y1": 220.38385000000005,
+            "r_x2": 477.47772,
+            "r_y2": 211.53705000000002,
+            "r_x3": 133.76801,
+            "r_y3": 211.53705000000002,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
-        "orig": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 5,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 8,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 232.33887000000004,
+            "r_x1": 477.47971,
+            "r_y1": 232.33887000000004,
+            "r_x2": 477.47971,
+            "r_y2": 223.49207,
+            "r_x3": 133.76801,
+            "r_y3": 223.49207,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 196.47382000000005,
-          "r_x1": 477.48062,
-          "r_y1": 196.47382000000005,
-          "r_x2": 477.48062,
-          "r_y2": 187.62701000000004,
-          "r_x3": 133.76801,
-          "r_y3": 187.62701000000004,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 9,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 244.29387999999994,
+            "r_x1": 477.47473,
+            "r_y1": 244.29387999999994,
+            "r_x2": 477.47473,
+            "r_y2": 235.44708000000003,
+            "r_x3": 133.76801,
+            "r_y3": 235.44708000000003,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
+          "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
-        "orig": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 6,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 10,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 256.24890000000005,
+            "r_x1": 477.47571000000005,
+            "r_y1": 256.24890000000005,
+            "r_x2": 477.47571000000005,
+            "r_y2": 247.40210000000002,
+            "r_x3": 133.76801,
+            "r_y3": 247.40210000000002,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
+          "orig": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 208.42882999999995,
-          "r_x1": 477.48172000000005,
-          "r_y1": 208.42882999999995,
-          "r_x2": 477.48172000000005,
-          "r_y2": 199.58203000000003,
-          "r_x3": 133.76801,
-          "r_y3": 199.58203000000003,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 11,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 268.20489999999995,
+            "r_x1": 351.48471,
+            "r_y1": 268.20489999999995,
+            "r_x2": 351.48471,
+            "r_y2": 259.35808999999995,
+            "r_x3": 133.76801,
+            "r_y3": 259.35808999999995,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "takimata sanctus est Lorem ipsum dolor sit amet.",
+          "orig": "takimata sanctus est Lorem ipsum dolor sit amet.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
-        "orig": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 7,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 12,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 226.89101,
+            "r_y0": 532.05774,
+            "r_x1": 384.3548,
+            "r_y1": 532.05774,
+            "r_x2": 384.3548,
+            "r_y2": 523.21097,
+            "r_x3": 226.89101,
+            "r_y3": 523.21097,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Figure 2: This is an example image.",
+          "orig": "Figure 2: This is an example image.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 220.38385000000005,
-          "r_x1": 477.47772,
-          "r_y1": 220.38385000000005,
-          "r_x2": 477.47772,
-          "r_y2": 211.53705000000002,
-          "r_x3": 133.76801,
-          "r_y3": 211.53705000000002,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 13,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 148.71201,
+            "r_y0": 555.12874,
+            "r_x1": 477.47786999999994,
+            "r_y1": 555.12874,
+            "r_x2": 477.47786999999994,
+            "r_y2": 546.28195,
+            "r_x3": 148.71201,
+            "r_y3": 546.28195,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
+          "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 8,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 14,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 567.08374,
+            "r_x1": 477.47860999999995,
+            "r_y1": 567.08374,
+            "r_x2": 477.47860999999995,
+            "r_y2": 558.23695,
+            "r_x3": 133.76801,
+            "r_y3": 558.23695,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
+          "orig": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 232.33887000000004,
-          "r_x1": 477.47971,
-          "r_y1": 232.33887000000004,
-          "r_x2": 477.47971,
-          "r_y2": 223.49207,
-          "r_x3": 133.76801,
-          "r_y3": 223.49207,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 15,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 579.03874,
+            "r_x1": 477.47571000000005,
+            "r_y1": 579.03874,
+            "r_x2": 477.47571000000005,
+            "r_y2": 570.19196,
+            "r_x3": 133.76801,
+            "r_y3": 570.19196,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
+          "orig": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 9,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 16,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 590.99374,
+            "r_x1": 477.47559,
+            "r_y1": 590.99374,
+            "r_x2": 477.47559,
+            "r_y2": 582.14696,
+            "r_x3": 133.76801,
+            "r_y3": 582.14696,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
+          "orig": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 244.29387999999994,
-          "r_x1": 477.47473,
-          "r_y1": 244.29387999999994,
-          "r_x2": 477.47473,
-          "r_y2": 235.44708000000003,
-          "r_x3": 133.76801,
-          "r_y3": 235.44708000000003,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 17,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 602.94875,
+            "r_x1": 477.48169000000007,
+            "r_y1": 602.94875,
+            "r_x2": 477.48169000000007,
+            "r_y2": 594.10196,
+            "r_x3": 133.76801,
+            "r_y3": 594.10196,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
+          "orig": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
-        "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 10,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 18,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 614.90375,
+            "r_x1": 477.48062,
+            "r_y1": 614.90375,
+            "r_x2": 477.48062,
+            "r_y2": 606.05696,
+            "r_x3": 133.76801,
+            "r_y3": 606.05696,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
+          "orig": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 256.24890000000005,
-          "r_x1": 477.47571000000005,
-          "r_y1": 256.24890000000005,
-          "r_x2": 477.47571000000005,
-          "r_y2": 247.40210000000002,
-          "r_x3": 133.76801,
-          "r_y3": 247.40210000000002,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 19,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 626.85974,
+            "r_x1": 477.48172000000005,
+            "r_y1": 626.85974,
+            "r_x2": 477.48172000000005,
+            "r_y2": 618.01295,
+            "r_x3": 133.76801,
+            "r_y3": 618.01295,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
+          "orig": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
-        "orig": "accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 11,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 20,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 638.81474,
+            "r_x1": 477.47772,
+            "r_y1": 638.81474,
+            "r_x2": 477.47772,
+            "r_y2": 629.96796,
+            "r_x3": 133.76801,
+            "r_y3": 629.96796,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 268.20489999999995,
-          "r_x1": 351.48471,
-          "r_y1": 268.20489999999995,
-          "r_x2": 351.48471,
-          "r_y2": 259.35808999999995,
-          "r_x3": 133.76801,
-          "r_y3": 259.35808999999995,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 21,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 650.76974,
+            "r_x1": 477.47971,
+            "r_y1": 650.76974,
+            "r_x2": 477.47971,
+            "r_y2": 641.92296,
+            "r_x3": 133.76801,
+            "r_y3": 641.92296,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "takimata sanctus est Lorem ipsum dolor sit amet.",
-        "orig": "takimata sanctus est Lorem ipsum dolor sit amet.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 12,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+        {
+          "index": 22,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 662.72475,
+            "r_x1": 477.47473,
+            "r_y1": 662.72475,
+            "r_x2": 477.47473,
+            "r_y2": 653.87796,
+            "r_x3": 133.76801,
+            "r_y3": 653.87796,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
+          "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "rect": {
-          "r_x0": 226.89101,
-          "r_y0": 532.05774,
-          "r_x1": 384.3548,
-          "r_y1": 532.05774,
-          "r_x2": 384.3548,
-          "r_y2": 523.21097,
-          "r_x3": 226.89101,
-          "r_y3": 523.21097,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 23,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 133.76801,
+            "r_y0": 674.67976,
+            "r_x1": 318.01736,
+            "r_y1": 674.67976,
+            "r_x2": 318.01736,
+            "r_y2": 665.83296,
+            "r_x3": 133.76801,
+            "r_y3": 665.83296,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "accusam et justo duo dolores et ea rebum.",
+          "orig": "accusam et justo duo dolores et ea rebum.",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
         },
-        "text": "Figure 2: This is an example image.",
-        "orig": "Figure 2: This is an example image.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 13,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 148.71201,
-          "r_y0": 555.12874,
-          "r_x1": 477.47786999999994,
-          "r_y1": 555.12874,
-          "r_x2": 477.47786999999994,
-          "r_y2": 546.28195,
-          "r_x3": 148.71201,
-          "r_y3": 546.28195,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
-        "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 14,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 567.08374,
-          "r_x1": 477.47860999999995,
-          "r_y1": 567.08374,
-          "r_x2": 477.47860999999995,
-          "r_y2": 558.23695,
-          "r_x3": 133.76801,
-          "r_y3": 558.23695,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
-        "orig": "eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 15,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 579.03874,
-          "r_x1": 477.47571000000005,
-          "r_y1": 579.03874,
-          "r_x2": 477.47571000000005,
-          "r_y2": 570.19196,
-          "r_x3": 133.76801,
-          "r_y3": 570.19196,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
-        "orig": "voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 16,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 590.99374,
-          "r_x1": 477.47559,
-          "r_y1": 590.99374,
-          "r_x2": 477.47559,
-          "r_y2": 582.14696,
-          "r_x3": 133.76801,
-          "r_y3": 582.14696,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
-        "orig": "kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 17,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 602.94875,
-          "r_x1": 477.48169000000007,
-          "r_y1": 602.94875,
-          "r_x2": 477.48169000000007,
-          "r_y2": 594.10196,
-          "r_x3": 133.76801,
-          "r_y3": 594.10196,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
-        "orig": "ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 18,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 614.90375,
-          "r_x1": 477.48062,
-          "r_y1": 614.90375,
-          "r_x2": 477.48062,
-          "r_y2": 606.05696,
-          "r_x3": 133.76801,
-          "r_y3": 606.05696,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
-        "orig": "tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 19,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 626.85974,
-          "r_x1": 477.48172000000005,
-          "r_y1": 626.85974,
-          "r_x2": 477.48172000000005,
-          "r_y2": 618.01295,
-          "r_x3": 133.76801,
-          "r_y3": 618.01295,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
-        "orig": "vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren,",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 20,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 638.81474,
-          "r_x1": 477.47772,
-          "r_y1": 638.81474,
-          "r_x2": 477.47772,
-          "r_y2": 629.96796,
-          "r_x3": 133.76801,
-          "r_y3": 629.96796,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "orig": "no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 21,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 650.76974,
-          "r_x1": 477.47971,
-          "r_y1": 650.76974,
-          "r_x2": 477.47971,
-          "r_y2": 641.92296,
-          "r_x3": 133.76801,
-          "r_y3": 641.92296,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "orig": "sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 22,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 662.72475,
-          "r_x1": 477.47473,
-          "r_y1": 662.72475,
-          "r_x2": 477.47473,
-          "r_y2": 653.87796,
-          "r_x3": 133.76801,
-          "r_y3": 653.87796,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
-        "orig": "ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 23,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 133.76801,
-          "r_y0": 674.67976,
-          "r_x1": 318.01736,
-          "r_y1": 674.67976,
-          "r_x2": 318.01736,
-          "r_y2": 665.83296,
-          "r_x3": 133.76801,
-          "r_y3": 665.83296,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "accusam et justo duo dolores et ea rebum.",
-        "orig": "accusam et justo duo dolores et ea rebum.",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      },
-      {
-        "index": 24,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 303.133,
-          "r_y0": 704.567757,
-          "r_x1": 308.11429,
-          "r_y1": 704.567757,
-          "r_x2": 308.11429,
-          "r_y2": 695.720963,
-          "r_x3": 303.133,
-          "r_y3": 695.720963,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "2",
-        "orig": "2",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": false
-      }
-    ],
-    "parsed_page": null,
+        {
+          "index": 24,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 303.133,
+            "r_y0": 704.567757,
+            "r_x1": 308.11429,
+            "r_y1": 704.567757,
+            "r_x2": 308.11429,
+            "r_y2": 695.720963,
+            "r_x3": 303.133,
+            "r_y3": 695.720963,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "2",
+          "orig": "2",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": false
+        }
+      ],
+      "has_chars": false,
+      "has_words": false,
+      "has_lines": true,
+      "image": null,
+      "lines": []
+    },
     "predictions": {
       "layout": {
         "clusters": [

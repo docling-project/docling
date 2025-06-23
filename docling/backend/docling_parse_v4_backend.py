@@ -59,20 +59,6 @@ class DoclingParseV4PageBackend(PdfPageBackend):
         return self._dpage
 
     def get_text_cells(self) -> Iterable[TextCell]:
-        page_size = self.get_size()
-
-        [tc.to_top_left_origin(page_size.height) for tc in self._dpage.textline_cells]
-
-        # for cell in self._dpage.textline_cells:
-        #     rect = cell.rect
-        #
-        #     assert (
-        #         rect.to_bounding_box().l <= rect.to_bounding_box().r
-        #     ), f"left is > right on bounding box {rect.to_bounding_box()} of rect {rect}"
-        #     assert (
-        #         rect.to_bounding_box().t <= rect.to_bounding_box().b
-        #     ), f"top is > bottom on bounding box {rect.to_bounding_box()} of rect {rect}"
-
         return self._dpage.textline_cells
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
@@ -171,12 +157,28 @@ class DoclingParseV4DocumentBackend(PdfDocumentBackend):
         self, page_no: int, create_words: bool = True, create_textlines: bool = True
     ) -> DoclingParseV4PageBackend:
         with pypdfium2_lock:
+            seg_page = self.dp_doc.get_page(
+                page_no + 1,
+                create_words=create_words,
+                create_textlines=create_textlines,
+            )
+
+            # In Docling, all TextCell instances are expected with top-left origin.
+            [
+                tc.to_top_left_origin(seg_page.dimension.height)
+                for tc in seg_page.textline_cells
+            ]
+            [
+                tc.to_top_left_origin(seg_page.dimension.height)
+                for tc in seg_page.char_cells
+            ]
+            [
+                tc.to_top_left_origin(seg_page.dimension.height)
+                for tc in seg_page.word_cells
+            ]
+
             return DoclingParseV4PageBackend(
-                self.dp_doc.get_page(
-                    page_no + 1,
-                    create_words=create_words,
-                    create_textlines=create_textlines,
-                ),
+                seg_page,
                 self._pdoc[page_no],
             )
 

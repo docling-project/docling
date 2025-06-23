@@ -42,7 +42,7 @@
         "$ref": "#/groups/1"
       },
       {
-        "$ref": "#/texts/23"
+        "$ref": "#/texts/25"
       }
     ],
     "content_layer": "body",
@@ -98,7 +98,7 @@
           "$ref": "#/texts/15"
         },
         {
-          "$ref": "#/groups/2"
+          "$ref": "#/texts/16"
         },
         {
           "$ref": "#/groups/3"
@@ -111,12 +111,9 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/texts/16"
       },
       "children": [
-        {
-          "$ref": "#/texts/16"
-        },
         {
           "$ref": "#/texts/17"
         },
@@ -125,6 +122,9 @@
         },
         {
           "$ref": "#/texts/19"
+        },
+        {
+          "$ref": "#/texts/20"
         }
       ],
       "content_layer": "body",
@@ -138,7 +138,7 @@
       },
       "children": [
         {
-          "$ref": "#/groups/4"
+          "$ref": "#/texts/21"
         }
       ],
       "content_layer": "body",
@@ -148,17 +148,17 @@
     {
       "self_ref": "#/groups/4",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/texts/21"
       },
       "children": [
         {
-          "$ref": "#/texts/20"
-        },
-        {
-          "$ref": "#/texts/21"
-        },
-        {
           "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/23"
+        },
+        {
+          "$ref": "#/texts/24"
         }
       ],
       "content_layer": "body",
@@ -461,20 +461,18 @@
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/1"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "Some",
-      "text": "Some",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false
-      },
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": "-"
     },
@@ -485,18 +483,16 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [],
-      "orig": "italic",
-      "text": "italic",
+      "orig": "Some",
+      "text": "Some",
       "formatting": {
         "bold": false,
-        "italic": true,
+        "italic": false,
         "underline": false,
         "strikethrough": false
-      },
-      "enumerated": false,
-      "marker": "-"
+      }
     },
     {
       "self_ref": "#/texts/18",
@@ -505,67 +501,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "bold",
-      "text": "bold",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false
-      },
-      "enumerated": false,
-      "marker": "-"
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "underline",
-      "text": "underline",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": true,
-        "strikethrough": false
-      },
-      "enumerated": false,
-      "marker": "-"
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "Nested",
-      "text": "Nested",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false
-      },
-      "enumerated": false,
-      "marker": "-"
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [],
       "orig": "italic",
       "text": "italic",
@@ -574,7 +510,59 @@
         "italic": true,
         "underline": false,
         "strikethrough": false
+      }
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/groups/2"
       },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "underline",
+      "text": "underline",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false
+      }
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/4"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
       "enumerated": false,
       "marker": "-"
     },
@@ -585,7 +573,43 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
+      "prov": [],
+      "orig": "Nested",
+      "text": "Nested",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false
+      }
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false
+      }
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
       "prov": [],
       "orig": "bold",
       "text": "bold",
@@ -594,12 +618,10 @@
         "italic": false,
         "underline": false,
         "strikethrough": false
-      },
-      "enumerated": false,
-      "marker": "-"
+      }
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/body"
       },

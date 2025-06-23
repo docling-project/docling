@@ -7,12 +7,17 @@ from typing import List, Optional, Union
 
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin, Size
-from docling_core.types.doc.page import BoundingRectangle, SegmentedPdfPage, TextCell
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    SegmentedPdfPage,
+    TextCell,
+)
 from docling_parse.pdf_parsers import pdf_parser_v1
 from PIL import Image, ImageDraw
 from pypdfium2 import PdfPage
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.backend.pypdfium2_backend import get_pdf_page_geometry
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
@@ -35,6 +40,51 @@ class DoclingParsePageBackend(PdfPageBackend):
 
     def is_valid(self) -> bool:
         return self.valid
+
+    def _compute_text_cells(self) -> List[TextCell]:
+        """Compute text cells from docling-parse data."""
+        cells: List[TextCell] = []
+        cell_counter = 0
+
+        if not self.valid:
+            return cells
+
+        page_size = self.get_size()
+
+        parser_width = self._dpage["width"]
+        parser_height = self._dpage["height"]
+
+        for i in range(len(self._dpage["cells"])):
+            rect = self._dpage["cells"][i]["box"]["device"]
+            x0, y0, x1, y1 = rect
+
+            if x1 < x0:
+                x0, x1 = x1, x0
+            if y1 < y0:
+                y0, y1 = y1, y0
+
+            text_piece = self._dpage["cells"][i]["content"]["rnormalized"]
+            cells.append(
+                TextCell(
+                    index=cell_counter,
+                    text=text_piece,
+                    orig=text_piece,
+                    from_ocr=False,
+                    rect=BoundingRectangle.from_bounding_box(
+                        BoundingBox(
+                            l=x0 * page_size.width / parser_width,
+                            b=y0 * page_size.height / parser_height,
+                            r=x1 * page_size.width / parser_width,
+                            t=y1 * page_size.height / parser_height,
+                            coord_origin=CoordOrigin.BOTTOMLEFT,
+                        )
+                    ).to_top_left_origin(page_size.height),
+                )
+            )
+
+            cell_counter += 1
+
+        return cells
 
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
         if not self.valid:
@@ -70,75 +120,27 @@ class DoclingParsePageBackend(PdfPageBackend):
         return text_piece
 
     def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
-        return None
+        if not self.valid:
+            return None
+
+        text_cells = self._compute_text_cells()
+
+        # Get the PDF page geometry from pypdfium2
+        dimension = get_pdf_page_geometry(self._ppage)
+
+        # Create SegmentedPdfPage
+        return SegmentedPdfPage(
+            dimension=dimension,
+            textline_cells=text_cells,
+            char_cells=[],
+            word_cells=[],
+            has_lines=len(text_cells) > 0,
+            has_words=False,
+            has_chars=False,
+        )
 
     def get_text_cells(self) -> Iterable[TextCell]:
-        cells: List[TextCell] = []
-        cell_counter = 0
-
-        if not self.valid:
-            return cells
-
-        page_size = self.get_size()
-
-        parser_width = self._dpage["width"]
-        parser_height = self._dpage["height"]
-
-        for i in range(len(self._dpage["cells"])):
-            rect = self._dpage["cells"][i]["box"]["device"]
-            x0, y0, x1, y1 = rect
-
-            if x1 < x0:
-                x0, x1 = x1, x0
-            if y1 < y0:
-                y0, y1 = y1, y0
-
-            text_piece = self._dpage["cells"][i]["content"]["rnormalized"]
-            cells.append(
-                TextCell(
-                    index=cell_counter,
-                    text=text_piece,
-                    orig=text_piece,
-                    from_ocr=False,
-                    rect=BoundingRectangle.from_bounding_box(
-                        BoundingBox(
-                            # l=x0, b=y0, r=x1, t=y1,
-                            l=x0 * page_size.width / parser_width,
-                            b=y0 * page_size.height / parser_height,
-                            r=x1 * page_size.width / parser_width,
-                            t=y1 * page_size.height / parser_height,
-                            coord_origin=CoordOrigin.BOTTOMLEFT,
-                        )
-                    ).to_top_left_origin(page_size.height),
-                )
-            )
-
-            cell_counter += 1
-
-        def draw_clusters_and_cells():
-            image = (
-                self.get_page_image()
-            )  # make new image to avoid drawing on the saved ones
-            draw = ImageDraw.Draw(image)
-            for c in cells:
-                x0, y0, x1, y1 = c.rect.to_bounding_box().as_tuple()
-                cell_color = (
-                    random.randint(30, 140),
-                    random.randint(30, 140),
-                    random.randint(30, 140),
-                )
-                draw.rectangle([(x0, y0), (x1, y1)], outline=cell_color)
-            image.show()
-
-        # before merge:
-        # draw_clusters_and_cells()
-
-        # cells = merge_horizontal_cells(cells)
-
-        # after merge:
-        # draw_clusters_and_cells()
-
-        return cells
+        return self._compute_text_cells()
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         AREA_THRESHOLD = 0  # 32 * 32

@@ -235,7 +235,6 @@ class Page(BaseModel):
     page_no: int
     # page_hash: Optional[str] = None
     size: Optional[Size] = None
-    cells: List[TextCell] = []
     parsed_page: Optional[SegmentedPdfPage] = None
     predictions: PagePredictions = PagePredictions()
     assembled: Optional[AssembledUnit] = None
@@ -248,11 +247,26 @@ class Page(BaseModel):
         float, Image
     ] = {}  # Cache of images in different scales. By default it is cleared during assembling.
 
+    @property
+    def cells(self) -> List[TextCell]:
+        """Return text cells as a read-only view of parsed_page.textline_cells."""
+        if self.parsed_page is not None:
+            return self.parsed_page.textline_cells
+        else:
+            return []
+
     def get_image(
-        self, scale: float = 1.0, cropbox: Optional[BoundingBox] = None
+        self,
+        scale: float = 1.0,
+        max_size: Optional[int] = None,
+        cropbox: Optional[BoundingBox] = None,
     ) -> Optional[Image]:
         if self._backend is None:
             return self._image_cache.get(scale, None)
+
+        if max_size:
+            assert self.size is not None
+            scale = min(scale, max_size / max(self.size.as_tuple()))
 
         if scale not in self._image_cache:
             if cropbox is None:

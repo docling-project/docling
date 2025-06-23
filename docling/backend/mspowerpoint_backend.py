@@ -20,6 +20,7 @@ from docling_core.types.doc.document import ContentLayer
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+from pptx.oxml.text import CT_TextLineBreak
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
@@ -120,136 +121,91 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return prov
 
-    def handle_text_elements(self, shape, parent_slide, slide_ind, doc, slide_size):  # noqa: C901
-        is_a_list = False
+    def handle_text_elements(self, shape, parent_slide, slide_ind, doc, slide_size):
         is_list_group_created = False
         enum_list_item_value = 0
         new_list = None
-        bullet_type = "None"
-        list_label = GroupLabel.LIST
         doc_label = DocItemLabel.LIST_ITEM
         prov = self.generate_prov(shape, slide_ind, shape.text.strip(), slide_size)
 
-        # Identify if shape contains lists
-        for paragraph in shape.text_frame.paragraphs:
-            # Check if paragraph is a bullet point using the `element` XML
+        def is_list_item(paragraph):
+            """Check if the paragraph is a list item."""
             p = paragraph._element
             if (
                 p.find(".//a:buChar", namespaces={"a": self.namespaces["a"]})
                 is not None
             ):
-                bullet_type = "Bullet"
-                is_a_list = True
+                return (True, "Bullet")
             elif (
                 p.find(".//a:buAutoNum", namespaces={"a": self.namespaces["a"]})
                 is not None
             ):
-                bullet_type = "Numbered"
-                is_a_list = True
-            else:
-                is_a_list = False
-
-            if paragraph.level > 0:
+                return (True, "Numbered")
+            elif paragraph.level > 0:
                 # Most likely a sub-list
-                is_a_list = True
-
-            if is_a_list:
-                # Determine if this is an unordered list or an ordered list.
-                # Set GroupLabel.ORDERED_LIST when it fits.
-                if bullet_type == "Numbered":
-                    list_label = GroupLabel.ORDERED_LIST
-
-            if is_a_list:
-                _log.debug("LIST DETECTED!")
+                return (True, "None")
             else:
-                _log.debug("No List")
-
-        # If there is a list inside of the shape, create a new docling list to assign list items to
-        # if is_a_list:
-        #     new_list = doc.add_group(
-        #         label=list_label, name=f"list", parent=parent_slide
-        #     )
+                return (False, "None")
 
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
-            # p_text = paragraph.text.strip()
+            is_a_list, bullet_type = is_list_item(paragraph)
             p = paragraph._element
-            enum_list_item_value += 1
-            inline_paragraph_text = ""
-            inline_list_item_text = ""
 
-            for e in p.iterfind(".//a:r", namespaces={"a": self.namespaces["a"]}):
-                if len(e.text.strip()) > 0:
-                    e_is_a_list_item = False
-                    is_numbered = False
-                    if (
-                        p.find(".//a:buChar", namespaces={"a": self.namespaces["a"]})
-                        is not None
-                    ):
-                        bullet_type = "Bullet"
-                        e_is_a_list_item = True
-                    elif (
-                        p.find(".//a:buAutoNum", namespaces={"a": self.namespaces["a"]})
-                        is not None
-                    ):
-                        bullet_type = "Numbered"
-                        is_numbered = True
-                        e_is_a_list_item = True
-                    else:
-                        e_is_a_list_item = False
+            # Convert line breaks to spaces and accumulate text
+            p_text = ""
+            for e in p.content_children:
+                if isinstance(e, CT_TextLineBreak):
+                    p_text += " "
+                else:
+                    p_text += e.text
 
-                    if e_is_a_list_item:
-                        if len(inline_paragraph_text) > 0:
-                            # output accumulated inline text:
-                            doc.add_text(
-                                label=doc_label,
-                                parent=parent_slide,
-                                text=inline_paragraph_text,
-                                prov=prov,
-                            )
-                        # Set marker and enumerated arguments if this is an enumeration element.
-                        inline_list_item_text += e.text
-                        # print(e.text)
-                    else:
-                        # Assign proper label to the text, depending if it's a Title or Section Header
-                        # For other types of text, assign - PARAGRAPH
-                        doc_label = DocItemLabel.PARAGRAPH
-                        if shape.is_placeholder:
-                            placeholder_type = shape.placeholder_format.type
-                            if placeholder_type in [
-                                PP_PLACEHOLDER.CENTER_TITLE,
-                                PP_PLACEHOLDER.TITLE,
-                            ]:
-                                # It's a title
-                                doc_label = DocItemLabel.TITLE
-                            elif placeholder_type == PP_PLACEHOLDER.SUBTITLE:
-                                DocItemLabel.SECTION_HEADER
-                        enum_list_item_value = 0
-                        inline_paragraph_text += e.text
+            if is_a_list:
+                enum_marker = ""
+                enumerated = bullet_type == "Numbered"
 
-            if len(inline_paragraph_text) > 0:
+                if not is_list_group_created:
+                    new_list = doc.add_group(
+                        label=GroupLabel.ORDERED_LIST
+                        if enumerated
+                        else GroupLabel.LIST,
+                        name="list",
+                        parent=parent_slide,
+                    )
+                    is_list_group_created = True
+                    enum_list_item_value = 0
+
+                if enumerated:
+                    enum_list_item_value += 1
+                    enum_marker = str(enum_list_item_value) + "."
+
+                doc.add_list_item(
+                    marker=enum_marker,
+                    enumerated=enumerated,
+                    parent=new_list,
+                    text=p_text,
+                    prov=prov,
+                )
+            else:  # is paragraph not a list item
+                # Assign proper label to the text, depending if it's a Title or Section Header
+                # For other types of text, assign - PARAGRAPH
+                doc_label = DocItemLabel.PARAGRAPH
+                if shape.is_placeholder:
+                    placeholder_type = shape.placeholder_format.type
+                    if placeholder_type in [
+                        PP_PLACEHOLDER.CENTER_TITLE,
+                        PP_PLACEHOLDER.TITLE,
+                    ]:
+                        # It's a title
+                        doc_label = DocItemLabel.TITLE
+                    elif placeholder_type == PP_PLACEHOLDER.SUBTITLE:
+                        DocItemLabel.SECTION_HEADER
+
                 # output accumulated inline text:
                 doc.add_text(
                     label=doc_label,
                     parent=parent_slide,
-                    text=inline_paragraph_text,
-                    prov=prov,
-                )
-
-            if len(inline_list_item_text) > 0:
-                enum_marker = ""
-                if is_numbered:
-                    enum_marker = str(enum_list_item_value) + "."
-                if not is_list_group_created:
-                    new_list = doc.add_group(
-                        label=list_label, name="list", parent=parent_slide
-                    )
-                    is_list_group_created = True
-                doc.add_list_item(
-                    marker=enum_marker,
-                    enumerated=is_numbered,
-                    parent=new_list,
-                    text=inline_list_item_text,
+                    text=p_text,
                     prov=prov,
                 )
         return

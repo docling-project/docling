@@ -8,7 +8,7 @@ from docling_core.types.doc import DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
 from rtree import index
 
-from docling.datamodel.base_models import BoundingBox, Cluster
+from docling.datamodel.base_models import BoundingBox, Cluster, Page
 
 _log = logging.getLogger(__name__)
 
@@ -194,11 +194,11 @@ class LayoutPostprocessor:
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
     }
 
-    def __init__(self, cells: List[TextCell], clusters: List[Cluster], page_size: Size):
-        """Initialize processor with cells and clusters."""
-        """Initialize processor with cells and spatial indices."""
-        self.cells = cells
-        self.page_size = page_size
+    def __init__(self, page: Page, clusters: List[Cluster]) -> None:
+        """Initialize processor with page and clusters."""
+        self.cells = page.cells
+        self.page = page
+        self.page_size = page.size
         self.all_clusters = clusters
         self.regular_clusters = [
             c for c in clusters if c.label not in self.SPECIAL_TYPES
@@ -239,6 +239,10 @@ class LayoutPostprocessor:
             # Also sort cells in children if any
             for child in cluster.children:
                 child.cells = self._sort_cells(child.cells)
+
+        assert self.page.parsed_page is not None
+        self.page.parsed_page.textline_cells = self.cells
+        self.page.parsed_page.has_lines = len(self.cells) > 0
 
         return final_clusters, self.cells
 
@@ -301,6 +305,7 @@ class LayoutPostprocessor:
         special_clusters = self._handle_cross_type_overlaps(special_clusters)
 
         # Calculate page area from known page size
+        assert self.page_size is not None
         page_area = self.page_size.width * self.page_size.height
         if page_area > 0:
             # Filter out full-page pictures

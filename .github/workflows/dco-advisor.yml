@@ -1,0 +1,192 @@
+name: DCO Advisor Bot
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  dco_advisor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Handle DCO check result
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request || context.payload.check_run?.pull_requests?.[0];
+            if (!pr) return;
+
+            const prNumber = pr.number;
+            const baseRef = pr.base.ref;
+            const headSha =
+              context.payload.check_run?.head_sha ||
+              pr.head?.sha;
+            const username = pr.user.login;
+
+            console.log("HEAD SHA:", headSha);
+
+            const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+            // Poll until DCO check has a conclusion (max 6 attempts, 30s)
+            let dcoCheck = null;
+            for (let attempt = 0; attempt < 6; attempt++) {
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: headSha
+              });
+
+              
+              console.log("All check runs:");
+                checks.check_runs.forEach(run => {
+                console.log(`- ${run.name} (${run.status}/${run.conclusion}) @ ${run.head_sha}`);
+              });
+
+              dcoCheck = checks.check_runs.find(run =>
+                run.name.toLowerCase().includes("dco") &&
+              !run.name.toLowerCase().includes("dco_advisor") &&
+                run.head_sha === headSha
+              );
+
+
+              if (dcoCheck?.conclusion) break;
+              console.log(`Waiting for DCO check... (${attempt + 1})`);
+              await sleep(5000); // wait 5 seconds
+            }
+
+            if (!dcoCheck || !dcoCheck.conclusion) {
+              console.log("DCO check did not complete in time.");
+              return;
+            }
+
+            const isFailure = ["failure", "action_required"].includes(dcoCheck.conclusion);
+            console.log(`DCO check conclusion for ${headSha}: ${dcoCheck.conclusion} (treated as ${isFailure ? "failure" : "success"})`);
+
+            // Parse DCO output for commit SHAs and author
+            let badCommits = [];
+            let authorName = "";
+            let authorEmail = "";
+            let moreInfo = `More info: [DCO check report](${dcoCheck?.html_url})`;
+
+            if (isFailure) {
+                const { data: commits } = await github.rest.pulls.listCommits({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: prNumber,
+                });
+
+                for (const commit of commits) {
+                    const commitMessage = commit.commit.message;
+                    const signoffMatch = commitMessage.match(/^Signed-off-by:\s+.+<.+>$/m);
+                    if (!signoffMatch) {
+                        console.log(`Bad commit found ${commit.sha}`)
+                        badCommits.push({
+                        sha: commit.sha,
+                        authorName: commit.commit.author.name,
+                        authorEmail: commit.commit.author.email,
+                        });
+                    }
+                }            
+            }
+
+            // If multiple authors are present, you could adapt the message accordingly
+            // For now, we'll just use the first one
+            if (badCommits.length > 0) {
+            authorName = badCommits[0].authorName;
+            authorEmail = badCommits[0].authorEmail;
+            }
+
+            // Generate remediation commit message if needed
+            let remediationSnippet = "";
+            if (badCommits.length && authorEmail) {
+              remediationSnippet = `git commit --allow-empty -s -m "DCO Remediation Commit for ${authorName} <${authorEmail}>\n\n` +
+                badCommits.map(c => `I, ${c.authorName} <${c.authorEmail}>, hereby add my Signed-off-by to this commit: ${c.sha}`).join('\n') +
+                `"`;
+            } else {
+              remediationSnippet = "# Unable to auto-generate remediation message. Please check the DCO check details.";
+            }
+
+            // Build comment
+            const commentHeader = '<!-- dco-advice-bot -->';
+            let body = "";
+
+            if (isFailure) {
+              body = [
+                commentHeader,
+                '❌ **DCO Check Failed**',
+                '',
+                `Hi @${username}, your pull request has failed the Developer Certificate of Origin (DCO) check.`,
+                '',
+                'This repository supports **remediation commits**, so you can fix this without rewriting history — but you must follow the required message format.',
+                '',
+                '---',
+                '',
+                '### 🛠 Quick Fix: Add a remediation commit',
+                'Run this command:',
+                '',
+                '```bash',
+                remediationSnippet,
+                'git push',
+                '```',
+                '',
+                '---',
+                '',
+                '<details>',
+                '<summary>🔧 Advanced: Sign off each commit directly</summary>',
+                '',
+                '**For the latest commit:**',
+                '```bash',
+                'git commit --amend --signoff',
+                'git push --force-with-lease',
+                '```',
+                '',
+                '**For multiple commits:**',
+                '```bash',
+                `git rebase --signoff origin/${baseRef}`,
+                'git push --force-with-lease',
+                '```',
+                '',
+                '</details>',
+                '',
+                moreInfo
+              ].join('\n');
+            } else {
+              body = [
+                commentHeader,
+                '✅ **DCO Check Passed**',
+                '',
+                `Thanks @${username}, all your commits are properly signed off. 🎉`
+              ].join('\n');
+            }
+
+            // Get existing comments on the PR
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            // Look for a previous bot comment
+            const existingComment = comments.find(c =>
+              c.body.includes("<!-- dco-advice-bot -->")
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }

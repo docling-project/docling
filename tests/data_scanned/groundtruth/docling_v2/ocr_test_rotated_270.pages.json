@@ -5,84 +5,143 @@
       "width": 841.9216918945312,
       "height": 595.201171875
     },
-    "cells": [
-      {
-        "index": 0,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
+    "parsed_page": {
+      "dimension": {
+        "angle": 0.0,
         "rect": {
-          "r_x0": 744.0930045534915,
-          "r_y0": 504.87200373583954,
-          "r_x1": 764.8982839673505,
-          "r_y1": 504.87200373583954,
-          "r_x2": 764.8982839673505,
-          "r_y2": 73.34702001188118,
-          "r_x3": 744.0930045534915,
-          "r_y3": 73.34702001188118,
-          "coord_origin": "TOPLEFT"
+          "r_x0": 0.0,
+          "r_y0": 0.0,
+          "r_x1": 595.201171875,
+          "r_y1": 0.0,
+          "r_x2": 595.201171875,
+          "r_y2": 841.9216918945312,
+          "r_x3": 0.0,
+          "r_y3": 841.9216918945312,
+          "coord_origin": "BOTTOMLEFT"
         },
-        "text": "Docling bundles PDF document conversion to",
-        "orig": "Docling bundles PDF document conversion to",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": true
+        "boundary_type": "crop_box",
+        "art_bbox": {
+          "l": 0.0,
+          "t": 841.9216918945312,
+          "r": 595.201171875,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "bleed_bbox": {
+          "l": 0.0,
+          "t": 841.9216918945312,
+          "r": 595.201171875,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "crop_bbox": {
+          "l": 0.0,
+          "t": 841.9216918945312,
+          "r": 595.201171875,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "media_bbox": {
+          "l": 0.0,
+          "t": 841.9216918945312,
+          "r": 595.201171875,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        },
+        "trim_bbox": {
+          "l": 0.0,
+          "t": 841.9216918945312,
+          "r": 595.201171875,
+          "b": 0.0,
+          "coord_origin": "BOTTOMLEFT"
+        }
       },
-      {
-        "index": 1,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
+      "bitmap_resources": [],
+      "char_cells": [],
+      "word_cells": [],
+      "textline_cells": [
+        {
+          "index": 0,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 744.0930045534915,
+            "r_y0": 504.87200373583954,
+            "r_x1": 764.8982839673505,
+            "r_y1": 504.87200373583954,
+            "r_x2": 764.8982839673505,
+            "r_y2": 73.34702001188118,
+            "r_x3": 744.0930045534915,
+            "r_y3": 73.34702001188118,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "Docling bundles PDF document conversion to",
+          "orig": "Docling bundles PDF document conversion to",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": true
         },
-        "rect": {
-          "r_x0": 717.168585936602,
-          "r_y0": 504.8720061466397,
-          "r_x1": 737.9738558137178,
-          "r_y1": 504.8720061466397,
-          "r_x2": 737.9738558137178,
-          "r_y2": 70.90211682372312,
-          "r_x3": 717.168585936602,
-          "r_y3": 70.90211682372312,
-          "coord_origin": "TOPLEFT"
+        {
+          "index": 1,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 717.168585936602,
+            "r_y0": 504.8720061466397,
+            "r_x1": 737.9738558137178,
+            "r_y1": 504.8720061466397,
+            "r_x2": 737.9738558137178,
+            "r_y2": 70.90211682372312,
+            "r_x3": 717.168585936602,
+            "r_y3": 70.90211682372312,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "JSON and Markdown in an easy self contained",
+          "orig": "JSON and Markdown in an easy self contained",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": true
         },
-        "text": "JSON and Markdown in an easy self contained",
-        "orig": "JSON and Markdown in an easy self contained",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": true
-      },
-      {
-        "index": 2,
-        "rgba": {
-          "r": 0,
-          "g": 0,
-          "b": 0,
-          "a": 255
-        },
-        "rect": {
-          "r_x0": 690.2441821046808,
-          "r_y0": 152.80629773131633,
-          "r_x1": 709.8255852011977,
-          "r_y1": 152.80629773131633,
-          "r_x2": 709.8255852011977,
-          "r_y2": 72.124570639845,
-          "r_x3": 690.2441821046808,
-          "r_y3": 72.124570639845,
-          "coord_origin": "TOPLEFT"
-        },
-        "text": "package",
-        "orig": "package",
-        "text_direction": "left_to_right",
-        "confidence": 1.0,
-        "from_ocr": true
-      }
-    ],
-    "parsed_page": null,
+        {
+          "index": 2,
+          "rgba": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 255
+          },
+          "rect": {
+            "r_x0": 690.2441821046808,
+            "r_y0": 152.80629773131633,
+            "r_x1": 709.8255852011977,
+            "r_y1": 152.80629773131633,
+            "r_x2": 709.8255852011977,
+            "r_y2": 72.124570639845,
+            "r_x3": 690.2441821046808,
+            "r_y3": 72.124570639845,
+            "coord_origin": "TOPLEFT"
+          },
+          "text": "package",
+          "orig": "package",
+          "text_direction": "left_to_right",
+          "confidence": 1.0,
+          "from_ocr": true
+        }
+      ],
+      "has_chars": false,
+      "has_words": false,
+      "has_lines": true,
+      "image": null,
+      "lines": []
+    },
     "predictions": {
       "layout": {
         "clusters": [

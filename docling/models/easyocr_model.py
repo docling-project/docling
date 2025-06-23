@@ -177,7 +177,7 @@ class EasyOcrModel(BaseOcrModel):
                         all_ocr_cells.extend(cells)
 
                     # Post-process the cells
-                    page.cells = self.post_process_cells(all_ocr_cells, page.cells)
+                    self.post_process_cells(all_ocr_cells, page)
 
                 # DEBUG code:
                 if settings.debug.visualize_ocr:

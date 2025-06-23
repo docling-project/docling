@@ -1,0 +1,86 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.3.0",
+  "name": "powerpoint_bad_text",
+  "origin": {
+    "mimetype": "application/vnd.ms-powerpoint",
+    "binary_hash": 1443005848482130016,
+    "filename": "powerpoint_bad_text.pptx"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/groups/0"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        }
+      ],
+      "content_layer": "body",
+      "name": "slide-0",
+      "label": "chapter"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "title",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 1041400.0,
+            "t": 4582390.0,
+            "r": 8083550.0,
+            "b": 1689099.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            118
+          ]
+        }
+      ],
+      "orig": "X-Library The fully customisable and copyright-free standard content template collection exclusively for our customers",
+      "text": "X-Library The fully customisable and copyright-free standard content template collection exclusively for our customers"
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 12190413.0,
+        "height": 6858000.0
+      },
+      "page_no": 1
+    }
+  }
+}
