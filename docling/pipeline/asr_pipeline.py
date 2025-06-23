@@ -15,7 +15,7 @@ from docling_core.types.doc.labels import DocItemLabel
 from pydantic import BaseModel, Field, validator
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.audio_backend import DummyBackend
+from docling.backend.dummy_backend import DummyBackend
 
 # from pydub import AudioSegment  # type: ignore
 # from transformers import WhisperForConditionalGeneration, WhisperProcessor, pipeline

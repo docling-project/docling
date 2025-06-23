@@ -11,9 +11,9 @@ from pydantic import BaseModel, ConfigDict, model_validator, validate_call
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
-from docling.backend.audio_backend import DummyBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.dummy_backend import DummyBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.md_backend import MarkdownDocumentBackend

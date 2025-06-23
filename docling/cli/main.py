@@ -23,10 +23,10 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.audio_backend import DummyBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.dummy_backend import DummyBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
