@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from docling_core.types.doc import DoclingDocument
+
 from docling.datamodel import asr_model_specs
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
@@ -24,7 +26,7 @@ def get_asr_converter():
     return converter
 
 
-def asr_pipeline_conversion(audio_path:Path) -> DoclingDocument:
+def asr_pipeline_conversion(audio_path: Path) -> DoclingDocument:
     """ASR pipeline conversion using whisper_turbo"""
     # Check if the test audio file exists
     assert audio_path.exists(), f"Test audio file not found: {audio_path}"
@@ -41,8 +43,7 @@ def asr_pipeline_conversion(audio_path:Path) -> DoclingDocument:
     return result.document
 
 
-if __name__=="__main__":
-
+if __name__ == "__main__":
     audio_path = Path("<audio-file.wav/mp3>")
 
     doc = asr_pipeline_conversion(audio_path=audio_path)
