@@ -26,7 +26,6 @@ from rich.console import Console
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
-from docling.backend.dummy_backend import DummyBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions

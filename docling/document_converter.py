@@ -13,13 +13,13 @@ from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
-from docling.backend.dummy_backend import DummyBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.backend.noop_backend import NoOpBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.base_models import (
@@ -122,7 +122,7 @@ class PdfFormatOption(FormatOption):
 
 class AudioFormatOption(FormatOption):
     pipeline_cls: Type = AsrPipeline
-    backend: Type[AbstractDocumentBackend] = DummyBackend
+    backend: Type[AbstractDocumentBackend] = NoOpBackend
 
 
 def _get_default_option(format: InputFormat) -> FormatOption:
@@ -163,7 +163,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.JSON_DOCLING: FormatOption(
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
-        InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=DummyBackend),
+        InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=NoOpBackend),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

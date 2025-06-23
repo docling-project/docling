@@ -15,7 +15,7 @@ from docling_core.types.doc.labels import DocItemLabel
 from pydantic import BaseModel, Field, validator
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.dummy_backend import DummyBackend
+from docling.backend.noop_backend import NoOpBackend
 
 # from pydub import AudioSegment  # type: ignore
 # from transformers import WhisperForConditionalGeneration, WhisperProcessor, pipeline
@@ -24,6 +24,7 @@ from docling.datamodel.accelerator_options import (
 )
 from docling.datamodel.base_models import (
     ConversionStatus,
+    FormatToMimeType,
 )
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
@@ -154,15 +155,17 @@ class _NativeWhisperModel:
             # Ensure we have a proper DoclingDocument
             origin = DocumentOrigin(
                 filename=conv_res.input.file.name or "audio.wav",
-                mimetype="audio/wav",
+                mimetype="audio/x-wav",
                 binary_hash=conv_res.input.document_hash,
             )
             conv_res.document = DoclingDocument(
                 name=conv_res.input.file.stem or "audio.wav", origin=origin
             )
 
-            for _ in conversation:
-                conv_res.document.add_text(label=DocItemLabel.TEXT, text=_.to_string())
+            for citem in conversation:
+                conv_res.document.add_text(
+                    label=DocItemLabel.TEXT, text=citem.to_string()
+                )
 
             conv_res.status = ConversionStatus.SUCCESS
             return conv_res
@@ -247,4 +250,4 @@ class AsrPipeline(BasePipeline):
 
     @classmethod
     def is_backend_supported(cls, backend: AbstractDocumentBackend):
-        return isinstance(backend, DummyBackend)
+        return isinstance(backend, NoOpBackend)

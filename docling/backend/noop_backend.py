@@ -10,16 +10,16 @@ from docling.datamodel.document import InputDocument
 _log = logging.getLogger(__name__)
 
 
-class DummyBackend(AbstractDocumentBackend):
+class NoOpBackend(AbstractDocumentBackend):
     """
-    A dummy backend that only validates input existence.
+    A no-op backend that only validates input existence.
     Used e.g. for audio files where actual processing is handled by the ASR pipeline.
     """
 
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
         super().__init__(in_doc, path_or_stream)
 
-        _log.debug(f"DummyBackend initialized for: {path_or_stream}")
+        _log.debug(f"NoOpBackend initialized for: {path_or_stream}")
 
         # Validate input
         try:
@@ -36,7 +36,7 @@ class DummyBackend(AbstractDocumentBackend):
             else:
                 self.valid = False
         except Exception as e:
-            _log.error(f"DummyBackend validation failed: {e}")
+            _log.error(f"NoOpBackend validation failed: {e}")
             self.valid = False
 
     def is_valid(self) -> bool:

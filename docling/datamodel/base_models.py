@@ -106,7 +106,7 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.JSON_DOCLING: ["application/json"],
-    InputFormat.AUDIO: ["audio/wav", "audio/x-wav"],
+    InputFormat.AUDIO: ["audio/x-wav", "audio/mpeg", "audio/wav", "audio/mp3"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {

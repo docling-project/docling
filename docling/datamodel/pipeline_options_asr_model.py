@@ -17,8 +17,8 @@ class BaseAsrOptions(BaseModel):
 
 
 class InferenceAsrFramework(str, Enum):
-    MLX = "mlx"
-    TRANSFORMERS = "transformers"
+    # MLX = "mlx" # disabled for now
+    # TRANSFORMERS = "transformers" # disabled for now
     WHISPER = "whisper"
 
 
