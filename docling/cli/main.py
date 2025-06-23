@@ -23,7 +23,7 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.audio_backend import AudioBackend
+from docling.backend.audio_backend import DummyBackend
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -665,7 +665,6 @@ def convert(  # noqa: C901
             audio_format_option = AudioFormatOption(
                 pipeline_cls=AsrPipeline,
                 pipeline_options=pipeline_options,
-                backend=AudioBackend,
             )
 
             format_options = {
