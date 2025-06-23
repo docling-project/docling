@@ -489,7 +489,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # Parse the markdown into an abstract syntax tree (AST)
             marko_parser = Markdown()
             parsed_ast = marko_parser.parse(self.markdown)
-            print(f"{parsed_ast=}")
             # Start iterating from the root of the AST
             self._iterate_elements(
                 element=parsed_ast,

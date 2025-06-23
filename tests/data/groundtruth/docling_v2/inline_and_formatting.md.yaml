@@ -6,9 +6,9 @@ body:
   - $ref: '#/groups/1'
   - $ref: '#/groups/2'
   - $ref: '#/texts/32'
-  - $ref: '#/texts/33'
-  - $ref: '#/texts/34'
-  - $ref: '#/texts/37'
+  - $ref: '#/groups/8'
+  - $ref: '#/texts/35'
+  - $ref: '#/texts/40'
   content_layer: body
   label: unspecified
   name: _root_
@@ -108,18 +108,29 @@ groups:
     $ref: '#/texts/28'
   self_ref: '#/groups/7'
 - children:
-  - $ref: '#/texts/35'
-  - $ref: '#/texts/36'
+  - $ref: '#/texts/33'
+  - $ref: '#/texts/34'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/texts/34'
+    $ref: '#/body'
   self_ref: '#/groups/8'
+- children:
+  - $ref: '#/texts/36'
+  - $ref: '#/texts/37'
+  - $ref: '#/texts/38'
+  - $ref: '#/texts/39'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/35'
+  self_ref: '#/groups/9'
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 13696403111835531717
+  binary_hash: 11578856098237602413
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
@@ -159,6 +170,7 @@ texts:
   formatting:
     bold: false
     italic: true
+    script: baseline
     strikethrough: false
     underline: false
   label: text
@@ -173,6 +185,7 @@ texts:
   formatting:
     bold: true
     italic: false
+    script: baseline
     strikethrough: false
     underline: false
   label: text
@@ -187,6 +200,7 @@ texts:
   formatting:
     bold: true
     italic: true
+    script: baseline
     strikethrough: false
     underline: false
   label: text
@@ -262,6 +276,7 @@ texts:
   formatting:
     bold: true
     italic: false
+    script: baseline
     strikethrough: false
     underline: false
   hyperlink: https://github.com/docling-project/docling
@@ -427,6 +442,7 @@ texts:
   formatting:
     bold: true
     italic: false
+    script: baseline
     strikethrough: false
     underline: false
   label: list_item
@@ -463,6 +479,7 @@ texts:
   formatting:
     bold: false
     italic: true
+    script: baseline
     strikethrough: false
     underline: false
   label: text
@@ -486,6 +503,7 @@ texts:
   formatting:
     bold: false
     italic: true
+    script: baseline
     strikethrough: false
     underline: false
   label: title
@@ -498,14 +516,33 @@ texts:
 - children: []
   content_layer: body
   label: text
-  orig: Bar
+  orig: Some
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/8'
   prov: []
   self_ref: '#/texts/33'
-  text: Bar
+  text: Some
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: code
+  orig: formatted_code
+  parent:
+    $ref: '#/groups/8'
+  prov: []
+  references: []
+  self_ref: '#/texts/34'
+  text: formatted_code
 - children:
-  - $ref: '#/groups/8'
+  - $ref: '#/groups/9'
   content_layer: body
   label: section_header
   level: 1
@@ -513,38 +550,62 @@ texts:
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/34'
+  self_ref: '#/texts/35'
   text: ''
 - children: []
   content_layer: body
   formatting:
     bold: false
     italic: true
+    script: baseline
     strikethrough: false
     underline: false
   label: text
   orig: Partially formatted
   parent:
-    $ref: '#/groups/8'
+    $ref: '#/groups/9'
   prov: []
-  self_ref: '#/texts/35'
+  self_ref: '#/texts/36'
   text: Partially formatted
 - children: []
   content_layer: body
   label: text
-  orig: heading
+  orig: heading to
   parent:
-    $ref: '#/groups/8'
+    $ref: '#/groups/9'
   prov: []
-  self_ref: '#/texts/36'
-  text: heading
+  self_ref: '#/texts/37'
+  text: heading to
 - children: []
   content_layer: body
   label: text
-  orig: End
+  orig: escape
+  parent:
+    $ref: '#/groups/9'
+  prov: []
+  self_ref: '#/texts/38'
+  text: escape
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: not_to_escape
+  parent:
+    $ref: '#/groups/9'
+  prov: []
+  references: []
+  self_ref: '#/texts/39'
+  text: not_to_escape
+- children: []
+  content_layer: body
+  hyperlink: https://en.wikipedia.org/wiki/Albert_Einstein
+  label: text
+  orig: $$E=mc^2$$
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/37'
-  text: End
-version: 1.3.0
+  self_ref: '#/texts/40'
+  text: $$E=mc^2$$
+version: 1.4.0

@@ -16,8 +16,8 @@ Create your feature branch: `git checkout -b feature/AmazingFeature`.
 
 # *Whole heading is italic*
 
-Bar
+Some *`formatted_code`*
 
-## *Partially formatted* heading
+## *Partially formatted* heading to\_escape `not_to_escape`
 
-End
+[$$E=mc^2$$](https://en.wikipedia.org/wiki/Albert_Einstein)
