@@ -50,7 +50,7 @@ if __name__ == "__main__":
     print(doc.export_to_markdown())
 
     # Expected output:
-    # 
+    #
     # [time: 0.0-4.0]  Shakespeare on Scenery by Oscar Wilde
-    # 
+    #
     # [time: 5.28-9.96]  This is a LibriVox recording. All LibriVox recordings are in the public domain.
