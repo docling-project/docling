@@ -48,4 +48,4 @@ class NoOpBackend(AbstractDocumentBackend):
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:
-        return {InputFormat.AUDIO}
+        return set(InputFormat)
