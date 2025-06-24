@@ -8,7 +8,7 @@ body:
   - $ref: '#/texts/32'
   - $ref: '#/groups/8'
   - $ref: '#/texts/35'
-  - $ref: '#/texts/40'
+  - $ref: '#/texts/39'
   content_layer: body
   label: unspecified
   name: _root_
@@ -120,7 +120,6 @@ groups:
   - $ref: '#/texts/36'
   - $ref: '#/texts/37'
   - $ref: '#/texts/38'
-  - $ref: '#/texts/39'
   content_layer: body
   label: inline
   name: group
@@ -130,7 +129,7 @@ groups:
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 11578856098237602413
+  binary_hash: 16409076955457599155
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
@@ -570,21 +569,12 @@ texts:
 - children: []
   content_layer: body
   label: text
-  orig: heading to
+  orig: heading to_escape
   parent:
     $ref: '#/groups/9'
   prov: []
   self_ref: '#/texts/37'
-  text: heading to
-- children: []
-  content_layer: body
-  label: text
-  orig: escape
-  parent:
-    $ref: '#/groups/9'
-  prov: []
-  self_ref: '#/texts/38'
-  text: escape
+  text: heading to_escape
 - captions: []
   children: []
   code_language: unknown
@@ -596,7 +586,7 @@ texts:
     $ref: '#/groups/9'
   prov: []
   references: []
-  self_ref: '#/texts/39'
+  self_ref: '#/texts/38'
   text: not_to_escape
 - children: []
   content_layer: body
@@ -606,6 +596,6 @@ texts:
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/40'
+  self_ref: '#/texts/39'
   text: $$E=mc^2$$
 version: 1.4.0

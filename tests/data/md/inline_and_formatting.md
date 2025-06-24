@@ -18,6 +18,6 @@ Create your feature branch: `git checkout -b feature/AmazingFeature`.
 
 Some *`formatted_code`*
 
-## *Partially formatted* heading to\_escape `not_to_escape`
+## *Partially formatted* heading to_escape `not_to_escape`
 
 [$$E=mc^2$$](https://en.wikipedia.org/wiki/Albert_Einstein)
