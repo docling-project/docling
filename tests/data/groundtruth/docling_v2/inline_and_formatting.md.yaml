@@ -6,13 +6,13 @@ body:
   - $ref: '#/groups/1'
   - $ref: '#/groups/2'
   - $ref: '#/texts/32'
-  - $ref: '#/texts/33'
   - $ref: '#/groups/8'
-  - $ref: '#/tables/0'
   - $ref: '#/groups/11'
-  - $ref: '#/texts/44'
+  - $ref: '#/texts/43'
+  - $ref: '#/texts/47'
   - $ref: '#/texts/48'
-  - $ref: '#/texts/49'
+  - $ref: '#/groups/13'
+  - $ref: '#/tables/0'
   content_layer: body
   label: unspecified
   name: _root_
@@ -112,8 +112,8 @@ groups:
     $ref: '#/texts/28'
   self_ref: '#/groups/7'
 - children:
-  - $ref: '#/texts/34'
-  - $ref: '#/texts/37'
+  - $ref: '#/texts/33'
+  - $ref: '#/texts/36'
   content_layer: body
   label: list
   name: list
@@ -121,28 +121,28 @@ groups:
     $ref: '#/body'
   self_ref: '#/groups/8'
 - children:
+  - $ref: '#/texts/34'
   - $ref: '#/texts/35'
-  - $ref: '#/texts/36'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/texts/34'
+    $ref: '#/texts/33'
   self_ref: '#/groups/9'
 - children:
+  - $ref: '#/texts/37'
   - $ref: '#/texts/38'
   - $ref: '#/texts/39'
   - $ref: '#/texts/40'
-  - $ref: '#/texts/41'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/texts/37'
+    $ref: '#/texts/36'
   self_ref: '#/groups/10'
 - children:
+  - $ref: '#/texts/41'
   - $ref: '#/texts/42'
-  - $ref: '#/texts/43'
   content_layer: body
   label: inline
   name: group
@@ -150,19 +150,26 @@ groups:
     $ref: '#/body'
   self_ref: '#/groups/11'
 - children:
+  - $ref: '#/texts/44'
   - $ref: '#/texts/45'
   - $ref: '#/texts/46'
-  - $ref: '#/texts/47'
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/texts/44'
+    $ref: '#/texts/43'
   self_ref: '#/groups/12'
+- children: []
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/13'
 key_value_items: []
 name: inline_and_formatting
 origin:
-  binary_hash: 1036526097556828366
+  binary_hash: 14550011543526094526
   filename: inline_and_formatting.md
   mimetype: text/markdown
 pages: {}
@@ -715,16 +722,6 @@ texts:
   self_ref: '#/texts/32'
   text: Whole heading is italic
   word_items_ids: []
-- children: []
-  content_layer: body
-  label: text
-  orig: <<<<<<< HEAD
-  parent:
-    $ref: '#/body'
-  prov: []
-  self_ref: '#/texts/33'
-  text: <<<<<<< HEAD
-  word_items_ids: []
 - children:
   - $ref: '#/groups/9'
   content_layer: body
@@ -735,7 +732,7 @@ texts:
   parent:
     $ref: '#/groups/8'
   prov: []
-  self_ref: '#/texts/34'
+  self_ref: '#/texts/33'
   text: ''
   word_items_ids: []
 - children: []
@@ -751,7 +748,7 @@ texts:
   parent:
     $ref: '#/groups/9'
   prov: []
-  self_ref: '#/texts/35'
+  self_ref: '#/texts/34'
   text: First
   word_items_ids: []
 - children: []
@@ -761,7 +758,7 @@ texts:
   parent:
     $ref: '#/groups/9'
   prov: []
-  self_ref: '#/texts/36'
+  self_ref: '#/texts/35'
   text: ': Lorem ipsum.'
   word_items_ids: []
 - children:
@@ -774,7 +771,7 @@ texts:
   parent:
     $ref: '#/groups/8'
   prov: []
-  self_ref: '#/texts/37'
+  self_ref: '#/texts/36'
   text: ''
   word_items_ids: []
 - children: []
@@ -790,7 +787,7 @@ texts:
   parent:
     $ref: '#/groups/10'
   prov: []
-  self_ref: '#/texts/38'
+  self_ref: '#/texts/37'
   text: Second
   word_items_ids: []
 - children: []
@@ -800,7 +797,7 @@ texts:
   parent:
     $ref: '#/groups/10'
   prov: []
-  self_ref: '#/texts/39'
+  self_ref: '#/texts/38'
   text: ': Dolor'
   word_items_ids: []
 - captions: []
@@ -814,7 +811,7 @@ texts:
     $ref: '#/groups/10'
   prov: []
   references: []
-  self_ref: '#/texts/40'
+  self_ref: '#/texts/39'
   text: sit
   word_items_ids: []
 - children: []
@@ -824,7 +821,7 @@ texts:
   parent:
     $ref: '#/groups/10'
   prov: []
-  self_ref: '#/texts/41'
+  self_ref: '#/texts/40'
   text: amet.
   word_items_ids: []
 - children: []
@@ -834,7 +831,7 @@ texts:
   parent:
     $ref: '#/groups/11'
   prov: []
-  self_ref: '#/texts/42'
+  self_ref: '#/texts/41'
   text: Some
   word_items_ids: []
 - captions: []
@@ -854,7 +851,7 @@ texts:
     $ref: '#/groups/11'
   prov: []
   references: []
-  self_ref: '#/texts/43'
+  self_ref: '#/texts/42'
   text: formatted_code
   word_items_ids: []
 - children:
@@ -866,7 +863,7 @@ texts:
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/44'
+  self_ref: '#/texts/43'
   text: ''
   word_items_ids: []
 - children: []
@@ -882,7 +879,7 @@ texts:
   parent:
     $ref: '#/groups/12'
   prov: []
-  self_ref: '#/texts/45'
+  self_ref: '#/texts/44'
   text: Partially formatted
   word_items_ids: []
 - children: []
@@ -892,7 +889,7 @@ texts:
   parent:
     $ref: '#/groups/12'
   prov: []
-  self_ref: '#/texts/46'
+  self_ref: '#/texts/45'
   text: heading to_escape
   word_items_ids: []
 - captions: []
@@ -906,7 +903,7 @@ texts:
     $ref: '#/groups/12'
   prov: []
   references: []
-  self_ref: '#/texts/47'
+  self_ref: '#/texts/46'
   text: not_to_escape
   word_items_ids: []
 - children: []
@@ -917,17 +914,18 @@ texts:
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/48'
+  self_ref: '#/texts/47'
   text: $$E=mc^2$$
   word_items_ids: []
 - children: []
   content_layer: body
-  label: text
-  orig: origin/main
+  label: section_header
+  level: 1
+  orig: Table Heading
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/49'
-  text: origin/main
+  self_ref: '#/texts/48'
+  text: Table Heading
   word_items_ids: []
 version: 1.4.0
