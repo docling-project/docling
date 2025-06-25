@@ -71,7 +71,8 @@ class ExampleFormulaUnderstandingPipeline(StandardPdfPipeline):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("./tests/data/pdf/2203.01017v2.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2203.01017v2.pdf"
 
     pipeline_options = ExampleFormulaUnderstandingPipelineOptions()
     pipeline_options.do_formula_understanding = True

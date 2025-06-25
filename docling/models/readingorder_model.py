@@ -124,7 +124,7 @@ class ReadingOrderModel:
             page_no = page.page_no + 1
             size = page.size
 
-            assert size is not None
+            assert size is not None, "Page size is not initialized."
 
             out_doc.add_page(page_no=page_no, size=size)
 

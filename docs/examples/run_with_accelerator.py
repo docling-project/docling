@@ -10,7 +10,8 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path("./tests/data/pdf/2206.01062.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
 
     # Explicitly set the accelerator
     # accelerator_options = AcceleratorOptions(
@@ -47,7 +48,7 @@ def main():
     settings.debug.profile_pipeline_timings = True
 
     # Convert the document
-    conversion_result = converter.convert(input_doc)
+    conversion_result = converter.convert(input_doc_path)
     doc = conversion_result.document
 
     # List with total time per document

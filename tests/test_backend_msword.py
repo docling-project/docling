@@ -9,6 +9,7 @@ from docling.datamodel.document import (
     DoclingDocument,
     InputDocument,
     SectionHeaderItem,
+    TextItem,
 )
 from docling.document_converter import DocumentConverter
 
@@ -96,18 +97,18 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[Path]):
 
         pred_md: str = doc.export_to_markdown()
         assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
-            "export to md"
+            f"export to markdown failed on {docx_path}"
         )
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
         )
         assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
-            "export to indented-text"
+            f"export to indented-text failed on {docx_path}"
         )
 
         assert verify_document(doc, str(gt_path) + ".json", generate=GENERATE), (
-            "document document"
+            f"DoclingDocument verification failed on {docx_path}"
         )
 
         if docx_path.name == "word_tables.docx":
@@ -116,7 +117,7 @@ def _test_e2e_docx_conversions_impl(docx_paths: list[Path]):
                 pred_text=pred_html,
                 gtfile=str(gt_path) + ".html",
                 generate=GENERATE,
-            ), "export to html"
+            ), f"export to html failed on {docx_path}"
 
 
 flaky_path = Path("tests/data/docx/textbox.docx")
@@ -131,3 +132,42 @@ def test_e2e_docx_conversions():
 @pytest.mark.xfail(strict=False)
 def test_textbox_conversion():
     _test_e2e_docx_conversions_impl(docx_paths=[flaky_path])
+
+
+def test_text_after_image_anchors():
+    """
+    Test to analyse whether text gets parsed after image anchors.
+    """
+
+    in_path = Path("tests/data/docx/word_image_anchors.docx")
+    in_doc = InputDocument(
+        path_or_stream=in_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = MsWordDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=in_path,
+    )
+    doc = backend.convert()
+
+    found_text_after_anchor_1 = found_text_after_anchor_2 = (
+        found_text_after_anchor_3
+    ) = found_text_after_anchor_4 = False
+    for item, _ in doc.iterate_items():
+        if isinstance(item, TextItem):
+            if item.text == "This is test 1":
+                found_text_after_anchor_1 = True
+            elif item.text == "0:08\nCorrect, he is not.":
+                found_text_after_anchor_2 = True
+            elif item.text == "This is test 2":
+                found_text_after_anchor_3 = True
+            elif item.text == "0:16\nYeah, exactly.":
+                found_text_after_anchor_4 = True
+
+    assert (
+        found_text_after_anchor_1
+        and found_text_after_anchor_2
+        and found_text_after_anchor_3
+        and found_text_after_anchor_4
+    )

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "2305.03393v1",
   "origin": {
     "mimetype": "application/pdf",
@@ -165,19 +165,22 @@
         "cref": "#/pictures/2"
       },
       {
-        "cref": "#/texts/229"
+        "cref": "#/texts/228"
       },
       {
-        "cref": "#/texts/230"
+        "cref": "#/texts/229"
       },
       {
         "cref": "#/groups/2"
       },
       {
-        "cref": "#/texts/233"
+        "cref": "#/texts/232"
       },
       {
         "cref": "#/groups/3"
+      },
+      {
+        "cref": "#/texts/237"
       },
       {
         "cref": "#/texts/238"
@@ -204,10 +207,10 @@
         "cref": "#/texts/245"
       },
       {
-        "cref": "#/texts/246"
+        "cref": "#/pictures/3"
       },
       {
-        "cref": "#/pictures/3"
+        "cref": "#/texts/319"
       },
       {
         "cref": "#/texts/320"
@@ -225,10 +228,10 @@
         "cref": "#/texts/324"
       },
       {
-        "cref": "#/texts/325"
+        "cref": "#/tables/0"
       },
       {
-        "cref": "#/tables/0"
+        "cref": "#/texts/326"
       },
       {
         "cref": "#/texts/327"
@@ -243,19 +246,19 @@
         "cref": "#/texts/330"
       },
       {
-        "cref": "#/texts/331"
+        "cref": "#/tables/1"
       },
       {
-        "cref": "#/tables/1"
+        "cref": "#/texts/332"
       },
       {
         "cref": "#/texts/333"
       },
       {
-        "cref": "#/texts/334"
+        "cref": "#/pictures/4"
       },
       {
-        "cref": "#/pictures/4"
+        "cref": "#/texts/432"
       },
       {
         "cref": "#/texts/433"
@@ -267,10 +270,10 @@
         "cref": "#/texts/435"
       },
       {
-        "cref": "#/texts/436"
+        "cref": "#/pictures/5"
       },
       {
-        "cref": "#/pictures/5"
+        "cref": "#/texts/448"
       },
       {
         "cref": "#/texts/449"
@@ -291,25 +294,22 @@
         "cref": "#/texts/454"
       },
       {
-        "cref": "#/texts/455"
+        "cref": "#/groups/4"
       },
       {
-        "cref": "#/groups/4"
+        "cref": "#/texts/459"
       },
       {
         "cref": "#/texts/460"
       },
       {
-        "cref": "#/texts/461"
-      },
-      {
         "cref": "#/groups/5"
       },
       {
-        "cref": "#/texts/475"
+        "cref": "#/texts/474"
       },
       {
-        "cref": "#/texts/476"
+        "cref": "#/texts/475"
       },
       {
         "cref": "#/groups/6"
@@ -376,10 +376,10 @@
       },
       "children": [
         {
-          "cref": "#/texts/231"
+          "cref": "#/texts/230"
         },
         {
-          "cref": "#/texts/232"
+          "cref": "#/texts/231"
         }
       ],
       "content_layer": "body",
@@ -393,6 +393,9 @@
       },
       "children": [
         {
+          "cref": "#/texts/233"
+        },
+        {
           "cref": "#/texts/234"
         },
         {
@@ -400,9 +403,6 @@
         },
         {
           "cref": "#/texts/236"
-        },
-        {
-          "cref": "#/texts/237"
         }
       ],
       "content_layer": "body",
@@ -416,6 +416,9 @@
       },
       "children": [
         {
+          "cref": "#/texts/455"
+        },
+        {
           "cref": "#/texts/456"
         },
         {
@@ -423,9 +426,6 @@
         },
         {
           "cref": "#/texts/458"
-        },
-        {
-          "cref": "#/texts/459"
         }
       ],
       "content_layer": "body",
@@ -438,6 +438,9 @@
         "cref": "#/body"
       },
       "children": [
+        {
+          "cref": "#/texts/461"
+        },
         {
           "cref": "#/texts/462"
         },
@@ -473,9 +476,6 @@
         },
         {
           "cref": "#/texts/473"
-        },
-        {
-          "cref": "#/texts/474"
         }
       ],
       "content_layer": "body",
@@ -488,6 +488,9 @@
         "cref": "#/body"
       },
       "children": [
+        {
+          "cref": "#/texts/476"
+        },
         {
           "cref": "#/texts/477"
         },
@@ -502,13 +505,24 @@
         },
         {
           "cref": "#/texts/481"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/7",
+      "parent": {
+        "cref": "#/pictures/2"
+      },
+      "children": [
         {
           "cref": "#/texts/482"
         }
       ],
       "content_layer": "body",
-      "name": "list",
+      "name": "group",
       "label": "list"
     }
   ],
@@ -6771,37 +6785,6 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 7,
-          "bbox": {
-            "l": 334.51135,
-            "t": 519.19159,
-            "r": 426.59875,
-            "b": 512.97711,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            33
-          ]
-        }
-      ],
-      "orig": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\"",
-      "text": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\"",
-      "formatting": null,
-      "hyperlink": null,
-      "enumerated": false,
-      "marker": "-"
-    },
-    {
-      "self_ref": "#/texts/216",
-      "parent": {
-        "cref": "#/pictures/2"
-      },
-      "children": [],
-      "content_layer": "body",
       "label": "text",
       "prov": [
         {
@@ -6825,7 +6808,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/216",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -6854,7 +6837,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/217",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -6883,7 +6866,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/218",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -6912,7 +6895,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/219",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -6941,7 +6924,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/220",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -6970,7 +6953,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/221",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -6999,7 +6982,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/222",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -7028,7 +7011,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/224",
+      "self_ref": "#/texts/223",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -7057,7 +7040,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/224",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -7086,7 +7069,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/226",
+      "self_ref": "#/texts/225",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -7115,7 +7098,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/227",
+      "self_ref": "#/texts/226",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -7144,7 +7127,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/228",
+      "self_ref": "#/texts/227",
       "parent": {
         "cref": "#/pictures/2"
       },
@@ -7173,7 +7156,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/228",
       "parent": {
         "cref": "#/body"
       },
@@ -7203,7 +7186,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/229",
       "parent": {
         "cref": "#/body"
       },
@@ -7232,7 +7215,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/230",
       "parent": {
         "cref": "#/groups/2"
       },
@@ -7263,7 +7246,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/231",
       "parent": {
         "cref": "#/groups/2"
       },
@@ -7294,7 +7277,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/232",
       "parent": {
         "cref": "#/body"
       },
@@ -7324,7 +7307,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/233",
       "parent": {
         "cref": "#/groups/3"
       },
@@ -7355,7 +7338,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/234",
       "parent": {
         "cref": "#/groups/3"
       },
@@ -7386,7 +7369,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/235",
       "parent": {
         "cref": "#/groups/3"
       },
@@ -7417,7 +7400,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/236",
       "parent": {
         "cref": "#/groups/3"
       },
@@ -7448,7 +7431,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/238",
+      "self_ref": "#/texts/237",
       "parent": {
         "cref": "#/body"
       },
@@ -7477,7 +7460,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/239",
+      "self_ref": "#/texts/238",
       "parent": {
         "cref": "#/body"
       },
@@ -7506,7 +7489,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/240",
+      "self_ref": "#/texts/239",
       "parent": {
         "cref": "#/body"
       },
@@ -7535,7 +7518,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/241",
+      "self_ref": "#/texts/240",
       "parent": {
         "cref": "#/body"
       },
@@ -7564,7 +7547,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/242",
+      "self_ref": "#/texts/241",
       "parent": {
         "cref": "#/body"
       },
@@ -7593,7 +7576,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/243",
+      "self_ref": "#/texts/242",
       "parent": {
         "cref": "#/body"
       },
@@ -7623,7 +7606,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/244",
+      "self_ref": "#/texts/243",
       "parent": {
         "cref": "#/body"
       },
@@ -7652,7 +7635,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/245",
+      "self_ref": "#/texts/244",
       "parent": {
         "cref": "#/body"
       },
@@ -7682,7 +7665,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/246",
+      "self_ref": "#/texts/245",
       "parent": {
         "cref": "#/body"
       },
@@ -7711,7 +7694,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/247",
+      "self_ref": "#/texts/246",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7740,7 +7723,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/248",
+      "self_ref": "#/texts/247",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7769,7 +7752,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/249",
+      "self_ref": "#/texts/248",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7798,7 +7781,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/250",
+      "self_ref": "#/texts/249",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7827,7 +7810,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/251",
+      "self_ref": "#/texts/250",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7856,7 +7839,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/252",
+      "self_ref": "#/texts/251",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7885,7 +7868,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/253",
+      "self_ref": "#/texts/252",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7914,7 +7897,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/254",
+      "self_ref": "#/texts/253",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7943,7 +7926,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/254",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -7972,7 +7955,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/256",
+      "self_ref": "#/texts/255",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8001,7 +7984,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/257",
+      "self_ref": "#/texts/256",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8030,7 +8013,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/258",
+      "self_ref": "#/texts/257",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8059,7 +8042,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/258",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8088,7 +8071,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/260",
+      "self_ref": "#/texts/259",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8117,7 +8100,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/261",
+      "self_ref": "#/texts/260",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8146,7 +8129,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/262",
+      "self_ref": "#/texts/261",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8175,7 +8158,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/263",
+      "self_ref": "#/texts/262",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8204,7 +8187,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/264",
+      "self_ref": "#/texts/263",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8233,7 +8216,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/265",
+      "self_ref": "#/texts/264",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8262,7 +8245,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/266",
+      "self_ref": "#/texts/265",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8291,7 +8274,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/267",
+      "self_ref": "#/texts/266",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8320,7 +8303,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/268",
+      "self_ref": "#/texts/267",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8349,7 +8332,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/269",
+      "self_ref": "#/texts/268",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8378,7 +8361,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/270",
+      "self_ref": "#/texts/269",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8407,7 +8390,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/271",
+      "self_ref": "#/texts/270",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8436,7 +8419,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/272",
+      "self_ref": "#/texts/271",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8465,7 +8448,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/273",
+      "self_ref": "#/texts/272",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8494,7 +8477,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/274",
+      "self_ref": "#/texts/273",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8523,7 +8506,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/275",
+      "self_ref": "#/texts/274",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8552,7 +8535,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/276",
+      "self_ref": "#/texts/275",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8581,7 +8564,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/277",
+      "self_ref": "#/texts/276",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8610,7 +8593,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/278",
+      "self_ref": "#/texts/277",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8639,7 +8622,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/279",
+      "self_ref": "#/texts/278",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8668,7 +8651,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/280",
+      "self_ref": "#/texts/279",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8697,7 +8680,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/281",
+      "self_ref": "#/texts/280",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8726,7 +8709,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/282",
+      "self_ref": "#/texts/281",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8755,7 +8738,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/283",
+      "self_ref": "#/texts/282",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8784,7 +8767,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/284",
+      "self_ref": "#/texts/283",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8813,7 +8796,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/285",
+      "self_ref": "#/texts/284",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8842,7 +8825,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/286",
+      "self_ref": "#/texts/285",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8871,7 +8854,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/287",
+      "self_ref": "#/texts/286",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8900,7 +8883,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/288",
+      "self_ref": "#/texts/287",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8929,7 +8912,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/289",
+      "self_ref": "#/texts/288",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8958,7 +8941,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/290",
+      "self_ref": "#/texts/289",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -8987,7 +8970,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/291",
+      "self_ref": "#/texts/290",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9016,7 +8999,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/292",
+      "self_ref": "#/texts/291",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9045,7 +9028,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/293",
+      "self_ref": "#/texts/292",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9074,7 +9057,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/294",
+      "self_ref": "#/texts/293",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9103,7 +9086,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/295",
+      "self_ref": "#/texts/294",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9132,7 +9115,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/296",
+      "self_ref": "#/texts/295",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9161,7 +9144,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/297",
+      "self_ref": "#/texts/296",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9190,7 +9173,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/298",
+      "self_ref": "#/texts/297",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9219,7 +9202,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/299",
+      "self_ref": "#/texts/298",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9248,7 +9231,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/300",
+      "self_ref": "#/texts/299",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9277,7 +9260,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/301",
+      "self_ref": "#/texts/300",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9306,7 +9289,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/302",
+      "self_ref": "#/texts/301",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9335,7 +9318,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/303",
+      "self_ref": "#/texts/302",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9364,7 +9347,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/304",
+      "self_ref": "#/texts/303",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9393,7 +9376,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/305",
+      "self_ref": "#/texts/304",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9422,7 +9405,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/306",
+      "self_ref": "#/texts/305",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9451,7 +9434,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/307",
+      "self_ref": "#/texts/306",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9480,7 +9463,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/308",
+      "self_ref": "#/texts/307",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9509,7 +9492,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/309",
+      "self_ref": "#/texts/308",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9538,7 +9521,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/310",
+      "self_ref": "#/texts/309",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9567,7 +9550,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/311",
+      "self_ref": "#/texts/310",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9596,7 +9579,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/312",
+      "self_ref": "#/texts/311",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9625,7 +9608,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/313",
+      "self_ref": "#/texts/312",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9654,7 +9637,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/314",
+      "self_ref": "#/texts/313",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9683,7 +9666,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/315",
+      "self_ref": "#/texts/314",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9712,7 +9695,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/316",
+      "self_ref": "#/texts/315",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9741,7 +9724,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/317",
+      "self_ref": "#/texts/316",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9770,7 +9753,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/318",
+      "self_ref": "#/texts/317",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9799,7 +9782,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/319",
+      "self_ref": "#/texts/318",
       "parent": {
         "cref": "#/pictures/3"
       },
@@ -9828,7 +9811,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/320",
+      "self_ref": "#/texts/319",
       "parent": {
         "cref": "#/body"
       },
@@ -9857,7 +9840,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/321",
+      "self_ref": "#/texts/320",
       "parent": {
         "cref": "#/body"
       },
@@ -9886,7 +9869,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/322",
+      "self_ref": "#/texts/321",
       "parent": {
         "cref": "#/body"
       },
@@ -9915,7 +9898,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/323",
+      "self_ref": "#/texts/322",
       "parent": {
         "cref": "#/body"
       },
@@ -9944,7 +9927,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/324",
+      "self_ref": "#/texts/323",
       "parent": {
         "cref": "#/body"
       },
@@ -9974,7 +9957,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/325",
+      "self_ref": "#/texts/324",
       "parent": {
         "cref": "#/body"
       },
@@ -10003,7 +9986,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/326",
+      "self_ref": "#/texts/325",
       "parent": {
         "cref": "#/tables/0"
       },
@@ -10032,7 +10015,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/327",
+      "self_ref": "#/texts/326",
       "parent": {
         "cref": "#/body"
       },
@@ -10062,7 +10045,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/328",
+      "self_ref": "#/texts/327",
       "parent": {
         "cref": "#/body"
       },
@@ -10091,7 +10074,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/329",
+      "self_ref": "#/texts/328",
       "parent": {
         "cref": "#/body"
       },
@@ -10120,7 +10103,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/330",
+      "self_ref": "#/texts/329",
       "parent": {
         "cref": "#/body"
       },
@@ -10149,7 +10132,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/331",
+      "self_ref": "#/texts/330",
       "parent": {
         "cref": "#/body"
       },
@@ -10178,7 +10161,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/332",
+      "self_ref": "#/texts/331",
       "parent": {
         "cref": "#/tables/1"
       },
@@ -10207,7 +10190,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/333",
+      "self_ref": "#/texts/332",
       "parent": {
         "cref": "#/body"
       },
@@ -10237,7 +10220,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/334",
+      "self_ref": "#/texts/333",
       "parent": {
         "cref": "#/body"
       },
@@ -10266,7 +10249,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/335",
+      "self_ref": "#/texts/334",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10295,7 +10278,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/336",
+      "self_ref": "#/texts/335",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10324,7 +10307,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/337",
+      "self_ref": "#/texts/336",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10353,7 +10336,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/338",
+      "self_ref": "#/texts/337",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10382,7 +10365,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/339",
+      "self_ref": "#/texts/338",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10411,7 +10394,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/340",
+      "self_ref": "#/texts/339",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10440,7 +10423,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/341",
+      "self_ref": "#/texts/340",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10469,7 +10452,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/342",
+      "self_ref": "#/texts/341",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10498,7 +10481,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/343",
+      "self_ref": "#/texts/342",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10527,7 +10510,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/344",
+      "self_ref": "#/texts/343",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10556,7 +10539,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/345",
+      "self_ref": "#/texts/344",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10585,7 +10568,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/346",
+      "self_ref": "#/texts/345",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10614,7 +10597,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/347",
+      "self_ref": "#/texts/346",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10643,7 +10626,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/348",
+      "self_ref": "#/texts/347",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10672,7 +10655,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/349",
+      "self_ref": "#/texts/348",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -10697,6 +10680,35 @@
       ],
       "orig": "C",
       "text": "C",
+      "formatting": null,
+      "hyperlink": null
+    },
+    {
+      "self_ref": "#/texts/349",
+      "parent": {
+        "cref": "#/pictures/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 10,
+          "bbox": {
+            "l": 410.25699,
+            "t": 269.80075,
+            "r": 450.48605,
+            "b": 267.08404999999993,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            28
+          ]
+        }
+      ],
+      "orig": "C C C C C C C C C C C C C NL",
+      "text": "C C C C C C C C C C C C C NL",
       "formatting": null,
       "hyperlink": null
     },
@@ -10712,20 +10724,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 410.25699,
-            "t": 269.80075,
-            "r": 450.48605,
-            "b": 267.08404999999993,
+            "l": 407.38348,
+            "t": 265.90192,
+            "r": 408.82025,
+            "b": 263.18521,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            28
+            1
           ]
         }
       ],
-      "orig": "C C C C C C C C C C C C C NL",
-      "text": "C C C C C C C C C C C C C NL",
+      "orig": "C",
+      "text": "C",
       "formatting": null,
       "hyperlink": null
     },
@@ -10741,20 +10753,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 407.38348,
+            "l": 410.25699,
             "t": 265.90192,
-            "r": 408.82025,
+            "r": 450.48605,
             "b": 263.18521,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            1
+            28
           ]
         }
       ],
-      "orig": "C",
-      "text": "C",
+      "orig": "C C C C C C C C C C C C C NL",
+      "text": "C C C C C C C C C C C C C NL",
       "formatting": null,
       "hyperlink": null
     },
@@ -10770,20 +10782,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 410.25699,
-            "t": 265.90192,
-            "r": 450.48605,
-            "b": 263.18521,
+            "l": 407.38348,
+            "t": 262.00305000000003,
+            "r": 408.82025,
+            "b": 259.2863500000001,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            28
+            1
           ]
         }
       ],
-      "orig": "C C C C C C C C C C C C C NL",
-      "text": "C C C C C C C C C C C C C NL",
+      "orig": "C",
+      "text": "C",
       "formatting": null,
       "hyperlink": null
     },
@@ -10799,20 +10811,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 407.38348,
+            "l": 410.25699,
             "t": 262.00305000000003,
-            "r": 408.82025,
+            "r": 450.48605,
             "b": 259.2863500000001,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            1
+            28
           ]
         }
       ],
-      "orig": "C",
-      "text": "C",
+      "orig": "C C C C C C C C C C C C C NL",
+      "text": "C C C C C C C C C C C C C NL",
       "formatting": null,
       "hyperlink": null
     },
@@ -10828,20 +10840,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 410.25699,
-            "t": 262.00305000000003,
-            "r": 450.48605,
-            "b": 259.2863500000001,
+            "l": 407.38348,
+            "t": 258.10421999999994,
+            "r": 408.82025,
+            "b": 255.38750000000005,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            28
+            1
           ]
         }
       ],
-      "orig": "C C C C C C C C C C C C C NL",
-      "text": "C C C C C C C C C C C C C NL",
+      "orig": "C",
+      "text": "C",
       "formatting": null,
       "hyperlink": null
     },
@@ -10857,20 +10869,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 407.38348,
+            "l": 410.25699,
             "t": 258.10421999999994,
-            "r": 408.82025,
+            "r": 450.48605,
             "b": 255.38750000000005,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            1
+            28
           ]
         }
       ],
-      "orig": "C",
-      "text": "C",
+      "orig": "C C C C C C C C C C C C C NL",
+      "text": "C C C C C C C C C C C C C NL",
       "formatting": null,
       "hyperlink": null
     },
@@ -10886,20 +10898,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 410.25699,
-            "t": 258.10421999999994,
-            "r": 450.48605,
-            "b": 255.38750000000005,
+            "l": 407.38348,
+            "t": 254.20537000000002,
+            "r": 408.82025,
+            "b": 251.48865,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            28
+            1
           ]
         }
       ],
-      "orig": "C C C C C C C C C C C C C NL",
-      "text": "C C C C C C C C C C C C C NL",
+      "orig": "C",
+      "text": "C",
       "formatting": null,
       "hyperlink": null
     },
@@ -10915,20 +10927,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 407.38348,
+            "l": 410.25699,
             "t": 254.20537000000002,
-            "r": 408.82025,
+            "r": 450.48605,
             "b": 251.48865,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            1
+            28
           ]
         }
       ],
-      "orig": "C",
-      "text": "C",
+      "orig": "C C C C C C C C C C C C C NL",
+      "text": "C C C C C C C C C C C C C NL",
       "formatting": null,
       "hyperlink": null
     },
@@ -10944,20 +10956,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 410.25699,
-            "t": 254.20537000000002,
-            "r": 450.48605,
-            "b": 251.48865,
+            "l": 407.38348,
+            "t": 250.30651999999998,
+            "r": 408.82025,
+            "b": 247.58979999999997,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            28
+            1
           ]
         }
       ],
-      "orig": "C C C C C C C C C C C C C NL",
-      "text": "C C C C C C C C C C C C C NL",
+      "orig": "C",
+      "text": "C",
       "formatting": null,
       "hyperlink": null
     },
@@ -10973,20 +10985,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 407.38348,
+            "l": 410.25699,
             "t": 250.30651999999998,
-            "r": 408.82025,
+            "r": 450.48605,
             "b": 247.58979999999997,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            1
+            28
           ]
         }
       ],
-      "orig": "C",
-      "text": "C",
+      "orig": "C C C C C C C C C C C C C NL",
+      "text": "C C C C C C C C C C C C C NL",
       "formatting": null,
       "hyperlink": null
     },
@@ -11002,20 +11014,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 410.25699,
-            "t": 250.30651999999998,
-            "r": 450.48605,
-            "b": 247.58979999999997,
+            "l": 407.38348,
+            "t": 246.40767000000005,
+            "r": 408.82025,
+            "b": 243.69094999999993,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            28
+            1
           ]
         }
       ],
-      "orig": "C C C C C C C C C C C C C NL",
-      "text": "C C C C C C C C C C C C C NL",
+      "orig": "C",
+      "text": "C",
       "formatting": null,
       "hyperlink": null
     },
@@ -11031,20 +11043,20 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 407.38348,
+            "l": 410.25699,
             "t": 246.40767000000005,
-            "r": 408.82025,
+            "r": 450.48605,
             "b": 243.69094999999993,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            1
+            28
           ]
         }
       ],
-      "orig": "C",
-      "text": "C",
+      "orig": "C C C C C C C C C C C C C NL",
+      "text": "C C C C C C C C C C C C C NL",
       "formatting": null,
       "hyperlink": null
     },
@@ -11060,35 +11072,6 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 410.25699,
-            "t": 246.40767000000005,
-            "r": 450.48605,
-            "b": 243.69094999999993,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            28
-          ]
-        }
-      ],
-      "orig": "C C C C C C C C C C C C C NL",
-      "text": "C C C C C C C C C C C C C NL",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/363",
-      "parent": {
-        "cref": "#/pictures/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 10,
-          "bbox": {
             "l": 407.38348,
             "t": 242.50880000000006,
             "r": 408.82025,
@@ -11107,7 +11090,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/364",
+      "self_ref": "#/texts/363",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11136,7 +11119,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/365",
+      "self_ref": "#/texts/364",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11165,7 +11148,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/366",
+      "self_ref": "#/texts/365",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11194,7 +11177,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/367",
+      "self_ref": "#/texts/366",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11223,7 +11206,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/368",
+      "self_ref": "#/texts/367",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11252,7 +11235,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/369",
+      "self_ref": "#/texts/368",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11281,7 +11264,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/370",
+      "self_ref": "#/texts/369",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11310,7 +11293,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/371",
+      "self_ref": "#/texts/370",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11339,7 +11322,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/372",
+      "self_ref": "#/texts/371",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11368,7 +11351,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/373",
+      "self_ref": "#/texts/372",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11397,7 +11380,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/374",
+      "self_ref": "#/texts/373",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11426,7 +11409,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/375",
+      "self_ref": "#/texts/374",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11455,7 +11438,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/376",
+      "self_ref": "#/texts/375",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11484,7 +11467,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/377",
+      "self_ref": "#/texts/376",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11513,7 +11496,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/378",
+      "self_ref": "#/texts/377",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11542,7 +11525,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/379",
+      "self_ref": "#/texts/378",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11571,7 +11554,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/380",
+      "self_ref": "#/texts/379",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11600,7 +11583,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/381",
+      "self_ref": "#/texts/380",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11629,7 +11612,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/382",
+      "self_ref": "#/texts/381",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11658,7 +11641,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/383",
+      "self_ref": "#/texts/382",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11687,7 +11670,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/384",
+      "self_ref": "#/texts/383",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11716,7 +11699,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/385",
+      "self_ref": "#/texts/384",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11745,7 +11728,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/386",
+      "self_ref": "#/texts/385",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11774,7 +11757,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/387",
+      "self_ref": "#/texts/386",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11803,7 +11786,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/388",
+      "self_ref": "#/texts/387",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11832,7 +11815,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/389",
+      "self_ref": "#/texts/388",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11861,7 +11844,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/390",
+      "self_ref": "#/texts/389",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11890,7 +11873,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/391",
+      "self_ref": "#/texts/390",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11919,7 +11902,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/392",
+      "self_ref": "#/texts/391",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11948,7 +11931,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/393",
+      "self_ref": "#/texts/392",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -11977,7 +11960,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/394",
+      "self_ref": "#/texts/393",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12006,7 +11989,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/395",
+      "self_ref": "#/texts/394",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12035,7 +12018,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/396",
+      "self_ref": "#/texts/395",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12064,7 +12047,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/397",
+      "self_ref": "#/texts/396",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12093,7 +12076,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/398",
+      "self_ref": "#/texts/397",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12122,7 +12105,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/399",
+      "self_ref": "#/texts/398",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12151,7 +12134,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/400",
+      "self_ref": "#/texts/399",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12180,7 +12163,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/401",
+      "self_ref": "#/texts/400",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12209,7 +12192,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/402",
+      "self_ref": "#/texts/401",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12238,7 +12221,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/403",
+      "self_ref": "#/texts/402",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12267,7 +12250,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/404",
+      "self_ref": "#/texts/403",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12296,7 +12279,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/405",
+      "self_ref": "#/texts/404",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12325,7 +12308,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/406",
+      "self_ref": "#/texts/405",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12354,7 +12337,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/407",
+      "self_ref": "#/texts/406",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12383,7 +12366,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/408",
+      "self_ref": "#/texts/407",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12412,7 +12395,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/409",
+      "self_ref": "#/texts/408",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12441,7 +12424,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/410",
+      "self_ref": "#/texts/409",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12470,7 +12453,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/411",
+      "self_ref": "#/texts/410",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12499,7 +12482,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/412",
+      "self_ref": "#/texts/411",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12528,7 +12511,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/413",
+      "self_ref": "#/texts/412",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12557,7 +12540,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/414",
+      "self_ref": "#/texts/413",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12586,7 +12569,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/415",
+      "self_ref": "#/texts/414",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12615,7 +12598,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/416",
+      "self_ref": "#/texts/415",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12644,7 +12627,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/417",
+      "self_ref": "#/texts/416",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12673,7 +12656,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/418",
+      "self_ref": "#/texts/417",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12702,7 +12685,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/419",
+      "self_ref": "#/texts/418",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12731,7 +12714,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/420",
+      "self_ref": "#/texts/419",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12760,7 +12743,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/421",
+      "self_ref": "#/texts/420",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12789,7 +12772,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/422",
+      "self_ref": "#/texts/421",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12818,7 +12801,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/423",
+      "self_ref": "#/texts/422",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12847,7 +12830,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/424",
+      "self_ref": "#/texts/423",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12876,7 +12859,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/425",
+      "self_ref": "#/texts/424",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12905,7 +12888,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/426",
+      "self_ref": "#/texts/425",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12934,7 +12917,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/427",
+      "self_ref": "#/texts/426",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12963,7 +12946,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/428",
+      "self_ref": "#/texts/427",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -12992,7 +12975,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/429",
+      "self_ref": "#/texts/428",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -13021,7 +13004,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/430",
+      "self_ref": "#/texts/429",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -13050,7 +13033,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/431",
+      "self_ref": "#/texts/430",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -13079,7 +13062,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/432",
+      "self_ref": "#/texts/431",
       "parent": {
         "cref": "#/pictures/4"
       },
@@ -13108,7 +13091,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/433",
+      "self_ref": "#/texts/432",
       "parent": {
         "cref": "#/body"
       },
@@ -13137,7 +13120,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/434",
+      "self_ref": "#/texts/433",
       "parent": {
         "cref": "#/body"
       },
@@ -13166,7 +13149,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/435",
+      "self_ref": "#/texts/434",
       "parent": {
         "cref": "#/body"
       },
@@ -13195,7 +13178,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/436",
+      "self_ref": "#/texts/435",
       "parent": {
         "cref": "#/body"
       },
@@ -13224,7 +13207,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/437",
+      "self_ref": "#/texts/436",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13253,7 +13236,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/438",
+      "self_ref": "#/texts/437",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13282,7 +13265,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/439",
+      "self_ref": "#/texts/438",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13311,7 +13294,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/440",
+      "self_ref": "#/texts/439",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13340,7 +13323,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/441",
+      "self_ref": "#/texts/440",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13369,7 +13352,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/442",
+      "self_ref": "#/texts/441",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13398,7 +13381,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/443",
+      "self_ref": "#/texts/442",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13427,7 +13410,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/444",
+      "self_ref": "#/texts/443",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13456,7 +13439,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/445",
+      "self_ref": "#/texts/444",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13485,7 +13468,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/446",
+      "self_ref": "#/texts/445",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13514,7 +13497,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/447",
+      "self_ref": "#/texts/446",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13543,7 +13526,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/448",
+      "self_ref": "#/texts/447",
       "parent": {
         "cref": "#/pictures/5"
       },
@@ -13572,7 +13555,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/449",
+      "self_ref": "#/texts/448",
       "parent": {
         "cref": "#/body"
       },
@@ -13601,7 +13584,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/450",
+      "self_ref": "#/texts/449",
       "parent": {
         "cref": "#/body"
       },
@@ -13630,7 +13613,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/451",
+      "self_ref": "#/texts/450",
       "parent": {
         "cref": "#/body"
       },
@@ -13660,7 +13643,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/452",
+      "self_ref": "#/texts/451",
       "parent": {
         "cref": "#/body"
       },
@@ -13689,7 +13672,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/453",
+      "self_ref": "#/texts/452",
       "parent": {
         "cref": "#/body"
       },
@@ -13718,7 +13701,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/454",
+      "self_ref": "#/texts/453",
       "parent": {
         "cref": "#/body"
       },
@@ -13747,7 +13730,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/455",
+      "self_ref": "#/texts/454",
       "parent": {
         "cref": "#/body"
       },
@@ -13777,7 +13760,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/456",
+      "self_ref": "#/texts/455",
       "parent": {
         "cref": "#/groups/4"
       },
@@ -13808,7 +13791,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/457",
+      "self_ref": "#/texts/456",
       "parent": {
         "cref": "#/groups/4"
       },
@@ -13839,7 +13822,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/458",
+      "self_ref": "#/texts/457",
       "parent": {
         "cref": "#/groups/4"
       },
@@ -13870,7 +13853,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/459",
+      "self_ref": "#/texts/458",
       "parent": {
         "cref": "#/groups/4"
       },
@@ -13901,7 +13884,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/460",
+      "self_ref": "#/texts/459",
       "parent": {
         "cref": "#/body"
       },
@@ -13930,7 +13913,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/461",
+      "self_ref": "#/texts/460",
       "parent": {
         "cref": "#/body"
       },
@@ -13959,7 +13942,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/462",
+      "self_ref": "#/texts/461",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -13990,7 +13973,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/463",
+      "self_ref": "#/texts/462",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14021,7 +14004,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/464",
+      "self_ref": "#/texts/463",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14052,7 +14035,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/465",
+      "self_ref": "#/texts/464",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14083,7 +14066,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/466",
+      "self_ref": "#/texts/465",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14114,7 +14097,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/467",
+      "self_ref": "#/texts/466",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14145,7 +14128,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/468",
+      "self_ref": "#/texts/467",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14176,7 +14159,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/469",
+      "self_ref": "#/texts/468",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14207,7 +14190,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/470",
+      "self_ref": "#/texts/469",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14238,7 +14221,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/471",
+      "self_ref": "#/texts/470",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14269,7 +14252,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/472",
+      "self_ref": "#/texts/471",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14300,7 +14283,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/473",
+      "self_ref": "#/texts/472",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14331,7 +14314,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/474",
+      "self_ref": "#/texts/473",
       "parent": {
         "cref": "#/groups/5"
       },
@@ -14362,7 +14345,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/475",
+      "self_ref": "#/texts/474",
       "parent": {
         "cref": "#/body"
       },
@@ -14391,7 +14374,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/476",
+      "self_ref": "#/texts/475",
       "parent": {
         "cref": "#/body"
       },
@@ -14420,7 +14403,7 @@
       "hyperlink": null
     },
     {
-      "self_ref": "#/texts/477",
+      "self_ref": "#/texts/476",
       "parent": {
         "cref": "#/groups/6"
       },
@@ -14451,7 +14434,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/478",
+      "self_ref": "#/texts/477",
       "parent": {
         "cref": "#/groups/6"
       },
@@ -14482,7 +14465,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/479",
+      "self_ref": "#/texts/478",
       "parent": {
         "cref": "#/groups/6"
       },
@@ -14513,7 +14496,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/480",
+      "self_ref": "#/texts/479",
       "parent": {
         "cref": "#/groups/6"
       },
@@ -14544,7 +14527,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/481",
+      "self_ref": "#/texts/480",
       "parent": {
         "cref": "#/groups/6"
       },
@@ -14575,7 +14558,7 @@
       "marker": "-"
     },
     {
-      "self_ref": "#/texts/482",
+      "self_ref": "#/texts/481",
       "parent": {
         "cref": "#/groups/6"
       },
@@ -14600,6 +14583,37 @@
       ],
       "orig": "23. Zhong, X., Tang, J., Yepes, A.J.: Publaynet: largest dataset ever for document layout analysis. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1015-1022. IEEE (2019)",
       "text": "23. Zhong, X., Tang, J., Yepes, A.J.: Publaynet: largest dataset ever for document layout analysis. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1015-1022. IEEE (2019)",
+      "formatting": null,
+      "hyperlink": null,
+      "enumerated": false,
+      "marker": "-"
+    },
+    {
+      "self_ref": "#/texts/482",
+      "parent": {
+        "cref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 7,
+          "bbox": {
+            "l": 334.51135,
+            "t": 519.19159,
+            "r": 426.59875,
+            "b": 512.97711,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            33
+          ]
+        }
+      ],
+      "orig": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\"",
+      "text": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\"",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
@@ -15173,6 +15187,9 @@
           "cref": "#/texts/214"
         },
         {
+          "cref": "#/groups/7"
+        },
+        {
           "cref": "#/texts/215"
         },
         {
@@ -15210,9 +15227,6 @@
         },
         {
           "cref": "#/texts/227"
-        },
-        {
-          "cref": "#/texts/228"
         }
       ],
       "content_layer": "body",
@@ -15249,6 +15263,9 @@
         "cref": "#/body"
       },
       "children": [
+        {
+          "cref": "#/texts/246"
+        },
         {
           "cref": "#/texts/247"
         },
@@ -15464,9 +15481,6 @@
         },
         {
           "cref": "#/texts/318"
-        },
-        {
-          "cref": "#/texts/319"
         }
       ],
       "content_layer": "body",
@@ -15489,7 +15503,7 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/247"
+          "cref": "#/texts/246"
         }
       ],
       "references": [],
@@ -15503,6 +15517,9 @@
         "cref": "#/body"
       },
       "children": [
+        {
+          "cref": "#/texts/334"
+        },
         {
           "cref": "#/texts/335"
         },
@@ -15793,9 +15810,6 @@
         },
         {
           "cref": "#/texts/431"
-        },
-        {
-          "cref": "#/texts/432"
         }
       ],
       "content_layer": "body",
@@ -15818,7 +15832,7 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/335"
+          "cref": "#/texts/334"
         }
       ],
       "references": [],
@@ -15832,6 +15846,9 @@
         "cref": "#/body"
       },
       "children": [
+        {
+          "cref": "#/texts/436"
+        },
         {
           "cref": "#/texts/437"
         },
@@ -15864,9 +15881,6 @@
         },
         {
           "cref": "#/texts/447"
-        },
-        {
-          "cref": "#/texts/448"
         }
       ],
       "content_layer": "body",
@@ -15889,7 +15903,7 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/437"
+          "cref": "#/texts/436"
         }
       ],
       "references": [],
@@ -15906,7 +15920,7 @@
       },
       "children": [
         {
-          "cref": "#/texts/326"
+          "cref": "#/texts/325"
         }
       ],
       "content_layer": "body",
@@ -15929,7 +15943,7 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/326"
+          "cref": "#/texts/325"
         }
       ],
       "references": [],
@@ -17683,7 +17697,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/1",
@@ -17692,7 +17707,7 @@
       },
       "children": [
         {
-          "cref": "#/texts/332"
+          "cref": "#/texts/331"
         }
       ],
       "content_layer": "body",
@@ -17715,7 +17730,7 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/332"
+          "cref": "#/texts/331"
         }
       ],
       "references": [],
@@ -18954,7 +18969,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     }
   ],
   "key_value_items": [],
