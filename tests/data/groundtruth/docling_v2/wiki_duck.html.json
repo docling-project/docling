@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "wiki_duck",
   "origin": {
     "mimetype": "text/html",
@@ -8489,7 +8489,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/1",
@@ -8648,7 +8649,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     }
   ],
   "key_value_items": [],

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "2203.01017v2",
   "origin": {
     "mimetype": "application/pdf",
@@ -17863,7 +17863,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/1",
@@ -18753,7 +18754,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/2",
@@ -20117,7 +20119,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/3",
@@ -22266,7 +22269,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/4",
@@ -22927,7 +22931,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/5",
@@ -24050,7 +24055,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/6",
@@ -26307,7 +26313,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/7",
@@ -27600,7 +27607,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/8",
@@ -27635,7 +27643,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/9",
@@ -27670,7 +27679,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/10",
@@ -27705,7 +27715,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/11",
@@ -27740,7 +27751,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/12",
@@ -27783,7 +27795,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/13",
@@ -27818,7 +27831,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/14",
@@ -27853,7 +27867,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/15",
@@ -27888,7 +27903,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/16",
@@ -27931,7 +27947,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/17",
@@ -27966,7 +27983,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/18",
@@ -28001,7 +28019,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/19",
@@ -28036,7 +28055,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/20",
@@ -28071,7 +28091,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/21",
@@ -28106,7 +28127,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/22",
@@ -28141,7 +28163,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/23",
@@ -28176,7 +28199,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/24",
@@ -28211,7 +28235,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/25",
@@ -28246,7 +28271,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/26",
@@ -28281,7 +28307,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/27",
@@ -28324,7 +28351,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/28",
@@ -28359,7 +28387,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/29",
@@ -28394,7 +28423,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/30",
@@ -28429,7 +28459,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/31",
@@ -28464,7 +28495,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/32",
@@ -28499,7 +28531,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/33",
@@ -28542,7 +28575,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/34",
@@ -28577,7 +28611,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/35",
@@ -28612,7 +28647,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/36",
@@ -28647,7 +28683,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/37",
@@ -28682,7 +28719,8 @@
         "num_rows": 0,
         "num_cols": 0,
         "grid": []
-      }
+      },
+      "annotations": []
     }
   ],
   "key_value_items": [],

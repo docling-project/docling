@@ -60,6 +60,8 @@
 <page_header><loc_159><loc_59><loc_366><loc_64>Optimized Table Tokenization for Table Structure Recognition</page_header>
 <page_header><loc_389><loc_59><loc_393><loc_64>7</page_header>
 <picture><loc_135><loc_103><loc_367><loc_177><caption><loc_110><loc_79><loc_393><loc_98>Fig. 3. OTSL description of table structure: A - table example; B - graphical representation of table structure; C - mapping structure on a grid; D - OTSL structure encoding; E - explanation on cell encoding</caption></picture>
+<unordered_list><list_item><loc_273><loc_172><loc_349><loc_176>4 - 2d merges: "C", "L", "U", "X"</list_item>
+</unordered_list>
 <section_header_level_1><loc_110><loc_193><loc_202><loc_198>4.2 Language Syntax</section_header_level_1>
 <text><loc_110><loc_205><loc_297><loc_211>The OTSL representation follows these syntax rules:</text>
 <unordered_list><list_item><loc_114><loc_219><loc_393><loc_232>1. Left-looking cell rule : The left neighbour of an "L" cell must be either another "L" cell or a "C" cell.</list_item>

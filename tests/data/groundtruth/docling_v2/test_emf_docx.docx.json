@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "test_emf_docx",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -60,7 +60,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -78,7 +79,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -96,7 +98,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -114,7 +117,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     }
   ],
