@@ -119,10 +119,10 @@
       "prov": [
         {
           "bbox": [
-            96.301003,
-            672.06866,
-            498.92708999999996,
-            684.96588
+            96.301,
+            672.069,
+            498.927,
+            684.966
           ],
           "page": 1,
           "span": [
@@ -142,10 +142,10 @@
       "prov": [
         {
           "bbox": [
-            142.47701,
-            620.67963,
-            452.75027,
-            645.31464
+            142.477,
+            620.783,
+            452.75,
+            644.992
           ],
           "page": 1,
           "span": [
@@ -166,9 +166,9 @@
         {
           "bbox": [
             208.123,
-            607.57446,
-            378.73257,
-            616.03876
+            607.73,
+            378.733,
+            615.438
           ],
           "page": 1,
           "span": [
@@ -188,10 +188,10 @@
       "prov": [
         {
           "bbox": [
-            145.99498,
-            565.76929,
-            190.48029,
-            576.51703
+            145.995,
+            565.769,
+            190.48,
+            576.517
           ],
           "page": 1,
           "span": [
@@ -211,10 +211,10 @@
       "prov": [
         {
           "bbox": [
-            315.56702,
-            565.24518,
-            408.4407,
-            573.99316
+            315.567,
+            565.338,
+            408.441,
+            573.651
           ],
           "page": 1,
           "span": [
@@ -234,10 +234,10 @@
       "prov": [
         {
           "bbox": [
-            50.111977,
-            279.00335999999993,
-            286.36511,
-            550.60492
+            50.112,
+            279.00299999999993,
+            286.365,
+            550.605
           ],
           "page": 1,
           "span": [
@@ -257,10 +257,10 @@
       "prov": [
         {
           "bbox": [
-            50.111977,
-            241.30951000000005,
-            126.94804,
-            252.05723999999998
+            50.112,
+            241.30899999999997,
+            126.948,
+            252.05700000000002
           ],
           "page": 1,
           "span": [
@@ -280,10 +280,10 @@
       "prov": [
         {
           "bbox": [
-            50.111977,
-            78.84822099999997,
-            286.36508,
-            231.21680000000003
+            50.112,
+            78.93399999999997,
+            286.365,
+            230.94799999999998
           ],
           "page": 1,
           "span": [
@@ -313,10 +313,10 @@
       "prov": [
         {
           "bbox": [
-            315.56702,
-            458.7572,
-            486.40194999999994,
-            478.30521000000005
+            315.567,
+            458.85,
+            486.402,
+            477.963
           ],
           "page": 1,
           "span": [
@@ -336,10 +336,10 @@
       "prov": [
         {
           "bbox": [
-            315.56702,
-            363.06918,
-            491.1912500000001,
-            371.8172
+            315.567,
+            363.162,
+            491.191,
+            371.475
           ],
           "page": 1,
           "span": [
@@ -370,9 +370,9 @@
         {
           "bbox": [
             308.862,
-            232.72709999999995,
-            545.11517,
-            277.49963
+            232.813,
+            545.115,
+            277.231
           ],
           "page": 1,
           "span": [
@@ -398,9 +398,9 @@
         {
           "bbox": [
             308.862,
-            126.95307000000003,
-            545.11517,
-            207.59064
+            127.03899999999999,
+            545.115,
+            207.322
           ],
           "page": 1,
           "span": [
@@ -421,9 +421,9 @@
         {
           "bbox": [
             308.862,
-            78.84806800000001,
-            545.11511,
-            123.61964
+            78.93399999999997,
+            545.115,
+            123.351
           ],
           "page": 1,
           "span": [
@@ -444,9 +444,9 @@
         {
           "bbox": [
             50.112,
-            695.93005,
-            286.36505,
-            716.79163
+            696.016,
+            286.365,
+            716.523
           ],
           "page": 2,
           "span": [
@@ -467,9 +467,9 @@
         {
           "bbox": [
             50.112,
-            563.96991,
-            286.36514,
-            692.42859
+            564.056,
+            286.365,
+            692.16
           ],
           "page": 2,
           "span": [
@@ -490,9 +490,9 @@
         {
           "bbox": [
             50.112,
-            420.05493,
-            286.36511,
-            560.46844
+            420.141,
+            286.365,
+            560.2
           ],
           "page": 2,
           "span": [
@@ -513,19 +513,19 @@
         {
           "bbox": [
             50.112,
-            359.827,
-            286.36658,
-            416.5535
+            359.913,
+            286.367,
+            416.285
           ],
           "page": 2,
           "span": [
             0,
-            242
+            238
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "To meet the design criteria listed above, we developed a new model called TableFormer and a synthetically generated table structure dataset called SynthTabNet $^{1}$. In particular, our contributions in this work can be summarised as follows:",
+      "text": "To meet the design criteria listed above, we developed a new model called TableFormer and a synthetically generated table structure dataset called SynthTabNet 1 . In particular, our contributions in this work can be summarised as follows:",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -535,10 +535,10 @@
       "prov": [
         {
           "bbox": [
-            61.569016,
-            302.67703,
-            286.3649,
-            347.56812
+            61.569,
+            302.763,
+            286.365,
+            347.568
           ],
           "page": 2,
           "span": [
@@ -558,10 +558,10 @@
       "prov": [
         {
           "bbox": [
-            61.569016,
-            245.07404999999994,
-            286.3649,
-            289.96616
+            61.569,
+            245.15999999999997,
+            286.365,
+            289.966
           ],
           "page": 2,
           "span": [
@@ -582,9 +582,9 @@
         {
           "bbox": [
             61.569,
-            199.42705,
-            286.36493,
-            232.36316
+            199.51300000000003,
+            286.365,
+            232.36300000000006
           ],
           "page": 2,
           "span": [
@@ -604,10 +604,10 @@
       "prov": [
         {
           "bbox": [
-            61.569008000000004,
-            153.77904999999998,
-            286.36508,
-            186.59659999999997
+            61.569,
+            153.865,
+            286.365,
+            186.32799999999997
           ],
           "page": 2,
           "span": [
@@ -627,10 +627,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            96.630043,
-            286.36511,
-            141.40161
+            50.112,
+            96.71600000000001,
+            286.365,
+            141.13300000000004
           ],
           "page": 2,
           "span": [
@@ -650,20 +650,20 @@
       "prov": [
         {
           "bbox": [
-            60.97100100000001,
-            79.278458,
-            183.73055,
-            86.40372500000001
+            60.971,
+            79.34699999999998,
+            183.731,
+            87.70399999999995
           ],
           "page": 2,
           "span": [
             0,
-            40
+            36
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "$^{1}$https://github.com/IBM/SynthTabNet",
+      "text": "1 https://github.com/IBM/SynthTabNet",
       "type": "footnote",
       "payload": null,
       "name": "Footnote",
@@ -674,9 +674,9 @@
         {
           "bbox": [
             308.862,
-            683.9750400000001,
-            545.11511,
-            716.79163
+            684.061,
+            545.115,
+            716.523
           ],
           "page": 2,
           "span": [
@@ -697,9 +697,9 @@
         {
           "bbox": [
             308.862,
-            659.52032,
-            498.28021,
-            670.26807
+            659.52,
+            498.28,
+            670.268
           ],
           "page": 2,
           "span": [
@@ -720,9 +720,9 @@
         {
           "bbox": [
             308.862,
-            461.54498,
-            545.11517,
-            649.77863
+            461.631,
+            545.115,
+            649.51
           ],
           "page": 2,
           "span": [
@@ -743,9 +743,9 @@
         {
           "bbox": [
             308.862,
-            341.9270900000001,
-            545.11523,
-            458.43054
+            342.013,
+            545.115,
+            458.162
           ],
           "page": 2,
           "span": [
@@ -765,10 +765,10 @@
       "prov": [
         {
           "bbox": [
-            308.86197,
-            78.84815200000003,
-            545.11688,
-            338.93222
+            308.862,
+            78.93399999999997,
+            545.117,
+            338.932
           ],
           "page": 2,
           "span": [
@@ -778,7 +778,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Image-to-Text networks : In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37, 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are \"image-encoder \u2192 text-decoder\" (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the \"image-encoder \u2192 dual decoder\" (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder , i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder ) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the",
+      "text": "Image-to-Text networks : In this type of network, one predicts a sequence of tokens starting from an encoded image. Such sequences of tokens can be HTML table tags [37, 17] or LaTeX symbols[10]. The choice of symbols is ultimately not very important, since one can be transformed into the other. There are however subtle variations in the Image-to-Text networks. The easiest network architectures are 'image-encoder \u2192 text-decoder' (IETD), similar to network architectures that try to provide captions to images [32]. In these IETD networks, one expects as output the LaTeX/HTML string of the entire table, i.e. the symbols necessary for creating the table with the content of the table. Another approach is the 'image-encoder \u2192 dual decoder' (IEDD) networks. In these type of networks, one has two consecutive decoders with different purposes. The first decoder is the tag-decoder , i.e. it only produces the HTML/LaTeX tags which construct an empty table. The second content-decoder uses the encoding of the image in combination with the output encoding of each cell-tag (from the tag-decoder ) to generate the textual content of each table cell. The network architecture of IEDD is certainly more elaborate, but it has the advantage that one can pre-train the",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -789,9 +789,9 @@
         {
           "bbox": [
             50.112,
-            707.88507,
-            250.15102,
-            716.79163
+            707.971,
+            250.151,
+            716.523
           ],
           "page": 3,
           "span": [
@@ -812,9 +812,9 @@
         {
           "bbox": [
             50.112,
-            516.5459,
-            286.36514,
-            704.7806400000001
+            516.632,
+            286.365,
+            704.512
           ],
           "page": 3,
           "span": [
@@ -834,10 +834,10 @@
       "prov": [
         {
           "bbox": [
-            50.111992,
-            301.29712,
-            286.36511,
-            513.56104
+            50.112,
+            301.383,
+            286.365,
+            513.561
           ],
           "page": 3,
           "span": [
@@ -857,20 +857,20 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            169.73315000000002,
-            286.36627,
-            298.31125
+            50.112,
+            169.81899999999996,
+            286.366,
+            298.311
           ],
           "page": 3,
           "span": [
             0,
-            619
+            618
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Hybrid Deep Learning-Rule-Based approach : A popular current model for table-structure identification is the use of a hybrid Deep Learning-Rule-Based approach similar to [27, 29]. In this approach, one first detects the position of the table-cells with object detection (e.g. YoloVx or MaskRCNN), then classifies the table into different types (from its images) and finally uses different rule-sets to obtain its table-structure. Currently, this approach achieves stateof-the-art results, but is not an end-to-end deep-learning method. As such, new rules need to be written if different types of tables are encountered.",
+      "text": "Hybrid Deep Learning-Rule-Based approach : Apopular current model for table-structure identification is the use of a hybrid Deep Learning-Rule-Based approach similar to [27, 29]. In this approach, one first detects the position of the table-cells with object detection (e.g. YoloVx or MaskRCNN), then classifies the table into different types (from its images) and finally uses different rule-sets to obtain its table-structure. Currently, this approach achieves stateof-the-art results, but is not an end-to-end deep-learning method. As such, new rules need to be written if different types of tables are encountered.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -880,10 +880,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            145.30743000000007,
-            105.22546,
-            156.05516
+            50.112,
+            145.30700000000002,
+            105.225,
+            156.05500000000006
           ],
           "page": 3,
           "span": [
@@ -903,10 +903,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            78.84813699999995,
-            286.36508,
-            135.57470999999998
+            50.112,
+            78.93399999999997,
+            286.365,
+            135.30600000000004
           ],
           "page": 3,
           "span": [
@@ -932,9 +932,9 @@
         {
           "bbox": [
             308.862,
-            503.3020900000001,
-            545.11511,
-            524.16364
+            503.388,
+            545.115,
+            523.895
           ],
           "page": 3,
           "span": [
@@ -955,9 +955,9 @@
         {
           "bbox": [
             308.862,
-            465.62009,
-            437.27002,
-            474.52664
+            465.706,
+            437.27,
+            474.258
           ],
           "page": 3,
           "span": [
@@ -978,9 +978,9 @@
         {
           "bbox": [
             308.862,
-            164.63825999999995,
-            545.11517,
-            460.46863
+            164.72399999999993,
+            545.115,
+            460.2
           ],
           "page": 3,
           "span": [
@@ -990,7 +990,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as \"simple\" when it does not contain row spans or column spans, otherwise it is \"complex\". The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits.",
+      "text": "The PubTabNet dataset contains 509k tables delivered as annotated PNG images. The annotations consist of the table structure represented in HTML format, the tokenized text and its bounding boxes per table cell. Fig. 1 shows the appearance style of PubTabNet. Depending on its complexity, a table is characterized as 'simple' when it does not contain row spans or column spans, otherwise it is 'complex'. The dataset is divided into Train and Val splits (roughly 98% and 2%). The Train split consists of 54% simple and 46% complex tables and the Val split of 51% and 49% respectively. The FinTabNet dataset contains 112k tables delivered as single-page PDF documents with mixed table structures and text content. Similarly to the PubTabNet, the annotations of FinTabNet include the table structure in HTML, the tokenized text and the bounding boxes on a table cell basis. The dataset is divided into Train, Test and Val splits (81%, 9.5%, 9.5%), and each one is almost equally divided into simple and complex tables (Train: 48% simple, 52% complex, Test: 48% simple, 52% complex, Test: 53% simple, 47% complex). Finally the TableBank dataset consists of 145k tables provided as JPEG images. The latter has annotations for the table structure, but only few with bounding boxes of the table cells. The entire dataset consists of simple tables and it is divided into 90% Train, 3% Test and 7% Val splits.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1001,9 +1001,9 @@
         {
           "bbox": [
             308.862,
-            78.84823600000004,
-            545.11511,
-            159.48581000000001
+            78.93399999999997,
+            545.115,
+            159.21699999999998
           ],
           "page": 3,
           "span": [
@@ -1024,9 +1024,9 @@
         {
           "bbox": [
             50.112,
-            695.93005,
-            286.36511,
-            716.79163
+            696.016,
+            286.365,
+            716.523
           ],
           "page": 4,
           "span": [
@@ -1047,9 +1047,9 @@
         {
           "bbox": [
             50.112,
-            478.89493,
-            286.36514,
-            691.03961
+            478.981,
+            286.365,
+            690.771
           ],
           "page": 4,
           "span": [
@@ -1070,9 +1070,9 @@
         {
           "bbox": [
             50.112,
-            357.50104,
-            286.36511,
-            474.00449000000003
+            357.587,
+            286.365,
+            473.736
           ],
           "page": 4,
           "span": [
@@ -1093,9 +1093,9 @@
         {
           "bbox": [
             50.112,
-            164.37611000000004,
-            286.36655,
-            352.6106
+            164.462,
+            286.367,
+            352.342
           ],
           "page": 4,
           "span": [
@@ -1115,10 +1115,10 @@
       "prov": [
         {
           "bbox": [
-            50.112015,
-            78.84810600000003,
-            286.36511,
-            159.48567000000003
+            50.112,
+            78.93399999999997,
+            286.365,
+            159.21699999999998
           ],
           "page": 4,
           "span": [
@@ -1144,9 +1144,9 @@
         {
           "bbox": [
             308.862,
-            567.61102,
-            545.11505,
-            624.33862
+            567.697,
+            545.115,
+            624.249
           ],
           "page": 4,
           "span": [
@@ -1156,7 +1156,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 1: Both \"Combined-Tabnet\" and \"CombinedTabnet\" are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank.",
+      "text": "Table 1: Both 'Combined-Tabnet' and 'CombinedTabnet' are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank.",
       "type": "caption",
       "payload": null,
       "name": "Caption",
@@ -1167,9 +1167,9 @@
         {
           "bbox": [
             308.862,
-            497.60803,
-            545.11517,
-            542.37958
+            497.694,
+            545.115,
+            542.111
           ],
           "page": 4,
           "span": [
@@ -1189,10 +1189,10 @@
       "prov": [
         {
           "bbox": [
-            320.81699,
-            485.32104,
-            542.74396,
-            494.22759999999994
+            320.817,
+            485.407,
+            542.744,
+            493.959
           ],
           "page": 4,
           "span": [
@@ -1213,9 +1213,9 @@
         {
           "bbox": [
             308.862,
-            460.06832999999995,
-            444.93607000000003,
-            470.81604
+            460.068,
+            444.936,
+            470.816
           ],
           "page": 4,
           "span": [
@@ -1236,9 +1236,9 @@
         {
           "bbox": [
             308.862,
-            345.51314999999994,
-            545.11523,
-            450.06061
+            345.599,
+            545.115,
+            449.792
           ],
           "page": 4,
           "span": [
@@ -1259,9 +1259,9 @@
         {
           "bbox": [
             308.862,
-            324.45367,
-            420.16058,
-            334.30573
+            324.454,
+            420.161,
+            334.306
           ],
           "page": 4,
           "span": [
@@ -1281,10 +1281,10 @@
       "prov": [
         {
           "bbox": [
-            308.86197,
-            127.00018999999998,
-            545.11572,
-            315.23471
+            308.862,
+            127.08600000000001,
+            545.116,
+            314.966
           ],
           "page": 4,
           "span": [
@@ -1304,10 +1304,10 @@
       "prov": [
         {
           "bbox": [
-            308.86197,
-            78.84818300000006,
-            545.11511,
-            123.73929999999996
+            308.862,
+            78.93399999999997,
+            545.115,
+            123.73900000000003
           ],
           "page": 4,
           "span": [
@@ -1332,10 +1332,10 @@
       "prov": [
         {
           "bbox": [
-            50.111992,
-            567.03308,
-            545.10846,
-            588.01422
+            50.112,
+            567.119,
+            545.108,
+            588.014
           ],
           "page": 5,
           "span": [
@@ -1361,9 +1361,9 @@
         {
           "bbox": [
             50.112,
-            111.72906,
-            286.36597,
-            264.2171900000001
+            111.81500000000005,
+            286.366,
+            264.217
           ],
           "page": 5,
           "span": [
@@ -1384,9 +1384,9 @@
         {
           "bbox": [
             308.862,
-            497.6930500000001,
-            545.11505,
-            542.46558
+            497.779,
+            545.115,
+            542.197
           ],
           "page": 5,
           "span": [
@@ -1406,10 +1406,10 @@
       "prov": [
         {
           "bbox": [
-            308.86194,
-            378.03818,
-            545.11511,
-            494.66019
+            308.862,
+            378.124,
+            545.115,
+            494.66
           ],
           "page": 5,
           "span": [
@@ -1419,7 +1419,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. \"Scene Understanding\", \"Image Captioning\"), something which we relate to the simplicity of table images.",
+      "text": "Structure Decoder. The transformer architecture of this component is based on the work proposed in [31]. After extensive experimentation, the Structure Decoder is modeled as a transformer encoder with two encoder layers and a transformer decoder made from a stack of 4 decoder layers that comprise mainly of multi-head attention and feed forward layers. This configuration uses fewer layers and heads in comparison to networks applied to other problems (e.g. 'Scene Understanding', 'Image Captioning'), something which we relate to the simplicity of table images.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1429,10 +1429,10 @@
       "prov": [
         {
           "bbox": [
-            308.86197,
-            246.42728999999997,
-            545.11511,
-            374.88574
+            308.862,
+            246.51300000000003,
+            545.115,
+            374.617
           ],
           "page": 5,
           "span": [
@@ -1452,10 +1452,10 @@
       "prov": [
         {
           "bbox": [
-            308.86194,
-            138.72729000000004,
-            545.11511,
-            243.3954
+            308.862,
+            138.813,
+            545.115,
+            243.39499999999998
           ],
           "page": 5,
           "span": [
@@ -1475,10 +1475,10 @@
       "prov": [
         {
           "bbox": [
-            308.86194,
-            78.84827399999995,
-            545.11505,
-            135.57484
+            308.862,
+            78.93399999999997,
+            545.115,
+            135.485
           ],
           "page": 5,
           "span": [
@@ -1499,9 +1499,9 @@
         {
           "bbox": [
             50.112,
-            636.15399,
-            286.36514,
-            716.79163
+            636.24,
+            286.365,
+            716.523
           ],
           "page": 6,
           "span": [
@@ -1522,9 +1522,9 @@
         {
           "bbox": [
             50.112,
-            551.73694,
-            286.36511,
-            632.37555
+            551.823,
+            286.365,
+            632.107
           ],
           "page": 6,
           "span": [
@@ -1545,19 +1545,19 @@
         {
           "bbox": [
             50.112,
-            347.7691,
-            286.36572,
-            548.07806
+            347.855,
+            286.366,
+            548.078
           ],
           "page": 6,
           "span": [
             0,
-            985
+            965
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Loss Functions. We formulate a multi-task loss Eq. 2 to train our network. The Cross-Entropy loss (denoted as l$_{s}$ ) is used to train the Structure Decoder which predicts the structure tokens. As for the Cell BBox Decoder it is trained with a combination of losses denoted as l$_{box}$ . l$_{box}$ consists of the generally used l$_{1}$ loss for object detection and the IoU loss ( l$_{iou}$ ) to be scale invariant as explained in [25]. In comparison to DETR, we do not use the Hungarian algorithm [15] to match the predicted bounding boxes with the ground-truth boxes, as we have already achieved a one-toone match through two steps: 1) Our token input sequence is naturally ordered, therefore the hidden states of the table data cells are also in order when they are provided as input to the Cell BBox Decoder , and 2) Our bounding boxes generation mechanism (see Sec. 3) ensures a one-to-one mapping between the cell content and its bounding box for all post-processed datasets.",
+      "text": "Loss Functions. We formulate a multi-task loss Eq. 2 to train our network. The Cross-Entropy loss (denoted as l s ) is used to train the Structure Decoder which predicts the structure tokens. As for the Cell BBox Decoder it is trained with a combination of losses denoted as l box . l box consists of the generally used l 1 loss for object detection and the IoU loss ( l iou ) to be scale invariant as explained in [25]. In comparison to DETR, we do not use the Hungarian algorithm [15] to match the predicted bounding boxes with the ground-truth boxes, as we have already achieved a one-toone match through two steps: 1) Our token input sequence is naturally ordered, therefore the hidden states of the table data cells are also in order when they are provided as input to the Cell BBox Decoder , and 2) Our bounding boxes generation mechanism (see Sec. 3) ensures a one-to-one mapping between the cell content and its bounding box for all post-processed datasets.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1567,10 +1567,10 @@
       "prov": [
         {
           "bbox": [
-            50.112022,
-            323.12811,
-            286.36499,
-            343.98965
+            50.112,
+            323.214,
+            286.365,
+            343.721
           ],
           "page": 6,
           "span": [
@@ -1590,10 +1590,10 @@
       "prov": [
         {
           "bbox": [
-            124.33002,
-            274.92828,
-            286.36243,
-            298.71906
+            124.33,
+            274.03600000000006,
+            286.362,
+            298.609
           ],
           "page": 6,
           "span": [
@@ -1613,20 +1613,20 @@
       "prov": [
         {
           "bbox": [
-            50.11203,
-            251.78412000000003,
-            281.59692,
-            261.4079899999999
+            50.112,
+            251.111,
+            281.597,
+            260.74
           ],
           "page": 6,
           "span": [
             0,
-            76
+            61
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "where \u03bb \u2208 [0, 1], and \u03bb$_{iou}$, \u03bb$_{l}$$_{1}$ \u2208$_{R}$ are hyper-parameters.",
+      "text": "where \u03bb \u2208 [0, 1], and \u03bb iou , \u03bb l 1 \u2208 R are hyper-parameters.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1636,10 +1636,10 @@
       "prov": [
         {
           "bbox": [
-            50.112045,
-            225.33538999999996,
-            171.98335,
-            236.08311000000003
+            50.112,
+            225.33500000000004,
+            171.983,
+            236.08299999999997
           ],
           "page": 6,
           "span": [
@@ -1659,10 +1659,10 @@
       "prov": [
         {
           "bbox": [
-            50.112045,
-            205.88362000000006,
-            179.17502,
-            215.73567000000003
+            50.112,
+            205.88400000000001,
+            179.175,
+            215.736
           ],
           "page": 6,
           "span": [
@@ -1682,10 +1682,10 @@
       "prov": [
         {
           "bbox": [
-            50.112045,
-            151.49311999999998,
-            286.36517,
-            196.26567
+            50.112,
+            151.57899999999995,
+            286.365,
+            196.17599999999993
           ],
           "page": 6,
           "span": [
@@ -1705,10 +1705,10 @@
       "prov": [
         {
           "bbox": [
-            91.661049,
-            113.60411999999997,
-            286.36246,
-            138.17200000000003
+            91.661,
+            113.69000000000005,
+            286.362,
+            137.50400000000002
           ],
           "page": 6,
           "span": [
@@ -1728,10 +1728,10 @@
       "prov": [
         {
           "bbox": [
-            50.112061,
-            78.84812199999999,
-            286.36514,
-            99.70968600000003
+            50.112,
+            78.93399999999997,
+            286.365,
+            99.44100000000003
           ],
           "page": 6,
           "span": [
@@ -1742,10 +1742,10 @@
         },
         {
           "bbox": [
-            308.86206,
-            683.9751,
-            545.11523,
-            716.79169
+            308.862,
+            684.061,
+            545.115,
+            716.523
           ],
           "page": 6,
           "span": [
@@ -1765,10 +1765,10 @@
       "prov": [
         {
           "bbox": [
-            308.86206,
-            463.62595,
-            545.1153,
-            675.77063
+            308.862,
+            463.712,
+            545.115,
+            675.502
           ],
           "page": 6,
           "span": [
@@ -1778,7 +1778,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "The Transformer Encoder consists of two \"Transformer Encoder Layers\", with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four \"Transformer Decoder Layers\" with similar input and output dimensions as the \"Transformer Encoder Layers\". Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5.",
+      "text": "The Transformer Encoder consists of two 'Transformer Encoder Layers', with an input feature size of 512, feed forward network of 1024, and 4 attention heads. As for the Transformer Decoder it is composed of four 'Transformer Decoder Layers' with similar input and output dimensions as the 'Transformer Encoder Layers'. Even though our model uses fewer layers and heads than the default implementation parameters, our extensive experimentation has proved this setup to be more suitable for table images. We attribute this finding to the inherent design of table images, which contain mostly lines and text, unlike the more elaborate content present in other scopes (e.g. the COCO dataset). Moreover, we have added ResNet blocks to the inputs of the Structure Decoder and Cell BBox Decoder. This prevents a decoder having a stronger influence over the learned weights which would damage the other prediction task (structure vs bounding boxes), but learn task specific weights instead. Lastly our dropout layers are set to 0.5.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1788,10 +1788,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            362.83002,
-            545.11517,
-            455.42249
+            308.862,
+            362.916,
+            545.115,
+            455.154
           ],
           "page": 6,
           "span": [
@@ -1811,10 +1811,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            238.12311,
-            545.11523,
-            354.62558000000007
+            308.862,
+            238.20900000000006,
+            545.115,
+            354.357
           ],
           "page": 6,
           "span": [
@@ -1834,10 +1834,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            202.59362999999996,
-            397.44281,
-            212.44568000000004
+            308.862,
+            202.59400000000005,
+            397.443,
+            212.44600000000003
           ],
           "page": 6,
           "span": [
@@ -1857,10 +1857,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            119.86811,
-            545.11517,
-            188.55066999999997
+            308.862,
+            119.95399999999995,
+            545.115,
+            188.28200000000004
           ],
           "page": 6,
           "span": [
@@ -1880,10 +1880,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            78.84710700000005,
-            545.11523,
-            111.66467
+            308.862,
+            78.93299999999999,
+            545.115,
+            111.39599999999996
           ],
           "page": 6,
           "span": [
@@ -1904,9 +1904,9 @@
         {
           "bbox": [
             50.112,
-            707.74658,
-            167.89825,
-            717.5986299999998
+            707.747,
+            167.898,
+            717.599
           ],
           "page": 7,
           "span": [
@@ -1927,9 +1927,9 @@
         {
           "bbox": [
             50.112,
-            653.87701,
-            286.36511,
-            698.6496000000001
+            653.963,
+            286.365,
+            698.381
           ],
           "page": 7,
           "span": [
@@ -1949,10 +1949,10 @@
       "prov": [
         {
           "bbox": [
-            86.218994,
-            619.26123,
-            286.3624,
-            641.68201
+            86.219,
+            618.368,
+            286.362,
+            641.572
           ],
           "page": 7,
           "span": [
@@ -1972,20 +1972,20 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            578.021,
-            286.36285,
-            610.99701
+            50.112,
+            578.107,
+            286.363,
+            610.887
           ],
           "page": 7,
           "span": [
             0,
-            162
+            154
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "where T$_{a}$ and T$_{b}$ represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and | T | represents the number of nodes in T .",
+      "text": "where T a and T b represent tables in tree structure HTML format. EditDist denotes the tree-edit distance, and | T | represents the number of nodes in T .",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -1996,9 +1996,9 @@
         {
           "bbox": [
             50.112,
-            557.32849,
-            170.45169,
-            567.18054
+            557.329,
+            170.452,
+            567.181
           ],
           "page": 7,
           "span": [
@@ -2019,9 +2019,9 @@
         {
           "bbox": [
             50.112,
-            395.86206,
-            286.36514,
-            548.3501
+            395.948,
+            286.365,
+            548.35
           ],
           "page": 7,
           "span": [
@@ -2047,9 +2047,9 @@
         {
           "bbox": [
             50.112,
-            178.70507999999995,
-            286.36511,
-            199.56664
+            178.79099999999994,
+            286.365,
+            199.298
           ],
           "page": 7,
           "span": [
@@ -2070,9 +2070,9 @@
         {
           "bbox": [
             50.112,
-            166.75008000000003,
-            261.78732,
-            175.65662999999995
+            166.836,
+            261.787,
+            175.38800000000003
           ],
           "page": 7,
           "span": [
@@ -2092,10 +2092,10 @@
       "prov": [
         {
           "bbox": [
-            50.112015,
-            78.84806800000001,
+            50.112,
+            78.93399999999997,
             286.366,
-            147.65019000000007
+            147.64999999999998
           ],
           "page": 7,
           "span": [
@@ -2107,9 +2107,9 @@
         {
           "bbox": [
             308.862,
-            564.42291,
-            545.11517,
-            716.79163
+            564.509,
+            545.115,
+            716.702
           ],
           "page": 7,
           "span": [
@@ -2135,9 +2135,9 @@
         {
           "bbox": [
             308.862,
-            454.6891499999999,
-            545.11517,
-            475.55069
+            454.775,
+            545.115,
+            475.282
           ],
           "page": 7,
           "span": [
@@ -2157,10 +2157,10 @@
       "prov": [
         {
           "bbox": [
-            308.86197,
-            271.83231,
-            545.11566,
-            424.3202800000001
+            308.862,
+            271.918,
+            545.116,
+            424.32
           ],
           "page": 7,
           "span": [
@@ -2186,9 +2186,9 @@
         {
           "bbox": [
             308.862,
-            102.32206999999994,
-            545.11517,
-            135.13864
+            102.40800000000002,
+            545.115,
+            134.87
           ],
           "page": 7,
           "span": [
@@ -2208,20 +2208,20 @@
       "prov": [
         {
           "bbox": [
-            53.286037,
-            705.43927,
-            61.550289,
-            713.3124399999999
+            53.286,
+            705.523,
+            499.556,
+            713.005
           ],
           "page": 8,
           "span": [
             0,
-            2
+            108
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- a.",
+      "text": "- a. Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2231,33 +2231,10 @@
       "prov": [
         {
           "bbox": [
-            65.682419,
-            705.43927,
-            499.55563,
-            713.3124399999999
-          ],
-          "page": 8,
-          "span": [
-            0,
-            105
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "- Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells",
-      "type": "paragraph",
-      "payload": null,
-      "name": "List-item",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            53.811783000000005,
-            689.8457,
-            284.34592,
-            697.71887
+            53.812,
+            689.929,
+            284.346,
+            697.411
           ],
           "page": 8,
           "span": [
@@ -2277,10 +2254,10 @@
       "prov": [
         {
           "bbox": [
-            304.83081,
-            689.8457,
-            431.09119,
-            697.71887
+            304.831,
+            689.929,
+            431.091,
+            697.411
           ],
           "page": 8,
           "span": [
@@ -2310,10 +2287,10 @@
       "prov": [
         {
           "bbox": [
-            53.811783000000005,
-            575.89355,
-            385.93451,
-            583.76672
+            53.812,
+            575.977,
+            385.934,
+            583.459
           ],
           "page": 8,
           "span": [
@@ -2338,10 +2315,10 @@
       "prov": [
         {
           "bbox": [
-            380.42731,
-            493.39716,
-            549.42175,
-            499.69574
+            380.427,
+            493.464,
+            549.422,
+            499.449
           ],
           "page": 8,
           "span": [
@@ -2371,10 +2348,10 @@
       "prov": [
         {
           "bbox": [
-            62.595001,
-            324.36508,
-            532.63049,
-            333.27164
+            62.595,
+            324.451,
+            532.63,
+            333.003
           ],
           "page": 8,
           "span": [
@@ -2400,9 +2377,9 @@
         {
           "bbox": [
             50.112,
-            426.35013,
-            545.11377,
-            471.12265
+            426.436,
+            545.114,
+            470.854
           ],
           "page": 8,
           "span": [
@@ -2428,9 +2405,9 @@
         {
           "bbox": [
             50.112,
-            290.75259,
-            163.7558,
-            300.60464
+            290.753,
+            163.756,
+            300.605
           ],
           "page": 8,
           "span": [
@@ -2451,9 +2428,9 @@
         {
           "bbox": [
             308.862,
-            290.54337,
-            460.84848,
-            301.29108
+            290.543,
+            460.848,
+            301.291
           ],
           "page": 8,
           "span": [
@@ -2474,9 +2451,9 @@
         {
           "bbox": [
             50.112,
-            78.84805299999994,
-            286.36511,
-            255.12662999999998
+            78.93399999999997,
+            286.365,
+            254.85799999999995
           ],
           "page": 8,
           "span": [
@@ -2486,7 +2463,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "We showcase several visualizations for the different components of our network on various \"complex\" tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type.",
+      "text": "We showcase several visualizations for the different components of our network on various 'complex' tables within datasets presented in this work in Fig. 5 and Fig. 6 As it is shown, our model is able to predict bounding boxes for all table cells, even for the empty ones. Additionally, our post-processing techniques can extract the cell content by matching the predicted bounding boxes to the PDF cells based on their overlap and spatial proximity. The left part of Fig. 5 demonstrates also the adaptability of our method to any language, as it can successfully extract Japanese text, although the training set contains only English content. We provide more visualizations including the intermediate steps in the supplementary material. Overall these illustrations justify the versatility of our method across a diverse range of table appearances and content type.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -2497,9 +2474,9 @@
         {
           "bbox": [
             308.862,
-            138.69407999999999,
-            545.11517,
-            279.10663
+            138.77999999999997,
+            545.115,
+            278.83799999999997
           ],
           "page": 8,
           "span": [
@@ -2509,7 +2486,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce \"SynthTabNet\" a challenging synthetically generated dataset that reinforces missing characteristics from other datasets.",
+      "text": "In this paper, we presented TableFormer an end-to-end transformer based approach to predict table structures and bounding boxes of cells from an image. This approach enables us to recreate the table structure, and extract the cell content from PDF or OCR by using bounding boxes. Additionally, it provides the versatility required in real-world scenarios when dealing with various types of PDF documents, and languages. Furthermore, our method outperforms all state-of-the-arts with a wide margin. Finally, we introduce 'SynthTabNet' a challenging synthetically generated dataset that reinforces missing characteristics from other datasets.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -2520,9 +2497,9 @@
         {
           "bbox": [
             308.862,
-            109.15336000000002,
-            364.40585,
-            119.90107999999998
+            109.15300000000002,
+            364.406,
+            119.90099999999995
           ],
           "page": 8,
           "span": [
@@ -2543,9 +2520,9 @@
         {
           "bbox": [
             313.345,
-            79.06324800000004,
-            545.1134,
-            98.03820799999994
+            79.13999999999999,
+            545.113,
+            97.79600000000005
           ],
           "page": 8,
           "span": [
@@ -2565,10 +2542,10 @@
       "prov": [
         {
           "bbox": [
-            70.030998,
-            675.22424,
-            286.36334,
-            716.11621
+            70.031,
+            675.301,
+            286.363,
+            715.874
           ],
           "page": 9,
           "span": [
@@ -2588,10 +2565,10 @@
       "prov": [
         {
           "bbox": [
-            54.595005,
-            642.0343,
-            286.36334,
-            671.9682599999999
+            54.595,
+            642.111,
+            286.363,
+            671.726
           ],
           "page": 9,
           "span": [
@@ -2611,10 +2588,10 @@
       "prov": [
         {
           "bbox": [
-            54.595001,
-            608.84534,
-            286.36301,
-            638.77832
+            54.595,
+            608.922,
+            286.363,
+            638.698
           ],
           "page": 9,
           "span": [
@@ -2634,20 +2611,20 @@
       "prov": [
         {
           "bbox": [
-            54.59499,
-            564.69641,
-            286.36401,
-            605.58936
+            54.595,
+            564.773,
+            286.364,
+            605.347
           ],
           "page": 9,
           "span": [
             0,
-            216
+            218
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [4] Herv\u00b4e D\u00b4ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
+      "text": "- [4] Herv\u00b4 e D\u00b4 ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2657,10 +2634,10 @@
       "prov": [
         {
           "bbox": [
-            54.594982,
-            520.54846,
-            286.36334,
-            561.44043
+            54.595,
+            520.625,
+            286.363,
+            561.198
           ],
           "page": 9,
           "span": [
@@ -2680,10 +2657,10 @@
       "prov": [
         {
           "bbox": [
-            54.594971,
-            476.3995100000001,
-            286.36676,
-            517.29242
+            54.595,
+            476.476,
+            286.367,
+            517.05
           ],
           "page": 9,
           "span": [
@@ -2693,7 +2670,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [6] Max G\u00a8obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition , pages 1449-1453, 2013. 2",
+      "text": "- [6] MaxG\u00a8 obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition , pages 1449-1453, 2013. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2703,10 +2680,10 @@
       "prov": [
         {
           "bbox": [
-            54.59499,
-            443.21048,
-            286.36319,
-            473.14346
+            54.595,
+            443.287,
+            286.363,
+            472.901
           ],
           "page": 9,
           "span": [
@@ -2726,10 +2703,10 @@
       "prov": [
         {
           "bbox": [
-            54.594986000000006,
-            388.10251,
-            286.36331,
-            439.9544399999999
+            54.595,
+            388.179,
+            286.363,
+            439.712
           ],
           "page": 9,
           "span": [
@@ -2749,10 +2726,10 @@
       "prov": [
         {
           "bbox": [
-            54.595001,
-            354.91353999999995,
-            286.35989,
-            384.84746999999993
+            54.595,
+            354.99,
+            286.36,
+            384.605
           ],
           "page": 9,
           "span": [
@@ -2773,9 +2750,9 @@
         {
           "bbox": [
             50.112,
-            310.76456,
-            286.36334,
-            351.6575000000001
+            310.841,
+            286.363,
+            351.415
           ],
           "page": 9,
           "span": [
@@ -2796,9 +2773,9 @@
         {
           "bbox": [
             50.112,
-            255.65761999999995,
-            286.36331,
-            307.50952
+            255.73400000000004,
+            286.363,
+            307.267
           ],
           "page": 9,
           "span": [
@@ -2818,10 +2795,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            200.55062999999996,
-            286.36334,
-            252.40157999999997
+            50.112,
+            200.62699999999995,
+            286.363,
+            252.159
           ],
           "page": 9,
           "span": [
@@ -2841,20 +2818,20 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            145.44263,
-            286.36331,
-            197.29458999999997
+            50.112,
+            145.519,
+            286.363,
+            197.05200000000002
           ],
           "page": 9,
           "span": [
             0,
-            283
+            284
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [13] Thotreingam Kasar, Philippine Barlas, Sebastien Adam, Cl\u00b4ement Chatelain, and Thierry Paquet. Learning to detect tables in scanned document images using line information. In 2013 12th International Conference on Document Analysis and Recognition , pages 1185-1189. IEEE, 2013. 2",
+      "text": "- [13] Thotreingam Kasar, Philippine Barlas, Sebastien Adam, Cl\u00b4 ement Chatelain, and Thierry Paquet. Learning to detect tables in scanned document images using line information. In 2013 12th International Conference on Document Analysis and Recognition , pages 1185-1189. IEEE, 2013. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2864,10 +2841,10 @@
       "prov": [
         {
           "bbox": [
-            50.111992,
-            112.25361999999996,
-            286.36334,
-            142.18658000000005
+            50.112,
+            112.33000000000004,
+            286.363,
+            141.94399999999996
           ],
           "page": 9,
           "span": [
@@ -2887,10 +2864,10 @@
       "prov": [
         {
           "bbox": [
-            50.111992,
-            79.06361400000003,
-            286.35931,
-            108.99757
+            50.112,
+            79.13999999999999,
+            286.359,
+            108.755
           ],
           "page": 9,
           "span": [
@@ -2910,10 +2887,10 @@
       "prov": [
         {
           "bbox": [
-            308.86197,
-            653.30664,
-            545.11475,
-            716.1165799999999
+            308.862,
+            653.383,
+            545.115,
+            715.874
           ],
           "page": 9,
           "span": [
@@ -2934,9 +2911,9 @@
         {
           "bbox": [
             308.862,
-            619.94366,
-            545.1134,
-            649.87665
+            620.02,
+            545.113,
+            649.634
           ],
           "page": 9,
           "span": [
@@ -2957,9 +2934,9 @@
         {
           "bbox": [
             308.862,
-            531.78577,
-            545.11353,
-            616.51367
+            531.862,
+            545.113,
+            616.271
           ],
           "page": 9,
           "span": [
@@ -2980,9 +2957,9 @@
         {
           "bbox": [
             308.862,
-            465.54587,
-            545.1142,
-            528.35577
+            465.622,
+            545.114,
+            528.113
           ],
           "page": 9,
           "span": [
@@ -3003,9 +2980,9 @@
         {
           "bbox": [
             308.862,
-            421.22287,
-            545.11609,
-            462.11581
+            421.299,
+            545.116,
+            461.873
           ],
           "page": 9,
           "span": [
@@ -3026,9 +3003,9 @@
         {
           "bbox": [
             308.862,
-            354.98294,
-            545.11346,
-            417.79382
+            355.059,
+            545.113,
+            417.551
           ],
           "page": 9,
           "span": [
@@ -3049,19 +3026,19 @@
         {
           "bbox": [
             308.862,
-            233.94903999999997,
-            545.11475,
-            351.55389
+            234.02499999999998,
+            545.115,
+            351.311
           ],
           "page": 9,
           "span": [
             0,
-            592
+            593
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [22] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In H. Wallach, H. Larochelle, A. Beygelzimer, F. d'Alch\u00b4e-Buc, E. Fox, and R. Garnett, editors, Advances in Neural Information Processing Systems 32 , pages 8024-8035. Curran Associates, Inc., 2019. 6",
+      "text": "- [22] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In H. Wallach, H. Larochelle, A. Beygelzimer, F. d'Alch\u00b4 e-Buc, E. Fox, and R. Garnett, editors, Advances in Neural Information Processing Systems 32 , pages 8024-8035. Curran Associates, Inc., 2019. 6",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3072,9 +3049,9 @@
         {
           "bbox": [
             308.862,
-            167.70902999999998,
-            545.1134,
-            230.519
+            167.78499999999997,
+            545.113,
+            230.27600000000007
           ],
           "page": 9,
           "span": [
@@ -3095,9 +3072,9 @@
         {
           "bbox": [
             308.862,
-            123.38602000000003,
-            545.11621,
-            164.27899000000002
+            123.46199999999999,
+            545.116,
+            164.03600000000006
           ],
           "page": 9,
           "span": [
@@ -3117,10 +3094,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            79.06402600000001,
-            545.1134,
-            119.95699000000002
+            308.862,
+            79.13999999999999,
+            545.113,
+            119.71399999999994
           ],
           "page": 9,
           "span": [
@@ -3140,10 +3117,10 @@
       "prov": [
         {
           "bbox": [
-            70.030998,
-            697.14124,
-            286.36176,
-            716.11621
+            70.031,
+            697.218,
+            286.362,
+            716.036
           ],
           "page": 10,
           "span": [
@@ -3163,10 +3140,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            631.02332,
-            286.36578,
-            693.83423
+            50.112,
+            631.1,
+            286.366,
+            693.592
           ],
           "page": 10,
           "span": [
@@ -3186,10 +3163,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            564.9054,
-            286.36337,
-            627.71533
+            50.112,
+            564.982,
+            286.363,
+            627.473
           ],
           "page": 10,
           "span": [
@@ -3209,10 +3186,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            520.70447,
-            286.36578,
-            561.59741
+            50.112,
+            520.781,
+            286.366,
+            561.355
           ],
           "page": 10,
           "span": [
@@ -3232,10 +3209,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            465.5455,
-            286.36627,
-            517.39642
+            50.112,
+            465.622,
+            286.366,
+            517.154
           ],
           "page": 10,
           "span": [
@@ -3255,10 +3232,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            410.38553,
-            286.36334,
-            462.23746
+            50.112,
+            410.462,
+            286.363,
+            461.995
           ],
           "page": 10,
           "span": [
@@ -3278,10 +3255,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            333.30856,
-            286.36389,
-            407.07748
+            50.112,
+            333.385,
+            286.364,
+            406.835
           ],
           "page": 10,
           "span": [
@@ -3301,10 +3278,10 @@
       "prov": [
         {
           "bbox": [
-            50.112007,
-            289.10757,
-            286.36334,
-            330.00052
+            50.112,
+            289.184,
+            286.363,
+            329.758
           ],
           "page": 10,
           "span": [
@@ -3324,10 +3301,10 @@
       "prov": [
         {
           "bbox": [
-            50.112015,
-            244.90756,
-            286.36337,
-            285.79953
+            50.112,
+            244.98400000000004,
+            286.363,
+            285.557
           ],
           "page": 10,
           "span": [
@@ -3347,10 +3324,10 @@
       "prov": [
         {
           "bbox": [
-            50.112022,
-            200.70655999999997,
-            286.36337,
-            241.59951999999998
+            50.112,
+            200.78300000000002,
+            286.363,
+            241.35699999999997
           ],
           "page": 10,
           "span": [
@@ -3370,10 +3347,10 @@
       "prov": [
         {
           "bbox": [
-            50.11203,
-            156.50554999999997,
-            286.3634,
-            197.39851
+            50.112,
+            156.582,
+            286.363,
+            197.15599999999995
           ],
           "page": 10,
           "span": [
@@ -3393,10 +3370,10 @@
       "prov": [
         {
           "bbox": [
-            50.112022,
-            101.34653000000003,
-            286.36337,
-            153.19750999999997
+            50.112,
+            101.423,
+            286.363,
+            152.95500000000004
           ],
           "page": 10,
           "span": [
@@ -3416,10 +3393,10 @@
       "prov": [
         {
           "bbox": [
-            50.112015,
-            79.063538,
-            286.36334,
-            98.038498
+            50.112,
+            79.13999999999999,
+            286.363,
+            97.79600000000005
           ],
           "page": 10,
           "span": [
@@ -3439,10 +3416,10 @@
       "prov": [
         {
           "bbox": [
-            328.78101,
-            675.22455,
-            545.11456,
-            716.11652
+            328.781,
+            675.301,
+            545.115,
+            715.874
           ],
           "page": 10,
           "span": [
@@ -3463,9 +3440,9 @@
         {
           "bbox": [
             308.862,
-            630.39258,
-            545.11334,
-            671.28552
+            630.469,
+            545.113,
+            671.043
           ],
           "page": 10,
           "span": [
@@ -3486,9 +3463,9 @@
         {
           "bbox": [
             132.842,
-            656.46991,
-            465.37591999999995,
-            681.42511
+            656.516,
+            465.376,
+            681.425
           ],
           "page": 11,
           "span": [
@@ -3508,10 +3485,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            620.09137,
-            175.96437,
-            630.83911
+            50.112,
+            620.091,
+            175.964,
+            630.839
           ],
           "page": 11,
           "span": [
@@ -3531,10 +3508,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            601.16864,
-            150.36401,
-            611.02069
+            50.112,
+            601.169,
+            150.364,
+            611.021
           ],
           "page": 11,
           "span": [
@@ -3554,10 +3531,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            403.84517999999997,
-            286.36514,
-            592.07971
+            50.112,
+            403.931,
+            286.365,
+            591.811
           ],
           "page": 11,
           "span": [
@@ -3567,7 +3544,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have \"strict\" tables, i.e. tables where every row has exactly the same length.",
+      "text": "As a first step of our data preparation process, we have calculated statistics over the datasets across the following dimensions: (1) table size measured in the number of rows and columns, (2) complexity of the table, (3) strictness of the provided HTML structure and (4) completeness (i.e. no omitted bounding boxes). A table is considered to be simple if it does not contain row spans or column spans. Additionally, a table has a strict HTML structure if every row has the same number of columns after taking into account any row or column spans. Therefore a strict HTML structure looks always rectangular. However, HTML is a lenient encoding format, i.e. tables with rows of different sizes might still be regarded as correct due to implicit display rules. These implicit rules leave room for ambiguity, which we want to avoid. As such, we prefer to have 'strict' tables, i.e. tables where every row has exactly the same length.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -3577,10 +3554,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            164.5403,
-            286.36511,
-            400.59473
+            50.112,
+            164.62599999999998,
+            286.365,
+            400.326
           ],
           "page": 11,
           "span": [
@@ -3600,10 +3577,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            140.42731000000003,
-            286.36496,
-            161.28985999999998
+            50.112,
+            140.51300000000003,
+            286.365,
+            161.02099999999996
           ],
           "page": 11,
           "span": [
@@ -3623,10 +3600,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            119.75780999999995,
-            153.60785,
-            129.60986000000003
+            50.112,
+            119.75800000000004,
+            153.608,
+            129.61
           ],
           "page": 11,
           "span": [
@@ -3646,10 +3623,10 @@
       "prov": [
         {
           "bbox": [
-            50.111984,
-            77.85229500000003,
-            286.36505,
-            110.66886999999997
+            50.112,
+            77.93799999999999,
+            286.365,
+            110.39999999999998
           ],
           "page": 11,
           "span": [
@@ -3661,9 +3638,9 @@
         {
           "bbox": [
             308.862,
-            584.57227,
-            545.11511,
-            629.34485
+            584.658,
+            545.115,
+            629.076
           ],
           "page": 11,
           "span": [
@@ -3684,9 +3661,9 @@
         {
           "bbox": [
             308.862,
-            559.90326,
-            545.11505,
-            580.76483
+            559.989,
+            545.115,
+            580.496
           ],
           "page": 11,
           "span": [
@@ -3707,9 +3684,9 @@
         {
           "bbox": [
             308.862,
-            475.45721,
-            545.11511,
-            556.09479
+            475.543,
+            545.115,
+            555.826
           ],
           "page": 11,
           "span": [
@@ -3730,9 +3707,9 @@
         {
           "bbox": [
             308.862,
-            343.19135,
-            545.11517,
-            471.64978
+            343.277,
+            545.115,
+            471.381
           ],
           "page": 11,
           "span": [
@@ -3753,9 +3730,9 @@
         {
           "bbox": [
             308.862,
-            294.61139,
-            545.11517,
-            339.38391
+            294.697,
+            545.115,
+            339.294
           ],
           "page": 11,
           "span": [
@@ -3776,9 +3753,9 @@
         {
           "bbox": [
             308.862,
-            246.03142000000003,
-            545.1153,
-            290.80396
+            246.11699999999996,
+            545.115,
+            290.535
           ],
           "page": 11,
           "span": [
@@ -3799,9 +3776,9 @@
         {
           "bbox": [
             308.862,
-            185.49640999999997,
-            545.11517,
-            242.22397
+            185.582,
+            545.115,
+            241.95500000000004
           ],
           "page": 11,
           "span": [
@@ -3822,9 +3799,9 @@
         {
           "bbox": [
             308.862,
-            145.01369,
-            545.10876,
-            169.70940999999993
+            145.01300000000003,
+            545.109,
+            169.70900000000006
           ],
           "page": 11,
           "span": [
@@ -3844,10 +3821,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            77.85139500000002,
-            545.11517,
-            134.57896000000005
+            308.862,
+            77.93700000000001,
+            545.115,
+            134.30999999999995
           ],
           "page": 11,
           "span": [
@@ -3873,9 +3850,9 @@
         {
           "bbox": [
             50.112,
-            605.63605,
-            545.11371,
-            626.49762
+            605.722,
+            545.114,
+            626.229
           ],
           "page": 12,
           "span": [
@@ -3896,9 +3873,9 @@
         {
           "bbox": [
             61.569,
-            560.20703,
-            286.36511,
-            581.0686
+            560.293,
+            286.365,
+            580.8
           ],
           "page": 12,
           "span": [
@@ -3919,9 +3896,9 @@
         {
           "bbox": [
             61.569,
-            527.06702,
-            286.36514,
-            547.92859
+            527.153,
+            286.365,
+            547.66
           ],
           "page": 12,
           "span": [
@@ -3942,9 +3919,9 @@
         {
           "bbox": [
             308.862,
-            536.2962,
-            545.11517,
-            581.06879
+            536.382,
+            545.115,
+            580.8
           ],
           "page": 12,
           "span": [
@@ -3965,9 +3942,9 @@
         {
           "bbox": [
             50.112,
-            396.29312,
-            286.36511,
-            512.79657
+            396.379,
+            286.365,
+            512.528
           ],
           "page": 12,
           "span": [
@@ -3988,9 +3965,9 @@
         {
           "bbox": [
             50.112,
-            372.06812,
-            286.36496,
-            392.93066
+            372.154,
+            286.365,
+            392.662
           ],
           "page": 12,
           "span": [
@@ -4011,9 +3988,9 @@
         {
           "bbox": [
             50.112,
-            335.88814999999994,
-            286.36508,
-            368.70468
+            335.974,
+            286.365,
+            368.436
           ],
           "page": 12,
           "span": [
@@ -4034,9 +4011,9 @@
         {
           "bbox": [
             50.112,
-            287.7532,
-            286.36505,
-            332.52472
+            287.839,
+            286.365,
+            332.256
           ],
           "page": 12,
           "span": [
@@ -4057,9 +4034,9 @@
         {
           "bbox": [
             50.112,
-            263.52721999999994,
-            286.36493,
-            284.38977
+            263.61300000000006,
+            286.365,
+            284.121
           ],
           "page": 12,
           "span": [
@@ -4069,7 +4046,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3. Use a carefully selected IOU threshold to designate the matches as \"good\" ones and \"bad\" ones.",
+      "text": "- 3. Use a carefully selected IOU threshold to designate the matches as 'good' ones and 'bad' ones.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4080,9 +4057,9 @@
         {
           "bbox": [
             50.112,
-            227.34722999999997,
-            286.36511,
-            260.16479000000004
+            227.433,
+            286.365,
+            259.89599999999996
           ],
           "page": 12,
           "span": [
@@ -4103,9 +4080,9 @@
         {
           "bbox": [
             50.112,
-            191.16722000000004,
-            286.36508,
-            223.98378000000002
+            191.25299999999993,
+            286.365,
+            223.71500000000003
           ],
           "page": 12,
           "span": [
@@ -4125,10 +4102,10 @@
       "prov": [
         {
           "bbox": [
-            110.70499,
-            137.89438999999993,
-            286.3624,
-            168.56408999999996
+            110.705,
+            137.00199999999995,
+            286.362,
+            167.89599999999996
           ],
           "page": 12,
           "span": [
@@ -4149,19 +4126,19 @@
         {
           "bbox": [
             50.112,
-            103.07321000000002,
+            103.15899999999999,
             286.362,
-            124.65208000000007
+            123.98400000000004
           ],
           "page": 12,
           "span": [
             0,
-            103
+            99
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "where c is one of { left, centroid, right } and x$_{c}$ is the xcoordinate for the corresponding point.",
+      "text": "where c is one of { left, centroid, right } and x c is the xcoordinate for the corresponding point.",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
@@ -4172,9 +4149,9 @@
         {
           "bbox": [
             50.112,
-            78.84821299999999,
-            286.36496,
-            99.70977800000003
+            78.93399999999997,
+            286.365,
+            99.44100000000003
           ],
           "page": 12,
           "span": [
@@ -4195,9 +4172,9 @@
         {
           "bbox": [
             308.862,
-            512.03619,
-            545.11499,
-            532.89777
+            512.122,
+            545.115,
+            532.629
           ],
           "page": 12,
           "span": [
@@ -4217,10 +4194,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            404.08929,
-            545.11511,
-            508.63674999999995
+            308.862,
+            404.175,
+            545.115,
+            508.368
           ],
           "page": 12,
           "span": [
@@ -4240,10 +4217,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            332.00836,
-            545.11517,
-            400.68985
+            308.862,
+            332.094,
+            545.115,
+            400.421
           ],
           "page": 12,
           "span": [
@@ -4263,10 +4240,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            224.06142,
-            545.11517,
-            328.60892
+            308.862,
+            224.14699999999993,
+            545.115,
+            328.34
           ],
           "page": 12,
           "span": [
@@ -4286,10 +4263,10 @@
       "prov": [
         {
           "bbox": [
-            308.86203,
-            187.84541000000002,
-            545.11688,
-            220.66197
+            308.862,
+            187.93100000000004,
+            545.117,
+            220.39300000000003
           ],
           "page": 12,
           "span": [
@@ -4309,10 +4286,10 @@
       "prov": [
         {
           "bbox": [
-            308.86206,
-            163.58440999999993,
-            545.11505,
-            184.44696
+            308.862,
+            163.66999999999996,
+            545.115,
+            184.178
           ],
           "page": 12,
           "span": [
@@ -4332,10 +4309,10 @@
       "prov": [
         {
           "bbox": [
-            308.86206,
-            127.36941000000002,
-            545.11505,
-            160.18597
+            308.862,
+            127.45500000000004,
+            545.115,
+            159.91700000000003
           ],
           "page": 12,
           "span": [
@@ -4355,10 +4332,10 @@
       "prov": [
         {
           "bbox": [
-            308.86206,
-            103.10841000000005,
-            545.11499,
-            123.96996999999999
+            308.862,
+            103.19399999999996,
+            545.115,
+            123.70100000000002
           ],
           "page": 12,
           "span": [
@@ -4378,10 +4355,10 @@
       "prov": [
         {
           "bbox": [
-            308.86206,
-            78.84840399999996,
-            545.11517,
-            99.70997599999998
+            308.862,
+            78.93399999999997,
+            545.115,
+            99.44100000000003
           ],
           "page": 12,
           "span": [
@@ -4402,9 +4379,9 @@
         {
           "bbox": [
             50.112,
-            707.88507,
-            88.846588,
-            716.79163
+            707.971,
+            88.847,
+            716.523
           ],
           "page": 13,
           "span": [
@@ -4425,9 +4402,9 @@
         {
           "bbox": [
             50.112,
-            683.9750400000001,
-            286.36496,
-            704.83661
+            684.061,
+            286.365,
+            704.568
           ],
           "page": 13,
           "span": [
@@ -4448,9 +4425,9 @@
         {
           "bbox": [
             50.112,
-            660.29413,
-            286.36499,
-            680.83691
+            660.294,
+            286.365,
+            680.837
           ],
           "page": 13,
           "span": [
@@ -4491,9 +4468,9 @@
         {
           "bbox": [
             63.341,
-            281.03708,
-            273.13342,
-            289.94363
+            281.123,
+            273.133,
+            289.675
           ],
           "page": 13,
           "span": [
@@ -4519,9 +4496,9 @@
         {
           "bbox": [
             308.862,
-            464.54009999999994,
-            545.11511,
-            485.40164
+            464.626,
+            545.115,
+            485.133
           ],
           "page": 13,
           "span": [
@@ -4566,10 +4543,10 @@
       "prov": [
         {
           "bbox": [
-            312.34299,
-            102.60006999999996,
-            541.63232,
-            111.50664000000006
+            312.343,
+            102.68600000000004,
+            541.632,
+            111.23800000000006
           ],
           "page": 13,
           "span": [
@@ -4620,9 +4597,9 @@
         {
           "bbox": [
             50.112,
-            414.3681,
-            286.36508,
-            435.22964
+            414.454,
+            286.365,
+            434.961
           ],
           "page": 14,
           "span": [
@@ -4662,10 +4639,10 @@
       "prov": [
         {
           "bbox": [
-            54.618998999999995,
-            111.27508,
-            281.8559,
-            120.18164000000002
+            54.619,
+            111.36099999999999,
+            281.856,
+            119.91300000000001
           ],
           "page": 14,
           "span": [
@@ -4705,10 +4682,10 @@
       "prov": [
         {
           "bbox": [
-            315.79001,
-            411.40909,
-            538.18524,
-            420.31564
+            315.79,
+            411.495,
+            538.185,
+            420.047
           ],
           "page": 14,
           "span": [
@@ -4733,10 +4710,10 @@
       "prov": [
         {
           "bbox": [
-            344.98499,
-            99.54707299999995,
-            508.98935000000006,
-            108.45363999999995
+            344.985,
+            99.63300000000004,
+            508.989,
+            108.18499999999995
           ],
           "page": 14,
           "span": [
@@ -4806,10 +4783,10 @@
       "prov": [
         {
           "bbox": [
-            84.233002,
-            138.74207,
-            252.24225,
-            147.64861999999994
+            84.233,
+            138.82799999999997,
+            252.242,
+            147.38
           ],
           "page": 15,
           "span": [
@@ -4859,10 +4836,10 @@
       "prov": [
         {
           "bbox": [
-            308.86197,
-            118.20308999999997,
-            545.11511,
-            139.06465000000003
+            308.862,
+            118.28899999999999,
+            545.115,
+            138.79600000000005
           ],
           "page": 15,
           "span": [
@@ -4888,9 +4865,9 @@
         {
           "bbox": [
             50.112,
-            262.80108999999993,
-            545.11383,
-            283.66263
+            262.88699999999994,
+            545.114,
+            283.394
           ],
           "page": 16,
           "span": [
@@ -5464,10 +5441,10 @@
         [
           {
             "bbox": [
-              451.9457100000001,
-              235.34704999999997,
-              457.95050000000003,
-              245.47748
+              451.946,
+              235.47699999999998,
+              457.951,
+              245.44000000000005
             ],
             "spans": [
               [
@@ -5521,10 +5498,10 @@
         [
           {
             "bbox": [
-              318.88071,
-              437.68588,
-              323.27319,
-              446.47083
+              318.881,
+              438.459,
+              323.273,
+              446.213
             ],
             "spans": [
               [
@@ -5549,10 +5526,10 @@
           },
           {
             "bbox": [
-              347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              347.249,
+              438.459,
+              351.641,
+              446.213
             ],
             "spans": [
               [
@@ -5589,10 +5566,10 @@
           },
           {
             "bbox": [
-              347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              347.249,
+              438.459,
+              351.641,
+              446.213
             ],
             "spans": [
               [
@@ -5629,10 +5606,10 @@
           },
           {
             "bbox": [
-              347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              347.249,
+              438.459,
+              351.641,
+              446.213
             ],
             "spans": [
               [
@@ -5669,10 +5646,10 @@
           },
           {
             "bbox": [
-              347.24872,
-              437.68588,
-              351.6412,
-              446.47083
+              347.249,
+              438.459,
+              351.641,
+              446.213
             ],
             "spans": [
               [
@@ -5711,10 +5688,10 @@
         [
           {
             "bbox": [
-              318.77316,
-              449.5455,
-              323.16565,
-              458.33044
+              318.773,
+              450.319,
+              323.166,
+              458.073
             ],
             "spans": [
               [
@@ -5739,10 +5716,10 @@
           },
           {
             "bbox": [
-              347.24872,
-              449.12082,
-              372.70581,
-              459.25122
+              347.249,
+              449.25,
+              372.706,
+              459.214
             ],
             "spans": [
               [
@@ -5767,10 +5744,10 @@
           },
           {
             "bbox": [
-              394.10422,
-              449.5455,
-              398.4967,
-              458.33044
+              394.104,
+              450.319,
+              398.497,
+              458.073
             ],
             "spans": [
               [
@@ -5795,10 +5772,10 @@
           },
           {
             "bbox": [
-              440.95941000000005,
-              449.5455,
-              445.3519,
-              458.33044
+              440.959,
+              450.319,
+              445.352,
+              458.073
             ],
             "spans": [
               [
@@ -5823,10 +5800,10 @@
           },
           {
             "bbox": [
-              487.81491,
-              449.5455,
-              492.2074,
-              458.33044
+              487.815,
+              450.319,
+              492.207,
+              458.073
             ],
             "spans": [
               [
@@ -5853,10 +5830,10 @@
         [
           {
             "bbox": [
-              318.77316,
-              473.70425,
-              323.16565,
-              482.4892
+              318.773,
+              474.477,
+              323.166,
+              482.232
             ],
             "spans": [
               [
@@ -5881,10 +5858,10 @@
           },
           {
             "bbox": [
-              347.24872,
-              461.8446,
-              351.6412,
-              470.62955
+              347.249,
+              462.618,
+              351.641,
+              470.372
             ],
             "spans": [
               [
@@ -5909,10 +5886,10 @@
           },
           {
             "bbox": [
-              394.10422,
-              461.8446,
-              402.88831,
-              470.62955
+              394.104,
+              462.618,
+              402.888,
+              470.372
             ],
             "spans": [
               [
@@ -5937,10 +5914,10 @@
           },
           {
             "bbox": [
-              440.95941000000005,
-              461.8446,
-              449.42285,
-              470.62955
+              440.959,
+              462.618,
+              449.423,
+              470.372
             ],
             "spans": [
               [
@@ -5965,10 +5942,10 @@
           },
           {
             "bbox": [
-              487.81491,
-              461.8446,
+              487.815,
+              462.618,
               496.599,
-              470.62955
+              470.372
             ],
             "spans": [
               [
@@ -5995,10 +5972,10 @@
         [
           {
             "bbox": [
-              347.24872,
-              473.70425,
-              356.03281,
-              482.4892
+              347.249,
+              474.477,
+              356.033,
+              482.232
             ],
             "spans": [
               [
@@ -6034,10 +6011,10 @@
           },
           {
             "bbox": [
-              394.10422,
-              473.70425,
-              402.88831,
-              482.4892
+              394.104,
+              474.477,
+              402.888,
+              482.232
             ],
             "spans": [
               [
@@ -6062,10 +6039,10 @@
           },
           {
             "bbox": [
-              440.95941000000005,
-              473.70425,
-              449.7435,
-              482.4892
+              440.959,
+              474.477,
+              449.743,
+              482.232
             ],
             "spans": [
               [
@@ -6090,10 +6067,10 @@
           },
           {
             "bbox": [
-              487.81491,
-              473.70425,
+              487.815,
+              474.477,
               496.599,
-              482.4892
+              482.232
             ],
             "spans": [
               [
@@ -6120,10 +6097,10 @@
         [
           {
             "bbox": [
-              347.24872,
-              485.12469,
-              356.03281,
-              493.90964
+              347.249,
+              485.898,
+              356.033,
+              493.652
             ],
             "spans": [
               [
@@ -6148,10 +6125,10 @@
           },
           {
             "bbox": [
-              394.10422,
-              485.12469,
-              402.88831,
-              493.90964
+              394.104,
+              485.898,
+              402.888,
+              493.652
             ],
             "spans": [
               [
@@ -6187,10 +6164,10 @@
           },
           {
             "bbox": [
-              440.95941000000005,
-              485.12469,
-              449.7435,
-              493.90964
+              440.959,
+              485.898,
+              449.743,
+              493.652
             ],
             "spans": [
               [
@@ -6215,10 +6192,10 @@
           },
           {
             "bbox": [
-              487.81491,
-              485.12469,
+              487.815,
+              485.898,
               496.599,
-              493.90964
+              493.652
             ],
             "spans": [
               [
@@ -6263,7 +6240,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "Table 1: Both \"Combined-Tabnet\" and \"CombinedTabnet\" are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank.",
+      "text": "Table 1: Both 'Combined-Tabnet' and 'CombinedTabnet' are variations of the following: (*) The CombinedTabnet dataset is the processed combination of PubTabNet and Fintabnet. (**) The combined dataset is the processed combination of PubTabNet, Fintabnet and TableBank.",
       "type": "table",
       "payload": null,
       "#-cols": 5,
@@ -6284,9 +6261,9 @@
           {
             "bbox": [
               412.332,
-              73.61437999999998,
-              430.90231,
-              82.52094
+              73.88300000000004,
+              430.902,
+              82.43499999999995
             ],
             "spans": [
               [
@@ -6311,10 +6288,10 @@
           },
           {
             "bbox": [
-              442.85742,
-              73.61437999999998,
-              464.4463799999999,
-              82.52094
+              442.857,
+              73.88300000000004,
+              464.446,
+              82.43499999999995
             ],
             "spans": [
               [
@@ -6339,10 +6316,10 @@
           },
           {
             "bbox": [
-              477.78632,
-              73.61437999999998,
-              494.94193,
-              82.52094
+              477.786,
+              73.88300000000004,
+              494.942,
+              82.43499999999995
             ],
             "spans": [
               [
@@ -6367,10 +6344,10 @@
           },
           {
             "bbox": [
-              508.28186,
-              73.61437999999998,
-              536.91437,
-              82.52094
+              508.282,
+              73.88300000000004,
+              536.914,
+              82.43499999999995
             ],
             "spans": [
               [
@@ -6398,9 +6375,9 @@
           {
             "bbox": [
               317.06,
-              85.9673499999999,
-              361.64264,
-              94.87390000000005
+              86.23599999999999,
+              361.643,
+              94.78800000000001
             ],
             "spans": [
               [
@@ -6425,10 +6402,10 @@
           },
           {
             "bbox": [
-              417.85599,
-              85.6684600000001,
-              425.37775,
-              94.88385000000017
+              417.856,
+              85.668,
+              425.378,
+              92.72199999999998
             ],
             "spans": [
               [
@@ -6453,10 +6430,10 @@
           },
           {
             "bbox": [
-              449.89569,
-              85.6684600000001,
-              457.41745000000003,
-              94.88385000000017
+              449.896,
+              85.668,
+              457.417,
+              92.72199999999998
             ],
             "spans": [
               [
@@ -6482,9 +6459,9 @@
           {
             "bbox": [
               476.401,
-              85.9673499999999,
-              496.3262,
-              94.87390000000005
+              86.23599999999999,
+              496.326,
+              94.78800000000001
             ],
             "spans": [
               [
@@ -6509,10 +6486,10 @@
           },
           {
             "bbox": [
-              512.63495,
-              85.9673499999999,
-              532.56012,
-              94.87390000000005
+              512.635,
+              86.23599999999999,
+              532.56,
+              94.78800000000001
             ],
             "spans": [
               [
@@ -6540,9 +6517,9 @@
           {
             "bbox": [
               317.06,
-              97.92236000000003,
-              359.43094,
-              106.82892000000004
+              98.19100000000003,
+              359.431,
+              106.74300000000005
             ],
             "spans": [
               [
@@ -6567,10 +6544,10 @@
           },
           {
             "bbox": [
-              417.85599,
-              97.62347,
-              425.37775,
-              106.83887000000016
+              417.856,
+              97.62300000000005,
+              425.378,
+              104.67700000000002
             ],
             "spans": [
               [
@@ -6595,10 +6572,10 @@
           },
           {
             "bbox": [
-              449.89569,
-              97.62347,
-              457.41745000000003,
-              106.83887000000016
+              449.896,
+              97.62300000000005,
+              457.417,
+              104.67700000000002
             ],
             "spans": [
               [
@@ -6624,9 +6601,9 @@
           {
             "bbox": [
               476.401,
-              97.92236000000003,
-              496.3262,
-              106.82892000000004
+              98.19100000000003,
+              496.326,
+              106.74300000000005
             ],
             "spans": [
               [
@@ -6651,10 +6628,10 @@
           },
           {
             "bbox": [
-              513.46185,
-              97.92236000000003,
-              531.73328,
-              106.82892000000004
+              513.462,
+              98.19100000000003,
+              531.733,
+              106.74300000000005
             ],
             "spans": [
               [
@@ -6682,9 +6659,9 @@
           {
             "bbox": [
               317.06,
-              109.87836000000004,
-              359.97888,
-              118.78490999999997
+              110.14700000000005,
+              359.979,
+              118.69899999999996
             ],
             "spans": [
               [
@@ -6709,10 +6686,10 @@
           },
           {
             "bbox": [
-              417.85599,
-              109.57947000000001,
-              425.37775,
-              118.79485999999997
+              417.856,
+              109.57899999999995,
+              425.378,
+              116.63300000000004
             ],
             "spans": [
               [
@@ -6737,10 +6714,10 @@
           },
           {
             "bbox": [
-              450.81226,
-              109.57947000000001,
-              456.50091999999995,
-              118.79485999999997
+              450.812,
+              109.57899999999995,
+              456.501,
+              116.63300000000004
             ],
             "spans": [
               [
@@ -6766,9 +6743,9 @@
           {
             "bbox": [
               476.401,
-              109.87836000000004,
-              496.3262,
-              118.78490999999997
+              110.14700000000005,
+              496.326,
+              118.69899999999996
             ],
             "spans": [
               [
@@ -6793,10 +6770,10 @@
           },
           {
             "bbox": [
-              511.25017999999994,
-              109.87836000000004,
-              533.94501,
-              118.78490999999997
+              511.25,
+              110.14700000000005,
+              533.945,
+              118.69899999999996
             ],
             "spans": [
               [
@@ -6824,9 +6801,9 @@
           {
             "bbox": [
               317.06,
-              121.83336999999995,
-              400.37723,
-              130.73992999999996
+              122.10199999999998,
+              400.377,
+              130.654
             ],
             "spans": [
               [
@@ -6851,10 +6828,10 @@
           },
           {
             "bbox": [
-              417.85599,
-              121.53448000000003,
-              425.37775,
-              130.74987999999996
+              417.856,
+              121.53399999999999,
+              425.378,
+              128.58799999999997
             ],
             "spans": [
               [
@@ -6879,10 +6856,10 @@
           },
           {
             "bbox": [
-              449.89569,
-              121.53448000000003,
-              457.41745000000003,
-              130.74987999999996
+              449.896,
+              121.53399999999999,
+              457.417,
+              128.58799999999997
             ],
             "spans": [
               [
@@ -6908,9 +6885,9 @@
           {
             "bbox": [
               476.401,
-              121.83336999999995,
-              496.3262,
-              130.73992999999996
+              122.10199999999998,
+              496.326,
+              130.654
             ],
             "spans": [
               [
@@ -6935,10 +6912,10 @@
           },
           {
             "bbox": [
-              512.63495,
-              121.83336999999995,
-              532.56012,
-              130.73992999999996
+              512.635,
+              122.10199999999998,
+              532.56,
+              130.654
             ],
             "spans": [
               [
@@ -6966,9 +6943,9 @@
           {
             "bbox": [
               317.06,
-              133.78839000000005,
-              375.17184,
-              142.69494999999995
+              134.05700000000002,
+              375.172,
+              142.60900000000004
             ],
             "spans": [
               [
@@ -6993,10 +6970,10 @@
           },
           {
             "bbox": [
-              417.85599,
-              133.48950000000002,
-              425.37775,
-              142.70489999999995
+              417.856,
+              133.48900000000003,
+              425.378,
+              140.543
             ],
             "spans": [
               [
@@ -7021,10 +6998,10 @@
           },
           {
             "bbox": [
-              449.89569,
-              133.48950000000002,
-              457.41745000000003,
-              142.70489999999995
+              449.896,
+              133.48900000000003,
+              457.417,
+              140.543
             ],
             "spans": [
               [
@@ -7050,9 +7027,9 @@
           {
             "bbox": [
               476.401,
-              133.78839000000005,
-              496.3262,
-              142.69494999999995
+              134.05700000000002,
+              496.326,
+              142.60900000000004
             ],
             "spans": [
               [
@@ -7077,10 +7054,10 @@
           },
           {
             "bbox": [
-              512.63495,
-              133.78839000000005,
-              532.56012,
-              142.69494999999995
+              512.635,
+              134.05700000000002,
+              532.56,
+              142.60900000000004
             ],
             "spans": [
               [
@@ -7108,9 +7085,9 @@
           {
             "bbox": [
               317.06,
-              145.74341000000004,
-              369.39352,
-              154.64995999999996
+              146.01199999999994,
+              369.394,
+              154.56399999999996
             ],
             "spans": [
               [
@@ -7135,10 +7112,10 @@
           },
           {
             "bbox": [
-              417.85599,
-              145.44446000000005,
-              425.37775,
-              154.65985
+              417.856,
+              145.44399999999996,
+              425.378,
+              152.49800000000005
             ],
             "spans": [
               [
@@ -7163,10 +7140,10 @@
           },
           {
             "bbox": [
-              449.89569,
-              145.44446000000005,
-              457.41745000000003,
-              154.65985
+              449.896,
+              145.44399999999996,
+              457.417,
+              152.49800000000005
             ],
             "spans": [
               [
@@ -7192,9 +7169,9 @@
           {
             "bbox": [
               476.401,
-              145.74334999999996,
-              496.3262,
-              154.6499
+              146.01199999999994,
+              496.326,
+              154.56399999999996
             ],
             "spans": [
               [
@@ -7219,10 +7196,10 @@
           },
           {
             "bbox": [
-              512.63495,
-              145.74334999999996,
-              532.56012,
-              154.6499
+              512.635,
+              146.01199999999994,
+              532.56,
+              154.56399999999996
             ],
             "spans": [
               [
@@ -7276,10 +7253,10 @@
         [
           {
             "bbox": [
-              78.843002,
-              420.69037,
-              104.85535,
-              429.59692
+              78.843,
+              420.959,
+              104.855,
+              429.511
             ],
             "spans": [
               [
@@ -7305,9 +7282,9 @@
           {
             "bbox": [
               129.338,
-              426.66736,
-              159.21584,
-              435.57391000000007
+              426.936,
+              159.216,
+              435.488
             ],
             "spans": [
               [
@@ -7332,10 +7309,10 @@
           },
           {
             "bbox": [
-              171.17096,
-              426.66736,
-              199.40497,
-              435.57391000000007
+              171.171,
+              426.936,
+              199.405,
+              435.488
             ],
             "spans": [
               [
@@ -7361,9 +7338,9 @@
           {
             "bbox": [
               211.2,
-              414.71237,
-              236.10649,
-              423.61893
+              414.981,
+              236.107,
+              423.533
             ],
             "spans": [
               [
@@ -7388,10 +7365,10 @@
           },
           {
             "bbox": [
-              264.54044,
-              426.66736,
-              277.27264,
-              435.57391000000007
+              264.54,
+              426.936,
+              277.273,
+              435.488
             ],
             "spans": [
               [
@@ -7419,9 +7396,9 @@
           {
             "bbox": [
               81.612,
-              443.62436,
-              102.08514,
-              452.53091
+              443.893,
+              102.085,
+              452.445
             ],
             "spans": [
               [
@@ -7446,10 +7423,10 @@
           },
           {
             "bbox": [
-              134.87206,
-              443.62436,
-              153.69141,
-              452.53091
+              134.872,
+              443.893,
+              153.691,
+              452.445
             ],
             "spans": [
               [
@@ -7474,10 +7451,10 @@
           },
           {
             "bbox": [
-              176.56554,
-              443.62436,
-              194.00009,
-              452.53091
+              176.566,
+              443.893,
+              194.0,
+              452.445
             ],
             "spans": [
               [
@@ -7502,10 +7479,10 @@
           },
           {
             "bbox": [
-              220.82938000000001,
-              443.62436,
-              238.26393,
-              452.53091
+              220.829,
+              443.893,
+              238.264,
+              452.445
             ],
             "spans": [
               [
@@ -7530,10 +7507,10 @@
           },
           {
             "bbox": [
-              262.18414,
-              443.62436,
-              279.61868,
-              452.53091
+              262.184,
+              443.893,
+              279.619,
+              452.445
             ],
             "spans": [
               [
@@ -7560,10 +7537,10 @@
         [
           {
             "bbox": [
-              82.165001,
-              455.58035,
-              101.5323,
-              464.48691
+              82.165,
+              455.849,
+              101.532,
+              464.401
             ],
             "spans": [
               [
@@ -7588,10 +7565,10 @@
           },
           {
             "bbox": [
-              134.86716,
-              455.58035,
-              153.68651,
-              464.48691
+              134.867,
+              455.849,
+              153.687,
+              464.401
             ],
             "spans": [
               [
@@ -7616,10 +7593,10 @@
           },
           {
             "bbox": [
-              183.62411,
-              455.58035,
-              186.94167,
-              464.48691
+              183.624,
+              455.849,
+              186.942,
+              464.401
             ],
             "spans": [
               [
@@ -7644,10 +7621,10 @@
           },
           {
             "bbox": [
-              227.88795000000002,
-              455.58035,
-              231.20551,
-              464.48691
+              227.888,
+              455.849,
+              231.205,
+              464.401
             ],
             "spans": [
               [
@@ -7672,10 +7649,10 @@
           },
           {
             "bbox": [
-              259.69855,
-              455.58035,
-              282.11441,
-              464.48691
+              259.699,
+              455.849,
+              282.114,
+              464.401
             ],
             "spans": [
               [
@@ -7702,10 +7679,10 @@
         [
           {
             "bbox": [
-              66.315002,
-              468.13336,
-              117.38329000000002,
-              477.03992
+              66.315,
+              468.402,
+              117.383,
+              476.954
             ],
             "spans": [
               [
@@ -7730,10 +7707,10 @@
           },
           {
             "bbox": [
-              134.86766,
-              468.13336,
-              153.68701,
-              477.03992
+              134.868,
+              468.402,
+              153.687,
+              476.954
             ],
             "spans": [
               [
@@ -7758,10 +7735,10 @@
           },
           {
             "bbox": [
-              176.57111,
-              468.13336,
-              194.00566,
-              477.03992
+              176.571,
+              468.402,
+              194.006,
+              476.954
             ],
             "spans": [
               [
@@ -7786,10 +7763,10 @@
           },
           {
             "bbox": [
-              220.83495,
-              468.13336,
-              238.26950000000002,
-              477.03992
+              220.835,
+              468.402,
+              238.269,
+              476.954
             ],
             "spans": [
               [
@@ -7815,9 +7792,9 @@
           {
             "bbox": [
               259.698,
-              468.01379,
-              282.11386,
-              476.97018
+              468.014,
+              282.114,
+              476.97
             ],
             "spans": [
               [
@@ -7845,9 +7822,9 @@
           {
             "bbox": [
               81.612,
-              483.32635,
-              102.08514,
-              492.23291
+              483.595,
+              102.085,
+              492.147
             ],
             "spans": [
               [
@@ -7872,10 +7849,10 @@
           },
           {
             "bbox": [
-              134.87206,
-              483.32635,
-              153.69141,
-              492.23291
+              134.872,
+              483.595,
+              153.691,
+              492.147
             ],
             "spans": [
               [
@@ -7900,10 +7877,10 @@
           },
           {
             "bbox": [
-              176.56554,
-              483.32635,
-              194.00009,
-              492.23291
+              176.566,
+              483.595,
+              194.0,
+              492.147
             ],
             "spans": [
               [
@@ -7928,10 +7905,10 @@
           },
           {
             "bbox": [
-              218.33870999999996,
-              483.32635,
-              240.75455999999997,
-              492.23291
+              218.339,
+              483.595,
+              240.755,
+              492.147
             ],
             "spans": [
               [
@@ -7956,10 +7933,10 @@
           },
           {
             "bbox": [
-              262.18411,
-              483.32635,
-              279.61865,
-              492.23291
+              262.184,
+              483.595,
+              279.619,
+              492.147
             ],
             "spans": [
               [
@@ -7986,10 +7963,10 @@
         [
           {
             "bbox": [
-              82.165001,
-              495.28134,
-              101.5323,
-              504.1879
+              82.165,
+              495.55,
+              101.532,
+              504.102
             ],
             "spans": [
               [
@@ -8014,10 +7991,10 @@
           },
           {
             "bbox": [
-              134.86716,
-              495.28134,
-              153.68651,
-              504.1879
+              134.867,
+              495.55,
+              153.687,
+              504.102
             ],
             "spans": [
               [
@@ -8042,10 +8019,10 @@
           },
           {
             "bbox": [
-              183.62411,
-              495.28134,
-              186.94167,
-              504.1879
+              183.624,
+              495.55,
+              186.942,
+              504.102
             ],
             "spans": [
               [
@@ -8070,10 +8047,10 @@
           },
           {
             "bbox": [
-              227.88795000000002,
-              495.28134,
-              231.20551,
-              504.1879
+              227.888,
+              495.55,
+              231.205,
+              504.102
             ],
             "spans": [
               [
@@ -8098,10 +8075,10 @@
           },
           {
             "bbox": [
-              259.69855,
-              495.28134,
-              282.11441,
-              504.1879
+              259.699,
+              495.55,
+              282.114,
+              504.102
             ],
             "spans": [
               [
@@ -8128,10 +8105,10 @@
         [
           {
             "bbox": [
-              71.789001,
-              507.23633,
-              111.90838999999998,
-              516.14288
+              71.789,
+              507.505,
+              91.156,
+              516.057
             ],
             "spans": [
               [
@@ -8156,10 +8133,10 @@
           },
           {
             "bbox": [
-              134.86221,
-              507.23633,
-              153.68156,
-              516.14288
+              134.862,
+              507.505,
+              153.682,
+              516.057
             ],
             "spans": [
               [
@@ -8184,10 +8161,10 @@
           },
           {
             "bbox": [
-              183.62914,
-              507.23633,
-              186.94669,
-              516.14288
+              183.629,
+              507.505,
+              186.947,
+              516.057
             ],
             "spans": [
               [
@@ -8212,10 +8189,10 @@
           },
           {
             "bbox": [
-              227.89297,
-              507.23633,
-              231.21053000000003,
-              516.14288
+              227.893,
+              507.505,
+              231.211,
+              516.057
             ],
             "spans": [
               [
@@ -8240,10 +8217,10 @@
           },
           {
             "bbox": [
-              259.6936,
-              507.23633,
-              282.10947,
-              516.14288
+              259.694,
+              507.505,
+              282.109,
+              516.057
             ],
             "spans": [
               [
@@ -8270,10 +8247,10 @@
         [
           {
             "bbox": [
-              66.315002,
-              519.1913099999999,
-              117.38329000000002,
-              528.0978700000001
+              66.315,
+              519.46,
+              117.383,
+              528.012
             ],
             "spans": [
               [
@@ -8298,10 +8275,10 @@
           },
           {
             "bbox": [
-              134.86766,
-              519.1913099999999,
-              153.68701,
-              528.0978700000001
+              134.868,
+              519.46,
+              153.687,
+              528.012
             ],
             "spans": [
               [
@@ -8326,10 +8303,10 @@
           },
           {
             "bbox": [
-              176.57111,
-              519.1913099999999,
-              194.00566,
-              528.0978700000001
+              176.571,
+              519.46,
+              194.006,
+              528.012
             ],
             "spans": [
               [
@@ -8354,10 +8331,10 @@
           },
           {
             "bbox": [
-              220.83495,
-              519.1913099999999,
-              238.26950000000002,
-              528.0978700000001
+              220.835,
+              519.46,
+              238.269,
+              528.012
             ],
             "spans": [
               [
@@ -8383,9 +8360,9 @@
           {
             "bbox": [
               262.189,
-              519.0717500000001,
-              279.62354,
-              528.02814
+              519.072,
+              279.624,
+              528.028
             ],
             "spans": [
               [
@@ -8413,9 +8390,9 @@
           {
             "bbox": [
               81.612,
-              536.49837,
-              102.08514,
-              545.40492
+              536.767,
+              102.085,
+              545.319
             ],
             "spans": [
               [
@@ -8440,10 +8417,10 @@
           },
           {
             "bbox": [
-              137.91064,
-              536.49837,
-              150.64285,
-              545.40492
+              137.911,
+              536.767,
+              150.643,
+              545.319
             ],
             "spans": [
               [
@@ -8468,10 +8445,10 @@
           },
           {
             "bbox": [
-              176.56554,
-              536.49837,
-              194.00009,
-              545.40492
+              176.566,
+              536.767,
+              194.0,
+              545.319
             ],
             "spans": [
               [
@@ -8496,10 +8473,10 @@
           },
           {
             "bbox": [
-              227.89285,
-              536.49837,
-              231.21040000000002,
-              545.40492
+              227.893,
+              536.767,
+              231.21,
+              545.319
             ],
             "spans": [
               [
@@ -8524,10 +8501,10 @@
           },
           {
             "bbox": [
-              262.18411,
-              536.49837,
-              279.61865,
-              545.40492
+              262.184,
+              536.767,
+              279.619,
+              545.319
             ],
             "spans": [
               [
@@ -8554,10 +8531,10 @@
         [
           {
             "bbox": [
-              66.315002,
-              548.45436,
-              117.38329000000002,
-              557.36092
+              66.315,
+              548.723,
+              117.383,
+              557.275
             ],
             "spans": [
               [
@@ -8582,10 +8559,10 @@
           },
           {
             "bbox": [
-              137.90625,
-              548.45436,
-              150.63846,
-              557.36092
+              137.906,
+              548.723,
+              150.638,
+              557.275
             ],
             "spans": [
               [
@@ -8610,10 +8587,10 @@
           },
           {
             "bbox": [
-              176.57111,
-              548.45436,
-              194.00566,
-              557.36092
+              176.571,
+              548.723,
+              194.006,
+              557.275
             ],
             "spans": [
               [
@@ -8638,10 +8615,10 @@
           },
           {
             "bbox": [
-              227.88845999999998,
-              548.45436,
-              231.20601,
-              557.36092
+              227.888,
+              548.723,
+              231.206,
+              557.275
             ],
             "spans": [
               [
@@ -8667,9 +8644,9 @@
           {
             "bbox": [
               262.189,
-              548.3348100000001,
-              279.62354,
-              557.2911799999999
+              548.335,
+              279.624,
+              557.2909999999999
             ],
             "spans": [
               [
@@ -8696,10 +8673,10 @@
         [
           {
             "bbox": [
-              66.315002,
-              568.00237,
-              117.38329000000002,
-              576.90892
+              66.315,
+              568.271,
+              117.383,
+              576.823
             ],
             "spans": [
               [
@@ -8724,10 +8701,10 @@
           },
           {
             "bbox": [
-              134.86766,
-              568.00237,
-              153.68701,
-              576.90892
+              134.868,
+              568.271,
+              153.687,
+              576.823
             ],
             "spans": [
               [
@@ -8752,10 +8729,10 @@
           },
           {
             "bbox": [
-              176.57111,
-              568.00237,
-              194.00566,
-              576.90892
+              176.571,
+              568.271,
+              194.006,
+              576.823
             ],
             "spans": [
               [
@@ -8780,10 +8757,10 @@
           },
           {
             "bbox": [
-              220.83495,
-              568.00237,
-              238.26950000000002,
-              576.90892
+              220.835,
+              568.271,
+              238.269,
+              576.823
             ],
             "spans": [
               [
@@ -8808,10 +8785,10 @@
           },
           {
             "bbox": [
-              262.1897,
-              568.00237,
-              279.62424,
-              576.90892
+              262.19,
+              568.271,
+              279.624,
+              576.823
             ],
             "spans": [
               [
@@ -8866,9 +8843,9 @@
           {
             "bbox": [
               339.323,
-              253.66436999999996,
-              365.33536,
-              262.57092
+              253.933,
+              365.335,
+              262.485
             ],
             "spans": [
               [
@@ -8893,10 +8870,10 @@
           },
           {
             "bbox": [
-              401.04132,
-              253.66436999999996,
-              430.91916,
-              262.57092
+              401.041,
+              253.933,
+              430.919,
+              262.485
             ],
             "spans": [
               [
@@ -8921,10 +8898,10 @@
           },
           {
             "bbox": [
-              454.10214,
-              253.66436999999996,
-              474.58523999999994,
-              262.57092
+              454.102,
+              253.933,
+              474.585,
+              262.485
             ],
             "spans": [
               [
@@ -8949,10 +8926,10 @@
           },
           {
             "bbox": [
-              486.54034,
-              253.66436999999996,
-              527.2276,
-              262.57092
+              486.54,
+              253.933,
+              507.023,
+              262.485
             ],
             "spans": [
               [
@@ -8979,10 +8956,10 @@
         [
           {
             "bbox": [
-              327.65601,
-              270.62134000000003,
-              377.00076,
-              279.52788999999996
+              327.656,
+              270.89,
+              377.001,
+              279.442
             ],
             "spans": [
               [
@@ -9007,10 +8984,10 @@
           },
           {
             "bbox": [
-              393.69809,
-              270.62134000000003,
-              438.28073,
-              279.52788999999996
+              393.698,
+              270.89,
+              438.281,
+              279.442
             ],
             "spans": [
               [
@@ -9035,10 +9012,10 @@
           },
           {
             "bbox": [
-              455.63559,
-              270.62134000000003,
-              473.07013,
-              279.52788999999996
+              455.636,
+              270.89,
+              473.07,
+              279.442
             ],
             "spans": [
               [
@@ -9063,10 +9040,10 @@
           },
           {
             "bbox": [
-              498.16592,
-              270.62134000000003,
-              515.60046,
-              279.52788999999996
+              498.166,
+              270.89,
+              515.6,
+              279.442
             ],
             "spans": [
               [
@@ -9093,10 +9070,10 @@
         [
           {
             "bbox": [
-              326.79501,
-              282.57631999999995,
-              377.86331,
-              291.48288
+              326.795,
+              282.845,
+              377.863,
+              291.397
             ],
             "spans": [
               [
@@ -9121,10 +9098,10 @@
           },
           {
             "bbox": [
-              393.69388,
-              282.57631999999995,
-              438.27652,
-              291.48288
+              393.694,
+              282.845,
+              438.276,
+              291.397
             ],
             "spans": [
               [
@@ -9149,10 +9126,10 @@
           },
           {
             "bbox": [
-              455.63101,
-              282.45676,
-              473.06555000000003,
-              291.41315
+              455.631,
+              282.457,
+              473.066,
+              291.413
             ],
             "spans": [
               [
@@ -9177,10 +9154,10 @@
           },
           {
             "bbox": [
-              498.1713,
-              282.45676,
-              515.60583,
-              291.41315
+              498.171,
+              282.457,
+              515.606,
+              291.413
             ],
             "spans": [
               [
@@ -9207,10 +9184,10 @@
         [
           {
             "bbox": [
-              326.79501,
-              294.53131,
-              377.86331,
-              303.43787
+              326.795,
+              294.8,
+              377.863,
+              303.352
             ],
             "spans": [
               [
@@ -9235,10 +9212,10 @@
           },
           {
             "bbox": [
-              389.81842,
-              294.53131,
-              442.15194999999994,
-              303.43787
+              389.818,
+              294.8,
+              442.152,
+              303.352
             ],
             "spans": [
               [
@@ -9263,10 +9240,10 @@
           },
           {
             "bbox": [
-              455.63135,
-              294.53131,
-              473.06589,
-              303.43787
+              455.631,
+              294.8,
+              473.066,
+              303.352
             ],
             "spans": [
               [
@@ -9291,10 +9268,10 @@
           },
           {
             "bbox": [
-              505.22515999999996,
-              294.53131,
-              508.54268999999994,
-              303.43787
+              505.225,
+              294.8,
+              508.543,
+              303.352
             ],
             "spans": [
               [
@@ -9348,10 +9325,10 @@
         [
           {
             "bbox": [
-              358.01099,
-              552.23337,
-              384.02335,
-              561.1399200000001
+              358.011,
+              552.502,
+              384.023,
+              561.054
             ],
             "spans": [
               [
@@ -9376,10 +9353,10 @@
           },
           {
             "bbox": [
-              408.50598,
-              558.21037,
-              436.73999,
-              567.11693
+              408.506,
+              558.479,
+              436.74,
+              567.031
             ],
             "spans": [
               [
@@ -9404,10 +9381,10 @@
           },
           {
             "bbox": [
-              449.03400000000005,
-              546.25537,
-              473.94049000000007,
-              555.16193
+              449.034,
+              546.524,
+              473.94,
+              555.076
             ],
             "spans": [
               [
@@ -9432,10 +9409,10 @@
           },
           {
             "bbox": [
-              499.3848,
-              558.21037,
+              499.385,
+              558.479,
               512.117,
-              567.11693
+              567.031
             ],
             "spans": [
               [
@@ -9462,10 +9439,10 @@
         [
           {
             "bbox": [
-              357.68201,
-              575.16736,
-              384.3519,
-              584.0739100000001
+              357.682,
+              575.436,
+              384.352,
+              583.988
             ],
             "spans": [
               [
@@ -9490,10 +9467,10 @@
           },
           {
             "bbox": [
-              413.90097,
-              575.16736,
-              431.33550999999994,
-              584.0739100000001
+              413.901,
+              575.436,
+              431.336,
+              583.988
             ],
             "spans": [
               [
@@ -9518,10 +9495,10 @@
           },
           {
             "bbox": [
-              458.16479000000004,
-              575.16736,
-              475.59933000000007,
-              584.0739100000001
+              458.165,
+              575.436,
+              475.599,
+              583.988
             ],
             "spans": [
               [
@@ -9546,10 +9523,10 @@
           },
           {
             "bbox": [
-              497.0289,
-              575.16736,
-              514.46344,
-              584.0739100000001
+              497.029,
+              575.436,
+              514.463,
+              583.988
             ],
             "spans": [
               [
@@ -9576,10 +9553,10 @@
         [
           {
             "bbox": [
-              350.72299,
-              587.12236,
-              391.31064,
-              596.02892
+              350.723,
+              587.391,
+              391.311,
+              595.943
             ],
             "spans": [
               [
@@ -9604,10 +9581,10 @@
           },
           {
             "bbox": [
-              413.90582,
-              587.12236,
-              431.34036,
-              596.02892
+              413.906,
+              587.391,
+              431.34,
+              595.943
             ],
             "spans": [
               [
@@ -9632,10 +9609,10 @@
           },
           {
             "bbox": [
-              458.16965,
-              587.12236,
-              475.60419,
-              596.02892
+              458.17,
+              587.391,
+              475.604,
+              595.943
             ],
             "spans": [
               [
@@ -9660,10 +9637,10 @@
           },
           {
             "bbox": [
-              497.03374999999994,
-              587.12236,
-              514.46832,
-              596.02892
+              497.034,
+              587.391,
+              514.468,
+              595.943
             ],
             "spans": [
               [
@@ -9690,10 +9667,10 @@
         [
           {
             "bbox": [
-              354.13599,
-              599.07835,
-              387.89923,
-              607.98491
+              354.136,
+              599.347,
+              387.899,
+              607.899
             ],
             "spans": [
               [
@@ -9718,10 +9695,10 @@
           },
           {
             "bbox": [
-              413.90161,
-              599.07835,
-              431.33615,
-              607.98491
+              413.902,
+              599.347,
+              431.336,
+              607.899
             ],
             "spans": [
               [
@@ -9746,10 +9723,10 @@
           },
           {
             "bbox": [
-              458.16544,
-              599.07835,
-              475.59998,
-              607.98491
+              458.165,
+              599.347,
+              475.6,
+              607.899
             ],
             "spans": [
               [
@@ -9774,10 +9751,10 @@
           },
           {
             "bbox": [
-              497.02954000000005,
-              599.07835,
-              514.46411,
-              607.98491
+              497.03,
+              599.347,
+              514.464,
+              607.899
             ],
             "spans": [
               [
@@ -9804,10 +9781,10 @@
         [
           {
             "bbox": [
-              346.55899,
-              611.03336,
-              395.47534,
-              619.93991
+              346.559,
+              611.302,
+              378.649,
+              619.854
             ],
             "spans": [
               [
@@ -9832,10 +9809,10 @@
           },
           {
             "bbox": [
-              413.90616,
-              611.03336,
-              431.34069999999997,
-              619.93991
+              413.906,
+              611.302,
+              431.341,
+              619.854
             ],
             "spans": [
               [
@@ -9860,10 +9837,10 @@
           },
           {
             "bbox": [
-              458.16998000000007,
-              611.03336,
-              475.60452,
-              619.93991
+              458.17,
+              611.302,
+              475.605,
+              619.854
             ],
             "spans": [
               [
@@ -9888,10 +9865,10 @@
           },
           {
             "bbox": [
-              497.03409,
-              611.03336,
-              514.46863,
-              619.93991
+              497.034,
+              611.302,
+              514.469,
+              619.854
             ],
             "spans": [
               [
@@ -9918,10 +9895,10 @@
         [
           {
             "bbox": [
-              360.78101,
-              622.9883600000001,
-              381.25415,
-              631.89491
+              360.781,
+              623.2570000000001,
+              381.254,
+              631.809
             ],
             "spans": [
               [
@@ -9946,10 +9923,10 @@
           },
           {
             "bbox": [
-              413.90158,
-              622.9883600000001,
-              431.33612,
-              631.89491
+              413.902,
+              623.2570000000001,
+              431.336,
+              631.809
             ],
             "spans": [
               [
@@ -9974,10 +9951,10 @@
           },
           {
             "bbox": [
-              458.16541,
-              622.9883600000001,
-              475.59995000000004,
-              631.89491
+              458.165,
+              623.2570000000001,
+              475.6,
+              631.809
             ],
             "spans": [
               [
@@ -10002,10 +9979,10 @@
           },
           {
             "bbox": [
-              497.0295100000001,
-              622.9883600000001,
-              514.46405,
-              631.89491
+              497.03,
+              623.2570000000001,
+              514.464,
+              631.809
             ],
             "spans": [
               [
@@ -10033,9 +10010,9 @@
           {
             "bbox": [
               345.483,
-              634.94336,
-              396.5513,
-              643.84991
+              635.212,
+              396.551,
+              643.764
             ],
             "spans": [
               [
@@ -10060,10 +10037,10 @@
           },
           {
             "bbox": [
-              413.90616,
-              634.94336,
-              431.34069999999997,
-              643.84991
+              413.906,
+              635.212,
+              431.341,
+              643.764
             ],
             "spans": [
               [
@@ -10088,10 +10065,10 @@
           },
           {
             "bbox": [
-              458.16998000000007,
-              634.94336,
-              475.60452,
-              643.84991
+              458.17,
+              635.212,
+              475.605,
+              643.764
             ],
             "spans": [
               [
@@ -10116,10 +10093,10 @@
           },
           {
             "bbox": [
-              497.03400000000005,
-              634.82381,
-              514.46857,
-              643.78018
+              497.034,
+              634.8240000000001,
+              514.469,
+              643.78
             ],
             "spans": [
               [
@@ -10195,10 +10172,10 @@
           },
           {
             "bbox": [
-              209.93285,
-              222.18073000000004,
-              241.04458999999997,
-              226.36212
+              209.933,
+              221.35799999999995,
+              223.873,
+              226.00400000000002
             ],
             "spans": [
               [
@@ -10227,10 +10204,10 @@
           },
           {
             "bbox": [
-              209.93285,
-              222.18073000000004,
-              241.04458999999997,
-              226.36212
+              209.933,
+              221.35799999999995,
+              223.873,
+              226.00400000000002
             ],
             "spans": [
               [
@@ -10259,10 +10236,10 @@
           },
           {
             "bbox": [
-              263.76489,
-              222.18073000000004,
-              284.50589,
-              226.36212
+              263.765,
+              221.35799999999995,
+              273.058,
+              226.00400000000002
             ],
             "spans": [
               [
@@ -10291,10 +10268,10 @@
           },
           {
             "bbox": [
-              263.76489,
-              222.18073000000004,
-              284.50589,
-              226.36212
+              263.765,
+              221.35799999999995,
+              273.058,
+              226.00400000000002
             ],
             "spans": [
               [
@@ -10325,10 +10302,10 @@
         [
           {
             "bbox": [
-              110.24990999999999,
-              229.66594999999995,
-              120.62018,
-              233.84735
+              110.25,
+              228.84400000000005,
+              114.896,
+              233.49
             ],
             "spans": [
               [
@@ -10353,10 +10330,10 @@
           },
           {
             "bbox": [
-              175.36609,
-              229.66594999999995,
-              196.1071,
-              233.84735
+              175.366,
+              228.84400000000005,
+              186.983,
+              233.49
             ],
             "spans": [
               [
@@ -10364,7 +10341,7 @@
                 1
               ]
             ],
-            "text": "\u30d5\u30a1\u30a4\u30eb \u6570",
+            "text": "\u30d5\u30a1\u30a4\u30eb\u6570 \u82f1\u8a9e",
             "type": "col_header",
             "col": 1,
             "col-header": true,
@@ -10380,39 +10357,22 @@
             ]
           },
           {
-            "bbox": [
-              209.62408,
-              229.66594999999995,
-              219.99435,
-              233.84735
-            ],
+            "bbox": null,
             "spans": [
               [
                 1,
                 2
               ]
             ],
-            "text": "\u82f1\u8a9e",
-            "type": "col_header",
-            "col": 2,
-            "col-header": true,
-            "col-span": [
-              2,
-              3
-            ],
-            "row": 1,
-            "row-header": false,
-            "row-span": [
-              1,
-              2
-            ]
+            "text": "",
+            "type": "body"
           },
           {
             "bbox": [
-              229.19814,
-              229.66594999999995,
-              244.75377,
-              233.84735
+              229.198,
+              228.84400000000005,
+              236.168,
+              233.49
             ],
             "spans": [
               [
@@ -10437,10 +10397,10 @@
           },
           {
             "bbox": [
-              256.1142,
-              229.66594999999995,
-              266.48447,
-              233.84735
+              256.114,
+              228.84400000000005,
+              260.761,
+              233.49
             ],
             "spans": [
               [
@@ -10465,10 +10425,10 @@
           },
           {
             "bbox": [
-              278.38434,
-              229.66594999999995,
-              293.93997,
-              233.84735
+              278.384,
+              228.84400000000005,
+              285.354,
+              233.49
             ],
             "spans": [
               [
@@ -10495,10 +10455,10 @@
         [
           {
             "bbox": [
-              55.53052099999999,
-              236.42584,
-              162.7131,
-              240.78375000000005
+              55.531,
+              236.48199999999997,
+              79.291,
+              240.76800000000003
             ],
             "spans": [
               [
@@ -10523,10 +10483,10 @@
           },
           {
             "bbox": [
-              184.39731,
-              236.42584,
-              189.56456,
-              240.78375000000005
+              184.397,
+              236.48199999999997,
+              189.565,
+              240.76800000000003
             ],
             "spans": [
               [
@@ -10551,10 +10511,10 @@
           },
           {
             "bbox": [
-              208.99026,
-              236.42584,
-              214.15752,
-              240.78375000000005
+              208.99,
+              236.48199999999997,
+              214.158,
+              240.76800000000003
             ],
             "spans": [
               [
@@ -10579,10 +10539,10 @@
           },
           {
             "bbox": [
-              234.87517,
-              236.42584,
-              237.45833000000002,
-              240.78375000000005
+              234.875,
+              236.48199999999997,
+              237.458,
+              240.76800000000003
             ],
             "spans": [
               [
@@ -10607,10 +10567,10 @@
           },
           {
             "bbox": [
-              256.88446,
-              236.42584,
-              264.6358,
-              240.78375000000005
+              256.884,
+              236.48199999999997,
+              264.636,
+              240.76800000000003
             ],
             "spans": [
               [
@@ -10635,10 +10595,10 @@
           },
           {
             "bbox": [
-              284.06134,
-              236.42584,
-              286.6445,
-              240.78375000000005
+              284.061,
+              236.48199999999997,
+              286.644,
+              240.76800000000003
             ],
             "spans": [
               [
@@ -10665,10 +10625,10 @@
         [
           {
             "bbox": [
-              55.53052099999999,
-              242.62048000000004,
-              139.72253,
-              246.97839
+              55.531,
+              242.67600000000004,
+              85.491,
+              246.962
             ],
             "spans": [
               [
@@ -10693,10 +10653,10 @@
           },
           {
             "bbox": [
-              183.10536,
-              242.62048000000004,
-              190.8567,
-              246.97839
+              183.105,
+              242.67600000000004,
+              190.857,
+              246.962
             ],
             "spans": [
               [
@@ -10721,10 +10681,10 @@
           },
           {
             "bbox": [
-              207.69832,
-              242.62048000000004,
-              215.44965999999997,
-              246.97839
+              207.698,
+              242.67600000000004,
+              215.45,
+              246.962
             ],
             "spans": [
               [
@@ -10749,10 +10709,10 @@
           },
           {
             "bbox": [
-              234.87517,
-              242.62048000000004,
-              237.45833000000002,
-              246.97839
+              234.875,
+              242.67600000000004,
+              237.458,
+              246.962
             ],
             "spans": [
               [
@@ -10777,10 +10737,10 @@
           },
           {
             "bbox": [
-              256.88446,
-              242.62048000000004,
-              264.6358,
-              246.97839
+              256.884,
+              242.67600000000004,
+              264.636,
+              246.962
             ],
             "spans": [
               [
@@ -10805,10 +10765,10 @@
           },
           {
             "bbox": [
-              284.06134,
-              242.62048000000004,
-              286.6445,
-              246.97839
+              284.061,
+              242.67600000000004,
+              286.644,
+              246.962
             ],
             "spans": [
               [
@@ -10835,10 +10795,10 @@
         [
           {
             "bbox": [
-              55.53052099999999,
-              249.79845999999998,
-              97.013,
-              253.97986000000003
+              55.531,
+              248.976,
+              74.118,
+              253.62199999999996
             ],
             "spans": [
               [
@@ -10863,10 +10823,10 @@
           },
           {
             "bbox": [
-              183.10536,
-              248.81506000000002,
-              190.8567,
-              253.17296999999996
+              183.105,
+              248.87099999999998,
+              190.857,
+              253.15700000000004
             ],
             "spans": [
               [
@@ -10891,10 +10851,10 @@
           },
           {
             "bbox": [
-              210.28223,
-              248.81506000000002,
-              212.86539,
-              253.17296999999996
+              210.282,
+              248.87099999999998,
+              212.865,
+              253.15700000000004
             ],
             "spans": [
               [
@@ -10919,10 +10879,10 @@
           },
           {
             "bbox": [
-              232.29153,
-              248.81506000000002,
-              240.04287999999997,
-              253.17296999999996
+              232.292,
+              248.87099999999998,
+              240.043,
+              253.15700000000004
             ],
             "spans": [
               [
@@ -10947,10 +10907,10 @@
           },
           {
             "bbox": [
-              256.88446,
-              248.81506000000002,
-              264.6358,
-              253.17296999999996
+              256.884,
+              248.87099999999998,
+              264.636,
+              253.15700000000004
             ],
             "spans": [
               [
@@ -10975,10 +10935,10 @@
           },
           {
             "bbox": [
-              281.47742,
-              248.81506000000002,
-              289.22876,
-              253.17296999999996
+              281.477,
+              248.87099999999998,
+              289.229,
+              253.15700000000004
             ],
             "spans": [
               [
@@ -11005,10 +10965,10 @@
         [
           {
             "bbox": [
-              55.53052099999999,
-              257.28369,
-              91.827637,
-              261.46509000000003
+              55.531,
+              256.461,
+              71.794,
+              261.10699999999997
             ],
             "spans": [
               [
@@ -11033,10 +10993,10 @@
           },
           {
             "bbox": [
-              183.10536,
-              256.30029,
-              190.8567,
-              260.65819999999997
+              183.105,
+              256.356,
+              190.857,
+              260.64200000000005
             ],
             "spans": [
               [
@@ -11061,10 +11021,10 @@
           },
           {
             "bbox": [
-              210.28223,
-              256.30029,
-              212.86539,
-              260.65819999999997
+              210.282,
+              256.356,
+              212.865,
+              260.64200000000005
             ],
             "spans": [
               [
@@ -11089,10 +11049,10 @@
           },
           {
             "bbox": [
-              232.29153,
-              256.30029,
-              240.04287999999997,
-              260.65819999999997
+              232.292,
+              256.356,
+              240.043,
+              260.64200000000005
             ],
             "spans": [
               [
@@ -11117,10 +11077,10 @@
           },
           {
             "bbox": [
-              256.88446,
-              256.30029,
-              264.6358,
-              260.65819999999997
+              256.884,
+              256.356,
+              264.636,
+              260.64200000000005
             ],
             "spans": [
               [
@@ -11145,10 +11105,10 @@
           },
           {
             "bbox": [
-              281.47742,
-              256.30029,
-              289.22876,
-              260.65819999999997
+              281.477,
+              256.356,
+              289.229,
+              260.64200000000005
             ],
             "spans": [
               [
@@ -11175,10 +11135,10 @@
         [
           {
             "bbox": [
-              55.53052099999999,
-              264.5108,
-              60.715424,
-              268.69219999999996
+              55.531,
+              263.688,
+              57.854,
+              268.33399999999995
             ],
             "spans": [
               [
@@ -11203,10 +11163,10 @@
           },
           {
             "bbox": [
-              183.10536,
-              263.52739999999994,
-              190.8567,
-              267.88531
+              183.105,
+              263.58299999999997,
+              190.857,
+              267.869
             ],
             "spans": [
               [
@@ -11231,10 +11191,10 @@
           },
           {
             "bbox": [
-              210.28223,
-              263.52739999999994,
-              212.86539,
-              267.88531
+              210.282,
+              263.58299999999997,
+              212.865,
+              267.869
             ],
             "spans": [
               [
@@ -11259,10 +11219,10 @@
           },
           {
             "bbox": [
-              232.29153,
-              263.52739999999994,
-              240.04287999999997,
-              267.88531
+              232.292,
+              263.58299999999997,
+              240.043,
+              267.869
             ],
             "spans": [
               [
@@ -11287,10 +11247,10 @@
           },
           {
             "bbox": [
-              256.88446,
-              263.52739999999994,
-              264.6358,
-              267.88531
+              256.884,
+              263.58299999999997,
+              264.636,
+              267.869
             ],
             "spans": [
               [
@@ -11315,10 +11275,10 @@
           },
           {
             "bbox": [
-              281.47742,
-              263.52739999999994,
-              289.22876,
-              267.88531
+              281.477,
+              263.58299999999997,
+              289.229,
+              267.869
             ],
             "spans": [
               [
@@ -11345,10 +11305,10 @@
         [
           {
             "bbox": [
-              55.53052099999999,
-              271.73785,
-              107.38374,
-              275.91925000000003
+              55.531,
+              270.91600000000005,
+              78.765,
+              275.562
             ],
             "spans": [
               [
@@ -11373,10 +11333,10 @@
           },
           {
             "bbox": [
-              184.39731,
-              270.75446,
-              189.56456,
-              275.11237000000006
+              184.397,
+              270.80999999999995,
+              189.565,
+              275.096
             ],
             "spans": [
               [
@@ -11401,10 +11361,10 @@
           },
           {
             "bbox": [
-              210.28223,
-              270.75446,
-              212.86539,
-              275.11237000000006
+              210.282,
+              270.80999999999995,
+              212.865,
+              275.096
             ],
             "spans": [
               [
@@ -11429,10 +11389,10 @@
           },
           {
             "bbox": [
-              233.58348,
-              270.75446,
-              238.75072999999998,
-              275.11237000000006
+              233.583,
+              270.80999999999995,
+              238.751,
+              275.096
             ],
             "spans": [
               [
@@ -11457,10 +11417,10 @@
           },
           {
             "bbox": [
-              256.88446,
-              270.75446,
-              264.6358,
-              275.11237000000006
+              256.884,
+              270.80999999999995,
+              264.636,
+              275.096
             ],
             "spans": [
               [
@@ -11485,10 +11445,10 @@
           },
           {
             "bbox": [
-              281.47742,
-              270.75446,
-              289.22876,
-              275.11237000000006
+              281.477,
+              270.80999999999995,
+              289.229,
+              275.096
             ],
             "spans": [
               [
@@ -11515,10 +11475,10 @@
         [
           {
             "bbox": [
-              55.53052099999999,
-              279.01392,
-              68.68605,
-              283.37183
+              55.531,
+              279.07000000000005,
+              68.686,
+              283.356
             ],
             "spans": [
               [
@@ -11543,10 +11503,10 @@
           },
           {
             "bbox": [
-              183.10536,
-              277.98157000000003,
-              190.8567,
-              282.33948000000004
+              183.105,
+              278.03700000000003,
+              190.857,
+              282.323
             ],
             "spans": [
               [
@@ -11571,10 +11531,10 @@
           },
           {
             "bbox": [
-              208.99026,
-              277.98157000000003,
-              214.15752,
-              282.33948000000004
+              208.99,
+              278.03700000000003,
+              214.158,
+              282.323
             ],
             "spans": [
               [
@@ -11599,10 +11559,10 @@
           },
           {
             "bbox": [
-              233.58348,
-              277.98157000000003,
-              238.75072999999998,
-              282.33948000000004
+              233.583,
+              278.03700000000003,
+              238.751,
+              282.323
             ],
             "spans": [
               [
@@ -11627,10 +11587,10 @@
           },
           {
             "bbox": [
-              256.88446,
-              277.98157000000003,
-              264.6358,
-              282.33948000000004
+              256.884,
+              278.03700000000003,
+              264.636,
+              282.323
             ],
             "spans": [
               [
@@ -11655,10 +11615,10 @@
           },
           {
             "bbox": [
-              282.76938,
-              277.98157000000003,
-              287.93661,
-              282.33948000000004
+              282.769,
+              278.03700000000003,
+              287.937,
+              282.323
             ],
             "spans": [
               [
@@ -11685,10 +11645,10 @@
         [
           {
             "bbox": [
-              169.61508,
-              286.45004,
-              174.79999,
-              290.63141
+              169.615,
+              285.628,
+              171.938,
+              290.274
             ],
             "spans": [
               [
@@ -11713,10 +11673,10 @@
           },
           {
             "bbox": [
-              183.10536,
-              285.46667,
-              190.8567,
-              289.8245800000001
+              183.105,
+              285.522,
+              190.857,
+              289.809
             ],
             "spans": [
               [
@@ -11741,10 +11701,10 @@
           },
           {
             "bbox": [
-              207.69832,
-              285.46667,
-              215.44965999999997,
-              289.8245800000001
+              207.698,
+              285.522,
+              215.45,
+              289.809
             ],
             "spans": [
               [
@@ -11769,10 +11729,10 @@
           },
           {
             "bbox": [
-              232.29153,
-              285.46667,
-              240.04287999999997,
-              289.8245800000001
+              232.292,
+              285.522,
+              240.043,
+              289.809
             ],
             "spans": [
               [
@@ -11797,10 +11757,10 @@
           },
           {
             "bbox": [
-              255.76506,
-              285.46667,
-              265.75204,
-              289.8245800000001
+              255.765,
+              285.522,
+              265.752,
+              289.809
             ],
             "spans": [
               [
@@ -11825,10 +11785,10 @@
           },
           {
             "bbox": [
-              281.47742,
-              285.46667,
-              289.22876,
-              289.8245800000001
+              281.477,
+              285.522,
+              289.229,
+              289.809
             ],
             "spans": [
               [
@@ -11893,10 +11853,10 @@
           },
           {
             "bbox": [
-              392.09671,
-              221.57446000000004,
-              438.0145,
-              226.63964999999996
+              392.097,
+              221.639,
+              409.208,
+              226.62099999999998
             ],
             "spans": [
               [
@@ -11925,10 +11885,10 @@
           },
           {
             "bbox": [
-              392.09671,
-              221.57446000000004,
-              438.0145,
-              226.63964999999996
+              392.097,
+              221.639,
+              409.208,
+              226.62099999999998
             ],
             "spans": [
               [
@@ -11957,10 +11917,10 @@
           },
           {
             "bbox": [
-              459.04861,
-              221.62415,
-              542.00018,
-              226.68933000000004
+              459.049,
+              221.68899999999996,
+              481.765,
+              226.67100000000005
             ],
             "spans": [
               [
@@ -11989,10 +11949,10 @@
           },
           {
             "bbox": [
-              459.04861,
-              221.62415,
-              542.00018,
-              226.68933000000004
+              459.049,
+              221.68899999999996,
+              481.765,
+              226.67100000000005
             ],
             "spans": [
               [
@@ -12034,10 +11994,10 @@
           },
           {
             "bbox": [
-              393.2442,
-              236.74712999999997,
-              400.74588,
-              241.81232
+              393.244,
+              236.812,
+              407.346,
+              241.79399999999998
             ],
             "spans": [
               [
@@ -12045,7 +12005,7 @@
                 1
               ]
             ],
-            "text": "RS U s",
+            "text": "RSUs",
             "type": "col_header",
             "col": 1,
             "col-header": true,
@@ -12062,10 +12022,10 @@
           },
           {
             "bbox": [
-              427.18323,
-              236.74712999999997,
-              440.98778999999996,
-              241.81232
+              427.183,
+              236.812,
+              440.988,
+              241.79399999999998
             ],
             "spans": [
               [
@@ -12090,10 +12050,10 @@
           },
           {
             "bbox": [
-              468.38254,
-              236.74712999999997,
-              482.48465000000004,
-              241.81232
+              468.383,
+              236.812,
+              482.485,
+              241.79399999999998
             ],
             "spans": [
               [
@@ -12118,10 +12078,10 @@
           },
           {
             "bbox": [
-              516.92578,
-              236.74712999999997,
-              530.73035,
-              241.81232
+              516.926,
+              236.812,
+              530.73,
+              241.79399999999998
             ],
             "spans": [
               [
@@ -12148,10 +12108,10 @@
         [
           {
             "bbox": [
-              306.11493,
-              244.61084000000005,
-              355.6532,
-              249.67602999999997
+              306.115,
+              244.67600000000004,
+              331.933,
+              249.65700000000004
             ],
             "spans": [
               [
@@ -12159,7 +12119,7 @@
                 0
               ]
             ],
-            "text": "Nonvested on Janua ry 1",
+            "text": "Nonvested on January 1",
             "type": "row_header",
             "col": 0,
             "col-header": false,
@@ -12176,10 +12136,10 @@
           },
           {
             "bbox": [
-              396.24661,
-              244.91327,
-              400.75238,
-              249.97844999999995
+              396.247,
+              244.97799999999995,
+              403.755,
+              249.96000000000004
             ],
             "spans": [
               [
@@ -12187,7 +12147,7 @@
                 1
               ]
             ],
-            "text": "1. 1",
+            "text": "1.1",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -12204,10 +12164,10 @@
           },
           {
             "bbox": [
-              429.81838999999997,
-              244.91327,
-              437.32708999999994,
-              249.97844999999995
+              429.818,
+              244.97799999999995,
+              437.327,
+              249.96000000000004
             ],
             "spans": [
               [
@@ -12232,10 +12192,10 @@
           },
           {
             "bbox": [
-              465.52859,
-              244.91327,
-              478.40103,
-              249.97844999999995
+              465.529,
+              244.97799999999995,
+              479.044,
+              249.96000000000004
             ],
             "spans": [
               [
@@ -12260,10 +12220,10 @@
           },
           {
             "bbox": [
-              513.44824,
-              244.91327,
-              531.46967,
-              249.97844999999995
+              513.448,
+              244.97799999999995,
+              516.451,
+              249.96000000000004
             ],
             "spans": [
               [
@@ -12290,10 +12250,10 @@
         [
           {
             "bbox": [
-              306.11493,
-              253.68451000000005,
-              325.62674,
-              258.74969
+              306.115,
+              253.74900000000002,
+              325.627,
+              258.731
             ],
             "spans": [
               [
@@ -12318,10 +12278,10 @@
           },
           {
             "bbox": [
-              396.24661,
-              253.68451000000005,
-              400.75238,
-              258.74969
+              396.247,
+              253.74900000000002,
+              403.755,
+              258.731
             ],
             "spans": [
               [
@@ -12329,7 +12289,7 @@
                 1
               ]
             ],
-            "text": "0. 5",
+            "text": "0.5",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -12346,10 +12306,10 @@
           },
           {
             "bbox": [
-              429.81838999999997,
-              253.68451000000005,
-              437.32708999999994,
-              258.74969
+              429.818,
+              253.74900000000002,
+              437.327,
+              258.731
             ],
             "spans": [
               [
@@ -12374,10 +12334,10 @@
           },
           {
             "bbox": [
-              466.43579000000005,
-              253.68451000000005,
-              482.54831,
-              258.74969
+              466.436,
+              253.74900000000002,
+              482.548,
+              258.731
             ],
             "spans": [
               [
@@ -12402,10 +12362,10 @@
           },
           {
             "bbox": [
-              514.29065,
-              253.68451000000005,
-              530.80981,
-              258.74969
+              514.291,
+              253.74900000000002,
+              530.81,
+              258.731
             ],
             "spans": [
               [
@@ -12432,10 +12392,10 @@
         [
           {
             "bbox": [
-              306.11493,
-              261.54822,
-              322.62866,
-              266.61339999999996
+              306.115,
+              261.61300000000006,
+              322.629,
+              266.595
             ],
             "spans": [
               [
@@ -12460,10 +12420,10 @@
           },
           {
             "bbox": [
-              394.43222,
-              261.54822,
-              400.73563,
-              266.61339999999996
+              394.432,
+              261.61300000000006,
+              405.536,
+              266.595
             ],
             "spans": [
               [
@@ -12471,7 +12431,7 @@
                 1
               ]
             ],
-            "text": "(0. 5 )",
+            "text": "(0.5)",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -12488,10 +12448,10 @@
           },
           {
             "bbox": [
-              427.7016,
-              261.54822,
-              438.80563,
-              266.61339999999996
+              427.702,
+              261.61300000000006,
+              438.806,
+              266.595
             ],
             "spans": [
               [
@@ -12516,10 +12476,10 @@
           },
           {
             "bbox": [
-              468.55533,
-              261.54822,
-              482.07043,
-              266.61339999999996
+              468.555,
+              261.61300000000006,
+              482.07,
+              266.595
             ],
             "spans": [
               [
@@ -12544,10 +12504,10 @@
           },
           {
             "bbox": [
-              516.01862,
-              261.54822,
-              529.53375,
-              266.61339999999996
+              516.019,
+              261.61300000000006,
+              529.534,
+              266.595
             ],
             "spans": [
               [
@@ -12574,10 +12534,10 @@
         [
           {
             "bbox": [
-              306.11493,
-              269.64148,
-              356.24771,
-              274.70667000000003
+              306.115,
+              269.706,
+              328.932,
+              274.688
             ],
             "spans": [
               [
@@ -12602,10 +12562,10 @@
           },
           {
             "bbox": [
-              394.43222,
-              270.31946000000005,
-              400.73563,
-              275.38464
+              394.432,
+              270.384,
+              405.536,
+              275.366
             ],
             "spans": [
               [
@@ -12613,7 +12573,7 @@
                 1
               ]
             ],
-            "text": "(0. 1 )",
+            "text": "(0.1)",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -12630,10 +12590,10 @@
           },
           {
             "bbox": [
-              431.02802,
-              270.31946000000005,
-              436.4280099999999,
-              275.38464
+              431.028,
+              270.384,
+              436.428,
+              275.366
             ],
             "spans": [
               [
@@ -12658,10 +12618,10 @@
           },
           {
             "bbox": [
-              465.83099000000004,
-              270.31946000000005,
-              482.35013,
-              275.38464
+              465.831,
+              270.384,
+              482.35,
+              275.366
             ],
             "spans": [
               [
@@ -12686,10 +12646,10 @@
           },
           {
             "bbox": [
-              516.01862,
-              270.31946000000005,
-              529.53375,
-              275.38464
+              516.019,
+              270.384,
+              529.534,
+              275.366
             ],
             "spans": [
               [
@@ -12716,10 +12676,10 @@
         [
           {
             "bbox": [
-              306.11493,
-              278.48572,
-              373.35764,
-              283.55092999999994
+              306.115,
+              278.55100000000004,
+              331.933,
+              283.532
             ],
             "spans": [
               [
@@ -12744,10 +12704,10 @@
           },
           {
             "bbox": [
-              396.24661,
-              278.48572,
-              403.75531,
-              283.55092999999994
+              396.247,
+              278.55100000000004,
+              403.755,
+              283.532
             ],
             "spans": [
               [
@@ -12772,10 +12732,10 @@
           },
           {
             "bbox": [
-              429.51599,
-              278.48572,
-              437.02469,
-              283.55092999999994
+              429.516,
+              278.55100000000004,
+              437.025,
+              283.532
             ],
             "spans": [
               [
@@ -12800,10 +12760,10 @@
           },
           {
             "bbox": [
-              463.7142,
-              278.48572,
-              484.73965000000004,
-              283.55092999999994
+              463.714,
+              278.55100000000004,
+              480.233,
+              283.532
             ],
             "spans": [
               [
@@ -12828,10 +12788,10 @@
           },
           {
             "bbox": [
-              512.99463,
-              278.48572,
-              534.02008,
-              283.55092999999994
+              512.995,
+              278.55100000000004,
+              515.997,
+              283.532
             ],
             "spans": [
               [
