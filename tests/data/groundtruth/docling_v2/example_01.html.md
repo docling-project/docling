@@ -2,11 +2,9 @@
 
 This is the first paragraph of the introduction.
 
-## Background
+### Background
 
 Some background information here.
-
-<!-- image -->
 
 - First item in unordered list
 - Second item in unordered list
