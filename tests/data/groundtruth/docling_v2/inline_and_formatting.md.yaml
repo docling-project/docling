@@ -312,7 +312,6 @@ tables:
   prov: []
   references: []
   self_ref: '#/tables/0'
-  word_items_ids: []
 texts:
 - children: []
   content_layer: body
@@ -323,7 +322,6 @@ texts:
   prov: []
   self_ref: '#/texts/0'
   text: Contribution guideline example
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -333,7 +331,6 @@ texts:
   prov: []
   self_ref: '#/texts/1'
   text: This is simple.
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -343,7 +340,6 @@ texts:
   prov: []
   self_ref: '#/texts/2'
   text: Foo
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -359,7 +355,6 @@ texts:
   prov: []
   self_ref: '#/texts/3'
   text: emphasis
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -375,7 +370,6 @@ texts:
   prov: []
   self_ref: '#/texts/4'
   text: strong emphasis
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -391,7 +385,6 @@ texts:
   prov: []
   self_ref: '#/texts/5'
   text: both
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -401,7 +394,6 @@ texts:
   prov: []
   self_ref: '#/texts/6'
   text: .
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -411,7 +403,6 @@ texts:
   prov: []
   self_ref: '#/texts/7'
   text: 'Create your feature branch:'
-  word_items_ids: []
 - captions: []
   children: []
   code_language: unknown
@@ -425,7 +416,6 @@ texts:
   references: []
   self_ref: '#/texts/8'
   text: git checkout -b feature/AmazingFeature
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -435,7 +425,6 @@ texts:
   prov: []
   self_ref: '#/texts/9'
   text: .
-  word_items_ids: []
 - children:
   - $ref: '#/groups/3'
   content_layer: body
@@ -448,7 +437,6 @@ texts:
   prov: []
   self_ref: '#/texts/10'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -458,7 +446,6 @@ texts:
   prov: []
   self_ref: '#/texts/11'
   text: Pull the
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -475,7 +462,6 @@ texts:
   prov: []
   self_ref: '#/texts/12'
   text: repository
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -485,7 +471,6 @@ texts:
   prov: []
   self_ref: '#/texts/13'
   text: .
-  word_items_ids: []
 - children:
   - $ref: '#/groups/4'
   content_layer: body
@@ -498,7 +483,6 @@ texts:
   prov: []
   self_ref: '#/texts/14'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -508,7 +492,6 @@ texts:
   prov: []
   self_ref: '#/texts/15'
   text: Create your feature branch (
-  word_items_ids: []
 - captions: []
   children: []
   code_language: unknown
@@ -522,7 +505,6 @@ texts:
   references: []
   self_ref: '#/texts/16'
   text: git checkout -b feature/AmazingFeature
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -532,7 +514,6 @@ texts:
   prov: []
   self_ref: '#/texts/17'
   text: )
-  word_items_ids: []
 - children:
   - $ref: '#/groups/5'
   content_layer: body
@@ -545,7 +526,6 @@ texts:
   prov: []
   self_ref: '#/texts/18'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -555,7 +535,6 @@ texts:
   prov: []
   self_ref: '#/texts/19'
   text: Commit your changes (
-  word_items_ids: []
 - captions: []
   children: []
   code_language: unknown
@@ -569,7 +548,6 @@ texts:
   references: []
   self_ref: '#/texts/20'
   text: git commit -m 'Add some AmazingFeature'
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -579,7 +557,6 @@ texts:
   prov: []
   self_ref: '#/texts/21'
   text: )
-  word_items_ids: []
 - children:
   - $ref: '#/groups/6'
   content_layer: body
@@ -592,7 +569,6 @@ texts:
   prov: []
   self_ref: '#/texts/22'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -602,7 +578,6 @@ texts:
   prov: []
   self_ref: '#/texts/23'
   text: Push to the branch (
-  word_items_ids: []
 - captions: []
   children: []
   code_language: unknown
@@ -616,7 +591,6 @@ texts:
   references: []
   self_ref: '#/texts/24'
   text: git push origin feature/AmazingFeature
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -626,7 +600,6 @@ texts:
   prov: []
   self_ref: '#/texts/25'
   text: )
-  word_items_ids: []
 - children: []
   content_layer: body
   enumerated: true
@@ -638,7 +611,6 @@ texts:
   prov: []
   self_ref: '#/texts/26'
   text: Open a Pull Request
-  word_items_ids: []
 - children: []
   content_layer: body
   enumerated: true
@@ -656,7 +628,6 @@ texts:
   prov: []
   self_ref: '#/texts/27'
   text: Whole list item has same formatting
-  word_items_ids: []
 - children:
   - $ref: '#/groups/7'
   content_layer: body
@@ -669,7 +640,6 @@ texts:
   prov: []
   self_ref: '#/texts/28'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -679,7 +649,6 @@ texts:
   prov: []
   self_ref: '#/texts/29'
   text: List item has
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -695,7 +664,6 @@ texts:
   prov: []
   self_ref: '#/texts/30'
   text: mixed or partial
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -705,7 +673,6 @@ texts:
   prov: []
   self_ref: '#/texts/31'
   text: formatting
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -721,7 +688,6 @@ texts:
   prov: []
   self_ref: '#/texts/32'
   text: Whole heading is italic
-  word_items_ids: []
 - children:
   - $ref: '#/groups/9'
   content_layer: body
@@ -734,7 +700,6 @@ texts:
   prov: []
   self_ref: '#/texts/33'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -750,7 +715,6 @@ texts:
   prov: []
   self_ref: '#/texts/34'
   text: First
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -760,7 +724,6 @@ texts:
   prov: []
   self_ref: '#/texts/35'
   text: ': Lorem ipsum.'
-  word_items_ids: []
 - children:
   - $ref: '#/groups/10'
   content_layer: body
@@ -773,7 +736,6 @@ texts:
   prov: []
   self_ref: '#/texts/36'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -789,7 +751,6 @@ texts:
   prov: []
   self_ref: '#/texts/37'
   text: Second
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -799,7 +760,6 @@ texts:
   prov: []
   self_ref: '#/texts/38'
   text: ': Dolor'
-  word_items_ids: []
 - captions: []
   children: []
   code_language: unknown
@@ -813,7 +773,6 @@ texts:
   references: []
   self_ref: '#/texts/39'
   text: sit
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -823,7 +782,6 @@ texts:
   prov: []
   self_ref: '#/texts/40'
   text: amet.
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -833,7 +791,6 @@ texts:
   prov: []
   self_ref: '#/texts/41'
   text: Some
-  word_items_ids: []
 - captions: []
   children: []
   code_language: unknown
@@ -853,7 +810,6 @@ texts:
   references: []
   self_ref: '#/texts/42'
   text: formatted_code
-  word_items_ids: []
 - children:
   - $ref: '#/groups/12'
   content_layer: body
@@ -865,7 +821,6 @@ texts:
   prov: []
   self_ref: '#/texts/43'
   text: ''
-  word_items_ids: []
 - children: []
   content_layer: body
   formatting:
@@ -881,7 +836,6 @@ texts:
   prov: []
   self_ref: '#/texts/44'
   text: Partially formatted
-  word_items_ids: []
 - children: []
   content_layer: body
   label: text
@@ -891,7 +845,6 @@ texts:
   prov: []
   self_ref: '#/texts/45'
   text: heading to_escape
-  word_items_ids: []
 - captions: []
   children: []
   code_language: unknown
@@ -905,7 +858,6 @@ texts:
   references: []
   self_ref: '#/texts/46'
   text: not_to_escape
-  word_items_ids: []
 - children: []
   content_layer: body
   hyperlink: https://en.wikipedia.org/wiki/Albert_Einstein
@@ -916,7 +868,6 @@ texts:
   prov: []
   self_ref: '#/texts/47'
   text: $$E=mc^2$$
-  word_items_ids: []
 - children: []
   content_layer: body
   label: section_header
@@ -927,5 +878,4 @@ texts:
   prov: []
   self_ref: '#/texts/48'
   text: Table Heading
-  word_items_ids: []
 version: 1.4.0

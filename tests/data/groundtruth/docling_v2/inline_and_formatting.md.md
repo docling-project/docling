@@ -14,16 +14,14 @@ Create your feature branch: `git checkout -b feature/AmazingFeature` .
 6. **Whole list item has same formatting**
 7. List item has *mixed or partial* formatting
 
-*# Whole heading is italic*
+# *Whole heading is italic*
 
 - **First** : Lorem ipsum.
 - **Second** : Dolor `sit` amet.
 
 Some *`formatted_code`*
 
-## 
-
-*Partially formatted* heading to\_escape `not_to_escape`
+## *Partially formatted* heading to\_escape `not_to_escape`
 
 [$$E=mc^2$$](https://en.wikipedia.org/wiki/Albert_Einstein)
 
