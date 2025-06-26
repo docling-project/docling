@@ -93,8 +93,9 @@ class BasePipeline(ABC):
         pass
 
     def _unload(self, conv_res: ConversionResult):
-        pass
-
+        # Clear GPU memory after processingAdd commentMore actions
+        clear_gpu_memory()
+        
     @classmethod
     @abstractmethod
     def get_default_options(cls) -> PipelineOptions:
@@ -196,12 +197,17 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
         return conv_res
 
     def _unload(self, conv_res: ConversionResult) -> ConversionResult:
+        # Unload page backends
         for page in conv_res.pages:
             if page._backend is not None:
                 page._backend.unload()
-
+        
+        # Unload input backend
         if conv_res.input._backend:
             conv_res.input._backend.unload()
+
+        # Call parent _unload to clean up GPU memory
+        super()._unload(conv_res)
 
         return conv_res
 
