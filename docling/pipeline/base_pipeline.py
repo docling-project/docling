@@ -5,6 +5,7 @@ import traceback
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import Any, Callable, List
+from docling.utils.gpu_utils import clear_gpu_memory
 
 from docling_core.types.doc import NodeItem
 
