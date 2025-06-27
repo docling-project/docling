@@ -10,11 +10,12 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    ListGroup,
     NodeItem,
     TableCell,
     TableData,
 )
-from docling_core.types.doc.document import Formatting, OrderedList, UnorderedList
+from docling_core.types.doc.document import Formatting
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.table import CT_Tc
@@ -688,7 +689,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         paragraph_elements: list,
     ) -> Optional[NodeItem]:
         return (
-            doc.add_group(label=GroupLabel.INLINE, parent=prev_parent)
+            doc.add_inline_group(parent=prev_parent)
             if len(paragraph_elements) > 1
             else prev_parent
         )
@@ -781,9 +782,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else:
                 # Inline equation
                 level = self._get_level()
-                inline_equation = doc.add_group(
-                    label=GroupLabel.INLINE, parent=self.parents[level - 1]
-                )
+                inline_equation = doc.add_inline_group(parent=self.parents[level - 1])
                 text_tmp = text
                 for eq in equations:
                     if len(text_tmp) == 0:
@@ -931,18 +930,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         level: int,
     ) -> None:
         # This should not happen by construction
-        if not isinstance(self.parents[level], (OrderedList, UnorderedList)):
+        if not isinstance(self.parents[level], ListGroup):
             return
+        if not elements:
+            return
+
         if len(elements) == 1:
             text, format, hyperlink = elements[0]
-            doc.add_list_item(
-                marker=marker,
-                enumerated=enumerated,
-                parent=self.parents[level],
-                text=text,
-                formatting=format,
-                hyperlink=hyperlink,
-            )
+            if text:
+                doc.add_list_item(
+                    marker=marker,
+                    enumerated=enumerated,
+                    parent=self.parents[level],
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
+                )
         else:
             new_item = doc.add_list_item(
                 marker=marker,
@@ -950,15 +953,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[level],
                 text="",
             )
-            new_parent = doc.add_group(label=GroupLabel.INLINE, parent=new_item)
+            new_parent = doc.add_inline_group(parent=new_item)
             for text, format, hyperlink in elements:
-                doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=new_parent,
-                    text=text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                )
+                if text:
+                    doc.add_text(
+                        label=DocItemLabel.TEXT,
+                        parent=new_parent,
+                        text=text,
+                        formatting=format,
+                        hyperlink=hyperlink,
+                    )
 
     def _add_list_item(
         self,
@@ -979,8 +983,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._prev_numid() is None:  # Open new list
             self.level_at_new_list = level
 
-            self.parents[level] = doc.add_group(
-                label=GroupLabel.LIST, name="list", parent=self.parents[level - 1]
+            self.parents[level] = doc.add_list_group(
+                name="list", parent=self.parents[level - 1]
             )
 
             # Set marker and enumerated arguments if this is an enumeration element.
@@ -1001,19 +1005,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + prev_indent + 1,
                 self.level_at_new_list + ilevel + 1,
             ):
-                # Determine if this is an unordered list or an ordered list.
-                # Set GroupLabel.ORDERED_LIST when it fits.
                 self.listIter = 0
-                if is_numbered:
-                    self.parents[i] = doc.add_group(
-                        label=GroupLabel.ORDERED_LIST,
-                        name="list",
-                        parent=self.parents[i - 1],
-                    )
-                else:
-                    self.parents[i] = doc.add_group(
-                        label=GroupLabel.LIST, name="list", parent=self.parents[i - 1]
-                    )
+                self.parents[i] = doc.add_list_group(
+                    name="list", parent=self.parents[i - 1]
+                )
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
             self.listIter += 1

@@ -380,61 +380,61 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 
 ### Citations
 
-- ^ "Duckling". The American Heritage Dictionary of the English Language, Fourth Edition. Houghton Mifflin Company. 2006. Retrieved 2015-05-22.
-- ^ "Duckling". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.
-- ^ Dohner, Janet Vorwald (2001). The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds. Yale University Press. ISBN 978-0300138139.
-- ^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.
-- ^ a b c d Carboneras 1992, p. 536.
-- ^ Livezey 1986, pp. 737–738.
-- ^ Madsen, McHugh &amp; de Kloet 1988, p. 452.
-- ^ Donne-Goussé, Laudet &amp; Hänni 2002, pp. 353–354.
-- ^ a b c d e f Carboneras 1992, p. 540.
-- ^ Elphick, Dunning &amp; Sibley 2001, p. 191.
-- ^ Kear 2005, p. 448.
-- ^ Kear 2005, p. 622–623.
-- ^ Kear 2005, p. 686.
-- ^ Elphick, Dunning &amp; Sibley 2001, p. 193.
-- ^ a b c d e f g Carboneras 1992, p. 537.
-- ^ American Ornithologists' Union 1998, p. xix.
-- ^ American Ornithologists' Union 1998.
-- ^ Carboneras 1992, p. 538.
-- ^ Christidis &amp; Boles 2008, p. 62.
-- ^ Shirihai 2008, pp. 239, 245.
-- ^ a b Pratt, Bruner &amp; Berrett 1987, pp. 98–107.
-- ^ Fitter, Fitter &amp; Hosking 2000, pp. 52–3.
-- ^ "Pacific Black Duck". www.wiresnr.org. Retrieved 2018-04-27.
-- ^ Ogden, Evans. "Dabbling Ducks". CWE. Retrieved 2006-11-02.
-- ^ Karl Mathiesen (16 March 2015). "Don't feed the ducks bread, say conservationists". The Guardian. Retrieved 13 November 2016.
-- ^ Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology. pp. 187–221. doi:10.1007/978-1-4615-6787-5\_4. ISBN 978-1-4615-6789-9.
-- ^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). "Long-Term Pair Bonds in Harlequin Ducks". The Condor. 102 (1): 201–205. doi:10.1093/condor/102.1.201. hdl:10315/13797.
-- ^ "If You Find An Orphaned Duckling - Wildlife Rehabber". wildliferehabber.com. Archived from the original on 2018-09-23. Retrieved 2018-12-22.
-- ^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]
-- ^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman &amp; Littlefield. ISBN 9780762797707.
-- ^ Amos, Jonathan (2003-09-08). "Sound science is quackers". BBC News. Retrieved 2006-11-02.
-- ^ "Mythbusters Episode 8". 12 December 2003.
-- ^ Erlandson 1994, p. 171.
-- ^ Jeffries 2008, pp. 168, 243.
-- ^ a b Sued-Badillo 2003, p. 65.
-- ^ Thorpe 1996, p. 68.
-- ^ Maisels 1999, p. 42.
-- ^ Rau 1876, p. 133.
-- ^ Higman 2012, p. 23.
-- ^ Hume 2012, p. 53.
-- ^ Hume 2012, p. 52.
-- ^ Fieldhouse 2002, p. 167.
-- ^ Livingston, A. D. (1998-01-01). Guide to Edible Plants and Animals. Wordsworth Editions, Limited. ISBN 9781853263774.
-- ^ "Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl" (PDF). New York State Department of Environmental Conservation. US Department of Commerce. December 2008. p. 3. Archived (PDF) from the original on 2022-10-09. Retrieved 2 July 2019.
-- ^ "FAOSTAT". www.fao.org. Retrieved 2019-10-25.
-- ^ "Anas platyrhynchos, Domestic Duck; DigiMorph Staff - The University of Texas at Austin". Digimorph.org. Retrieved 2012-12-23.
-- ^ Sy Montgomery. "Mallard; Encyclopædia Britannica". Britannica.com. Retrieved 2012-12-23.
-- ^ Glenday, Craig (2014). Guinness World Records. Guinness World Records Limited. pp. 135. ISBN 978-1-908843-15-9.
-- ^ Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147. ISBN 951-773-085-3.
-- ^ "Lubānas simbolika" (in Latvian). Retrieved September 9, 2021.
-- ^ "Föglö" (in Swedish). Retrieved September 9, 2021.
-- ^ Young, Emma. "World's funniest joke revealed". New Scientist. Retrieved 7 January 2019.
-- ^ "Howard the Duck (character)". Grand Comics Database.
-- ^ Sanderson, Peter; Gilbert, Laura (2008). "1970s". Marvel Chronicle A Year by Year History. London, United Kingdom: Dorling Kindersley. p. 161. ISBN 978-0756641238. December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.
-- ^ "The Duck". University of Oregon Athletics. Retrieved 2022-01-20.
+1. ^ "Duckling". The American Heritage Dictionary of the English Language, Fourth Edition. Houghton Mifflin Company. 2006. Retrieved 2015-05-22.
+2. ^ "Duckling". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.
+3. ^ Dohner, Janet Vorwald (2001). The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds. Yale University Press. ISBN 978-0300138139.
+4. ^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.
+5. ^ a b c d Carboneras 1992, p. 536.
+6. ^ Livezey 1986, pp. 737–738.
+7. ^ Madsen, McHugh &amp; de Kloet 1988, p. 452.
+8. ^ Donne-Goussé, Laudet &amp; Hänni 2002, pp. 353–354.
+9. ^ a b c d e f Carboneras 1992, p. 540.
+10. ^ Elphick, Dunning &amp; Sibley 2001, p. 191.
+11. ^ Kear 2005, p. 448.
+12. ^ Kear 2005, p. 622–623.
+13. ^ Kear 2005, p. 686.
+14. ^ Elphick, Dunning &amp; Sibley 2001, p. 193.
+15. ^ a b c d e f g Carboneras 1992, p. 537.
+16. ^ American Ornithologists' Union 1998, p. xix.
+17. ^ American Ornithologists' Union 1998.
+18. ^ Carboneras 1992, p. 538.
+19. ^ Christidis &amp; Boles 2008, p. 62.
+20. ^ Shirihai 2008, pp. 239, 245.
+21. ^ a b Pratt, Bruner &amp; Berrett 1987, pp. 98–107.
+22. ^ Fitter, Fitter &amp; Hosking 2000, pp. 52–3.
+23. ^ "Pacific Black Duck". www.wiresnr.org. Retrieved 2018-04-27.
+24. ^ Ogden, Evans. "Dabbling Ducks". CWE. Retrieved 2006-11-02.
+25. ^ Karl Mathiesen (16 March 2015). "Don't feed the ducks bread, say conservationists". The Guardian. Retrieved 13 November 2016.
+26. ^ Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology. pp. 187–221. doi:10.1007/978-1-4615-6787-5\_4. ISBN 978-1-4615-6789-9.
+27. ^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). "Long-Term Pair Bonds in Harlequin Ducks". The Condor. 102 (1): 201–205. doi:10.1093/condor/102.1.201. hdl:10315/13797.
+28. ^ "If You Find An Orphaned Duckling - Wildlife Rehabber". wildliferehabber.com. Archived from the original on 2018-09-23. Retrieved 2018-12-22.
+29. ^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]
+30. ^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman &amp; Littlefield. ISBN 9780762797707.
+31. ^ Amos, Jonathan (2003-09-08). "Sound science is quackers". BBC News. Retrieved 2006-11-02.
+32. ^ "Mythbusters Episode 8". 12 December 2003.
+33. ^ Erlandson 1994, p. 171.
+34. ^ Jeffries 2008, pp. 168, 243.
+35. ^ a b Sued-Badillo 2003, p. 65.
+36. ^ Thorpe 1996, p. 68.
+37. ^ Maisels 1999, p. 42.
+38. ^ Rau 1876, p. 133.
+39. ^ Higman 2012, p. 23.
+40. ^ Hume 2012, p. 53.
+41. ^ Hume 2012, p. 52.
+42. ^ Fieldhouse 2002, p. 167.
+43. ^ Livingston, A. D. (1998-01-01). Guide to Edible Plants and Animals. Wordsworth Editions, Limited. ISBN 9781853263774.
+44. ^ "Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl" (PDF). New York State Department of Environmental Conservation. US Department of Commerce. December 2008. p. 3. Archived (PDF) from the original on 2022-10-09. Retrieved 2 July 2019.
+45. ^ "FAOSTAT". www.fao.org. Retrieved 2019-10-25.
+46. ^ "Anas platyrhynchos, Domestic Duck; DigiMorph Staff - The University of Texas at Austin". Digimorph.org. Retrieved 2012-12-23.
+47. ^ Sy Montgomery. "Mallard; Encyclopædia Britannica". Britannica.com. Retrieved 2012-12-23.
+48. ^ Glenday, Craig (2014). Guinness World Records. Guinness World Records Limited. pp. 135. ISBN 978-1-908843-15-9.
+49. ^ Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147. ISBN 951-773-085-3.
+50. ^ "Lubānas simbolika" (in Latvian). Retrieved September 9, 2021.
+51. ^ "Föglö" (in Swedish). Retrieved September 9, 2021.
+52. ^ Young, Emma. "World's funniest joke revealed". New Scientist. Retrieved 7 January 2019.
+53. ^ "Howard the Duck (character)". Grand Comics Database.
+54. ^ Sanderson, Peter; Gilbert, Laura (2008). "1970s". Marvel Chronicle A Year by Year History. London, United Kingdom: Dorling Kindersley. p. 161. ISBN 978-0756641238. December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.
+55. ^ "The Duck". University of Oregon Athletics. Retrieved 2022-01-20.
 
 ### Sources
 

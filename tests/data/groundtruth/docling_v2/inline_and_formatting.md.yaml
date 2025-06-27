@@ -428,7 +428,7 @@ texts:
 - children:
   - $ref: '#/groups/3'
   content_layer: body
-  enumerated: false
+  enumerated: true
   label: list_item
   marker: ''
   orig: ''
@@ -474,7 +474,7 @@ texts:
 - children:
   - $ref: '#/groups/4'
   content_layer: body
-  enumerated: false
+  enumerated: true
   label: list_item
   marker: ''
   orig: ''
@@ -517,7 +517,7 @@ texts:
 - children:
   - $ref: '#/groups/5'
   content_layer: body
-  enumerated: false
+  enumerated: true
   label: list_item
   marker: ''
   orig: ''
@@ -560,7 +560,7 @@ texts:
 - children:
   - $ref: '#/groups/6'
   content_layer: body
-  enumerated: false
+  enumerated: true
   label: list_item
   marker: ''
   orig: ''
@@ -602,7 +602,7 @@ texts:
   text: )
 - children: []
   content_layer: body
-  enumerated: false
+  enumerated: true
   label: list_item
   marker: ''
   orig: Open a Pull Request
@@ -613,7 +613,7 @@ texts:
   text: Open a Pull Request
 - children: []
   content_layer: body
-  enumerated: false
+  enumerated: true
   formatting:
     bold: true
     italic: false
@@ -631,7 +631,7 @@ texts:
 - children:
   - $ref: '#/groups/7'
   content_layer: body
-  enumerated: false
+  enumerated: true
   label: list_item
   marker: ''
   orig: ''

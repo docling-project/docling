@@ -3,6 +3,6 @@
 - A. first
     - subitem
 - B. second
-    - strange
+    1. strange
 
 The end!

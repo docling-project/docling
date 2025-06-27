@@ -5753,7 +5753,7 @@
       "prov": [],
       "orig": "^ \"Duckling\". The American Heritage Dictionary of the English Language, Fourth Edition. Houghton Mifflin Company. 2006. Retrieved 2015-05-22.",
       "text": "^ \"Duckling\". The American Heritage Dictionary of the English Language, Fourth Edition. Houghton Mifflin Company. 2006. Retrieved 2015-05-22.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5767,7 +5767,7 @@
       "prov": [],
       "orig": "^ \"Duckling\". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.",
       "text": "^ \"Duckling\". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5781,7 +5781,7 @@
       "prov": [],
       "orig": "^ Dohner, Janet Vorwald (2001). The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds. Yale University Press. ISBN 978-0300138139.",
       "text": "^ Dohner, Janet Vorwald (2001). The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds. Yale University Press. ISBN 978-0300138139.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5795,7 +5795,7 @@
       "prov": [],
       "orig": "^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.",
       "text": "^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5809,7 +5809,7 @@
       "prov": [],
       "orig": "^ a b c d Carboneras 1992, p. 536.",
       "text": "^ a b c d Carboneras 1992, p. 536.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5823,7 +5823,7 @@
       "prov": [],
       "orig": "^ Livezey 1986, pp. 737–738.",
       "text": "^ Livezey 1986, pp. 737–738.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5837,7 +5837,7 @@
       "prov": [],
       "orig": "^ Madsen, McHugh & de Kloet 1988, p. 452.",
       "text": "^ Madsen, McHugh & de Kloet 1988, p. 452.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5851,7 +5851,7 @@
       "prov": [],
       "orig": "^ Donne-Goussé, Laudet & Hänni 2002, pp. 353–354.",
       "text": "^ Donne-Goussé, Laudet & Hänni 2002, pp. 353–354.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5865,7 +5865,7 @@
       "prov": [],
       "orig": "^ a b c d e f Carboneras 1992, p. 540.",
       "text": "^ a b c d e f Carboneras 1992, p. 540.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5879,7 +5879,7 @@
       "prov": [],
       "orig": "^ Elphick, Dunning & Sibley 2001, p. 191.",
       "text": "^ Elphick, Dunning & Sibley 2001, p. 191.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5893,7 +5893,7 @@
       "prov": [],
       "orig": "^ Kear 2005, p. 448.",
       "text": "^ Kear 2005, p. 448.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5907,7 +5907,7 @@
       "prov": [],
       "orig": "^ Kear 2005, p. 622–623.",
       "text": "^ Kear 2005, p. 622–623.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5921,7 +5921,7 @@
       "prov": [],
       "orig": "^ Kear 2005, p. 686.",
       "text": "^ Kear 2005, p. 686.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5935,7 +5935,7 @@
       "prov": [],
       "orig": "^ Elphick, Dunning & Sibley 2001, p. 193.",
       "text": "^ Elphick, Dunning & Sibley 2001, p. 193.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5949,7 +5949,7 @@
       "prov": [],
       "orig": "^ a b c d e f g Carboneras 1992, p. 537.",
       "text": "^ a b c d e f g Carboneras 1992, p. 537.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5963,7 +5963,7 @@
       "prov": [],
       "orig": "^ American Ornithologists' Union 1998, p. xix.",
       "text": "^ American Ornithologists' Union 1998, p. xix.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5977,7 +5977,7 @@
       "prov": [],
       "orig": "^ American Ornithologists' Union 1998.",
       "text": "^ American Ornithologists' Union 1998.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -5991,7 +5991,7 @@
       "prov": [],
       "orig": "^ Carboneras 1992, p. 538.",
       "text": "^ Carboneras 1992, p. 538.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6005,7 +6005,7 @@
       "prov": [],
       "orig": "^ Christidis & Boles 2008, p. 62.",
       "text": "^ Christidis & Boles 2008, p. 62.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6019,7 +6019,7 @@
       "prov": [],
       "orig": "^ Shirihai 2008, pp. 239, 245.",
       "text": "^ Shirihai 2008, pp. 239, 245.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6033,7 +6033,7 @@
       "prov": [],
       "orig": "^ a b Pratt, Bruner & Berrett 1987, pp. 98–107.",
       "text": "^ a b Pratt, Bruner & Berrett 1987, pp. 98–107.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6047,7 +6047,7 @@
       "prov": [],
       "orig": "^ Fitter, Fitter & Hosking 2000, pp. 52–3.",
       "text": "^ Fitter, Fitter & Hosking 2000, pp. 52–3.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6061,7 +6061,7 @@
       "prov": [],
       "orig": "^ \"Pacific Black Duck\". www.wiresnr.org. Retrieved 2018-04-27.",
       "text": "^ \"Pacific Black Duck\". www.wiresnr.org. Retrieved 2018-04-27.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6075,7 +6075,7 @@
       "prov": [],
       "orig": "^ Ogden, Evans. \"Dabbling Ducks\". CWE. Retrieved 2006-11-02.",
       "text": "^ Ogden, Evans. \"Dabbling Ducks\". CWE. Retrieved 2006-11-02.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6089,7 +6089,7 @@
       "prov": [],
       "orig": "^ Karl Mathiesen (16 March 2015). \"Don't feed the ducks bread, say conservationists\". The Guardian. Retrieved 13 November 2016.",
       "text": "^ Karl Mathiesen (16 March 2015). \"Don't feed the ducks bread, say conservationists\". The Guardian. Retrieved 13 November 2016.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6103,7 +6103,7 @@
       "prov": [],
       "orig": "^ Rohwer, Frank C.; Anderson, Michael G. (1988). \"Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl\". Current Ornithology. pp. 187–221. doi:10.1007/978-1-4615-6787-5_4. ISBN 978-1-4615-6789-9.",
       "text": "^ Rohwer, Frank C.; Anderson, Michael G. (1988). \"Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl\". Current Ornithology. pp. 187–221. doi:10.1007/978-1-4615-6787-5_4. ISBN 978-1-4615-6789-9.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6117,7 +6117,7 @@
       "prov": [],
       "orig": "^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). \"Long-Term Pair Bonds in Harlequin Ducks\". The Condor. 102 (1): 201–205. doi:10.1093/condor/102.1.201. hdl:10315/13797.",
       "text": "^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). \"Long-Term Pair Bonds in Harlequin Ducks\". The Condor. 102 (1): 201–205. doi:10.1093/condor/102.1.201. hdl:10315/13797.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6131,7 +6131,7 @@
       "prov": [],
       "orig": "^ \"If You Find An Orphaned Duckling - Wildlife Rehabber\". wildliferehabber.com. Archived from the original on 2018-09-23. Retrieved 2018-12-22.",
       "text": "^ \"If You Find An Orphaned Duckling - Wildlife Rehabber\". wildliferehabber.com. Archived from the original on 2018-09-23. Retrieved 2018-12-22.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6145,7 +6145,7 @@
       "prov": [],
       "orig": "^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]",
       "text": "^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6159,7 +6159,7 @@
       "prov": [],
       "orig": "^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman & Littlefield. ISBN 9780762797707.",
       "text": "^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman & Littlefield. ISBN 9780762797707.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6173,7 +6173,7 @@
       "prov": [],
       "orig": "^ Amos, Jonathan (2003-09-08). \"Sound science is quackers\". BBC News. Retrieved 2006-11-02.",
       "text": "^ Amos, Jonathan (2003-09-08). \"Sound science is quackers\". BBC News. Retrieved 2006-11-02.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6187,7 +6187,7 @@
       "prov": [],
       "orig": "^ \"Mythbusters Episode 8\". 12 December 2003.",
       "text": "^ \"Mythbusters Episode 8\". 12 December 2003.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6201,7 +6201,7 @@
       "prov": [],
       "orig": "^ Erlandson 1994, p. 171.",
       "text": "^ Erlandson 1994, p. 171.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6215,7 +6215,7 @@
       "prov": [],
       "orig": "^ Jeffries 2008, pp. 168, 243.",
       "text": "^ Jeffries 2008, pp. 168, 243.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6229,7 +6229,7 @@
       "prov": [],
       "orig": "^ a b Sued-Badillo 2003, p. 65.",
       "text": "^ a b Sued-Badillo 2003, p. 65.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6243,7 +6243,7 @@
       "prov": [],
       "orig": "^ Thorpe 1996, p. 68.",
       "text": "^ Thorpe 1996, p. 68.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6257,7 +6257,7 @@
       "prov": [],
       "orig": "^ Maisels 1999, p. 42.",
       "text": "^ Maisels 1999, p. 42.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6271,7 +6271,7 @@
       "prov": [],
       "orig": "^ Rau 1876, p. 133.",
       "text": "^ Rau 1876, p. 133.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6285,7 +6285,7 @@
       "prov": [],
       "orig": "^ Higman 2012, p. 23.",
       "text": "^ Higman 2012, p. 23.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6299,7 +6299,7 @@
       "prov": [],
       "orig": "^ Hume 2012, p. 53.",
       "text": "^ Hume 2012, p. 53.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6313,7 +6313,7 @@
       "prov": [],
       "orig": "^ Hume 2012, p. 52.",
       "text": "^ Hume 2012, p. 52.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6327,7 +6327,7 @@
       "prov": [],
       "orig": "^ Fieldhouse 2002, p. 167.",
       "text": "^ Fieldhouse 2002, p. 167.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6341,7 +6341,7 @@
       "prov": [],
       "orig": "^ Livingston, A. D. (1998-01-01). Guide to Edible Plants and Animals. Wordsworth Editions, Limited. ISBN 9781853263774.",
       "text": "^ Livingston, A. D. (1998-01-01). Guide to Edible Plants and Animals. Wordsworth Editions, Limited. ISBN 9781853263774.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6355,7 +6355,7 @@
       "prov": [],
       "orig": "^ \"Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl\" (PDF). New York State Department of Environmental Conservation. US Department of Commerce. December 2008. p. 3. Archived (PDF) from the original on 2022-10-09. Retrieved 2 July 2019.",
       "text": "^ \"Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl\" (PDF). New York State Department of Environmental Conservation. US Department of Commerce. December 2008. p. 3. Archived (PDF) from the original on 2022-10-09. Retrieved 2 July 2019.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6369,7 +6369,7 @@
       "prov": [],
       "orig": "^ \"FAOSTAT\". www.fao.org. Retrieved 2019-10-25.",
       "text": "^ \"FAOSTAT\". www.fao.org. Retrieved 2019-10-25.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6383,7 +6383,7 @@
       "prov": [],
       "orig": "^ \"Anas platyrhynchos, Domestic Duck; DigiMorph Staff - The University of Texas at Austin\". Digimorph.org. Retrieved 2012-12-23.",
       "text": "^ \"Anas platyrhynchos, Domestic Duck; DigiMorph Staff - The University of Texas at Austin\". Digimorph.org. Retrieved 2012-12-23.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6397,7 +6397,7 @@
       "prov": [],
       "orig": "^ Sy Montgomery. \"Mallard; Encyclopædia Britannica\". Britannica.com. Retrieved 2012-12-23.",
       "text": "^ Sy Montgomery. \"Mallard; Encyclopædia Britannica\". Britannica.com. Retrieved 2012-12-23.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6411,7 +6411,7 @@
       "prov": [],
       "orig": "^ Glenday, Craig (2014). Guinness World Records. Guinness World Records Limited. pp. 135. ISBN 978-1-908843-15-9.",
       "text": "^ Glenday, Craig (2014). Guinness World Records. Guinness World Records Limited. pp. 135. ISBN 978-1-908843-15-9.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6425,7 +6425,7 @@
       "prov": [],
       "orig": "^ Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147. ISBN 951-773-085-3.",
       "text": "^ Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147. ISBN 951-773-085-3.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6439,7 +6439,7 @@
       "prov": [],
       "orig": "^ \"Lubānas simbolika\" (in Latvian). Retrieved September 9, 2021.",
       "text": "^ \"Lubānas simbolika\" (in Latvian). Retrieved September 9, 2021.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6453,7 +6453,7 @@
       "prov": [],
       "orig": "^ \"Föglö\" (in Swedish). Retrieved September 9, 2021.",
       "text": "^ \"Föglö\" (in Swedish). Retrieved September 9, 2021.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6467,7 +6467,7 @@
       "prov": [],
       "orig": "^ Young, Emma. \"World's funniest joke revealed\". New Scientist. Retrieved 7 January 2019.",
       "text": "^ Young, Emma. \"World's funniest joke revealed\". New Scientist. Retrieved 7 January 2019.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6481,7 +6481,7 @@
       "prov": [],
       "orig": "^ \"Howard the Duck (character)\". Grand Comics Database.",
       "text": "^ \"Howard the Duck (character)\". Grand Comics Database.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6495,7 +6495,7 @@
       "prov": [],
       "orig": "^ Sanderson, Peter; Gilbert, Laura (2008). \"1970s\". Marvel Chronicle A Year by Year History. London, United Kingdom: Dorling Kindersley. p. 161. ISBN 978-0756641238. December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.",
       "text": "^ Sanderson, Peter; Gilbert, Laura (2008). \"1970s\". Marvel Chronicle A Year by Year History. London, United Kingdom: Dorling Kindersley. p. 161. ISBN 978-0756641238. December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -6509,7 +6509,7 @@
       "prov": [],
       "orig": "^ \"The Duck\". University of Oregon Athletics. Retrieved 2022-01-20.",
       "text": "^ \"The Duck\". University of Oregon Athletics. Retrieved 2022-01-20.",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {

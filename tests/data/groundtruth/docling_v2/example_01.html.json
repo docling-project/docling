@@ -4,7 +4,7 @@
   "name": "example_01",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 13782069548509991617,
+    "binary_hash": 13726679883013609282,
     "filename": "example_01.html"
   },
   "furniture": {
@@ -59,6 +59,23 @@
       "content_layer": "body",
       "name": "ordered list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/texts/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        }
+      ],
+      "content_layer": "body",
+      "name": "ordered list start 42",
+      "label": "list"
     }
   ],
   "texts": [
@@ -110,6 +127,9 @@
         },
         {
           "$ref": "#/groups/1"
+        },
+        {
+          "$ref": "#/groups/2"
         }
       ],
       "content_layer": "body",
@@ -170,7 +190,7 @@
       "prov": [],
       "orig": "First item in ordered list",
       "text": "First item in ordered list",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
     },
     {
@@ -184,8 +204,36 @@
       "prov": [],
       "orig": "Second item in ordered list",
       "text": "Second item in ordered list",
-      "enumerated": false,
+      "enumerated": true,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "First item in ordered list with start",
+      "text": "First item in ordered list with start",
+      "enumerated": true,
+      "marker": "42."
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Second item in ordered list with start",
+      "text": "Second item in ordered list with start",
+      "enumerated": true,
+      "marker": "43."
     }
   ],
   "pictures": [

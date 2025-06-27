@@ -14,13 +14,12 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
-    GroupLabel,
     NodeItem,
     TableCell,
     TableData,
     TextItem,
 )
-from docling_core.types.doc.document import Formatting, OrderedList, UnorderedList
+from docling_core.types.doc.document import Formatting
 from marko import Markdown
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
 from typing_extensions import Annotated
@@ -51,6 +50,7 @@ class _HeadingCreationPayload(BaseModel):
 
 class _ListItemCreationPayload(BaseModel):
     kind: Literal["list_item"] = "list_item"
+    enumerated: bool
 
 
 _CreationPayload = Annotated[
@@ -187,15 +187,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         parent_item: Optional[NodeItem],
         text: str,
+        enumerated: bool,
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
     ):
-        if not isinstance(parent_item, (OrderedList, UnorderedList)):
-            _log.warning("ListItem would have not had a list parent, adding one.")
-            parent_item = doc.add_unordered_list(parent=parent_item)
         item = doc.add_list_item(
             text=text,
-            enumerated=(isinstance(parent_item, OrderedList)),
+            enumerated=enumerated,
             parent=parent_item,
             formatting=formatting,
             hyperlink=hyperlink,
@@ -238,6 +236,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         creation_stack: list[
             _CreationPayload
         ],  # stack for lazy item creation triggered deep in marko's AST (on RawText)
+        list_ordered_flag_by_ref: dict[str, bool],
         parent_item: Optional[NodeItem] = None,
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
@@ -275,10 +274,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._close_table(doc)
             _log.debug(f" - List {'ordered' if element.ordered else 'unordered'}")
             if has_non_empty_list_items:
-                label = GroupLabel.ORDERED_LIST if element.ordered else GroupLabel.LIST
-                parent_item = doc.add_group(
-                    label=label, name="list", parent=parent_item
-                )
+                parent_item = doc.add_list_group(name="list", parent=parent_item)
+                list_ordered_flag_by_ref[parent_item.self_ref] = element.ordered
 
         elif (
             isinstance(element, marko.block.ListItem)
@@ -289,16 +286,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._close_table(doc)
             _log.debug(" - List item")
 
+            enumerated = (
+                list_ordered_flag_by_ref.get(parent_item.self_ref, False)
+                if parent_item
+                else False
+            )
             if len(child.children) > 1:  # inline group will be created further down
                 parent_item = self._create_list_item(
                     doc=doc,
                     parent_item=parent_item,
                     text="",
+                    enumerated=enumerated,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
             else:
-                creation_stack.append(_ListItemCreationPayload())
+                creation_stack.append(_ListItemCreationPayload(enumerated=enumerated))
 
         elif isinstance(element, marko.inline.Image):
             self._close_table(doc)
@@ -349,10 +352,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     while len(creation_stack) > 0:
                         to_create = creation_stack.pop()
                         if isinstance(to_create, _ListItemCreationPayload):
+                            enumerated = (
+                                list_ordered_flag_by_ref.get(
+                                    parent_item.self_ref, False
+                                )
+                                if parent_item
+                                else False
+                            )
                             parent_item = self._create_list_item(
                                 doc=doc,
                                 parent_item=parent_item,
                                 text=snippet_text,
+                                enumerated=enumerated,
                                 formatting=formatting,
                                 hyperlink=hyperlink,
                             )
@@ -453,6 +464,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     doc=doc,
                     visited=visited,
                     creation_stack=creation_stack,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
                     parent_item=parent_item,
                     formatting=formatting,
                     hyperlink=hyperlink,
@@ -497,6 +509,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 parent_item=None,
                 visited=set(),
                 creation_stack=[],
+                list_ordered_flag_by_ref={},
             )
             self._close_table(doc=doc)  # handle any last hanging table
 
