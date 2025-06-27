@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "textbox",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -114,64 +114,61 @@
         "$ref": "#/texts/39"
       },
       {
-        "$ref": "#/groups/11"
+        "$ref": "#/texts/40"
       },
       {
-        "$ref": "#/texts/44"
+        "$ref": "#/texts/41"
+      },
+      {
+        "$ref": "#/texts/42"
+      },
+      {
+        "$ref": "#/groups/11"
       },
       {
         "$ref": "#/texts/45"
       },
       {
-        "$ref": "#/texts/46"
+        "$ref": "#/groups/12"
       },
       {
-        "$ref": "#/groups/13"
+        "$ref": "#/texts/48"
       },
       {
         "$ref": "#/texts/49"
       },
       {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/13"
       },
       {
-        "$ref": "#/texts/52"
+        "$ref": "#/texts/51"
+      },
+      {
+        "$ref": "#/groups/14"
       },
       {
         "$ref": "#/texts/53"
       },
       {
+        "$ref": "#/texts/54"
+      },
+      {
         "$ref": "#/groups/15"
-      },
-      {
-        "$ref": "#/texts/55"
-      },
-      {
-        "$ref": "#/groups/16"
-      },
-      {
-        "$ref": "#/texts/57"
       },
       {
         "$ref": "#/texts/58"
       },
       {
-        "$ref": "#/groups/17"
+        "$ref": "#/groups/16"
+      },
+      {
+        "$ref": "#/texts/60"
+      },
+      {
+        "$ref": "#/texts/61"
       },
       {
         "$ref": "#/texts/62"
-      },
-      {
-        "$ref": "#/groups/18"
-      },
-      {
-        "$ref": "#/texts/64"
-      },
-      {
-        "$ref": "#/texts/65"
-      },
-      {
-        "$ref": "#/texts/66"
       }
     ],
     "content_layer": "body",
@@ -364,10 +361,10 @@
       },
       "children": [
         {
-          "$ref": "#/groups/12"
+          "$ref": "#/texts/43"
         },
         {
-          "$ref": "#/texts/43"
+          "$ref": "#/texts/44"
         }
       ],
       "content_layer": "body",
@@ -377,22 +374,19 @@
     {
       "self_ref": "#/groups/12",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/40"
+          "$ref": "#/texts/46"
         },
         {
-          "$ref": "#/texts/41"
-        },
-        {
-          "$ref": "#/texts/42"
+          "$ref": "#/texts/47"
         }
       ],
       "content_layer": "body",
-      "name": "group",
-      "label": "inline"
+      "name": "textbox",
+      "label": "section"
     },
     {
       "self_ref": "#/groups/13",
@@ -401,10 +395,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/47"
-        },
-        {
-          "$ref": "#/texts/48"
+          "$ref": "#/texts/50"
         }
       ],
       "content_layer": "body",
@@ -418,10 +409,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/50"
-        },
-        {
-          "$ref": "#/texts/51"
+          "$ref": "#/texts/52"
         }
       ],
       "content_layer": "body",
@@ -435,7 +423,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/54"
+          "$ref": "#/texts/55"
+        },
+        {
+          "$ref": "#/texts/56"
+        },
+        {
+          "$ref": "#/texts/57"
         }
       ],
       "content_layer": "body",
@@ -449,41 +443,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/56"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/17",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
           "$ref": "#/texts/59"
-        },
-        {
-          "$ref": "#/texts/60"
-        },
-        {
-          "$ref": "#/texts/61"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/18",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/63"
         }
       ],
       "content_layer": "body",
@@ -592,7 +552,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/6",
@@ -747,7 +707,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/17",
@@ -768,7 +728,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/18",
@@ -794,7 +754,7 @@
       "orig": "",
       "text": "",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/20",
@@ -913,7 +873,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/28",
@@ -934,7 +894,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/29",
@@ -960,7 +920,7 @@
       "orig": "",
       "text": "",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/31",
@@ -1080,59 +1040,38 @@
     {
       "self_ref": "#/texts/40",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "The Health Bureau will handle",
-      "text": "The Health Bureau will handle",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/41",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "reporting and specimen collection",
-      "text": "reporting and specimen collection",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/42",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": ".",
-      "text": ".",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/43",
@@ -1143,13 +1082,20 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "Whether the epidemic has eased.",
+      "text": "Whether the epidemic has eased.",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -1173,26 +1119,14 @@
     {
       "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/47",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "Whether the epidemic has eased.",
-      "text": "Whether the epidemic has eased.",
+      "orig": "Whether the test results are positive for a legally designated infectious disease.",
+      "text": "Whether the test results are positive for a legally designated infectious disease.",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -1202,9 +1136,28 @@
       }
     },
     {
+      "self_ref": "#/texts/47",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "No",
+      "text": "No",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
       "self_ref": "#/texts/48",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -1228,33 +1181,14 @@
     {
       "self_ref": "#/texts/50",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "Whether the test results are positive for a legally designated infectious disease.",
-      "text": "Whether the test results are positive for a legally designated infectious disease.",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/51",
-      "parent": {
-        "$ref": "#/groups/14"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "No",
-      "text": "No",
+      "orig": "Yes",
+      "text": "Yes",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -1264,7 +1198,7 @@
       }
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/body"
       },
@@ -1274,6 +1208,25 @@
       "prov": [],
       "orig": "",
       "text": ""
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "Yes",
+      "text": "Yes",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/53",
@@ -1290,81 +1243,19 @@
     {
       "self_ref": "#/texts/54",
       "parent": {
-        "$ref": "#/groups/15"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/55",
       "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/56",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/57",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/58",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/59",
-      "parent": {
-        "$ref": "#/groups/17"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -1381,9 +1272,9 @@
       }
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/56",
       "parent": {
-        "$ref": "#/groups/17"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -1393,9 +1284,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/61",
+      "self_ref": "#/texts/57",
       "parent": {
-        "$ref": "#/groups/17"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -1412,7 +1303,7 @@
       }
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -1424,9 +1315,9 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/63",
+      "self_ref": "#/texts/59",
       "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/16"
       },
       "children": [],
       "content_layer": "body",
@@ -1443,7 +1334,7 @@
       }
     },
     {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/body"
       },
@@ -1455,7 +1346,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/65",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/body"
       },
@@ -1467,7 +1358,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/66",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/body"
       },

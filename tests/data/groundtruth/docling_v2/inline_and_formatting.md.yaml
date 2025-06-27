@@ -56,7 +56,7 @@ groups:
   - $ref: '#/texts/27'
   - $ref: '#/texts/28'
   content_layer: body
-  label: ordered_list
+  label: list
   name: list
   parent:
     $ref: '#/body'
@@ -428,9 +428,9 @@ texts:
 - children:
   - $ref: '#/groups/3'
   content_layer: body
-  enumerated: true
+  enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -474,9 +474,9 @@ texts:
 - children:
   - $ref: '#/groups/4'
   content_layer: body
-  enumerated: true
+  enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -517,9 +517,9 @@ texts:
 - children:
   - $ref: '#/groups/5'
   content_layer: body
-  enumerated: true
+  enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -560,9 +560,9 @@ texts:
 - children:
   - $ref: '#/groups/6'
   content_layer: body
-  enumerated: true
+  enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -602,9 +602,9 @@ texts:
   text: )
 - children: []
   content_layer: body
-  enumerated: true
+  enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: Open a Pull Request
   parent:
     $ref: '#/groups/2'
@@ -613,7 +613,7 @@ texts:
   text: Open a Pull Request
 - children: []
   content_layer: body
-  enumerated: true
+  enumerated: false
   formatting:
     bold: true
     italic: false
@@ -621,7 +621,7 @@ texts:
     strikethrough: false
     underline: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: Whole list item has same formatting
   parent:
     $ref: '#/groups/2'
@@ -631,9 +631,9 @@ texts:
 - children:
   - $ref: '#/groups/7'
   content_layer: body
-  enumerated: true
+  enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: ''
   parent:
     $ref: '#/groups/2'
@@ -693,7 +693,7 @@ texts:
   content_layer: body
   enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: ''
   parent:
     $ref: '#/groups/8'
@@ -729,7 +729,7 @@ texts:
   content_layer: body
   enumerated: false
   label: list_item
-  marker: '-'
+  marker: ''
   orig: ''
   parent:
     $ref: '#/groups/8'
@@ -878,4 +878,4 @@ texts:
   prov: []
   self_ref: '#/texts/48'
   text: Table Heading
-version: 1.4.0
+version: 1.5.0

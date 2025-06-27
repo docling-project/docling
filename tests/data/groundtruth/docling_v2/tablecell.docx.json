@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "tablecell",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -82,7 +82,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/1",
@@ -103,7 +103,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/2",

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "example_03",
   "origin": {
     "mimetype": "text/html",
@@ -75,7 +75,7 @@
       ],
       "content_layer": "body",
       "name": "ordered list",
-      "label": "ordered_list"
+      "label": "list"
     },
     {
       "self_ref": "#/groups/3",
@@ -92,7 +92,7 @@
       ],
       "content_layer": "body",
       "name": "ordered list",
-      "label": "ordered_list"
+      "label": "list"
     }
   ],
   "texts": [
@@ -198,7 +198,7 @@
       "orig": "First item in unordered list",
       "text": "First item in unordered list",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/6",
@@ -212,7 +212,7 @@
       "orig": "Nested item 1",
       "text": "Nested item 1",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/7",
@@ -226,7 +226,7 @@
       "orig": "Nested item 2",
       "text": "Nested item 2",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/8",
@@ -240,7 +240,7 @@
       "orig": "Second item in unordered list",
       "text": "Second item in unordered list",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -257,8 +257,8 @@
       "prov": [],
       "orig": "First item in ordered list",
       "text": "First item in ordered list",
-      "enumerated": true,
-      "marker": "1"
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/10",
@@ -271,8 +271,8 @@
       "prov": [],
       "orig": "Nested ordered item 1",
       "text": "Nested ordered item 1",
-      "enumerated": true,
-      "marker": "1."
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/11",
@@ -285,8 +285,8 @@
       "prov": [],
       "orig": "Nested ordered item 2",
       "text": "Nested ordered item 2",
-      "enumerated": true,
-      "marker": "2."
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/12",
@@ -299,8 +299,8 @@
       "prov": [],
       "orig": "Second item in ordered list",
       "text": "Second item in ordered list",
-      "enumerated": true,
-      "marker": "2."
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",

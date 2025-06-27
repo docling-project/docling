@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "2203.01017v2",
   "origin": {
     "mimetype": "application/pdf",
@@ -1340,7 +1340,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
@@ -2096,7 +2096,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/39",
@@ -3055,7 +3055,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/72",
@@ -3086,7 +3086,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/73",
@@ -3117,7 +3117,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/74",
@@ -3148,7 +3148,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/75",
@@ -9249,7 +9249,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/284",
@@ -9280,7 +9280,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/285",
@@ -11288,7 +11288,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/354",
@@ -11348,7 +11348,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/356",
@@ -11379,7 +11379,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/357",
@@ -11410,7 +11410,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/358",
@@ -11441,7 +11441,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/359",
@@ -11472,7 +11472,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/360",
@@ -11503,7 +11503,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/361",
@@ -11534,7 +11534,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/362",
@@ -11565,7 +11565,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/363",
@@ -11596,7 +11596,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/364",
@@ -11627,7 +11627,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/365",
@@ -11658,7 +11658,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/366",
@@ -11689,7 +11689,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/367",
@@ -11720,7 +11720,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/368",
@@ -11751,7 +11751,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/369",
@@ -11782,7 +11782,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/370",
@@ -11813,7 +11813,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/371",
@@ -11844,7 +11844,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/372",
@@ -11875,7 +11875,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/373",
@@ -11906,7 +11906,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/374",
@@ -11937,7 +11937,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/375",
@@ -11968,7 +11968,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/376",
@@ -11999,7 +11999,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/377",
@@ -12030,7 +12030,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/378",
@@ -12061,7 +12061,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/379",
@@ -12092,7 +12092,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/380",
@@ -12181,7 +12181,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/383",
@@ -12212,7 +12212,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/384",
@@ -12243,7 +12243,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/385",
@@ -12274,7 +12274,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/386",
@@ -12305,7 +12305,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/387",
@@ -12336,7 +12336,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/388",
@@ -12367,7 +12367,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/389",
@@ -12398,7 +12398,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/390",
@@ -12429,7 +12429,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/391",
@@ -12460,7 +12460,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/392",
@@ -12491,7 +12491,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/393",
@@ -12522,7 +12522,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/394",
@@ -12553,7 +12553,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/395",
@@ -12584,7 +12584,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/396",
@@ -12923,7 +12923,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/407",
@@ -12954,7 +12954,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/408",
@@ -12985,7 +12985,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/409",
@@ -13016,7 +13016,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/410",
@@ -13047,7 +13047,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/411",
@@ -14906,7 +14906,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/475",
@@ -14937,7 +14937,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/476",
@@ -15055,7 +15055,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/480",
@@ -15086,7 +15086,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/481",
@@ -15117,7 +15117,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/482",
@@ -15148,7 +15148,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/483",
@@ -15179,7 +15179,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/484",
@@ -15268,7 +15268,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/487",
@@ -15299,7 +15299,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/488",
@@ -15330,7 +15330,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/489",
@@ -15361,7 +15361,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/490",
@@ -15392,7 +15392,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/491",
@@ -15452,7 +15452,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/493",
@@ -15483,7 +15483,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/494",
@@ -15514,7 +15514,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/495",
@@ -15545,7 +15545,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/496",

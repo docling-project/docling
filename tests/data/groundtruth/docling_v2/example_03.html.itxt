@@ -10,9 +10,9 @@ item-0 at level 0: unspecified: group _root_
             item-9 at level 6: list_item: Nested item 1
             item-10 at level 6: list_item: Nested item 2
         item-11 at level 4: list_item: Second item in unordered list
-      item-12 at level 3: ordered_list: group ordered list
+      item-12 at level 3: list: group ordered list
         item-13 at level 4: list_item: First item in ordered list
-          item-14 at level 5: ordered_list: group ordered list
+          item-14 at level 5: list: group ordered list
             item-15 at level 6: list_item: Nested ordered item 1
             item-16 at level 6: list_item: Nested ordered item 2
         item-17 at level 4: list_item: Second item in ordered list

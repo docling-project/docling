@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "example_02",
   "origin": {
     "mimetype": "text/html",
@@ -58,7 +58,7 @@
       ],
       "content_layer": "body",
       "name": "ordered list",
-      "label": "ordered_list"
+      "label": "list"
     }
   ],
   "texts": [
@@ -140,7 +140,7 @@
       "orig": "First item in unordered list",
       "text": "First item in unordered list",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/5",
@@ -154,7 +154,7 @@
       "orig": "Second item in unordered list",
       "text": "Second item in unordered list",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/6",
@@ -167,8 +167,8 @@
       "prov": [],
       "orig": "First item in ordered list",
       "text": "First item in ordered list",
-      "enumerated": true,
-      "marker": "1."
+      "enumerated": false,
+      "marker": ""
     },
     {
       "self_ref": "#/texts/7",
@@ -181,8 +181,8 @@
       "prov": [],
       "orig": "Second item in ordered list",
       "text": "Second item in ordered list",
-      "enumerated": true,
-      "marker": "2."
+      "enumerated": false,
+      "marker": ""
     }
   ],
   "pictures": [],

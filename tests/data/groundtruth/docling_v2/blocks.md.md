@@ -6,7 +6,7 @@ Empty unordered list:
 
 Ordered list:
 
-1. bar
+- bar
 
 Empty ordered list:
 

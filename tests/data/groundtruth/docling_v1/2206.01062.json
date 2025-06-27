@@ -654,7 +654,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (1) Human Annotation : In contrast to PubLayNet and DocBank, we relied on human annotation instead of automation approaches to generate the data set.",
+      "text": "(1) Human Annotation : In contrast to PubLayNet and DocBank, we relied on human annotation instead of automation approaches to generate the data set.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -677,7 +677,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (2) Large Layout Variability : We include diverse and complex layouts from a large variety of public sources.",
+      "text": "(2) Large Layout Variability : We include diverse and complex layouts from a large variety of public sources.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -700,7 +700,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (3) Detailed Label Set : We define 11 class labels to distinguish layout features in high detail. PubLayNet provides 5 labels; DocBank provides 13, although not a superset of ours.",
+      "text": "(3) Detailed Label Set : We define 11 class labels to distinguish layout features in high detail. PubLayNet provides 5 labels; DocBank provides 13, although not a superset of ours.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -723,7 +723,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (4) Redundant Annotations : A fraction of the pages in the DocLayNet data set carry more than one human annotation.",
+      "text": "(4) Redundant Annotations : A fraction of the pages in the DocLayNet data set carry more than one human annotation.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -792,7 +792,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (5) Pre-defined Train-, Test- & Validation-set : Like DocBank, we provide fixed train-, test- & validation-sets to ensure proportional representation of the class-labels. Further, we prevent leakage of unique layouts across sets, which has a large effect on model accuracy scores.",
+      "text": "(5) Pre-defined Train-, Test- & Validation-set : Like DocBank, we provide fixed train-, test- & validation-sets to ensure proportional representation of the class-labels. Further, we prevent leakage of unique layouts across sets, which has a large effect on model accuracy scores.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1511,7 +1511,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (1) Every list-item is an individual object instance with class label List-item . This definition is different from PubLayNet and DocBank, where all list-items are grouped together into one List object.",
+      "text": "(1) Every list-item is an individual object instance with class label List-item . This definition is different from PubLayNet and DocBank, where all list-items are grouped together into one List object.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1534,7 +1534,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (2) A List-item is a paragraph with hanging indentation. Singleline elements can qualify as List-item if the neighbour elements expose hanging indentation. Bullet or enumeration symbols are not a requirement.",
+      "text": "(2) A List-item is a paragraph with hanging indentation. Singleline elements can qualify as List-item if the neighbour elements expose hanging indentation. Bullet or enumeration symbols are not a requirement.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1557,7 +1557,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (3) For every Caption , there must be exactly one corresponding Picture or Table .",
+      "text": "(3) For every Caption , there must be exactly one corresponding Picture or Table .",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1580,7 +1580,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (4) Connected sub-pictures are grouped together in one Picture object.",
+      "text": "(4) Connected sub-pictures are grouped together in one Picture object.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1603,7 +1603,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (5) Formula numbers are included in a Formula object.",
+      "text": "(5) Formula numbers are included in a Formula object.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1626,7 +1626,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- (6) Emphasised text (e.g. in italic or bold) at the beginning of a paragraph is not considered a Section-header , unless it appears exclusively on its own line.",
+      "text": "(6) Emphasised text (e.g. in italic or bold) at the beginning of a paragraph is not considered a Section-header , unless it appears exclusively on its own line.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2507,7 +2507,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [1] Max G\u00f6bel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition , pages 1449-1453, 2013.",
+      "text": "[1] Max G\u00f6bel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition , pages 1449-1453, 2013.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2530,7 +2530,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [2] Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
+      "text": "[2] Christian Clausner, Apostolos Antonacopoulos, and Stefan Pletschacher. Icdar2017 competition on recognition of documents with complex layouts rdcl2017. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 1404-1410, 2017.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2553,7 +2553,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [3] Herv\u00e9 D\u00e9jean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), April 2019. http://sac.founderit.com/.",
+      "text": "[3] Herv\u00e9 D\u00e9jean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), April 2019. http://sac.founderit.com/.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2576,7 +2576,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [4] Antonio Jimeno Yepes, Peter Zhong, and Douglas Burdick. Competition on scientific literature parsing. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 605-617. LNCS 12824, SpringerVerlag, sep 2021.",
+      "text": "[4] Antonio Jimeno Yepes, Peter Zhong, and Douglas Burdick. Competition on scientific literature parsing. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 605-617. LNCS 12824, SpringerVerlag, sep 2021.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2599,7 +2599,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [5] Logan Markewich, Hao Zhang, Yubin Xing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR) , pages 1-11, 01 2022.",
+      "text": "[5] Logan Markewich, Hao Zhang, Yubin Xing, Navid Lambert-Shirzad, Jiang Zhexin, Roy Lee, Zhi Li, and Seok-Bum Ko. Segmentation for document layout analysis: not dead yet. International Journal on Document Analysis and Recognition (IJDAR) , pages 1-11, 01 2022.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2622,7 +2622,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [6] Xu Zhong, Jianbin Tang, and Antonio Jimeno-Yepes. Publaynet: Largest dataset ever for document layout analysis. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 1015-1022, sep 2019.",
+      "text": "[6] Xu Zhong, Jianbin Tang, and Antonio Jimeno-Yepes. Publaynet: Largest dataset ever for document layout analysis. In Proceedings of the International Conference on Document Analysis and Recognition , ICDAR, pages 1015-1022, sep 2019.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2645,7 +2645,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [7] Minghao Li, Yiheng Xu, Lei Cui, Shaohan Huang, Furu Wei, Zhoujun Li, and Ming Zhou. Docbank: A benchmark dataset for document layout analysis. In Proceedings of the 28th International Conference on Computational Linguistics , COLING, pages 949-960. International Committee on Computational Linguistics, dec 2020.",
+      "text": "[7] Minghao Li, Yiheng Xu, Lei Cui, Shaohan Huang, Furu Wei, Zhoujun Li, and Ming Zhou. Docbank: A benchmark dataset for document layout analysis. In Proceedings of the 28th International Conference on Computational Linguistics , COLING, pages 949-960. International Committee on Computational Linguistics, dec 2020.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2668,7 +2668,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [8] Riaz Ahmad, Muhammad Tanvir Afzal, and M. Qadir. Information extraction from pdf sources based on rule-based system using integrated formats. In SemWebEval@ESWC , 2016.",
+      "text": "[8] Riaz Ahmad, Muhammad Tanvir Afzal, and M. Qadir. Information extraction from pdf sources based on rule-based system using integrated formats. In SemWebEval@ESWC , 2016.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2691,7 +2691,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [9] Ross B. Girshick, Jeff Donahue, Trevor Darrell, and Jitendra Malik. Rich feature hierarchies for accurate object detection and semantic segmentation. In IEEE Conference on Computer Vision and Pattern Recognition , CVPR, pages 580-587. IEEE Computer Society, jun 2014.",
+      "text": "[9] Ross B. Girshick, Jeff Donahue, Trevor Darrell, and Jitendra Malik. Rich feature hierarchies for accurate object detection and semantic segmentation. In IEEE Conference on Computer Vision and Pattern Recognition , CVPR, pages 580-587. IEEE Computer Society, jun 2014.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2714,7 +2714,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [10] Ross B. Girshick. Fast R-CNN. In 2015 IEEE International Conference on Computer Vision , ICCV, pages 1440-1448. IEEE Computer Society, dec 2015.",
+      "text": "[10] Ross B. Girshick. Fast R-CNN. In 2015 IEEE International Conference on Computer Vision , ICCV, pages 1440-1448. IEEE Computer Society, dec 2015.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2737,7 +2737,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [11] Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. Faster r-cnn: Towards real-time object detection with region proposal networks. IEEE Transactions on Pattern Analysis and Machine Intelligence , 39(6):1137-1149, 2017.",
+      "text": "[11] Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun. Faster r-cnn: Towards real-time object detection with region proposal networks. IEEE Transactions on Pattern Analysis and Machine Intelligence , 39(6):1137-1149, 2017.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2760,7 +2760,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [12] Kaiming He, Georgia Gkioxari, Piotr Doll\u00e1r, and Ross B. Girshick. Mask R-CNN. In IEEE International Conference on Computer Vision , ICCV, pages 2980-2988. IEEE Computer Society, Oct 2017.",
+      "text": "[12] Kaiming He, Georgia Gkioxari, Piotr Doll\u00e1r, and Ross B. Girshick. Mask R-CNN. In IEEE International Conference on Computer Vision , ICCV, pages 2980-2988. IEEE Computer Society, Oct 2017.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2783,7 +2783,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [13] Glenn Jocher, Alex Stoken, Ayush Chaurasia, Jirka Borovec, NanoCode012, TaoXie, Yonghye Kwon, Kalen Michael, Liu Changyu, Jiacong Fang, Abhiram V, Laughing, tkianai, yxNONG, Piotr Skalski, Adam Hogan, Jebastin Nadar, imyhxy, Lorenzo Mammana, Alex Wang, Cristi Fati, Diego Montes, Jan Hajek, Laurentiu",
+      "text": "[13] Glenn Jocher, Alex Stoken, Ayush Chaurasia, Jirka Borovec, NanoCode012, TaoXie, Yonghye Kwon, Kalen Michael, Liu Changyu, Jiacong Fang, Abhiram V, Laughing, tkianai, yxNONG, Piotr Skalski, Adam Hogan, Jebastin Nadar, imyhxy, Lorenzo Mammana, Alex Wang, Cristi Fati, Diego Montes, Jan Hajek, Laurentiu",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2880,7 +2880,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [20] Shoubin Li, Xuyan Ma, Shuaiqun Pan, Jun Hu, Lin Shi, and Qing Wang. Vtlayout: Fusion of visual and text features for document layout analysis, 2021.",
+      "text": "[20] Shoubin Li, Xuyan Ma, Shuaiqun Pan, Jun Hu, Lin Shi, and Qing Wang. Vtlayout: Fusion of visual and text features for document layout analysis, 2021.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2903,7 +2903,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [14] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-end object detection with transformers. CoRR , abs/2005.12872, 2020.",
+      "text": "[14] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-end object detection with transformers. CoRR , abs/2005.12872, 2020.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2926,7 +2926,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [15] Mingxing Tan, Ruoming Pang, and Quoc V. Le. Efficientdet: Scalable and efficient object detection. CoRR , abs/1911.09070, 2019.",
+      "text": "[15] Mingxing Tan, Ruoming Pang, and Quoc V. Le. Efficientdet: Scalable and efficient object detection. CoRR , abs/1911.09070, 2019.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2949,7 +2949,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [16] Tsung-Yi Lin, Michael Maire, Serge J. Belongie, Lubomir D. Bourdev, Ross B. Girshick, James Hays, Pietro Perona, Deva Ramanan, Piotr Doll\u00e1r, and C. Lawrence Zitnick. Microsoft COCO: common objects in context, 2014.",
+      "text": "[16] Tsung-Yi Lin, Michael Maire, Serge J. Belongie, Lubomir D. Bourdev, Ross B. Girshick, James Hays, Pietro Perona, Deva Ramanan, Piotr Doll\u00e1r, and C. Lawrence Zitnick. Microsoft COCO: common objects in context, 2014.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2972,7 +2972,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [17] Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, and Ross Girshick. Detectron2, 2019.",
+      "text": "[17] Yuxin Wu, Alexander Kirillov, Francisco Massa, Wan-Yen Lo, and Ross Girshick. Detectron2, 2019.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2995,7 +2995,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [18] Nikolaos Livathinos, Cesar Berrospi, Maksym Lysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence , AAAI, pages 1513715145, feb 2021.",
+      "text": "[18] Nikolaos Livathinos, Cesar Berrospi, Maksym Lysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter W. J. Staar. Robust pdf document conversion using recurrent neural networks. In Proceedings of the 35th Conference on Artificial Intelligence , AAAI, pages 1513715145, feb 2021.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3018,7 +3018,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [19] Yiheng Xu, Minghao Li, Lei Cui, Shaohan Huang, Furu Wei, and Ming Zhou. Layoutlm: Pre-training of text and layout for document image understanding. In Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining , KDD, pages 1192-1200, New York, USA, 2020. Association for Computing Machinery.",
+      "text": "[19] Yiheng Xu, Minghao Li, Lei Cui, Shaohan Huang, Furu Wei, and Ming Zhou. Layoutlm: Pre-training of text and layout for document image understanding. In Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining , KDD, pages 1192-1200, New York, USA, 2020. Association for Computing Machinery.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3041,7 +3041,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [21] Peng Zhang, Can Li, Liang Qiao, Zhanzhan Cheng, Shiliang Pu, Yi Niu, and Fei Wu. Vsr: A unified framework for document layout analysis combining vision, semantics and relations, 2021.",
+      "text": "[21] Peng Zhang, Can Li, Liang Qiao, Zhanzhan Cheng, Shiliang Pu, Yi Niu, and Fei Wu. Vsr: A unified framework for document layout analysis combining vision, semantics and relations, 2021.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3064,7 +3064,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [22] Peter W J Staar, Michele Dolfi, Christoph Auer, and Costas Bekas. Corpus conversion service: A machine learning platform to ingest documents at scale. In Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining , KDD, pages 774-782. ACM, 2018.",
+      "text": "[22] Peter W J Staar, Michele Dolfi, Christoph Auer, and Costas Bekas. Corpus conversion service: A machine learning platform to ingest documents at scale. In Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining , KDD, pages 774-782. ACM, 2018.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3087,7 +3087,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- [23] Connor Shorten and Taghi M. Khoshgoftaar. A survey on image data augmentation for deep learning. Journal of Big Data , 6(1):60, 2019.",
+      "text": "[23] Connor Shorten and Taghi M. Khoshgoftaar. A survey on image data augmentation for deep learning. Journal of Big Data , 6(1):60, 2019.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",

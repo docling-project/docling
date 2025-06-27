@@ -7,6 +7,6 @@ item-0 at level 0: unspecified: group _root_
       item-6 at level 3: list: group list
         item-7 at level 4: list_item: First item in unordered list
         item-8 at level 4: list_item: Second item in unordered list
-      item-9 at level 3: ordered_list: group ordered list
+      item-9 at level 3: list: group ordered list
         item-10 at level 4: list_item: First item in ordered list
         item-11 at level 4: list_item: Second item in ordered list
