@@ -43,6 +43,22 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# GraniteDocling
+GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
+    repo_id="ibm-granite/granite-docling-256m-preview",
+    prompt="Convert this page to docling.",
+    response_format=ResponseFormat.DOCTAGS,
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_VISION2SEQ,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+    ],
+    scale=2.0,
+    temperature=0.0,
+)
+
 # GraniteVision
 GRANITE_VISION_TRANSFORMERS = InlineVlmOptions(
     repo_id="ibm-granite/granite-vision-3.2-2b",
@@ -140,5 +156,6 @@ GEMMA3_27B_MLX = InlineVlmOptions(
 
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"
+    GRANITE_DOCLING = "granite_docling"
     GRANITE_VISION = "granite_vision"
     GRANITE_VISION_OLLAMA = "granite_vision_ollama"
