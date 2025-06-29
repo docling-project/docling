@@ -10,7 +10,6 @@ from docling_core.types.doc.page import (
     BoundingRectangle,
     TextCellUnit,
 )
-from docling_ibm_models.tableformer.data_management.tf_predictor import TFPredictor
 from PIL import ImageDraw
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -70,6 +69,9 @@ class TableStructureModel(BasePageModel):
 
             # Third Party
             import docling_ibm_models.tableformer.common as c
+            from docling_ibm_models.tableformer.data_management.tf_predictor import (
+                TFPredictor,
+            )
 
             device = decide_device(accelerator_options.device)
 

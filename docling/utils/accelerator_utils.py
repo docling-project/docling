@@ -1,8 +1,6 @@
 import logging
 from typing import List, Optional
 
-import torch
-
 from docling.datamodel.accelerator_options import AcceleratorDevice
 
 _log = logging.getLogger(__name__)
@@ -18,6 +16,7 @@ def decide_device(
     1. AUTO: Check for the best available device on the system.
     2. User-defined: Check if the device actually exists, otherwise fall-back to CPU
     """
+    import torch
     device = "cpu"
 
     has_cuda = torch.backends.cuda.is_built() and torch.cuda.is_available()
