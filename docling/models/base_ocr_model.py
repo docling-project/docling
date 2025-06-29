@@ -10,7 +10,6 @@ from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
 from rtree import index
-from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -31,6 +30,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         options: OcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
+        from scipy.ndimage import binary_dilation, find_objects, label
+
         self.enabled = enabled
         self.options = options
 

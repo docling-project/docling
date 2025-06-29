@@ -7,7 +7,6 @@ from typing import Optional
 
 import numpy as np
 from docling_core.types.doc import DocItemLabel
-from docling_ibm_models.layoutmodel.layout_predictor import LayoutPredictor
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -51,6 +50,8 @@ class LayoutModel(BasePageModel):
     def __init__(
         self, artifacts_path: Optional[Path], accelerator_options: AcceleratorOptions
     ):
+        from docling_ibm_models.layoutmodel.layout_predictor import LayoutPredictor
+
         device = decide_device(accelerator_options.device)
 
         if artifacts_path is None:
