@@ -1,17 +1,19 @@
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from pydantic import AnyUrl, BaseModel
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.base_models import Page
 
 
 class BaseVlmOptions(BaseModel):
     kind: str
-    prompt: str
+    prompt: Union[str, Callable[[Page], str]]
     scale: float = 2.0
     max_size: Optional[int] = None
+    temperature: float = 0.0
 
 
 class ResponseFormat(str, Enum):
@@ -51,7 +53,6 @@ class InlineVlmOptions(BaseVlmOptions):
         AcceleratorDevice.MPS,
     ]
 
-    temperature: float = 0.0
     stop_strings: List[str] = []
     extra_generation_config: Dict[str, Any] = {}
 
