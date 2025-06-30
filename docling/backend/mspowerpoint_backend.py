@@ -17,6 +17,8 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
+from lxml import etree
+from lxml.etree import XPath
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
@@ -45,6 +47,17 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         self.pptx_obj = None
         self.valid = False
+        self.xpath_expr = etree.XPath(
+            ".//a:blip",
+            namespaces={
+                "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+                "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+            },
+        )
+        self.xpath_expr = etree.XPath(".//a:blip", namespaces={
+            "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+            "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        })
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.pptx_obj = Presentation(self.path_or_stream)
@@ -232,20 +245,35 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
         return
 
-    def handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
+    def handle_pictures(
+        self, shape, parent_slide, slide_ind, doc, slide_size, drawing_blip, slide
+    ):
+
+        def get_pptx_image(drawing_blip):
+            rId = drawing_blip[0].get(
+                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+            )
+            rel = slide.part.rels.get(rId)
+            image_part = rel.target_part
+            image_data = image_part.blob
+
+            return image_data
+
         # Open it with PIL
         try:
             # Get the image bytes
-            image = shape.image
-            image_bytes = image.blob
-            im_dpi, _ = image.dpi
-            pil_image = Image.open(BytesIO(image_bytes))
+            # Open it with PIL
+            image_data = get_pptx_image(drawing_blip)
+            image_bytes = BytesIO(image_data)
+            pil_image = Image.open(image_bytes)
+            im_dpi, _ = pil_image.info.get("dpi", (72, 72))
 
             # shape has picture
             prov = self.generate_prov(shape, slide_ind, "", slide_size)
             doc.add_picture(
                 parent=parent_slide,
-                image=ImageRef.from_pil(image=pil_image, dpi=im_dpi),
+                image=ImageRef.from_pil(image=pil_image, dpi=int(im_dpi)),
+                image=ImageRef.from_pil(image=pil_image, dpi=int(im_dpi)),
                 caption=None,
                 prov=prov,
             )
@@ -344,9 +372,20 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     self.handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
-                    if hasattr(shape, "image"):
+                    drawing_blip = self.xpath_expr(shape.element)
+<<<<<<< HEAD
+                    if drawing_blip: #ensure there is a drwaing blip
+=======
+                    if drawing_blip:  # ensure there is a drawing blip
+>>>>>>> 4e8bf2c (fix/adding the missing slide size argument in the handle pictures in the mspowerpoint_backend.py file and adding generate=True in the verify export method in the pytest for pptx to ensure the pytest passes appropriately Signed-off-by: Franck Benichou franck.benichou@sciencespo.fr)
                         self.handle_pictures(
-                            shape, parent_slide, slide_ind, doc, slide_size
+                            shape,
+                            parent_slide,
+                            slide_ind,
+                            doc,
+                            slide_size,
+                            drawing_blip,
+                            slide,
                         )
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
