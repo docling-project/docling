@@ -94,7 +94,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 model_cls = AutoModelForVision2Seq
             elif (
                 self.vlm_options.transformers_model_type
-                == TransformersModelType.AUTOMODEL_FORIMAGETEXTTOTEXT
+                == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
             ):
                 model_cls = AutoModelForImageTextToText
 
