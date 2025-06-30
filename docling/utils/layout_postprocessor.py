@@ -9,6 +9,7 @@ from docling_core.types.doc.page import TextCell
 from rtree import index
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
+from docling.datamodel.pipeline_options import LayoutOptions
 
 _log = logging.getLogger(__name__)
 
@@ -194,12 +195,16 @@ class LayoutPostprocessor:
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
     }
 
-    def __init__(self, page: Page, clusters: List[Cluster]) -> None:
+    def __init__(
+        self, page: Page, clusters: List[Cluster], options: LayoutOptions
+    ) -> None:
         """Initialize processor with page and clusters."""
+
         self.cells = page.cells
         self.page = page
         self.page_size = page.size
         self.all_clusters = clusters
+        self.options = options
         self.regular_clusters = [
             c for c in clusters if c.label not in self.SPECIAL_TYPES
         ]
@@ -267,7 +272,7 @@ class LayoutPostprocessor:
 
         # Handle orphaned cells
         unassigned = self._find_unassigned_cells(clusters)
-        if unassigned:
+        if unassigned and self.options.create_orphan_clusters:
             next_id = max((c.id for c in self.all_clusters), default=0) + 1
             orphan_clusters = []
             for i, cell in enumerate(unassigned):

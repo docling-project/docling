@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
@@ -265,6 +266,12 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
     )
 
 
+class LayoutOptions(BaseModel):
+    """Options for layout processing."""
+
+    create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
+
+
 class AsrPipelineOptions(PipelineOptions):
     asr_options: Union[InlineAsrOptions] = asr_model_specs.WHISPER_TINY
     artifacts_path: Optional[Union[Path, str]] = None
@@ -289,6 +296,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     picture_description_options: PictureDescriptionBaseOptions = (
         smolvlm_picture_description
     )
+    layout_options: LayoutOptions = LayoutOptions()
 
     images_scale: float = 1.0
     generate_page_images: bool = False

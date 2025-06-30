@@ -80,6 +80,7 @@ class StandardPdfPipeline(PaginatedPipeline):
             LayoutModel(
                 artifacts_path=artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
+                options=pipeline_options.layout_options,
             ),
             # Table structure model
             TableStructureModel(
