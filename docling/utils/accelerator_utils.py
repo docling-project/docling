@@ -17,6 +17,7 @@ def decide_device(
     2. User-defined: Check if the device actually exists, otherwise fall-back to CPU
     """
     import torch
+
     device = "cpu"
 
     has_cuda = torch.backends.cuda.is_built() and torch.cuda.is_available()

@@ -3,7 +3,7 @@ import logging
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -19,6 +19,9 @@ from docling.datamodel.settings import settings
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from scipy.ndimage import binary_dilation, find_objects, label
 
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):

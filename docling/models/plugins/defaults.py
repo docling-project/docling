@@ -1,5 +1,3 @@
-
-
 def ocr_engines():
     from docling.models.easyocr_model import EasyOcrModel
     from docling.models.ocr_mac_model import OcrMacModel
