@@ -813,7 +813,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.38.1"
+version = "2.39.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

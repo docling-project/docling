@@ -1,3 +1,13 @@
+## [v2.39.0](https://github.com/docling-project/docling/releases/tag/v2.39.0) - 2025-06-27
+
+### Feature
+
+* Leverage new list modeling, capture default markers ([#1856](https://github.com/docling-project/docling/issues/1856)) ([`0533da1`](https://github.com/docling-project/docling/commit/0533da1923598e4a2d6392283f6de0f9c7002b01))
+
+### Fix
+
+* **markdown:** Make parsing of rich table cells valid ([#1821](https://github.com/docling-project/docling/issues/1821)) ([`e79e4f0`](https://github.com/docling-project/docling/commit/e79e4f0ab6c5b8276316e423b14c9821165049f2))
+
 ## [v2.38.1](https://github.com/docling-project/docling/releases/tag/v2.38.1) - 2025-06-25
 
 ### Fix
