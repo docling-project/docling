@@ -42,11 +42,11 @@
 <subtitle-level-1><location><page_6><loc_22><loc_40><loc_43><loc_41></location>4.1 Language Definition</subtitle-level-1>
 <paragraph><location><page_6><loc_22><loc_34><loc_79><loc_38></location>In Figure 3, we illustrate how the OTSL is defined. In essence, the OTSL defines only 5 tokens that directly describe a tabular structure based on an atomic 2D grid.</paragraph>
 <paragraph><location><page_6><loc_24><loc_33><loc_67><loc_34></location>The OTSL vocabulary is comprised of the following tokens:</paragraph>
-<paragraph><location><page_6><loc_23><loc_30><loc_75><loc_31></location>- -"C" cell a new table cell that either has or does not have cell content</paragraph>
-<paragraph><location><page_6><loc_23><loc_27><loc_79><loc_29></location>- -"L" cell left-looking cell , merging with the left neighbor cell to create a span</paragraph>
-<paragraph><location><page_6><loc_23><loc_24><loc_79><loc_26></location>- -"U" cell up-looking cell , merging with the upper neighbor cell to create a span</paragraph>
-<paragraph><location><page_6><loc_23><loc_22><loc_74><loc_23></location>- -"X" cell cross cell , to merge with both left and upper neighbor cells</paragraph>
-<paragraph><location><page_6><loc_23><loc_20><loc_54><loc_21></location>- -"NL" new-line , switch to the next row.</paragraph>
+<paragraph><location><page_6><loc_23><loc_30><loc_75><loc_31></location>-"C" cell a new table cell that either has or does not have cell content</paragraph>
+<paragraph><location><page_6><loc_23><loc_27><loc_79><loc_29></location>-"L" cell left-looking cell , merging with the left neighbor cell to create a span</paragraph>
+<paragraph><location><page_6><loc_23><loc_24><loc_79><loc_26></location>-"U" cell up-looking cell , merging with the upper neighbor cell to create a span</paragraph>
+<paragraph><location><page_6><loc_23><loc_22><loc_74><loc_23></location>-"X" cell cross cell , to merge with both left and upper neighbor cells</paragraph>
+<paragraph><location><page_6><loc_23><loc_20><loc_54><loc_21></location>-"NL" new-line , switch to the next row.</paragraph>
 <paragraph><location><page_6><loc_22><loc_16><loc_79><loc_19></location>A notable attribute of OTSL is that it has the capability of achieving lossless conversion to HTML.</paragraph>
 <figure>
 <location><page_7><loc_27><loc_65><loc_73><loc_79></location>
@@ -58,7 +58,7 @@
 <paragraph><location><page_7><loc_23><loc_54><loc_79><loc_56></location>1. Left-looking cell rule : The left neighbour of an "L" cell must be either another "L" cell or a "C" cell.</paragraph>
 <paragraph><location><page_7><loc_23><loc_51><loc_79><loc_53></location>2. Up-looking cell rule : The upper neighbour of a "U" cell must be either another "U" cell or a "C" cell.</paragraph>
 <subtitle-level-1><location><page_7><loc_23><loc_49><loc_37><loc_50></location>3. Cross cell rule :</subtitle-level-1>
-<paragraph><location><page_7><loc_25><loc_44><loc_79><loc_49></location>- The left neighbour of an "X" cell must be either another "X" cell or a "U" cell, and the upper neighbour of an "X" cell must be either another "X" cell or an "L" cell.</paragraph>
+<paragraph><location><page_7><loc_25><loc_44><loc_79><loc_49></location>The left neighbour of an "X" cell must be either another "X" cell or a "U" cell, and the upper neighbour of an "X" cell must be either another "X" cell or an "L" cell.</paragraph>
 <paragraph><location><page_7><loc_23><loc_43><loc_78><loc_44></location>4. First row rule : Only "L" cells and "C" cells are allowed in the first row.</paragraph>
 <paragraph><location><page_7><loc_23><loc_40><loc_79><loc_43></location>5. First column rule : Only "U" cells and "C" cells are allowed in the first column.</paragraph>
 <paragraph><location><page_7><loc_23><loc_37><loc_79><loc_40></location>6. Rectangular rule : The table representation is always rectangular - all rows must have an equal number of tokens, terminated with "NL" token.</paragraph>

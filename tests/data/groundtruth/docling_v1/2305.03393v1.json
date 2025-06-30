@@ -937,7 +937,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- -\"C\" cell a new table cell that either has or does not have cell content",
+      "text": "-\"C\" cell a new table cell that either has or does not have cell content",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -960,7 +960,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- -\"L\" cell left-looking cell , merging with the left neighbor cell to create a span",
+      "text": "-\"L\" cell left-looking cell , merging with the left neighbor cell to create a span",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -983,7 +983,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- -\"U\" cell up-looking cell , merging with the upper neighbor cell to create a span",
+      "text": "-\"U\" cell up-looking cell , merging with the upper neighbor cell to create a span",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1006,7 +1006,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- -\"X\" cell cross cell , to merge with both left and upper neighbor cells",
+      "text": "-\"X\" cell cross cell , to merge with both left and upper neighbor cells",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1029,7 +1029,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- -\"NL\" new-line , switch to the next row.",
+      "text": "-\"NL\" new-line , switch to the next row.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -1218,7 +1218,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
+      "text": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",

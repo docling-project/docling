@@ -2221,7 +2221,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- a.",
+      "text": "a.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2244,7 +2244,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells",
+      "text": "Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2578,7 +2578,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5",
+      "text": "end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3452,7 +3452,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
+      "text": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4092,7 +4092,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
+      "text": "3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4322,7 +4322,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
+      "text": "9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4345,7 +4345,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
+      "text": "9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4368,7 +4368,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
+      "text": "9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4391,7 +4391,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9e. If the table cell under the identified row and column is not empty, extend its content with the content of the or-",
+      "text": "9e. If the table cell under the identified row and column is not empty, extend its content with the content of the or-",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",

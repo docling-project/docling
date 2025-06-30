@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "powerpoint_sample",
   "origin": {
     "mimetype": "application/vnd.ms-powerpoint",
@@ -137,7 +137,7 @@
       ],
       "content_layer": "body",
       "name": "list",
-      "label": "ordered_list"
+      "label": "list"
     },
     {
       "self_ref": "#/groups/4",
@@ -197,7 +197,7 @@
       ],
       "content_layer": "body",
       "name": "list",
-      "label": "ordered_list"
+      "label": "list"
     },
     {
       "self_ref": "#/groups/7",
@@ -578,7 +578,7 @@
       "orig": "I1",
       "text": "I1",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
@@ -607,7 +607,7 @@
       "orig": "I2",
       "text": "I2",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/14",
@@ -636,7 +636,7 @@
       "orig": "I3",
       "text": "I3",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/15",
@@ -665,7 +665,7 @@
       "orig": "I4",
       "text": "I4",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/16",
@@ -721,7 +721,7 @@
       "orig": "Item A",
       "text": "Item A",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/18",
@@ -750,7 +750,7 @@
       "orig": "Item B",
       "text": "Item B",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/19",
@@ -893,7 +893,7 @@
       "orig": "l1 ",
       "text": "l1 ",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/24",
@@ -922,7 +922,7 @@
       "orig": "l2",
       "text": "l2",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/25",
@@ -951,7 +951,7 @@
       "orig": "l3",
       "text": "l3",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/26",

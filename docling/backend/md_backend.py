@@ -2,9 +2,10 @@ import logging
 import re
 import warnings
 from copy import deepcopy
+from enum import Enum
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Set, Union
+from typing import List, Literal, Optional, Set, Union
 
 import marko
 import marko.element
@@ -13,15 +14,15 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
-    GroupLabel,
     NodeItem,
     TableCell,
     TableData,
     TextItem,
 )
-from docling_core.types.doc.document import Formatting, OrderedList, UnorderedList
+from docling_core.types.doc.document import Formatting
 from marko import Markdown
-from pydantic import AnyUrl, TypeAdapter
+from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
+from typing_extensions import Annotated
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -33,6 +34,32 @@ _log = logging.getLogger(__name__)
 _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
 _START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
 _STOP_MARKER = f"#_#_{_MARKER_BODY}_STOP_#_#"
+
+
+class _PendingCreationType(str, Enum):
+    """CoordOrigin."""
+
+    HEADING = "heading"
+    LIST_ITEM = "list_item"
+
+
+class _HeadingCreationPayload(BaseModel):
+    kind: Literal["heading"] = "heading"
+    level: int
+
+
+class _ListItemCreationPayload(BaseModel):
+    kind: Literal["list_item"] = "list_item"
+    enumerated: bool
+
+
+_CreationPayload = Annotated[
+    Union[
+        _HeadingCreationPayload,
+        _ListItemCreationPayload,
+    ],
+    Field(discriminator="kind"),
+]
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
@@ -155,6 +182,50 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 doc.add_table(data=table_data)
         return
 
+    def _create_list_item(
+        self,
+        doc: DoclingDocument,
+        parent_item: Optional[NodeItem],
+        text: str,
+        enumerated: bool,
+        formatting: Optional[Formatting] = None,
+        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+    ):
+        item = doc.add_list_item(
+            text=text,
+            enumerated=enumerated,
+            parent=parent_item,
+            formatting=formatting,
+            hyperlink=hyperlink,
+        )
+        return item
+
+    def _create_heading_item(
+        self,
+        doc: DoclingDocument,
+        parent_item: Optional[NodeItem],
+        text: str,
+        level: int,
+        formatting: Optional[Formatting] = None,
+        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+    ):
+        if level == 1:
+            item = doc.add_title(
+                text=text,
+                parent=parent_item,
+                formatting=formatting,
+                hyperlink=hyperlink,
+            )
+        else:
+            item = doc.add_heading(
+                text=text,
+                level=level - 1,
+                parent=parent_item,
+                formatting=formatting,
+                hyperlink=hyperlink,
+            )
+        return item
+
     def _iterate_elements(  # noqa: C901
         self,
         *,
@@ -162,6 +233,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         depth: int,
         doc: DoclingDocument,
         visited: Set[marko.element.Element],
+        creation_stack: list[
+            _CreationPayload
+        ],  # stack for lazy item creation triggered deep in marko's AST (on RawText)
+        list_ordered_flag_by_ref: dict[str, bool],
         parent_item: Optional[NodeItem] = None,
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
@@ -177,28 +252,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 f" - Heading level {element.level}, content: {element.children[0].children}"  # type: ignore
             )
 
-            if len(element.children) == 1:
-                child = element.children[0]
-                snippet_text = str(child.children)  # type: ignore
-                visited.add(child)
-            else:
-                snippet_text = ""  # inline group will be created
-
-            if element.level == 1:
-                parent_item = doc.add_title(
-                    text=snippet_text,
-                    parent=parent_item,
+            if len(element.children) > 1:  # inline group will be created further down
+                parent_item = self._create_heading_item(
+                    doc=doc,
+                    parent_item=parent_item,
+                    text="",
+                    level=element.level,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
             else:
-                parent_item = doc.add_heading(
-                    text=snippet_text,
-                    level=element.level - 1,
-                    parent=parent_item,
-                    formatting=formatting,
-                    hyperlink=hyperlink,
-                )
+                creation_stack.append(_HeadingCreationPayload(level=element.level))
 
         elif isinstance(element, marko.block.List):
             has_non_empty_list_items = False
@@ -210,10 +274,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._close_table(doc)
             _log.debug(f" - List {'ordered' if element.ordered else 'unordered'}")
             if has_non_empty_list_items:
-                label = GroupLabel.ORDERED_LIST if element.ordered else GroupLabel.LIST
-                parent_item = doc.add_group(
-                    label=label, name="list", parent=parent_item
-                )
+                parent_item = doc.add_list_group(name="list", parent=parent_item)
+                list_ordered_flag_by_ref[parent_item.self_ref] = element.ordered
 
         elif (
             isinstance(element, marko.block.ListItem)
@@ -224,22 +286,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._close_table(doc)
             _log.debug(" - List item")
 
-            if len(child.children) == 1:
-                snippet_text = str(child.children[0].children)  # type: ignore
-                visited.add(child)
-            else:
-                snippet_text = ""  # inline group will be created
-            is_numbered = isinstance(parent_item, OrderedList)
-            if not isinstance(parent_item, (OrderedList, UnorderedList)):
-                _log.warning("ListItem would have not had a list parent, adding one.")
-                parent_item = doc.add_unordered_list(parent=parent_item)
-            parent_item = doc.add_list_item(
-                enumerated=is_numbered,
-                parent=parent_item,
-                text=snippet_text,
-                formatting=formatting,
-                hyperlink=hyperlink,
+            enumerated = (
+                list_ordered_flag_by_ref.get(parent_item.self_ref, False)
+                if parent_item
+                else False
             )
+            if len(child.children) > 1:  # inline group will be created further down
+                parent_item = self._create_list_item(
+                    doc=doc,
+                    parent_item=parent_item,
+                    text="",
+                    enumerated=enumerated,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+            else:
+                creation_stack.append(_ListItemCreationPayload(enumerated=enumerated))
 
         elif isinstance(element, marko.inline.Image):
             self._close_table(doc)
@@ -276,7 +338,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f" - Paragraph (raw text): {element.children}")
             snippet_text = element.children.strip()
             # Detect start of the table:
-            if "|" in snippet_text:
+            if "|" in snippet_text or self.in_table:
                 # most likely part of the markdown table
                 self.in_table = True
                 if len(self.md_table_buffer) > 0:
@@ -285,13 +347,46 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     self.md_table_buffer.append(snippet_text)
             elif snippet_text:
                 self._close_table(doc)
-                doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=parent_item,
-                    text=snippet_text,
-                    formatting=formatting,
-                    hyperlink=hyperlink,
-                )
+
+                if creation_stack:
+                    while len(creation_stack) > 0:
+                        to_create = creation_stack.pop()
+                        if isinstance(to_create, _ListItemCreationPayload):
+                            enumerated = (
+                                list_ordered_flag_by_ref.get(
+                                    parent_item.self_ref, False
+                                )
+                                if parent_item
+                                else False
+                            )
+                            parent_item = self._create_list_item(
+                                doc=doc,
+                                parent_item=parent_item,
+                                text=snippet_text,
+                                enumerated=enumerated,
+                                formatting=formatting,
+                                hyperlink=hyperlink,
+                            )
+                        elif isinstance(to_create, _HeadingCreationPayload):
+                            # not keeping as parent_item as logic for correctly tracking
+                            # that not implemented yet (section components not captured
+                            # as heading children in marko)
+                            self._create_heading_item(
+                                doc=doc,
+                                parent_item=parent_item,
+                                text=snippet_text,
+                                level=to_create.level,
+                                formatting=formatting,
+                                hyperlink=hyperlink,
+                            )
+                else:
+                    doc.add_text(
+                        label=DocItemLabel.TEXT,
+                        parent=parent_item,
+                        text=snippet_text,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
@@ -353,7 +448,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             parent_item = doc.add_inline_group(parent=parent_item)
 
         processed_block_types = (
-            # marko.block.Heading,
             marko.block.CodeBlock,
             marko.block.FencedCode,
             marko.inline.RawText,
@@ -369,6 +463,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     depth=depth + 1,
                     doc=doc,
                     visited=visited,
+                    creation_stack=creation_stack,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
                     parent_item=parent_item,
                     formatting=formatting,
                     hyperlink=hyperlink,
@@ -412,6 +508,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 doc=doc,
                 parent_item=None,
                 visited=set(),
+                creation_stack=[],
+                list_ordered_flag_by_ref={},
             )
             self._close_table(doc=doc)  # handle any last hanging table
 

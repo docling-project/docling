@@ -1,6 +1,6 @@
 [project]
 name = "docling"
-version = "2.37.0"  # DO NOT EDIT, updated automatically
+version = "2.39.0"  # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -44,7 +44,8 @@ authors = [
 requires-python = '>=3.9,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
-  'docling-core[chunking] (>=2.29.0,<3.0.0)',
+  'docling-core[chunking] (>=2.39.0,<3.0.0)',
+  'docling-ibm-models (>=3.4.4,<4.0.0)',
   'docling-parse (>=4.0.0,<5.0.0)',
   'docling-ibm-models (>=3.6.0,<4)',
   'filetype (>=1.2.0,<2.0.0)',
@@ -99,6 +100,9 @@ rapidocr = [
   # 'onnxruntime (>=1.7.0,<2.0.0) ; python_version >= "3.10"',
   # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
 ]
+asr = [
+    "openai-whisper>=20240930",
+]
 
 [dependency-groups]
 dev = [
@@ -144,6 +148,9 @@ constraints = [
 [tool.uv]
 package = true
 default-groups = "all"
+
+[tool.uv.sources]
+openai-whisper = { git = "https://github.com/openai/whisper.git", rev = "dd985ac4b90cafeef8712f2998d62c59c3e62d22" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]

@@ -49,6 +49,7 @@ class InputFormat(str, Enum):
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
     JSON_DOCLING = "json_docling"
+    AUDIO = "audio"
 
 
 class OutputFormat(str, Enum):
@@ -73,6 +74,7 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.XLSX: ["xlsx", "xlsm"],
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.JSON_DOCLING: ["json"],
+    InputFormat.AUDIO: ["wav", "mp3"],
 }
 
 FormatToMimeType: Dict[InputFormat, List[str]] = {
@@ -104,6 +106,7 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.JSON_DOCLING: ["application/json"],
+    InputFormat.AUDIO: ["audio/x-wav", "audio/mpeg", "audio/wav", "audio/mp3"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -298,7 +301,7 @@ class OpenAiChatMessage(BaseModel):
 class OpenAiResponseChoice(BaseModel):
     index: int
     message: OpenAiChatMessage
-    finish_reason: str
+    finish_reason: Optional[str]
 
 
 class OpenAiResponseUsage(BaseModel):

@@ -1,3 +1,42 @@
+## [v2.39.0](https://github.com/docling-project/docling/releases/tag/v2.39.0) - 2025-06-27
+
+### Feature
+
+* Leverage new list modeling, capture default markers ([#1856](https://github.com/docling-project/docling/issues/1856)) ([`0533da1`](https://github.com/docling-project/docling/commit/0533da1923598e4a2d6392283f6de0f9c7002b01))
+
+### Fix
+
+* **markdown:** Make parsing of rich table cells valid ([#1821](https://github.com/docling-project/docling/issues/1821)) ([`e79e4f0`](https://github.com/docling-project/docling/commit/e79e4f0ab6c5b8276316e423b14c9821165049f2))
+
+## [v2.38.1](https://github.com/docling-project/docling/releases/tag/v2.38.1) - 2025-06-25
+
+### Fix
+
+* Updated granite vision model version for picture description ([#1852](https://github.com/docling-project/docling/issues/1852)) ([`d337825`](https://github.com/docling-project/docling/commit/d337825b8ef9ab3ec00c1496c340041e406bd271))
+* **markdown:** Fix single-formatted headings & list items ([#1820](https://github.com/docling-project/docling/issues/1820)) ([`7c5614a`](https://github.com/docling-project/docling/commit/7c5614a37a316950c9a1d123e4fd94e0e831aca0))
+* Fix response type of ollama ([#1850](https://github.com/docling-project/docling/issues/1850)) ([`41e8cae`](https://github.com/docling-project/docling/commit/41e8cae26b625b95ffab021fb4dc337249e8caad))
+* Handle missing runs to avoid out of range exception ([#1844](https://github.com/docling-project/docling/issues/1844)) ([`4002de1`](https://github.com/docling-project/docling/commit/4002de1f9220a6568ed87ba726254cde3ab1168a))
+
+## [v2.38.0](https://github.com/docling-project/docling/releases/tag/v2.38.0) - 2025-06-23
+
+### Feature
+
+* Support audio input ([#1763](https://github.com/docling-project/docling/issues/1763)) ([`1557e7c`](https://github.com/docling-project/docling/commit/1557e7ce3e036fb51eb118296f5cbff3b6dfbfa7))
+* **markdown:** Add formatting & improve inline support ([#1804](https://github.com/docling-project/docling/issues/1804)) ([`861abcd`](https://github.com/docling-project/docling/commit/861abcdcb0d406342b9566f81203b87cf32b7ad0))
+* Maximum image size for Vlm models ([#1802](https://github.com/docling-project/docling/issues/1802)) ([`215b540`](https://github.com/docling-project/docling/commit/215b540f6c078a72464310ef22975ebb6cde4f0a))
+
+### Fix
+
+* **docx:** Ensure list items have a list parent ([#1827](https://github.com/docling-project/docling/issues/1827)) ([`d26dac6`](https://github.com/docling-project/docling/commit/d26dac61a86b0af5b16686f78956ba047bcbddba))
+* **msword_backend:** Identify text in the same line after an image #1425 ([#1610](https://github.com/docling-project/docling/issues/1610)) ([`1350a8d`](https://github.com/docling-project/docling/commit/1350a8d3e5ea3c4b4d506757758880c8f78efd8c))
+* Ensure uninitialized pages are removed before assembling document ([#1812](https://github.com/docling-project/docling/issues/1812)) ([`dd7f64f`](https://github.com/docling-project/docling/commit/dd7f64ff28226cd9964fc4d8ba807b2c8a6358ef))
+* Formula conversion with page_range param set ([#1791](https://github.com/docling-project/docling/issues/1791)) ([`dbab30e`](https://github.com/docling-project/docling/commit/dbab30e92cc1d130ce7f9335ab9c46aa7a30930d))
+
+### Documentation
+
+* Update readme and add ASR example ([#1836](https://github.com/docling-project/docling/issues/1836)) ([`f3ae302`](https://github.com/docling-project/docling/commit/f3ae3029b8a6d6f0109383fbc82ebf9da3942afd))
+* Support running examples from root or subfolder ([#1816](https://github.com/docling-project/docling/issues/1816)) ([`64ac043`](https://github.com/docling-project/docling/commit/64ac043786efdece0c61827051a5b41dddf6c5d7))
+
 ## [v2.37.0](https://github.com/docling-project/docling/releases/tag/v2.37.0) - 2025-06-16
 
 ### Feature

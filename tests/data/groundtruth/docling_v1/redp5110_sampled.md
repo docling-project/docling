@@ -18,13 +18,13 @@ Solution Brief IBM Systems Lab Services and Training
 
 ## Highlights
 
-- GLYPH<g115>GLYPH<g3> GLYPH<g40>GLYPH<g81>GLYPH<g75>GLYPH<g68>GLYPH<g81>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g87>GLYPH<g75>GLYPH<g72>GLYPH<g3> GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g73>GLYPH<g82>GLYPH<g85>GLYPH<g80>GLYPH<g68>GLYPH<g81>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g92>GLYPH<g82>GLYPH<g88>GLYPH<g85> GLYPH<g3> GLYPH<g71>GLYPH<g68>GLYPH<g87>GLYPH<g68>GLYPH<g69>GLYPH<g68>GLYPH<g86>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g86>
+GLYPH<g115>GLYPH<g3> GLYPH<g40>GLYPH<g81>GLYPH<g75>GLYPH<g68>GLYPH<g81>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g87>GLYPH<g75>GLYPH<g72>GLYPH<g3> GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g73>GLYPH<g82>GLYPH<g85>GLYPH<g80>GLYPH<g68>GLYPH<g81>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g92>GLYPH<g82>GLYPH<g88>GLYPH<g85> GLYPH<g3> GLYPH<g71>GLYPH<g68>GLYPH<g87>GLYPH<g68>GLYPH<g69>GLYPH<g68>GLYPH<g86>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g86>
 
-- GLYPH<g115>GLYPH<g3> GLYPH<g40>GLYPH<g68>GLYPH<g85> GLYPH<g81>GLYPH<g3> GLYPH<g74>GLYPH<g85>GLYPH<g72>GLYPH<g68>GLYPH<g87>GLYPH<g72>GLYPH<g85>GLYPH<g3> GLYPH<g85>GLYPH<g72>GLYPH<g87>GLYPH<g88>GLYPH<g85> GLYPH<g81>GLYPH<g3> GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g44>GLYPH<g55>GLYPH<g3> GLYPH<g83>GLYPH<g85>GLYPH<g82>GLYPH<g77>GLYPH<g72>GLYPH<g70>GLYPH<g87>GLYPH<g86> GLYPH<g3> GLYPH<g87>GLYPH<g75>GLYPH<g85>GLYPH<g82>GLYPH<g88>GLYPH<g74>GLYPH<g75>GLYPH<g3> GLYPH<g80>GLYPH<g82>GLYPH<g71>GLYPH<g72>GLYPH<g85> GLYPH<g81>GLYPH<g76>GLYPH<g93>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g71>GLYPH<g68>GLYPH<g87>GLYPH<g68>GLYPH<g69>GLYPH<g68>GLYPH<g86>GLYPH<g72>GLYPH<g3> GLYPH<g68>GLYPH<g81>GLYPH<g71> GLYPH<g3> GLYPH<g68>GLYPH<g83>GLYPH<g83>GLYPH<g79>GLYPH<g76>GLYPH<g70>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g86>
+GLYPH<g115>GLYPH<g3> GLYPH<g40>GLYPH<g68>GLYPH<g85> GLYPH<g81>GLYPH<g3> GLYPH<g74>GLYPH<g85>GLYPH<g72>GLYPH<g68>GLYPH<g87>GLYPH<g72>GLYPH<g85>GLYPH<g3> GLYPH<g85>GLYPH<g72>GLYPH<g87>GLYPH<g88>GLYPH<g85> GLYPH<g81>GLYPH<g3> GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g44>GLYPH<g55>GLYPH<g3> GLYPH<g83>GLYPH<g85>GLYPH<g82>GLYPH<g77>GLYPH<g72>GLYPH<g70>GLYPH<g87>GLYPH<g86> GLYPH<g3> GLYPH<g87>GLYPH<g75>GLYPH<g85>GLYPH<g82>GLYPH<g88>GLYPH<g74>GLYPH<g75>GLYPH<g3> GLYPH<g80>GLYPH<g82>GLYPH<g71>GLYPH<g72>GLYPH<g85> GLYPH<g81>GLYPH<g76>GLYPH<g93>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g71>GLYPH<g68>GLYPH<g87>GLYPH<g68>GLYPH<g69>GLYPH<g68>GLYPH<g86>GLYPH<g72>GLYPH<g3> GLYPH<g68>GLYPH<g81>GLYPH<g71> GLYPH<g3> GLYPH<g68>GLYPH<g83>GLYPH<g83>GLYPH<g79>GLYPH<g76>GLYPH<g70>GLYPH<g68>GLYPH<g87>GLYPH<g76>GLYPH<g82>GLYPH<g81>GLYPH<g86>
 
-- GLYPH<g115>GLYPH<g3> GLYPH<g53>GLYPH<g72>GLYPH<g79>GLYPH<g92>GLYPH<g3> GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g44>GLYPH<g37>GLYPH<g48>GLYPH<g3> GLYPH<g72>GLYPH<g91>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g87>GLYPH<g3> GLYPH<g70>GLYPH<g82>GLYPH<g81>GLYPH<g86>GLYPH<g88>GLYPH<g79>GLYPH<g87>GLYPH<g76>GLYPH<g81>GLYPH<g74>GLYPH<g15>GLYPH<g3> GLYPH<g86>GLYPH<g78>GLYPH<g76>GLYPH<g79>GLYPH<g79>GLYPH<g86> GLYPH<g3> GLYPH<g86>GLYPH<g75>GLYPH<g68>GLYPH<g85>GLYPH<g76>GLYPH<g81>GLYPH<g74>GLYPH<g3> GLYPH<g68>GLYPH<g81>GLYPH<g71>GLYPH<g3> GLYPH<g85>GLYPH<g72>GLYPH<g81>GLYPH<g82>GLYPH<g90>GLYPH<g81>GLYPH<g3> GLYPH<g86>GLYPH<g72>GLYPH<g85>GLYPH<g89>GLYPH<g76>GLYPH<g70>GLYPH<g72>GLYPH<g86>
+GLYPH<g115>GLYPH<g3> GLYPH<g53>GLYPH<g72>GLYPH<g79>GLYPH<g92>GLYPH<g3> GLYPH<g82>GLYPH<g81>GLYPH<g3> GLYPH<g44>GLYPH<g37>GLYPH<g48>GLYPH<g3> GLYPH<g72>GLYPH<g91>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g87>GLYPH<g3> GLYPH<g70>GLYPH<g82>GLYPH<g81>GLYPH<g86>GLYPH<g88>GLYPH<g79>GLYPH<g87>GLYPH<g76>GLYPH<g81>GLYPH<g74>GLYPH<g15>GLYPH<g3> GLYPH<g86>GLYPH<g78>GLYPH<g76>GLYPH<g79>GLYPH<g79>GLYPH<g86> GLYPH<g3> GLYPH<g86>GLYPH<g75>GLYPH<g68>GLYPH<g85>GLYPH<g76>GLYPH<g81>GLYPH<g74>GLYPH<g3> GLYPH<g68>GLYPH<g81>GLYPH<g71>GLYPH<g3> GLYPH<g85>GLYPH<g72>GLYPH<g81>GLYPH<g82>GLYPH<g90>GLYPH<g81>GLYPH<g3> GLYPH<g86>GLYPH<g72>GLYPH<g85>GLYPH<g89>GLYPH<g76>GLYPH<g70>GLYPH<g72>GLYPH<g86>
 
-- GLYPH<g115>GLYPH<g3> GLYPH<g55> GLYPH<g68>GLYPH<g78>GLYPH<g72>GLYPH<g3> GLYPH<g68>GLYPH<g71>GLYPH<g89>GLYPH<g68>GLYPH<g81>GLYPH<g87>GLYPH<g68>GLYPH<g74>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g68>GLYPH<g70>GLYPH<g70>GLYPH<g72>GLYPH<g86>GLYPH<g86>GLYPH<g3> GLYPH<g87>GLYPH<g82>GLYPH<g3> GLYPH<g68> GLYPH<g3> GLYPH<g90>GLYPH<g82>GLYPH<g85>GLYPH<g79>GLYPH<g71>GLYPH<g90>GLYPH<g76>GLYPH<g71>GLYPH<g72>GLYPH<g3> GLYPH<g86>GLYPH<g82>GLYPH<g88>GLYPH<g85>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g72>GLYPH<g91>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g87>GLYPH<g76>GLYPH<g86>GLYPH<g72>
+GLYPH<g115>GLYPH<g3> GLYPH<g55> GLYPH<g68>GLYPH<g78>GLYPH<g72>GLYPH<g3> GLYPH<g68>GLYPH<g71>GLYPH<g89>GLYPH<g68>GLYPH<g81>GLYPH<g87>GLYPH<g68>GLYPH<g74>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g68>GLYPH<g70>GLYPH<g70>GLYPH<g72>GLYPH<g86>GLYPH<g86>GLYPH<g3> GLYPH<g87>GLYPH<g82>GLYPH<g3> GLYPH<g68> GLYPH<g3> GLYPH<g90>GLYPH<g82>GLYPH<g85>GLYPH<g79>GLYPH<g71>GLYPH<g90>GLYPH<g76>GLYPH<g71>GLYPH<g72>GLYPH<g3> GLYPH<g86>GLYPH<g82>GLYPH<g88>GLYPH<g85>GLYPH<g70>GLYPH<g72>GLYPH<g3> GLYPH<g82>GLYPH<g73>GLYPH<g3> GLYPH<g72>GLYPH<g91>GLYPH<g83>GLYPH<g72>GLYPH<g85>GLYPH<g87>GLYPH<g76>GLYPH<g86>GLYPH<g72>
 
 <!-- image -->
 
@@ -46,23 +46,23 @@ With combined experiences and direct access to development groups, we're the exp
 
 Global CoE engagements cover topics including:
 
-- r Database performance and scalability
+r Database performance and scalability
 
-- r Advanced SQL knowledge and skills transfer
+r Advanced SQL knowledge and skills transfer
 
-- r Business intelligence and analytics
+r Business intelligence and analytics
 
-- r DB2 Web Query
+r DB2 Web Query
 
-- r Query/400 modernization for better reporting and analysis capabilities
+r Query/400 modernization for better reporting and analysis capabilities
 
-- r Database modernization and re-engineering
+r Database modernization and re-engineering
 
-- r Data-centric architecture and design
+r Data-centric architecture and design
 
-- r Extremely large database and overcoming limits to growth
+r Extremely large database and overcoming limits to growth
 
-- r ISV education and enablement
+r ISV education and enablement
 
 ## Preface
 
@@ -96,23 +96,23 @@ Businesses must make a serious effort to secure their data and recognize that se
 
 This chapter describes how you can secure and protect data in DB2 for i. The following topics are covered in this chapter:
 
-- GLYPH<SM590000> Security fundamentals
+GLYPH<SM590000> Security fundamentals
 
-- GLYPH<SM590000> Current state of IBM i security
+GLYPH<SM590000> Current state of IBM i security
 
-- GLYPH<SM590000> DB2 for i security controls
+GLYPH<SM590000> DB2 for i security controls
 
 ## 1.1 Security fundamentals
 
 Before reviewing database security techniques, there are two fundamental steps in securing information assets that must be described:
 
-- GLYPH<SM590000> First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.
+GLYPH<SM590000> First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.
 
-- The monitoring and assessment of adherence to the security policy determines whether your security strategy is working. Often, IBM security consultants are asked to perform security assessments for companies without regard to the security policy. Although these assessments can be useful for observing how the system is defined and how data is being accessed, they cannot determine the level of security without a security policy. Without a security policy, it really is not an assessment as much as it is a baseline for monitoring the changes in the security settings that are captured.
+The monitoring and assessment of adherence to the security policy determines whether your security strategy is working. Often, IBM security consultants are asked to perform security assessments for companies without regard to the security policy. Although these assessments can be useful for observing how the system is defined and how data is being accessed, they cannot determine the level of security without a security policy. Without a security policy, it really is not an assessment as much as it is a baseline for monitoring the changes in the security settings that are captured.
 
 A security policy is what defines whether the system and its settings are secure (or not).
 
-- GLYPH<SM590000> The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.
+GLYPH<SM590000> The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.
 
 With your eyes now open to the importance of securing information assets, the rest of this chapter reviews the methods that are available for securing database resources on IBM i.
 
@@ -141,11 +141,11 @@ Figure 1-2 Existing row and column controls
 
 The following CL commands can be used to work with, display, or change function usage IDs:
 
-- GLYPH<SM590000> Work Function Usage ( WRKFCNUSG )
+GLYPH<SM590000> Work Function Usage ( WRKFCNUSG )
 
-- GLYPH<SM590000> Change Function Usage ( CHGFCNUSG )
+GLYPH<SM590000> Change Function Usage ( CHGFCNUSG )
 
-- GLYPH<SM590000> Display Function Usage ( DSPFCNUSG )
+GLYPH<SM590000> Display Function Usage ( DSPFCNUSG )
 
 For example, the following CHGFCNUSG command shows granting authorization to user HBEDOYA to administer and manage RCAC rules:
 
@@ -244,15 +244,15 @@ Table 3-1 Special registers and their corresponding values
 
 Figure 3-5 shows the difference in the special register values when an adopted authority is used:
 
-- GLYPH<SM590000> A user connects to the server using the user profile ALICE.
+GLYPH<SM590000> A user connects to the server using the user profile ALICE.
 
-- GLYPH<SM590000> USER and CURRENT USER initially have the same value of ALICE.
+GLYPH<SM590000> USER and CURRENT USER initially have the same value of ALICE.
 
-- GLYPH<SM590000> ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.
+GLYPH<SM590000> ALICE calls an SQL procedure that is named proc1, which is owned by user profile JOE and was created to adopt JOE's authority when it is called.
 
-- GLYPH<SM590000> While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.
+GLYPH<SM590000> While the procedure is running, the special register USER still contains the value of ALICE because it excludes any adopted authority. The special register CURRENT USER contains the value of JOE because it includes any adopted authority.
 
-- GLYPH<SM590000> When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.
+GLYPH<SM590000> When proc1 ends, the session reverts to its original state with both USER and CURRENT USER having the value of ALICE.
 
 Figure 3-5 Special registers and adopted authority
 <!-- image -->
@@ -303,15 +303,15 @@ WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . D
 
 2. The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:
 
-- -Human Resources can see the unmasked TAX_ID of the employees.
+-Human Resources can see the unmasked TAX_ID of the employees.
 
-- -Employees can see only their own unmasked TAX_ID.
+-Employees can see only their own unmasked TAX_ID.
 
-- -Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).
+-Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).
 
-- -Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.
+-Any other person sees the entire TAX_ID as masked, for example, XXX-XX-XXXX.
 
-- To implement this column mask, run the SQL statement that is shown in Example 3-9.
+To implement this column mask, run the SQL statement that is shown in Example 3-9.
 
 CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYEES FOR COLUMN TAX_ID RETURN CASE WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR' ) = 1 THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . TAX_ID WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 'XXX-XX-' CONCAT QSYS2 . SUBSTR ( EMPLOYEES . TAX_ID , 8 , 4 ) ) WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'EMP' ) = 1 THEN EMPLOYEES . TAX_ID ELSE 'XXX-XX-XXXX' END ENABLE ;
 
@@ -330,9 +330,9 @@ Now that you have created the row permission and the two column masks, RCAC must
 
 ## Example 3-10 Activating RCAC on the EMPLOYEES table
 
-- /* Active Row Access Control (permissions) */
+/* Active Row Access Control (permissions) */
 
-- /* Active Column Access Control (masks)
+/* Active Column Access Control (masks)
 
 */
 

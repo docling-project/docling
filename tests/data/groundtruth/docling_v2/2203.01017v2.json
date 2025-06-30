@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "2203.01017v2",
   "origin": {
     "mimetype": "application/pdf",
@@ -9249,7 +9249,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/284",
@@ -9280,7 +9280,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/285",
@@ -11348,7 +11348,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/356",
@@ -12553,7 +12553,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/395",
@@ -15148,7 +15148,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/483",
@@ -15452,7 +15452,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/493",
@@ -15483,7 +15483,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/494",
@@ -15514,7 +15514,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/495",
@@ -15545,7 +15545,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/496",

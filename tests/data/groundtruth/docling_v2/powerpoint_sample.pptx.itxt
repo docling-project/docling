@@ -11,7 +11,7 @@ item-0 at level 0: unspecified: group _root_
     item-10 at level 2: paragraph: And baz things
     item-11 at level 2: paragraph: A rectangle shape with this text inside.
   item-12 at level 1: chapter: group slide-2
-    item-13 at level 2: ordered_list: group list
+    item-13 at level 2: list: group list
       item-14 at level 3: list_item: List item4
       item-15 at level 3: list_item: List item5
       item-16 at level 3: list_item: List item6
@@ -25,7 +25,7 @@ item-0 at level 0: unspecified: group _root_
       item-24 at level 3: list_item: Item A
       item-25 at level 3: list_item: Item B
     item-26 at level 2: paragraph: Maybe a list?
-    item-27 at level 2: ordered_list: group list
+    item-27 at level 2: list: group list
       item-28 at level 3: list_item: List1
       item-29 at level 3: list_item: List2
       item-30 at level 3: list_item: List3

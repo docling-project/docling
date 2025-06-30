@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "word_sample",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -243,7 +243,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/7",
@@ -264,7 +264,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/8",
@@ -285,7 +285,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -325,7 +325,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/11",
@@ -346,7 +346,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/12",
@@ -367,7 +367,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
@@ -530,7 +530,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/21",
@@ -551,7 +551,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/22",
@@ -572,7 +572,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     }
   ],
   "pictures": [

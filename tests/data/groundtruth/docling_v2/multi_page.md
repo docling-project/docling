@@ -52,11 +52,11 @@ In addition to general-purpose word processors, specialized tools have emerged t
 
 The evolution of word processors wasn't just about hardware or software improvements-it was about the features that revolutionized how people wrote and edited. Some of these transformative features include:
 
-- Undo/Redo : Introduced in the 1980s, the ability to undo mistakes and redo actions made experimentation and error correction much easier.
-- Spell Check and Grammar Check : By the 1990s, these became standard, allowing users to spot errors automatically.
-- Templates : Pre-designed formats for documents, such as resumes, letters, and invoices, helped users save time.
-- Track Changes : A game-changer for collaboration, this feature allowed multiple users to suggest edits while maintaining the original text.
-- Real-Time Collaboration : Tools like Google Docs and Microsoft 365 enabled multiple users to edit the same document simultaneously, forever changing teamwork dynamics.
+1. Undo/Redo : Introduced in the 1980s, the ability to undo mistakes and redo actions made experimentation and error correction much easier.
+2. Spell Check and Grammar Check : By the 1990s, these became standard, allowing users to spot errors automatically.
+3. Templates : Pre-designed formats for documents, such as resumes, letters, and invoices, helped users save time.
+4. Track Changes : A game-changer for collaboration, this feature allowed multiple users to suggest edits while maintaining the original text.
+5. Real-Time Collaboration : Tools like Google Docs and Microsoft 365 enabled multiple users to edit the same document simultaneously, forever changing teamwork dynamics.
 
 ## The Cultural Impact of Word Processors
 
@@ -70,11 +70,11 @@ The word processor didn't just change workplaces-it changed culture. It democrat
 
 As we move further into the 21st century, the role of the word processor continues to evolve:
 
-- Artificial Intelligence : Modern word processors are leveraging AI to suggest content improvements. Tools like Grammarly, ProWritingAid, and even native features in Word now analyze tone, conciseness, and clarity. Some AI systems can even generate entire paragraphs or rewrite sentences.
-- Integration with Other Tools : Word processors are no longer standalone. They integrate with task managers, cloud storage, and project management platforms. For instance, Google Docs syncs with Google Drive, while Microsoft Word integrates seamlessly with OneDrive and Teams.
-- Voice Typing : Speech-to-text capabilities have made word processing more accessible, particularly for those with disabilities. Tools like Dragon NaturallySpeaking and built-in options in Google Docs and Microsoft Word have made dictation mainstream.
-- Multimedia Documents : Word processing has expanded beyond text. Modern tools allow users to embed images, videos, charts, and interactive elements, transforming simple documents into rich multimedia experiences.
-- Cross-Platform Accessibility : Thanks to cloud computing, documents can now be accessed and edited across devices. Whether you're on a desktop, tablet, or smartphone, you can continue working seamlessly.
+1. Artificial Intelligence : Modern word processors are leveraging AI to suggest content improvements. Tools like Grammarly, ProWritingAid, and even native features in Word now analyze tone, conciseness, and clarity. Some AI systems can even generate entire paragraphs or rewrite sentences.
+2. Integration with Other Tools : Word processors are no longer standalone. They integrate with task managers, cloud storage, and project management platforms. For instance, Google Docs syncs with Google Drive, while Microsoft Word integrates seamlessly with OneDrive and Teams.
+3. Voice Typing : Speech-to-text capabilities have made word processing more accessible, particularly for those with disabilities. Tools like Dragon NaturallySpeaking and built-in options in Google Docs and Microsoft Word have made dictation mainstream.
+4. Multimedia Documents : Word processing has expanded beyond text. Modern tools allow users to embed images, videos, charts, and interactive elements, transforming simple documents into rich multimedia experiences.
+5. Cross-Platform Accessibility : Thanks to cloud computing, documents can now be accessed and edited across devices. Whether you're on a desktop, tablet, or smartphone, you can continue working seamlessly.
 
 ## A Glimpse Into the Future
 

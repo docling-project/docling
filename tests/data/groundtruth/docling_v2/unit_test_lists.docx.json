@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "unit_test_lists",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -456,7 +456,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -477,7 +477,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/10",
@@ -498,7 +498,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/11",
@@ -551,7 +551,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/14",
@@ -572,7 +572,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/15",
@@ -593,7 +593,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/16",
@@ -646,7 +646,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/19",
@@ -667,7 +667,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/20",
@@ -688,7 +688,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/21",
@@ -709,7 +709,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/22",
@@ -730,7 +730,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/23",
@@ -751,7 +751,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/24",
@@ -804,7 +804,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/27",
@@ -825,7 +825,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/28",
@@ -846,7 +846,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/29",
@@ -899,7 +899,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/32",
@@ -920,7 +920,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/33",
@@ -941,7 +941,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/34",
@@ -962,7 +962,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/35",
@@ -1021,7 +1021,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/38",
@@ -1042,7 +1042,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/39",
@@ -1063,7 +1063,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/40",
@@ -1084,7 +1084,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/41",
@@ -1105,7 +1105,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/42",
@@ -1126,7 +1126,7 @@
         "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/43",
