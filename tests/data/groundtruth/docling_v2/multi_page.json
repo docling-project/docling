@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "name": "multi_page",
   "origin": {
     "mimetype": "application/pdf",
@@ -534,7 +534,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/8",
@@ -565,7 +565,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -684,7 +684,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
@@ -715,7 +715,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/14",
@@ -834,7 +834,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/18",
@@ -865,7 +865,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/19",
@@ -896,7 +896,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/20",
@@ -1074,7 +1074,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/26",
@@ -1105,7 +1105,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/27",
@@ -1136,7 +1136,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/28",
@@ -1226,7 +1226,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/31",
@@ -1257,7 +1257,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/32",
@@ -1288,7 +1288,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/33",
@@ -1319,7 +1319,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/34",
@@ -1350,7 +1350,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/35",
@@ -1440,7 +1440,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/38",
@@ -1471,7 +1471,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/39",
@@ -1502,7 +1502,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/40",
@@ -1592,7 +1592,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/43",
@@ -1623,7 +1623,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/44",
@@ -1654,7 +1654,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/45",
@@ -1685,7 +1685,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/46",
@@ -1716,7 +1716,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/47",
@@ -1806,7 +1806,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/50",
@@ -1837,7 +1837,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/51",
@@ -1868,7 +1868,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/52",

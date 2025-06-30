@@ -17,6 +17,7 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
+from pydantic import BaseModel
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -48,6 +49,11 @@ TAGS_FOR_NODE_ITEMS: Final = [
 ]
 
 
+class _Context(BaseModel):
+    list_ordered_flag_by_ref: dict[str, bool] = {}
+    list_start_by_ref: dict[str, int] = {}
+
+
 class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @override
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
@@ -59,6 +65,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.max_levels = 10
         self.level = 0
         self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
+        self.ctx = _Context()
         for i in range(self.max_levels):
             self.parents[i] = None
 
@@ -121,6 +128,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.content_layer = (
                 ContentLayer.BODY if headers is None else ContentLayer.FURNITURE
             )
+            self.ctx = _Context()  # reset context
             self.walk(content, doc)
         else:
             raise RuntimeError(
@@ -294,28 +302,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def handle_list(self, element: Tag, doc: DoclingDocument) -> None:
         """Handles list tags (ul, ol) and their list items."""
 
-        if element.name == "ul":
-            # create a list group
-            self.parents[self.level + 1] = doc.add_group(
-                parent=self.parents[self.level],
-                name="list",
-                label=GroupLabel.LIST,
-                content_layer=self.content_layer,
-            )
-        elif element.name == "ol":
+        start: Optional[int] = None
+        if is_ordered := element.name == "ol":
             start_attr = element.get("start")
-            start: int = (
-                int(start_attr)
-                if isinstance(start_attr, str) and start_attr.isnumeric()
-                else 1
-            )
-            # create a list group
-            self.parents[self.level + 1] = doc.add_group(
-                parent=self.parents[self.level],
-                name="ordered list" + (f" start {start}" if start != 1 else ""),
-                label=GroupLabel.ORDERED_LIST,
-                content_layer=self.content_layer,
-            )
+            if isinstance(start_attr, str) and start_attr.isnumeric():
+                start = int(start_attr)
+            name = "ordered list" + (f" start {start}" if start is not None else "")
+        else:
+            name = "list"
+        # create a list group
+        list_group = doc.add_list_group(
+            name=name,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+        )
+        self.parents[self.level + 1] = list_group
+        self.ctx.list_ordered_flag_by_ref[list_group.self_ref] = is_ordered
+        if is_ordered and start is not None:
+            self.ctx.list_start_by_ref[list_group.self_ref] = start
+
         self.level += 1
 
         self.walk(element, doc)
@@ -331,16 +336,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if parent is None:
             _log.debug(f"list-item has no parent in DoclingDocument: {element}")
             return
-        parent_label: str = parent.label
-        index_in_list = len(parent.children) + 1
-        if (
-            parent_label == GroupLabel.ORDERED_LIST
-            and isinstance(parent, GroupItem)
-            and parent.name
-        ):
-            start_in_list: str = parent.name.split(" ")[-1]
-            start: int = int(start_in_list) if start_in_list.isnumeric() else 1
-            index_in_list += start - 1
+        enumerated = self.ctx.list_ordered_flag_by_ref.get(parent.self_ref, False)
+        if enumerated and (start := self.ctx.list_start_by_ref.get(parent.self_ref)):
+            marker = f"{start + len(parent.children)}."
+        else:
+            marker = ""
 
         if nested_list:
             # Text in list item can be hidden within hierarchy, hence
@@ -349,12 +349,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             # Flatten text, remove break lines:
             text = text.replace("\n", "").replace("\r", "")
             text = " ".join(text.split()).strip()
-
-            marker = ""
-            enumerated = False
-            if parent_label == GroupLabel.ORDERED_LIST:
-                marker = str(index_in_list)
-                enumerated = True
 
             if len(text) > 0:
                 # create a list-item
@@ -375,11 +369,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif element.text.strip():
             text = element.text.strip()
 
-            marker = ""
-            enumerated = False
-            if parent_label == GroupLabel.ORDERED_LIST:
-                marker = f"{index_in_list!s}."
-                enumerated = True
             doc.add_list_item(
                 text=text,
                 enumerated=enumerated,

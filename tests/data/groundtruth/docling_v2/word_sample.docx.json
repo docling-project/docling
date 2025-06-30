@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "name": "word_sample",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -106,7 +106,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -149,7 +150,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -167,7 +169,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -217,7 +220,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -235,10 +239,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/7",
@@ -255,10 +260,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/8",
@@ -275,10 +281,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -295,7 +302,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -313,10 +321,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/11",
@@ -333,10 +342,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/12",
@@ -353,10 +363,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
@@ -373,7 +384,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -426,7 +438,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -444,7 +457,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -462,7 +476,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -492,7 +507,8 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       }
     },
     {
@@ -510,10 +526,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/21",
@@ -530,10 +547,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/22",
@@ -550,10 +568,11 @@
         "bold": false,
         "italic": false,
         "underline": false,
-        "strikethrough": false
+        "strikethrough": false,
+        "script": "baseline"
       },
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     }
   ],
   "pictures": [
@@ -897,7 +916,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     }
   ],
   "key_value_items": [],

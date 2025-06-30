@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "name": "example_07",
   "origin": {
     "mimetype": "text/html",
@@ -169,7 +169,7 @@
       "orig": "Asia",
       "text": "Asia",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/1",
@@ -183,7 +183,7 @@
       "orig": "China",
       "text": "China",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/2",
@@ -197,7 +197,7 @@
       "orig": "Japan",
       "text": "Japan",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/3",
@@ -211,7 +211,7 @@
       "orig": "Thailand",
       "text": "Thailand",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/4",
@@ -229,7 +229,7 @@
       "orig": "Europe",
       "text": "Europe",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/5",
@@ -243,7 +243,7 @@
       "orig": "UK",
       "text": "UK",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/6",
@@ -257,7 +257,7 @@
       "orig": "Germany",
       "text": "Germany",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/7",
@@ -275,7 +275,7 @@
       "orig": "Switzerland",
       "text": "Switzerland",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/8",
@@ -289,7 +289,7 @@
       "orig": "Bern",
       "text": "Bern",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -303,7 +303,7 @@
       "orig": "Aargau",
       "text": "Aargau",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/10",
@@ -321,7 +321,7 @@
       "orig": "Italy",
       "text": "Italy",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/11",
@@ -335,7 +335,7 @@
       "orig": "Piedmont",
       "text": "Piedmont",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/12",
@@ -349,7 +349,7 @@
       "orig": "Liguria",
       "text": "Liguria",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
@@ -363,7 +363,7 @@
       "orig": "Africa",
       "text": "Africa",
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     }
   ],
   "pictures": [],

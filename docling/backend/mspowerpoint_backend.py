@@ -121,7 +121,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return prov
 
-    def handle_text_elements(self, shape, parent_slide, slide_ind, doc, slide_size):
+    def handle_text_elements(
+        self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
+    ):
         is_list_group_created = False
         enum_list_item_value = 0
         new_list = None
@@ -165,10 +167,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 enumerated = bullet_type == "Numbered"
 
                 if not is_list_group_created:
-                    new_list = doc.add_group(
-                        label=GroupLabel.ORDERED_LIST
-                        if enumerated
-                        else GroupLabel.LIST,
+                    new_list = doc.add_list_group(
                         name="list",
                         parent=parent_slide,
                     )

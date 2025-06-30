@@ -301,7 +301,7 @@ class OpenAiChatMessage(BaseModel):
 class OpenAiResponseChoice(BaseModel):
     index: int
     message: OpenAiChatMessage
-    finish_reason: str
+    finish_reason: Optional[str]
 
 
 class OpenAiResponseUsage(BaseModel):

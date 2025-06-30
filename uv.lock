@@ -1010,7 +1010,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.38.0"
+version = "2.39.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -1109,7 +1109,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
-    { name = "docling-core", extras = ["chunking"], specifier = ">=2.29.0,<3.0.0" },
+    { name = "docling-core", extras = ["chunking"], specifier = ">=2.39.0,<3.0.0" },
     { name = "docling-ibm-models", specifier = ">=3.4.4,<4.0.0" },
     { name = "docling-parse", specifier = ">=4.0.0,<5.0.0" },
     { name = "easyocr", specifier = ">=1.7,<2.0" },
