@@ -144,7 +144,10 @@ class TesseractOcrModel(BaseOcrModel):
 
                         local_reader = self.reader
                         self.osd_reader.SetImage(high_res_image)
+
+                        doc_orientation = 0
                         osd = self.osd_reader.DetectOrientationScript()
+
                         # No text, or Orientation and Script detection failure
                         if osd is None:
                             _log.error(
@@ -158,11 +161,14 @@ class TesseractOcrModel(BaseOcrModel):
                             # to OCR in the hope OCR will succeed while OSD failed
                             if self._is_auto:
                                 continue
-                        doc_orientation = parse_tesseract_orientation(osd["orient_deg"])
-                        if doc_orientation != 0:
-                            high_res_image = high_res_image.rotate(
-                                -doc_orientation, expand=True
+                        else:
+                            doc_orientation = parse_tesseract_orientation(
+                                osd["orient_deg"]
                             )
+                            if doc_orientation != 0:
+                                high_res_image = high_res_image.rotate(
+                                    -doc_orientation, expand=True
+                                )
                         if self._is_auto:
                             script = osd["script_name"]
                             script = map_tesseract_script(script)

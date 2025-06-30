@@ -187,7 +187,17 @@ class DoclingParseV4DocumentBackend(PdfDocumentBackend):
 
     def unload(self):
         super().unload()
-        self.dp_doc.unload()
-        with pypdfium2_lock:
-            self._pdoc.close()
-        self._pdoc = None
+        # Unload docling-parse document first
+        if self.dp_doc is not None:
+            self.dp_doc.unload()
+            self.dp_doc = None
+
+        # Then close pypdfium2 document with proper locking
+        if self._pdoc is not None:
+            with pypdfium2_lock:
+                try:
+                    self._pdoc.close()
+                except Exception:
+                    # Ignore cleanup errors
+                    pass
+            self._pdoc = None
