@@ -65,64 +65,7 @@ class FormatOption(BaseModel):
         return self
 
 
-class CsvFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = CsvDocumentBackend
 
-
-class ExcelFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MsExcelDocumentBackend
-
-
-class WordFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MsWordDocumentBackend
-
-
-class PowerpointFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MsPowerpointDocumentBackend
-
-
-class MarkdownFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
-
-
-class AsciiDocFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = AsciiDocBackend
-
-
-class HTMLFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
-
-
-class PatentUsptoFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[PatentUsptoDocumentBackend] = PatentUsptoDocumentBackend
-
-
-class XMLJatsFormatOption(FormatOption):
-    pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = JatsDocumentBackend
-
-
-class ImageFormatOption(FormatOption):
-    pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
-
-
-class PdfFormatOption(FormatOption):
-    pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
-
-
-class AudioFormatOption(FormatOption):
-    pipeline_cls: Type = AsrPipeline
-    backend: Type[AbstractDocumentBackend] = NoOpBackend
 
 
 def _get_default_option(format: InputFormat) -> FormatOption:
@@ -167,12 +110,11 @@ def _get_default_option(format: InputFormat) -> FormatOption:
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options
-    else:
-        raise RuntimeError(f"No default options configured for {format}")
+    raise RuntimeError(f"No default options configured for {format}")
 
 
 class DocumentConverter:
-    _default_download_filename = "file"
+    _default_filename = "file"
 
     def __init__(
         self,
@@ -194,10 +136,7 @@ class DocumentConverter:
             Tuple[Type[BasePipeline], str], BasePipeline
         ] = {}
 
-    def _get_initialized_pipelines(
-        self,
-    ) -> dict[tuple[Type[BasePipeline], str], BasePipeline]:
-        return self.initialized_pipelines
+    
 
     def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:
         """Generate a hash of pipeline options to use as part of the cache key."""
@@ -217,7 +156,7 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert(
         self,
-        source: Union[Path, str, DocumentStream],  # TODO review naming
+        documents: Union[Path, str, DocumentStream],  # TODO review naming
         headers: Optional[Dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
@@ -225,7 +164,7 @@ class DocumentConverter:
         page_range: PageRange = DEFAULT_PAGE_RANGE,
     ) -> ConversionResult:
         all_res = self.convert_all(
-            source=[source],
+            documents=[documents],
             raises_on_error=raises_on_error,
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
@@ -237,7 +176,7 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(
         self,
-        source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
+        documents: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
         headers: Optional[Dict[str, str]] = None,
         raises_on_error: bool = True,  # True: raises on first conversion error; False: does not raise on conv error
         max_num_pages: int = sys.maxsize,
@@ -249,28 +188,10 @@ class DocumentConverter:
             max_file_size=max_file_size,
             page_range=page_range,
         )
-        conv_input = _DocumentConversionInput(
-            path_or_stream_iterator=source, limits=limits, headers=headers
-        )
-        conv_res_iter = self._convert(conv_input, raises_on_error=raises_on_error)
+        """Converts a batch of documents.
 
-        had_result = False
-        for conv_res in conv_res_iter:
-            had_result = True
-            if raises_on_error and conv_res.status not in {
-                ConversionStatus.SUCCESS,
-                ConversionStatus.PARTIAL_SUCCESS,
-            }:
-                raise ConversionError(
-                    f"Conversion failed for: {conv_res.input.file} with status: {conv_res.status}"
-                )
-            else:
-                yield conv_res
-
-        if not had_result and raises_on_error:
-            raise ConversionError(
-                "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
-            )
+        Note: PDF backends are not thread-safe, so thread pool usage is disabled.
+        """
 
     def _convert(
         self, conv_input: _DocumentConversionInput, raises_on_error: bool
@@ -380,5 +301,6 @@ class DocumentConverter:
                     status=ConversionStatus.FAILURE,
                 )
                 # TODO add error log why it failed.
+                _log.error(f"Input document {in_doc.file} is not valid.")
 
         return conv_res
