@@ -23,21 +23,13 @@ from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
-from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+
+
+
+
+
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.asr_model_specs import (
-    WHISPER_BASE,
-    WHISPER_LARGE,
-    WHISPER_MEDIUM,
-    WHISPER_SMALL,
-    WHISPER_TINY,
-    WHISPER_TURBO,
-    AsrModelType,
-)
+
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -45,35 +37,13 @@ from docling.datamodel.base_models import (
     OutputFormat,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import (
-    AsrPipelineOptions,
-    EasyOcrOptions,
-    OcrOptions,
-    PaginatedPipelineOptions,
-    PdfBackend,
-    PdfPipelineOptions,
-    PipelineOptions,
-    ProcessingPipeline,
-    TableFormerMode,
-    VlmPipelineOptions,
-)
-from docling.datamodel.settings import settings
-from docling.datamodel.vlm_model_specs import (
-    GRANITE_VISION_OLLAMA,
-    GRANITE_VISION_TRANSFORMERS,
-    SMOLDOCLING_MLX,
-    SMOLDOCLING_TRANSFORMERS,
-    VlmModelType,
-)
-from docling.document_converter import (
-    AudioFormatOption,
-    DocumentConverter,
-    FormatOption,
-    PdfFormatOption,
-)
+
+
+
+
 from docling.models.factories import get_ocr_factory
-from docling.pipeline.asr_pipeline import AsrPipeline
-from docling.pipeline.vlm_pipeline import VlmPipeline
+
+
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -190,79 +160,10 @@ def export_documents(
     failure_count = 0
 
     for conv_res in conv_results:
-        if conv_res.status == ConversionStatus.SUCCESS:
-            success_count += 1
-            doc_filename = conv_res.input.file.stem
-
-            # Export JSON format:
-            if export_json:
-                fname = output_dir / f"{doc_filename}.json"
-                _log.info(f"writing JSON output to {fname}")
-                conv_res.document.save_as_json(
-                    filename=fname, image_mode=image_export_mode
-                )
-
-            # Export HTML format:
-            if export_html:
-                fname = output_dir / f"{doc_filename}.html"
-                _log.info(f"writing HTML output to {fname}")
-                conv_res.document.save_as_html(
-                    filename=fname, image_mode=image_export_mode, split_page_view=False
-                )
-
-            # Export HTML format:
-            if export_html_split_page:
-                fname = output_dir / f"{doc_filename}.html"
-                _log.info(f"writing HTML output to {fname}")
-                if show_layout:
-                    ser = HTMLDocSerializer(
-                        doc=conv_res.document,
-                        params=HTMLParams(
-                            image_mode=image_export_mode,
-                            output_style=HTMLOutputStyle.SPLIT_PAGE,
-                        ),
-                    )
-                    visualizer = LayoutVisualizer()
-                    visualizer.params.show_label = False
-                    ser_res = ser.serialize(
-                        visualizer=visualizer,
-                    )
-                    with open(fname, "w") as fw:
-                        fw.write(ser_res.text)
-                else:
-                    conv_res.document.save_as_html(
-                        filename=fname,
-                        image_mode=image_export_mode,
-                        split_page_view=True,
-                    )
-
-            # Export Text format:
-            if export_txt:
-                fname = output_dir / f"{doc_filename}.txt"
-                _log.info(f"writing TXT output to {fname}")
-                conv_res.document.save_as_markdown(
-                    filename=fname,
-                    strict_text=True,
-                    image_mode=ImageRefMode.PLACEHOLDER,
-                )
-
-            # Export Markdown format:
-            if export_md:
-                fname = output_dir / f"{doc_filename}.md"
-                _log.info(f"writing Markdown output to {fname}")
-                conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
-                )
-
-            # Export Document Tags format:
-            if export_doctags:
-                fname = output_dir / f"{doc_filename}.doctags"
-                _log.info(f"writing Doc Tags output to {fname}")
-                conv_res.document.save_as_document_tokens(filename=fname)
-
-        else:
+        if conv_res.status != ConversionStatus.SUCCESS:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
             failure_count += 1
+            continue
 
     _log.info(
         f"Processed {success_count + failure_count} docs, of which {failure_count} failed"
@@ -270,9 +171,7 @@ def export_documents(
 
 
 def _split_list(raw: Optional[str]) -> Optional[List[str]]:
-    if raw is None:
-        return None
-    return re.split(r"[;,]", raw)
+    return re.split(r"[;,]", raw) if raw else None
 
 
 @app.command(no_args_is_help=True)
@@ -485,11 +384,11 @@ def convert(  # noqa: C901
     settings.debug.visualize_tables = debug_visualize_tables
     settings.debug.visualize_ocr = debug_visualize_ocr
 
-    if from_formats is None:
-        from_formats = list(InputFormat)
+    if not from_formats:
+            from_formats = list(InputFormat)
 
     parsed_headers: Optional[Dict[str, str]] = None
-    if headers is not None:
+    if headers:
         headers_t = TypeAdapter(Dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
 
@@ -532,7 +431,7 @@ def convert(  # noqa: C901
                     _log.info(err)  # will print more details if verbose is activated
                     raise typer.Abort()
 
-        if to_formats is None:
+        if not to_formats:
             to_formats = [OutputFormat.MARKDOWN]
 
         export_json = OutputFormat.JSON in to_formats
@@ -549,7 +448,7 @@ def convert(  # noqa: C901
         )
 
         ocr_lang_list = _split_list(ocr_lang)
-        if ocr_lang_list is not None:
+        if ocr_lang_list:
             ocr_options.lang = ocr_lang_list
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
@@ -585,15 +484,14 @@ def convert(  # noqa: C901
                 pipeline_options.images_scale = 2
 
             backend: Type[PdfDocumentBackend]
-            if pdf_backend == PdfBackend.DLPARSE_V1:
-                backend = DoclingParseDocumentBackend
-            elif pdf_backend == PdfBackend.DLPARSE_V2:
-                backend = DoclingParseV2DocumentBackend
-            elif pdf_backend == PdfBackend.DLPARSE_V4:
-                backend = DoclingParseV4DocumentBackend  # type: ignore
-            elif pdf_backend == PdfBackend.PYPDFIUM2:
-                backend = PyPdfiumDocumentBackend  # type: ignore
-            else:
+            backend_map = {
+                PdfBackend.DLPARSE_V1: DoclingParseDocumentBackend,
+                PdfBackend.DLPARSE_V2: DoclingParseV2DocumentBackend,
+                PdfBackend.DLPARSE_V4: DoclingParseV4DocumentBackend,
+                PdfBackend.PYPDFIUM2: PyPdfiumDocumentBackend,
+            }
+            backend = backend_map.get(pdf_backend)
+            if not backend:
                 raise RuntimeError(f"Unexpected PDF backend type {pdf_backend}")
 
             pdf_format_option = PdfFormatOption(
@@ -611,22 +509,23 @@ def convert(  # noqa: C901
                 enable_remote_services=enable_remote_services,
             )
 
-            if vlm_model == VlmModelType.GRANITE_VISION:
-                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
-            elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
-            elif vlm_model == VlmModelType.SMOLDOCLING:
-                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
-                if sys.platform == "darwin":
-                    try:
-                        import mlx_vlm
+            vlm_model_map = {
+                VlmModelType.GRANITE_VISION: GRANITE_VISION_TRANSFORMERS,
+                VlmModelType.GRANITE_VISION_OLLAMA: GRANITE_VISION_OLLAMA,
+                VlmModelType.SMOLDOCLING: SMOLDOCLING_TRANSFORMERS,
+            }
+            pipeline_options.vlm_options = vlm_model_map.get(vlm_model)
 
-                        pipeline_options.vlm_options = SMOLDOCLING_MLX
-                    except ImportError:
-                        _log.warning(
-                            "To run SmolDocling faster, please install mlx-vlm:\n"
-                            "pip install mlx-vlm"
-                        )
+            if vlm_model == VlmModelType.SMOLDOCLING and sys.platform == "darwin":
+                try:
+                    import mlx_vlm
+
+                    pipeline_options.vlm_options = SMOLDOCLING_MLX
+                except ImportError:
+                    _log.warning(
+                        "To run SmolDocling faster, please install mlx-vlm:\n"
+                        "pip install mlx-vlm"
+                    )
 
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
@@ -643,19 +542,16 @@ def convert(  # noqa: C901
                 # artifacts_path = artifacts_path
             )
 
-            if asr_model == AsrModelType.WHISPER_TINY:
-                pipeline_options.asr_options = WHISPER_TINY
-            elif asr_model == AsrModelType.WHISPER_SMALL:
-                pipeline_options.asr_options = WHISPER_SMALL
-            elif asr_model == AsrModelType.WHISPER_MEDIUM:
-                pipeline_options.asr_options = WHISPER_MEDIUM
-            elif asr_model == AsrModelType.WHISPER_BASE:
-                pipeline_options.asr_options = WHISPER_BASE
-            elif asr_model == AsrModelType.WHISPER_LARGE:
-                pipeline_options.asr_options = WHISPER_LARGE
-            elif asr_model == AsrModelType.WHISPER_TURBO:
-                pipeline_options.asr_options = WHISPER_TURBO
-            else:
+            asr_model_map = {
+                AsrModelType.WHISPER_TINY: WHISPER_TINY,
+                AsrModelType.WHISPER_SMALL: WHISPER_SMALL,
+                AsrModelType.WHISPER_MEDIUM: WHISPER_MEDIUM,
+                AsrModelType.WHISPER_BASE: WHISPER_BASE,
+                AsrModelType.WHISPER_LARGE: WHISPER_LARGE,
+                AsrModelType.WHISPER_TURBO: WHISPER_TURBO,
+            }
+            pipeline_options.asr_options = asr_model_map.get(asr_model)
+            if not pipeline_options.asr_options:
                 _log.error(f"{asr_model} is not known")
                 raise ValueError(f"{asr_model} is not known")
 
@@ -670,9 +566,8 @@ def convert(  # noqa: C901
                 InputFormat.AUDIO: audio_format_option,
             }
 
-        if artifacts_path is not None:
+        if artifacts_path:
             pipeline_options.artifacts_path = artifacts_path
-            # audio_pipeline_options.artifacts_path = artifacts_path
 
         doc_converter = DocumentConverter(
             allowed_formats=from_formats,

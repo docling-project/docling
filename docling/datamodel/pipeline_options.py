@@ -14,31 +14,15 @@ from typing_extensions import deprecated
 from docling.datamodel import asr_model_specs
 
 # Import the following for backwards compatibility
-from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.pipeline_options_asr_model import (
-    InlineAsrOptions,
-)
-from docling.datamodel.pipeline_options_vlm_model import (
-    ApiVlmOptions,
-    InferenceFramework,
-    InlineVlmOptions,
-    ResponseFormat,
-)
-from docling.datamodel.vlm_model_specs import (
-    GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
-    GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
-    SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
-    SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
-    VlmModelType,
-)
+
+
+
+
 
 _log = logging.getLogger(__name__)
 
 
-class BaseOptions(BaseModel):
-    """Base class for options."""
 
-    kind: ClassVar[str]
 
 
 class TableFormerMode(str, Enum):
@@ -200,16 +184,7 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
         return self.repo_id.replace("/", "--")
 
 
-# SmolVLM
-smolvlm_picture_description = PictureDescriptionVlmOptions(
-    repo_id="HuggingFaceTB/SmolVLM-256M-Instruct"
-)
 
-# GraniteVision
-granite_picture_description = PictureDescriptionVlmOptions(
-    repo_id="ibm-granite/granite-vision-3.2-2b-preview",
-    prompt="What is shown in this image?",
-)
 
 
 # Define an enum for the backend options
@@ -223,15 +198,7 @@ class PdfBackend(str, Enum):
 
 
 # Define an enum for the ocr engines
-@deprecated("Use ocr_factory.registered_enum")
-class OcrEngine(str, Enum):
-    """Enum of valid OCR engines."""
 
-    EASYOCR = "easyocr"
-    TESSERACT_CLI = "tesseract_cli"
-    TESSERACT = "tesseract"
-    OCRMAC = "ocrmac"
-    RAPIDOCR = "rapidocr"
 
 
 class PipelineOptions(BaseModel):
@@ -246,68 +213,10 @@ class PipelineOptions(BaseModel):
     allow_external_plugins: bool = False
 
 
-class PaginatedPipelineOptions(PipelineOptions):
+
+
+
+class VlmPipelineOptions(PipelineOptions):
     artifacts_path: Optional[Union[Path, str]] = None
 
-    images_scale: float = 1.0
-    generate_page_images: bool = False
-    generate_picture_images: bool = False
-
-
-class VlmPipelineOptions(PaginatedPipelineOptions):
-    generate_page_images: bool = True
-    force_backend_text: bool = (
-        False  # (To be used with vlms, or other generative models)
-    )
-    # If True, text from backend will be used instead of generated text
-    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = (
-        smoldocling_vlm_conversion_options
-    )
-
-
-class AsrPipelineOptions(PipelineOptions):
-    asr_options: Union[InlineAsrOptions] = asr_model_specs.WHISPER_TINY
-    artifacts_path: Optional[Union[Path, str]] = None
-
-
-class PdfPipelineOptions(PaginatedPipelineOptions):
-    """Options for the PDF pipeline."""
-
-    do_table_structure: bool = True  # True: perform table structure extraction
-    do_ocr: bool = True  # True: perform OCR, replace programmatic PDF text
-    do_code_enrichment: bool = False  # True: perform code OCR
-    do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
-    do_picture_classification: bool = False  # True: classify pictures in documents
-    do_picture_description: bool = False  # True: run describe pictures in documents
-    force_backend_text: bool = (
-        False  # (To be used with vlms, or other generative models)
-    )
-    # If True, text from backend will be used instead of generated text
-
-    table_structure_options: TableStructureOptions = TableStructureOptions()
-    ocr_options: OcrOptions = EasyOcrOptions()
-    picture_description_options: PictureDescriptionBaseOptions = (
-        smolvlm_picture_description
-    )
-
-    images_scale: float = 1.0
-    generate_page_images: bool = False
-    generate_picture_images: bool = False
-    generate_table_images: bool = Field(
-        default=False,
-        deprecated=(
-            "Field `generate_table_images` is deprecated. "
-            "To obtain table images, set `PdfPipelineOptions.generate_page_images = True` "
-            "before conversion and then use the `TableItem.get_image` function."
-        ),
-    )
-
-    generate_parsed_pages: Literal[True] = (
-        True  # Always True since parsed_page is now mandatory
-    )
-
-
-class ProcessingPipeline(str, Enum):
-    STANDARD = "standard"
-    VLM = "vlm"
-    ASR = "asr"
+    
