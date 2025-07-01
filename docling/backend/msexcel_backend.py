@@ -186,9 +186,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if self.workbook is not None:
             # Iterate over all sheets
             for sheet_name in self.workbook.sheetnames:
+                sheet = self.workbook[sheet_name]
+                if sheet.sheet_state != Worksheet.SHEETSTATE_VISIBLE:
+                    _log.info(f"Ignore invisible sheet: {sheet_name}")
+                    continue
                 _log.info(f"Processing sheet: {sheet_name}")
 
-                sheet = self.workbook[sheet_name]
                 page_no = self.workbook.index(sheet) + 1
                 # do not rely on sheet.max_column, sheet.max_row if there are images
                 page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
