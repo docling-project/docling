@@ -20,9 +20,6 @@ from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 _log = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    from scipy.ndimage import binary_dilation, find_objects, label
-
 
 class BaseOcrModel(BasePageModel, BaseModelWithOptions):
     def __init__(
@@ -33,6 +30,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         options: OcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
+        # Make sure any delay/error from import occurs on ocr model init and not first use
         from scipy.ndimage import binary_dilation, find_objects, label
 
         self.enabled = enabled
@@ -40,6 +38,8 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
 
     # Computes the optimum amount and coordinates of rectangles to OCR on a given page
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
+        from scipy.ndimage import binary_dilation, find_objects, label
+
         BITMAP_COVERAGE_TRESHOLD = 0.75
         assert page.size is not None
 
