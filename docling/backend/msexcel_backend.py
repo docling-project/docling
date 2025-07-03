@@ -337,13 +337,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # Collect the data within the bounds
         data = []
         visited_cells: set[tuple[int, int]] = set()
-        for ri, row in enumerate(sheet.iter_rows(
+        for ri, row in enumerate(
+            sheet.iter_rows(
                 min_row=start_row + 1,  # start_row is 0-based but iter_rows is 1-based
                 max_row=max_row + 1,
                 min_col=start_col + 1,
                 max_col=max_col + 1,
-                values_only=False
-        ), start_row):
+                values_only=False,
+            ),
+            start_row,
+        ):
             for rj, cell in enumerate(row, start_col):
                 # Check if the cell belongs to a merged range
                 row_span = 1
@@ -401,13 +404,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         max_row: int = start_row
 
-        for ri, (cell,) in enumerate(sheet.iter_rows(
+        for ri, (cell,) in enumerate(
+            sheet.iter_rows(
                 min_row=start_row + 2,
                 max_row=sheet.max_row,
                 min_col=start_col + 1,
                 max_col=start_col + 1,
-                values_only=False
-        ), start_row + 1):
+                values_only=False,
+            ),
+            start_row + 1,
+        ):
             # Check if the cell is part of a merged range
             merged_range = next(
                 (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
@@ -440,13 +446,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         max_col: int = start_col
 
-        for rj, (cell,) in enumerate(sheet.iter_cols(
+        for rj, (cell,) in enumerate(
+            sheet.iter_cols(
                 min_row=start_row + 1,
                 max_row=start_row + 1,
                 min_col=start_col + 2,
                 max_col=sheet.max_column,
-                values_only=False
-        ), start_col + 1):
+                values_only=False,
+            ),
+            start_col + 1,
+        ):
             # Check if the cell is part of a merged range
             merged_range = next(
                 (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
