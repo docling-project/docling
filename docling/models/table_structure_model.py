@@ -1,8 +1,7 @@
 import copy
 import warnings
-from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional, Tuple, cast
 
 import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -11,6 +10,7 @@ from docling_core.types.doc.page import (
     TextCellUnit,
 )
 from PIL import ImageDraw
+from PIL.Image import Image
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import Page, Table, TableStructurePrediction
@@ -23,12 +23,15 @@ from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.orientation import detect_orientation, rotate_bounding_box
 from docling.utils.profiling import TimeRecorder
 
 
 class TableStructureModel(BasePageModel):
     _model_repo_folder = "ds4sd--docling-models"
     _model_path = "model_artifacts/tableformer"
+
+    _table_labels = {DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX}
 
     def __init__(
         self,
@@ -186,31 +189,48 @@ class TableStructureModel(BasePageModel):
                     page.predictions.tablestructure = (
                         TableStructurePrediction()
                     )  # dummy
-
-                    in_tables = [
-                        (
-                            cluster,
-                            [
-                                round(cluster.bbox.l) * self.scale,
-                                round(cluster.bbox.t) * self.scale,
-                                round(cluster.bbox.r) * self.scale,
-                                round(cluster.bbox.b) * self.scale,
-                            ],
-                        )
+                    cells_orientation = detect_orientation(page.cells)
+                    # Keep only table bboxes
+                    in_tables_clusters = [
+                        cluster
                         for cluster in page.predictions.layout.clusters
-                        if cluster.label
-                        in [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
+                        if cluster.label in self._table_labels
                     ]
-                    if not len(in_tables):
+
+                    if not len(in_tables_clusters):
                         yield page
                         continue
-
+                    # Rotate and scale table image
+                    page_im = cast(Image, page.get_image())
+                    scaled_page_im: Image = cast(
+                        Image, page.get_image(scale=self.scale)
+                    )
+                    if cells_orientation:
+                        scaled_page_im = scaled_page_im.rotate(
+                            -cells_orientation, expand=True
+                        )
                     page_input = {
-                        "width": page.size.width * self.scale,
-                        "height": page.size.height * self.scale,
-                        "image": numpy.asarray(page.get_image(scale=self.scale)),
+                        "width": scaled_page_im.size[0],
+                        "height": scaled_page_im.size[1],
+                        "image": numpy.asarray(scaled_page_im),
                     }
-
+                    # Rotate and scale table cells
+                    in_tables = [
+                        (
+                            c,
+                            [
+                                round(x) * self.scale
+                                for x in _rotate_bbox(
+                                    c.bbox,
+                                    orientation=-cells_orientation,
+                                    im_size=page_im.size,
+                                )
+                                .to_top_left_origin(page_im.size[1])
+                                .as_tuple()
+                            ],
+                        )
+                        for c in in_tables_clusters
+                    ]
                     table_clusters, table_bboxes = zip(*in_tables)
 
                     if len(table_bboxes):
@@ -238,11 +258,16 @@ class TableStructureModel(BasePageModel):
                                             scale=self.scale
                                         )
                                     )
+                                    new_bbox = _rotate_bbox(
+                                        new_cell.to_bounding_box(),
+                                        orientation=-cells_orientation,
+                                        im_size=scaled_page_im.size,
+                                    ).model_dump()
                                     tokens.append(
                                         {
                                             "id": new_cell.index,
                                             "text": new_cell.text,
-                                            "bbox": new_cell.rect.to_bounding_box().model_dump(),
+                                            "bbox": new_bbox,
                                         }
                                     )
                             page_input["tokens"] = tokens
@@ -302,3 +327,11 @@ class TableStructureModel(BasePageModel):
                         )
 
                 yield page
+
+
+def _rotate_bbox(
+    bbox: BoundingBox, *, orientation: int, im_size: Tuple[int, int]
+) -> BoundingBox:
+    if orientation:
+        return rotate_bounding_box(bbox, orientation, im_size).to_bounding_box()
+    return bbox
