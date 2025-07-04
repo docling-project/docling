@@ -1,3 +1,9 @@
 <document>
-<paragraph><location><page_1><loc_12><loc_82><loc_85><loc_91></location>Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package</paragraph>
+<table>
+<location><page_1><loc_12><loc_39><loc_67><loc_87></location>
+<row_0><col_0><body></col_0><col_1><col_header>Column 0</col_1><col_2><col_header>Column 1</col_2><col_3><col_header>Column 2</col_3></row_0>
+<row_1><col_0><row_header>this is row 0</col_0><col_1><body>some cells</col_1><col_2><body>have content</col_2><col_3><body>and</col_3></row_1>
+<row_2><col_0><row_header>and row 1</col_0><col_1><body></col_1><col_2><body>other</col_2><col_3><body>have</col_3></row_2>
+<row_3><col_0><row_header>and last row 2</col_0><col_1><body>nothing</col_1><col_2><body></col_2><col_3><body>inside</col_3></row_3>
+</table>
 </document>

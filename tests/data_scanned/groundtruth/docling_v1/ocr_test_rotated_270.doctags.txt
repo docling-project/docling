@@ -1,3 +1,9 @@
 <document>
-<paragraph><location><page_1><loc_82><loc_75><loc_84><loc_88></location>package</paragraph>
+<table>
+<location><page_1><loc_39><loc_33><loc_87><loc_88></location>
+<row_0><col_0><body>and last row 2</col_0><col_1><body>and row 1</col_1><col_2><body>this is row 0</col_2><col_3><body></col_3></row_0>
+<row_1><col_0><body>nothing</col_0><col_1><body></col_1><col_2><body>some cells</col_2><col_3><body>Column 0</col_3></row_1>
+<row_2><col_0><body></col_0><col_1><body>other</col_1><col_2><body>have content</col_2><col_3><body>Column 1</col_3></row_2>
+<row_3><col_0><body>inside</col_0><col_1><body>have</col_1><col_2><body>and</col_2><col_3><body>Column 2</col_3></row_3>
+</table>
 </document>
