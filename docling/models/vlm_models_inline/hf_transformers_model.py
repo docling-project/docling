@@ -41,6 +41,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             from transformers import (
                 AutoModel,
                 AutoModelForCausalLM,
+                AutoModelForImageTextToText,
                 AutoModelForVision2Seq,
                 AutoProcessor,
                 BitsAndBytesConfig,
@@ -91,6 +92,11 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 == TransformersModelType.AUTOMODEL_VISION2SEQ
             ):
                 model_cls = AutoModelForVision2Seq
+            elif (
+                self.vlm_options.transformers_model_type
+                == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
+            ):
+                model_cls = AutoModelForImageTextToText
 
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
@@ -176,6 +182,12 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             prompt = f"{user_prompt}<|image_1|>{self.vlm_options.prompt}{prompt_suffix}{assistant_prompt}"
             _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
 
+            return prompt
+        if self.vlm_options.repo_id.lower().startswith("bytedance/dolphin"):
+            _log.debug("Using specialized prompt for dolphin")
+            # more info here https://huggingface.co/ByteDance/Dolphin
+            prompt = f"<s>{self.vlm_options.prompt} <Answer/>"
+            _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
             return prompt
 
         messages = [
