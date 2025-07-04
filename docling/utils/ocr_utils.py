@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle
@@ -43,7 +43,9 @@ def tesseract_box_to_bounding_rectangle(
     orientation: int,
     im_size: Tuple[int, int],
 ) -> BoundingRectangle:
-    # box is in the top, left, height, width format, top left coordinates
+    # bbox is in the top, left, height, width format, top left coordinates
+    # We detected the tesseract on the document rotated with minus orientation, we have
+    # to apply an orientation angle
     rect = rotate_bounding_box(bbox, angle=orientation, im_size=im_size)
     rect = BoundingRectangle(
         r_x0=rect.r_x0 / scale,
@@ -54,7 +56,7 @@ def tesseract_box_to_bounding_rectangle(
         r_y2=rect.r_y2 / scale,
         r_x3=rect.r_x3 / scale,
         r_y3=rect.r_y3 / scale,
-        coord_origin=CoordOrigin.TOPLEFT,
+        coord_origin=rect.coord_origin,
     )
     if original_offset is not None:
         if original_offset.coord_origin is not CoordOrigin.TOPLEFT:

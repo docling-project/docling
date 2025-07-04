@@ -27,13 +27,13 @@
   "file-info": {
     "filename": "ocr_test_rotated_90.pdf",
     "filename-prov": null,
-    "document-hash": "4a282813d93824eaa9bc2a0b2a0d6d626ecc8f5f380bd1320e2dd3e8e53c2ba6",
+    "document-hash": "2fb20caf4f54c878a0b454b496010d92adc6ae1b7f10fbd9ba1ba26260f818a8",
     "#-pages": 1,
     "collection-name": null,
     "description": null,
     "page-hashes": [
       {
-        "hash": "f8a4dc72d8b159f69d0bc968b97f3fb9e0ac59dcb3113492432755835935d9b3",
+        "hash": "56c847ad7c5ab9f0346a325510af001ab66a9bb45f65ffc7bbfc60c929def7d2",
         "model": "default",
         "page": 1
       }
@@ -41,39 +41,454 @@
   },
   "main-text": [
     {
+      "name": "Table",
+      "type": "table",
+      "$ref": "#/tables/0"
+    }
+  ],
+  "figures": [],
+  "tables": [
+    {
       "prov": [
         {
           "bbox": [
-            131.21306574279092,
-            74.12495603322407,
-            152.19606490864376,
-            154.19400205373182
+            75.13359832763672,
+            102.99908447265625,
+            361.18695068359375,
+            562.1403198242188
           ],
           "page": 1,
           "span": [
             0,
-            7
+            0
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "package",
-      "type": "paragraph",
+      "text": "",
+      "type": "table",
       "payload": null,
-      "name": "Text",
-      "font": null
+      "#-cols": 4,
+      "#-rows": 4,
+      "data": [
+        [
+          {
+            "bbox": [
+              105.0718660651769,
+              304.7354643560275,
+              119.73306194406335,
+              369.59883715876185
+            ],
+            "spans": [
+              [
+                0,
+                0
+              ]
+            ],
+            "text": "Column 2",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              172.26899264661517,
+              324.3168597625203,
+              188.15195177751215,
+              352.46511670018316
+            ],
+            "spans": [
+              [
+                0,
+                1
+              ]
+            ],
+            "text": "and",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              240.68788382926402,
+              321.869185135892,
+              256.570842960161,
+              356.13662847492196
+            ],
+            "spans": [
+              [
+                0,
+                2
+              ]
+            ],
+            "text": "have",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              312.772072637728,
+              319.42151173034614,
+              326.21150018118874,
+              359.8081389276117
+            ],
+            "spans": [
+              [
+                0,
+                3
+              ]
+            ],
+            "text": "inside",
+            "type": "body",
+            "col": 3,
+            "col-header": false,
+            "col-span": [
+              3,
+              4
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          }
+        ],
+        [
+          {
+            "bbox": [
+              105.0718660651769,
+              419.77616156495424,
+              119.73306194406335,
+              483.4156981046677
+            ],
+            "spans": [
+              [
+                1,
+                0
+              ]
+            ],
+            "text": "Column 1",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          },
+          {
+            "bbox": [
+              172.26898999097682,
+              408.7616301134671,
+              185.70842261785268,
+              495.6540658231026
+            ],
+            "spans": [
+              [
+                1,
+                1
+              ]
+            ],
+            "text": "have content",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          },
+          {
+            "bbox": [
+              240.68788377535307,
+              433.23837164942523,
+              255.34907711253194,
+              468.729651251476
+            ],
+            "spans": [
+              [
+                1,
+                2
+              ]
+            ],
+            "text": "other",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          },
+          {
+            "bbox": null,
+            "spans": [
+              [
+                1,
+                3
+              ]
+            ],
+            "text": "",
+            "type": "body"
+          }
+        ],
+        [
+          {
+            "bbox": [
+              105.07186605295925,
+              532.3691850430223,
+              119.73306193184567,
+              597.2325578457567
+            ],
+            "spans": [
+              [
+                2,
+                0
+              ]
+            ],
+            "text": "Column 0",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          },
+          {
+            "bbox": [
+              172.26899069197702,
+              529.9215107729757,
+              186.93018720629036,
+              600.9040699770771
+            ],
+            "spans": [
+              [
+                2,
+                1
+              ]
+            ],
+            "text": "some cells",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          },
+          {
+            "bbox": null,
+            "spans": [
+              [
+                2,
+                2
+              ]
+            ],
+            "text": "",
+            "type": "body"
+          },
+          {
+            "bbox": [
+              311.49999737299976,
+              536.775000315586,
+              332.5000022770002,
+              592.9083316144141
+            ],
+            "spans": [
+              [
+                2,
+                3
+              ]
+            ],
+            "text": "nothing",
+            "type": "body",
+            "col": 3,
+            "col-header": false,
+            "col-span": [
+              3,
+              4
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          }
+        ],
+        [
+          {
+            "bbox": null,
+            "spans": [
+              [
+                3,
+                0
+              ]
+            ],
+            "text": "",
+            "type": "body"
+          },
+          {
+            "bbox": [
+              172.2689900422697,
+              638.8430233885732,
+              186.93018846286373,
+              719.6162777831045
+            ],
+            "spans": [
+              [
+                3,
+                1
+              ]
+            ],
+            "text": "this is row 0",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 3,
+            "row-header": false,
+            "row-span": [
+              3,
+              4
+            ]
+          },
+          {
+            "bbox": [
+              240.68788248006402,
+              647.4098827174411,
+              255.34907835895044,
+              712.2732555201754
+            ],
+            "spans": [
+              [
+                3,
+                2
+              ]
+            ],
+            "text": "and row 1",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 3,
+            "row-header": false,
+            "row-span": [
+              3,
+              4
+            ]
+          },
+          {
+            "bbox": [
+              313.9938353514431,
+              633.9476737903873,
+              327.43326861374595,
+              725.735464724632
+            ],
+            "spans": [
+              [
+                3,
+                3
+              ]
+            ],
+            "text": "and last row 2",
+            "type": "body",
+            "col": 3,
+            "col-header": false,
+            "col-span": [
+              3,
+              4
+            ],
+            "row": 3,
+            "row-header": false,
+            "row-span": [
+              3,
+              4
+            ]
+          }
+        ]
+      ],
+      "model": null,
+      "bounding-box": null
     }
   ],
-  "figures": [],
-  "tables": [],
   "bitmaps": null,
   "equations": [],
   "footnotes": [],
   "page-dimensions": [
     {
-      "height": 595.201171875,
+      "height": 842.0,
       "page": 1,
-      "width": 841.9216918945312
+      "width": 595.0
     }
   ],
   "page-footers": [],
