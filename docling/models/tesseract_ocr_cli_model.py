@@ -27,7 +27,6 @@ from docling.utils.ocr_utils import (
     parse_tesseract_orientation,
     tesseract_box_to_bounding_rectangle,
 )
-from docling.utils.orientation import Box
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)

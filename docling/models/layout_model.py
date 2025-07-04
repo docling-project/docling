@@ -1,8 +1,8 @@
 import copy
 import logging
 import warnings
-from copy import deepcopy
 from collections.abc import Iterable
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
@@ -18,7 +18,7 @@ from docling.models.base_model import BasePageModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.layout_postprocessor import LayoutPostprocessor
-from docling.utils.orientation import detect_orientation
+from docling.utils.orientation import detect_orientation, rotate_bounding_box
 from docling.utils.profiling import TimeRecorder
 from docling.utils.visualization import draw_clusters
 
@@ -99,7 +99,6 @@ class LayoutModel(BasePageModel):
         self,
         conv_res,
         page,
-        page_orientation: int,
         clusters,
         mode_prefix: str,
         show: bool = False,
@@ -113,10 +112,6 @@ class LayoutModel(BasePageModel):
         page_image = deepcopy(page.image)
         scale_x = page_image.width / page.size.width
         scale_y = page_image.height / page.size.height
-        if page_orientation:
-            page_image = page_image.rotate(-page_orientation, expand=True)
-            if abs(page_orientation) in [90, 270]:
-                scale_x, scale_y = scale_y, scale_x
         # Filter clusters for left and right images
         exclude_labels = {
             DocItemLabel.FORM,
@@ -132,9 +127,6 @@ class LayoutModel(BasePageModel):
         # Draw clusters on both images
         draw_clusters(left_image, left_clusters, scale_x, scale_y)
         draw_clusters(right_image, right_clusters, scale_x, scale_y)
-        if page_orientation:
-            left_image = left_image.rotate(page_orientation, expand=True)
-            right_image = right_image.rotate(page_orientation, expand=True)
         # Combine the images side by side
         combined_width = left_image.width * 2
         combined_height = left_image.height
@@ -177,11 +169,16 @@ class LayoutModel(BasePageModel):
                             .replace(" ", "_")
                             .replace("-", "_")
                         )  # Temporary, until docling-ibm-model uses docling-core types
+                        bbox = BoundingBox.model_validate(pred_item)
+                        if page_orientation:
+                            bbox = rotate_bounding_box(
+                                bbox, page_orientation, page_image.size
+                            ).to_bounding_box()
                         cluster = Cluster(
                             id=ix,
                             label=label,
                             confidence=pred_item["confidence"],
-                            bbox=BoundingBox.model_validate(pred_item),
+                            bbox=bbox,
                             cells=[],
                         )
                         clusters.append(cluster)
@@ -190,7 +187,6 @@ class LayoutModel(BasePageModel):
                         self.draw_clusters_and_cells_side_by_side(
                             conv_res,
                             page,
-                            page_orientation,
                             clusters,
                             mode_prefix="raw",
                         )
@@ -228,7 +224,6 @@ class LayoutModel(BasePageModel):
                     self.draw_clusters_and_cells_side_by_side(
                         conv_res,
                         page,
-                        page_orientation,
                         processed_clusters,
                         mode_prefix="postprocessed",
                     )
