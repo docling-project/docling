@@ -318,9 +318,9 @@ If a special register value is in the list of user profiles or it is a member of
 
 Here is an example of using the VERIFY\_GROUP\_FOR\_USER function:
 
-- 1. There are user profiles for MGR, JANE, JUDY, and TONY.
-- 2. The user profile JANE specifies a group profile of MGR.
-- 3. If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:
+1. There are user profiles for MGR, JANE, JUDY, and TONY.
+2. The user profile JANE specifies a group profile of MGR.
+3. If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:
 
 ```
 VERIFY_GROUP_FOR_USER (CURRENT_USER, 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR', 'STEVE') The following function invocation returns a value of 0: VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JUDY', 'TONY')
@@ -334,7 +334,7 @@ CASE
 WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 9999 || '-' || MONTH ( EMPLOYEES . DATE_OF_BIRTH ) || '-' || DAY (EMPLOYEES.DATE_OF_BIRTH )) ELSE NULL END ENABLE ;
 ```
 
-- 2. The other column to mask in this example is the TAX\_ID information. In this example, the rules to enforce include the following ones:
+2. The other column to mask in this example is the TAX\_ID information. In this example, the rules to enforce include the following ones:
 - -Human Resources can see the unmasked TAX\_ID of the employees.
 - -Employees can see only their own unmasked TAX\_ID.
 - -Managers see a masked version of TAX\_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).
@@ -347,7 +347,7 @@ CREATE MASK HR_SCHEMA.MASK_TAX_ID_ON_EMPLOYEES ON HR_SCHEMA.EMPLOYEES AS EMPLOYE
 
 Example 3-9 Creating a mask on the TAX\_ID column
 
-- 3. Figure 3-10 shows the masks that are created in the HR\_SCHEMA.
+3. Figure 3-10 shows the masks that are created in the HR\_SCHEMA.
 
 Figure 3-10 Column masks shown in System i Navigator
 
@@ -357,7 +357,7 @@ Figure 3-10 Column masks shown in System i Navigator
 
 Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:
 
-- 1. Run the SQL statements that are shown in Example 3-10.
+1. Run the SQL statements that are shown in Example 3-10.
 
 ## Example 3-10 Activating RCAC on the EMPLOYEES table
 
@@ -372,14 +372,14 @@ ACTIVATE ROW ACCESS CONTROL
 
 ACTIVATE COLUMN ACCESS CONTROL;
 
-- 2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR\_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .
+2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR\_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .
 
 Figure 3-11 Selecting the EMPLOYEES table from System i Navigator
 
 <!-- image -->
 
-- 2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.
-- 3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
+2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.
+3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.
 
 Figure 4-68 Visual Explain with RCAC enabled
 
