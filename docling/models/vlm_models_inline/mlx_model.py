@@ -56,8 +56,6 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
-            self.param_question = vlm_options.prompt
-
             ## Load the model
             self.vlm_model, self.processor = load(artifacts_path)
             self.config = load_config(artifacts_path)
@@ -86,8 +84,12 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
+                    if callable(self.vlm_options.prompt):
+                        user_prompt = self.vlm_options.prompt(page)
+                    else:
+                        user_prompt = self.vlm_options.prompt
                     prompt = self.apply_chat_template(
-                        self.processor, self.config, self.param_question, num_images=1
+                        self.processor, self.config, user_prompt, num_images=1
                     )
 
                     start_time = time.time()
