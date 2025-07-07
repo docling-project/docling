@@ -180,18 +180,18 @@ def main():
         format=ResponseFormat.DOCTAGS,
     )
 
-    # Example using the OlmOcr (dynamic prompt) model with LM Studio:
-    # (uncomment the following lines)
-    # pipeline_options.vlm_options = lms_olmocr_vlm_options(
-    #     model="hf.co/lmstudio-community/olmOCR-7B-0225-preview-GGUF",
-    # )
-
     # Example using the Granite Vision model with LM Studio:
     # (uncomment the following lines)
     # pipeline_options.vlm_options = lms_vlm_options(
     #     model="granite-vision-3.2-2b",
     #     prompt="OCR the full page to markdown.",
     #     format=ResponseFormat.MARKDOWN,
+    # )
+
+    # Example using the OlmOcr (dynamic prompt) model with LM Studio:
+    # (uncomment the following lines)
+    # pipeline_options.vlm_options = lms_olmocr_vlm_options(
+    #     model="hf.co/lmstudio-community/olmOCR-7B-0225-preview-GGUF",
     # )
 
     # Example using the Granite Vision model with Ollama:
