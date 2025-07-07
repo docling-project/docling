@@ -1,16 +1,16 @@
 from enum import Enum
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
+from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
-from docling.datamodel.base_models import Page
 
 
 class BaseVlmOptions(BaseModel):
     kind: str
-    prompt: Union[str, Callable[[Page], str]]
+    prompt: Union[str, Callable[[Optional[SegmentedPage]], str]]
     scale: float = 2.0
     max_size: Optional[int] = None
     temperature: float = 0.0

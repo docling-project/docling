@@ -1,11 +1,13 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import requests
+from docling_core.types.doc.page import SegmentedPage
 from dotenv import load_dotenv
 
-from docling.datamodel.base_models import InputFormat, Page
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
@@ -53,25 +55,40 @@ def ollama_vlm_options(model: str, prompt: str):
 
 
 def ollama_olmocr_vlm_options(model: str):
-    def _dynamic_olmocr_prompt(page: Page):
-        anchor = [f"Page dimensions: {int(page.size.width)}x{int(page.size.height)}"]
+    def _dynamic_olmocr_prompt(page: Optional[SegmentedPage]):
+        if page is None:
+            return (
+                "Below is the image of one page of a document. Just return the plain text"
+                " representation of this document as if you were reading it naturally.\n"
+                "Do not hallucinate.\n"
+            )
 
-        for cell in page._backend.get_text_cells():
-            if not cell.text.strip():
+        anchor = [
+            f"Page dimensions: {int(page.dimension.width)}x{int(page.dimension.height)}"
+        ]
+
+        for text_cell in page.textline_cells:
+            if not text_cell.text.strip():
                 continue
-            bbox = cell.to_bounding_box().to_bottom_left_origin(page.size.height)
-            anchor.append(f"[{int(bbox.l)}x{int(bbox.b)}] {cell.text}")
+            bbox = text_cell.rect.to_bounding_box().to_bottom_left_origin(
+                page.dimension.height
+            )
+            anchor.append(f"[{int(bbox.l)}x{int(bbox.b)}] {text_cell.text}")
 
-        for rect in page._backend.get_bitmap_rects():
-            bbox = rect.to_bottom_left_origin(page.size.height)
+        for image_cell in page.bitmap_resources:
+            bbox = image_cell.rect.to_bounding_box().to_bottom_left_origin(
+                page.dimension.height
+            )
             anchor.append(
                 f"[Image {int(bbox.l)}x{int(bbox.b)} to {int(bbox.r)}x{int(bbox.t)}]"
             )
 
         if len(anchor) == 1:
             anchor.append(
-                f"[Image 0x0 to {int(page.size.width)}x{int(page.size.height)}]"
+                f"[Image 0x0 to {int(page.dimension.width)}x{int(page.dimension.height)}]"
             )
+
+        # Original prompt uses cells sorting. We are skipping it in this demo.
 
         base_text = "\n".join(anchor)
 
@@ -181,7 +198,7 @@ def main():
     # Example using the OlmOcr (dynamic prompt) model with Ollama:
     # (uncomment the following lines)
     # pipeline_options.vlm_options = ollama_olmocr_vlm_options(
-    #     model="hf.co/mradermacher/olmOCR-7B-0225-preview-GGUF:Q8_0",
+    #     model="hf.co/allenai/olmOCR-7B-0225-preview-GGUF:Q8_0",
     # )
 
     # Another possibility is using online services, e.g. watsonx.ai.

@@ -85,7 +85,7 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
                             hi_res_image = hi_res_image.convert("RGB")
 
                     if callable(self.vlm_options.prompt):
-                        user_prompt = self.vlm_options.prompt(page)
+                        user_prompt = self.vlm_options.prompt(page.parsed_page)
                     else:
                         user_prompt = self.vlm_options.prompt
                     prompt = self.apply_chat_template(

@@ -129,7 +129,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
 
                     # Define prompt structure
                     if callable(self.vlm_options.prompt):
-                        user_prompt = self.vlm_options.prompt(page)
+                        user_prompt = self.vlm_options.prompt(page.parsed_page)
                     else:
                         user_prompt = self.vlm_options.prompt
                     prompt = self.formulate_prompt(user_prompt)

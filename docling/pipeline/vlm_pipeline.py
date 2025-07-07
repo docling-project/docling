@@ -117,6 +117,7 @@ class VlmPipeline(PaginatedPipeline):
             page._backend = conv_res.input._backend.load_page(page.page_no)  # type: ignore
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()
+                page.parsed_page = page._backend.get_segmented_page()
 
         return page
 

@@ -54,7 +54,7 @@ class ApiVlmModel(BasePageModel):
                             hi_res_image = hi_res_image.convert("RGB")
 
                     if callable(self.vlm_options.prompt):
-                        prompt = self.vlm_options.prompt(page)
+                        prompt = self.vlm_options.prompt(page.parsed_page)
                     else:
                         prompt = self.vlm_options.prompt
 
