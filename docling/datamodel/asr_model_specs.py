@@ -22,7 +22,7 @@ WHISPER_TINY = InlineAsrNativeWhisperOptions(
     verbose=True,
     timestamps=True,
     word_timestamps=True,
-    temperatue=0.0,
+    temperature=0.0,
     max_new_tokens=256,
     max_time_chunk=30.0,
 )
@@ -33,7 +33,7 @@ WHISPER_SMALL = InlineAsrNativeWhisperOptions(
     verbose=True,
     timestamps=True,
     word_timestamps=True,
-    temperatue=0.0,
+    temperature=0.0,
     max_new_tokens=256,
     max_time_chunk=30.0,
 )
@@ -44,7 +44,7 @@ WHISPER_MEDIUM = InlineAsrNativeWhisperOptions(
     verbose=True,
     timestamps=True,
     word_timestamps=True,
-    temperatue=0.0,
+    temperature=0.0,
     max_new_tokens=256,
     max_time_chunk=30.0,
 )
@@ -55,7 +55,7 @@ WHISPER_BASE = InlineAsrNativeWhisperOptions(
     verbose=True,
     timestamps=True,
     word_timestamps=True,
-    temperatue=0.0,
+    temperature=0.0,
     max_new_tokens=256,
     max_time_chunk=30.0,
 )
@@ -66,7 +66,7 @@ WHISPER_LARGE = InlineAsrNativeWhisperOptions(
     verbose=True,
     timestamps=True,
     word_timestamps=True,
-    temperatue=0.0,
+    temperature=0.0,
     max_new_tokens=256,
     max_time_chunk=30.0,
 )
@@ -77,7 +77,7 @@ WHISPER_TURBO = InlineAsrNativeWhisperOptions(
     verbose=True,
     timestamps=True,
     word_timestamps=True,
-    temperatue=0.0,
+    temperature=0.0,
     max_new_tokens=256,
     max_time_chunk=30.0,
 )
