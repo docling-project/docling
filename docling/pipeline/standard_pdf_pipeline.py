@@ -129,6 +129,7 @@ class StandardPdfPipeline(PaginatedPipeline):
         if (
             self.pipeline_options.do_formula_enrichment
             or self.pipeline_options.do_code_enrichment
+            or self.pipeline_options.do_picture_classification
             or self.pipeline_options.do_picture_description
         ):
             self.keep_backend = True

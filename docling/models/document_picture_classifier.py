@@ -14,7 +14,8 @@ from PIL import Image
 from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.models.base_model import BaseEnrichmentModel
+from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
@@ -32,7 +33,7 @@ class DocumentPictureClassifierOptions(BaseModel):
     kind: Literal["document_picture_classifier"] = "document_picture_classifier"
 
 
-class DocumentPictureClassifier(BaseEnrichmentModel):
+class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
     """
     A model for classifying pictures in documents.
 
@@ -135,7 +136,7 @@ class DocumentPictureClassifier(BaseEnrichmentModel):
     def __call__(
         self,
         doc: DoclingDocument,
-        element_batch: Iterable[NodeItem],
+        element_batch: Iterable[ItemAndImageEnrichmentElement],
     ) -> Iterable[NodeItem]:
         """
         Processes a batch of elements and enriches them with classification predictions.
@@ -144,7 +145,7 @@ class DocumentPictureClassifier(BaseEnrichmentModel):
         ----------
         doc : DoclingDocument
             The document containing the elements to be processed.
-        element_batch : Iterable[NodeItem]
+        element_batch : Iterable[ItemAndImageEnrichmentElement]
             A batch of pictures to classify.
 
         Returns
@@ -155,22 +156,20 @@ class DocumentPictureClassifier(BaseEnrichmentModel):
         """
         if not self.enabled:
             for element in element_batch:
-                yield element
+                yield element.item
             return
 
         images: List[Union[Image.Image, np.ndarray]] = []
         elements: List[PictureItem] = []
         for el in element_batch:
-            assert isinstance(el, PictureItem)
-            elements.append(el)
-            img = el.get_image(doc)
-            assert img is not None
-            images.append(img)
+            assert isinstance(el.item, PictureItem)
+            elements.append(el.item)
+            images.append(el.image)
 
         outputs = self.document_picture_classifier.predict(images)
 
-        for element, output in zip(elements, outputs):
-            element.annotations.append(
+        for item, output in zip(elements, outputs):
+            item.annotations.append(
                 PictureClassificationData(
                     provenance="DocumentPictureClassifier",
                     predicted_classes=[
@@ -183,4 +182,4 @@ class DocumentPictureClassifier(BaseEnrichmentModel):
                 )
             )
 
-            yield element
+            yield item
