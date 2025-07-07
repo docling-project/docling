@@ -34,27 +34,10 @@ def lms_vlm_options(model: str, prompt: str, format: ResponseFormat):
     return options
 
 
-#### Using Ollama
+#### Using LM Studio with OlmOcr model
 
 
-def ollama_vlm_options(model: str, prompt: str):
-    options = ApiVlmOptions(
-        url="http://localhost:11434/v1/chat/completions",  # the default Ollama endpoint
-        params=dict(
-            model=model,
-        ),
-        prompt=prompt,
-        timeout=90,
-        scale=1.0,
-        response_format=ResponseFormat.MARKDOWN,
-    )
-    return options
-
-
-#### Using Ollama with OlmOcr
-
-
-def ollama_olmocr_vlm_options(model: str):
+def lms_olmocr_vlm_options(model: str):
     def _dynamic_olmocr_prompt(page: Optional[SegmentedPage]):
         if page is None:
             return (
@@ -101,7 +84,7 @@ def ollama_olmocr_vlm_options(model: str):
         )
 
     options = ApiVlmOptions(
-        url="http://localhost:11434/v1/chat/completions",  # the default Ollama endpoint
+        url="http://localhost:1234/v1/chat/completions",
         params=dict(
             model=model,
         ),
@@ -109,6 +92,23 @@ def ollama_olmocr_vlm_options(model: str):
         timeout=90,
         scale=1.0,
         max_size=1024,  # from OlmOcr pipeline
+        response_format=ResponseFormat.MARKDOWN,
+    )
+    return options
+
+
+#### Using Ollama
+
+
+def ollama_vlm_options(model: str, prompt: str):
+    options = ApiVlmOptions(
+        url="http://localhost:11434/v1/chat/completions",  # the default Ollama endpoint
+        params=dict(
+            model=model,
+        ),
+        prompt=prompt,
+        timeout=90,
+        scale=1.0,
         response_format=ResponseFormat.MARKDOWN,
     )
     return options
@@ -180,6 +180,12 @@ def main():
         format=ResponseFormat.DOCTAGS,
     )
 
+    # Example using the OlmOcr (dynamic prompt) model with LM Studio:
+    # (uncomment the following lines)
+    # pipeline_options.vlm_options = lms_olmocr_vlm_options(
+    #     model="hf.co/lmstudio-community/olmOCR-7B-0225-preview-GGUF",
+    # )
+
     # Example using the Granite Vision model with LM Studio:
     # (uncomment the following lines)
     # pipeline_options.vlm_options = lms_vlm_options(
@@ -193,12 +199,6 @@ def main():
     # pipeline_options.vlm_options = ollama_vlm_options(
     #     model="granite3.2-vision:2b",
     #     prompt="OCR the full page to markdown.",
-    # )
-
-    # Example using the OlmOcr (dynamic prompt) model with Ollama:
-    # (uncomment the following lines)
-    # pipeline_options.vlm_options = ollama_olmocr_vlm_options(
-    #     model="hf.co/allenai/olmOCR-7B-0225-preview",
     # )
 
     # Another possibility is using online services, e.g. watsonx.ai.
