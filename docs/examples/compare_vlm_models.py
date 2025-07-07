@@ -14,11 +14,18 @@ from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 from tabulate import tabulate
 
 from docling.datamodel import vlm_model_specs
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import InferenceFramework
+from docling.datamodel.pipeline_options_vlm_model import (
+    InferenceFramework,
+    InlineVlmOptions,
+    ResponseFormat,
+    TransformersModelType,
+    TransformersPromptStyle,
+)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
@@ -101,6 +108,33 @@ if __name__ == "__main__":
     out_path = Path("scratch")
     out_path.mkdir(parents=True, exist_ok=True)
 
+    ## Definiton of more inline models
+    llava_qwen = InlineVlmOptions(
+        repo_id="llava-hf/llava-interleave-qwen-0.5b-hf",
+        # prompt="Read text in the image.",
+        prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
+        # prompt="Parse the reading order of this document.",
+        response_format=ResponseFormat.MARKDOWN,
+        inference_framework=InferenceFramework.TRANSFORMERS,
+        transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+        supported_devices=[AcceleratorDevice.CUDA, AcceleratorDevice.CPU],
+        scale=2.0,
+        temperature=0.0,
+    )
+
+    # Note that this is not the expected way of using the Dolphin model, but it shows the usage of a raw prompt.
+    dolphin_oneshot = InlineVlmOptions(
+        repo_id="ByteDance/Dolphin",
+        prompt="<s>Read text in the image. <Answer/>",
+        response_format=ResponseFormat.MARKDOWN,
+        inference_framework=InferenceFramework.TRANSFORMERS,
+        transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+        transformers_prompt_style=TransformersPromptStyle.RAW,
+        supported_devices=[AcceleratorDevice.CUDA, AcceleratorDevice.CPU],
+        scale=2.0,
+        temperature=0.0,
+    )
+
     ## Use VlmPipeline
     pipeline_options = VlmPipelineOptions()
     pipeline_options.generate_page_images = True
@@ -121,6 +155,9 @@ if __name__ == "__main__":
         vlm_model_specs.GRANITE_VISION_TRANSFORMERS,
         vlm_model_specs.PHI4_TRANSFORMERS,
         vlm_model_specs.PIXTRAL_12B_TRANSFORMERS,
+        ## More inline models
+        dolphin_oneshot,
+        llava_qwen,
     ]
 
     # Remove MLX models if not on Mac
