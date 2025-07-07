@@ -198,7 +198,7 @@ def main():
     # Example using the OlmOcr (dynamic prompt) model with Ollama:
     # (uncomment the following lines)
     # pipeline_options.vlm_options = ollama_olmocr_vlm_options(
-    #     model="hf.co/allenai/olmOCR-7B-0225-preview",
+    #     model="hf.co/lmstudio-community/olmOCR-7B-0225-preview-GGUF:Q8_0",
     # )
 
     # Another possibility is using online services, e.g. watsonx.ai.
