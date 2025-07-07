@@ -17,8 +17,9 @@ def get_converter():
     pipeline_options.do_table_structure = False
     pipeline_options.do_code_enrichment = False
     pipeline_options.do_formula_enrichment = False
+    pipeline_options.generate_picture_images = False
+    pipeline_options.generate_page_images = False
     pipeline_options.do_picture_classification = True
-    pipeline_options.generate_picture_images = True
     pipeline_options.images_scale = 2
 
     converter = DocumentConverter(

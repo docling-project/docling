@@ -77,7 +77,7 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     === "RHEL"
 
         ```console
-        dnf install tesseract tesseract-devel tesseract-langpack-eng leptonica-devel
+        dnf install tesseract tesseract-devel tesseract-langpack-eng tesseract-osd leptonica-devel
         TESSDATA_PREFIX=/usr/share/tesseract/tessdata/
         echo "Set TESSDATA_PREFIX=${TESSDATA_PREFIX}"
         ```

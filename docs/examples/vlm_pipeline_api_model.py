@@ -1,8 +1,10 @@
 import logging
 import os
 from pathlib import Path
+from typing import Optional
 
 import requests
+from docling_core.types.doc.page import SegmentedPage
 from dotenv import load_dotenv
 
 from docling.datamodel.base_models import InputFormat
@@ -28,6 +30,69 @@ def lms_vlm_options(model: str, prompt: str, format: ResponseFormat):
         timeout=90,
         scale=1.0,
         response_format=format,
+    )
+    return options
+
+
+#### Using LM Studio with OlmOcr model
+
+
+def lms_olmocr_vlm_options(model: str):
+    def _dynamic_olmocr_prompt(page: Optional[SegmentedPage]):
+        if page is None:
+            return (
+                "Below is the image of one page of a document. Just return the plain text"
+                " representation of this document as if you were reading it naturally.\n"
+                "Do not hallucinate.\n"
+            )
+
+        anchor = [
+            f"Page dimensions: {int(page.dimension.width)}x{int(page.dimension.height)}"
+        ]
+
+        for text_cell in page.textline_cells:
+            if not text_cell.text.strip():
+                continue
+            bbox = text_cell.rect.to_bounding_box().to_bottom_left_origin(
+                page.dimension.height
+            )
+            anchor.append(f"[{int(bbox.l)}x{int(bbox.b)}] {text_cell.text}")
+
+        for image_cell in page.bitmap_resources:
+            bbox = image_cell.rect.to_bounding_box().to_bottom_left_origin(
+                page.dimension.height
+            )
+            anchor.append(
+                f"[Image {int(bbox.l)}x{int(bbox.b)} to {int(bbox.r)}x{int(bbox.t)}]"
+            )
+
+        if len(anchor) == 1:
+            anchor.append(
+                f"[Image 0x0 to {int(page.dimension.width)}x{int(page.dimension.height)}]"
+            )
+
+        # Original prompt uses cells sorting. We are skipping it in this demo.
+
+        base_text = "\n".join(anchor)
+
+        return (
+            f"Below is the image of one page of a document, as well as some raw textual"
+            f" content that was previously extracted for it. Just return the plain text"
+            f" representation of this document as if you were reading it naturally.\n"
+            f"Do not hallucinate.\n"
+            f"RAW_TEXT_START\n{base_text}\nRAW_TEXT_END"
+        )
+
+    options = ApiVlmOptions(
+        url="http://localhost:1234/v1/chat/completions",
+        params=dict(
+            model=model,
+        ),
+        prompt=_dynamic_olmocr_prompt,
+        timeout=90,
+        scale=1.0,
+        max_size=1024,  # from OlmOcr pipeline
+        response_format=ResponseFormat.MARKDOWN,
     )
     return options
 
@@ -95,8 +160,8 @@ def watsonx_vlm_options(model: str, prompt: str):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    # input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
-    input_doc_path = Path("./tests/data/pdf/2305.03393v1-pg9.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2305.03393v1-pg9.pdf"
 
     pipeline_options = VlmPipelineOptions(
         enable_remote_services=True  # <-- this is required!
@@ -121,6 +186,12 @@ def main():
     #     model="granite-vision-3.2-2b",
     #     prompt="OCR the full page to markdown.",
     #     format=ResponseFormat.MARKDOWN,
+    # )
+
+    # Example using the OlmOcr (dynamic prompt) model with LM Studio:
+    # (uncomment the following lines)
+    # pipeline_options.vlm_options = lms_olmocr_vlm_options(
+    #     model="hf.co/lmstudio-community/olmOCR-7B-0225-preview-GGUF",
     # )
 
     # Example using the Granite Vision model with Ollama:

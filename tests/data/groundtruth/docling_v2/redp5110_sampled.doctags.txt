@@ -161,9 +161,9 @@
 <text><loc_112><loc_224><loc_447><loc_275>The VERIFY_GROUP_FOR_USER function was added in IBM i 7.2. Although it is primarily intended for use with RCAC permissions and masks, it can be used in other SQL statements. The first parameter must be one of these three special registers: SESSION_USER, USER, or CURRENT_USER. The second and subsequent parameters are a list of user or group profiles. Each of these values must be 1 - 10 characters in length. These values are not validated for their existence, which means that you can specify the names of user profiles that do not exist without receiving any kind of error.</text>
 <text><loc_112><loc_283><loc_447><loc_304>If a special register value is in the list of user profiles or it is a member of a group profile included in the list, the function returns a long integer value of 1. Otherwise, it returns a value of 0. It never returns the null value.</text>
 <text><loc_112><loc_312><loc_375><loc_318>Here is an example of using the VERIFY_GROUP_FOR_USER function:</text>
-<unordered_list><list_item><loc_112><loc_323><loc_332><loc_329>1. There are user profiles for MGR, JANE, JUDY, and TONY.</list_item>
-<list_item><loc_112><loc_334><loc_324><loc_339>2. The user profile JANE specifies a group profile of MGR.</list_item>
-<list_item><loc_112><loc_344><loc_438><loc_358>3. If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:</list_item>
+<unordered_list><list_item><loc_112><loc_323><loc_332><loc_329>There are user profiles for MGR, JANE, JUDY, and TONY.</list_item>
+<list_item><loc_112><loc_334><loc_324><loc_339>The user profile JANE specifies a group profile of MGR.</list_item>
+<list_item><loc_112><loc_344><loc_438><loc_358>If a user is connected to the server using user profile JANE, all of the following function invocations return a value of 1:</list_item>
 </unordered_list>
 <code><loc_124><loc_363><loc_368><loc_405><_unknown_>VERIFY_GROUP_FOR_USER (CURRENT_USER, 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR') VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JANE', 'MGR', 'STEVE') The following function invocation returns a value of 0: VERIFY_GROUP_FOR_USER (CURRENT_USER, 'JUDY', 'TONY')</code>
 <page_footer><loc_53><loc_477><loc_64><loc_482>20</page_footer>
@@ -172,7 +172,7 @@
 <text><loc_112><loc_45><loc_136><loc_51>RETURN</text>
 <text><loc_112><loc_53><loc_128><loc_58>CASE</text>
 <code><loc_112><loc_60><loc_426><loc_164><_unknown_>WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'HR', 'EMP' ) = 1 THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER = EMPLOYEES . USER_ID THEN EMPLOYEES . DATE_OF_BIRTH WHEN VERIFY_GROUP_FOR_USER ( SESSION_USER , 'MGR' ) = 1 AND SESSION_USER <> EMPLOYEES . USER_ID THEN ( 9999 || '-' || MONTH ( EMPLOYEES . DATE_OF_BIRTH ) || '-' || DAY (EMPLOYEES.DATE_OF_BIRTH )) ELSE NULL END ENABLE ;</code>
-<unordered_list><list_item><loc_112><loc_174><loc_447><loc_187>2. The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:</list_item>
+<unordered_list><list_item><loc_112><loc_174><loc_447><loc_187>The other column to mask in this example is the TAX_ID information. In this example, the rules to enforce include the following ones:</list_item>
 <list_item><loc_124><loc_192><loc_383><loc_198>-Human Resources can see the unmasked TAX_ID of the employees.</list_item>
 <list_item><loc_124><loc_203><loc_330><loc_209>-Employees can see only their own unmasked TAX_ID.</list_item>
 <list_item><loc_124><loc_214><loc_445><loc_227>-Managers see a masked version of TAX_ID with the first five characters replaced with the X character (for example, XXX-XX-1234).</list_item>
@@ -183,12 +183,12 @@
 <page_footer><loc_282><loc_477><loc_428><loc_482>Chapter 3. Row and Column Access Control</page_footer>
 <page_footer><loc_438><loc_477><loc_447><loc_482>27</page_footer>
 <page_break>
-<unordered_list><list_item><loc_112><loc_45><loc_368><loc_51>3. Figure 3-10 shows the masks that are created in the HR_SCHEMA.</list_item>
+<unordered_list><list_item><loc_112><loc_45><loc_368><loc_51>Figure 3-10 shows the masks that are created in the HR_SCHEMA.</list_item>
 </unordered_list>
 <picture><loc_52><loc_60><loc_447><loc_107><caption><loc_53><loc_110><loc_239><loc_115>Figure 3-10 Column masks shown in System i Navigator</caption></picture>
 <section_header_level_1><loc_53><loc_128><loc_167><loc_135>3.6.6 Activating RCAC</section_header_level_1>
 <text><loc_112><loc_144><loc_447><loc_165>Now that you have created the row permission and the two column masks, RCAC must be activated. The row permission and the two column masks are enabled (last clause in the scripts), but now you must activate RCAC on the table. To do so, complete the following steps:</text>
-<unordered_list><list_item><loc_112><loc_170><loc_335><loc_176>1. Run the SQL statements that are shown in Example 3-10.</list_item>
+<unordered_list><list_item><loc_112><loc_170><loc_335><loc_176>Run the SQL statements that are shown in Example 3-10.</list_item>
 </unordered_list>
 <section_header_level_1><loc_112><loc_184><loc_307><loc_189>Example 3-10 Activating RCAC on the EMPLOYEES table</section_header_level_1>
 <unordered_list><list_item><loc_112><loc_195><loc_308><loc_200>/* Active Row Access Control (permissions) */</list_item>
@@ -198,14 +198,14 @@
 <text><loc_112><loc_210><loc_238><loc_216>ALTER TABLE HR_SCHEMA.EMPLOYEES</text>
 <text><loc_112><loc_218><loc_222><loc_223>ACTIVATE ROW ACCESS CONTROL</text>
 <text><loc_112><loc_225><loc_238><loc_231>ACTIVATE COLUMN ACCESS CONTROL;</text>
-<unordered_list><list_item><loc_112><loc_240><loc_442><loc_261>2. Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .</list_item>
+<unordered_list><list_item><loc_112><loc_240><loc_442><loc_261>Look at the definition of the EMPLOYEE table, as shown in Figure 3-11. To do this, from the main navigation pane of System i Navigator, click Schemas  HR_SCHEMA  Tables , right-click the EMPLOYEES table, and click Definition .</list_item>
 </unordered_list>
 <picture><loc_52><loc_270><loc_433><loc_408><caption><loc_53><loc_410><loc_284><loc_415>Figure 3-11 Selecting the EMPLOYEES table from System i Navigator</caption></picture>
 <page_footer><loc_53><loc_477><loc_64><loc_482>28</page_footer>
 <page_footer><loc_76><loc_477><loc_273><loc_482>Row and Column Access Control Support in IBM DB2 for i</page_footer>
 <page_break>
-<unordered_list><list_item><loc_112><loc_45><loc_420><loc_66>2. Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</list_item>
-<list_item><loc_112><loc_320><loc_447><loc_341>3. Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</list_item>
+<unordered_list><list_item><loc_112><loc_45><loc_420><loc_66>Figure 4-68 shows the Visual Explain of the same SQL statement, but with RCAC enabled. It is clear that the implementation of the SQL statement is more complex because the row permission rule becomes part of the WHERE clause.</list_item>
+<list_item><loc_112><loc_320><loc_447><loc_341>Compare the advised indexes that are provided by the Optimizer without RCAC and with RCAC enabled. Figure 4-69 shows the index advice for the SQL statement without RCAC enabled. The index being advised is for the ORDER BY clause.</list_item>
 </unordered_list>
 <picture><loc_112><loc_75><loc_446><loc_301><caption><loc_112><loc_303><loc_267><loc_309>Figure 4-68 Visual Explain with RCAC enabled</caption></picture>
 <picture><loc_53><loc_349><loc_414><loc_419><caption><loc_53><loc_421><loc_186><loc_427>Figure 4-69 Index advice with no RCAC</caption></picture>

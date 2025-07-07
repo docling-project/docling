@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "name": "2305.03393v1",
   "origin": {
     "mimetype": "application/pdf",
@@ -171,13 +171,13 @@
         "cref": "#/texts/230"
       },
       {
-        "cref": "#/groups/2"
+        "cref": "#/groups/3"
       },
       {
         "cref": "#/texts/233"
       },
       {
-        "cref": "#/groups/3"
+        "cref": "#/groups/4"
       },
       {
         "cref": "#/texts/238"
@@ -294,7 +294,7 @@
         "cref": "#/texts/455"
       },
       {
-        "cref": "#/groups/4"
+        "cref": "#/groups/5"
       },
       {
         "cref": "#/texts/460"
@@ -303,7 +303,7 @@
         "cref": "#/texts/461"
       },
       {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       {
         "cref": "#/texts/475"
@@ -312,7 +312,7 @@
         "cref": "#/texts/476"
       },
       {
-        "cref": "#/groups/6"
+        "cref": "#/groups/7"
       }
     ],
     "content_layer": "body",
@@ -372,6 +372,20 @@
     {
       "self_ref": "#/groups/2",
       "parent": {
+        "cref": "#/pictures/2"
+      },
+      "children": [
+        {
+          "cref": "#/texts/215"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
         "cref": "#/body"
       },
       "children": [
@@ -387,7 +401,7 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/3",
+      "self_ref": "#/groups/4",
       "parent": {
         "cref": "#/body"
       },
@@ -410,7 +424,7 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/4",
+      "self_ref": "#/groups/5",
       "parent": {
         "cref": "#/body"
       },
@@ -433,7 +447,7 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/5",
+      "self_ref": "#/groups/6",
       "parent": {
         "cref": "#/body"
       },
@@ -483,7 +497,7 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/6",
+      "self_ref": "#/groups/7",
       "parent": {
         "cref": "#/body"
       },
@@ -4956,7 +4970,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/153",
@@ -4987,7 +5001,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/154",
@@ -5018,7 +5032,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/155",
@@ -5049,7 +5063,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/156",
@@ -5080,7 +5094,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/157",
@@ -6767,7 +6781,7 @@
     {
       "self_ref": "#/texts/215",
       "parent": {
-        "cref": "#/pictures/2"
+        "cref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -6793,7 +6807,7 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/216",
@@ -7234,7 +7248,7 @@
     {
       "self_ref": "#/texts/231",
       "parent": {
-        "cref": "#/groups/2"
+        "cref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -7256,16 +7270,16 @@
         }
       ],
       "orig": "1. Left-looking cell rule : The left neighbour of an \"L\" cell must be either another \"L\" cell or a \"C\" cell.",
-      "text": "1. Left-looking cell rule : The left neighbour of an \"L\" cell must be either another \"L\" cell or a \"C\" cell.",
+      "text": "Left-looking cell rule : The left neighbour of an \"L\" cell must be either another \"L\" cell or a \"C\" cell.",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/232",
       "parent": {
-        "cref": "#/groups/2"
+        "cref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -7287,11 +7301,11 @@
         }
       ],
       "orig": "2. Up-looking cell rule : The upper neighbour of a \"U\" cell must be either another \"U\" cell or a \"C\" cell.",
-      "text": "2. Up-looking cell rule : The upper neighbour of a \"U\" cell must be either another \"U\" cell or a \"C\" cell.",
+      "text": "Up-looking cell rule : The upper neighbour of a \"U\" cell must be either another \"U\" cell or a \"C\" cell.",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "2."
     },
     {
       "self_ref": "#/texts/233",
@@ -7326,7 +7340,7 @@
     {
       "self_ref": "#/texts/234",
       "parent": {
-        "cref": "#/groups/3"
+        "cref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -7352,12 +7366,12 @@
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/235",
       "parent": {
-        "cref": "#/groups/3"
+        "cref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -7379,16 +7393,16 @@
         }
       ],
       "orig": "4. First row rule : Only \"L\" cells and \"C\" cells are allowed in the first row.",
-      "text": "4. First row rule : Only \"L\" cells and \"C\" cells are allowed in the first row.",
+      "text": "First row rule : Only \"L\" cells and \"C\" cells are allowed in the first row.",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "4."
     },
     {
       "self_ref": "#/texts/236",
       "parent": {
-        "cref": "#/groups/3"
+        "cref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -7410,16 +7424,16 @@
         }
       ],
       "orig": "5. First column rule : Only \"U\" cells and \"C\" cells are allowed in the first column.",
-      "text": "5. First column rule : Only \"U\" cells and \"C\" cells are allowed in the first column.",
+      "text": "First column rule : Only \"U\" cells and \"C\" cells are allowed in the first column.",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "5."
     },
     {
       "self_ref": "#/texts/237",
       "parent": {
-        "cref": "#/groups/3"
+        "cref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -7441,11 +7455,11 @@
         }
       ],
       "orig": "6. Rectangular rule : The table representation is always rectangular - all rows must have an equal number of tokens, terminated with \"NL\" token.",
-      "text": "6. Rectangular rule : The table representation is always rectangular - all rows must have an equal number of tokens, terminated with \"NL\" token.",
+      "text": "Rectangular rule : The table representation is always rectangular - all rows must have an equal number of tokens, terminated with \"NL\" token.",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "6."
     },
     {
       "self_ref": "#/texts/238",
@@ -13779,7 +13793,7 @@
     {
       "self_ref": "#/texts/456",
       "parent": {
-        "cref": "#/groups/4"
+        "cref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -13801,16 +13815,16 @@
         }
       ],
       "orig": "1. Auer, C., Dolfi, M., Carvalho, A., Ramis, C.B., Staar, P.W.J.: Delivering document conversion as a cloud service with high throughput and responsiveness. CoRR abs/2206.00785 (2022). https://doi.org/10.48550/arXiv.2206.00785 , https://doi.org/10.48550/arXiv.2206.00785",
-      "text": "1. Auer, C., Dolfi, M., Carvalho, A., Ramis, C.B., Staar, P.W.J.: Delivering document conversion as a cloud service with high throughput and responsiveness. CoRR abs/2206.00785 (2022). https://doi.org/10.48550/arXiv.2206.00785 , https://doi.org/10.48550/arXiv.2206.00785",
+      "text": "Auer, C., Dolfi, M., Carvalho, A., Ramis, C.B., Staar, P.W.J.: Delivering document conversion as a cloud service with high throughput and responsiveness. CoRR abs/2206.00785 (2022). https://doi.org/10.48550/arXiv.2206.00785 , https://doi.org/10.48550/arXiv.2206.00785",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/457",
       "parent": {
-        "cref": "#/groups/4"
+        "cref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -13832,16 +13846,16 @@
         }
       ],
       "orig": "2. Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Forn\u00e9s, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545561. Springer International Publishing, Cham (2022)",
-      "text": "2. Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Forn\u00e9s, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545561. Springer International Publishing, Cham (2022)",
+      "text": "Chen, B., Peng, D., Zhang, J., Ren, Y., Jin, L.: Complex table structure recognition in the wild using transformer and identity matrix-based augmentation. In: Porwal, U., Forn\u00e9s, A., Shafait, F. (eds.) Frontiers in Handwriting Recognition. pp. 545561. Springer International Publishing, Cham (2022)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "2."
     },
     {
       "self_ref": "#/texts/458",
       "parent": {
-        "cref": "#/groups/4"
+        "cref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -13863,16 +13877,16 @@
         }
       ],
       "orig": "3. Chi, Z., Huang, H., Xu, H.D., Yu, H., Yin, W., Mao, X.L.: Complicated table structure recognition. arXiv preprint arXiv:1908.04729 (2019)",
-      "text": "3. Chi, Z., Huang, H., Xu, H.D., Yu, H., Yin, W., Mao, X.L.: Complicated table structure recognition. arXiv preprint arXiv:1908.04729 (2019)",
+      "text": "Chi, Z., Huang, H., Xu, H.D., Yu, H., Yin, W., Mao, X.L.: Complicated table structure recognition. arXiv preprint arXiv:1908.04729 (2019)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "3."
     },
     {
       "self_ref": "#/texts/459",
       "parent": {
-        "cref": "#/groups/4"
+        "cref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -13894,11 +13908,11 @@
         }
       ],
       "orig": "4. Deng, Y., Rosenberg, D., Mann, G.: Challenges in end-to-end neural scientific table recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 894-901. IEEE (2019)",
-      "text": "4. Deng, Y., Rosenberg, D., Mann, G.: Challenges in end-to-end neural scientific table recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 894-901. IEEE (2019)",
+      "text": "Deng, Y., Rosenberg, D., Mann, G.: Challenges in end-to-end neural scientific table recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 894-901. IEEE (2019)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "4."
     },
     {
       "self_ref": "#/texts/460",
@@ -13961,7 +13975,7 @@
     {
       "self_ref": "#/texts/462",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -13983,16 +13997,16 @@
         }
       ],
       "orig": "5. Kayal, P., Anand, M., Desai, H., Singh, M.: Tables to latex: structure and content extraction from scientific tables. International Journal on Document Analysis and Recognition (IJDAR) pp. 1-10 (2022)",
-      "text": "5. Kayal, P., Anand, M., Desai, H., Singh, M.: Tables to latex: structure and content extraction from scientific tables. International Journal on Document Analysis and Recognition (IJDAR) pp. 1-10 (2022)",
+      "text": "Kayal, P., Anand, M., Desai, H., Singh, M.: Tables to latex: structure and content extraction from scientific tables. International Journal on Document Analysis and Recognition (IJDAR) pp. 1-10 (2022)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "5."
     },
     {
       "self_ref": "#/texts/463",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14014,16 +14028,16 @@
         }
       ],
       "orig": "6. Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 18681873. IEEE (2022)",
-      "text": "6. Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 18681873. IEEE (2022)",
+      "text": "Lee, E., Kwon, J., Yang, H., Park, J., Lee, S., Koo, H.I., Cho, N.I.: Table structure recognition based on grid shape graph. In: 2022 Asia-Pacific Signal and Information Processing Association Annual Summit and Conference (APSIPA ASC). pp. 18681873. IEEE (2022)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "6."
     },
     {
       "self_ref": "#/texts/464",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14045,16 +14059,16 @@
         }
       ],
       "orig": "7. Li, M., Cui, L., Huang, S., Wei, F., Zhou, M., Li, Z.: Tablebank: A benchmark dataset for table detection and recognition (2019)",
-      "text": "7. Li, M., Cui, L., Huang, S., Wei, F., Zhou, M., Li, Z.: Tablebank: A benchmark dataset for table detection and recognition (2019)",
+      "text": "Li, M., Cui, L., Huang, S., Wei, F., Zhou, M., Li, Z.: Tablebank: A benchmark dataset for table detection and recognition (2019)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "7."
     },
     {
       "self_ref": "#/texts/465",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14076,16 +14090,16 @@
         }
       ],
       "orig": "8. Livathinos, N., Berrospi, C., Lysak, M., Kuropiatnyk, V., Nassar, A., Carvalho, A., Dolfi, M., Auer, C., Dinkla, K., Staar, P.: Robust pdf document conversion using recurrent neural networks. Proceedings of the AAAI Conference on Artificial Intelligence 35 (17), 15137-15145 (May 2021), https://ojs.aaai.org/index.php/ AAAI/article/view/17777",
-      "text": "8. Livathinos, N., Berrospi, C., Lysak, M., Kuropiatnyk, V., Nassar, A., Carvalho, A., Dolfi, M., Auer, C., Dinkla, K., Staar, P.: Robust pdf document conversion using recurrent neural networks. Proceedings of the AAAI Conference on Artificial Intelligence 35 (17), 15137-15145 (May 2021), https://ojs.aaai.org/index.php/ AAAI/article/view/17777",
+      "text": "Livathinos, N., Berrospi, C., Lysak, M., Kuropiatnyk, V., Nassar, A., Carvalho, A., Dolfi, M., Auer, C., Dinkla, K., Staar, P.: Robust pdf document conversion using recurrent neural networks. Proceedings of the AAAI Conference on Artificial Intelligence 35 (17), 15137-15145 (May 2021), https://ojs.aaai.org/index.php/ AAAI/article/view/17777",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "8."
     },
     {
       "self_ref": "#/texts/466",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14107,16 +14121,16 @@
         }
       ],
       "orig": "9. Nassar, A., Livathinos, N., Lysak, M., Staar, P.: Tableformer: Table structure understanding with transformers. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4614-4623 (June 2022)",
-      "text": "9. Nassar, A., Livathinos, N., Lysak, M., Staar, P.: Tableformer: Table structure understanding with transformers. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4614-4623 (June 2022)",
+      "text": "Nassar, A., Livathinos, N., Lysak, M., Staar, P.: Tableformer: Table structure understanding with transformers. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4614-4623 (June 2022)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "9."
     },
     {
       "self_ref": "#/texts/467",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14138,16 +14152,16 @@
         }
       ],
       "orig": "10. Pfitzmann, B., Auer, C., Dolfi, M., Nassar, A.S., Staar, P.W.J.: Doclaynet: A large human-annotated dataset for document-layout segmentation. In: Zhang, A., Rangwala, H. (eds.) KDD '22: The 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, Washington, DC, USA, August 14 - 18, 2022. pp. 3743-3751. ACM (2022). https://doi.org/10.1145/3534678.3539043 , https:// doi.org/10.1145/3534678.3539043",
-      "text": "10. Pfitzmann, B., Auer, C., Dolfi, M., Nassar, A.S., Staar, P.W.J.: Doclaynet: A large human-annotated dataset for document-layout segmentation. In: Zhang, A., Rangwala, H. (eds.) KDD '22: The 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, Washington, DC, USA, August 14 - 18, 2022. pp. 3743-3751. ACM (2022). https://doi.org/10.1145/3534678.3539043 , https:// doi.org/10.1145/3534678.3539043",
+      "text": "Pfitzmann, B., Auer, C., Dolfi, M., Nassar, A.S., Staar, P.W.J.: Doclaynet: A large human-annotated dataset for document-layout segmentation. In: Zhang, A., Rangwala, H. (eds.) KDD '22: The 28th ACM SIGKDD Conference on Knowledge Discovery and Data Mining, Washington, DC, USA, August 14 - 18, 2022. pp. 3743-3751. ACM (2022). https://doi.org/10.1145/3534678.3539043 , https:// doi.org/10.1145/3534678.3539043",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "10."
     },
     {
       "self_ref": "#/texts/468",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14169,16 +14183,16 @@
         }
       ],
       "orig": "11. Prasad, D., Gadpal, A., Kapadni, K., Visave, M., Sultanpure, K.: Cascadetabnet: An approach for end to end table detection and structure recognition from imagebased documents. In: Proceedings of the IEEE/CVF conference on computer vision and pattern recognition workshops. pp. 572-573 (2020)",
-      "text": "11. Prasad, D., Gadpal, A., Kapadni, K., Visave, M., Sultanpure, K.: Cascadetabnet: An approach for end to end table detection and structure recognition from imagebased documents. In: Proceedings of the IEEE/CVF conference on computer vision and pattern recognition workshops. pp. 572-573 (2020)",
+      "text": "Prasad, D., Gadpal, A., Kapadni, K., Visave, M., Sultanpure, K.: Cascadetabnet: An approach for end to end table detection and structure recognition from imagebased documents. In: Proceedings of the IEEE/CVF conference on computer vision and pattern recognition workshops. pp. 572-573 (2020)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "11."
     },
     {
       "self_ref": "#/texts/469",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14200,16 +14214,16 @@
         }
       ],
       "orig": "12. Schreiber, S., Agne, S., Wolf, I., Dengel, A., Ahmed, S.: Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In: 2017 14th IAPR international conference on document analysis and recognition (ICDAR). vol. 1, pp. 1162-1167. IEEE (2017)",
-      "text": "12. Schreiber, S., Agne, S., Wolf, I., Dengel, A., Ahmed, S.: Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In: 2017 14th IAPR international conference on document analysis and recognition (ICDAR). vol. 1, pp. 1162-1167. IEEE (2017)",
+      "text": "Schreiber, S., Agne, S., Wolf, I., Dengel, A., Ahmed, S.: Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In: 2017 14th IAPR international conference on document analysis and recognition (ICDAR). vol. 1, pp. 1162-1167. IEEE (2017)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "12."
     },
     {
       "self_ref": "#/texts/470",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14231,16 +14245,16 @@
         }
       ],
       "orig": "13. Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403-1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226",
-      "text": "13. Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403-1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226",
+      "text": "Siddiqui, S.A., Fateh, I.A., Rizvi, S.T.R., Dengel, A., Ahmed, S.: Deeptabstr: Deep learning based table structure recognition. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1403-1409 (2019). https:// doi.org/10.1109/ICDAR.2019.00226",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "13."
     },
     {
       "self_ref": "#/texts/471",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14262,16 +14276,16 @@
         }
       ],
       "orig": "14. Smock, B., Pesala, R., Abraham, R.: PubTables-1M: Towards comprehensive table extraction from unstructured documents. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4634-4642 (June 2022)",
-      "text": "14. Smock, B., Pesala, R., Abraham, R.: PubTables-1M: Towards comprehensive table extraction from unstructured documents. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4634-4642 (June 2022)",
+      "text": "Smock, B., Pesala, R., Abraham, R.: PubTables-1M: Towards comprehensive table extraction from unstructured documents. In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR). pp. 4634-4642 (June 2022)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "14."
     },
     {
       "self_ref": "#/texts/472",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14293,16 +14307,16 @@
         }
       ],
       "orig": "15. Staar, P.W.J., Dolfi, M., Auer, C., Bekas, C.: Corpus conversion service: A machine learning platform to ingest documents at scale. In: Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. pp. 774-782. KDD '18, Association for Computing Machinery, New York, NY, USA (2018). https://doi.org/10.1145/3219819.3219834 , https://doi.org/10. 1145/3219819.3219834",
-      "text": "15. Staar, P.W.J., Dolfi, M., Auer, C., Bekas, C.: Corpus conversion service: A machine learning platform to ingest documents at scale. In: Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. pp. 774-782. KDD '18, Association for Computing Machinery, New York, NY, USA (2018). https://doi.org/10.1145/3219819.3219834 , https://doi.org/10. 1145/3219819.3219834",
+      "text": "Staar, P.W.J., Dolfi, M., Auer, C., Bekas, C.: Corpus conversion service: A machine learning platform to ingest documents at scale. In: Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. pp. 774-782. KDD '18, Association for Computing Machinery, New York, NY, USA (2018). https://doi.org/10.1145/3219819.3219834 , https://doi.org/10. 1145/3219819.3219834",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "15."
     },
     {
       "self_ref": "#/texts/473",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14324,16 +14338,16 @@
         }
       ],
       "orig": "16. Wang, X.: Tabular Abstraction, Editing, and Formatting. Ph.D. thesis, CAN (1996), aAINN09397",
-      "text": "16. Wang, X.: Tabular Abstraction, Editing, and Formatting. Ph.D. thesis, CAN (1996), aAINN09397",
+      "text": "Wang, X.: Tabular Abstraction, Editing, and Formatting. Ph.D. thesis, CAN (1996), aAINN09397",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "16."
     },
     {
       "self_ref": "#/texts/474",
       "parent": {
-        "cref": "#/groups/5"
+        "cref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -14355,11 +14369,11 @@
         }
       ],
       "orig": "17. Xue, W., Li, Q., Tao, D.: Res2tim: Reconstruct syntactic structures from table images. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 749-755. IEEE (2019)",
-      "text": "17. Xue, W., Li, Q., Tao, D.: Res2tim: Reconstruct syntactic structures from table images. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 749-755. IEEE (2019)",
+      "text": "Xue, W., Li, Q., Tao, D.: Res2tim: Reconstruct syntactic structures from table images. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 749-755. IEEE (2019)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "17."
     },
     {
       "self_ref": "#/texts/475",
@@ -14422,7 +14436,7 @@
     {
       "self_ref": "#/texts/477",
       "parent": {
-        "cref": "#/groups/6"
+        "cref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -14444,16 +14458,16 @@
         }
       ],
       "orig": "18. Xue, W., Yu, B., Wang, W., Tao, D., Li, Q.: Tgrnet: A table graph reconstruction network for table structure recognition. In: Proceedings of the IEEE/CVF International Conference on Computer Vision. pp. 1295-1304 (2021)",
-      "text": "18. Xue, W., Yu, B., Wang, W., Tao, D., Li, Q.: Tgrnet: A table graph reconstruction network for table structure recognition. In: Proceedings of the IEEE/CVF International Conference on Computer Vision. pp. 1295-1304 (2021)",
+      "text": "Xue, W., Yu, B., Wang, W., Tao, D., Li, Q.: Tgrnet: A table graph reconstruction network for table structure recognition. In: Proceedings of the IEEE/CVF International Conference on Computer Vision. pp. 1295-1304 (2021)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "18."
     },
     {
       "self_ref": "#/texts/478",
       "parent": {
-        "cref": "#/groups/6"
+        "cref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -14475,16 +14489,16 @@
         }
       ],
       "orig": "19. Ye, J., Qi, X., He, Y., Chen, Y., Gu, D., Gao, P., Xiao, R.: Pingan-vcgroup's solution for icdar 2021 competition on scientific literature parsing task b: Table recognition to html (2021). https://doi.org/10.48550/ARXIV.2105.01848 , https://arxiv.org/abs/2105.01848",
-      "text": "19. Ye, J., Qi, X., He, Y., Chen, Y., Gu, D., Gao, P., Xiao, R.: Pingan-vcgroup's solution for icdar 2021 competition on scientific literature parsing task b: Table recognition to html (2021). https://doi.org/10.48550/ARXIV.2105.01848 , https://arxiv.org/abs/2105.01848",
+      "text": "Ye, J., Qi, X., He, Y., Chen, Y., Gu, D., Gao, P., Xiao, R.: Pingan-vcgroup's solution for icdar 2021 competition on scientific literature parsing task b: Table recognition to html (2021). https://doi.org/10.48550/ARXIV.2105.01848 , https://arxiv.org/abs/2105.01848",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "19."
     },
     {
       "self_ref": "#/texts/479",
       "parent": {
-        "cref": "#/groups/6"
+        "cref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -14506,16 +14520,16 @@
         }
       ],
       "orig": "20. Zhang, Z., Zhang, J., Du, J., Wang, F.: Split, embed and merge: An accurate table structure recognizer. Pattern Recognition 126 , 108565 (2022)",
-      "text": "20. Zhang, Z., Zhang, J., Du, J., Wang, F.: Split, embed and merge: An accurate table structure recognizer. Pattern Recognition 126 , 108565 (2022)",
+      "text": "Zhang, Z., Zhang, J., Du, J., Wang, F.: Split, embed and merge: An accurate table structure recognizer. Pattern Recognition 126 , 108565 (2022)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "20."
     },
     {
       "self_ref": "#/texts/480",
       "parent": {
-        "cref": "#/groups/6"
+        "cref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -14537,16 +14551,16 @@
         }
       ],
       "orig": "21. Zheng, X., Burdick, D., Popa, L., Zhong, X., Wang, N.X.R.: Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. In: 2021 IEEE Winter Conference on Applications of Computer Vision (WACV). pp. 697-706 (2021). https://doi.org/10.1109/WACV48630.2021. 00074",
-      "text": "21. Zheng, X., Burdick, D., Popa, L., Zhong, X., Wang, N.X.R.: Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. In: 2021 IEEE Winter Conference on Applications of Computer Vision (WACV). pp. 697-706 (2021). https://doi.org/10.1109/WACV48630.2021. 00074",
+      "text": "Zheng, X., Burdick, D., Popa, L., Zhong, X., Wang, N.X.R.: Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. In: 2021 IEEE Winter Conference on Applications of Computer Vision (WACV). pp. 697-706 (2021). https://doi.org/10.1109/WACV48630.2021. 00074",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "21."
     },
     {
       "self_ref": "#/texts/481",
       "parent": {
-        "cref": "#/groups/6"
+        "cref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -14568,16 +14582,16 @@
         }
       ],
       "orig": "22. Zhong, X., ShafieiBavani, E., Jimeno Yepes, A.: Image-based table recognition: Data, model, and evaluation. In: Vedaldi, A., Bischof, H., Brox, T., Frahm, J.M. (eds.) Computer Vision - ECCV 2020. pp. 564-580. Springer International Publishing, Cham (2020)",
-      "text": "22. Zhong, X., ShafieiBavani, E., Jimeno Yepes, A.: Image-based table recognition: Data, model, and evaluation. In: Vedaldi, A., Bischof, H., Brox, T., Frahm, J.M. (eds.) Computer Vision - ECCV 2020. pp. 564-580. Springer International Publishing, Cham (2020)",
+      "text": "Zhong, X., ShafieiBavani, E., Jimeno Yepes, A.: Image-based table recognition: Data, model, and evaluation. In: Vedaldi, A., Bischof, H., Brox, T., Frahm, J.M. (eds.) Computer Vision - ECCV 2020. pp. 564-580. Springer International Publishing, Cham (2020)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "22."
     },
     {
       "self_ref": "#/texts/482",
       "parent": {
-        "cref": "#/groups/6"
+        "cref": "#/groups/7"
       },
       "children": [],
       "content_layer": "body",
@@ -14599,11 +14613,11 @@
         }
       ],
       "orig": "23. Zhong, X., Tang, J., Yepes, A.J.: Publaynet: largest dataset ever for document layout analysis. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1015-1022. IEEE (2019)",
-      "text": "23. Zhong, X., Tang, J., Yepes, A.J.: Publaynet: largest dataset ever for document layout analysis. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1015-1022. IEEE (2019)",
+      "text": "Zhong, X., Tang, J., Yepes, A.J.: Publaynet: largest dataset ever for document layout analysis. In: 2019 International Conference on Document Analysis and Recognition (ICDAR). pp. 1015-1022. IEEE (2019)",
       "formatting": null,
       "hyperlink": null,
       "enumerated": false,
-      "marker": "-"
+      "marker": "23."
     }
   ],
   "pictures": [
@@ -15173,7 +15187,7 @@
           "cref": "#/texts/214"
         },
         {
-          "cref": "#/texts/215"
+          "cref": "#/groups/2"
         },
         {
           "cref": "#/texts/216"
@@ -17683,7 +17697,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     },
     {
       "self_ref": "#/tables/1",
@@ -18954,7 +18969,8 @@
             }
           ]
         ]
-      }
+      },
+      "annotations": []
     }
   ],
   "key_value_items": [],

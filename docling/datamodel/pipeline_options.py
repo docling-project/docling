@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
@@ -11,8 +12,13 @@ from pydantic import (
 )
 from typing_extensions import deprecated
 
+from docling.datamodel import asr_model_specs
+
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrOptions,
+)
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -202,7 +208,7 @@ smolvlm_picture_description = PictureDescriptionVlmOptions(
 
 # GraniteVision
 granite_picture_description = PictureDescriptionVlmOptions(
-    repo_id="ibm-granite/granite-vision-3.1-2b-preview",
+    repo_id="ibm-granite/granite-vision-3.2-2b-preview",
     prompt="What is shown in this image?",
 )
 
@@ -260,6 +266,17 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
     )
 
 
+class LayoutOptions(BaseModel):
+    """Options for layout processing."""
+
+    create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
+
+
+class AsrPipelineOptions(PipelineOptions):
+    asr_options: Union[InlineAsrOptions] = asr_model_specs.WHISPER_TINY
+    artifacts_path: Optional[Union[Path, str]] = None
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Options for the PDF pipeline."""
 
@@ -279,6 +296,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     picture_description_options: PictureDescriptionBaseOptions = (
         smolvlm_picture_description
     )
+    layout_options: LayoutOptions = LayoutOptions()
 
     images_scale: float = 1.0
     generate_page_images: bool = False
@@ -297,6 +315,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     )
 
 
-class PdfPipeline(str, Enum):
+class ProcessingPipeline(str, Enum):
     STANDARD = "standard"
     VLM = "vlm"
+    ASR = "asr"

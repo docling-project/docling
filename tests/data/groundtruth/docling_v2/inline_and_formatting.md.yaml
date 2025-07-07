@@ -1,0 +1,881 @@
+body:
+  children:
+  - $ref: '#/texts/0'
+  - $ref: '#/texts/1'
+  - $ref: '#/groups/0'
+  - $ref: '#/groups/1'
+  - $ref: '#/groups/2'
+  - $ref: '#/texts/32'
+  - $ref: '#/groups/8'
+  - $ref: '#/groups/11'
+  - $ref: '#/texts/43'
+  - $ref: '#/texts/47'
+  - $ref: '#/texts/48'
+  - $ref: '#/groups/13'
+  - $ref: '#/tables/0'
+  content_layer: body
+  label: unspecified
+  name: _root_
+  self_ref: '#/body'
+form_items: []
+furniture:
+  children: []
+  content_layer: furniture
+  label: unspecified
+  name: _root_
+  self_ref: '#/furniture'
+groups:
+- children:
+  - $ref: '#/texts/2'
+  - $ref: '#/texts/3'
+  - $ref: '#/texts/4'
+  - $ref: '#/texts/5'
+  - $ref: '#/texts/6'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/0'
+- children:
+  - $ref: '#/texts/7'
+  - $ref: '#/texts/8'
+  - $ref: '#/texts/9'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/1'
+- children:
+  - $ref: '#/texts/10'
+  - $ref: '#/texts/14'
+  - $ref: '#/texts/18'
+  - $ref: '#/texts/22'
+  - $ref: '#/texts/26'
+  - $ref: '#/texts/27'
+  - $ref: '#/texts/28'
+  content_layer: body
+  label: list
+  name: list
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/2'
+- children:
+  - $ref: '#/texts/11'
+  - $ref: '#/texts/12'
+  - $ref: '#/texts/13'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/10'
+  self_ref: '#/groups/3'
+- children:
+  - $ref: '#/texts/15'
+  - $ref: '#/texts/16'
+  - $ref: '#/texts/17'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/14'
+  self_ref: '#/groups/4'
+- children:
+  - $ref: '#/texts/19'
+  - $ref: '#/texts/20'
+  - $ref: '#/texts/21'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/18'
+  self_ref: '#/groups/5'
+- children:
+  - $ref: '#/texts/23'
+  - $ref: '#/texts/24'
+  - $ref: '#/texts/25'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/22'
+  self_ref: '#/groups/6'
+- children:
+  - $ref: '#/texts/29'
+  - $ref: '#/texts/30'
+  - $ref: '#/texts/31'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/28'
+  self_ref: '#/groups/7'
+- children:
+  - $ref: '#/texts/33'
+  - $ref: '#/texts/36'
+  content_layer: body
+  label: list
+  name: list
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/8'
+- children:
+  - $ref: '#/texts/34'
+  - $ref: '#/texts/35'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/33'
+  self_ref: '#/groups/9'
+- children:
+  - $ref: '#/texts/37'
+  - $ref: '#/texts/38'
+  - $ref: '#/texts/39'
+  - $ref: '#/texts/40'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/36'
+  self_ref: '#/groups/10'
+- children:
+  - $ref: '#/texts/41'
+  - $ref: '#/texts/42'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/11'
+- children:
+  - $ref: '#/texts/44'
+  - $ref: '#/texts/45'
+  - $ref: '#/texts/46'
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/texts/43'
+  self_ref: '#/groups/12'
+- children: []
+  content_layer: body
+  label: inline
+  name: group
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/13'
+key_value_items: []
+name: inline_and_formatting
+origin:
+  binary_hash: 14550011543526094526
+  filename: inline_and_formatting.md
+  mimetype: text/markdown
+pages: {}
+pictures: []
+schema_name: DoclingDocument
+tables:
+- annotations: []
+  captions: []
+  children: []
+  content_layer: body
+  data:
+    grid:
+    - - col_span: 1
+        column_header: true
+        end_col_offset_idx: 1
+        end_row_offset_idx: 1
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 0
+        start_row_offset_idx: 0
+        text: Bold Heading
+      - col_span: 1
+        column_header: true
+        end_col_offset_idx: 2
+        end_row_offset_idx: 1
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 1
+        start_row_offset_idx: 0
+        text: Italic Heading
+    - - col_span: 1
+        column_header: false
+        end_col_offset_idx: 1
+        end_row_offset_idx: 2
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 0
+        start_row_offset_idx: 1
+        text: data a
+      - col_span: 1
+        column_header: false
+        end_col_offset_idx: 2
+        end_row_offset_idx: 2
+        row_header: false
+        row_section: false
+        row_span: 1
+        start_col_offset_idx: 1
+        start_row_offset_idx: 1
+        text: data b
+    num_cols: 2
+    num_rows: 2
+    table_cells:
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 1
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 0
+      text: Bold Heading
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 2
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 0
+      text: Italic Heading
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 1
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 1
+      text: data a
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 2
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 1
+      text: data b
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 1
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 0
+      text: Bold Heading
+    - col_span: 1
+      column_header: true
+      end_col_offset_idx: 2
+      end_row_offset_idx: 1
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 0
+      text: Italic Heading
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 1
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 0
+      start_row_offset_idx: 1
+      text: data a
+    - col_span: 1
+      column_header: false
+      end_col_offset_idx: 2
+      end_row_offset_idx: 2
+      row_header: false
+      row_section: false
+      row_span: 1
+      start_col_offset_idx: 1
+      start_row_offset_idx: 1
+      text: data b
+  footnotes: []
+  label: table
+  parent:
+    $ref: '#/body'
+  prov: []
+  references: []
+  self_ref: '#/tables/0'
+texts:
+- children: []
+  content_layer: body
+  label: title
+  orig: Contribution guideline example
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/0'
+  text: Contribution guideline example
+- children: []
+  content_layer: body
+  label: text
+  orig: This is simple.
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/1'
+  text: This is simple.
+- children: []
+  content_layer: body
+  label: text
+  orig: Foo
+  parent:
+    $ref: '#/groups/0'
+  prov: []
+  self_ref: '#/texts/2'
+  text: Foo
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: emphasis
+  parent:
+    $ref: '#/groups/0'
+  prov: []
+  self_ref: '#/texts/3'
+  text: emphasis
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: strong emphasis
+  parent:
+    $ref: '#/groups/0'
+  prov: []
+  self_ref: '#/texts/4'
+  text: strong emphasis
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: both
+  parent:
+    $ref: '#/groups/0'
+  prov: []
+  self_ref: '#/texts/5'
+  text: both
+- children: []
+  content_layer: body
+  label: text
+  orig: .
+  parent:
+    $ref: '#/groups/0'
+  prov: []
+  self_ref: '#/texts/6'
+  text: .
+- children: []
+  content_layer: body
+  label: text
+  orig: 'Create your feature branch:'
+  parent:
+    $ref: '#/groups/1'
+  prov: []
+  self_ref: '#/texts/7'
+  text: 'Create your feature branch:'
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: git checkout -b feature/AmazingFeature
+  parent:
+    $ref: '#/groups/1'
+  prov: []
+  references: []
+  self_ref: '#/texts/8'
+  text: git checkout -b feature/AmazingFeature
+- children: []
+  content_layer: body
+  label: text
+  orig: .
+  parent:
+    $ref: '#/groups/1'
+  prov: []
+  self_ref: '#/texts/9'
+  text: .
+- children:
+  - $ref: '#/groups/3'
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: ''
+  orig: ''
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/10'
+  text: ''
+- children: []
+  content_layer: body
+  label: text
+  orig: Pull the
+  parent:
+    $ref: '#/groups/3'
+  prov: []
+  self_ref: '#/texts/11'
+  text: Pull the
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  hyperlink: https://github.com/docling-project/docling
+  label: text
+  orig: repository
+  parent:
+    $ref: '#/groups/3'
+  prov: []
+  self_ref: '#/texts/12'
+  text: repository
+- children: []
+  content_layer: body
+  label: text
+  orig: .
+  parent:
+    $ref: '#/groups/3'
+  prov: []
+  self_ref: '#/texts/13'
+  text: .
+- children:
+  - $ref: '#/groups/4'
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: ''
+  orig: ''
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/14'
+  text: ''
+- children: []
+  content_layer: body
+  label: text
+  orig: Create your feature branch (
+  parent:
+    $ref: '#/groups/4'
+  prov: []
+  self_ref: '#/texts/15'
+  text: Create your feature branch (
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: git checkout -b feature/AmazingFeature
+  parent:
+    $ref: '#/groups/4'
+  prov: []
+  references: []
+  self_ref: '#/texts/16'
+  text: git checkout -b feature/AmazingFeature
+- children: []
+  content_layer: body
+  label: text
+  orig: )
+  parent:
+    $ref: '#/groups/4'
+  prov: []
+  self_ref: '#/texts/17'
+  text: )
+- children:
+  - $ref: '#/groups/5'
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: ''
+  orig: ''
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/18'
+  text: ''
+- children: []
+  content_layer: body
+  label: text
+  orig: Commit your changes (
+  parent:
+    $ref: '#/groups/5'
+  prov: []
+  self_ref: '#/texts/19'
+  text: Commit your changes (
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: git commit -m 'Add some AmazingFeature'
+  parent:
+    $ref: '#/groups/5'
+  prov: []
+  references: []
+  self_ref: '#/texts/20'
+  text: git commit -m 'Add some AmazingFeature'
+- children: []
+  content_layer: body
+  label: text
+  orig: )
+  parent:
+    $ref: '#/groups/5'
+  prov: []
+  self_ref: '#/texts/21'
+  text: )
+- children:
+  - $ref: '#/groups/6'
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: ''
+  orig: ''
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/22'
+  text: ''
+- children: []
+  content_layer: body
+  label: text
+  orig: Push to the branch (
+  parent:
+    $ref: '#/groups/6'
+  prov: []
+  self_ref: '#/texts/23'
+  text: Push to the branch (
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: git push origin feature/AmazingFeature
+  parent:
+    $ref: '#/groups/6'
+  prov: []
+  references: []
+  self_ref: '#/texts/24'
+  text: git push origin feature/AmazingFeature
+- children: []
+  content_layer: body
+  label: text
+  orig: )
+  parent:
+    $ref: '#/groups/6'
+  prov: []
+  self_ref: '#/texts/25'
+  text: )
+- children: []
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: ''
+  orig: Open a Pull Request
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/26'
+  text: Open a Pull Request
+- children: []
+  content_layer: body
+  enumerated: true
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: list_item
+  marker: ''
+  orig: Whole list item has same formatting
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/27'
+  text: Whole list item has same formatting
+- children:
+  - $ref: '#/groups/7'
+  content_layer: body
+  enumerated: true
+  label: list_item
+  marker: ''
+  orig: ''
+  parent:
+    $ref: '#/groups/2'
+  prov: []
+  self_ref: '#/texts/28'
+  text: ''
+- children: []
+  content_layer: body
+  label: text
+  orig: List item has
+  parent:
+    $ref: '#/groups/7'
+  prov: []
+  self_ref: '#/texts/29'
+  text: List item has
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: mixed or partial
+  parent:
+    $ref: '#/groups/7'
+  prov: []
+  self_ref: '#/texts/30'
+  text: mixed or partial
+- children: []
+  content_layer: body
+  label: text
+  orig: formatting
+  parent:
+    $ref: '#/groups/7'
+  prov: []
+  self_ref: '#/texts/31'
+  text: formatting
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: title
+  orig: Whole heading is italic
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/32'
+  text: Whole heading is italic
+- children:
+  - $ref: '#/groups/9'
+  content_layer: body
+  enumerated: false
+  label: list_item
+  marker: ''
+  orig: ''
+  parent:
+    $ref: '#/groups/8'
+  prov: []
+  self_ref: '#/texts/33'
+  text: ''
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: First
+  parent:
+    $ref: '#/groups/9'
+  prov: []
+  self_ref: '#/texts/34'
+  text: First
+- children: []
+  content_layer: body
+  label: text
+  orig: ': Lorem ipsum.'
+  parent:
+    $ref: '#/groups/9'
+  prov: []
+  self_ref: '#/texts/35'
+  text: ': Lorem ipsum.'
+- children:
+  - $ref: '#/groups/10'
+  content_layer: body
+  enumerated: false
+  label: list_item
+  marker: ''
+  orig: ''
+  parent:
+    $ref: '#/groups/8'
+  prov: []
+  self_ref: '#/texts/36'
+  text: ''
+- children: []
+  content_layer: body
+  formatting:
+    bold: true
+    italic: false
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: Second
+  parent:
+    $ref: '#/groups/10'
+  prov: []
+  self_ref: '#/texts/37'
+  text: Second
+- children: []
+  content_layer: body
+  label: text
+  orig: ': Dolor'
+  parent:
+    $ref: '#/groups/10'
+  prov: []
+  self_ref: '#/texts/38'
+  text: ': Dolor'
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: sit
+  parent:
+    $ref: '#/groups/10'
+  prov: []
+  references: []
+  self_ref: '#/texts/39'
+  text: sit
+- children: []
+  content_layer: body
+  label: text
+  orig: amet.
+  parent:
+    $ref: '#/groups/10'
+  prov: []
+  self_ref: '#/texts/40'
+  text: amet.
+- children: []
+  content_layer: body
+  label: text
+  orig: Some
+  parent:
+    $ref: '#/groups/11'
+  prov: []
+  self_ref: '#/texts/41'
+  text: Some
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: code
+  orig: formatted_code
+  parent:
+    $ref: '#/groups/11'
+  prov: []
+  references: []
+  self_ref: '#/texts/42'
+  text: formatted_code
+- children:
+  - $ref: '#/groups/12'
+  content_layer: body
+  label: section_header
+  level: 1
+  orig: ''
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/43'
+  text: ''
+- children: []
+  content_layer: body
+  formatting:
+    bold: false
+    italic: true
+    script: baseline
+    strikethrough: false
+    underline: false
+  label: text
+  orig: Partially formatted
+  parent:
+    $ref: '#/groups/12'
+  prov: []
+  self_ref: '#/texts/44'
+  text: Partially formatted
+- children: []
+  content_layer: body
+  label: text
+  orig: heading to_escape
+  parent:
+    $ref: '#/groups/12'
+  prov: []
+  self_ref: '#/texts/45'
+  text: heading to_escape
+- captions: []
+  children: []
+  code_language: unknown
+  content_layer: body
+  footnotes: []
+  label: code
+  orig: not_to_escape
+  parent:
+    $ref: '#/groups/12'
+  prov: []
+  references: []
+  self_ref: '#/texts/46'
+  text: not_to_escape
+- children: []
+  content_layer: body
+  hyperlink: https://en.wikipedia.org/wiki/Albert_Einstein
+  label: text
+  orig: $$E=mc^2$$
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/47'
+  text: $$E=mc^2$$
+- children: []
+  content_layer: body
+  label: section_header
+  level: 1
+  orig: Table Heading
+  parent:
+    $ref: '#/body'
+  prov: []
+  self_ref: '#/texts/48'
+  text: Table Heading
+version: 1.5.0

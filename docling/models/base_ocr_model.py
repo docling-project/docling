@@ -3,14 +3,13 @@ import logging
 from abc import abstractmethod
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import TYPE_CHECKING, List, Optional, Type
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import TextCell
 from PIL import Image, ImageDraw
 from rtree import index
-from scipy.ndimage import binary_dilation, find_objects, label
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page
@@ -31,11 +30,16 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         options: OcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
+        # Make sure any delay/error from import occurs on ocr model init and not first use
+        from scipy.ndimage import binary_dilation, find_objects, label
+
         self.enabled = enabled
         self.options = options
 
     # Computes the optimum amount and coordinates of rectangles to OCR on a given page
     def get_ocr_rects(self, page: Page) -> List[BoundingBox]:
+        from scipy.ndimage import binary_dilation, find_objects, label
+
         BITMAP_COVERAGE_TRESHOLD = 0.75
         assert page.size is not None
 

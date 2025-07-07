@@ -302,7 +302,7 @@ item-0 at level 0: unspecified: group _root_
         item-288 at level 4: list_item: Rubber duck
     item-289 at level 2: section_header: Notes
       item-290 at level 3: section_header: Citations
-        item-291 at level 4: ordered_list: group ordered list
+        item-291 at level 4: list: group ordered list
           item-292 at level 5: list_item: ^ "Duckling". The American Herit ... n Company. 2006. Retrieved 2015-05-22.
           item-293 at level 5: list_item: ^ "Duckling". Kernerman English  ...  Ltd. 2000–2006. Retrieved 2015-05-22.
           item-294 at level 5: list_item: ^ Dohner, Janet Vorwald (2001).  ... University Press. ISBN 978-0300138139.

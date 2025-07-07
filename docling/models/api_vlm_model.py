@@ -29,12 +29,9 @@ class ApiVlmModel(BasePageModel):
 
             self.timeout = self.vlm_options.timeout
             self.concurrency = self.vlm_options.concurrency
-            self.prompt_content = (
-                f"This is a page from a document.\n{self.vlm_options.prompt}"
-            )
             self.params = {
                 **self.vlm_options.params,
-                "temperature": 0,
+                "temperature": self.vlm_options.temperature,
             }
 
     def __call__(
@@ -48,15 +45,22 @@ class ApiVlmModel(BasePageModel):
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
+                    hi_res_image = page.get_image(
+                        scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
+                    )
                     assert hi_res_image is not None
                     if hi_res_image:
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
+                    if callable(self.vlm_options.prompt):
+                        prompt = self.vlm_options.prompt(page.parsed_page)
+                    else:
+                        prompt = self.vlm_options.prompt
+
                     page_tags = api_image_request(
                         image=hi_res_image,
-                        prompt=self.prompt_content,
+                        prompt=prompt,
                         url=self.vlm_options.url,
                         timeout=self.timeout,
                         headers=self.vlm_options.headers,
