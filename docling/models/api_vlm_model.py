@@ -67,6 +67,8 @@ class ApiVlmModel(BasePageModel):
                         **self.params,
                     )
 
+                    if self.vlm_options.decode_response:
+                        page_tags = self.vlm_options.decode_response(page_tags)
                     page.predictions.vlm_response = VlmPrediction(text=page_tags)
 
                 return page

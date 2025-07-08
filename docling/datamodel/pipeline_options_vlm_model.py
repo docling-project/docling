@@ -14,6 +14,7 @@ class BaseVlmOptions(BaseModel):
     scale: float = 2.0
     max_size: Optional[int] = None
     temperature: float = 0.0
+    decode_response: Optional[Callable[[str], str]] = None
 
 
 class ResponseFormat(str, Enum):
