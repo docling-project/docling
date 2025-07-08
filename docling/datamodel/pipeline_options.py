@@ -17,13 +17,13 @@ from docling.datamodel import asr_model_specs
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.layout_model_specs import (
+    DOCLING_LAYOUT_EGRET_LARGE,
+    DOCLING_LAYOUT_EGRET_MEDIUM,
+    DOCLING_LAYOUT_EGRET_XLARGE,
+    DOCLING_LAYOUT_HERON,
+    DOCLING_LAYOUT_HERON_101,
+    DOCLING_LAYOUT_V2,
     LayoutModelConfig,
-    docling_layout_egret_large,
-    docling_layout_egret_medium,
-    docling_layout_egret_xlarge,
-    docling_layout_heron,
-    docling_layout_heron_101,
-    docling_layout_v2,
 )
 from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrOptions,
@@ -279,7 +279,7 @@ class LayoutOptions(BaseModel):
     """Options for layout processing."""
 
     create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
-    model_spec: LayoutModelConfig = docling_layout_v2
+    model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 
 class AsrPipelineOptions(PipelineOptions):

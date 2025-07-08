@@ -29,42 +29,42 @@ class LayoutModelConfig(BaseModel):
 # HuggingFace Layout Models
 
 # Default Docling Layout Model
-docling_layout_v2 = LayoutModelConfig(
+DOCLING_LAYOUT_V2 = LayoutModelConfig(
     name="docling_layout_v2",
     repo_id="ds4sd/docling-layout-old",
     revision="main",
     model_path="",
 )
 
-docling_layout_heron = LayoutModelConfig(
+DOCLING_LAYOUT_HERON = LayoutModelConfig(
     name="docling_layout_heron",
     repo_id="ds4sd/docling-layout-heron",
     revision="main",
     model_path="",
 )
 
-docling_layout_heron_101 = LayoutModelConfig(
+DOCLING_LAYOUT_HERON_101 = LayoutModelConfig(
     name="docling_layout_heron_101",
     repo_id="ds4sd/docling-layout-heron-101",
     revision="main",
     model_path="",
 )
 
-docling_layout_egret_medium = LayoutModelConfig(
+DOCLING_LAYOUT_EGRET_MEDIUM = LayoutModelConfig(
     name="docling_layout_egret_medium",
     repo_id="ds4sd/docling-layout-egret-medium",
     revision="main",
     model_path="",
 )
 
-docling_layout_egret_large = LayoutModelConfig(
+DOCLING_LAYOUT_EGRET_LARGE = LayoutModelConfig(
     name="docling_layout_egret_large",
     repo_id="ds4sd/docling-layout-egret-large",
     revision="main",
     model_path="",
 )
 
-docling_layout_egret_xlarge = LayoutModelConfig(
+DOCLING_LAYOUT_EGRET_XLARGE = LayoutModelConfig(
     name="docling_layout_egret_xlarge",
     repo_id="ds4sd/docling-layout-egret-xlarge",
     revision="main",

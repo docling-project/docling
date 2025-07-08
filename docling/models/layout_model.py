@@ -12,7 +12,7 @@ from PIL import Image
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.layout_model_specs import LayoutModelConfig, docling_layout_v2
+from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
 from docling.datamodel.pipeline_options import LayoutOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
@@ -91,7 +91,7 @@ class LayoutModel(BasePageModel):
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
-        layout_model_config: LayoutModelConfig = docling_layout_v2,
+        layout_model_config: LayoutModelConfig = DOCLING_LAYOUT_V2,
     ) -> Path:
         return download_hf_model(
             repo_id=layout_model_config.repo_id,
