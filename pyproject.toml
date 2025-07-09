@@ -100,7 +100,7 @@ rapidocr = [
   # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
 ]
 asr = [
-    "openai-whisper>=20240930",
+    "openai-whisper>=20250625",
 ]
 
 [dependency-groups]
@@ -149,8 +149,6 @@ package = true
 default-groups = "all"
 
 [tool.uv.sources]
-openai-whisper = { git = "https://github.com/openai/whisper.git", rev = "dd985ac4b90cafeef8712f2998d62c59c3e62d22" }
-docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models", rev = "nli/auto_layout_predictor" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]
