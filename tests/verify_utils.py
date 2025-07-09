@@ -24,8 +24,8 @@ from pydantic.json import pydantic_encoder
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 
-COORD_PREC = 1  # decimal places for coordinates
-CONFID_PREC = 2  # decimal places for confidence
+COORD_PREC = 2  # decimal places for coordinates
+CONFID_PREC = 3  # decimal places for confidence
 
 
 def levenshtein(str1: str, str2: str) -> int:

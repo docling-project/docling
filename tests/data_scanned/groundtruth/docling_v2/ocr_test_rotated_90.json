@@ -43,9 +43,9 @@
           "page_no": 1,
           "bbox": {
             "l": 77.1,
-            "t": 506.1,
-            "r": 126.1,
-            "b": 71.9,
+            "t": 506.07,
+            "r": 126.08,
+            "b": 71.88,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -69,10 +69,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 131.2,
-            "t": 154.2,
+            "l": 131.21,
+            "t": 154.19,
             "r": 152.2,
-            "b": 74.1,
+            "b": 74.12,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -92,7 +92,7 @@
   "pages": {
     "1": {
       "size": {
-        "width": 841.9,
+        "width": 841.92,
         "height": 595.2
       },
       "page_no": 1

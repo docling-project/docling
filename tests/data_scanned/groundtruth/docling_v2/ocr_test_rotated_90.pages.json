@@ -2,7 +2,7 @@
   {
     "page_no": 0,
     "size": {
-      "width": 841.9,
+      "width": 841.92,
       "height": 595.2
     },
     "parsed_page": {
@@ -14,43 +14,43 @@
           "r_x1": 595.2,
           "r_y1": 0.0,
           "r_x2": 595.2,
-          "r_y2": 841.9,
+          "r_y2": 841.92,
           "r_x3": 0.0,
-          "r_y3": 841.9,
+          "r_y3": 841.92,
           "coord_origin": "BOTTOMLEFT"
         },
         "boundary_type": "crop_box",
         "art_bbox": {
           "l": 0.0,
-          "t": 841.9,
+          "t": 841.92,
           "r": 595.2,
           "b": 0.0,
           "coord_origin": "BOTTOMLEFT"
         },
         "bleed_bbox": {
           "l": 0.0,
-          "t": 841.9,
+          "t": 841.92,
           "r": 595.2,
           "b": 0.0,
           "coord_origin": "BOTTOMLEFT"
         },
         "crop_bbox": {
           "l": 0.0,
-          "t": 841.9,
+          "t": 841.92,
           "r": 595.2,
           "b": 0.0,
           "coord_origin": "BOTTOMLEFT"
         },
         "media_bbox": {
           "l": 0.0,
-          "t": 841.9,
+          "t": 841.92,
           "r": 595.2,
           "b": 0.0,
           "coord_origin": "BOTTOMLEFT"
         },
         "trim_bbox": {
           "l": 0.0,
-          "t": 841.9,
+          "t": 841.92,
           "r": 595.2,
           "b": 0.0,
           "coord_origin": "BOTTOMLEFT"
@@ -70,13 +70,13 @@
           },
           "rect": {
             "r_x0": 77.1,
-            "r_y0": 520.8,
-            "r_x1": 96.7,
-            "r_y1": 520.8,
-            "r_x2": 96.7,
-            "r_y2": 89.2,
+            "r_y0": 520.76,
+            "r_x1": 96.68,
+            "r_y1": 520.76,
+            "r_x2": 96.68,
+            "r_y2": 89.24,
             "r_x3": 77.1,
-            "r_y3": 89.2,
+            "r_y3": 89.24,
             "coord_origin": "TOPLEFT"
           },
           "text": "Docling bundles PDF document conversion to",
@@ -94,14 +94,14 @@
             "a": 255
           },
           "rect": {
-            "r_x0": 100.6,
-            "r_y0": 523.3,
-            "r_x1": 126.1,
-            "r_y1": 523.3,
-            "r_x2": 126.1,
-            "r_y2": 89.1,
-            "r_x3": 100.6,
-            "r_y3": 89.1,
+            "r_x0": 100.64,
+            "r_y0": 523.32,
+            "r_x1": 126.08,
+            "r_y1": 523.32,
+            "r_x2": 126.08,
+            "r_y2": 89.13,
+            "r_x3": 100.64,
+            "r_y3": 89.13,
             "coord_origin": "TOPLEFT"
           },
           "text": "JSON and Markdown in an easy self contained",
@@ -119,14 +119,14 @@
             "a": 255
           },
           "rect": {
-            "r_x0": 131.2,
-            "r_y0": 521.1,
+            "r_x0": 131.21,
+            "r_y0": 521.08,
             "r_x1": 152.2,
-            "r_y1": 521.1,
+            "r_y1": 521.08,
             "r_x2": 152.2,
-            "r_y2": 441.0,
-            "r_x3": 131.2,
-            "r_y3": 441.0,
+            "r_y2": 441.01,
+            "r_x3": 131.21,
+            "r_y3": 441.01,
             "coord_origin": "TOPLEFT"
           },
           "text": "package",
@@ -150,12 +150,12 @@
             "label": "page_header",
             "bbox": {
               "l": 77.1,
-              "t": 89.1,
-              "r": 126.1,
-              "b": 523.3,
+              "t": 89.13,
+              "r": 126.08,
+              "b": 523.32,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.6,
+            "confidence": 0.602,
             "cells": [
               {
                 "index": 0,
@@ -167,13 +167,13 @@
                 },
                 "rect": {
                   "r_x0": 77.1,
-                  "r_y0": 520.8,
-                  "r_x1": 96.7,
-                  "r_y1": 520.8,
-                  "r_x2": 96.7,
-                  "r_y2": 89.2,
+                  "r_y0": 520.76,
+                  "r_x1": 96.68,
+                  "r_y1": 520.76,
+                  "r_x2": 96.68,
+                  "r_y2": 89.24,
                   "r_x3": 77.1,
-                  "r_y3": 89.2,
+                  "r_y3": 89.24,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "Docling bundles PDF document conversion to",
@@ -191,14 +191,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 100.6,
-                  "r_y0": 523.3,
-                  "r_x1": 126.1,
-                  "r_y1": 523.3,
-                  "r_x2": 126.1,
-                  "r_y2": 89.1,
-                  "r_x3": 100.6,
-                  "r_y3": 89.1,
+                  "r_x0": 100.64,
+                  "r_y0": 523.32,
+                  "r_x1": 126.08,
+                  "r_y1": 523.32,
+                  "r_x2": 126.08,
+                  "r_y2": 89.13,
+                  "r_x3": 100.64,
+                  "r_y3": 89.13,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "JSON and Markdown in an easy self contained",
@@ -214,13 +214,13 @@
             "id": 1,
             "label": "text",
             "bbox": {
-              "l": 131.2,
-              "t": 441.0,
+              "l": 131.21,
+              "t": 441.01,
               "r": 152.2,
-              "b": 521.1,
+              "b": 521.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.52,
+            "confidence": 0.523,
             "cells": [
               {
                 "index": 2,
@@ -231,14 +231,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 131.2,
-                  "r_y0": 521.1,
+                  "r_x0": 131.21,
+                  "r_y0": 521.08,
                   "r_x1": 152.2,
-                  "r_y1": 521.1,
+                  "r_y1": 521.08,
                   "r_x2": 152.2,
-                  "r_y2": 441.0,
-                  "r_x3": 131.2,
-                  "r_y3": 441.0,
+                  "r_y2": 441.01,
+                  "r_x3": 131.21,
+                  "r_y3": 441.01,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "package",
@@ -270,12 +270,12 @@
             "label": "page_header",
             "bbox": {
               "l": 77.1,
-              "t": 89.1,
-              "r": 126.1,
-              "b": 523.3,
+              "t": 89.13,
+              "r": 126.08,
+              "b": 523.32,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.6,
+            "confidence": 0.602,
             "cells": [
               {
                 "index": 0,
@@ -287,13 +287,13 @@
                 },
                 "rect": {
                   "r_x0": 77.1,
-                  "r_y0": 520.8,
-                  "r_x1": 96.7,
-                  "r_y1": 520.8,
-                  "r_x2": 96.7,
-                  "r_y2": 89.2,
+                  "r_y0": 520.76,
+                  "r_x1": 96.68,
+                  "r_y1": 520.76,
+                  "r_x2": 96.68,
+                  "r_y2": 89.24,
                   "r_x3": 77.1,
-                  "r_y3": 89.2,
+                  "r_y3": 89.24,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "Docling bundles PDF document conversion to",
@@ -311,14 +311,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 100.6,
-                  "r_y0": 523.3,
-                  "r_x1": 126.1,
-                  "r_y1": 523.3,
-                  "r_x2": 126.1,
-                  "r_y2": 89.1,
-                  "r_x3": 100.6,
-                  "r_y3": 89.1,
+                  "r_x0": 100.64,
+                  "r_y0": 523.32,
+                  "r_x1": 126.08,
+                  "r_y1": 523.32,
+                  "r_x2": 126.08,
+                  "r_y2": 89.13,
+                  "r_x3": 100.64,
+                  "r_y3": 89.13,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "JSON and Markdown in an easy self contained",
@@ -340,13 +340,13 @@
             "id": 1,
             "label": "text",
             "bbox": {
-              "l": 131.2,
-              "t": 441.0,
+              "l": 131.21,
+              "t": 441.01,
               "r": 152.2,
-              "b": 521.1,
+              "b": 521.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.52,
+            "confidence": 0.523,
             "cells": [
               {
                 "index": 2,
@@ -357,14 +357,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 131.2,
-                  "r_y0": 521.1,
+                  "r_x0": 131.21,
+                  "r_y0": 521.08,
                   "r_x1": 152.2,
-                  "r_y1": 521.1,
+                  "r_y1": 521.08,
                   "r_x2": 152.2,
-                  "r_y2": 441.0,
-                  "r_x3": 131.2,
-                  "r_y3": 441.0,
+                  "r_y2": 441.01,
+                  "r_x3": 131.21,
+                  "r_y3": 441.01,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "package",
@@ -388,13 +388,13 @@
             "id": 1,
             "label": "text",
             "bbox": {
-              "l": 131.2,
-              "t": 441.0,
+              "l": 131.21,
+              "t": 441.01,
               "r": 152.2,
-              "b": 521.1,
+              "b": 521.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.52,
+            "confidence": 0.523,
             "cells": [
               {
                 "index": 2,
@@ -405,14 +405,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 131.2,
-                  "r_y0": 521.1,
+                  "r_x0": 131.21,
+                  "r_y0": 521.08,
                   "r_x1": 152.2,
-                  "r_y1": 521.1,
+                  "r_y1": 521.08,
                   "r_x2": 152.2,
-                  "r_y2": 441.0,
-                  "r_x3": 131.2,
-                  "r_y3": 441.0,
+                  "r_y2": 441.01,
+                  "r_x3": 131.21,
+                  "r_y3": 441.01,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "package",
@@ -437,12 +437,12 @@
             "label": "page_header",
             "bbox": {
               "l": 77.1,
-              "t": 89.1,
-              "r": 126.1,
-              "b": 523.3,
+              "t": 89.13,
+              "r": 126.08,
+              "b": 523.32,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.6,
+            "confidence": 0.602,
             "cells": [
               {
                 "index": 0,
@@ -454,13 +454,13 @@
                 },
                 "rect": {
                   "r_x0": 77.1,
-                  "r_y0": 520.8,
-                  "r_x1": 96.7,
-                  "r_y1": 520.8,
-                  "r_x2": 96.7,
-                  "r_y2": 89.2,
+                  "r_y0": 520.76,
+                  "r_x1": 96.68,
+                  "r_y1": 520.76,
+                  "r_x2": 96.68,
+                  "r_y2": 89.24,
                   "r_x3": 77.1,
-                  "r_y3": 89.2,
+                  "r_y3": 89.24,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "Docling bundles PDF document conversion to",
@@ -478,14 +478,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 100.6,
-                  "r_y0": 523.3,
-                  "r_x1": 126.1,
-                  "r_y1": 523.3,
-                  "r_x2": 126.1,
-                  "r_y2": 89.1,
-                  "r_x3": 100.6,
-                  "r_y3": 89.1,
+                  "r_x0": 100.64,
+                  "r_y0": 523.32,
+                  "r_x1": 126.08,
+                  "r_y1": 523.32,
+                  "r_x2": 126.08,
+                  "r_y2": 89.13,
+                  "r_x3": 100.64,
+                  "r_y3": 89.13,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "JSON and Markdown in an easy self contained",
