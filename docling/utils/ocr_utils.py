@@ -41,7 +41,7 @@ def tesseract_box_to_bounding_rectangle(
     im_size: Tuple[int, int],
 ) -> BoundingRectangle:
     # box is in the top, left, height, width format, top left coordinates
-    rect = rotate_bounding_box(bbox, angle=-orientation, im_size=im_size)
+    rect = rotate_bounding_box(bbox, angle=orientation, im_size=im_size)
     rect = BoundingRectangle(
         r_x0=rect.r_x0 / scale,
         r_y0=rect.r_y0 / scale,
