@@ -1,2 +1,2 @@
-<doctag><otsl><loc_197><loc_61><loc_437><loc_333><fcel>and last row 2<fcel>and row 1<fcel>this is row 0<ecel><nl><fcel>nothing<ecel><fcel>some cells<fcel>Column 0<nl><ecel><fcel>other<fcel>have content<fcel>Column 1<nl><fcel>inside<fcel>have<fcel>and<fcel>Column 2<nl></otsl>
+<doctag><otsl><loc_227><loc_44><loc_428><loc_348><fcel>Yet another value<fcel>Some other value<fcel>value<nl></otsl>
 </doctag>

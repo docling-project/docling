@@ -1,2 +1,2 @@
-<doctag><otsl><loc_167><loc_196><loc_439><loc_436><ched>inside<ecel><ched>nothing<ched>and last row 2<nl><fcel>have<fcel>other<ecel><fcel>and row 1<nl><fcel>and<fcel>have content<fcel>some cells<fcel>this is row 0<nl><fcel>Column 2<fcel>Column 1<fcel>Column 0<ecel><nl></otsl>
+<doctag><otsl><loc_152><loc_227><loc_456><loc_428><ched>Vertically merged<ched>Other merged column<ched>Yet another column<nl><fcel>value<fcel>Some other value<fcel>Yet another value<nl><fcel>value<fcel>Some other value<fcel>Yet another value<nl></otsl>
 </doctag>
