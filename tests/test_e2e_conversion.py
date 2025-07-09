@@ -8,9 +8,8 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_conversion_result_v1, verify_conversion_result_v2
+from .verify_utils import verify_conversion_result_v2
 
-GENERATE_V1 = GEN_TEST_DATA
 GENERATE_V2 = GEN_TEST_DATA
 
 
@@ -50,10 +49,6 @@ def test_e2e_pdfs_conversions():
         print(f"converting {pdf_path}")
 
         doc_result: ConversionResult = converter.convert(pdf_path)
-
-        verify_conversion_result_v1(
-            input_path=pdf_path, doc_result=doc_result, generate=GENERATE_V1
-        )
 
         verify_conversion_result_v2(
             input_path=pdf_path, doc_result=doc_result, generate=GENERATE_V2

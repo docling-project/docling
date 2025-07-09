@@ -5,12 +5,10 @@
   "origin": {
     "mimetype": "application/pdf",
     "binary_hash": 6445357065749877499,
-    "filename": "picture_classification.pdf",
-    "uri": null
+    "filename": "picture_classification.pdf"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
     "name": "_root_",
@@ -18,34 +16,33 @@
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
+        "$ref": "#/texts/0"
       },
       {
-        "cref": "#/texts/1"
+        "$ref": "#/texts/1"
       },
       {
-        "cref": "#/pictures/0"
+        "$ref": "#/pictures/0"
       },
       {
-        "cref": "#/texts/3"
+        "$ref": "#/texts/3"
       },
       {
-        "cref": "#/texts/4"
+        "$ref": "#/texts/4"
       },
       {
-        "cref": "#/texts/5"
+        "$ref": "#/texts/5"
       },
       {
-        "cref": "#/pictures/1"
+        "$ref": "#/pictures/1"
       },
       {
-        "cref": "#/texts/7"
+        "$ref": "#/texts/7"
       },
       {
-        "cref": "#/texts/8"
+        "$ref": "#/texts/8"
       }
     ],
     "content_layer": "body",
@@ -57,7 +54,7 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -66,10 +63,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 133.76801,
-            "t": 667.19122,
-            "r": 252.35513,
-            "b": 654.45184,
+            "l": 133.77,
+            "t": 667.19,
+            "r": 252.36,
+            "b": 654.45,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -80,14 +77,12 @@
       ],
       "orig": "Figures Example",
       "text": "Figures Example",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -96,10 +91,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 133.76801,
-            "t": 642.32806,
-            "r": 477.48276,
-            "b": 501.97412,
+            "l": 133.77,
+            "t": 642.33,
+            "r": 477.48,
+            "b": 501.97,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -109,14 +104,12 @@
         }
       ],
       "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "cref": "#/pictures/0"
+        "$ref": "#/pictures/0"
       },
       "children": [],
       "content_layer": "body",
@@ -125,10 +118,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 226.89101,
-            "t": 262.86505,
-            "r": 384.3548,
-            "b": 254.01826000000005,
+            "l": 226.89,
+            "t": 262.87,
+            "r": 384.35,
+            "b": 254.02,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -138,14 +131,12 @@
         }
       ],
       "orig": "Figure 1: This is an example image.",
-      "text": "Figure 1: This is an example image.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Figure 1: This is an example image."
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -154,10 +145,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 133.76801,
-            "t": 238.95505000000003,
-            "r": 477.48172000000005,
-            "b": 122.51225,
+            "l": 133.77,
+            "t": 238.96,
+            "r": 477.48,
+            "b": 122.51,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -167,14 +158,12 @@
         }
       ],
       "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.",
-      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "furniture",
@@ -183,10 +172,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 303.133,
-            "t": 96.27903700000002,
-            "r": 308.11429,
-            "b": 87.43224299999997,
+            "l": 303.13,
+            "t": 96.28,
+            "r": 308.11,
+            "b": 87.43,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -196,14 +185,12 @@
         }
       ],
       "orig": "1",
-      "text": "1",
-      "formatting": null,
-      "hyperlink": null
+      "text": "1"
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -212,10 +199,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 133.76801,
-            "t": 664.1490499999999,
-            "r": 477.48172000000005,
-            "b": 523.7951,
+            "l": 133.77,
+            "t": 664.15,
+            "r": 477.48,
+            "b": 523.8,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -225,14 +212,12 @@
         }
       ],
       "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
     },
     {
       "self_ref": "#/texts/6",
       "parent": {
-        "cref": "#/pictures/1"
+        "$ref": "#/pictures/1"
       },
       "children": [],
       "content_layer": "body",
@@ -241,10 +226,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 226.89101,
-            "t": 268.78903,
-            "r": 384.3548,
-            "b": 259.94226000000003,
+            "l": 226.89,
+            "t": 268.79,
+            "r": 384.35,
+            "b": 259.94,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -254,14 +239,12 @@
         }
       ],
       "orig": "Figure 2: This is an example image.",
-      "text": "Figure 2: This is an example image.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Figure 2: This is an example image."
     },
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -270,10 +253,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 133.76801,
-            "t": 245.71804999999995,
-            "r": 477.48172000000005,
-            "b": 117.32024000000001,
+            "l": 133.77,
+            "t": 245.72,
+            "r": 477.48,
+            "b": 117.32,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -283,14 +266,12 @@
         }
       ],
       "orig": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.",
-      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum."
     },
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "furniture",
@@ -299,10 +280,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 303.133,
-            "t": 96.27903700000002,
-            "r": 308.11429,
-            "b": 87.43224299999997,
+            "l": 303.13,
+            "t": 96.28,
+            "r": 308.11,
+            "b": 87.43,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -312,20 +293,18 @@
         }
       ],
       "orig": "2",
-      "text": "2",
-      "formatting": null,
-      "hyperlink": null
+      "text": "2"
     }
   ],
   "pictures": [
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/texts/2"
+          "$ref": "#/texts/2"
         }
       ],
       "content_layer": "body",
@@ -334,10 +313,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.9200439453125,
-            "t": 487.109375,
-            "r": 475.6635437011719,
-            "b": 281.78173828125,
+            "l": 134.92,
+            "t": 487.11,
+            "r": 475.66,
+            "b": 281.78,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -348,22 +327,21 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/2"
+          "$ref": "#/texts/2"
         }
       ],
       "references": [],
       "footnotes": [],
-      "image": null,
       "annotations": []
     },
     {
       "self_ref": "#/pictures/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/texts/6"
+          "$ref": "#/texts/6"
         }
       ],
       "content_layer": "body",
@@ -372,10 +350,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 218.8155517578125,
-            "t": 513.9846496582031,
-            "r": 391.96246337890625,
-            "b": 283.10589599609375,
+            "l": 218.82,
+            "t": 513.98,
+            "r": 391.96,
+            "b": 283.11,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -386,12 +364,11 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/6"
+          "$ref": "#/texts/6"
         }
       ],
       "references": [],
       "footnotes": [],
-      "image": null,
       "annotations": []
     }
   ],
@@ -404,7 +381,6 @@
         "width": 612.0,
         "height": 792.0
       },
-      "image": null,
       "page_no": 1
     },
     "2": {
@@ -412,7 +388,6 @@
         "width": 612.0,
         "height": 792.0
       },
-      "image": null,
       "page_no": 2
     }
   }

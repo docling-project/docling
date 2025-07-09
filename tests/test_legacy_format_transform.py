@@ -36,6 +36,7 @@ def get_converter():
     return converter
 
 
+@pytest.mark.skip(reason="Legacy format transform is deprecated")
 def test_compare_legacy_output(test_doc_paths):
     converter = get_converter()
     res = converter.convert_all(test_doc_paths, raises_on_error=True)

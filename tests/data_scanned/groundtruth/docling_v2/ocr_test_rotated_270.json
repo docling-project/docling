@@ -5,12 +5,10 @@
   "origin": {
     "mimetype": "application/pdf",
     "binary_hash": 10890858393843077593,
-    "filename": "ocr_test_rotated_270.pdf",
-    "uri": null
+    "filename": "ocr_test_rotated_270.pdf"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
     "name": "_root_",
@@ -18,13 +16,12 @@
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
+        "$ref": "#/texts/0"
       },
       {
-        "cref": "#/texts/1"
+        "$ref": "#/texts/1"
       }
     ],
     "content_layer": "body",
@@ -36,7 +33,7 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "furniture",
@@ -45,10 +42,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 717.168585936602,
-            "t": 524.2990550512769,
-            "r": 764.8982839673505,
-            "b": 90.3291657283603,
+            "l": 717.17,
+            "t": 524.3,
+            "r": 764.9,
+            "b": 90.33,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -58,14 +55,12 @@
         }
       ],
       "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -74,10 +69,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 690.2441821046808,
-            "t": 523.076601235155,
-            "r": 709.8255852011977,
-            "b": 442.39487414368364,
+            "l": 690.24,
+            "t": 523.08,
+            "r": 709.83,
+            "b": 442.39,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -87,9 +82,7 @@
         }
       ],
       "orig": "package",
-      "text": "package",
-      "formatting": null,
-      "hyperlink": null
+      "text": "package"
     }
   ],
   "pictures": [],
@@ -99,10 +92,9 @@
   "pages": {
     "1": {
       "size": {
-        "width": 841.9216918945312,
-        "height": 595.201171875
+        "width": 841.92,
+        "height": 595.2
       },
-      "image": null,
       "page_no": 1
     }
   }

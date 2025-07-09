@@ -5,12 +5,10 @@
   "origin": {
     "mimetype": "application/pdf",
     "binary_hash": 16115062463007057787,
-    "filename": "webp-test.webp",
-    "uri": null
+    "filename": "webp-test.webp"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
     "name": "_root_",
@@ -18,10 +16,9 @@
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
+        "$ref": "#/texts/0"
       }
     ],
     "content_layer": "body",
@@ -33,7 +30,7 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -42,10 +39,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 234.08627147881114,
-            "t": 2570.0959833241664,
-            "r": 1696.0985042090742,
-            "b": 2319.1220927976665,
+            "l": 234.09,
+            "t": 2570.1,
+            "r": 1696.1,
+            "b": 2319.12,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -55,9 +52,7 @@
         }
       ],
       "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],
@@ -70,7 +65,6 @@
         "width": 2000.0,
         "height": 2829.0
       },
-      "image": null,
       "page_no": 1
     }
   }

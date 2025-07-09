@@ -12,6 +12,7 @@ from docling_core.types.doc import (
     Size,
     TableCell,
 )
+from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from docling_core.types.io import (
     DocumentStream,
@@ -19,7 +20,14 @@ from docling_core.types.io import (
 
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FieldSerializationInfo,
+    computed_field,
+    field_serializer,
+)
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
@@ -142,6 +150,10 @@ class Cluster(BaseModel):
     cells: List[TextCell] = []
     children: List["Cluster"] = []  # Add child cluster support
 
+    @field_serializer("confidence")
+    def _serialize(self, value: float, info: FieldSerializationInfo) -> float:
+        return round_pydantic_float(value, info.context, PydanticSerCtxKey.CONFID_PREC)
+
 
 class BasePageElement(BaseModel):
     label: DocItemLabel
@@ -193,6 +205,16 @@ class FigureElement(BasePageElement):
     provenance: Optional[str] = None
     predicted_class: Optional[str] = None
     confidence: Optional[float] = None
+
+    @field_serializer("confidence")
+    def _serialize(
+        self, value: Optional[float], info: FieldSerializationInfo
+    ) -> Optional[float]:
+        return (
+            round_pydantic_float(value, info.context, PydanticSerCtxKey.CONFID_PREC)
+            if value is not None
+            else None
+        )
 
 
 class FigureClassificationPrediction(BaseModel):

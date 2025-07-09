@@ -905,7 +905,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
-    { name = "docling-core", extras = ["chunking"], specifier = ">=2.40.0,<3.0.0" },
+    { name = "docling-core", extras = ["chunking"], specifier = ">=2.42.0,<3.0.0" },
     { name = "docling-ibm-models", specifier = ">=3.6.0,<4" },
     { name = "docling-parse", specifier = ">=4.0.0,<5.0.0" },
     { name = "easyocr", specifier = ">=1.7,<2.0" },
@@ -980,7 +980,7 @@ examples = [
 
 [[package]]
 name = "docling-core"
-version = "2.41.0"
+version = "2.42.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonref" },
@@ -994,9 +994,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fc/d4/e2dd9212562888d251c41ac81571f206cd651eb73ca567ab99a073138311/docling_core-2.41.0.tar.gz", hash = "sha256:f0cc1da14a11de55b3d9fd8f560cf6feb5458eedde931c13db435be18fe655d8", size = 149075, upload-time = "2025-07-09T07:43:53.702Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/60/c9/f5555f8efbbbecce858e78791fbe0b9465c3c91ea917a3a3acdb1c3c9887/docling_core-2.42.0.tar.gz", hash = "sha256:cf2bb9e889920bac1d94412bd89c10e647419b6d5f7fe5e6f71ed732eb8f24f6", size = 154657, upload-time = "2025-07-09T12:27:34.858Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/27/f33849493aa9b3925e766fcaf33f0254b808960b5c77aaab807c30343ea7/docling_core-2.41.0-py3-none-any.whl", hash = "sha256:2d719279e701f339ef30e8db7d00d35f4c2fef56a0a2f35a7bd4a39733ab39cd", size = 153553, upload-time = "2025-07-09T07:43:51.668Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/e4/685bb1b38ca120fdffc1c24f1ce54229ff996e5cad50a9c9dd39b671cb83/docling_core-2.42.0-py3-none-any.whl", hash = "sha256:0774391f335217a5aec8357977e66b63b6e8c9d821c56103de54c526eab92ed6", size = 158101, upload-time = "2025-07-09T12:27:33.147Z" },
 ]
 
 [package.optional-dependencies]
