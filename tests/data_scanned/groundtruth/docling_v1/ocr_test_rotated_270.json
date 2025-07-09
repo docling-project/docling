@@ -27,13 +27,13 @@
   "file-info": {
     "filename": "ocr_test_rotated_270.pdf",
     "filename-prov": null,
-    "document-hash": "52f54e7183bdb73aa3713c7b169baca93e276963a138418c26e7d6a1ea128f14",
+    "document-hash": "6fefac7b5b41551979e0acb695ca99549a91784619c82c6095d8130179431437",
     "#-pages": 1,
     "collection-name": null,
     "description": null,
     "page-hashes": [
       {
-        "hash": "59bc9ddba89e7b008185dd16d384493beb034686e5670546786390c5d237a304",
+        "hash": "68730d83582a6ac50587fdba1a8ce6b263d682a0daf984522d4dbe9f9e3d4fbe",
         "model": "default",
         "page": 1
       }
@@ -41,39 +41,122 @@
   },
   "main-text": [
     {
+      "name": "Table",
+      "type": "table",
+      "$ref": "#/tables/0"
+    },
+    {
       "prov": [
         {
           "bbox": [
-            690.2441821046808,
-            442.39487414368364,
-            709.8255852011977,
-            523.076601235155
+            640.87671,
+            235.72681,
+            653.16504,
+            533.28552
           ],
           "page": 1,
           "span": [
             0,
-            7
+            49
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "package",
+      "text": "heteststartswithsomerandomtextandthenatableimage:",
       "type": "paragraph",
       "payload": null,
       "name": "Text",
       "font": null
+    },
+    {
+      "name": "Picture",
+      "type": "figure",
+      "$ref": "#/figures/0"
+    },
+    {
+      "prov": [
+        {
+          "bbox": [
+            690.10272,
+            194.03976,
+            719.1490499999999,
+            410.73663
+          ],
+          "page": 1,
+          "span": [
+            0,
+            20
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "This is a table test",
+      "type": "subtitle-level-1",
+      "payload": null,
+      "name": "Section-header",
+      "font": null
     }
   ],
-  "figures": [],
-  "tables": [],
+  "figures": [
+    {
+      "prov": [
+        {
+          "bbox": [
+            668.9778442382812,
+            532.5339431762695,
+            683.4164962768555,
+            541.4290084838867
+          ],
+          "page": 1,
+          "span": [
+            0,
+            0
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "",
+      "type": "figure",
+      "payload": null,
+      "bounding-box": null
+    }
+  ],
+  "tables": [
+    {
+      "prov": [
+        {
+          "bbox": [
+            460.5577697753906,
+            112.21743774414062,
+            599.0364074707031,
+            469.385986328125
+          ],
+          "page": 1,
+          "span": [
+            0,
+            0
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "",
+      "type": "table",
+      "payload": null,
+      "#-cols": 0,
+      "#-rows": 0,
+      "data": [],
+      "model": null,
+      "bounding-box": null
+    }
+  ],
   "bitmaps": null,
   "equations": [],
   "footnotes": [],
   "page-dimensions": [
     {
-      "height": 595.201171875,
+      "height": 612.0,
       "page": 1,
-      "width": 841.9216918945312
+      "width": 792.0
     }
   ],
   "page-footers": [],
