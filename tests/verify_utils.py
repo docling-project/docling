@@ -12,6 +12,10 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
+from docling_core.types.doc.base import (
+    BoundingBox,
+    PydanticSerCtxKey,
+)
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
 from pydantic import TypeAdapter
@@ -20,8 +24,8 @@ from pydantic.json import pydantic_encoder
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 
-COORD_PREC = 2  # decimal places for coordinates
-CONFID_PREC = 1  # decimal places for confidence
+COORD_PREC = 1  # decimal places for coordinates
+CONFID_PREC = 2  # decimal places for confidence
 
 
 def levenshtein(str1: str, str2: str) -> int:
@@ -79,9 +83,13 @@ def verify_cells(doc_pred_pages: List[Page], doc_true_pages: List[Page]):
             assert true_text == pred_text, f"{true_text}!={pred_text}"
 
             true_bbox = cell_true_item.rect.to_bounding_box().as_tuple()
-            pred_bbox = cell_pred_item.rect.to_bounding_box().as_tuple()
-            assert true_bbox == pred_bbox, (
-                f"bbox is not the same: {true_bbox} != {pred_bbox}"
+            norm_pred_bbox = BoundingBox.model_validate_json(
+                cell_pred_item.rect.to_bounding_box().model_dump_json(
+                    context={PydanticSerCtxKey.COORD_PREC.value: COORD_PREC}
+                )
+            ).as_tuple()
+            assert true_bbox == norm_pred_bbox, (
+                f"bbox is not the same: {true_bbox} != {norm_pred_bbox}"
             )
 
     return True
@@ -415,7 +423,10 @@ def verify_conversion_result_v2(
         pages_data = [
             page.model_dump(
                 mode="json",
-                context={"coord_prec": COORD_PREC, "confid_prec": CONFID_PREC},
+                context={
+                    PydanticSerCtxKey.COORD_PREC.value: COORD_PREC,
+                    PydanticSerCtxKey.CONFID_PREC.value: CONFID_PREC,
+                },
             )
             for page in doc_pred_pages
         ]

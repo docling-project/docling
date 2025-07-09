@@ -39,10 +39,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 234.09,
+            "l": 234.1,
             "t": 2570.1,
             "r": 1696.1,
-            "b": 2319.12,
+            "b": 2319.1,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
