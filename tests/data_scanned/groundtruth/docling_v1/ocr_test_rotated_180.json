@@ -27,13 +27,13 @@
   "file-info": {
     "filename": "ocr_test_rotated_180.pdf",
     "filename-prov": null,
-    "document-hash": "687553cff95da8e2898fa50a68986ee2a3735ba5d287615e03c0d40fd3b33758",
+    "document-hash": "361fa0fc8db9c3a973d316d08509ac78cc0e7f81dea94358319092640d439ca0",
     "#-pages": 1,
     "collection-name": null,
     "description": null,
     "page-hashes": [
       {
-        "hash": "9e7213c0aa5ff85dfdb9a5b7566dfd229a4c5b8a4e289dd68655ddb1197c3b1f",
+        "hash": "ab89ee70d4aee0b8dc5ed72ad42e16e98a8ec9c2eea1e03d99b50c25bbc5a806",
         "model": "default",
         "page": 1
       }
@@ -44,52 +44,6 @@
       "name": "Table",
       "type": "table",
       "$ref": "#/tables/0"
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            238.78076,
-            124.28821000000005,
-            540.0,
-            136.57727
-          ],
-          "page": 1,
-          "span": [
-            0,
-            71
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "ehT t se t w strats it modnar emos h t xe t dna t a neh t elba i egam :",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            194.03979,
-            72.85058600000002,
-            410.73657,
-            101.89746000000002
-          ],
-          "page": 1,
-          "span": [
-            0,
-            20
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "tset elbat a si sihT",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
     }
   ],
   "figures": [],
@@ -98,10 +52,10 @@
       "prov": [
         {
           "bbox": [
-            112.69406127929688,
-            163.70050048828125,
-            470.0718078613281,
-            302.27655029296875
+            240.90093994140625,
+            87.64955139160156,
+            722.950309753418,
+            334.58026123046875
           ],
           "page": 1,
           "span": [
@@ -119,22 +73,39 @@
       "data": [
         [
           {
-            "bbox": null,
+            "bbox": [
+              97.33333333333337,
+              105.66666666666669,
+              190.0,
+              126.33333333333337
+            ],
             "spans": [
               [
                 0,
                 0
               ]
             ],
-            "text": "",
-            "type": "body"
+            "text": "Vertically merged",
+            "type": "col_header",
+            "col": 0,
+            "col-header": true,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
           },
           {
             "bbox": [
-              303.0,
-              508.3333333333333,
-              329.0,
-              517.0
+              232.33333333333326,
+              105.66666666666669,
+              363.6666666666667,
+              126.33333333333337
             ],
             "spans": [
               [
@@ -142,7 +113,7 @@
                 1
               ]
             ],
-            "text": "other don't",
+            "text": "Other merged column",
             "type": "col_header",
             "col": 1,
             "col-header": true,
@@ -159,10 +130,10 @@
           },
           {
             "bbox": [
-              422.6666666666667,
-              508.3333333333333,
-              451.6666666666667,
-              517.0
+              406.3333333333333,
+              105.66666666666669,
+              518.0,
+              121.66666666666663
             ],
             "spans": [
               [
@@ -170,7 +141,7 @@
                 2
               ]
             ],
-            "text": "Some other row",
+            "text": "Yet another column",
             "type": "col_header",
             "col": 2,
             "col-header": true,
@@ -189,10 +160,10 @@
         [
           {
             "bbox": [
-              190.0,
-              554.6666666666666,
-              213.66666666666666,
-              563.3333333333334
+              121.66666666666663,
+              204.0,
+              168.66666666666663,
+              220.0
             ],
             "spans": [
               [
@@ -200,8 +171,8 @@
                 0
               ]
             ],
-            "text": "have content",
-            "type": "row_header",
+            "text": "value",
+            "type": "body",
             "col": 0,
             "col-header": false,
             "col-span": [
@@ -209,7 +180,7 @@
               1
             ],
             "row": 1,
-            "row-header": true,
+            "row-header": false,
             "row-span": [
               1,
               2
@@ -217,10 +188,10 @@
           },
           {
             "bbox": [
-              299.0,
-              554.6666666666666,
-              326.33333333333337,
-              561.0
+              247.0,
+              188.0,
+              349.6666666666667,
+              204.0
             ],
             "spans": [
               [
@@ -228,7 +199,7 @@
                 1
               ]
             ],
-            "text": "some cell",
+            "text": "Some other value",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -246,9 +217,9 @@
           {
             "bbox": [
               408.3333333333333,
-              554.6666666666666,
-              437.3333333333333,
-              563.3333333333334
+              188.0,
+              514.0,
+              204.0
             ],
             "spans": [
               [
@@ -256,7 +227,7 @@
                 2
               ]
             ],
-            "text": "Some row",
+            "text": "Yet another value",
             "type": "body",
             "col": 2,
             "col-header": false,
@@ -275,10 +246,10 @@
         [
           {
             "bbox": [
-              201.66666666666669,
-              601.0,
-              230.66666666666666,
-              609.6666666666666
+              121.66666666666663,
+              284.0,
+              168.66666666666663,
+              300.0
             ],
             "spans": [
               [
@@ -286,8 +257,8 @@
                 0
               ]
             ],
-            "text": "Some other column",
-            "type": "row_header",
+            "text": "value",
+            "type": "body",
             "col": 0,
             "col-header": false,
             "col-span": [
@@ -295,7 +266,7 @@
               1
             ],
             "row": 2,
-            "row-header": true,
+            "row-header": false,
             "row-span": [
               2,
               3
@@ -303,10 +274,10 @@
           },
           {
             "bbox": [
-              308.0,
-              601.0,
-              337.0,
-              609.6666666666666
+              247.0,
+              268.0,
+              349.6666666666667,
+              284.0
             ],
             "spans": [
               [
@@ -314,7 +285,7 @@
                 1
               ]
             ],
-            "text": "Some column",
+            "text": "Some other value",
             "type": "body",
             "col": 1,
             "col-header": false,
@@ -330,15 +301,32 @@
             ]
           },
           {
-            "bbox": null,
+            "bbox": [
+              408.3333333333333,
+              268.0,
+              514.0,
+              284.0
+            ],
             "spans": [
               [
                 2,
                 2
               ]
             ],
-            "text": "",
-            "type": "body"
+            "text": "Yet another value",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
           }
         ]
       ],
@@ -351,9 +339,9 @@
   "footnotes": [],
   "page-dimensions": [
     {
-      "height": 792.0,
+      "height": 612.0,
       "page": 1,
-      "width": 612.0
+      "width": 792.0
     }
   ],
   "page-footers": [],
