@@ -27,13 +27,13 @@
   "file-info": {
     "filename": "ocr_test.pdf",
     "filename-prov": null,
-    "document-hash": "4220c26a23a085eeca7ed3904ae0952e7e73458e65ce19e56170a9ce095b2313",
+    "document-hash": "0f391d12850f72bb91897f7f3bebfd4a0a8357e2a883ac1f664e32342c04e418",
     "#-pages": 1,
     "collection-name": null,
     "description": null,
     "page-hashes": [
       {
-        "hash": "07ff68c95cc6ec01fb38d02dc5d5efc466f3cfbf2e1dcb6c16b4e722d7f9f657",
+        "hash": "32f328168da3f69890a725c1168799f9ff7337249e98b1f36c12965551477be5",
         "model": "default",
         "page": 1
       }
@@ -41,223 +41,307 @@
   },
   "main-text": [
     {
-      "prov": [
-        {
-          "bbox": [
-            201.26343,
-            690.10254,
-            417.96021,
-            719.14941
-          ],
-          "page": 1,
-          "span": [
-            0,
-            20
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "This is a table test",
-      "type": "subtitle-level-1",
-      "payload": null,
-      "name": "Section-header",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            72.0,
-            655.42273,
-            376.27319,
-            667.7117899999998
-          ],
-          "page": 1,
-          "span": [
-            0,
-            61
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "The test starts with some random text and then a table image:",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            275.33333333333337,
-            601.0,
-            343.66666666666663,
-            609.6666666666666
-          ],
-          "page": 1,
-          "span": [
-            0,
-            11
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Some column",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            381.3333333333333,
-            601.0,
-            479.3333333333333,
-            609.6666666666666
-          ],
-          "page": 1,
-          "span": [
-            0,
-            17
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Some other column",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            175.0,
-            554.6666666666667,
-            225.66666666666669,
-            563.3333333333333
-          ],
-          "page": 1,
-          "span": [
-            0,
-            8
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Some row",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            286.0,
-            554.6666666666667,
-            333.0,
-            563.3333333333333
-          ],
-          "page": 1,
-          "span": [
-            0,
-            9
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "some cell",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            398.3333333333333,
-            554.6666666666667,
-            463.0,
-            563.3333333333333
-          ],
-          "page": 1,
-          "span": [
-            0,
-            12
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "have content",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            160.33333333333334,
-            508.33333333333337,
-            240.33333333333331,
-            517.0
-          ],
-          "page": 1,
-          "span": [
-            0,
-            14
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "Some other row",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
-    {
-      "prov": [
-        {
-          "bbox": [
-            283.0,
-            508.33333333333337,
-            336.33333333333337,
-            517.0
-          ],
-          "page": 1,
-          "span": [
-            0,
-            11
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "other don't",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
+      "name": "Table",
+      "type": "table",
+      "$ref": "#/tables/0"
     }
   ],
   "figures": [],
-  "tables": [],
+  "tables": [
+    {
+      "prov": [
+        {
+          "bbox": [
+            69.04969024658203,
+            277.41973876953125,
+            551.0990600585938,
+            524.3504486083984
+          ],
+          "page": 1,
+          "span": [
+            0,
+            0
+          ],
+          "__ref_s3_data": null
+        }
+      ],
+      "text": "",
+      "type": "table",
+      "payload": null,
+      "#-cols": 3,
+      "#-rows": 3,
+      "data": [
+        [
+          {
+            "bbox": [
+              97.33333333333333,
+              105.66666666666666,
+              190.0,
+              126.33333333333334
+            ],
+            "spans": [
+              [
+                0,
+                0
+              ]
+            ],
+            "text": "Vertically merged",
+            "type": "col_header",
+            "col": 0,
+            "col-header": true,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              232.66666666666666,
+              105.66666666666666,
+              364.0,
+              126.33333333333334
+            ],
+            "spans": [
+              [
+                0,
+                1
+              ]
+            ],
+            "text": "Other merged column",
+            "type": "col_header",
+            "col": 1,
+            "col-header": true,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              406.3333333333333,
+              105.66666666666666,
+              518.3333333333333,
+              121.66666666666666
+            ],
+            "spans": [
+              [
+                0,
+                2
+              ]
+            ],
+            "text": "Yet another column",
+            "type": "col_header",
+            "col": 2,
+            "col-header": true,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          }
+        ],
+        [
+          {
+            "bbox": [
+              121.66666666666667,
+              204.33333333333334,
+              168.66666666666666,
+              220.0
+            ],
+            "spans": [
+              [
+                1,
+                0
+              ]
+            ],
+            "text": "value",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          },
+          {
+            "bbox": [
+              247.0,
+              188.33333333333331,
+              349.6666666666667,
+              204.33333333333334
+            ],
+            "spans": [
+              [
+                1,
+                1
+              ]
+            ],
+            "text": "Some other value",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          },
+          {
+            "bbox": [
+              408.3333333333333,
+              188.33333333333331,
+              514.0,
+              204.33333333333334
+            ],
+            "spans": [
+              [
+                1,
+                2
+              ]
+            ],
+            "text": "Yet another value",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          }
+        ],
+        [
+          {
+            "bbox": [
+              121.66666666666667,
+              284.0,
+              168.66666666666666,
+              300.0
+            ],
+            "spans": [
+              [
+                2,
+                0
+              ]
+            ],
+            "text": "value",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          },
+          {
+            "bbox": [
+              247.0,
+              268.0,
+              349.6666666666667,
+              284.0
+            ],
+            "spans": [
+              [
+                2,
+                1
+              ]
+            ],
+            "text": "Some other value",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          },
+          {
+            "bbox": [
+              408.3333333333333,
+              268.0,
+              514.0,
+              284.0
+            ],
+            "spans": [
+              [
+                2,
+                2
+              ]
+            ],
+            "text": "Yet another value",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          }
+        ]
+      ],
+      "model": null,
+      "bounding-box": null
+    }
+  ],
   "bitmaps": null,
   "equations": [],
   "footnotes": [],
   "page-dimensions": [
     {
-      "height": 792.0,
+      "height": 612.0,
       "page": 1,
-      "width": 612.0
+      "width": 792.0
     }
   ],
   "page-footers": [],

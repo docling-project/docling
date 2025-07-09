@@ -260,7 +260,7 @@ class TableStructureModel(BasePageModel):
                                     )
                                     new_bbox = _rotate_bbox(
                                         new_cell.to_bounding_box(),
-                                        orientation=-cells_orientation,
+                                        orientation=cells_orientation,
                                         im_size=scaled_page_im.size,
                                     ).model_dump()
                                     tokens.append(

@@ -1,5 +1,4 @@
-|                | Column 0   | Column 1     | Column 2   |
-|----------------|------------|--------------|------------|
-| this is row 0  | some cells | have content | and        |
-| and row 1      |            | other        | have       |
-| and last row 2 | nothing    |              | inside     |
+| Vertically merged   | Other merged column   | Yet another column   |
+|---------------------|-----------------------|----------------------|
+| value               | Some other value      | Yet another value    |
+| value               | Some other value      | Yet another value    |

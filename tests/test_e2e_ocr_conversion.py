@@ -61,24 +61,24 @@ def test_e2e_conversions():
 
     engines: List[Tuple[OcrOptions, bool]] = [
         (TesseractOcrOptions(), True),
-        # (TesseractCliOcrOptions(), True),
-        # (EasyOcrOptions(), False),
-        # (TesseractOcrOptions(force_full_page_ocr=True), True),
-        # (TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
-        # (TesseractCliOcrOptions(force_full_page_ocr=True), True),
-        # (TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
-        # (EasyOcrOptions(force_full_page_ocr=True), False),
+        (TesseractCliOcrOptions(), True),
+        (EasyOcrOptions(), False),
+        (TesseractOcrOptions(force_full_page_ocr=True), True),
+        (TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
+        (TesseractCliOcrOptions(force_full_page_ocr=True), True),
+        (TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
+        (EasyOcrOptions(force_full_page_ocr=True), False),
     ]
-    #
-    # # rapidocr is only available for Python >=3.6,<3.13
-    # if sys.version_info < (3, 13):
-    #     engines.append((RapidOcrOptions(), False))
-    #     engines.append((RapidOcrOptions(force_full_page_ocr=True), False))
-    #
-    # # only works on mac
-    # if "darwin" == sys.platform:
-    #     engines.append((OcrMacOptions(), True))
-    #     engines.append((OcrMacOptions(force_full_page_ocr=True), True))
+
+    # rapidocr is only available for Python >=3.6,<3.13
+    if sys.version_info < (3, 13):
+        engines.append((RapidOcrOptions(), False))
+        engines.append((RapidOcrOptions(force_full_page_ocr=True), False))
+
+    # only works on mac
+    if "darwin" == sys.platform:
+        engines.append((OcrMacOptions(), False))
+        engines.append((OcrMacOptions(force_full_page_ocr=True), False))
 
     for ocr_options, supports_rotation in engines:
         print(

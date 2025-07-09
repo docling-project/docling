@@ -1,11 +1,8 @@
 <document>
-<subtitle-level-1><location><page_1><loc_33><loc_87><loc_68><loc_91></location>This is a table test</subtitle-level-1>
-<paragraph><location><page_1><loc_12><loc_83><loc_61><loc_84></location>The test starts with some random text and then a table image:</paragraph>
-<paragraph><location><page_1><loc_45><loc_76><loc_56><loc_77></location>Some column</paragraph>
-<paragraph><location><page_1><loc_62><loc_76><loc_78><loc_77></location>Some other column</paragraph>
-<paragraph><location><page_1><loc_29><loc_70><loc_37><loc_71></location>Some row</paragraph>
-<paragraph><location><page_1><loc_47><loc_70><loc_54><loc_71></location>some cell</paragraph>
-<paragraph><location><page_1><loc_65><loc_70><loc_76><loc_71></location>have content</paragraph>
-<paragraph><location><page_1><loc_26><loc_64><loc_39><loc_65></location>Some other row</paragraph>
-<paragraph><location><page_1><loc_46><loc_64><loc_55><loc_65></location>other don't</paragraph>
+<table>
+<location><page_1><loc_9><loc_45><loc_70><loc_86></location>
+<row_0><col_0><col_header>Vertically merged</col_0><col_1><col_header>Other merged column</col_1><col_2><col_header>Yet another column</col_2></row_0>
+<row_1><col_0><body>value</col_0><col_1><body>Some other value</col_1><col_2><body>Yet another value</col_2></row_1>
+<row_2><col_0><body>value</col_0><col_1><body>Some other value</col_1><col_2><body>Yet another value</col_2></row_2>
+</table>
 </document>
