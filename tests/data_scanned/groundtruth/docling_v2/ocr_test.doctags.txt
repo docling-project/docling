@@ -1,2 +1,2 @@
-<doctag><text><loc_59><loc_46><loc_424><loc_91>Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package</text>
+<doctag><otsl><loc_61><loc_63><loc_333><loc_303><ecel><ched>Column 0<ched>Column 1<ched>Column 2<nl><rhed>this is row 0<fcel>some cells<fcel>have content<fcel>and<nl><rhed>and row 1<ecel><fcel>other<fcel>have<nl><rhed>and last row 2<fcel>nothing<ecel><fcel>inside<nl></otsl>
 </doctag>
