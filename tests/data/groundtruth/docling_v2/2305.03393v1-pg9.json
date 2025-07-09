@@ -5,12 +5,10 @@
   "origin": {
     "mimetype": "application/pdf",
     "binary_hash": 3463920545297462180,
-    "filename": "2305.03393v1-pg9.pdf",
-    "uri": null
+    "filename": "2305.03393v1-pg9.pdf"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
     "name": "_root_",
@@ -18,34 +16,33 @@
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
+        "$ref": "#/texts/0"
       },
       {
-        "cref": "#/texts/1"
+        "$ref": "#/texts/1"
       },
       {
-        "cref": "#/texts/2"
+        "$ref": "#/texts/2"
       },
       {
-        "cref": "#/texts/3"
+        "$ref": "#/texts/3"
       },
       {
-        "cref": "#/texts/4"
+        "$ref": "#/texts/4"
       },
       {
-        "cref": "#/tables/0"
+        "$ref": "#/tables/0"
       },
       {
-        "cref": "#/texts/6"
+        "$ref": "#/texts/6"
       },
       {
-        "cref": "#/texts/7"
+        "$ref": "#/texts/7"
       },
       {
-        "cref": "#/texts/8"
+        "$ref": "#/texts/8"
       }
     ],
     "content_layer": "body",
@@ -57,7 +54,7 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "furniture",
@@ -66,10 +63,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 194.478,
-            "t": 700.50647,
-            "r": 447.54476999999997,
-            "b": 689.21777,
+            "l": 194.48,
+            "t": 700.51,
+            "r": 447.54,
+            "b": 689.22,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -79,14 +76,12 @@
         }
       ],
       "orig": "Optimized Table Tokenization for Table Structure Recognition",
-      "text": "Optimized Table Tokenization for Table Structure Recognition",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Optimized Table Tokenization for Table Structure Recognition"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "furniture",
@@ -95,10 +90,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 475.98441,
-            "t": 700.50647,
-            "r": 480.59314,
-            "b": 689.21777,
+            "l": 475.98,
+            "t": 700.51,
+            "r": 480.59,
+            "b": 689.22,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -108,14 +103,12 @@
         }
       ],
       "orig": "9",
-      "text": "9",
-      "formatting": null,
-      "hyperlink": null
+      "text": "9"
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -124,10 +117,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.765,
-            "t": 675.53699,
-            "r": 480.59665,
-            "b": 639.09302,
+            "l": 134.76,
+            "t": 675.54,
+            "r": 480.6,
+            "b": 639.09,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -137,14 +130,12 @@
         }
       ],
       "orig": "order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz.",
-      "text": "order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz."
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -153,10 +144,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.765,
-            "t": 625.29486,
-            "r": 318.45145,
-            "b": 612.79181,
+            "l": 134.76,
+            "t": 625.29,
+            "r": 318.45,
+            "b": 612.79,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -167,14 +158,12 @@
       ],
       "orig": "5.1 Hyper Parameter Optimization",
       "text": "5.1 Hyper Parameter Optimization",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -183,10 +172,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.765,
-            "t": 608.88495,
-            "r": 480.59567,
-            "b": 536.57599,
+            "l": 134.76,
+            "t": 608.88,
+            "r": 480.6,
+            "b": 536.58,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -196,14 +185,12 @@
         }
       ],
       "orig": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. 1. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a 2x speed up in the inference runtime over HTML.",
-      "text": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. 1. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a 2x speed up in the inference runtime over HTML.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. 1. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a 2x speed up in the inference runtime over HTML."
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "cref": "#/tables/0"
+        "$ref": "#/tables/0"
       },
       "children": [],
       "content_layer": "body",
@@ -212,10 +199,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.765,
-            "t": 519.20526,
-            "r": 480.59890999999993,
-            "b": 464.01782,
+            "l": 134.76,
+            "t": 519.21,
+            "r": 480.6,
+            "b": 464.02,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -225,14 +212,12 @@
         }
       ],
       "orig": "Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart.",
-      "text": "Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart."
     },
     {
       "self_ref": "#/texts/6",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -241,10 +226,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.765,
-            "t": 286.32889,
-            "r": 264.40829,
-            "b": 273.82581000000005,
+            "l": 134.76,
+            "t": 286.33,
+            "r": 264.41,
+            "b": 273.83,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -255,14 +240,12 @@
       ],
       "orig": "5.2 Quantitative Results",
       "text": "5.2 Quantitative Results",
-      "formatting": null,
-      "hyperlink": null,
       "level": 1
     },
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -271,10 +254,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.765,
-            "t": 269.91995,
-            "r": 480.72003,
-            "b": 173.70000000000005,
+            "l": 134.76,
+            "t": 269.92,
+            "r": 480.72,
+            "b": 173.7,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -284,14 +267,12 @@
         }
       ],
       "orig": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables.",
-      "text": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables."
     },
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -300,9 +281,9 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.765,
-            "t": 174.27795000000003,
-            "r": 480.59857000000005,
+            "l": 134.76,
+            "t": 174.28,
+            "r": 480.6,
             "b": 125.88,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -313,9 +294,7 @@
         }
       ],
       "orig": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation.",
-      "text": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation.",
-      "formatting": null,
-      "hyperlink": null
+      "text": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation."
     }
   ],
   "pictures": [],
@@ -323,11 +302,11 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/texts/5"
+          "$ref": "#/texts/5"
         }
       ],
       "content_layer": "body",
@@ -336,10 +315,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 139.66741943359375,
-            "t": 454.45458984375,
-            "r": 475.00927734375,
-            "b": 322.5054626464844,
+            "l": 139.67,
+            "t": 454.45,
+            "r": 475.01,
+            "b": 322.51,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -350,20 +329,19 @@
       ],
       "captions": [
         {
-          "cref": "#/texts/5"
+          "$ref": "#/texts/5"
         }
       ],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
             "bbox": {
               "l": 160.37,
-              "t": 339.45749,
-              "r": 168.04523,
-              "b": 350.74619,
+              "t": 339.46,
+              "r": 168.05,
+              "b": 350.75,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 2,
@@ -379,10 +357,10 @@
           },
           {
             "bbox": {
-              "l": 207.974,
-              "t": 339.45749,
-              "r": 215.64923000000002,
-              "b": 350.74619,
+              "l": 207.97,
+              "t": 339.46,
+              "r": 215.65,
+              "b": 350.75,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 2,
@@ -398,10 +376,10 @@
           },
           {
             "bbox": {
-              "l": 239.79799999999997,
-              "t": 344.93649,
-              "r": 278.3338,
-              "b": 356.22519000000005,
+              "l": 239.8,
+              "t": 344.94,
+              "r": 278.33,
+              "b": 356.23,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 2,
@@ -417,10 +395,10 @@
           },
           {
             "bbox": {
-              "l": 324.67001,
-              "t": 339.45749,
-              "r": 348.26419,
-              "b": 350.74619,
+              "l": 324.67,
+              "t": 339.46,
+              "r": 348.26,
+              "b": 350.75,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -436,10 +414,10 @@
           },
           {
             "bbox": {
-              "l": 396.271,
-              "t": 339.45749,
-              "r": 417.12595,
-              "b": 350.74619,
+              "l": 396.27,
+              "t": 339.46,
+              "r": 417.13,
+              "b": 350.75,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -455,10 +433,10 @@
           },
           {
             "bbox": {
-              "l": 394.927,
-              "t": 350.41647,
-              "r": 418.46921,
-              "b": 361.70517,
+              "l": 394.93,
+              "t": 350.42,
+              "r": 418.47,
+              "b": 361.71,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -474,10 +452,10 @@
           },
           {
             "bbox": {
-              "l": 430.771,
-              "t": 339.45749,
-              "r": 467.14142000000004,
-              "b": 350.74619,
+              "l": 430.77,
+              "t": 339.46,
+              "r": 467.14,
+              "b": 350.75,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -493,10 +471,10 @@
           },
           {
             "bbox": {
-              "l": 427.14801,
-              "t": 350.41647,
-              "r": 470.76955999999996,
-              "b": 361.70517,
+              "l": 427.15,
+              "t": 350.42,
+              "r": 470.77,
+              "b": 361.71,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -512,10 +490,10 @@
           },
           {
             "bbox": {
-              "l": 286.686,
-              "t": 352.40848,
-              "r": 312.32812,
-              "b": 363.69717,
+              "l": 286.69,
+              "t": 352.41,
+              "r": 312.33,
+              "b": 363.7,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -531,10 +509,10 @@
           },
           {
             "bbox": {
-              "l": 320.702,
-              "t": 352.40848,
-              "r": 353.71539,
-              "b": 363.69717,
+              "l": 320.7,
+              "t": 352.41,
+              "r": 353.72,
+              "b": 363.7,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -550,10 +528,10 @@
           },
           {
             "bbox": {
-              "l": 369.306,
-              "t": 352.40848,
-              "r": 379.02914,
-              "b": 363.69717,
+              "l": 369.31,
+              "t": 352.41,
+              "r": 379.03,
+              "b": 363.7,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -569,10 +547,10 @@
           },
           {
             "bbox": {
-              "l": 161.90601,
-              "t": 371.23849,
-              "r": 166.51474,
-              "b": 382.52719,
+              "l": 161.91,
+              "t": 371.24,
+              "r": 166.51,
+              "b": 382.53,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -588,10 +566,10 @@
           },
           {
             "bbox": {
-              "l": 209.509,
-              "t": 371.23849,
-              "r": 214.11774,
-              "b": 382.52719,
+              "l": 209.51,
+              "t": 371.24,
+              "r": 214.12,
+              "b": 382.53,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -607,10 +585,10 @@
           },
           {
             "bbox": {
-              "l": 246.71000999999998,
-              "t": 365.75848,
-              "r": 271.41064,
-              "b": 377.04717999999997,
+              "l": 246.71,
+              "t": 365.76,
+              "r": 271.41,
+              "b": 377.05,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -626,10 +604,10 @@
           },
           {
             "bbox": {
-              "l": 289.017,
-              "t": 365.75848,
-              "r": 310.00732,
-              "b": 377.04717999999997,
+              "l": 289.02,
+              "t": 365.76,
+              "r": 310.01,
+              "b": 377.05,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -645,10 +623,10 @@
           },
           {
             "bbox": {
-              "l": 326.71701,
-              "t": 365.75848,
-              "r": 347.70734,
-              "b": 377.04717999999997,
+              "l": 326.72,
+              "t": 365.76,
+              "r": 347.71,
+              "b": 377.05,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -664,10 +642,10 @@
           },
           {
             "bbox": {
-              "l": 363.67599,
-              "t": 365.75848,
-              "r": 384.66632,
-              "b": 377.04717999999997,
+              "l": 363.68,
+              "t": 365.76,
+              "r": 384.67,
+              "b": 377.05,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -683,10 +661,10 @@
           },
           {
             "bbox": {
-              "l": 397.26999,
-              "t": 365.69571,
-              "r": 416.12634,
-              "b": 377.10098000000005,
+              "l": 397.27,
+              "t": 365.7,
+              "r": 416.13,
+              "b": 377.1,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -702,10 +680,10 @@
           },
           {
             "bbox": {
-              "l": 439.52701,
-              "t": 365.69571,
-              "r": 458.38336,
-              "b": 377.10098000000005,
+              "l": 439.53,
+              "t": 365.7,
+              "r": 458.38,
+              "b": 377.1,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -721,10 +699,10 @@
           },
           {
             "bbox": {
-              "l": 161.90601,
-              "t": 397.53949,
-              "r": 166.51474,
-              "b": 408.82819,
+              "l": 161.91,
+              "t": 397.54,
+              "r": 166.51,
+              "b": 408.83,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -740,10 +718,10 @@
           },
           {
             "bbox": {
-              "l": 209.509,
-              "t": 397.53949,
-              "r": 214.11774,
-              "b": 408.82819,
+              "l": 209.51,
+              "t": 397.54,
+              "r": 214.12,
+              "b": 408.83,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -759,10 +737,10 @@
           },
           {
             "bbox": {
-              "l": 246.71000999999998,
-              "t": 392.06049,
-              "r": 271.41064,
-              "b": 403.34918,
+              "l": 246.71,
+              "t": 392.06,
+              "r": 271.41,
+              "b": 403.35,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -778,10 +756,10 @@
           },
           {
             "bbox": {
-              "l": 289.017,
-              "t": 392.06049,
-              "r": 310.00732,
-              "b": 403.34918,
+              "l": 289.02,
+              "t": 392.06,
+              "r": 310.01,
+              "b": 403.35,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -797,10 +775,10 @@
           },
           {
             "bbox": {
-              "l": 326.71701,
-              "t": 392.06049,
-              "r": 347.70734,
-              "b": 403.34918,
+              "l": 326.72,
+              "t": 392.06,
+              "r": 347.71,
+              "b": 403.35,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -816,10 +794,10 @@
           },
           {
             "bbox": {
-              "l": 363.67599,
-              "t": 392.06049,
-              "r": 384.66632,
-              "b": 403.34918,
+              "l": 363.68,
+              "t": 392.06,
+              "r": 384.67,
+              "b": 403.35,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -835,10 +813,10 @@
           },
           {
             "bbox": {
-              "l": 394.61801,
-              "t": 391.99771,
-              "r": 418.77798,
-              "b": 403.40298,
+              "l": 394.62,
+              "t": 392.0,
+              "r": 418.78,
+              "b": 403.4,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -854,10 +832,10 @@
           },
           {
             "bbox": {
-              "l": 439.52701,
-              "t": 391.99771,
-              "r": 458.38336,
-              "b": 403.40298,
+              "l": 439.53,
+              "t": 392.0,
+              "r": 458.38,
+              "b": 403.4,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -873,10 +851,10 @@
           },
           {
             "bbox": {
-              "l": 161.90601,
-              "t": 423.84048,
-              "r": 166.51474,
-              "b": 435.12918,
+              "l": 161.91,
+              "t": 423.84,
+              "r": 166.51,
+              "b": 435.13,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -892,10 +870,10 @@
           },
           {
             "bbox": {
-              "l": 209.509,
-              "t": 423.84048,
-              "r": 214.11774,
-              "b": 435.12918,
+              "l": 209.51,
+              "t": 423.84,
+              "r": 214.12,
+              "b": 435.13,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -911,10 +889,10 @@
           },
           {
             "bbox": {
-              "l": 246.71000999999998,
-              "t": 418.3614799999999,
-              "r": 271.41064,
-              "b": 429.65018,
+              "l": 246.71,
+              "t": 418.36,
+              "r": 271.41,
+              "b": 429.65,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -930,10 +908,10 @@
           },
           {
             "bbox": {
-              "l": 289.017,
-              "t": 418.3614799999999,
-              "r": 310.00732,
-              "b": 429.65018,
+              "l": 289.02,
+              "t": 418.36,
+              "r": 310.01,
+              "b": 429.65,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -949,10 +927,10 @@
           },
           {
             "bbox": {
-              "l": 326.71701,
-              "t": 418.3614799999999,
-              "r": 347.70734,
-              "b": 429.65018,
+              "l": 326.72,
+              "t": 418.36,
+              "r": 347.71,
+              "b": 429.65,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -968,10 +946,10 @@
           },
           {
             "bbox": {
-              "l": 363.67599,
-              "t": 418.3614799999999,
-              "r": 384.66632,
-              "b": 429.65018,
+              "l": 363.68,
+              "t": 418.36,
+              "r": 384.67,
+              "b": 429.65,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -987,10 +965,10 @@
           },
           {
             "bbox": {
-              "l": 394.61801,
-              "t": 418.29871,
-              "r": 418.77798,
-              "b": 429.70398,
+              "l": 394.62,
+              "t": 418.3,
+              "r": 418.78,
+              "b": 429.7,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1006,10 +984,10 @@
           },
           {
             "bbox": {
-              "l": 439.52701,
-              "t": 418.29871,
-              "r": 458.38336,
-              "b": 429.70398,
+              "l": 439.53,
+              "t": 418.3,
+              "r": 458.38,
+              "b": 429.7,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1025,10 +1003,10 @@
           },
           {
             "bbox": {
-              "l": 161.90601,
-              "t": 450.14248999999995,
-              "r": 166.51474,
-              "b": 461.43118,
+              "l": 161.91,
+              "t": 450.14,
+              "r": 166.51,
+              "b": 461.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1044,10 +1022,10 @@
           },
           {
             "bbox": {
-              "l": 209.509,
-              "t": 450.14248999999995,
-              "r": 214.11774,
-              "b": 461.43118,
+              "l": 209.51,
+              "t": 450.14,
+              "r": 214.12,
+              "b": 461.43,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1063,10 +1041,10 @@
           },
           {
             "bbox": {
-              "l": 246.71000999999998,
-              "t": 444.66248,
-              "r": 271.41064,
-              "b": 455.95117,
+              "l": 246.71,
+              "t": 444.66,
+              "r": 271.41,
+              "b": 455.95,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1082,10 +1060,10 @@
           },
           {
             "bbox": {
-              "l": 289.017,
-              "t": 444.66248,
-              "r": 310.00732,
-              "b": 455.95117,
+              "l": 289.02,
+              "t": 444.66,
+              "r": 310.01,
+              "b": 455.95,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1101,10 +1079,10 @@
           },
           {
             "bbox": {
-              "l": 329.021,
-              "t": 444.66248,
-              "r": 345.40439,
-              "b": 455.95117,
+              "l": 329.02,
+              "t": 444.66,
+              "r": 345.4,
+              "b": 455.95,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1120,10 +1098,10 @@
           },
           {
             "bbox": {
-              "l": 362.08801,
-              "t": 444.5996999999999,
-              "r": 386.24799,
-              "b": 456.00497,
+              "l": 362.09,
+              "t": 444.6,
+              "r": 386.25,
+              "b": 456.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1139,10 +1117,10 @@
           },
           {
             "bbox": {
-              "l": 394.61801,
-              "t": 444.5996999999999,
-              "r": 418.77798,
-              "b": 456.00497,
+              "l": 394.62,
+              "t": 444.6,
+              "r": 418.78,
+              "b": 456.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1158,10 +1136,10 @@
           },
           {
             "bbox": {
-              "l": 439.52701,
-              "t": 444.5996999999999,
-              "r": 458.38336,
-              "b": 456.00497,
+              "l": 439.53,
+              "t": 444.6,
+              "r": 458.38,
+              "b": 456.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1183,9 +1161,9 @@
             {
               "bbox": {
                 "l": 160.37,
-                "t": 339.45749,
-                "r": 168.04523,
-                "b": 350.74619,
+                "t": 339.46,
+                "r": 168.05,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1201,10 +1179,10 @@
             },
             {
               "bbox": {
-                "l": 207.974,
-                "t": 339.45749,
-                "r": 215.64923000000002,
-                "b": 350.74619,
+                "l": 207.97,
+                "t": 339.46,
+                "r": 215.65,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1220,10 +1198,10 @@
             },
             {
               "bbox": {
-                "l": 239.79799999999997,
-                "t": 344.93649,
-                "r": 278.3338,
-                "b": 356.22519000000005,
+                "l": 239.8,
+                "t": 344.94,
+                "r": 278.33,
+                "b": 356.23,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1239,10 +1217,10 @@
             },
             {
               "bbox": {
-                "l": 324.67001,
-                "t": 339.45749,
-                "r": 348.26419,
-                "b": 350.74619,
+                "l": 324.67,
+                "t": 339.46,
+                "r": 348.26,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1258,10 +1236,10 @@
             },
             {
               "bbox": {
-                "l": 324.67001,
-                "t": 339.45749,
-                "r": 348.26419,
-                "b": 350.74619,
+                "l": 324.67,
+                "t": 339.46,
+                "r": 348.26,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1277,10 +1255,10 @@
             },
             {
               "bbox": {
-                "l": 324.67001,
-                "t": 339.45749,
-                "r": 348.26419,
-                "b": 350.74619,
+                "l": 324.67,
+                "t": 339.46,
+                "r": 348.26,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1296,10 +1274,10 @@
             },
             {
               "bbox": {
-                "l": 396.271,
-                "t": 339.45749,
-                "r": 417.12595,
-                "b": 350.74619,
+                "l": 396.27,
+                "t": 339.46,
+                "r": 417.13,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1315,10 +1293,10 @@
             },
             {
               "bbox": {
-                "l": 430.771,
-                "t": 339.45749,
-                "r": 467.14142000000004,
-                "b": 350.74619,
+                "l": 430.77,
+                "t": 339.46,
+                "r": 467.14,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1337,9 +1315,9 @@
             {
               "bbox": {
                 "l": 160.37,
-                "t": 339.45749,
-                "r": 168.04523,
-                "b": 350.74619,
+                "t": 339.46,
+                "r": 168.05,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1355,10 +1333,10 @@
             },
             {
               "bbox": {
-                "l": 207.974,
-                "t": 339.45749,
-                "r": 215.64923000000002,
-                "b": 350.74619,
+                "l": 207.97,
+                "t": 339.46,
+                "r": 215.65,
+                "b": 350.75,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1374,10 +1352,10 @@
             },
             {
               "bbox": {
-                "l": 239.79799999999997,
-                "t": 344.93649,
-                "r": 278.3338,
-                "b": 356.22519000000005,
+                "l": 239.8,
+                "t": 344.94,
+                "r": 278.33,
+                "b": 356.23,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1393,10 +1371,10 @@
             },
             {
               "bbox": {
-                "l": 286.686,
-                "t": 352.40848,
-                "r": 312.32812,
-                "b": 363.69717,
+                "l": 286.69,
+                "t": 352.41,
+                "r": 312.33,
+                "b": 363.7,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1412,10 +1390,10 @@
             },
             {
               "bbox": {
-                "l": 320.702,
-                "t": 352.40848,
-                "r": 353.71539,
-                "b": 363.69717,
+                "l": 320.7,
+                "t": 352.41,
+                "r": 353.72,
+                "b": 363.7,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1431,10 +1409,10 @@
             },
             {
               "bbox": {
-                "l": 369.306,
-                "t": 352.40848,
-                "r": 379.02914,
-                "b": 363.69717,
+                "l": 369.31,
+                "t": 352.41,
+                "r": 379.03,
+                "b": 363.7,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1450,10 +1428,10 @@
             },
             {
               "bbox": {
-                "l": 394.927,
-                "t": 350.41647,
-                "r": 418.46921,
-                "b": 361.70517,
+                "l": 394.93,
+                "t": 350.42,
+                "r": 418.47,
+                "b": 361.71,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1469,10 +1447,10 @@
             },
             {
               "bbox": {
-                "l": 427.14801,
-                "t": 350.41647,
-                "r": 470.76955999999996,
-                "b": 361.70517,
+                "l": 427.15,
+                "t": 350.42,
+                "r": 470.77,
+                "b": 361.71,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1490,10 +1468,10 @@
           [
             {
               "bbox": {
-                "l": 161.90601,
-                "t": 371.23849,
-                "r": 166.51474,
-                "b": 382.52719,
+                "l": 161.91,
+                "t": 371.24,
+                "r": 166.51,
+                "b": 382.53,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1509,10 +1487,10 @@
             },
             {
               "bbox": {
-                "l": 209.509,
-                "t": 371.23849,
-                "r": 214.11774,
-                "b": 382.52719,
+                "l": 209.51,
+                "t": 371.24,
+                "r": 214.12,
+                "b": 382.53,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1528,10 +1506,10 @@
             },
             {
               "bbox": {
-                "l": 246.71000999999998,
-                "t": 365.75848,
-                "r": 271.41064,
-                "b": 377.04717999999997,
+                "l": 246.71,
+                "t": 365.76,
+                "r": 271.41,
+                "b": 377.05,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1547,10 +1525,10 @@
             },
             {
               "bbox": {
-                "l": 289.017,
-                "t": 365.75848,
-                "r": 310.00732,
-                "b": 377.04717999999997,
+                "l": 289.02,
+                "t": 365.76,
+                "r": 310.01,
+                "b": 377.05,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1566,10 +1544,10 @@
             },
             {
               "bbox": {
-                "l": 326.71701,
-                "t": 365.75848,
-                "r": 347.70734,
-                "b": 377.04717999999997,
+                "l": 326.72,
+                "t": 365.76,
+                "r": 347.71,
+                "b": 377.05,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1585,10 +1563,10 @@
             },
             {
               "bbox": {
-                "l": 363.67599,
-                "t": 365.75848,
-                "r": 384.66632,
-                "b": 377.04717999999997,
+                "l": 363.68,
+                "t": 365.76,
+                "r": 384.67,
+                "b": 377.05,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1604,10 +1582,10 @@
             },
             {
               "bbox": {
-                "l": 397.26999,
-                "t": 365.69571,
-                "r": 416.12634,
-                "b": 377.10098000000005,
+                "l": 397.27,
+                "t": 365.7,
+                "r": 416.13,
+                "b": 377.1,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1623,10 +1601,10 @@
             },
             {
               "bbox": {
-                "l": 439.52701,
-                "t": 365.69571,
-                "r": 458.38336,
-                "b": 377.10098000000005,
+                "l": 439.53,
+                "t": 365.7,
+                "r": 458.38,
+                "b": 377.1,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1644,10 +1622,10 @@
           [
             {
               "bbox": {
-                "l": 161.90601,
-                "t": 397.53949,
-                "r": 166.51474,
-                "b": 408.82819,
+                "l": 161.91,
+                "t": 397.54,
+                "r": 166.51,
+                "b": 408.83,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1663,10 +1641,10 @@
             },
             {
               "bbox": {
-                "l": 209.509,
-                "t": 397.53949,
-                "r": 214.11774,
-                "b": 408.82819,
+                "l": 209.51,
+                "t": 397.54,
+                "r": 214.12,
+                "b": 408.83,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1682,10 +1660,10 @@
             },
             {
               "bbox": {
-                "l": 246.71000999999998,
-                "t": 392.06049,
-                "r": 271.41064,
-                "b": 403.34918,
+                "l": 246.71,
+                "t": 392.06,
+                "r": 271.41,
+                "b": 403.35,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1701,10 +1679,10 @@
             },
             {
               "bbox": {
-                "l": 289.017,
-                "t": 392.06049,
-                "r": 310.00732,
-                "b": 403.34918,
+                "l": 289.02,
+                "t": 392.06,
+                "r": 310.01,
+                "b": 403.35,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1720,10 +1698,10 @@
             },
             {
               "bbox": {
-                "l": 326.71701,
-                "t": 392.06049,
-                "r": 347.70734,
-                "b": 403.34918,
+                "l": 326.72,
+                "t": 392.06,
+                "r": 347.71,
+                "b": 403.35,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1739,10 +1717,10 @@
             },
             {
               "bbox": {
-                "l": 363.67599,
-                "t": 392.06049,
-                "r": 384.66632,
-                "b": 403.34918,
+                "l": 363.68,
+                "t": 392.06,
+                "r": 384.67,
+                "b": 403.35,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1758,10 +1736,10 @@
             },
             {
               "bbox": {
-                "l": 394.61801,
-                "t": 391.99771,
-                "r": 418.77798,
-                "b": 403.40298,
+                "l": 394.62,
+                "t": 392.0,
+                "r": 418.78,
+                "b": 403.4,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1777,10 +1755,10 @@
             },
             {
               "bbox": {
-                "l": 439.52701,
-                "t": 391.99771,
-                "r": 458.38336,
-                "b": 403.40298,
+                "l": 439.53,
+                "t": 392.0,
+                "r": 458.38,
+                "b": 403.4,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1798,10 +1776,10 @@
           [
             {
               "bbox": {
-                "l": 161.90601,
-                "t": 423.84048,
-                "r": 166.51474,
-                "b": 435.12918,
+                "l": 161.91,
+                "t": 423.84,
+                "r": 166.51,
+                "b": 435.13,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1817,10 +1795,10 @@
             },
             {
               "bbox": {
-                "l": 209.509,
-                "t": 423.84048,
-                "r": 214.11774,
-                "b": 435.12918,
+                "l": 209.51,
+                "t": 423.84,
+                "r": 214.12,
+                "b": 435.13,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1836,10 +1814,10 @@
             },
             {
               "bbox": {
-                "l": 246.71000999999998,
-                "t": 418.3614799999999,
-                "r": 271.41064,
-                "b": 429.65018,
+                "l": 246.71,
+                "t": 418.36,
+                "r": 271.41,
+                "b": 429.65,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1855,10 +1833,10 @@
             },
             {
               "bbox": {
-                "l": 289.017,
-                "t": 418.3614799999999,
-                "r": 310.00732,
-                "b": 429.65018,
+                "l": 289.02,
+                "t": 418.36,
+                "r": 310.01,
+                "b": 429.65,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1874,10 +1852,10 @@
             },
             {
               "bbox": {
-                "l": 326.71701,
-                "t": 418.3614799999999,
-                "r": 347.70734,
-                "b": 429.65018,
+                "l": 326.72,
+                "t": 418.36,
+                "r": 347.71,
+                "b": 429.65,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1893,10 +1871,10 @@
             },
             {
               "bbox": {
-                "l": 363.67599,
-                "t": 418.3614799999999,
-                "r": 384.66632,
-                "b": 429.65018,
+                "l": 363.68,
+                "t": 418.36,
+                "r": 384.67,
+                "b": 429.65,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1912,10 +1890,10 @@
             },
             {
               "bbox": {
-                "l": 394.61801,
-                "t": 418.29871,
-                "r": 418.77798,
-                "b": 429.70398,
+                "l": 394.62,
+                "t": 418.3,
+                "r": 418.78,
+                "b": 429.7,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1931,10 +1909,10 @@
             },
             {
               "bbox": {
-                "l": 439.52701,
-                "t": 418.29871,
-                "r": 458.38336,
-                "b": 429.70398,
+                "l": 439.53,
+                "t": 418.3,
+                "r": 458.38,
+                "b": 429.7,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1952,10 +1930,10 @@
           [
             {
               "bbox": {
-                "l": 161.90601,
-                "t": 450.14248999999995,
-                "r": 166.51474,
-                "b": 461.43118,
+                "l": 161.91,
+                "t": 450.14,
+                "r": 166.51,
+                "b": 461.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1971,10 +1949,10 @@
             },
             {
               "bbox": {
-                "l": 209.509,
-                "t": 450.14248999999995,
-                "r": 214.11774,
-                "b": 461.43118,
+                "l": 209.51,
+                "t": 450.14,
+                "r": 214.12,
+                "b": 461.43,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1990,10 +1968,10 @@
             },
             {
               "bbox": {
-                "l": 246.71000999999998,
-                "t": 444.66248,
-                "r": 271.41064,
-                "b": 455.95117,
+                "l": 246.71,
+                "t": 444.66,
+                "r": 271.41,
+                "b": 455.95,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2009,10 +1987,10 @@
             },
             {
               "bbox": {
-                "l": 289.017,
-                "t": 444.66248,
-                "r": 310.00732,
-                "b": 455.95117,
+                "l": 289.02,
+                "t": 444.66,
+                "r": 310.01,
+                "b": 455.95,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2028,10 +2006,10 @@
             },
             {
               "bbox": {
-                "l": 329.021,
-                "t": 444.66248,
-                "r": 345.40439,
-                "b": 455.95117,
+                "l": 329.02,
+                "t": 444.66,
+                "r": 345.4,
+                "b": 455.95,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2047,10 +2025,10 @@
             },
             {
               "bbox": {
-                "l": 362.08801,
-                "t": 444.5996999999999,
-                "r": 386.24799,
-                "b": 456.00497,
+                "l": 362.09,
+                "t": 444.6,
+                "r": 386.25,
+                "b": 456.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2066,10 +2044,10 @@
             },
             {
               "bbox": {
-                "l": 394.61801,
-                "t": 444.5996999999999,
-                "r": 418.77798,
-                "b": 456.00497,
+                "l": 394.62,
+                "t": 444.6,
+                "r": 418.78,
+                "b": 456.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2085,10 +2063,10 @@
             },
             {
               "bbox": {
-                "l": 439.52701,
-                "t": 444.5996999999999,
-                "r": 458.38336,
-                "b": 456.00497,
+                "l": 439.53,
+                "t": 444.6,
+                "r": 458.38,
+                "b": 456.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2116,7 +2094,6 @@
         "width": 612.0,
         "height": 792.0
       },
-      "image": null,
       "page_no": 1
     }
   }

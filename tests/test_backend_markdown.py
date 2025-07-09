@@ -3,6 +3,7 @@ from pathlib import Path
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import DoclingDocument, InputDocument
+from tests.verify_utils import CONFID_PREC, COORD_PREC
 
 from .test_data_gen_flag import GEN_TEST_DATA
 
@@ -41,7 +42,11 @@ def test_convert_valid():
 
             if in_path.stem in yaml_filter:
                 with open(yaml_gt_path, mode="w", encoding="utf-8") as f:
-                    act_doc.save_as_yaml(yaml_gt_path)
+                    act_doc.save_as_yaml(
+                        yaml_gt_path,
+                        coord_precision=COORD_PREC,
+                        confid_precision=CONFID_PREC,
+                    )
         else:
             with open(md_gt_path, encoding="utf-8") as f:
                 exp_data = f.read().rstrip()
