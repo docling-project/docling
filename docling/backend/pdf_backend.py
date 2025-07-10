@@ -57,7 +57,28 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
             if self.input_format is InputFormat.IMAGE:
                 buf = BytesIO()
                 img = Image.open(self.path_or_stream)
-                img.save(buf, "PDF")
+                
+                # Handle multi-page TIFF images
+                if hasattr(img, 'n_frames') and img.n_frames > 1:
+                    # Extract all frames from multi-page image
+                    frames = []
+                    try:
+                        for i in range(img.n_frames):
+                            img.seek(i)
+                            frames.append(img.copy())
+                    except EOFError:
+                        pass
+                    
+                    # Save as multi-page PDF
+                    if frames:
+                        frames[0].save(buf, "PDF", save_all=True, append_images=frames[1:])
+                    else:
+                        # Fallback to single page if frame extraction fails
+                        img.save(buf, "PDF")
+                else:
+                    # Single page image - use existing behavior
+                    img.save(buf, "PDF")
+                
                 buf.seek(0)
                 self.path_or_stream = buf
             else:
