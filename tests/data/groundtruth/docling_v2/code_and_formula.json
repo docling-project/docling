@@ -82,9 +82,9 @@
           "page_no": 1,
           "bbox": {
             "l": 133.77,
-            "t": 667.19,
+            "t": 667.08,
             "r": 315.92,
-            "b": 654.45,
+            "b": 654.48,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -110,9 +110,9 @@
           "page_no": 1,
           "bbox": {
             "l": 133.77,
-            "t": 642.33,
+            "t": 642.22,
             "r": 477.48,
-            "b": 501.97,
+            "b": 502.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -137,9 +137,9 @@
           "page_no": 1,
           "bbox": {
             "l": 133.77,
-            "t": 498.87,
+            "t": 498.76,
             "r": 477.48,
-            "b": 454.15,
+            "b": 454.19,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -203,9 +203,9 @@
           "page_no": 1,
           "bbox": {
             "l": 223.16,
-            "t": 442.08,
+            "t": 441.97,
             "r": 388.09,
-            "b": 433.23,
+            "b": 433.26,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -230,9 +230,9 @@
           "page_no": 1,
           "bbox": {
             "l": 133.77,
-            "t": 372.94,
+            "t": 372.83,
             "r": 477.48,
-            "b": 232.59,
+            "b": 232.62,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -257,9 +257,9 @@
           "page_no": 1,
           "bbox": {
             "l": 133.77,
-            "t": 229.48,
+            "t": 229.37,
             "r": 477.48,
-            "b": 184.76,
+            "b": 184.79,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -284,9 +284,9 @@
           "page_no": 1,
           "bbox": {
             "l": 303.13,
-            "t": 96.28,
+            "t": 96.17,
             "r": 308.11,
-            "b": 87.43,
+            "b": 87.46,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -311,9 +311,9 @@
           "page_no": 2,
           "bbox": {
             "l": 133.77,
-            "t": 717.08,
+            "t": 716.97,
             "r": 191.53,
-            "b": 704.34,
+            "b": 704.37,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -339,9 +339,9 @@
           "page_no": 2,
           "bbox": {
             "l": 133.77,
-            "t": 692.22,
+            "t": 692.11,
             "r": 477.48,
-            "b": 551.86,
+            "b": 551.9,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -366,9 +366,9 @@
           "page_no": 2,
           "bbox": {
             "l": 133.77,
-            "t": 548.76,
+            "t": 548.65,
             "r": 477.48,
-            "b": 492.09,
+            "b": 492.12,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -393,18 +393,18 @@
           "page_no": 2,
           "bbox": {
             "l": 280.55,
-            "t": 479.06,
+            "t": 478.99,
             "r": 330.7,
-            "b": 468.18,
+            "b": 468.21,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            12
+            11
           ]
         }
       ],
-      "orig": "a 2 + 8 = 12",
+      "orig": "a 2 +8 = 12",
       "text": ""
     },
     {
@@ -420,9 +420,9 @@
           "page_no": 2,
           "bbox": {
             "l": 133.77,
-            "t": 459.09,
+            "t": 458.98,
             "r": 477.48,
-            "b": 318.74,
+            "b": 318.77,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -447,9 +447,9 @@
           "page_no": 2,
           "bbox": {
             "l": 133.77,
-            "t": 315.63,
+            "t": 315.52,
             "r": 477.48,
-            "b": 247.01,
+            "b": 247.04,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -474,9 +474,9 @@
           "page_no": 2,
           "bbox": {
             "l": 133.77,
-            "t": 243.9,
+            "t": 243.79,
             "r": 477.48,
-            "b": 175.28,
+            "b": 175.31,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -501,9 +501,9 @@
           "page_no": 2,
           "bbox": {
             "l": 303.13,
-            "t": 146.17,
+            "t": 146.06,
             "r": 308.11,
-            "b": 137.32,
+            "b": 137.35,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
