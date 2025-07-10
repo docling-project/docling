@@ -107,10 +107,10 @@ class OcrMacModel(BaseOcrModel):
                             x2 = x1 + w * im_width
                             y1 = y2 - h * im_height
 
-                            left = x1 / self.scale
-                            top = y1 / self.scale
-                            right = x2 / self.scale
-                            bottom = y2 / self.scale
+                            left = x1 / self.scale + ocr_rect.l
+                            top = y1 / self.scale + ocr_rect.t
+                            right = x2 / self.scale + ocr_rect.l
+                            bottom = y2 / self.scale + ocr_rect.t
 
                             cells.append(
                                 TextCell(

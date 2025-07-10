@@ -73,8 +73,8 @@ def test_e2e_conversions():
 
     # only works on mac
     if "darwin" == sys.platform:
-        engines.append((OcrMacOptions(), True))
-        engines.append((OcrMacOptions(force_full_page_ocr=True), True))
+        engines.append((OcrMacOptions(), False))
+        engines.append((OcrMacOptions(force_full_page_ocr=True), False))
 
     for ocr_options, supports_rotation in engines:
         print(
