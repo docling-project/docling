@@ -114,7 +114,7 @@ def main():
     # Example for the Granite Vision model:
     # (uncomment the following lines)
     # pipeline_options.picture_description_options = vllm_local_options(
-    #     model="ibm-granite/granite-vision-3.1-2b-preview"
+    #     model="ibm-granite/granite-vision-3.2-2b"
     # )
 
     # Example for the SmolVLM model:

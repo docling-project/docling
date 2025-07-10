@@ -217,7 +217,7 @@ smolvlm_picture_description = PictureDescriptionVlmOptions(
 
 # GraniteVision
 granite_picture_description = PictureDescriptionVlmOptions(
-    repo_id="ibm-granite/granite-vision-3.2-2b-preview",
+    repo_id="ibm-granite/granite-vision-3.2-2b",
     prompt="What is shown in this image?",
 )
 
