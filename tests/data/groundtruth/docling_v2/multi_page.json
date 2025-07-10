@@ -309,9 +309,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 769.33,
+            "t": 766.58,
             "r": 262.99,
-            "b": 756.05,
+            "b": 756.71,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -337,9 +337,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 741.73,
+            "t": 738.98,
             "r": 497.52,
-            "b": 714.53,
+            "b": 715.19,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -364,9 +364,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 699.82,
-            "r": 325.82,
-            "b": 684.94,
+            "t": 696.74,
+            "r": 325.81,
+            "b": 685.68,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -392,9 +392,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 670.69,
+            "t": 667.94,
             "r": 508.18,
-            "b": 615.65,
+            "b": 616.31,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -419,9 +419,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 601.57,
+            "t": 598.82,
             "r": 504.5,
-            "b": 546.53,
+            "b": 547.19,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -446,9 +446,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 504.22,
+            "t": 501.14,
             "r": 336.72,
-            "b": 489.34,
+            "b": 490.08,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -474,9 +474,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 474.85,
+            "t": 472.1,
             "r": 523.19,
-            "b": 433.73,
+            "b": 434.39,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -501,9 +501,9 @@
           "page_no": 1,
           "bbox": {
             "l": 90.0,
-            "t": 419.65,
+            "t": 416.9,
             "r": 518.01,
-            "b": 364.85,
+            "b": 365.51,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -512,10 +512,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
-      "text": "IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
+      "orig": "\u221e IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
+      "text": "\u221e IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/8",
@@ -530,9 +530,9 @@
           "page_no": 1,
           "bbox": {
             "l": 90.0,
-            "t": 364.45,
+            "t": 361.7,
             "r": 497.52,
-            "b": 323.33,
+            "b": 323.99,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -541,10 +541,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
-      "text": "Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
+      "orig": "\u221e Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
+      "text": "\u221e Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -559,9 +559,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 309.01,
+            "t": 306.26,
             "r": 514.47,
-            "b": 281.57,
+            "b": 282.23,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -586,9 +586,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 239.26,
+            "t": 236.18,
             "r": 306.71,
-            "b": 224.38,
+            "b": 225.12,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -614,9 +614,9 @@
           "page_no": 1,
           "bbox": {
             "l": 72.0,
-            "t": 210.13,
+            "t": 207.38,
             "r": 515.57,
-            "b": 182.69,
+            "b": 183.35,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -641,9 +641,9 @@
           "page_no": 1,
           "bbox": {
             "l": 90.0,
-            "t": 168.37,
+            "t": 165.62,
             "r": 522.53,
-            "b": 127.49,
+            "b": 128.15,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -652,10 +652,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
-      "text": "WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
+      "orig": "\u221e WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
+      "text": "\u221e WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/13",
@@ -670,9 +670,9 @@
           "page_no": 1,
           "bbox": {
             "l": 90.0,
-            "t": 127.09,
+            "t": 124.34,
             "r": 525.26,
-            "b": 85.97,
+            "b": 86.63,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -681,10 +681,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
-      "text": "Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
+      "orig": "\u221e Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
+      "text": "\u221e Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/14",
@@ -699,9 +699,9 @@
           "page_no": 2,
           "bbox": {
             "l": 72.0,
-            "t": 769.57,
+            "t": 766.82,
             "r": 516.5,
-            "b": 728.45,
+            "b": 729.11,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -726,9 +726,9 @@
           "page_no": 2,
           "bbox": {
             "l": 72.0,
-            "t": 686.14,
+            "t": 683.06,
             "r": 272.2,
-            "b": 671.26,
+            "b": 672.0,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -754,9 +754,9 @@
           "page_no": 2,
           "bbox": {
             "l": 72.0,
-            "t": 656.77,
+            "t": 654.02,
             "r": 510.87,
-            "b": 629.57,
+            "b": 630.23,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -781,9 +781,9 @@
           "page_no": 2,
           "bbox": {
             "l": 90.0,
-            "t": 615.25,
+            "t": 612.5,
             "r": 491.24,
-            "b": 588.29,
+            "b": 588.95,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -792,10 +792,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
-      "text": "Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
+      "orig": "\u221e Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
+      "text": "\u221e Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/18",
@@ -810,9 +810,9 @@
           "page_no": 2,
           "bbox": {
             "l": 90.0,
-            "t": 587.65,
+            "t": 584.9,
             "r": 517.54,
-            "b": 560.69,
+            "b": 561.35,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -821,10 +821,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
-      "text": "OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
+      "orig": "\u221e OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
+      "text": "\u221e OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/19",
@@ -839,9 +839,9 @@
           "page_no": 2,
           "bbox": {
             "l": 90.0,
-            "t": 560.05,
+            "t": 557.3,
             "r": 524.56,
-            "b": 518.93,
+            "b": 519.59,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -850,10 +850,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
-      "text": "Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
+      "orig": "\u221e Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
+      "text": "\u221e Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/20",
@@ -868,9 +868,9 @@
           "page_no": 2,
           "bbox": {
             "l": 72.0,
-            "t": 476.62,
+            "t": 473.54,
             "r": 231.71,
-            "b": 461.74,
+            "b": 462.48,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -896,9 +896,9 @@
           "page_no": 2,
           "bbox": {
             "l": 72.0,
-            "t": 447.25,
+            "t": 444.5,
             "r": 520.54,
-            "b": 378.53,
+            "b": 379.19,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -923,9 +923,9 @@
           "page_no": 2,
           "bbox": {
             "l": 72.0,
-            "t": 336.37,
+            "t": 333.62,
             "r": 515.56,
-            "b": 295.49,
+            "b": 296.15,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -950,9 +950,9 @@
           "page_no": 3,
           "bbox": {
             "l": 72.0,
-            "t": 769.18,
+            "t": 766.1,
             "r": 276.73,
-            "b": 754.3,
+            "b": 755.04,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -978,9 +978,9 @@
           "page_no": 3,
           "bbox": {
             "l": 72.0,
-            "t": 740.05,
+            "t": 737.3,
             "r": 514.67,
-            "b": 698.93,
+            "b": 699.59,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1005,9 +1005,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 684.61,
+            "t": 681.86,
             "r": 519.51,
-            "b": 616.13,
+            "b": 616.79,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1016,10 +1016,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
-      "text": "Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
+      "orig": "\u221e Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
+      "text": "\u221e Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/26",
@@ -1034,9 +1034,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 615.73,
+            "t": 612.98,
             "r": 503.53,
-            "b": 560.93,
+            "b": 561.59,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1045,10 +1045,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
-      "text": "Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
+      "orig": "\u221e Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
+      "text": "\u221e Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/27",
@@ -1063,9 +1063,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 560.53,
+            "t": 557.78,
             "r": 524.48,
-            "b": 505.49,
+            "b": 506.15,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1074,10 +1074,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
-      "text": "Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
+      "orig": "\u221e Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
+      "text": "\u221e Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/28",
@@ -1092,9 +1092,9 @@
           "page_no": 3,
           "bbox": {
             "l": 72.0,
-            "t": 463.18,
+            "t": 460.1,
             "r": 340.47,
-            "b": 448.3,
+            "b": 449.04,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1120,9 +1120,9 @@
           "page_no": 3,
           "bbox": {
             "l": 72.0,
-            "t": 434.05,
+            "t": 431.3,
             "r": 514.72,
-            "b": 392.93,
+            "b": 393.59,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1147,9 +1147,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 378.61,
+            "t": 375.86,
             "r": 509.27,
-            "b": 351.41,
+            "b": 352.07,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1176,9 +1176,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 351.01,
+            "t": 348.26,
             "r": 516.6,
-            "b": 323.81,
+            "b": 324.47,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1205,9 +1205,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 323.41,
+            "t": 320.66,
             "r": 486.9,
-            "b": 296.21,
+            "b": 296.87,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1234,9 +1234,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 295.81,
+            "t": 293.06,
             "r": 502.21,
-            "b": 268.61,
+            "b": 269.27,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1263,9 +1263,9 @@
           "page_no": 3,
           "bbox": {
             "l": 90.0,
-            "t": 268.21,
+            "t": 265.46,
             "r": 521.88,
-            "b": 227.09,
+            "b": 227.75,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1292,9 +1292,9 @@
           "page_no": 3,
           "bbox": {
             "l": 72.0,
-            "t": 184.54,
+            "t": 181.46,
             "r": 311.96,
-            "b": 169.66,
+            "b": 170.4,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1320,9 +1320,9 @@
           "page_no": 3,
           "bbox": {
             "l": 72.0,
-            "t": 155.41,
+            "t": 152.66,
             "r": 518.9,
-            "b": 114.29,
+            "b": 114.95,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1347,9 +1347,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 769.57,
+            "t": 766.82,
             "r": 514.56,
-            "b": 728.69,
+            "b": 729.35,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1358,10 +1358,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
-      "text": "Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
+      "orig": "\u221e Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
+      "text": "\u221e Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/38",
@@ -1376,9 +1376,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 728.29,
+            "t": 725.54,
             "r": 521.9,
-            "b": 687.41,
+            "b": 688.07,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1387,10 +1387,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
-      "text": "Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
+      "orig": "\u221e Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
+      "text": "\u221e Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/39",
@@ -1405,9 +1405,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 686.77,
+            "t": 684.02,
             "r": 515.85,
-            "b": 645.65,
+            "b": 646.31,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1416,10 +1416,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
-      "text": "Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
+      "orig": "\u221e Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
+      "text": "\u221e Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/40",
@@ -1434,9 +1434,9 @@
           "page_no": 4,
           "bbox": {
             "l": 72.0,
-            "t": 603.34,
+            "t": 600.26,
             "r": 295.45,
-            "b": 588.46,
+            "b": 589.2,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1462,9 +1462,9 @@
           "page_no": 4,
           "bbox": {
             "l": 72.0,
-            "t": 573.73,
-            "r": 521.21,
-            "b": 560.45,
+            "t": 570.98,
+            "r": 521.22,
+            "b": 561.11,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1489,9 +1489,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 546.37,
+            "t": 543.62,
             "r": 523.84,
-            "b": 491.57,
+            "b": 492.23,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1518,9 +1518,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 491.17,
+            "t": 488.42,
             "r": 514.53,
-            "b": 436.37,
+            "b": 437.03,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1547,9 +1547,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 435.97,
+            "t": 433.22,
             "r": 502.92,
-            "b": 381.17,
+            "b": 381.83,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1576,9 +1576,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 380.77,
+            "t": 378.02,
             "r": 516.92,
-            "b": 339.89,
+            "b": 340.55,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1605,9 +1605,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 339.25,
+            "t": 336.5,
             "r": 510.91,
-            "b": 298.13,
+            "b": 298.79,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1634,9 +1634,9 @@
           "page_no": 4,
           "bbox": {
             "l": 72.0,
-            "t": 255.82,
+            "t": 252.74,
             "r": 228.36,
-            "b": 240.94,
+            "b": 241.68,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1662,9 +1662,9 @@
           "page_no": 4,
           "bbox": {
             "l": 72.0,
-            "t": 226.45,
+            "t": 223.7,
             "r": 515.05,
-            "b": 199.25,
+            "b": 199.91,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1689,9 +1689,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 184.93,
+            "t": 182.18,
             "r": 518.27,
-            "b": 157.97,
+            "b": 158.63,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1700,10 +1700,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
-      "text": "Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
+      "orig": "\u221e Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
+      "text": "\u221e Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/50",
@@ -1718,9 +1718,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 157.33,
+            "t": 154.58,
             "r": 525.52,
-            "b": 116.45,
+            "b": 117.11,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1729,10 +1729,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
-      "text": "Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
+      "orig": "\u221e Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
+      "text": "\u221e Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/51",
@@ -1747,9 +1747,9 @@
           "page_no": 4,
           "bbox": {
             "l": 90.0,
-            "t": 116.05,
+            "t": 113.3,
             "r": 518.91,
-            "b": 88.61,
+            "b": 89.27,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -1758,10 +1758,10 @@
           ]
         }
       ],
-      "orig": "\u00b7 Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
-      "text": "Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
+      "orig": "\u221e Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
+      "text": "\u221e Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": ""
     },
     {
       "self_ref": "#/texts/52",
@@ -1776,9 +1776,9 @@
           "page_no": 5,
           "bbox": {
             "l": 72.0,
-            "t": 741.73,
+            "t": 738.98,
             "r": 510.5,
-            "b": 673.01,
+            "b": 673.67,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

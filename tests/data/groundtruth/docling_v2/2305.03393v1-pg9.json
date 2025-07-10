@@ -64,9 +64,9 @@
           "page_no": 1,
           "bbox": {
             "l": 194.48,
-            "t": 700.51,
-            "r": 447.54,
-            "b": 689.22,
+            "t": 698.34,
+            "r": 447.55,
+            "b": 689.96,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -91,9 +91,9 @@
           "page_no": 1,
           "bbox": {
             "l": 475.98,
-            "t": 700.51,
+            "t": 698.34,
             "r": 480.59,
-            "b": 689.22,
+            "b": 689.96,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -118,9 +118,9 @@
           "page_no": 1,
           "bbox": {
             "l": 134.76,
-            "t": 675.54,
+            "t": 673.13,
             "r": 480.6,
-            "b": 639.09,
+            "b": 639.92,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -145,9 +145,9 @@
           "page_no": 1,
           "bbox": {
             "l": 134.76,
-            "t": 625.29,
+            "t": 622.84,
             "r": 318.45,
-            "b": 612.79,
+            "b": 613.62,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -173,9 +173,9 @@
           "page_no": 1,
           "bbox": {
             "l": 134.76,
-            "t": 608.88,
+            "t": 606.47,
             "r": 480.6,
-            "b": 536.58,
+            "b": 536.93,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -200,9 +200,9 @@
           "page_no": 1,
           "bbox": {
             "l": 134.76,
-            "t": 519.21,
+            "t": 518.26,
             "r": 480.6,
-            "b": 464.02,
+            "b": 464.76,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -227,9 +227,9 @@
           "page_no": 1,
           "bbox": {
             "l": 134.76,
-            "t": 286.33,
+            "t": 283.88,
             "r": 264.41,
-            "b": 273.83,
+            "b": 274.65,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -255,19 +255,19 @@
           "page_no": 1,
           "bbox": {
             "l": 134.76,
-            "t": 269.92,
+            "t": 267.51,
             "r": 480.72,
-            "b": 173.7,
+            "b": 174.53,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            555
+            557
           ]
         }
       ],
-      "orig": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables.",
-      "text": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables."
+      "orig": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse and large tables.",
+      "text": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse and large tables."
     },
     {
       "self_ref": "#/texts/8",
@@ -282,9 +282,9 @@
           "page_no": 1,
           "bbox": {
             "l": 134.76,
-            "t": 174.28,
+            "t": 171.87,
             "r": 480.6,
-            "b": 125.88,
+            "b": 126.71,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -339,9 +339,9 @@
           {
             "bbox": {
               "l": 160.37,
-              "t": 339.46,
-              "r": 168.05,
-              "b": 350.75,
+              "t": 341.63,
+              "r": 168.04,
+              "b": 350.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 2,
@@ -358,9 +358,9 @@
           {
             "bbox": {
               "l": 207.97,
-              "t": 339.46,
+              "t": 341.63,
               "r": 215.65,
-              "b": 350.75,
+              "b": 350.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 2,
@@ -377,9 +377,9 @@
           {
             "bbox": {
               "l": 239.8,
-              "t": 344.94,
+              "t": 347.11,
               "r": 278.33,
-              "b": 356.23,
+              "b": 355.48,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 2,
@@ -396,9 +396,9 @@
           {
             "bbox": {
               "l": 324.67,
-              "t": 339.46,
+              "t": 341.63,
               "r": 348.26,
-              "b": 350.75,
+              "b": 350.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -415,9 +415,9 @@
           {
             "bbox": {
               "l": 396.27,
-              "t": 339.46,
-              "r": 417.13,
-              "b": 350.75,
+              "t": 341.63,
+              "r": 417.12,
+              "b": 350.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -434,9 +434,9 @@
           {
             "bbox": {
               "l": 394.93,
-              "t": 350.42,
+              "t": 352.59,
               "r": 418.47,
-              "b": 361.71,
+              "b": 360.96,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -453,9 +453,9 @@
           {
             "bbox": {
               "l": 430.77,
-              "t": 339.46,
+              "t": 341.63,
               "r": 467.14,
-              "b": 350.75,
+              "b": 350.0,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -472,9 +472,9 @@
           {
             "bbox": {
               "l": 427.15,
-              "t": 350.42,
-              "r": 470.77,
-              "b": 361.71,
+              "t": 352.59,
+              "r": 445.07,
+              "b": 360.96,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -491,9 +491,9 @@
           {
             "bbox": {
               "l": 286.69,
-              "t": 352.41,
-              "r": 312.33,
-              "b": 363.7,
+              "t": 354.58,
+              "r": 312.32,
+              "b": 362.95,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -510,9 +510,9 @@
           {
             "bbox": {
               "l": 320.7,
-              "t": 352.41,
+              "t": 354.58,
               "r": 353.72,
-              "b": 363.7,
+              "b": 362.95,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -529,9 +529,9 @@
           {
             "bbox": {
               "l": 369.31,
-              "t": 352.41,
+              "t": 354.58,
               "r": 379.03,
-              "b": 363.7,
+              "b": 362.95,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -548,9 +548,9 @@
           {
             "bbox": {
               "l": 161.91,
-              "t": 371.24,
+              "t": 373.41,
               "r": 166.51,
-              "b": 382.53,
+              "b": 381.78,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -567,9 +567,9 @@
           {
             "bbox": {
               "l": 209.51,
-              "t": 371.24,
+              "t": 373.41,
               "r": 214.12,
-              "b": 382.53,
+              "b": 381.78,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -586,9 +586,9 @@
           {
             "bbox": {
               "l": 246.71,
-              "t": 365.76,
+              "t": 367.93,
               "r": 271.41,
-              "b": 377.05,
+              "b": 376.3,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -605,9 +605,9 @@
           {
             "bbox": {
               "l": 289.02,
-              "t": 365.76,
+              "t": 367.93,
               "r": 310.01,
-              "b": 377.05,
+              "b": 376.3,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -624,9 +624,9 @@
           {
             "bbox": {
               "l": 326.72,
-              "t": 365.76,
+              "t": 367.93,
               "r": 347.71,
-              "b": 377.05,
+              "b": 376.3,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -643,9 +643,9 @@
           {
             "bbox": {
               "l": 363.68,
-              "t": 365.76,
+              "t": 367.93,
               "r": 384.67,
-              "b": 377.05,
+              "b": 376.3,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -662,9 +662,9 @@
           {
             "bbox": {
               "l": 397.27,
-              "t": 365.7,
+              "t": 366.64,
               "r": 416.13,
-              "b": 377.1,
+              "b": 376.77,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -681,9 +681,9 @@
           {
             "bbox": {
               "l": 439.53,
-              "t": 365.7,
-              "r": 458.38,
-              "b": 377.1,
+              "t": 366.64,
+              "r": 458.39,
+              "b": 376.77,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -700,9 +700,9 @@
           {
             "bbox": {
               "l": 161.91,
-              "t": 397.54,
+              "t": 399.71,
               "r": 166.51,
-              "b": 408.83,
+              "b": 408.08,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -719,9 +719,9 @@
           {
             "bbox": {
               "l": 209.51,
-              "t": 397.54,
+              "t": 399.71,
               "r": 214.12,
-              "b": 408.83,
+              "b": 408.08,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -738,9 +738,9 @@
           {
             "bbox": {
               "l": 246.71,
-              "t": 392.06,
+              "t": 394.23,
               "r": 271.41,
-              "b": 403.35,
+              "b": 402.6,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -757,9 +757,9 @@
           {
             "bbox": {
               "l": 289.02,
-              "t": 392.06,
+              "t": 394.23,
               "r": 310.01,
-              "b": 403.35,
+              "b": 402.6,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -776,9 +776,9 @@
           {
             "bbox": {
               "l": 326.72,
-              "t": 392.06,
+              "t": 394.23,
               "r": 347.71,
-              "b": 403.35,
+              "b": 402.6,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -795,9 +795,9 @@
           {
             "bbox": {
               "l": 363.68,
-              "t": 392.06,
+              "t": 394.23,
               "r": 384.67,
-              "b": 403.35,
+              "b": 402.6,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -814,9 +814,9 @@
           {
             "bbox": {
               "l": 394.62,
-              "t": 392.0,
+              "t": 392.94,
               "r": 418.78,
-              "b": 403.4,
+              "b": 403.08,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -833,9 +833,9 @@
           {
             "bbox": {
               "l": 439.53,
-              "t": 392.0,
-              "r": 458.38,
-              "b": 403.4,
+              "t": 392.94,
+              "r": 458.39,
+              "b": 403.08,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -852,9 +852,9 @@
           {
             "bbox": {
               "l": 161.91,
-              "t": 423.84,
+              "t": 426.01,
               "r": 166.51,
-              "b": 435.13,
+              "b": 434.38,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -871,9 +871,9 @@
           {
             "bbox": {
               "l": 209.51,
-              "t": 423.84,
+              "t": 426.01,
               "r": 214.12,
-              "b": 435.13,
+              "b": 434.38,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -890,9 +890,9 @@
           {
             "bbox": {
               "l": 246.71,
-              "t": 418.36,
+              "t": 420.53,
               "r": 271.41,
-              "b": 429.65,
+              "b": 428.9,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -909,9 +909,9 @@
           {
             "bbox": {
               "l": 289.02,
-              "t": 418.36,
+              "t": 420.53,
               "r": 310.01,
-              "b": 429.65,
+              "b": 428.9,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -928,9 +928,9 @@
           {
             "bbox": {
               "l": 326.72,
-              "t": 418.36,
+              "t": 420.53,
               "r": 347.71,
-              "b": 429.65,
+              "b": 428.9,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -947,9 +947,9 @@
           {
             "bbox": {
               "l": 363.68,
-              "t": 418.36,
+              "t": 420.53,
               "r": 384.67,
-              "b": 429.65,
+              "b": 428.9,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -966,9 +966,9 @@
           {
             "bbox": {
               "l": 394.62,
-              "t": 418.3,
+              "t": 419.24,
               "r": 418.78,
-              "b": 429.7,
+              "b": 429.38,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -985,9 +985,9 @@
           {
             "bbox": {
               "l": 439.53,
-              "t": 418.3,
-              "r": 458.38,
-              "b": 429.7,
+              "t": 419.24,
+              "r": 458.39,
+              "b": 429.38,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1004,9 +1004,9 @@
           {
             "bbox": {
               "l": 161.91,
-              "t": 450.14,
+              "t": 452.31,
               "r": 166.51,
-              "b": 461.43,
+              "b": 460.69,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1023,9 +1023,9 @@
           {
             "bbox": {
               "l": 209.51,
-              "t": 450.14,
+              "t": 452.31,
               "r": 214.12,
-              "b": 461.43,
+              "b": 460.69,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1042,9 +1042,9 @@
           {
             "bbox": {
               "l": 246.71,
-              "t": 444.66,
+              "t": 446.83,
               "r": 271.41,
-              "b": 455.95,
+              "b": 455.21,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1061,9 +1061,9 @@
           {
             "bbox": {
               "l": 289.02,
-              "t": 444.66,
+              "t": 446.83,
               "r": 310.01,
-              "b": 455.95,
+              "b": 455.21,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1080,9 +1080,9 @@
           {
             "bbox": {
               "l": 329.02,
-              "t": 444.66,
-              "r": 345.4,
-              "b": 455.95,
+              "t": 446.83,
+              "r": 345.41,
+              "b": 455.21,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1099,9 +1099,9 @@
           {
             "bbox": {
               "l": 362.09,
-              "t": 444.6,
+              "t": 445.54,
               "r": 386.25,
-              "b": 456.0,
+              "b": 455.68,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1118,9 +1118,9 @@
           {
             "bbox": {
               "l": 394.62,
-              "t": 444.6,
+              "t": 445.54,
               "r": 418.78,
-              "b": 456.0,
+              "b": 455.68,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1137,9 +1137,9 @@
           {
             "bbox": {
               "l": 439.53,
-              "t": 444.6,
-              "r": 458.38,
-              "b": 456.0,
+              "t": 445.54,
+              "r": 458.39,
+              "b": 455.68,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
@@ -1161,9 +1161,9 @@
             {
               "bbox": {
                 "l": 160.37,
-                "t": 339.46,
-                "r": 168.05,
-                "b": 350.75,
+                "t": 341.63,
+                "r": 168.04,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1180,9 +1180,9 @@
             {
               "bbox": {
                 "l": 207.97,
-                "t": 339.46,
+                "t": 341.63,
                 "r": 215.65,
-                "b": 350.75,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1199,9 +1199,9 @@
             {
               "bbox": {
                 "l": 239.8,
-                "t": 344.94,
+                "t": 347.11,
                 "r": 278.33,
-                "b": 356.23,
+                "b": 355.48,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1218,9 +1218,9 @@
             {
               "bbox": {
                 "l": 324.67,
-                "t": 339.46,
+                "t": 341.63,
                 "r": 348.26,
-                "b": 350.75,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1237,9 +1237,9 @@
             {
               "bbox": {
                 "l": 324.67,
-                "t": 339.46,
+                "t": 341.63,
                 "r": 348.26,
-                "b": 350.75,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1256,9 +1256,9 @@
             {
               "bbox": {
                 "l": 324.67,
-                "t": 339.46,
+                "t": 341.63,
                 "r": 348.26,
-                "b": 350.75,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1275,9 +1275,9 @@
             {
               "bbox": {
                 "l": 396.27,
-                "t": 339.46,
-                "r": 417.13,
-                "b": 350.75,
+                "t": 341.63,
+                "r": 417.12,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1294,9 +1294,9 @@
             {
               "bbox": {
                 "l": 430.77,
-                "t": 339.46,
+                "t": 341.63,
                 "r": 467.14,
-                "b": 350.75,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1315,9 +1315,9 @@
             {
               "bbox": {
                 "l": 160.37,
-                "t": 339.46,
-                "r": 168.05,
-                "b": 350.75,
+                "t": 341.63,
+                "r": 168.04,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1334,9 +1334,9 @@
             {
               "bbox": {
                 "l": 207.97,
-                "t": 339.46,
+                "t": 341.63,
                 "r": 215.65,
-                "b": 350.75,
+                "b": 350.0,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1353,9 +1353,9 @@
             {
               "bbox": {
                 "l": 239.8,
-                "t": 344.94,
+                "t": 347.11,
                 "r": 278.33,
-                "b": 356.23,
+                "b": 355.48,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 2,
@@ -1372,9 +1372,9 @@
             {
               "bbox": {
                 "l": 286.69,
-                "t": 352.41,
-                "r": 312.33,
-                "b": 363.7,
+                "t": 354.58,
+                "r": 312.32,
+                "b": 362.95,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1391,9 +1391,9 @@
             {
               "bbox": {
                 "l": 320.7,
-                "t": 352.41,
+                "t": 354.58,
                 "r": 353.72,
-                "b": 363.7,
+                "b": 362.95,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1410,9 +1410,9 @@
             {
               "bbox": {
                 "l": 369.31,
-                "t": 352.41,
+                "t": 354.58,
                 "r": 379.03,
-                "b": 363.7,
+                "b": 362.95,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1429,9 +1429,9 @@
             {
               "bbox": {
                 "l": 394.93,
-                "t": 350.42,
+                "t": 352.59,
                 "r": 418.47,
-                "b": 361.71,
+                "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1448,9 +1448,9 @@
             {
               "bbox": {
                 "l": 427.15,
-                "t": 350.42,
-                "r": 470.77,
-                "b": 361.71,
+                "t": 352.59,
+                "r": 445.07,
+                "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1469,9 +1469,9 @@
             {
               "bbox": {
                 "l": 161.91,
-                "t": 371.24,
+                "t": 373.41,
                 "r": 166.51,
-                "b": 382.53,
+                "b": 381.78,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1488,9 +1488,9 @@
             {
               "bbox": {
                 "l": 209.51,
-                "t": 371.24,
+                "t": 373.41,
                 "r": 214.12,
-                "b": 382.53,
+                "b": 381.78,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1507,9 +1507,9 @@
             {
               "bbox": {
                 "l": 246.71,
-                "t": 365.76,
+                "t": 367.93,
                 "r": 271.41,
-                "b": 377.05,
+                "b": 376.3,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1526,9 +1526,9 @@
             {
               "bbox": {
                 "l": 289.02,
-                "t": 365.76,
+                "t": 367.93,
                 "r": 310.01,
-                "b": 377.05,
+                "b": 376.3,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1545,9 +1545,9 @@
             {
               "bbox": {
                 "l": 326.72,
-                "t": 365.76,
+                "t": 367.93,
                 "r": 347.71,
-                "b": 377.05,
+                "b": 376.3,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1564,9 +1564,9 @@
             {
               "bbox": {
                 "l": 363.68,
-                "t": 365.76,
+                "t": 367.93,
                 "r": 384.67,
-                "b": 377.05,
+                "b": 376.3,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1583,9 +1583,9 @@
             {
               "bbox": {
                 "l": 397.27,
-                "t": 365.7,
+                "t": 366.64,
                 "r": 416.13,
-                "b": 377.1,
+                "b": 376.77,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1602,9 +1602,9 @@
             {
               "bbox": {
                 "l": 439.53,
-                "t": 365.7,
-                "r": 458.38,
-                "b": 377.1,
+                "t": 366.64,
+                "r": 458.39,
+                "b": 376.77,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1623,9 +1623,9 @@
             {
               "bbox": {
                 "l": 161.91,
-                "t": 397.54,
+                "t": 399.71,
                 "r": 166.51,
-                "b": 408.83,
+                "b": 408.08,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1642,9 +1642,9 @@
             {
               "bbox": {
                 "l": 209.51,
-                "t": 397.54,
+                "t": 399.71,
                 "r": 214.12,
-                "b": 408.83,
+                "b": 408.08,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1661,9 +1661,9 @@
             {
               "bbox": {
                 "l": 246.71,
-                "t": 392.06,
+                "t": 394.23,
                 "r": 271.41,
-                "b": 403.35,
+                "b": 402.6,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1680,9 +1680,9 @@
             {
               "bbox": {
                 "l": 289.02,
-                "t": 392.06,
+                "t": 394.23,
                 "r": 310.01,
-                "b": 403.35,
+                "b": 402.6,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1699,9 +1699,9 @@
             {
               "bbox": {
                 "l": 326.72,
-                "t": 392.06,
+                "t": 394.23,
                 "r": 347.71,
-                "b": 403.35,
+                "b": 402.6,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1718,9 +1718,9 @@
             {
               "bbox": {
                 "l": 363.68,
-                "t": 392.06,
+                "t": 394.23,
                 "r": 384.67,
-                "b": 403.35,
+                "b": 402.6,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1737,9 +1737,9 @@
             {
               "bbox": {
                 "l": 394.62,
-                "t": 392.0,
+                "t": 392.94,
                 "r": 418.78,
-                "b": 403.4,
+                "b": 403.08,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1756,9 +1756,9 @@
             {
               "bbox": {
                 "l": 439.53,
-                "t": 392.0,
-                "r": 458.38,
-                "b": 403.4,
+                "t": 392.94,
+                "r": 458.39,
+                "b": 403.08,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1777,9 +1777,9 @@
             {
               "bbox": {
                 "l": 161.91,
-                "t": 423.84,
+                "t": 426.01,
                 "r": 166.51,
-                "b": 435.13,
+                "b": 434.38,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1796,9 +1796,9 @@
             {
               "bbox": {
                 "l": 209.51,
-                "t": 423.84,
+                "t": 426.01,
                 "r": 214.12,
-                "b": 435.13,
+                "b": 434.38,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1815,9 +1815,9 @@
             {
               "bbox": {
                 "l": 246.71,
-                "t": 418.36,
+                "t": 420.53,
                 "r": 271.41,
-                "b": 429.65,
+                "b": 428.9,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1834,9 +1834,9 @@
             {
               "bbox": {
                 "l": 289.02,
-                "t": 418.36,
+                "t": 420.53,
                 "r": 310.01,
-                "b": 429.65,
+                "b": 428.9,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1853,9 +1853,9 @@
             {
               "bbox": {
                 "l": 326.72,
-                "t": 418.36,
+                "t": 420.53,
                 "r": 347.71,
-                "b": 429.65,
+                "b": 428.9,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1872,9 +1872,9 @@
             {
               "bbox": {
                 "l": 363.68,
-                "t": 418.36,
+                "t": 420.53,
                 "r": 384.67,
-                "b": 429.65,
+                "b": 428.9,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1891,9 +1891,9 @@
             {
               "bbox": {
                 "l": 394.62,
-                "t": 418.3,
+                "t": 419.24,
                 "r": 418.78,
-                "b": 429.7,
+                "b": 429.38,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1910,9 +1910,9 @@
             {
               "bbox": {
                 "l": 439.53,
-                "t": 418.3,
-                "r": 458.38,
-                "b": 429.7,
+                "t": 419.24,
+                "r": 458.39,
+                "b": 429.38,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1931,9 +1931,9 @@
             {
               "bbox": {
                 "l": 161.91,
-                "t": 450.14,
+                "t": 452.31,
                 "r": 166.51,
-                "b": 461.43,
+                "b": 460.69,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1950,9 +1950,9 @@
             {
               "bbox": {
                 "l": 209.51,
-                "t": 450.14,
+                "t": 452.31,
                 "r": 214.12,
-                "b": 461.43,
+                "b": 460.69,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1969,9 +1969,9 @@
             {
               "bbox": {
                 "l": 246.71,
-                "t": 444.66,
+                "t": 446.83,
                 "r": 271.41,
-                "b": 455.95,
+                "b": 455.21,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -1988,9 +1988,9 @@
             {
               "bbox": {
                 "l": 289.02,
-                "t": 444.66,
+                "t": 446.83,
                 "r": 310.01,
-                "b": 455.95,
+                "b": 455.21,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2007,9 +2007,9 @@
             {
               "bbox": {
                 "l": 329.02,
-                "t": 444.66,
-                "r": 345.4,
-                "b": 455.95,
+                "t": 446.83,
+                "r": 345.41,
+                "b": 455.21,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2026,9 +2026,9 @@
             {
               "bbox": {
                 "l": 362.09,
-                "t": 444.6,
+                "t": 445.54,
                 "r": 386.25,
-                "b": 456.0,
+                "b": 455.68,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2045,9 +2045,9 @@
             {
               "bbox": {
                 "l": 394.62,
-                "t": 444.6,
+                "t": 445.54,
                 "r": 418.78,
-                "b": 456.0,
+                "b": 455.68,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -2064,9 +2064,9 @@
             {
               "bbox": {
                 "l": 439.53,
-                "t": 444.6,
-                "r": 458.38,
-                "b": 456.0,
+                "t": 445.54,
+                "r": 458.39,
+                "b": 455.68,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
