@@ -14,7 +14,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_document
+from .verify_utils import CONFID_PREC, COORD_PREC, verify_document
 
 GENERATE: bool = GEN_TEST_DATA
 DATA_PATH: Path = Path("./tests/data/uspto/")
@@ -24,7 +24,11 @@ GT_PATH: Path = Path("./tests/data/groundtruth/docling_v2/")
 def _generate_groundtruth(doc: DoclingDocument, file_stem: str) -> None:
     with open(GT_PATH / f"{file_stem}.itxt", "w", encoding="utf-8") as file_obj:
         file_obj.write(doc._export_to_indented_text())
-    doc.save_as_json(GT_PATH / f"{file_stem}.json")
+    doc.save_as_json(
+        GT_PATH / f"{file_stem}.json",
+        coord_precision=COORD_PREC,
+        confid_precision=CONFID_PREC,
+    )
     doc.save_as_markdown(GT_PATH / f"{file_stem}.md")
 
 
@@ -88,7 +92,11 @@ def tables() -> list[tuple[Path, TableData]]:
 def test_patent_export(patents):
     for _, doc in patents:
         with NamedTemporaryFile(suffix=".yaml", delete=False) as tmp_file:
-            doc.save_as_yaml(Path(tmp_file.name))
+            doc.save_as_yaml(
+                Path(tmp_file.name),
+                coord_precision=COORD_PREC,
+                confid_precision=CONFID_PREC,
+            )
             assert os.path.getsize(tmp_file.name) > 0
 
         with NamedTemporaryFile(suffix=".html", delete=False) as tmp_file:

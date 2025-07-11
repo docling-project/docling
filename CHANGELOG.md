@@ -1,3 +1,19 @@
+## [v2.41.0](https://github.com/docling-project/docling/releases/tag/v2.41.0) - 2025-07-10
+
+### Feature
+
+* Layout model specification and multiple choices ([#1910](https://github.com/docling-project/docling/issues/1910)) ([`2b8616d`](https://github.com/docling-project/docling/commit/2b8616d6d5e2b4ca1de587cd7a0746d3fe8e227b))
+* Enable precision control in float serialization ([#1914](https://github.com/docling-project/docling/issues/1914)) ([`ec588df`](https://github.com/docling-project/docling/commit/ec588df97148818a6bee2512d5d81972b723a554))
+* Add image-text-to-text models in transformers ([#1772](https://github.com/docling-project/docling/issues/1772)) ([`a07ba86`](https://github.com/docling-project/docling/commit/a07ba863c4c3dacfecaca159faa5653097662755))
+* **vlm:** Dynamic prompts ([#1808](https://github.com/docling-project/docling/issues/1808)) ([`b8813ee`](https://github.com/docling-project/docling/commit/b8813eea806a33f3bcc4f865d7e6ceba8b2fffa5))
+
+### Fix
+
+* **ocr-utils:** Unit test and fix the `rotate_bounding_box` function ([#1897](https://github.com/docling-project/docling/issues/1897)) ([`931eb55`](https://github.com/docling-project/docling/commit/931eb55b8820765eb872961f295be0676852c73e))
+* Docs are missing osd packages for tesseract on RHEL ([#1905](https://github.com/docling-project/docling/issues/1905)) ([`e25873d`](https://github.com/docling-project/docling/commit/e25873d55766761741ad5781efd18bc3bfea5e3d))
+* Use only backend for picture classifier ([#1904](https://github.com/docling-project/docling/issues/1904)) ([`edd4356`](https://github.com/docling-project/docling/commit/edd4356aac25b62c30cae6d2e8c69095f63bd442))
+* Typo in asr options ([#1902](https://github.com/docling-project/docling/issues/1902)) ([`dd8fde7`](https://github.com/docling-project/docling/commit/dd8fde7f19ecd9695d6bc6cf94896a2cf87a0e7c))
+
 ## [v2.40.0](https://github.com/docling-project/docling/releases/tag/v2.40.0) - 2025-07-04
 
 ### Feature

@@ -10,6 +10,7 @@ from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.layout_model_specs import LayoutModelConfig
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
@@ -36,9 +37,6 @@ _log = logging.getLogger(__name__)
 
 
 class StandardPdfPipeline(PaginatedPipeline):
-    _layout_model_path = LayoutModel._model_path
-    _table_model_path = TableStructureModel._model_path
-
     def __init__(self, pipeline_options: PdfPipelineOptions):
         super().__init__(pipeline_options)
         self.pipeline_options: PdfPipelineOptions

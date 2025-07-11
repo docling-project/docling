@@ -12,6 +12,7 @@ from PIL import Image
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import BoundingBox, Cluster, LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
 from docling.datamodel.pipeline_options import LayoutOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import BasePageModel
@@ -25,9 +26,6 @@ _log = logging.getLogger(__name__)
 
 
 class LayoutModel(BasePageModel):
-    _model_repo_folder = "ds4sd--docling-models"
-    _model_path = "model_artifacts/layout"
-
     TEXT_ELEM_LABELS = [
         DocItemLabel.TEXT,
         DocItemLabel.FOOTNOTE,
@@ -59,25 +57,28 @@ class LayoutModel(BasePageModel):
         self.options = options
 
         device = decide_device(accelerator_options.device)
+        layout_model_config = options.model_spec
+        model_repo_folder = layout_model_config.model_repo_folder
+        model_path = layout_model_config.model_path
 
         if artifacts_path is None:
-            artifacts_path = self.download_models() / self._model_path
+            artifacts_path = (
+                self.download_models(layout_model_config=layout_model_config)
+                / model_path
+            )
         else:
-            # will become the default in the future
-            if (artifacts_path / self._model_repo_folder).exists():
-                artifacts_path = (
-                    artifacts_path / self._model_repo_folder / self._model_path
-                )
-            elif (artifacts_path / self._model_path).exists():
+            if (artifacts_path / model_repo_folder).exists():
+                artifacts_path = artifacts_path / model_repo_folder / model_path
+            elif (artifacts_path / model_path).exists():
                 warnings.warn(
                     "The usage of artifacts_path containing directly "
-                    f"{self._model_path} is deprecated. Please point "
+                    f"{model_path} is deprecated. Please point "
                     "the artifacts_path to the parent containing "
-                    f"the {self._model_repo_folder} folder.",
+                    f"the {model_repo_folder} folder.",
                     DeprecationWarning,
                     stacklevel=3,
                 )
-                artifacts_path = artifacts_path / self._model_path
+                artifacts_path = artifacts_path / model_path
 
         self.layout_predictor = LayoutPredictor(
             artifact_path=str(artifacts_path),
@@ -90,10 +91,11 @@ class LayoutModel(BasePageModel):
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
+        layout_model_config: LayoutModelConfig = DOCLING_LAYOUT_V2,
     ) -> Path:
         return download_hf_model(
-            repo_id="ds4sd/docling-models",
-            revision="v2.2.0",
+            repo_id=layout_model_config.repo_id,
+            revision=layout_model_config.revision,
             local_dir=local_dir,
             force=force,
             progress=progress,

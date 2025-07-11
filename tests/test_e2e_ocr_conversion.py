@@ -3,6 +3,9 @@ from pathlib import Path
 from typing import List, Tuple
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
+from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
@@ -18,9 +21,8 @@ from docling.datamodel.pipeline_options import (
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_conversion_result_v1, verify_conversion_result_v2
+from .verify_utils import verify_conversion_result_v2
 
-GENERATE_V1 = GEN_TEST_DATA
 GENERATE_V2 = GEN_TEST_DATA
 
 
@@ -45,7 +47,7 @@ def get_converter(ocr_options: OcrOptions):
         format_options={
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=pipeline_options,
-                backend=DoclingParseDocumentBackend,
+                backend=DoclingParseDocumentBackend,  # PdfFormatOption().backend,
             )
         }
     )
@@ -88,13 +90,6 @@ def test_e2e_conversions():
             print(f"converting {pdf_path}")
 
             doc_result: ConversionResult = converter.convert(pdf_path)
-
-            verify_conversion_result_v1(
-                input_path=pdf_path,
-                doc_result=doc_result,
-                generate=GENERATE_V1,
-                fuzzy=True,
-            )
 
             verify_conversion_result_v2(
                 input_path=pdf_path,
