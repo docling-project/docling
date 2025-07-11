@@ -809,6 +809,7 @@ name = "docling"
 version = "2.41.0"
 source = { editable = "." }
 dependencies = [
+    { name = "accelerate" },
     { name = "beautifulsoup4" },
     { name = "certifi" },
     { name = "docling-core", extra = ["chunking"] },
@@ -902,6 +903,7 @@ examples = [
 
 [package.metadata]
 requires-dist = [
+    { name = "accelerate", specifier = ">=1.8.1" },
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
