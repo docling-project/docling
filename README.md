@@ -58,15 +58,15 @@ More [detailed installation instructions](https://docling-project.github.io/docl
 
 ## Getting started
 
-To convert individual documents with python, use `convert()`, for example:
+To convert individual documents with python, use `convert_single()`, for example:
 
 ```python
 from docling.document_converter import DocumentConverter
 
 source = "https://arxiv.org/pdf/2408.09869"  # document per local path or URL
 converter = DocumentConverter()
-result = converter.convert(source)
-print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
+result = converter.convert_single(source)
+print(result.render_as_markdown())  # output: "## Docling Technical Report[...]"
 ```
 
 More [advanced usage options](https://docling-project.github.io/docling/usage/) are available in
