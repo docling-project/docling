@@ -5,17 +5,19 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Optional
 
+from PIL import Image
+
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.base_models import Page, VlmPrediction
+from docling.datamodel.base_models import Page, VlmPrediction, VlmPredictionToken
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.models.base_model import BasePageModel
+from docling.models.base_model import BasePageModel, BaseVlmModel
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
@@ -25,7 +27,7 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
-class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMixin):
+class HuggingFaceTransformersVlmModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         enabled: bool,
@@ -36,6 +38,11 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
         self.enabled = enabled
 
         self.vlm_options = vlm_options
+
+        self.scale = self.vlm_options.scale
+        self.max_size = 512
+        if isinstance(self.vlm_options.max_size, int):
+            self.max_size = self.vlm_options.max_size
 
         if self.enabled:
             import torch
@@ -119,6 +126,43 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
 
+    def get_user_prompt(self, page: Optional[Page]) -> str:
+        # Define prompt structure
+        user_prompt = ""
+        if callable(self.vlm_options.prompt) and page is not None:
+            user_prompt = self.vlm_options.prompt(page.parsed_page)
+        elif isinstance(self.vlm_options.prompt, str):
+            user_prompt = self.vlm_options.prompt
+
+        prompt = self.formulate_prompt(user_prompt)
+        return prompt
+
+    def predict_on_page_image(
+        self, *, page_image: Image.Image, prompt: str, output_tokens: bool = False
+    ) -> tuple[str, Optional[list[VlmPredictionToken]]]:
+        output = ""
+
+        inputs = self.processor(
+            text=prompt, images=[page_image], return_tensors="pt"
+        ).to(self.device)
+
+        # Call model to generate:
+        generated_ids = self.vlm_model.generate(
+            **inputs,
+            max_new_tokens=self.max_new_tokens,
+            use_cache=self.use_cache,
+            temperature=self.temperature,
+            generation_config=self.generation_config,
+            **self.vlm_options.extra_generation_config,
+        )
+
+        output = self.processor.batch_decode(
+            generated_ids[:, inputs["input_ids"].shape[1] :],
+            skip_special_tokens=False,
+        )[0]
+
+        return output, []
+
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
@@ -130,22 +174,29 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 with TimeRecorder(conv_res, "vlm"):
                     assert page.size is not None
 
-                    hi_res_image = page.get_image(
+                    page_image = page.get_image(
                         scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
                     )
 
+                    assert page_image is not None
+
                     # Define prompt structure
+                    """
                     if callable(self.vlm_options.prompt):
                         user_prompt = self.vlm_options.prompt(page.parsed_page)
                     else:
                         user_prompt = self.vlm_options.prompt
                     prompt = self.formulate_prompt(user_prompt)
-
-                    inputs = self.processor(
-                        text=prompt, images=[hi_res_image], return_tensors="pt"
-                    ).to(self.device)
+                    """
+                    prompt = self.get_user_prompt(page=page)
 
                     start_time = time.time()
+
+                    """
+                    inputs = self.processor(
+                        text=prompt, images=[page_image], return_tensors="pt"
+                    ).to(self.device)
+
                     # Call model to generate:
                     generated_ids = self.vlm_model.generate(
                         **inputs,
@@ -166,9 +217,14 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
+                    """
+                    generated_text = self.predict_on_page_image(
+                        page_image=page_image, prompt=prompt, output_tokens=False
+                    )
+
                     page.predictions.vlm_response = VlmPrediction(
-                        text=generated_texts,
-                        generation_time=generation_time,
+                        text=generated_text,
+                        generation_time=time.time() - start_time,
                     )
 
                 yield page
