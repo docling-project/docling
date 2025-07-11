@@ -70,7 +70,7 @@ dependencies = [
   'scipy (>=1.6.0,<2.0.0)',
   # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
   # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
-  "accelerate>=1.8.1",
+  "accelerate>=1.0.0,<2",
 ]
 
 [project.urls]
