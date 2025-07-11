@@ -320,6 +320,8 @@ class TesseractOcrCliModel(BaseOcrModel):
 
 
 def _parse_orientation(df_osd: pd.DataFrame) -> int:
-    orientations = df_osd.loc[df_osd["key"] == "Orientation in degrees"].value.tolist()
-    orientation = parse_tesseract_orientation(orientations[0].strip())
+    # For strictly optimal performance with invariant dataframe format:
+    mask = df_osd["key"].values == "Orientation in degrees"
+    orientation_val = df_osd["value"].values[mask][0]
+    orientation = parse_tesseract_orientation(orientation_val.strip())
     return orientation
