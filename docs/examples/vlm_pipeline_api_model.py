@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from pathlib import Path
@@ -83,6 +84,14 @@ def lms_olmocr_vlm_options(model: str):
             f"RAW_TEXT_START\n{base_text}\nRAW_TEXT_END"
         )
 
+    def _decode_olmocr_response(generated_text: str) -> str:
+        try:
+            generated_json = json.loads(generated_text)
+        except json.decoder.JSONDecodeError:
+            return ""
+
+        return generated_json["natural_text"]
+
     options = ApiVlmOptions(
         url="http://localhost:1234/v1/chat/completions",
         params=dict(
@@ -92,6 +101,7 @@ def lms_olmocr_vlm_options(model: str):
         timeout=90,
         scale=1.0,
         max_size=1024,  # from OlmOcr pipeline
+        decode_response=_decode_olmocr_response,
         response_format=ResponseFormat.MARKDOWN,
     )
     return options

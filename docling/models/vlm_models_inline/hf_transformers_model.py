@@ -166,6 +166,10 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
+                    if self.vlm_options.decode_response:
+                        generated_texts = self.vlm_options.decode_response(
+                            generated_texts
+                        )
                     page.predictions.vlm_response = VlmPrediction(
                         text=generated_texts,
                         generation_time=generation_time,

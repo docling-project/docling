@@ -142,6 +142,8 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
                     _log.debug(
                         f"{generation_time:.2f} seconds for {len(tokens)} tokens ({len(tokens) / generation_time} tokens/sec)."
                     )
+                    if self.vlm_options.decode_response:
+                        page_tags = self.vlm_options.decode_response(page_tags)
                     page.predictions.vlm_response = VlmPrediction(
                         text=page_tags,
                         generation_time=generation_time,
