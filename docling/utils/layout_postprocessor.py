@@ -267,8 +267,9 @@ class LayoutPostprocessor:
         # Initial cell assignment
         clusters = self._assign_cells_to_clusters(clusters)
 
-        # Remove clusters with no cells
-        clusters = [cluster for cluster in clusters if cluster.cells]
+        # Remove clusters with no cells (if keep_empty_clusters is False)
+        if not self.options.keep_empty_clusters:
+            clusters = [cluster for cluster in clusters if cluster.cells]
 
         # Handle orphaned cells
         unassigned = self._find_unassigned_cells(clusters)
