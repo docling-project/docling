@@ -332,3 +332,41 @@ class ProcessingPipeline(str, Enum):
     STANDARD = "standard"
     VLM = "vlm"
     ASR = "asr"
+
+
+class AsyncPdfPipelineOptions(PdfPipelineOptions):
+    """Enhanced options for async pipeline with cross-document batching"""
+
+    # GPU batching configuration - larger than sync defaults
+    layout_batch_size: int = 64
+    ocr_batch_size: int = 32
+    table_batch_size: int = 16
+
+    # Async coordination
+    batch_timeout_seconds: float = 2.0
+    max_concurrent_extractions: int = 16
+
+    # Queue sizes for backpressure
+    extraction_queue_size: int = 100
+    model_queue_size_multiplier: float = 2.0  # queue_size = batch_size * multiplier
+
+    # Resource management
+    max_gpu_memory_mb: Optional[int] = None
+    enable_resource_monitoring: bool = True
+
+    # Safety settings
+    enable_exception_isolation: bool = True
+    cleanup_validation: bool = True
+
+    @classmethod
+    def from_sync_options(
+        cls, sync_options: PdfPipelineOptions
+    ) -> "AsyncPdfPipelineOptions":
+        """Convert sync options to async options"""
+        # Start with sync options and override with async defaults
+        data = sync_options.model_dump()
+
+        # Remove sync-specific fields if any
+        data.pop("page_batch_size", None)  # We don't use fixed page batching
+
+        return cls(**data)
