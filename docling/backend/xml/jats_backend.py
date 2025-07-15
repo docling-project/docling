@@ -93,8 +93,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Initialize the root of the document hierarchy
         self.root: Optional[NodeItem] = None
-
-        self.valid = False
+        self.hlevel: int = 0
+        self.valid: bool = False
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.path_or_stream.seek(0)
@@ -147,6 +147,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 binary_hash=self.document_hash,
             )
             doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+            self.hlevel = 0
 
             # Get metadata XML components
             xml_components: XMLComponents = self._parse_metadata()
@@ -304,7 +305,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             title: str = abstract["label"] or DEFAULT_HEADER_ABSTRACT
             if not text:
                 continue
-            parent = doc.add_heading(parent=self.root, text=title)
+            parent = doc.add_heading(
+                parent=self.root, text=title, level=self.hlevel + 1
+            )
             doc.add_text(
                 parent=parent,
                 text=text,
@@ -637,7 +640,10 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 elif child.tag == "ack":
                     text = DEFAULT_HEADER_ACKNOWLEDGMENTS
                 if text:
-                    new_parent = doc.add_heading(text=text, parent=parent)
+                    self.hlevel += 1
+                    new_parent = doc.add_heading(
+                        text=text, parent=parent, level=self.hlevel
+                    )
             elif child.tag == "list":
                 new_parent = doc.add_group(
                     label=GroupLabel.LIST, name="list", parent=parent
@@ -694,6 +700,8 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
                 new_text = self._walk_linear(doc, new_parent, child)
                 if not (node.getparent().tag == "p" and node.tag in flush_tags):
                     node_text += new_text
+                if child.tag in ("sec", "ack") and text:
+                    self.hlevel -= 1
 
             # pick up the tail text
             node_text += child.tail.replace("\n", " ") if child.tail else ""
