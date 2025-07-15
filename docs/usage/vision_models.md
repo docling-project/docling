@@ -1,5 +1,5 @@
 
-The `VlmPipeline` in Docling allows to convert documents end-to-end using a vision-language model.
+The `VlmPipeline` in Docling allows you to convert documents end-to-end using a vision-language model.
 
 Docling supports vision-language models which output:
 
@@ -39,7 +39,7 @@ For running Docling using local models with the `VlmPipeline`:
 ## Available local models
 
 By default, the vision-language models are running locally.
-Docling allows to choose between the Hugging Face [Transformers](https://github.com/huggingface/transformers) framweork and the [MLX](https://github.com/Blaizzy/mlx-vlm) (for Apple devices with MPS acceleration) one.
+Docling allows to choose between the Hugging Face [Transformers](https://github.com/huggingface/transformers) framework and the [MLX](https://github.com/Blaizzy/mlx-vlm) (for Apple devices with MPS acceleration) one.
 
 The following table reports the models currently available out-of-the-box.
 
@@ -54,7 +54,7 @@ The following table reports the models currently available out-of-the-box.
 | `vlm_model_specs.PHI4_TRANSFORMERS` | [microsoft/Phi-4-multimodal-instruct](https://huggingface.co/microsoft/Phi-4-multimodal-instruct) | `Transformers/AutoModelForCasualLM` | CPU | 1 | 1175.67 |
 | `vlm_model_specs.PIXTRAL_12B_TRANSFORMERS` | [mistral-community/pixtral-12b](https://huggingface.co/mistral-community/pixtral-12b) | `Transformers/AutoModelForVision2Seq` | CPU | 1 | 1828.21 |
 
-_Inference time is computed on a Macbook M3 Max using the example page `tests/data/pdf/2305.03393v1-pg9.pdf`. The comparision is done with the example [compare_vlm_models.py](./../examples/compare_vlm_models.py)._
+_Inference time is computed on a Macbook M3 Max using the example page `tests/data/pdf/2305.03393v1-pg9.pdf`. The comparison is done with the example [compare_vlm_models.py](./../examples/compare_vlm_models.py)._
 
 For choosing the model, the code snippet above can be extended as follow
 
