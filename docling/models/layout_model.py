@@ -7,6 +7,7 @@ from typing import Optional
 
 import numpy as np
 from docling_core.types.doc import DocItemLabel
+from docling_core.types.doc.page import TextCell
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -15,7 +16,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2, LayoutModelConfig
 from docling.datamodel.pipeline_options import LayoutOptions
 from docling.datamodel.settings import settings
-from docling.models.base_model import BasePageModel
+from docling.models.base_model import BaseLayoutModel, BasePageModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.layout_postprocessor import LayoutPostprocessor
@@ -25,7 +26,7 @@ from docling.utils.visualization import draw_clusters
 _log = logging.getLogger(__name__)
 
 
-class LayoutModel(BasePageModel):
+class LayoutModel(BaseLayoutModel):
     TEXT_ELEM_LABELS = [
         DocItemLabel.TEXT,
         DocItemLabel.FOOTNOTE,
@@ -158,6 +159,7 @@ class LayoutModel(BasePageModel):
                     page_image = page.get_image(scale=1.0)
                     assert page_image is not None
 
+                    """
                     clusters = []
                     for ix, pred_item in enumerate(
                         self.layout_predictor.predict(page_image)
@@ -176,14 +178,18 @@ class LayoutModel(BasePageModel):
                             cells=[],
                         )
                         clusters.append(cluster)
+                    """
+                    predicted_clusters = self.predict_on_page_image(
+                        page_image=page_image
+                    )
 
                     if settings.debug.visualize_raw_layout:
                         self.draw_clusters_and_cells_side_by_side(
-                            conv_res, page, clusters, mode_prefix="raw"
+                            conv_res, page, predicted_clusters, mode_prefix="raw"
                         )
 
                     # Apply postprocessing
-
+                    """
                     processed_clusters, processed_cells = LayoutPostprocessor(
                         page, clusters, self.options
                     ).postprocess()
@@ -210,6 +216,30 @@ class LayoutModel(BasePageModel):
                     page.predictions.layout = LayoutPrediction(
                         clusters=processed_clusters
                     )
+                    """
+                    page, processed_clusters, processed_cells = (
+                        self.postprocess_on_page_image(
+                            page=page, clusters=predicted_clusters
+                        )
+                    )
+
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore",
+                            "Mean of empty slice|invalid value encountered in scalar divide",
+                            RuntimeWarning,
+                            "numpy",
+                        )
+
+                        conv_res.confidence.pages[page.page_no].layout_score = float(
+                            np.mean([c.confidence for c in processed_clusters])
+                        )
+
+                        conv_res.confidence.pages[page.page_no].ocr_score = float(
+                            np.mean(
+                                [c.confidence for c in processed_cells if c.from_ocr]
+                            )
+                        )
 
                 if settings.debug.visualize_layout:
                     self.draw_clusters_and_cells_side_by_side(
@@ -217,3 +247,34 @@ class LayoutModel(BasePageModel):
                     )
 
                 yield page
+
+    def predict_on_page_image(self, *, page_image: Image.Image) -> list[Cluster]:
+        pred_items = self.layout_predictor.predict(page_image)
+
+        clusters = []
+        for ix, pred_item in enumerate(pred_items):
+            label = DocItemLabel(
+                pred_item["label"].lower().replace(" ", "_").replace("-", "_")
+            )  # Temporary, until docling-ibm-model uses docling-core types
+            cluster = Cluster(
+                id=ix,
+                label=label,
+                confidence=pred_item["confidence"],
+                bbox=BoundingBox.model_validate(pred_item),
+                cells=[],
+            )
+            clusters.append(cluster)
+
+        return clusters
+
+    def postprocess_on_page_image(
+        self, *, page: Page, clusters: list[Cluster]
+    ) -> tuple[Page, list[Cluster], list[TextCell]]:
+        processed_clusters, processed_cells = LayoutPostprocessor(
+            page, clusters, self.options
+        ).postprocess()
+        # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
+
+        page.predictions.layout = LayoutPrediction(clusters=processed_clusters)
+
+        return page, processed_clusters, processed_cells

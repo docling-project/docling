@@ -63,6 +63,7 @@ from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_TRANSFORMERS,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
+    VLM2STAGE,
     VlmModelType,
 )
 from docling.document_converter import (
@@ -627,6 +628,12 @@ def convert(  # noqa: C901
                             "To run SmolDocling faster, please install mlx-vlm:\n"
                             "pip install mlx-vlm"
                         )
+            elif vlm_model == VlmModelType.VLM2STAGE:
+                pipeline_options.vlm_options = VLM2STAGE
+            else:
+                raise ValueError(
+                    f"{vlm_model} is not of type GRANITE_VISION, GRANITE_VISION_OLLAMA, SMOLDOCLING_TRANSFORMERS or VLM2STAGE"
+                )
 
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options

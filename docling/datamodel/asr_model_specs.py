@@ -11,12 +11,13 @@ from docling.datamodel.pipeline_options_asr_model import (
     # ApiAsrOptions,
     InferenceAsrFramework,
     InlineAsrNativeWhisperOptions,
-    TransformersModelType,
+    InlineAsrOptions,
+    # TransformersModelType,
 )
 
 _log = logging.getLogger(__name__)
 
-WHISPER_TINY = InlineAsrNativeWhisperOptions(
+WHISPER_TINY: InlineAsrOptions = InlineAsrNativeWhisperOptions(
     repo_id="tiny",
     inference_framework=InferenceAsrFramework.WHISPER,
     verbose=True,
@@ -27,7 +28,7 @@ WHISPER_TINY = InlineAsrNativeWhisperOptions(
     max_time_chunk=30.0,
 )
 
-WHISPER_SMALL = InlineAsrNativeWhisperOptions(
+WHISPER_SMALL: InlineAsrOptions = InlineAsrNativeWhisperOptions(
     repo_id="small",
     inference_framework=InferenceAsrFramework.WHISPER,
     verbose=True,
@@ -38,7 +39,7 @@ WHISPER_SMALL = InlineAsrNativeWhisperOptions(
     max_time_chunk=30.0,
 )
 
-WHISPER_MEDIUM = InlineAsrNativeWhisperOptions(
+WHISPER_MEDIUM: InlineAsrOptions = InlineAsrNativeWhisperOptions(
     repo_id="medium",
     inference_framework=InferenceAsrFramework.WHISPER,
     verbose=True,
@@ -49,7 +50,7 @@ WHISPER_MEDIUM = InlineAsrNativeWhisperOptions(
     max_time_chunk=30.0,
 )
 
-WHISPER_BASE = InlineAsrNativeWhisperOptions(
+WHISPER_BASE: InlineAsrOptions = InlineAsrNativeWhisperOptions(
     repo_id="base",
     inference_framework=InferenceAsrFramework.WHISPER,
     verbose=True,
@@ -60,7 +61,7 @@ WHISPER_BASE = InlineAsrNativeWhisperOptions(
     max_time_chunk=30.0,
 )
 
-WHISPER_LARGE = InlineAsrNativeWhisperOptions(
+WHISPER_LARGE: InlineAsrOptions = InlineAsrNativeWhisperOptions(
     repo_id="large",
     inference_framework=InferenceAsrFramework.WHISPER,
     verbose=True,
@@ -71,7 +72,7 @@ WHISPER_LARGE = InlineAsrNativeWhisperOptions(
     max_time_chunk=30.0,
 )
 
-WHISPER_TURBO = InlineAsrNativeWhisperOptions(
+WHISPER_TURBO: InlineAsrOptions = InlineAsrNativeWhisperOptions(
     repo_id="turbo",
     inference_framework=InferenceAsrFramework.WHISPER,
     verbose=True,
