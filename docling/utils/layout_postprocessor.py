@@ -194,7 +194,6 @@ class LayoutPostprocessor:
         # DocItemLabel.DOCUMENT_INDEX: DocItemLabel.TABLE,
         DocItemLabel.TITLE: DocItemLabel.SECTION_HEADER,
     }
-    # All constants, class attributes here as before.
 
     def __init__(
         self, page: Page, clusters: List[Cluster], options: LayoutOptions
@@ -220,18 +219,10 @@ class LayoutPostprocessor:
             [c for c in self.special_clusters if c.label in self.WRAPPER_TYPES]
         )
 
-        # ---- NEW OPTIMIZED: Precompute quick-access table for regular cluster bboxes ----
-        # (For hot-path bbox filtering inside _process_special_clusters/_handle_cross_type_overlaps)
-        # Cluster ID mapped to (cluster, bbox, (l,t,r,b)) for fast lookup.
         self._regular_bbox_tuples = [
             (c, c.bbox.l, c.bbox.t, c.bbox.r, c.bbox.b) for c in self.regular_clusters
         ]
-        self._regular_bboxes = [
-            (c.bbox.l, c.bbox.t, c.bbox.r, c.bbox.b) for c in self.regular_clusters
-        ]
-        self._regular_clusters_list = (
-            self.regular_clusters
-        )  # For index access with above
+
 
     def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
         """Main processing pipeline."""
@@ -323,6 +314,7 @@ class LayoutPostprocessor:
 
         special_clusters = self._handle_cross_type_overlaps(special_clusters)
 
+        # Calculate page area from known page size
         assert self.page_size is not None
         page_area = self.page_size.width * self.page_size.height
         if page_area > 0:
@@ -336,7 +328,7 @@ class LayoutPostprocessor:
                 )
             ]
 
-        # ---- OPTIMIZED: PRE-PROCESS REGULAR CLUSTERS BY BOUNDS ----
+        # PRE-PROCESS REGULAR CLUSTERS BY BOUNDS
         # For each special, pre-filter only regular clusters whose bbox intersects
         # the special's bbox, using a quick rectangle intersection test.
         regular_bbox_tuples = self._regular_bbox_tuples  # local for speed
@@ -347,23 +339,22 @@ class LayoutPostprocessor:
 
             # Find only those regular clusters whose bbox intersects the special's bbox
             possible = []
-            for c, l, t, r, b in regular_bbox_tuples:
-                if l < sr and r > sl and t < sb and b > st:
-                    possible.append((c, l, t, r, b))
+            for c, left, top, right, bottom in regular_bbox_tuples:
+                if left < sr and right > sl and top < sb and bottom > st:
+                    possible.append(c)
 
             # Now do the expensive computation only for these
-            append_contained = contained.append
-            for c, _, _, _, _ in possible:
+            for c in possible:
                 containment = c.bbox.intersection_over_self(special.bbox)
                 if containment > 0.8:
-                    append_contained(c)
+                    contained.append(c)
 
             if contained:
                 contained = self._sort_clusters(contained, mode="id")
                 special.children = contained
 
+                # Adjust bbox only for Form and Key-Value-Region, not Table or Picture
                 if special.label in [DocItemLabel.FORM, DocItemLabel.KEY_VALUE_REGION]:
-                    # This is still cheap, keeps the minimal code change
                     special.bbox = BoundingBox(
                         l=min(c.bbox.l for c in contained),
                         t=min(c.bbox.t for c in contained),
@@ -401,7 +392,7 @@ class LayoutPostprocessor:
         should be removed.
         """
         wrappers_to_remove = set()
-        # OPTIMIZED: Pre-index tables only for bbox fast filter
+        # Precompute table clusters with their bbox coordinates for intersection testing
         table_clusters = [
             (c, c.bbox.l, c.bbox.t, c.bbox.r, c.bbox.b)
             for c in self.regular_clusters
@@ -417,8 +408,8 @@ class LayoutPostprocessor:
 
             # restrict to table-regulars whose bbox intersects
             possible = []
-            for c, l, t, r, b in table_clusters:
-                if l < wr and r > wl and t < wb and b > wt:
+            for c, left, top, right, bottom in table_clusters:
+                if left < wr and right > wl and top < wb and bottom > wt:
                     possible.append(c)
 
             for regular in possible:
@@ -523,7 +514,9 @@ class LayoutPostprocessor:
         spatial_index = (
             self.regular_index
             if cluster_type == "regular"
-            else self.picture_index if cluster_type == "picture" else self.wrapper_index
+            else self.picture_index
+            if cluster_type == "picture"
+            else self.wrapper_index
         )
 
         # Map of currently valid clusters
