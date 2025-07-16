@@ -1,11 +1,13 @@
 import asyncio
 import logging
+import uuid
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Set
+from typing import Dict, Optional
 
 from docling.datamodel.base_models import Page
 from docling.datamodel.document import ConversionResult
 from docling.pipeline.async_base_pipeline import DocumentTracker
+from docling.pipeline.graph import get_pipeline_thread_pool
 
 _log = logging.getLogger(__name__)
 
@@ -19,22 +21,29 @@ class AsyncPageTracker:
     keep_images: bool = False
     keep_backend: bool = False
 
+    def __post_init__(self):
+        """Initialize shared thread pool reference after dataclass creation"""
+        self._thread_pool = get_pipeline_thread_pool()
+
     async def register_document(
         self, conv_res: ConversionResult, total_pages: int
     ) -> str:
         """Register a new document for tracking"""
         async with self._lock:
-            doc_id = str(id(conv_res))
+            # Use UUID for better collision resistance than str(id())
+            doc_id = str(uuid.uuid4())
             self._doc_trackers[doc_id] = DocumentTracker(
                 doc_id=doc_id, total_pages=total_pages, conv_result=conv_res
             )
+            # Store the doc_id in the conv_res for later lookup
+            conv_res._async_doc_id = doc_id
             return doc_id
 
     async def track_page_loaded(self, page: Page, conv_res: ConversionResult) -> None:
         """Track when a page backend is loaded"""
         async with self._lock:
-            doc_id = str(id(conv_res))
-            if doc_id in self._doc_trackers and page._backend is not None:
+            doc_id = getattr(conv_res, "_async_doc_id", None)
+            if doc_id and doc_id in self._doc_trackers and page._backend is not None:
                 self._doc_trackers[doc_id].page_backends[page.page_no] = page._backend
 
     async def track_page_completion(
@@ -42,8 +51,8 @@ class AsyncPageTracker:
     ) -> bool:
         """Track page completion and cleanup when all pages done"""
         async with self._lock:
-            doc_id = str(id(conv_res))
-            if doc_id not in self._doc_trackers:
+            doc_id = getattr(conv_res, "_async_doc_id", None)
+            if not doc_id or doc_id not in self._doc_trackers:
                 _log.warning(f"Document {doc_id} not registered for tracking")
                 return False
 
@@ -58,6 +67,9 @@ class AsyncPageTracker:
             if tracker.processed_pages == tracker.total_pages:
                 await self._cleanup_document_resources(tracker)
                 del self._doc_trackers[doc_id]
+                # Clean up the doc_id from conv_res
+                if hasattr(conv_res, "_async_doc_id"):
+                    delattr(conv_res, "_async_doc_id")
                 return True  # Document is complete
 
             return False  # Document is not yet complete
@@ -69,8 +81,10 @@ class AsyncPageTracker:
             for page_no, backend in tracker.page_backends.items():
                 if backend is not None:
                     try:
-                        # Run unload in thread to avoid blocking
-                        await asyncio.to_thread(backend.unload)
+                        # Run unload in shared thread pool to avoid blocking
+                        await asyncio.get_running_loop().run_in_executor(
+                            self._thread_pool, backend.unload
+                        )
                     except Exception as e:
                         _log.warning(
                             f"Failed to unload backend for page {page_no}: {e}"
@@ -85,41 +99,3 @@ class AsyncPageTracker:
             for tracker in self._doc_trackers.values():
                 await self._cleanup_document_resources(tracker)
             self._doc_trackers.clear()
-
-
-@dataclass
-class ConversionResultAccumulator:
-    """Accumulates updates to ConversionResult without immediate mutation"""
-
-    _updates: Dict[str, Dict] = field(default_factory=dict)  # doc_id -> updates
-    _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
-
-    async def accumulate_page_result(
-        self, page_no: int, conv_res: ConversionResult, updates: Dict
-    ) -> None:
-        """Accumulate updates for later application"""
-        async with self._lock:
-            doc_id = str(id(conv_res))
-            if doc_id not in self._updates:
-                self._updates[doc_id] = {}
-
-            if page_no not in self._updates[doc_id]:
-                self._updates[doc_id][page_no] = {}
-
-            self._updates[doc_id][page_no].update(updates)
-
-    async def flush_to_conv_res(self, conv_res: ConversionResult) -> None:
-        """Apply all accumulated updates atomically"""
-        async with self._lock:
-            doc_id = str(id(conv_res))
-            if doc_id in self._updates:
-                # Apply updates
-                for page_no, updates in self._updates[doc_id].items():
-                    # Find the page and apply updates
-                    for page in conv_res.pages:
-                        if page.page_no == page_no:
-                            for key, value in updates.items():
-                                setattr(page, key, value)
-                            break
-
-                del self._updates[doc_id]

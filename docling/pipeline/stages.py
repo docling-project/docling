@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from collections import defaultdict
 from typing import Any, AsyncIterable, Callable, Coroutine, Dict, List
 
 from docling.datamodel.document import ConversionResult, InputDocument, Page
 from docling.pipeline.graph import STOP_SENTINEL, PipelineStage, StreamItem
+
+_log = logging.getLogger(__name__)
 
 
 class SourceStage(PipelineStage):
@@ -53,7 +56,7 @@ class ExtractionStage(PipelineStage):
                 conv_res.pages.append(page)
 
                 page._backend = await self.loop.run_in_executor(
-                    None, conv_res.input._backend.load_page, page_no
+                    self.thread_pool, conv_res.input._backend.load_page, page_no
                 )
 
                 if page._backend and page._backend.is_valid():
@@ -62,11 +65,18 @@ class ExtractionStage(PipelineStage):
                     return StreamItem(
                         payload=page, conv_res_id=id(conv_res), conv_res=conv_res
                     )
-        except Exception:
-            # In case of page-level error, we might log it but continue
-            # For now, we don't propagate failure here, but in the document level
-            pass
-        return None
+                else:
+                    _log.warning(
+                        f"Failed to load or validate page {page_no} from document {conv_res.input.file.name}"
+                    )
+                    return None
+        except Exception as e:
+            _log.error(
+                f"Error extracting page {page_no} from document {conv_res.input.file.name}: {e}",
+                exc_info=True,
+            )
+            # Don't propagate individual page failures - document-level error handling will catch this
+            return None
 
     async def _process_document(self, in_doc: InputDocument):
         """Processes a single document, extracting all its pages."""
@@ -90,13 +100,34 @@ class ExtractionStage(PipelineStage):
                 self.loop.create_task(self._extract_page(i, conv_res))
                 for i in page_indices_to_extract
             ]
-            pages_extracted = await asyncio.gather(*tasks)
+            pages_extracted = await asyncio.gather(*tasks, return_exceptions=True)
 
-            await self._send_to_outputs(
-                self.output_channel, [p for p in pages_extracted if p]
+            # Filter out None results and exceptions, log any exceptions found
+            valid_pages = []
+            for i, result in enumerate(pages_extracted):
+                if isinstance(result, Exception):
+                    _log.error(
+                        f"Page extraction failed for page {page_indices_to_extract[i]} "
+                        f"in document {in_doc.file.name}: {result}"
+                    )
+                elif result is not None:
+                    valid_pages.append(result)
+
+            await self._send_to_outputs(self.output_channel, valid_pages)
+
+            # If no pages were successfully extracted, mark as failure
+            if not valid_pages:
+                _log.error(
+                    f"No pages could be extracted from document {in_doc.file.name}"
+                )
+                conv_res.status = "FAILURE"
+                await self._send_to_outputs(self.failure_channel, [conv_res])
+
+        except Exception as e:
+            _log.error(
+                f"Document-level extraction failed for {in_doc.file.name}: {e}",
+                exc_info=True,
             )
-
-        except Exception:
             conv_res.status = "FAILURE"
             await self._send_to_outputs(self.failure_channel, [conv_res])
 
@@ -130,7 +161,8 @@ class PageProcessorStage(PipelineStage):
 
             # The model call is sync, run in thread to avoid blocking event loop
             processed_page = await self.loop.run_in_executor(
-                None, lambda: next(iter(self.model(item.conv_res, [item.payload])))
+                self.thread_pool,
+                lambda: next(iter(self.model(item.conv_res, [item.payload]))),
             )
             item.payload = processed_page
             await self._send_to_outputs(self.output_channel, [item])
@@ -202,7 +234,7 @@ class BatchProcessorStage(PipelineStage):
 
                 # The model call is sync, run in thread
                 processed_pages = await self.loop.run_in_executor(
-                    None, lambda: list(self.model(conv_res, pages))
+                    self.thread_pool, lambda: list(self.model(conv_res, pages))
                 )
 
                 # Re-wrap the processed pages into StreamItems
@@ -237,7 +269,6 @@ class AggregationStage(PipelineStage):
     async def run(self) -> None:
         success_q = self.input_queues[self.success_channel]
         failure_q = self.input_queues.get(self.failure_channel)
-        doc_completers: Dict[int, asyncio.Future] = {}
 
         async def handle_successes():
             while True:
@@ -250,8 +281,6 @@ class AggregationStage(PipelineStage):
                 if is_doc_complete:
                     await self.finalizer_func(item.conv_res)
                     await self._send_to_outputs(self.output_channel, [item.conv_res])
-                    if item.conv_res_id in doc_completers:
-                        doc_completers.pop(item.conv_res_id).set_result(True)
 
         async def handle_failures():
             if failure_q is None:
@@ -261,8 +290,6 @@ class AggregationStage(PipelineStage):
                 if failed_res is STOP_SENTINEL:
                     break
                 await self._send_to_outputs(self.output_channel, [failed_res])
-                if id(failed_res) in doc_completers:
-                    doc_completers.pop(id(failed_res)).set_result(True)
 
         # Create tasks only for channels that exist
         tasks = [handle_successes()]

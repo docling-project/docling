@@ -1,13 +1,38 @@
 from __future__ import annotations
 
 import asyncio
+import weakref
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, AsyncIterable, Dict, List, Literal, Optional
 
 # Sentinel to signal stream completion
 STOP_SENTINEL = object()
+
+# Global thread pool for pipeline operations - shared across all stages
+_PIPELINE_THREAD_POOL: Optional[ThreadPoolExecutor] = None
+_THREAD_POOL_REFS = weakref.WeakSet()
+
+
+def get_pipeline_thread_pool(max_workers: Optional[int] = None) -> ThreadPoolExecutor:
+    """Get or create the shared pipeline thread pool."""
+    global _PIPELINE_THREAD_POOL
+    if _PIPELINE_THREAD_POOL is None or _PIPELINE_THREAD_POOL._shutdown:
+        _PIPELINE_THREAD_POOL = ThreadPoolExecutor(
+            max_workers=max_workers, thread_name_prefix="docling_pipeline"
+        )
+    _THREAD_POOL_REFS.add(_PIPELINE_THREAD_POOL)
+    return _PIPELINE_THREAD_POOL
+
+
+def shutdown_pipeline_thread_pool(wait: bool = True) -> None:
+    """Shutdown the shared thread pool."""
+    global _PIPELINE_THREAD_POOL
+    if _PIPELINE_THREAD_POOL is not None:
+        _PIPELINE_THREAD_POOL.shutdown(wait=wait)
+        _PIPELINE_THREAD_POOL = None
 
 
 @dataclass(slots=True)
@@ -25,11 +50,12 @@ class StreamItem:
 class PipelineStage(ABC):
     """A single, encapsulated step in a processing pipeline graph."""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, max_workers: Optional[int] = None):
         self.name = name
         self.input_queues: Dict[str, asyncio.Queue] = {}
         self.output_queues: Dict[str, List[asyncio.Queue]] = {}
         self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._thread_pool = get_pipeline_thread_pool(max_workers)
 
     @abstractmethod
     async def run(self) -> None:
@@ -57,6 +83,11 @@ class PipelineStage(ABC):
         if self._loop is None:
             self._loop = asyncio.get_running_loop()
         return self._loop
+
+    @property
+    def thread_pool(self) -> ThreadPoolExecutor:
+        """Get the shared thread pool for this stage."""
+        return self._thread_pool
 
 
 class GraphRunner:
@@ -125,20 +156,25 @@ class GraphRunner:
         """
         self._wire_graph(queue_max_size)
 
-        async with asyncio.TaskGroup() as tg:
-            # Create a task for the source feeder
-            tg.create_task(
-                self._run_source(
-                    source_stream, source_config["stage"], source_config["channel"]
+        try:
+            async with asyncio.TaskGroup() as tg:
+                # Create a task for the source feeder
+                tg.create_task(
+                    self._run_source(
+                        source_stream, source_config["stage"], source_config["channel"]
+                    )
                 )
-            )
 
-            # Create tasks for all pipeline stages
-            for stage in self._stages.values():
-                tg.create_task(stage.run())
+                # Create tasks for all pipeline stages
+                for stage in self._stages.values():
+                    tg.create_task(stage.run())
 
-            # Yield results from the sink
-            async for result in self._run_sink(
-                sink_config["stage"], sink_config["channel"]
-            ):
-                yield result
+                # Yield results from the sink
+                async for result in self._run_sink(
+                    sink_config["stage"], sink_config["channel"]
+                ):
+                    yield result
+        finally:
+            # Ensure thread pool cleanup on pipeline completion
+            # Note: We don't shutdown here as other pipelines might be using it
+            pass

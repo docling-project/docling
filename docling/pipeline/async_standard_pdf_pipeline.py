@@ -22,7 +22,7 @@ from docling.models.page_preprocessing_model import (
 from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
 from docling.models.table_structure_model import TableStructureModel
 from docling.pipeline.async_base_pipeline import AsyncPipeline
-from docling.pipeline.graph import GraphRunner
+from docling.pipeline.graph import GraphRunner, get_pipeline_thread_pool
 from docling.pipeline.resource_manager import AsyncPageTracker
 from docling.pipeline.stages import (
     AggregationStage,
@@ -49,6 +49,8 @@ class AsyncStandardPdfPipeline(AsyncPipeline):
             keep_images=self._should_keep_images(),
             keep_backend=self._should_keep_backend(),
         )
+        # Get shared thread pool for enrichment operations
+        self._thread_pool = get_pipeline_thread_pool()
         self._initialize_models()
 
     def _should_keep_images(self) -> bool:
@@ -416,9 +418,10 @@ class AsyncStandardPdfPipeline(AsyncPipeline):
             for element_batch in chunkify(
                 elements_to_process, model.elements_batch_size
             ):
-                # Run model in thread to avoid blocking
-                await asyncio.to_thread(
-                    lambda: list(model(conv_res.document, element_batch))
+                # Run model in shared thread pool to avoid blocking
+                await asyncio.get_running_loop().run_in_executor(
+                    self._thread_pool,
+                    lambda: list(model(conv_res.document, element_batch)),
                 )
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
