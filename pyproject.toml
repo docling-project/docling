@@ -149,6 +149,7 @@ package = true
 default-groups = "all"
 
 [tool.uv.sources]
+docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models.git", rev = "cau/batching-layout-model" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]
