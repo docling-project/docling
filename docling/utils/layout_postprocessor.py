@@ -339,15 +339,15 @@ class LayoutPostprocessor:
 
             # Find only those regular clusters whose bbox intersects the special's bbox
             possible = []
-            for c, left, top, right, bottom in regular_bbox_tuples:
+            for cluster, left, top, right, bottom in regular_bbox_tuples:
                 if left < sr and right > sl and top < sb and bottom > st:
-                    possible.append(c)
+                    possible.append(cluster)
 
             # Now do the expensive computation only for these
-            for c in possible:
-                containment = c.bbox.intersection_over_self(special.bbox)
+            for cluster in possible:
+                containment = cluster.bbox.intersection_over_self(special.bbox)
                 if containment > 0.8:
-                    contained.append(c)
+                    contained.append(cluster)
 
             if contained:
                 contained = self._sort_clusters(contained, mode="id")
