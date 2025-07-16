@@ -334,39 +334,29 @@ class ProcessingPipeline(str, Enum):
     ASR = "asr"
 
 
-class AsyncPdfPipelineOptions(PdfPipelineOptions):
-    """Enhanced options for async pipeline with cross-document batching"""
+class ThreadedPdfPipelineOptions(PdfPipelineOptions):
+    """Pipeline options for the threaded PDF pipeline with batching and backpressure control"""
 
-    # GPU batching configuration - larger than sync defaults
-    layout_batch_size: int = 64
-    ocr_batch_size: int = 32
-    table_batch_size: int = 16
+    # Batch sizes for different stages
+    ocr_batch_size: int = 4
+    layout_batch_size: int = 4
+    table_batch_size: int = 4
 
-    # Async coordination
+    # Timing control
     batch_timeout_seconds: float = 2.0
-    max_concurrent_extractions: int = 16
 
-    # Queue sizes for backpressure
-    extraction_queue_size: int = 100
-    model_queue_size_multiplier: float = 2.0  # queue_size = batch_size * multiplier
+    # Backpressure and queue control
+    queue_max_size: int = 100
+    max_workers: Optional[int] = None  # None uses ThreadPoolExecutor default
 
-    # Resource management
-    max_gpu_memory_mb: Optional[int] = None
-    enable_resource_monitoring: bool = True
-
-    # Safety settings
-    enable_exception_isolation: bool = True
-    cleanup_validation: bool = True
+    # Pipeline coordination
+    stage_timeout_seconds: float = 10.0  # Timeout for feeding items to stages
+    collection_timeout_seconds: float = 5.0  # Timeout for collecting results
 
     @classmethod
     def from_sync_options(
         cls, sync_options: PdfPipelineOptions
-    ) -> "AsyncPdfPipelineOptions":
-        """Convert sync options to async options"""
-        # Start with sync options and override with async defaults
+    ) -> "ThreadedPdfPipelineOptions":
+        """Convert sync options to threaded options"""
         data = sync_options.model_dump()
-
-        # Remove sync-specific fields if any
-        data.pop("page_batch_size", None)  # We don't use fixed page batching
-
         return cls(**data)

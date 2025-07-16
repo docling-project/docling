@@ -41,7 +41,7 @@ authors = [
   { name = "Panos Vagenas", email = "pva@zurich.ibm.com" },
   { name = "Peter Staar", email = "taa@zurich.ibm.com" },
 ]
-requires-python = '>=3.11,<4.0'
+requires-python = '>=3.9,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
   'docling-core[chunking] (>=2.42.0,<3.0.0)',

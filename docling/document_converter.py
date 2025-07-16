@@ -1,9 +1,8 @@
-import asyncio
 import hashlib
 import logging
 import sys
 import time
-from collections.abc import AsyncIterable, Iterable, Iterator
+from collections.abc import Iterable, Iterator
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
@@ -218,29 +217,29 @@ class DocumentConverter:
     @validate_call(config=ConfigDict(strict=True))
     def convert(
         self,
-        source: Union[Path, str, DocumentStream],
+        source: Union[Path, str, DocumentStream],  # TODO review naming
         headers: Optional[Dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
     ) -> ConversionResult:
-        for result in self.convert_all(
+        all_res = self.convert_all(
             source=[source],
-            headers=headers,
             raises_on_error=raises_on_error,
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
+            headers=headers,
             page_range=page_range,
-        ):
-            return result
+        )
+        return next(all_res)
 
     @validate_call(config=ConfigDict(strict=True))
     def convert_all(
         self,
-        source: Iterable[Union[Path, str, DocumentStream]],
+        source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
         headers: Optional[Dict[str, str]] = None,
-        raises_on_error: bool = True,
+        raises_on_error: bool = True,  # True: raises on first conversion error; False: does not raise on conv error
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
@@ -251,10 +250,7 @@ class DocumentConverter:
             page_range=page_range,
         )
         conv_input = _DocumentConversionInput(
-            path_or_stream_iterator=source,
-            allowed_formats=self.allowed_formats,
-            limits=limits,
-            headers=headers,
+            path_or_stream_iterator=source, limits=limits, headers=headers
         )
         conv_res_iter = self._convert(conv_input, raises_on_error=raises_on_error)
 
@@ -275,107 +271,6 @@ class DocumentConverter:
             raise ConversionError(
                 "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
             )
-
-    async def convert_all_async(
-        self,
-        source: Iterable[Union[Path, str, DocumentStream]],
-        headers: Optional[Dict[str, str]] = None,
-        raises_on_error: bool = True,
-        max_num_pages: int = sys.maxsize,
-        max_file_size: int = sys.maxsize,
-        page_range: PageRange = DEFAULT_PAGE_RANGE,
-    ) -> AsyncIterable[ConversionResult]:
-        """
-        Async version of convert_all with cross-document batching.
-
-        Yields results as they complete, not necessarily in input order.
-        """
-        limits = DocumentLimits(
-            max_num_pages=max_num_pages,
-            max_file_size=max_file_size,
-            page_range=page_range,
-        )
-        conv_input = _DocumentConversionInput(
-            path_or_stream_iterator=source, limits=limits, headers=headers
-        )
-
-        # Create async document stream
-        async def doc_stream():
-            for doc in conv_input.docs(self.format_to_options):
-                yield doc
-
-        # Check if we have async-capable pipelines
-        has_async = False
-        for format_opt in self.format_to_options.values():
-            if hasattr(format_opt.pipeline_cls, "execute_stream"):
-                has_async = True
-                break
-
-        if has_async:
-            # Use async pipeline for cross-document batching
-            # For now, assume PDF pipeline handles all async processing
-            pdf_format_opt = self.format_to_options.get(InputFormat.PDF)
-
-            if pdf_format_opt is None:
-                return
-
-            pipeline_cls = pdf_format_opt.pipeline_cls
-            if hasattr(pipeline_cls, "execute_stream"):
-                # Initialize async pipeline
-                pipeline_options = self.format_to_options[
-                    InputFormat.PDF
-                ].pipeline_options
-
-                # Convert to async options if needed
-                from docling.datamodel.pipeline_options import AsyncPdfPipelineOptions
-
-                if not isinstance(pipeline_options, AsyncPdfPipelineOptions):
-                    pipeline_options = AsyncPdfPipelineOptions.from_sync_options(
-                        pipeline_options
-                    )
-
-                pipeline = pipeline_cls(pipeline_options)
-
-                # Process all documents through async pipeline
-                async for result in pipeline.execute_stream(doc_stream()):
-                    yield result
-            else:
-                # Fallback to sequential async processing
-                async for doc in doc_stream():
-                    result = await asyncio.to_thread(
-                        self._process_document, doc, raises_on_error
-                    )
-                    yield result
-        else:
-            # All pipelines are sync, process sequentially with threading
-            async for doc in doc_stream():
-                result = await asyncio.to_thread(
-                    self._process_document, doc, raises_on_error
-                )
-                yield result
-
-    async def convert_async(
-        self,
-        source: Union[Path, str, DocumentStream],
-        headers: Optional[Dict[str, str]] = None,
-        raises_on_error: bool = True,
-        max_num_pages: int = sys.maxsize,
-        max_file_size: int = sys.maxsize,
-        page_range: PageRange = DEFAULT_PAGE_RANGE,
-    ) -> ConversionResult:
-        """Async convenience method for single document conversion."""
-        async for result in self.convert_all_async(
-            [source],
-            headers=headers,
-            raises_on_error=raises_on_error,
-            max_num_pages=max_num_pages,
-            max_file_size=max_file_size,
-            page_range=page_range,
-        ):
-            return result
-
-        # If no results were yielded, raise an error
-        raise RuntimeError(f"No conversion result produced for source: {source}")
 
     def _convert(
         self, conv_input: _DocumentConversionInput, raises_on_error: bool

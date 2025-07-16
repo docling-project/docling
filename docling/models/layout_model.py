@@ -148,72 +148,90 @@ class LayoutModel(BasePageModel):
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-        for page in page_batch:
+        # Convert to list to allow multiple iterations
+        pages = list(page_batch)
+
+        # Separate valid and invalid pages
+        valid_pages = []
+        valid_page_images = []
+
+        for page in pages:
+            assert page._backend is not None
+            if not page._backend.is_valid():
+                continue
+
+            assert page.size is not None
+            page_image = page.get_image(scale=1.0)
+            assert page_image is not None
+
+            valid_pages.append(page)
+            valid_page_images.append(page_image)
+
+        # Process all valid pages with batch prediction
+        batch_predictions = []
+        if valid_page_images:
+            with TimeRecorder(conv_res, "layout"):
+                batch_predictions = self.layout_predictor.predict_batch(  # type: ignore[attr-defined]
+                    valid_page_images
+                )
+
+        # Process each page with its predictions
+        valid_page_idx = 0
+        for page in pages:
             assert page._backend is not None
             if not page._backend.is_valid():
                 yield page
-            else:
-                with TimeRecorder(conv_res, "layout"):
-                    assert page.size is not None
-                    page_image = page.get_image(scale=1.0)
-                    assert page_image is not None
+                continue
 
-                    clusters = []
-                    for ix, pred_item in enumerate(
-                        self.layout_predictor.predict(page_image)
-                    ):
-                        label = DocItemLabel(
-                            pred_item["label"]
-                            .lower()
-                            .replace(" ", "_")
-                            .replace("-", "_")
-                        )  # Temporary, until docling-ibm-model uses docling-core types
-                        cluster = Cluster(
-                            id=ix,
-                            label=label,
-                            confidence=pred_item["confidence"],
-                            bbox=BoundingBox.model_validate(pred_item),
-                            cells=[],
-                        )
-                        clusters.append(cluster)
+            page_predictions = batch_predictions[valid_page_idx]
+            valid_page_idx += 1
 
-                    if settings.debug.visualize_raw_layout:
-                        self.draw_clusters_and_cells_side_by_side(
-                            conv_res, page, clusters, mode_prefix="raw"
-                        )
+            clusters = []
+            for ix, pred_item in enumerate(page_predictions):
+                label = DocItemLabel(
+                    pred_item["label"].lower().replace(" ", "_").replace("-", "_")
+                )  # Temporary, until docling-ibm-model uses docling-core types
+                cluster = Cluster(
+                    id=ix,
+                    label=label,
+                    confidence=pred_item["confidence"],
+                    bbox=BoundingBox.model_validate(pred_item),
+                    cells=[],
+                )
+                clusters.append(cluster)
 
-                    # Apply postprocessing
+            if settings.debug.visualize_raw_layout:
+                self.draw_clusters_and_cells_side_by_side(
+                    conv_res, page, clusters, mode_prefix="raw"
+                )
 
-                    processed_clusters, processed_cells = LayoutPostprocessor(
-                        page, clusters, self.options
-                    ).postprocess()
-                    # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
+            # Apply postprocessing
+            processed_clusters, processed_cells = LayoutPostprocessor(
+                page, clusters, self.options
+            ).postprocess()
+            # Note: LayoutPostprocessor updates page.cells and page.parsed_page internally
 
-                    with warnings.catch_warnings():
-                        warnings.filterwarnings(
-                            "ignore",
-                            "Mean of empty slice|invalid value encountered in scalar divide",
-                            RuntimeWarning,
-                            "numpy",
-                        )
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    "Mean of empty slice|invalid value encountered in scalar divide",
+                    RuntimeWarning,
+                    "numpy",
+                )
 
-                        conv_res.confidence.pages[page.page_no].layout_score = float(
-                            np.mean([c.confidence for c in processed_clusters])
-                        )
+                conv_res.confidence.pages[page.page_no].layout_score = float(
+                    np.mean([c.confidence for c in processed_clusters])
+                )
 
-                        conv_res.confidence.pages[page.page_no].ocr_score = float(
-                            np.mean(
-                                [c.confidence for c in processed_cells if c.from_ocr]
-                            )
-                        )
+                conv_res.confidence.pages[page.page_no].ocr_score = float(
+                    np.mean([c.confidence for c in processed_cells if c.from_ocr])
+                )
 
-                    page.predictions.layout = LayoutPrediction(
-                        clusters=processed_clusters
-                    )
+            page.predictions.layout = LayoutPrediction(clusters=processed_clusters)
 
-                if settings.debug.visualize_layout:
-                    self.draw_clusters_and_cells_side_by_side(
-                        conv_res, page, processed_clusters, mode_prefix="postprocessed"
-                    )
+            if settings.debug.visualize_layout:
+                self.draw_clusters_and_cells_side_by_side(
+                    conv_res, page, processed_clusters, mode_prefix="postprocessed"
+                )
 
-                yield page
+            yield page
