@@ -590,11 +590,11 @@ class ThreadedStandardPdfPipeline(BasePipeline):
                 page_no=page.page_no,
             )
 
-            # Feed into first stage with timeout
-            if not self.preprocess_stage.input_queue.put(
-                item, timeout=self.pipeline_options.stage_timeout_seconds
-            ):
-                _log.warning(f"Failed to feed page {page.page_no} due to backpressure")
+            # Feed into first stage - block patiently to ensure no pages are dropped
+            if not self.preprocess_stage.input_queue.put(item, timeout=None):
+                _log.error(
+                    f"Failed to feed page {page.page_no} - queue was closed unexpectedly"
+                )
 
     def _collect_results_with_recovery(
         self, conv_res: ConversionResult, expected_count: int
@@ -603,22 +603,24 @@ class ThreadedStandardPdfPipeline(BasePipeline):
         result = ProcessingResult(total_expected=expected_count)
         doc_id = id(conv_res)
 
-        # Collect from output queue
+        # Collect from output queue - block patiently to ensure all pages are collected
         while len(result.pages) + len(result.failed_pages) < expected_count:
             batch = self.output_queue.get_batch(
                 batch_size=expected_count
                 - len(result.pages)
                 - len(result.failed_pages),
-                timeout=self.pipeline_options.collection_timeout_seconds,
+                timeout=None,  # Block indefinitely to ensure no pages are lost
             )
 
             if not batch:
-                # Timeout reached, log missing pages
+                # Empty batch only happens when queue is closed - all stages must have finished
                 missing_count = (
                     expected_count - len(result.pages) - len(result.failed_pages)
                 )
                 if missing_count > 0:
-                    _log.warning(f"Pipeline timeout: missing {missing_count} pages")
+                    _log.error(
+                        f"Pipeline closed unexpectedly: missing {missing_count} pages"
+                    )
                 break
 
             for item in batch:

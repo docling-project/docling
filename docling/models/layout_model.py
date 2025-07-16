@@ -3,7 +3,7 @@ import logging
 import warnings
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import DocItemLabel
@@ -153,7 +153,7 @@ class LayoutModel(BasePageModel):
 
         # Separate valid and invalid pages
         valid_pages = []
-        valid_page_images = []
+        valid_page_images: List[Union[Image.Image, np.ndarray]] = []
 
         for page in pages:
             assert page._backend is not None

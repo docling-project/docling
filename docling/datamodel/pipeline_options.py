@@ -347,11 +347,9 @@ class ThreadedPdfPipelineOptions(PdfPipelineOptions):
 
     # Backpressure and queue control
     queue_max_size: int = 100
-    max_workers: Optional[int] = None  # None uses ThreadPoolExecutor default
 
-    # Pipeline coordination
-    stage_timeout_seconds: float = 10.0  # Timeout for feeding items to stages
-    collection_timeout_seconds: float = 5.0  # Timeout for collecting results
+    # Pipeline coordination - batch_timeout_seconds is the only safe timeout
+    # stage_timeout_seconds and collection_timeout_seconds removed to prevent data loss
 
     @classmethod
     def from_sync_options(
