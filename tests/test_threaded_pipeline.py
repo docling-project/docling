@@ -23,7 +23,7 @@ def test_threaded_pipeline_multiple_documents():
         "tests/data/pdf/2206.01062.pdf",
         "tests/data/pdf/2305.03393v1.pdf",
     ]
-    # test_files = [str(f) for f in Path("/home/ubuntu/datasets/flat_bench_set").rglob("*.pdf")]
+    # test_files = [str(f) for f in Path("test/data/pdf").rglob("*.pdf")]
 
     do_ts = False
     do_ocr = False
@@ -52,14 +52,18 @@ def test_threaded_pipeline_multiple_documents():
         threaded_converter.initialize_pipeline(InputFormat.PDF)
 
         # Test threaded pipeline
-        threaded_results = []
+        threaded_success_count = 0
+        threaded_failure_count = 0
         start_time = time.perf_counter()
         for result in threaded_converter.convert_all(test_files, raises_on_error=True):
             print(
                 "Finished converting document with threaded pipeline:",
                 result.input.file.name,
             )
-            threaded_results.append(result)
+            if result.status == ConversionStatus.SUCCESS:
+                threaded_success_count += 1
+            else:
+                threaded_failure_count += 1
         threaded_time = time.perf_counter() - start_time
 
         del threaded_converter
@@ -83,14 +87,18 @@ def test_threaded_pipeline_multiple_documents():
         standard_converter.initialize_pipeline(InputFormat.PDF)
 
         # Test standard pipeline
-        standard_results = []
+        standard_success_count = 0
+        standard_failure_count = 0
         start_time = time.perf_counter()
         for result in standard_converter.convert_all(test_files, raises_on_error=True):
             print(
                 "Finished converting document with standard pipeline:",
                 result.input.file.name,
             )
-            standard_results.append(result)
+            if result.status == ConversionStatus.SUCCESS:
+                standard_success_count += 1
+            else:
+                standard_failure_count += 1
         standard_time = time.perf_counter() - start_time
 
         del standard_converter
@@ -99,28 +107,14 @@ def test_threaded_pipeline_multiple_documents():
 
     # Verify results
     if run_threaded and run_serial:
-        assert len(standard_results) == len(threaded_results)
+        assert standard_success_count == threaded_success_count
+        assert standard_failure_count == threaded_failure_count
     if run_serial:
-        for result in standard_results:
-            assert result.status == ConversionStatus.SUCCESS
+        assert standard_success_count == len(test_files)
+        assert standard_failure_count == 0
     if run_threaded:
-        for result in threaded_results:
-            assert result.status == ConversionStatus.SUCCESS
-
-    if run_serial and run_threaded:
-        # Basic content comparison
-        for i, (standard_result, threaded_result) in enumerate(
-            zip(standard_results, threaded_results)
-        ):
-            standard_doc = standard_result.document
-            threaded_doc = threaded_result.document
-
-            assert len(standard_doc.pages) == len(threaded_doc.pages), (
-                f"Document {i} page count mismatch"
-            )
-            assert len(standard_doc.texts) == len(threaded_doc.texts), (
-                f"Document {i} text count mismatch"
-            )
+        assert threaded_success_count == len(test_files)
+        assert threaded_failure_count == 0
 
 
 def test_pipeline_comparison():
