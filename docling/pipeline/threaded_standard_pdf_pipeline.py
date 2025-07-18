@@ -527,6 +527,9 @@ class ThreadedStandardPdfPipeline(BasePipeline):
             for st in ctx.stages:
                 st.stop()
             ctx.output_queue.close()
+
+            if conv_res.input._backend is not None:
+                conv_res.input._backend.unload()
         return conv_res
 
     # -------------------------------------------------------------- feed_pages
