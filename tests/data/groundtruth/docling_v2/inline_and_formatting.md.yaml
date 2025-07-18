@@ -1,18 +1,7 @@
 body:
   children:
-  - $ref: '#/texts/0'
-  - $ref: '#/texts/1'
   - $ref: '#/groups/0'
-  - $ref: '#/groups/1'
-  - $ref: '#/groups/2'
-  - $ref: '#/texts/32'
-  - $ref: '#/groups/8'
-  - $ref: '#/groups/11'
-  - $ref: '#/texts/43'
-  - $ref: '#/texts/47'
-  - $ref: '#/texts/48'
-  - $ref: '#/groups/13'
-  - $ref: '#/tables/0'
+  - $ref: '#/groups/9'
   content_layer: body
   label: unspecified
   name: _root_
@@ -26,6 +15,18 @@ furniture:
   self_ref: '#/furniture'
 groups:
 - children:
+  - $ref: '#/texts/0'
+  - $ref: '#/texts/1'
+  - $ref: '#/groups/1'
+  - $ref: '#/groups/2'
+  - $ref: '#/groups/3'
+  content_layer: body
+  label: section
+  name: header-1
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/0'
+- children:
   - $ref: '#/texts/2'
   - $ref: '#/texts/3'
   - $ref: '#/texts/4'
@@ -35,8 +36,8 @@ groups:
   label: inline
   name: group
   parent:
-    $ref: '#/body'
-  self_ref: '#/groups/0'
+    $ref: '#/groups/0'
+  self_ref: '#/groups/1'
 - children:
   - $ref: '#/texts/7'
   - $ref: '#/texts/8'
@@ -45,8 +46,8 @@ groups:
   label: inline
   name: group
   parent:
-    $ref: '#/body'
-  self_ref: '#/groups/1'
+    $ref: '#/groups/0'
+  self_ref: '#/groups/2'
 - children:
   - $ref: '#/texts/10'
   - $ref: '#/texts/14'
@@ -59,8 +60,8 @@ groups:
   label: list
   name: list
   parent:
-    $ref: '#/body'
-  self_ref: '#/groups/2'
+    $ref: '#/groups/0'
+  self_ref: '#/groups/3'
 - children:
   - $ref: '#/texts/11'
   - $ref: '#/texts/12'
@@ -70,7 +71,7 @@ groups:
   name: group
   parent:
     $ref: '#/texts/10'
-  self_ref: '#/groups/3'
+  self_ref: '#/groups/4'
 - children:
   - $ref: '#/texts/15'
   - $ref: '#/texts/16'
@@ -80,7 +81,7 @@ groups:
   name: group
   parent:
     $ref: '#/texts/14'
-  self_ref: '#/groups/4'
+  self_ref: '#/groups/5'
 - children:
   - $ref: '#/texts/19'
   - $ref: '#/texts/20'
@@ -90,7 +91,7 @@ groups:
   name: group
   parent:
     $ref: '#/texts/18'
-  self_ref: '#/groups/5'
+  self_ref: '#/groups/6'
 - children:
   - $ref: '#/texts/23'
   - $ref: '#/texts/24'
@@ -100,7 +101,7 @@ groups:
   name: group
   parent:
     $ref: '#/texts/22'
-  self_ref: '#/groups/6'
+  self_ref: '#/groups/7'
 - children:
   - $ref: '#/texts/29'
   - $ref: '#/texts/30'
@@ -110,7 +111,19 @@ groups:
   name: group
   parent:
     $ref: '#/texts/28'
-  self_ref: '#/groups/7'
+  self_ref: '#/groups/8'
+- children:
+  - $ref: '#/texts/32'
+  - $ref: '#/groups/10'
+  - $ref: '#/groups/13'
+  - $ref: '#/groups/14'
+  - $ref: '#/groups/16'
+  content_layer: body
+  label: section
+  name: header-1
+  parent:
+    $ref: '#/body'
+  self_ref: '#/groups/9'
 - children:
   - $ref: '#/texts/33'
   - $ref: '#/texts/36'
@@ -118,8 +131,8 @@ groups:
   label: list
   name: list
   parent:
-    $ref: '#/body'
-  self_ref: '#/groups/8'
+    $ref: '#/groups/9'
+  self_ref: '#/groups/10'
 - children:
   - $ref: '#/texts/34'
   - $ref: '#/texts/35'
@@ -128,7 +141,7 @@ groups:
   name: group
   parent:
     $ref: '#/texts/33'
-  self_ref: '#/groups/9'
+  self_ref: '#/groups/11'
 - children:
   - $ref: '#/texts/37'
   - $ref: '#/texts/38'
@@ -139,7 +152,7 @@ groups:
   name: group
   parent:
     $ref: '#/texts/36'
-  self_ref: '#/groups/10'
+  self_ref: '#/groups/12'
 - children:
   - $ref: '#/texts/41'
   - $ref: '#/texts/42'
@@ -147,8 +160,17 @@ groups:
   label: inline
   name: group
   parent:
-    $ref: '#/body'
-  self_ref: '#/groups/11'
+    $ref: '#/groups/9'
+  self_ref: '#/groups/13'
+- children:
+  - $ref: '#/texts/43'
+  - $ref: '#/texts/47'
+  content_layer: body
+  label: section
+  name: header-2
+  parent:
+    $ref: '#/groups/9'
+  self_ref: '#/groups/14'
 - children:
   - $ref: '#/texts/44'
   - $ref: '#/texts/45'
@@ -158,14 +180,24 @@ groups:
   name: group
   parent:
     $ref: '#/texts/43'
-  self_ref: '#/groups/12'
+  self_ref: '#/groups/15'
+- children:
+  - $ref: '#/texts/48'
+  - $ref: '#/groups/17'
+  - $ref: '#/tables/0'
+  content_layer: body
+  label: section
+  name: header-2
+  parent:
+    $ref: '#/groups/9'
+  self_ref: '#/groups/16'
 - children: []
   content_layer: body
   label: inline
   name: group
   parent:
-    $ref: '#/body'
-  self_ref: '#/groups/13'
+    $ref: '#/groups/16'
+  self_ref: '#/groups/17'
 key_value_items: []
 name: inline_and_formatting
 origin:
@@ -308,7 +340,7 @@ tables:
   footnotes: []
   label: table
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/16'
   prov: []
   references: []
   self_ref: '#/tables/0'
@@ -316,9 +348,9 @@ texts:
 - children: []
   content_layer: body
   label: title
-  orig: Contribution guideline example
+  orig: ''
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/0'
   prov: []
   self_ref: '#/texts/0'
   text: Contribution guideline example
@@ -327,7 +359,7 @@ texts:
   label: text
   orig: This is simple.
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/0'
   prov: []
   self_ref: '#/texts/1'
   text: This is simple.
@@ -336,7 +368,7 @@ texts:
   label: text
   orig: Foo
   parent:
-    $ref: '#/groups/0'
+    $ref: '#/groups/1'
   prov: []
   self_ref: '#/texts/2'
   text: Foo
@@ -351,7 +383,7 @@ texts:
   label: text
   orig: emphasis
   parent:
-    $ref: '#/groups/0'
+    $ref: '#/groups/1'
   prov: []
   self_ref: '#/texts/3'
   text: emphasis
@@ -366,7 +398,7 @@ texts:
   label: text
   orig: strong emphasis
   parent:
-    $ref: '#/groups/0'
+    $ref: '#/groups/1'
   prov: []
   self_ref: '#/texts/4'
   text: strong emphasis
@@ -381,7 +413,7 @@ texts:
   label: text
   orig: both
   parent:
-    $ref: '#/groups/0'
+    $ref: '#/groups/1'
   prov: []
   self_ref: '#/texts/5'
   text: both
@@ -390,7 +422,7 @@ texts:
   label: text
   orig: .
   parent:
-    $ref: '#/groups/0'
+    $ref: '#/groups/1'
   prov: []
   self_ref: '#/texts/6'
   text: .
@@ -399,7 +431,7 @@ texts:
   label: text
   orig: 'Create your feature branch:'
   parent:
-    $ref: '#/groups/1'
+    $ref: '#/groups/2'
   prov: []
   self_ref: '#/texts/7'
   text: 'Create your feature branch:'
@@ -411,7 +443,7 @@ texts:
   label: code
   orig: git checkout -b feature/AmazingFeature
   parent:
-    $ref: '#/groups/1'
+    $ref: '#/groups/2'
   prov: []
   references: []
   self_ref: '#/texts/8'
@@ -421,19 +453,19 @@ texts:
   label: text
   orig: .
   parent:
-    $ref: '#/groups/1'
+    $ref: '#/groups/2'
   prov: []
   self_ref: '#/texts/9'
   text: .
 - children:
-  - $ref: '#/groups/3'
+  - $ref: '#/groups/4'
   content_layer: body
   enumerated: true
   label: list_item
   marker: ''
   orig: ''
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/3'
   prov: []
   self_ref: '#/texts/10'
   text: ''
@@ -442,7 +474,7 @@ texts:
   label: text
   orig: Pull the
   parent:
-    $ref: '#/groups/3'
+    $ref: '#/groups/4'
   prov: []
   self_ref: '#/texts/11'
   text: Pull the
@@ -458,7 +490,7 @@ texts:
   label: text
   orig: repository
   parent:
-    $ref: '#/groups/3'
+    $ref: '#/groups/4'
   prov: []
   self_ref: '#/texts/12'
   text: repository
@@ -467,19 +499,19 @@ texts:
   label: text
   orig: .
   parent:
-    $ref: '#/groups/3'
+    $ref: '#/groups/4'
   prov: []
   self_ref: '#/texts/13'
   text: .
 - children:
-  - $ref: '#/groups/4'
+  - $ref: '#/groups/5'
   content_layer: body
   enumerated: true
   label: list_item
   marker: ''
   orig: ''
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/3'
   prov: []
   self_ref: '#/texts/14'
   text: ''
@@ -488,7 +520,7 @@ texts:
   label: text
   orig: Create your feature branch (
   parent:
-    $ref: '#/groups/4'
+    $ref: '#/groups/5'
   prov: []
   self_ref: '#/texts/15'
   text: Create your feature branch (
@@ -500,7 +532,7 @@ texts:
   label: code
   orig: git checkout -b feature/AmazingFeature
   parent:
-    $ref: '#/groups/4'
+    $ref: '#/groups/5'
   prov: []
   references: []
   self_ref: '#/texts/16'
@@ -510,19 +542,19 @@ texts:
   label: text
   orig: )
   parent:
-    $ref: '#/groups/4'
+    $ref: '#/groups/5'
   prov: []
   self_ref: '#/texts/17'
   text: )
 - children:
-  - $ref: '#/groups/5'
+  - $ref: '#/groups/6'
   content_layer: body
   enumerated: true
   label: list_item
   marker: ''
   orig: ''
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/3'
   prov: []
   self_ref: '#/texts/18'
   text: ''
@@ -531,7 +563,7 @@ texts:
   label: text
   orig: Commit your changes (
   parent:
-    $ref: '#/groups/5'
+    $ref: '#/groups/6'
   prov: []
   self_ref: '#/texts/19'
   text: Commit your changes (
@@ -543,7 +575,7 @@ texts:
   label: code
   orig: git commit -m 'Add some AmazingFeature'
   parent:
-    $ref: '#/groups/5'
+    $ref: '#/groups/6'
   prov: []
   references: []
   self_ref: '#/texts/20'
@@ -553,19 +585,19 @@ texts:
   label: text
   orig: )
   parent:
-    $ref: '#/groups/5'
+    $ref: '#/groups/6'
   prov: []
   self_ref: '#/texts/21'
   text: )
 - children:
-  - $ref: '#/groups/6'
+  - $ref: '#/groups/7'
   content_layer: body
   enumerated: true
   label: list_item
   marker: ''
   orig: ''
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/3'
   prov: []
   self_ref: '#/texts/22'
   text: ''
@@ -574,7 +606,7 @@ texts:
   label: text
   orig: Push to the branch (
   parent:
-    $ref: '#/groups/6'
+    $ref: '#/groups/7'
   prov: []
   self_ref: '#/texts/23'
   text: Push to the branch (
@@ -586,7 +618,7 @@ texts:
   label: code
   orig: git push origin feature/AmazingFeature
   parent:
-    $ref: '#/groups/6'
+    $ref: '#/groups/7'
   prov: []
   references: []
   self_ref: '#/texts/24'
@@ -596,7 +628,7 @@ texts:
   label: text
   orig: )
   parent:
-    $ref: '#/groups/6'
+    $ref: '#/groups/7'
   prov: []
   self_ref: '#/texts/25'
   text: )
@@ -607,7 +639,7 @@ texts:
   marker: ''
   orig: Open a Pull Request
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/3'
   prov: []
   self_ref: '#/texts/26'
   text: Open a Pull Request
@@ -624,19 +656,19 @@ texts:
   marker: ''
   orig: Whole list item has same formatting
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/3'
   prov: []
   self_ref: '#/texts/27'
   text: Whole list item has same formatting
 - children:
-  - $ref: '#/groups/7'
+  - $ref: '#/groups/8'
   content_layer: body
   enumerated: true
   label: list_item
   marker: ''
   orig: ''
   parent:
-    $ref: '#/groups/2'
+    $ref: '#/groups/3'
   prov: []
   self_ref: '#/texts/28'
   text: ''
@@ -645,7 +677,7 @@ texts:
   label: text
   orig: List item has
   parent:
-    $ref: '#/groups/7'
+    $ref: '#/groups/8'
   prov: []
   self_ref: '#/texts/29'
   text: List item has
@@ -660,7 +692,7 @@ texts:
   label: text
   orig: mixed or partial
   parent:
-    $ref: '#/groups/7'
+    $ref: '#/groups/8'
   prov: []
   self_ref: '#/texts/30'
   text: mixed or partial
@@ -669,7 +701,7 @@ texts:
   label: text
   orig: formatting
   parent:
-    $ref: '#/groups/7'
+    $ref: '#/groups/8'
   prov: []
   self_ref: '#/texts/31'
   text: formatting
@@ -682,21 +714,21 @@ texts:
     strikethrough: false
     underline: false
   label: title
-  orig: Whole heading is italic
+  orig: ''
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/9'
   prov: []
   self_ref: '#/texts/32'
   text: Whole heading is italic
 - children:
-  - $ref: '#/groups/9'
+  - $ref: '#/groups/11'
   content_layer: body
   enumerated: false
   label: list_item
   marker: ''
   orig: ''
   parent:
-    $ref: '#/groups/8'
+    $ref: '#/groups/10'
   prov: []
   self_ref: '#/texts/33'
   text: ''
@@ -711,7 +743,7 @@ texts:
   label: text
   orig: First
   parent:
-    $ref: '#/groups/9'
+    $ref: '#/groups/11'
   prov: []
   self_ref: '#/texts/34'
   text: First
@@ -720,19 +752,19 @@ texts:
   label: text
   orig: ': Lorem ipsum.'
   parent:
-    $ref: '#/groups/9'
+    $ref: '#/groups/11'
   prov: []
   self_ref: '#/texts/35'
   text: ': Lorem ipsum.'
 - children:
-  - $ref: '#/groups/10'
+  - $ref: '#/groups/12'
   content_layer: body
   enumerated: false
   label: list_item
   marker: ''
   orig: ''
   parent:
-    $ref: '#/groups/8'
+    $ref: '#/groups/10'
   prov: []
   self_ref: '#/texts/36'
   text: ''
@@ -747,7 +779,7 @@ texts:
   label: text
   orig: Second
   parent:
-    $ref: '#/groups/10'
+    $ref: '#/groups/12'
   prov: []
   self_ref: '#/texts/37'
   text: Second
@@ -756,7 +788,7 @@ texts:
   label: text
   orig: ': Dolor'
   parent:
-    $ref: '#/groups/10'
+    $ref: '#/groups/12'
   prov: []
   self_ref: '#/texts/38'
   text: ': Dolor'
@@ -768,7 +800,7 @@ texts:
   label: code
   orig: sit
   parent:
-    $ref: '#/groups/10'
+    $ref: '#/groups/12'
   prov: []
   references: []
   self_ref: '#/texts/39'
@@ -778,7 +810,7 @@ texts:
   label: text
   orig: amet.
   parent:
-    $ref: '#/groups/10'
+    $ref: '#/groups/12'
   prov: []
   self_ref: '#/texts/40'
   text: amet.
@@ -787,7 +819,7 @@ texts:
   label: text
   orig: Some
   parent:
-    $ref: '#/groups/11'
+    $ref: '#/groups/13'
   prov: []
   self_ref: '#/texts/41'
   text: Some
@@ -805,19 +837,19 @@ texts:
   label: code
   orig: formatted_code
   parent:
-    $ref: '#/groups/11'
+    $ref: '#/groups/13'
   prov: []
   references: []
   self_ref: '#/texts/42'
   text: formatted_code
 - children:
-  - $ref: '#/groups/12'
+  - $ref: '#/groups/15'
   content_layer: body
   label: section_header
   level: 1
   orig: ''
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/14'
   prov: []
   self_ref: '#/texts/43'
   text: ''
@@ -832,7 +864,7 @@ texts:
   label: text
   orig: Partially formatted
   parent:
-    $ref: '#/groups/12'
+    $ref: '#/groups/15'
   prov: []
   self_ref: '#/texts/44'
   text: Partially formatted
@@ -841,7 +873,7 @@ texts:
   label: text
   orig: heading to_escape
   parent:
-    $ref: '#/groups/12'
+    $ref: '#/groups/15'
   prov: []
   self_ref: '#/texts/45'
   text: heading to_escape
@@ -853,7 +885,7 @@ texts:
   label: code
   orig: not_to_escape
   parent:
-    $ref: '#/groups/12'
+    $ref: '#/groups/15'
   prov: []
   references: []
   self_ref: '#/texts/46'
@@ -864,7 +896,7 @@ texts:
   label: text
   orig: $$E=mc^2$$
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/14'
   prov: []
   self_ref: '#/texts/47'
   text: $$E=mc^2$$
@@ -872,9 +904,9 @@ texts:
   content_layer: body
   label: section_header
   level: 1
-  orig: Table Heading
+  orig: ''
   parent:
-    $ref: '#/body'
+    $ref: '#/groups/16'
   prov: []
   self_ref: '#/texts/48'
   text: Table Heading
