@@ -1,8 +1,10 @@
 import hashlib
 import logging
 import sys
+import threading
 import time
 from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
@@ -49,6 +51,9 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
+
+# Module-level lock for pipeline cache
+_pipeline_cache_lock = threading.Lock()
 
 
 class FormatOption(BaseModel):
@@ -284,10 +289,13 @@ class DocumentConverter:
             _log.info("Going to convert document batch...")
 
             # parallel processing only within input_batch
-            # with ThreadPoolExecutor(
+            #with ThreadPoolExecutor(
             #    max_workers=settings.perf.doc_batch_concurrency
-            # ) as pool:
-            #   yield from pool.map(self.process_document, input_batch)
+            #) as pool:
+            #    yield from pool.map(
+            #        partial(self._process_document, raises_on_error=raises_on_error),
+            #        input_batch,
+            #    )
             # Note: PDF backends are not thread-safe, thread pool usage was disabled.
 
             for item in map(
@@ -315,19 +323,20 @@ class DocumentConverter:
         # Use a composite key to cache pipelines
         cache_key = (pipeline_class, options_hash)
 
-        if cache_key not in self.initialized_pipelines:
-            _log.info(
-                f"Initializing pipeline for {pipeline_class.__name__} with options hash {options_hash}"
-            )
-            self.initialized_pipelines[cache_key] = pipeline_class(
-                pipeline_options=pipeline_options
-            )
-        else:
-            _log.debug(
-                f"Reusing cached pipeline for {pipeline_class.__name__} with options hash {options_hash}"
-            )
+        with _pipeline_cache_lock:
+            if cache_key not in self.initialized_pipelines:
+                _log.info(
+                    f"Initializing pipeline for {pipeline_class.__name__} with options hash {options_hash}"
+                )
+                self.initialized_pipelines[cache_key] = pipeline_class(
+                    pipeline_options=pipeline_options
+                )
+            else:
+                _log.debug(
+                    f"Reusing cached pipeline for {pipeline_class.__name__} with options hash {options_hash}"
+                )
 
-        return self.initialized_pipelines[cache_key]
+            return self.initialized_pipelines[cache_key]
 
     def _process_document(
         self, in_doc: InputDocument, raises_on_error: bool
