@@ -6,6 +6,8 @@ This is the first paragraph of the introduction.
 
 Some background information here.
 
+Example image
+
 <!-- image -->
 
 - First item in unordered list

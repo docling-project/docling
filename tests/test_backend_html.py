@@ -37,17 +37,13 @@ def test_heading_levels():
         if isinstance(item, SectionHeaderItem):
             if item.text == "Etymology":
                 found_lvl_1 = True
-                assert item.level == 1
+                assert item.level == 2
             elif item.text == "Feeding":
                 found_lvl_2 = True
-                assert item.level == 2
+                assert item.level == 3
     assert found_lvl_1 and found_lvl_2
 
 
-@pytest.mark.skip(
-    "Temporarily disabled since docling-core>=2.21.0 does not support ordered lists "
-    "with custom start value"
-)
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
