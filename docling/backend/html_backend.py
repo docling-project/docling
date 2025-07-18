@@ -380,6 +380,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"list-item has no text: {element}")
 
     @staticmethod
+    def _get_cell_spans(cell: Tag) -> tuple[int, int]:
+        """Extract colspan and rowspan values from a table cell tag.
+
+        This function retrieves the 'colspan' and 'rowspan' attributes from a given
+        table cell tag.
+        If the attribute does not exist or it is not numeric, it defaults to 1.
+        """
+        raw_spans: tuple[str, str] = (
+            str(cell.get("colspan", "1")),
+            str(cell.get("rowspan", "1")),
+        )
+        int_spans: tuple[int, int] = (
+            int(raw_spans[0]) if raw_spans[0].isnumeric() else 1,
+            int(raw_spans[1]) if raw_spans[0].isnumeric() else 1,
+        )
+
+        return int_spans
+
+    @staticmethod
     def parse_table_data(element: Tag) -> Optional[TableData]:  # noqa: C901
         nested_tables = element.find("table")
         if nested_tables is not None:
@@ -398,10 +417,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if not isinstance(row, Tag):
                     continue
                 cell_tag = cast(Tag, cell)
-                val = cell_tag.get("colspan", "1")
-                colspan = int(val) if (isinstance(val, str) and val.isnumeric()) else 1
-                col_count += colspan
-                if cell_tag.name == "td" or cell_tag.get("rowspan") is None:
+                col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
+                col_count += col_span
+                if cell_tag.name == "td" or row_span == 1:
                     is_row_header = False
             num_cols = max(num_cols, col_count)
             if not is_row_header:
@@ -428,10 +446,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             row_header = True
             for html_cell in cells:
                 if isinstance(html_cell, Tag):
+                    _, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
                     if html_cell.name == "td":
                         col_header = False
                         row_header = False
-                    elif html_cell.get("rowspan") is None:
+                    elif row_span == 1:
                         row_header = False
             if not row_header:
                 row_idx += 1
@@ -456,18 +475,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 text = html_cell.text
 
                 # label = html_cell.name
-                col_val = html_cell.get("colspan", "1")
-                col_span = (
-                    int(col_val)
-                    if isinstance(col_val, str) and col_val.isnumeric()
-                    else 1
-                )
-                row_val = html_cell.get("rowspan", "1")
-                row_span = (
-                    int(row_val)
-                    if isinstance(row_val, str) and row_val.isnumeric()
-                    else 1
-                )
+                col_span, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
                 if row_header:
                     row_span -= 1
                 while (

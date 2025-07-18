@@ -4,7 +4,6 @@ import sys
 import threading
 import time
 from collections.abc import Iterable, Iterator
-from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
@@ -289,9 +288,9 @@ class DocumentConverter:
             _log.info("Going to convert document batch...")
 
             # parallel processing only within input_batch
-            #with ThreadPoolExecutor(
+            # with ThreadPoolExecutor(
             #    max_workers=settings.perf.doc_batch_concurrency
-            #) as pool:
+            # ) as pool:
             #    yield from pool.map(
             #        partial(self._process_document, raises_on_error=raises_on_error),
             #        input_batch,

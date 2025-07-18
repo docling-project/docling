@@ -21,21 +21,8 @@ def test_threaded_pipeline_multiple_documents():
     test_files = [
         "tests/data/pdf/2203.01017v2.pdf",
         "tests/data/pdf/2206.01062.pdf",
-        "tests/data/pdf/2305.03393v1.pdf"
+        "tests/data/pdf/2305.03393v1.pdf",
     ]
-
-    # Standard pipeline
-    standard_converter = DocumentConverter(
-        format_options={
-            InputFormat.PDF: PdfFormatOption(
-                pipeline_cls=StandardPdfPipeline,
-                pipeline_options=PdfPipelineOptions(
-                    do_table_structure=True,
-                    do_ocr=True,
-                ),
-            )
-        }
-    )
 
     # Threaded pipeline
     threaded_converter = DocumentConverter(
@@ -54,29 +41,53 @@ def test_threaded_pipeline_multiple_documents():
         }
     )
 
-    # Test standard pipeline
-    standard_results = []
-    start_time = time.perf_counter()
-    for result in standard_converter.convert_all(test_files, raises_on_error=True):
-        print("Finished converting document with standard pipeline:", result.input.file.name)
-        standard_results.append(result)
-    standard_time = time.perf_counter() - start_time
-
-    del standard_converter
+    threaded_converter.initialize_pipeline(InputFormat.PDF)
 
     # Test threaded pipeline
     threaded_results = []
     start_time = time.perf_counter()
     for result in threaded_converter.convert_all(test_files, raises_on_error=True):
-        print("Finished converting document with threaded pipeline:", result.input.file.name)
+        print(
+            "Finished converting document with threaded pipeline:",
+            result.input.file.name,
+        )
         threaded_results.append(result)
     threaded_time = time.perf_counter() - start_time
 
     del threaded_converter
 
     print("\nMulti-document Pipeline Comparison:")
-    print(f"Standard pipeline:  {standard_time:.2f} seconds")
     print(f"Threaded pipeline:  {threaded_time:.2f} seconds")
+
+    # Standard pipeline
+    standard_converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=StandardPdfPipeline,
+                pipeline_options=PdfPipelineOptions(
+                    do_table_structure=True,
+                    do_ocr=True,
+                ),
+            )
+        }
+    )
+
+    standard_converter.initialize_pipeline(InputFormat.PDF)
+
+    # Test standard pipeline
+    standard_results = []
+    start_time = time.perf_counter()
+    for result in standard_converter.convert_all(test_files, raises_on_error=True):
+        print(
+            "Finished converting document with standard pipeline:",
+            result.input.file.name,
+        )
+        standard_results.append(result)
+    standard_time = time.perf_counter() - start_time
+
+    del standard_converter
+
+    print(f"Standard pipeline:  {standard_time:.2f} seconds")
     print(f"Speedup:            {standard_time / threaded_time:.2f}x")
 
     # Verify results
@@ -87,12 +98,18 @@ def test_threaded_pipeline_multiple_documents():
         assert result.status == ConversionStatus.SUCCESS
 
     # Basic content comparison
-    for i, (standard_result, threaded_result) in enumerate(zip(standard_results, threaded_results)):
+    for i, (standard_result, threaded_result) in enumerate(
+        zip(standard_results, threaded_results)
+    ):
         standard_doc = standard_result.document
         threaded_doc = threaded_result.document
-        
-        assert len(standard_doc.pages) == len(threaded_doc.pages), f"Document {i} page count mismatch"
-        assert len(standard_doc.texts) == len(threaded_doc.texts), f"Document {i} text count mismatch"
+
+        assert len(standard_doc.pages) == len(threaded_doc.pages), (
+            f"Document {i} page count mismatch"
+        )
+        assert len(standard_doc.texts) == len(threaded_doc.texts), (
+            f"Document {i} text count mismatch"
+        )
 
 
 def test_pipeline_comparison():

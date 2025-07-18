@@ -1,44 +1,37 @@
 # threaded_standard_pdf_pipeline.py
-# pylint: disable=too-many-lines
-"""
-Thread-safe, multi-threaded PDF pipeline.
+# pylint: disable=too-many-lines,invalid-name
+"""Thread-safe, production-ready PDF pipeline
+================================================
+A self-contained, thread-safe PDF conversion pipeline exploiting parallelism between pipeline stages and models.
 
-Key points
-----------
-* Heavy models are initialised once per pipeline instance and safely reused across threads.
-* Every `execute()` call creates its own `RunContext` with fresh queues and worker threads
-  so concurrent executions never share mutable state.
-* Back-pressure remains intact because every `ThreadedQueue` is bounded (`max_size` from
-  pipeline options). When a downstream queue is full, upstream stages block on a condition
-  variable instead of busy-polling.
-* Pipeline termination relies on queue closing:
-  - The producer thread closes its output queue after the last real page is queued.
-  - Each stage propagates that closure downstream by closing its own output queues
-    once it has drained its input queue and detected that it is closed.
-  - The collector finishes when it has received either
-      * all expected pages, or
-      * the output queue is closed and empty.
-* Per-page errors are captured, propagated, and turned into
-  `ConversionStatus.PARTIAL_SUCCESS` when appropriate.
+* **Per-run isolation** - every :py:meth:`execute` call uses its own bounded queues and worker
+  threads so that concurrent invocations never share mutable state.
+* **Deterministic run identifiers** - pages are tracked with an internal *run-id* instead of
+  relying on :pyfunc:`id`, which may clash after garbage collection.
+* **Explicit back-pressure & shutdown** - producers block on full queues; queue *close()*
+  propagates downstream so stages terminate deterministically without sentinels.
+* **Minimal shared state** - heavyweight models are initialised once per pipeline instance
+  and only read by worker threads; no runtime mutability is exposed.
+* **Strict typing & clean API usage** - code is fully annotated and respects *coding_rules.md*.
 """
 
 from __future__ import annotations
 
+import itertools
 import logging
 import threading
 import time
 import warnings
-import weakref
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, Iterable, List, Optional, Sequence, Tuple
 
-from docling_core.types.doc import ImageRef, PictureItem, TableItem
+from docling_core.types.doc import NodeItem
 
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import AssembledUnit, ConversionStatus, Page
-from docling.datamodel.document import ConversionResult
+from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
@@ -67,25 +60,21 @@ _log = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@dataclass
+@dataclass(slots=True)
 class ThreadedItem:
-    """Item that moves between pipeline stages."""
+    """Envelope that travels between pipeline stages."""
 
     payload: Optional[Page]
-    conv_res_id: int
+    run_id: int  # Unique per *execute* call, monotonic across pipeline instance
+    page_no: int
     conv_res: ConversionResult
-    page_no: int = -1
     error: Optional[Exception] = None
     is_failed: bool = False
 
-    def __post_init__(self) -> None:
-        if self.page_no == -1 and self.payload is not None:
-            self.page_no = self.payload.page_no
 
-
-@dataclass
+@dataclass(slots=True)
 class ProcessingResult:
-    """Aggregate of processed and failed pages."""
+    """Aggregated outcome of a pipeline run."""
 
     pages: List[Page] = field(default_factory=list)
     failed_pages: List[Tuple[int, Exception]] = field(default_factory=list)
@@ -101,120 +90,108 @@ class ProcessingResult:
 
     @property
     def is_partial_success(self) -> bool:
-        return self.success_count > 0 and self.failure_count > 0
+        return 0 < self.success_count < self.total_expected
 
     @property
     def is_complete_failure(self) -> bool:
         return self.success_count == 0 and self.failure_count > 0
 
 
-@dataclass
 class ThreadedQueue:
-    """Bounded queue with explicit back-pressure and close semantics."""
+    """Bounded queue with blocking put/ get_batch and explicit *close()* semantics."""
 
-    max_size: int = 512
-    items: deque[ThreadedItem] = field(default_factory=deque)
-    lock: threading.Lock = field(default_factory=threading.Lock)
-    not_full: threading.Condition = field(init=False)
-    not_empty: threading.Condition = field(init=False)
-    closed: bool = False
+    __slots__ = ("_closed", "_items", "_lock", "_max", "_not_empty", "_not_full")
 
-    def __post_init__(self) -> None:
-        self.not_full = threading.Condition(self.lock)
-        self.not_empty = threading.Condition(self.lock)
+    def __init__(self, max_size: int) -> None:
+        self._max: int = max_size
+        self._items: deque[ThreadedItem] = deque()
+        self._lock = threading.Lock()
+        self._not_full = threading.Condition(self._lock)
+        self._not_empty = threading.Condition(self._lock)
+        self._closed = False
 
-    # ------------------------------------------------------------------  put()
-    def put(self, item: ThreadedItem, timeout: Optional[float] = None) -> bool:
-        """Block until the queue has room or is closed. Returns False if closed."""
-        with self.not_full:
-            if self.closed:
+    # ---------------------------------------------------------------- put()
+    def put(self, item: ThreadedItem, timeout: Optional[float] | None = None) -> bool:
+        """Block until queue accepts *item* or is closed.  Returns *False* if closed."""
+        with self._not_full:
+            if self._closed:
                 return False
-
             start = time.monotonic()
-            while len(self.items) >= self.max_size and not self.closed:
+            while len(self._items) >= self._max and not self._closed:
                 if timeout is not None:
                     remaining = timeout - (time.monotonic() - start)
                     if remaining <= 0:
                         return False
-                    self.not_full.wait(remaining)
+                    self._not_full.wait(remaining)
                 else:
-                    self.not_full.wait()
-
-            if self.closed:
+                    self._not_full.wait()
+            if self._closed:
                 return False
-
-            self.items.append(item)
-            self.not_empty.notify()
+            self._items.append(item)
+            self._not_empty.notify()
             return True
 
-    # ------------------------------------------------------------  get_batch()
+    # ------------------------------------------------------------ get_batch()
     def get_batch(
-        self, batch_size: int, timeout: Optional[float] = None
+        self, size: int, timeout: Optional[float] | None = None
     ) -> List[ThreadedItem]:
-        """Return up to `batch_size` items; may return fewer on timeout/closure."""
-        with self.not_empty:
+        """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
+        with self._not_empty:
             start = time.monotonic()
-            while not self.items and not self.closed:
+            while not self._items and not self._closed:
                 if timeout is not None:
                     remaining = timeout - (time.monotonic() - start)
                     if remaining <= 0:
                         return []
-                    self.not_empty.wait(remaining)
+                    self._not_empty.wait(remaining)
                 else:
-                    self.not_empty.wait()
-
+                    self._not_empty.wait()
             batch: List[ThreadedItem] = []
-            while len(batch) < batch_size and self.items:
-                batch.append(self.items.popleft())
-
+            while self._items and len(batch) < size:
+                batch.append(self._items.popleft())
             if batch:
-                self.not_full.notify_all()
+                self._not_full.notify_all()
             return batch
 
-    # ------------------------------------------------------------------  close
+    # ---------------------------------------------------------------- close()
     def close(self) -> None:
-        with self.lock:
-            self.closed = True
-            self.not_empty.notify_all()
-            self.not_full.notify_all()
+        with self._lock:
+            self._closed = True
+            self._not_empty.notify_all()
+            self._not_full.notify_all()
 
-    # ---------------------------------------------------------------  cleanup
-    def cleanup(self) -> None:
-        with self.lock:
-            self.items.clear()
-            self.closed = True
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Pipeline stage
-# ──────────────────────────────────────────────────────────────────────────────
+    # -------------------------------------------------------------- property
+    @property
+    def closed(self) -> bool:
+        return self._closed
 
 
 class ThreadedPipelineStage:
-    """A processing stage with its own thread, batch size and timeouts."""
+    """A single pipeline stage backed by one worker thread."""
 
     def __init__(
         self,
+        *,
         name: str,
         model: Any,
         batch_size: int,
         batch_timeout: float,
         queue_max_size: int,
     ) -> None:
-        self.name: str = name
-        self.model: Any = model
-        self.batch_size: int = batch_size
-        self.batch_timeout: float = batch_timeout
-        self.input_queue: ThreadedQueue = ThreadedQueue(max_size=queue_max_size)
-        self.output_queues: List[ThreadedQueue] = []
+        self.name = name
+        self.model = model
+        self.batch_size = batch_size
+        self.batch_timeout = batch_timeout
+        self.input_queue = ThreadedQueue(queue_max_size)
+        self._outputs: list[ThreadedQueue] = []
         self._thread: Optional[threading.Thread] = None
-        self._running: bool = False
+        self._running = False
 
-    # ----------------------------------------------------------------  wiring
-    def add_output_queue(self, queue: ThreadedQueue) -> None:
-        self.output_queues.append(queue)
+    # ---------------------------------------------------------------- wiring
+    def add_output_queue(self, q: ThreadedQueue) -> None:
+        self._outputs.append(q)
 
-    # -----------------------------------------------------------  lifecycle
+    # -------------------------------------------------------------- lifecycle
     def start(self) -> None:
         if self._running:
             return
@@ -232,90 +209,86 @@ class ThreadedPipelineStage:
         if self._thread is not None:
             self._thread.join(timeout=30.0)
             if self._thread.is_alive():
-                _log.warning("Stage %s thread did not shut down in time", self.name)
+                _log.warning("Stage %s did not terminate cleanly within 30s", self.name)
 
-    def cleanup(self) -> None:
-        self.input_queue.cleanup()
-        for q in self.output_queues:
-            q.cleanup()
-
-    # ------------------------------------------------------------------  _run
+    # ------------------------------------------------------------------ _run
     def _run(self) -> None:
         try:
             while self._running:
-                batch = self.input_queue.get_batch(
-                    self.batch_size, timeout=self.batch_timeout
-                )
-
-                # Exit when upstream is finished and queue drained
+                batch = self.input_queue.get_batch(self.batch_size, self.batch_timeout)
                 if not batch and self.input_queue.closed:
                     break
-
-                processed_items = self._process_batch(batch)
-                self._send_to_outputs(processed_items)
-        except Exception as exc:  # pragma: no cover - safety net
-            _log.error("Fatal error in stage %s: %s", self.name, exc, exc_info=True)
+                processed = self._process_batch(batch)
+                self._emit(processed)
+        except Exception:  # pragma: no cover - top-level guard
+            _log.exception("Fatal error in stage %s", self.name)
         finally:
-            # Propagate closure to downstream
-            for q in self.output_queues:
+            for q in self._outputs:
                 q.close()
 
-    # -------------------------------------------------------  _process_batch
-    def _process_batch(self, batch: Sequence[ThreadedItem]) -> List[ThreadedItem]:
-        grouped: dict[int, List[ThreadedItem]] = defaultdict(list)
+    # ----------------------------------------------------- _process_batch()
+    def _process_batch(self, batch: Sequence[ThreadedItem]) -> list[ThreadedItem]:
+        """Run *model* on *batch* grouped by run_id to maximise batching."""
+        groups: dict[int, list[ThreadedItem]] = defaultdict(list)
         for itm in batch:
-            grouped[itm.conv_res_id].append(itm)
+            groups[itm.run_id].append(itm)
 
-        out: List[ThreadedItem] = []
-        for conv_res_id, items in grouped.items():
+        result: list[ThreadedItem] = []
+        for rid, items in groups.items():
+            good: list[ThreadedItem] = [i for i in items if not i.is_failed]
+            if not good:
+                result.extend(items)
+                continue
             try:
-                valid = [it for it in items if not it.is_failed]
-                fail = [it for it in items if it.is_failed]
+                # Filter out None payloads and ensure type safety
+                pages_with_payloads = [
+                    (i, i.payload) for i in good if i.payload is not None
+                ]
+                if len(pages_with_payloads) != len(good):
+                    # Some items have None payloads, mark all as failed
+                    for it in items:
+                        it.is_failed = True
+                        it.error = RuntimeError("Page payload is None")
+                    result.extend(items)
+                    continue
 
-                if valid:
-                    conv_res = valid[0].conv_res
-                    pages = [it.payload for it in valid]  # type: ignore[arg-type]
-                    assert all(p is not None for p in pages)
-                    processed_pages = list(self.model(conv_res, pages))  # type: ignore[arg-type]
-
-                    for idx, page in enumerate(processed_pages):
-                        out.append(
-                            ThreadedItem(
-                                payload=page,
-                                conv_res_id=conv_res_id,
-                                conv_res=conv_res,
-                                page_no=valid[idx].page_no,
-                            )
+                pages: List[Page] = [payload for _, payload in pages_with_payloads]
+                processed_pages = list(self.model(good[0].conv_res, pages))  # type: ignore[arg-type]
+                if len(processed_pages) != len(pages):  # strict mismatch guard
+                    raise RuntimeError(
+                        f"Model {self.name} returned wrong number of pages"
+                    )
+                for idx, page in enumerate(processed_pages):
+                    result.append(
+                        ThreadedItem(
+                            payload=page,
+                            run_id=rid,
+                            page_no=good[idx].page_no,
+                            conv_res=good[idx].conv_res,
                         )
-                out.extend(fail)
+                    )
             except Exception as exc:
-                _log.error(
-                    "Model %s failed for doc %s: %s", self.name, conv_res_id, exc
-                )
+                _log.error("Stage %s failed for run %d: %s", self.name, rid, exc)
                 for it in items:
                     it.is_failed = True
                     it.error = exc
-                    out.append(it)
+                result.extend(items)
+        return result
 
-        return out
-
-    # ------------------------------------------------------  _send_to_outputs
-    def _send_to_outputs(self, items: Sequence[ThreadedItem]) -> None:
+    # -------------------------------------------------------------- _emit()
+    def _emit(self, items: Iterable[ThreadedItem]) -> None:
         for item in items:
-            for q in self.output_queues:
-                if not q.put(item, timeout=None):
-                    _log.error("Queue closed while writing from %s", self.name)
+            for q in self._outputs:
+                if not q.put(item):
+                    _log.error("Output queue closed while emitting from %s", self.name)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Run context (per-execute mutable state)
-# ──────────────────────────────────────────────────────────────────────────────
-
-
-@dataclass
+@dataclass(slots=True)
 class RunContext:
-    preprocess_stage: ThreadedPipelineStage
-    stages: List[ThreadedPipelineStage]
+    """Wiring for a single *execute* call."""
+
+    stages: list[ThreadedPipelineStage]
+    first_stage: ThreadedPipelineStage
     output_queue: ThreadedQueue
 
 
@@ -325,118 +298,72 @@ class RunContext:
 
 
 class ThreadedStandardPdfPipeline(BasePipeline):
-    """Thread-safe PDF pipeline with per-run isolation and queue-closing protocol."""
+    """High-performance PDF pipeline with multi-threaded stages."""
 
-    # ----------------------------------------------------------------  ctor
     def __init__(self, pipeline_options: ThreadedPdfPipelineOptions) -> None:
         super().__init__(pipeline_options)
         self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
+        self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
 
-        # Flags set by enrichment logic
-        self.keep_backend: bool = False
-        self.keep_images: bool = False
+        # initialise heavy models once
+        self._init_models()
 
-        # Placeholders for heavy models
-        self.preprocessing_model: PagePreprocessingModel
-        self.ocr_model: Any
-        self.layout_model: LayoutModel
-        self.table_model: TableStructureModel
-        self.assemble_model: PageAssembleModel
-        self.reading_order_model: ReadingOrderModel
+    # ---------------------------------------------------------------- execute
+    def execute(
+        self, in_doc: InputDocument, raises_on_error: bool = True
+    ) -> ConversionResult:  # type: ignore[override]
+        conv_res = ConversionResult(input=in_doc)
 
-        self._initialize_models()
+        if not isinstance(in_doc._backend, PdfDocumentBackend):
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
 
-        # Weak tracking for stage-internal look-ups
-        self._document_tracker: weakref.WeakValueDictionary[int, ConversionResult] = (
-            weakref.WeakValueDictionary()
-        )
-        self._document_lock = threading.Lock()
-
-    # ────────────────────────────────────────────────────────────────────────
-    # Model helpers
-    # ────────────────────────────────────────────────────────────────────────
-
-    def _get_artifacts_path(self) -> Optional[Path]:
-        if self.pipeline_options.artifacts_path:
-            path = Path(self.pipeline_options.artifacts_path).expanduser()
-        elif settings.artifacts_path:
-            path = Path(settings.artifacts_path).expanduser()
-        else:
-            path = None
-
-        if path is not None and not path.is_dir():
-            raise RuntimeError(
-                f"{path=} is not a directory containing the required models."
-            )
-        return path
-
-    def _get_ocr_model(self, artifacts_path: Optional[Path]) -> Any:
-        factory = get_ocr_factory(
-            allow_external_plugins=self.pipeline_options.allow_external_plugins
-        )
-        return factory.create_instance(
-            options=self.pipeline_options.ocr_options,
-            enabled=self.pipeline_options.do_ocr,
-            artifacts_path=artifacts_path,
-            accelerator_options=self.pipeline_options.accelerator_options,
-        )
-
-    def _get_picture_description_model(
-        self,
-        artifacts_path: Optional[Path],
-    ) -> Optional[PictureDescriptionBaseModel]:
-        factory = get_picture_description_factory(
-            allow_external_plugins=self.pipeline_options.allow_external_plugins
-        )
-        return factory.create_instance(
-            options=self.pipeline_options.picture_description_options,
-            enabled=self.pipeline_options.do_picture_description,
-            enable_remote_services=self.pipeline_options.enable_remote_services,
-            artifacts_path=artifacts_path,
-            accelerator_options=self.pipeline_options.accelerator_options,
-        )
+        with TimeRecorder(conv_res, "pipeline_total", scope=ProfilingScope.DOCUMENT):
+            try:
+                conv_res = self._build_document(conv_res)
+                conv_res = self._assemble_document(conv_res)
+                conv_res.status = self._determine_status(conv_res)
+            finally:
+                self._unload(conv_res)
+        return conv_res
 
     # ────────────────────────────────────────────────────────────────────────
-    # Heavy-model initialisation
+    # Heavy-model initialisation & helpers
     # ────────────────────────────────────────────────────────────────────────
 
-    def _initialize_models(self) -> None:
-        artifacts_path = self._get_artifacts_path()
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            self.keep_images = (
-                self.pipeline_options.generate_page_images
-                or self.pipeline_options.generate_picture_images
-                or self.pipeline_options.generate_table_images
-            )
-
+    def _init_models(self) -> None:
+        art_path = self._resolve_artifacts_path()
+        self.keep_images = (
+            self.pipeline_options.generate_page_images
+            or self.pipeline_options.generate_picture_images
+            or self.pipeline_options.generate_table_images
+        )
         self.preprocessing_model = PagePreprocessingModel(
             options=PagePreprocessingOptions(
                 images_scale=self.pipeline_options.images_scale
             )
         )
-        self.ocr_model = self._get_ocr_model(artifacts_path)
+        self.ocr_model = self._make_ocr_model(art_path)
         self.layout_model = LayoutModel(
-            artifacts_path=artifacts_path,
+            artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
             options=self.pipeline_options.layout_options,
         )
         self.table_model = TableStructureModel(
             enabled=self.pipeline_options.do_table_structure,
-            artifacts_path=artifacts_path,
+            artifacts_path=art_path,
             options=self.pipeline_options.table_structure_options,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
-        # Optional enrichment
+        # --- optional enrichment ------------------------------------------------
         self.enrichment_pipe = []
         code_formula = CodeFormulaModel(
             enabled=self.pipeline_options.do_code_enrichment
             or self.pipeline_options.do_formula_enrichment,
-            artifacts_path=artifacts_path,
+            artifacts_path=art_path,
             options=CodeFormulaModelOptions(
                 do_code_enrichment=self.pipeline_options.do_code_enrichment,
                 do_formula_enrichment=self.pipeline_options.do_formula_enrichment,
@@ -448,14 +375,14 @@ class ThreadedStandardPdfPipeline(BasePipeline):
 
         picture_classifier = DocumentPictureClassifier(
             enabled=self.pipeline_options.do_picture_classification,
-            artifacts_path=artifacts_path,
+            artifacts_path=art_path,
             options=DocumentPictureClassifierOptions(),
             accelerator_options=self.pipeline_options.accelerator_options,
         )
         if picture_classifier.enabled:
             self.enrichment_pipe.append(picture_classifier)
 
-        picture_descr = self._get_picture_description_model(artifacts_path)
+        picture_descr = self._make_picture_description_model(art_path)
         if picture_descr and picture_descr.enabled:
             self.enrichment_pipe.append(picture_descr)
 
@@ -468,199 +395,198 @@ class ThreadedStandardPdfPipeline(BasePipeline):
             )
         )
 
+    # ---------------------------------------------------------------- helpers
+    def _resolve_artifacts_path(self) -> Optional[Path]:
+        if self.pipeline_options.artifacts_path:
+            p = Path(self.pipeline_options.artifacts_path).expanduser()
+        elif settings.artifacts_path:
+            p = Path(settings.artifacts_path).expanduser()
+        else:
+            return None
+        if not p.is_dir():
+            raise RuntimeError(
+                f"{p} does not exist or is not a directory containing the required models"
+            )
+        return p
+
+    def _make_ocr_model(self, art_path: Optional[Path]) -> Any:
+        factory = get_ocr_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        return factory.create_instance(
+            options=self.pipeline_options.ocr_options,
+            enabled=self.pipeline_options.do_ocr,
+            artifacts_path=art_path,
+            accelerator_options=self.pipeline_options.accelerator_options,
+        )
+
+    def _make_picture_description_model(
+        self, art_path: Optional[Path]
+    ) -> Optional[PictureDescriptionBaseModel]:
+        factory = get_picture_description_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        return factory.create_instance(
+            options=self.pipeline_options.picture_description_options,
+            enabled=self.pipeline_options.do_picture_description,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
+            artifacts_path=art_path,
+            accelerator_options=self.pipeline_options.accelerator_options,
+        )
+
     # ────────────────────────────────────────────────────────────────────────
-    # Run context creation
+    # Build - thread pipeline
     # ────────────────────────────────────────────────────────────────────────
 
-    def _create_run(self) -> RunContext:
+    def _create_run_ctx(self) -> RunContext:
         opts = self.pipeline_options
-
         preprocess = ThreadedPipelineStage(
-            "preprocess",
-            self.preprocessing_model,
+            name="preprocess",
+            model=self.preprocessing_model,
             batch_size=1,
             batch_timeout=opts.batch_timeout_seconds,
             queue_max_size=opts.queue_max_size,
         )
         ocr = ThreadedPipelineStage(
-            "ocr",
-            self.ocr_model,
+            name="ocr",
+            model=self.ocr_model,
             batch_size=opts.ocr_batch_size,
             batch_timeout=opts.batch_timeout_seconds,
             queue_max_size=opts.queue_max_size,
         )
         layout = ThreadedPipelineStage(
-            "layout",
-            self.layout_model,
+            name="layout",
+            model=self.layout_model,
             batch_size=opts.layout_batch_size,
             batch_timeout=opts.batch_timeout_seconds,
             queue_max_size=opts.queue_max_size,
         )
         table = ThreadedPipelineStage(
-            "table",
-            self.table_model,
+            name="table",
+            model=self.table_model,
             batch_size=opts.table_batch_size,
             batch_timeout=opts.batch_timeout_seconds,
             queue_max_size=opts.queue_max_size,
         )
         assemble = ThreadedPipelineStage(
-            "assemble",
-            self.assemble_model,
+            name="assemble",
+            model=self.assemble_model,
             batch_size=1,
             batch_timeout=opts.batch_timeout_seconds,
             queue_max_size=opts.queue_max_size,
         )
 
-        # Wiring
-        output_queue = ThreadedQueue(max_size=opts.queue_max_size)
+        # wire stages
+        output_q = ThreadedQueue(opts.queue_max_size)
         preprocess.add_output_queue(ocr.input_queue)
         ocr.add_output_queue(layout.input_queue)
         layout.add_output_queue(table.input_queue)
         table.add_output_queue(assemble.input_queue)
-        assemble.add_output_queue(output_queue)
+        assemble.add_output_queue(output_q)
 
         stages = [preprocess, ocr, layout, table, assemble]
-        return RunContext(
-            preprocess_stage=preprocess, stages=stages, output_queue=output_queue
-        )
+        return RunContext(stages=stages, first_stage=preprocess, output_queue=output_q)
 
-    # ────────────────────────────────────────────────────────────────────────
-    # Document build
-    # ────────────────────────────────────────────────────────────────────────
+    # --------------------------------------------------------------------- build
+    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:  # type: ignore[override]
+        run_id = next(self._run_seq)
+        return self._build_document_with_run_id(conv_res, run_id)
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
-        if not isinstance(conv_res.input._backend, PdfDocumentBackend):
-            raise RuntimeError("Input backend must be PdfDocumentBackend")
+    def _build_document_with_run_id(
+        self, conv_res: ConversionResult, run_id: int
+    ) -> ConversionResult:
+        """Internal method that handles the actual document building with run_id."""
+        backend: PdfDocumentBackend = conv_res.input._backend  # type: ignore[assignment]
+        if not isinstance(backend, PdfDocumentBackend):
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
 
-        with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
-            # ---------------------------------------------------------------- pages
-            start_page, end_page = conv_res.input.limits.page_range
-            pages_to_process: List[Page] = []
-            for i in range(conv_res.input.page_count):
-                if start_page - 1 <= i <= end_page - 1:
-                    page = Page(page_no=i)
+        # preload page objects
+        start_page, end_page = conv_res.input.limits.page_range
+        pages: list[Page] = []
+        for i in range(conv_res.input.page_count):
+            if start_page - 1 <= i <= end_page - 1:
+                page = Page(page_no=i)
+                page._backend = backend.load_page(i)
+                if page._backend and page._backend.is_valid():
+                    page.size = page._backend.get_size()
                     conv_res.pages.append(page)
-                    page._backend = conv_res.input._backend.load_page(i)
-                    if page._backend and page._backend.is_valid():
-                        page.size = page._backend.get_size()
-                        pages_to_process.append(page)
+                    pages.append(page)
+        if not pages:
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
 
-            if not pages_to_process:
-                conv_res.status = ConversionStatus.FAILURE
-                return conv_res
-
-            # ---------------------------------------------------------------- run ctx
-            ctx = self._create_run()
-
-            # Weak-map registration (for potential cross-stage look-ups)
-            with self._document_lock:
-                self._document_tracker[id(conv_res)] = conv_res
-
-            for stage in ctx.stages:
-                stage.start()
-
-            try:
-                self._feed_pipeline(ctx.preprocess_stage, pages_to_process, conv_res)
-                result = self._collect_results_with_recovery(
-                    ctx, conv_res, len(pages_to_process)
-                )
-                self._update_document_with_results(conv_res, result)
-            finally:
-                for stage in ctx.stages:
-                    stage.stop()
-                    stage.cleanup()
-                ctx.output_queue.cleanup()
-                with self._document_lock:
-                    self._document_tracker.pop(id(conv_res), None)
-
+        ctx = self._create_run_ctx()
+        for st in ctx.stages:
+            st.start()
+        try:
+            self._feed_pages(ctx.first_stage, pages, conv_res, run_id)
+            proc = self._collect(ctx, conv_res, run_id, len(pages))
+            self._integrate_results(conv_res, proc)
+        finally:
+            for st in ctx.stages:
+                st.stop()
+            ctx.output_queue.close()
         return conv_res
 
-    # ────────────────────────────────────────────────────────────────────────
-    # Feed pages
-    # ────────────────────────────────────────────────────────────────────────
-
-    def _feed_pipeline(
+    # -------------------------------------------------------------- feed_pages
+    def _feed_pages(
         self,
-        preprocess_stage: ThreadedPipelineStage,
+        stage: ThreadedPipelineStage,
         pages: Sequence[Page],
         conv_res: ConversionResult,
+        run_id: int,
     ) -> None:
         for pg in pages:
-            ok = preprocess_stage.input_queue.put(
+            ok = stage.input_queue.put(
                 ThreadedItem(
-                    payload=pg,
-                    conv_res_id=id(conv_res),
-                    conv_res=conv_res,
-                    page_no=pg.page_no,
-                ),
-                timeout=None,
+                    payload=pg, run_id=run_id, page_no=pg.page_no, conv_res=conv_res
+                )
             )
             if not ok:
-                raise RuntimeError(
-                    "Preprocess queue closed unexpectedly while feeding pages"
-                )
+                raise RuntimeError("Input queue closed while feeding pages")
+        stage.input_queue.close()
 
-        # Upstream finished: close queue (no sentinel needed)
-        preprocess_stage.input_queue.close()
-
-    # ────────────────────────────────────────────────────────────────────────
-    # Collect results
-    # ────────────────────────────────────────────────────────────────────────
-
-    def _collect_results_with_recovery(
-        self,
-        ctx: RunContext,
-        conv_res: ConversionResult,
-        expected_count: int,
+    # ------------------------------------------------------------- _collect()
+    def _collect(
+        self, ctx: RunContext, conv_res: ConversionResult, run_id: int, expected: int
     ) -> ProcessingResult:
-        result = ProcessingResult(total_expected=expected_count)
-
+        res = ProcessingResult(total_expected=expected)
         while True:
-            batch = ctx.output_queue.get_batch(batch_size=expected_count, timeout=None)
+            batch = ctx.output_queue.get_batch(expected, timeout=None)
             if not batch and ctx.output_queue.closed:
                 break
-
-            for item in batch:
-                if item.conv_res_id != id(conv_res):
-                    # In per-run isolation this cannot happen
-                    continue
-                if item.is_failed or item.error:
-                    result.failed_pages.append(
-                        (item.page_no, item.error or Exception("Unknown error"))
+            for itm in batch:
+                if itm.run_id != run_id:
+                    continue  # not our run (should not happen due to isolation)
+                if itm.is_failed or itm.error:
+                    res.failed_pages.append(
+                        (itm.page_no, itm.error or Exception("unknown error"))
                     )
                 else:
-                    assert item.payload is not None
-                    result.pages.append(item.payload)
-
-            # Terminate when all pages accounted for
-            if (result.success_count + result.failure_count) >= expected_count:
+                    assert itm.payload is not None
+                    res.pages.append(itm.payload)
+            if res.success_count + res.failure_count >= expected:
                 break
+        return res
 
-        return result
-
-    # ────────────────────────────────────────────────────────────────────────
-    # Update ConversionResult
-    # ────────────────────────────────────────────────────────────────────────
-
-    def _update_document_with_results(
+    # ---------------------------------------------------- integrate_results()
+    def _integrate_results(
         self, conv_res: ConversionResult, proc: ProcessingResult
     ) -> None:
         page_map = {p.page_no: p for p in proc.pages}
-        new_pages: List[Page] = []
-        for page in conv_res.pages:
-            if page.page_no in page_map:
-                new_pages.append(page_map[page.page_no])
-            elif not any(fp_no == page.page_no for fp_no, _ in proc.failed_pages):
-                new_pages.append(page)
-        conv_res.pages = new_pages
-
-        if proc.is_partial_success:
-            conv_res.status = ConversionStatus.PARTIAL_SUCCESS
-        elif proc.is_complete_failure:
+        conv_res.pages = [
+            page_map.get(p.page_no, p)
+            for p in conv_res.pages
+            if p.page_no in page_map
+            or not any(fp == p.page_no for fp, _ in proc.failed_pages)
+        ]
+        if proc.is_complete_failure:
             conv_res.status = ConversionStatus.FAILURE
+        elif proc.is_partial_success:
+            conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         else:
             conv_res.status = ConversionStatus.SUCCESS
-
         if not self.keep_images:
             for p in conv_res.pages:
                 p._image_cache = {}
@@ -669,39 +595,36 @@ class ThreadedStandardPdfPipeline(BasePipeline):
                 if p._backend is not None:
                     p._backend.unload()
 
-    # ────────────────────────────────────────────────────────────────────────
-    # Assemble / enrich
-    # ────────────────────────────────────────────────────────────────────────
-
-    def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
-        all_elements, all_headers, all_body = [], [], []
+    # ---------------------------------------------------------------- assemble
+    def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:  # type: ignore[override]
+        elements, headers, body = [], [], []
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
             for p in conv_res.pages:
                 if p.assembled:
-                    all_elements.extend(p.assembled.elements)
-                    all_headers.extend(p.assembled.headers)
-                    all_body.extend(p.assembled.body)
-
+                    elements.extend(p.assembled.elements)
+                    headers.extend(p.assembled.headers)
+                    body.extend(p.assembled.body)
             conv_res.assembled = AssembledUnit(
-                elements=all_elements, headers=all_headers, body=all_body
+                elements=elements, headers=headers, body=body
             )
             conv_res.document = self.reading_order_model(conv_res)
         return conv_res
 
-    # ────────────────────────────────────────────────────────────────────────
-    # Base overrides
-    # ────────────────────────────────────────────────────────────────────────
-
+    # ---------------------------------------------------------------- misc
     @classmethod
-    def get_default_options(cls) -> ThreadedPdfPipelineOptions:
-        return ThreadedPdfPipelineOptions()  # type: ignore[call-arg]
+    def get_default_options(cls) -> ThreadedPdfPipelineOptions:  # type: ignore[override]
+        return ThreadedPdfPipelineOptions()
 
     @classmethod
     def is_backend_supported(cls, backend) -> bool:  # type: ignore[override]
         return isinstance(backend, PdfDocumentBackend)
 
-    def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
+    def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:  # type: ignore[override]
         return conv_res.status
 
-    def _unload(self, conv_res: ConversionResult) -> None:
-        return
+    def _unload(self, conv_res: ConversionResult) -> None:  # type: ignore[override]
+        for p in conv_res.pages:
+            if p._backend is not None:
+                p._backend.unload()
+        if conv_res.input._backend:
+            conv_res.input._backend.unload()
