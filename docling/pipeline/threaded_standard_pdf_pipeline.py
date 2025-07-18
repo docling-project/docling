@@ -308,25 +308,6 @@ class ThreadedStandardPdfPipeline(BasePipeline):
         # initialise heavy models once
         self._init_models()
 
-    # ---------------------------------------------------------------- execute
-    def execute(
-        self, in_doc: InputDocument, raises_on_error: bool = True
-    ) -> ConversionResult:  # type: ignore[override]
-        conv_res = ConversionResult(input=in_doc)
-
-        if not isinstance(in_doc._backend, PdfDocumentBackend):
-            conv_res.status = ConversionStatus.FAILURE
-            return conv_res
-
-        with TimeRecorder(conv_res, "pipeline_total", scope=ProfilingScope.DOCUMENT):
-            try:
-                conv_res = self._build_document(conv_res)
-                conv_res = self._assemble_document(conv_res)
-                conv_res.status = self._determine_status(conv_res)
-            finally:
-                self._unload(conv_res)
-        return conv_res
-
     # ────────────────────────────────────────────────────────────────────────
     # Heavy-model initialisation & helpers
     # ────────────────────────────────────────────────────────────────────────
