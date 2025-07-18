@@ -14,9 +14,9 @@ from .verify_utils import verify_document, verify_export
 GENERATE = GEN_TEST_DATA
 
 
-def get_pubmed_paths():
-    directory = Path(os.path.dirname(__file__) + "/data/pubmed/")
-    xml_files = sorted(directory.rglob("*.xml"))
+def get_jats_paths():
+    directory = Path(os.path.dirname(__file__) + "/data/jats/")
+    xml_files = sorted(directory.rglob("*.nxml"))
     return xml_files
 
 
@@ -25,20 +25,20 @@ def get_converter():
     return converter
 
 
-def test_e2e_pubmed_conversions(use_stream=False):
-    pubmed_paths = get_pubmed_paths()
+def test_e2e_jats_conversions(use_stream=False):
+    jats_paths = get_jats_paths()
     converter = get_converter()
 
-    for pubmed_path in pubmed_paths:
+    for jats_path in jats_paths:
         gt_path = (
-            pubmed_path.parent.parent / "groundtruth" / "docling_v2" / pubmed_path.name
+            jats_path.parent.parent / "groundtruth" / "docling_v2" / jats_path.name
         )
         if use_stream:
-            buf = BytesIO(pubmed_path.open("rb").read())
-            stream = DocumentStream(name=pubmed_path.name, stream=buf)
+            buf = BytesIO(jats_path.open("rb").read())
+            stream = DocumentStream(name=jats_path.name, stream=buf)
             conv_result: ConversionResult = converter.convert(stream)
         else:
-            conv_result: ConversionResult = converter.convert(pubmed_path)
+            conv_result: ConversionResult = converter.convert(jats_path)
         doc: DoclingDocument = conv_result.document
 
         pred_md: str = doc.export_to_markdown()
@@ -54,9 +54,9 @@ def test_e2e_pubmed_conversions(use_stream=False):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), "export to json"
 
 
-def test_e2e_pubmed_conversions_stream():
-    test_e2e_pubmed_conversions(use_stream=True)
+def test_e2e_jats_conversions_stream():
+    test_e2e_jats_conversions(use_stream=True)
 
 
-def test_e2e_pubmed_conversions_no_stream():
-    test_e2e_pubmed_conversions(use_stream=False)
+def test_e2e_jats_conversions_no_stream():
+    test_e2e_jats_conversions(use_stream=False)

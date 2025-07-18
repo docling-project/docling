@@ -279,6 +279,9 @@ class LayoutOptions(BaseModel):
     """Options for layout processing."""
 
     create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
+    keep_empty_clusters: bool = (
+        False  # Whether to keep clusters that contain no text cells
+    )
     model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 
