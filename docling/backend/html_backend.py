@@ -14,7 +14,6 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupItem,
     GroupLabel,
-    ListItem,
     TableCell,
     TableData,
     TextItem,
