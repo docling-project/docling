@@ -219,6 +219,11 @@ class LayoutPostprocessor:
             [c for c in self.special_clusters if c.label in self.WRAPPER_TYPES]
         )
 
+        self._regular_bbox_tuples = [
+            (c, c.bbox.l, c.bbox.t, c.bbox.r, c.bbox.b) for c in self.regular_clusters
+        ]
+
+
     def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
         """Main processing pipeline."""
         self.regular_clusters = self._process_regular_clusters()
@@ -324,15 +329,28 @@ class LayoutPostprocessor:
                 )
             ]
 
+        # PRE-PROCESS REGULAR CLUSTERS BY BOUNDS
+        # For each special, pre-filter only regular clusters whose bbox intersects
+        # the special's bbox, using a quick rectangle intersection test.
+        regular_bbox_tuples = self._regular_bbox_tuples  # local for speed
         for special in special_clusters:
             contained = []
-            for cluster in self.regular_clusters:
+            s_bbox = special.bbox
+            sl, st, sr, sb = s_bbox.l, s_bbox.t, s_bbox.r, s_bbox.b
+
+            # Find only those regular clusters whose bbox intersects the special's bbox
+            possible = []
+            for cluster, left, top, right, bottom in regular_bbox_tuples:
+                if left < sr and right > sl and top < sb and bottom > st:
+                    possible.append(cluster)
+
+            # Now do the expensive computation only for these
+            for cluster in possible:
                 containment = cluster.bbox.intersection_over_self(special.bbox)
                 if containment > 0.8:
                     contained.append(cluster)
 
             if contained:
-                # Sort contained clusters by minimum cell ID:
                 contained = self._sort_clusters(contained, mode="id")
                 special.children = contained
 
@@ -375,24 +393,36 @@ class LayoutPostprocessor:
         should be removed.
         """
         wrappers_to_remove = set()
+        # Precompute table clusters with their bbox coordinates for intersection testing
+        table_clusters = [
+            (c, c.bbox.l, c.bbox.t, c.bbox.r, c.bbox.b)
+            for c in self.regular_clusters
+            if c.label == DocItemLabel.TABLE
+        ]
 
         for wrapper in special_clusters:
             if wrapper.label not in self.WRAPPER_TYPES:
                 continue  # only treat KEY_VALUE_REGION for now.
 
-            for regular in self.regular_clusters:
-                if regular.label == DocItemLabel.TABLE:
-                    # Calculate overlap
-                    overlap_ratio = wrapper.bbox.intersection_over_self(regular.bbox)
+            wbb = wrapper.bbox
+            wl, wt, wr, wb = wbb.l, wbb.t, wbb.r, wbb.b
 
-                    conf_diff = wrapper.confidence - regular.confidence
+            # restrict to table-regulars whose bbox intersects
+            possible = []
+            for c, left, top, right, bottom in table_clusters:
+                if left < wr and right > wl and top < wb and bottom > wt:
+                    possible.append(c)
 
-                    # If wrapper is mostly overlapping with a TABLE, remove the wrapper
-                    if (
-                        overlap_ratio > 0.9 and conf_diff < 0.1
-                    ):  # self.OVERLAP_PARAMS["wrapper"]["conf_threshold"]):  # 80% overlap threshold
-                        wrappers_to_remove.add(wrapper.id)
-                        break
+            for regular in possible:
+                overlap_ratio = wrapper.bbox.intersection_over_self(regular.bbox)
+                conf_diff = wrapper.confidence - regular.confidence
+
+                # If wrapper is mostly overlapping with a TABLE, remove the wrapper
+                if (
+                    overlap_ratio > 0.9 and conf_diff < 0.1
+                ):  # self.OVERLAP_PARAMS["wrapper"]["conf_threshold"]):  # 80% overlap threshold
+                    wrappers_to_remove.add(wrapper.id)
+                    break
 
         # Filter out the identified wrappers
         special_clusters = [
