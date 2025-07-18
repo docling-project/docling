@@ -1,6 +1,7 @@
 import hashlib
 import logging
 import sys
+import threading
 import time
 from collections.abc import Iterable, Iterator
 from functools import partial
@@ -49,6 +50,7 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
+_PIPELINE_CACHE_LOCK = threading.Lock()
 
 
 class FormatOption(BaseModel):
@@ -315,17 +317,18 @@ class DocumentConverter:
         # Use a composite key to cache pipelines
         cache_key = (pipeline_class, options_hash)
 
-        if cache_key not in self.initialized_pipelines:
-            _log.info(
-                f"Initializing pipeline for {pipeline_class.__name__} with options hash {options_hash}"
-            )
-            self.initialized_pipelines[cache_key] = pipeline_class(
-                pipeline_options=pipeline_options
-            )
-        else:
-            _log.debug(
-                f"Reusing cached pipeline for {pipeline_class.__name__} with options hash {options_hash}"
-            )
+        with _PIPELINE_CACHE_LOCK:
+            if cache_key not in self.initialized_pipelines:
+                _log.info(
+                    f"Initializing pipeline for {pipeline_class.__name__} with options hash {options_hash}"
+                )
+                self.initialized_pipelines[cache_key] = pipeline_class(
+                    pipeline_options=pipeline_options
+                )
+            else:
+                _log.debug(
+                    f"Reusing cached pipeline for {pipeline_class.__name__} with options hash {options_hash}"
+                )
 
         return self.initialized_pipelines[cache_key]
 
