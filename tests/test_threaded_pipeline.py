@@ -19,6 +19,7 @@ from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfP
 def test_threaded_pipeline_multiple_documents():
     """Test threaded pipeline with multiple documents and compare with standard pipeline"""
     test_files = [
+        "/Users/cau/Downloads/icao_doc8168_volume_2.pdf",
         "tests/data/pdf/2203.01017v2.pdf",
         "tests/data/pdf/2206.01062.pdf",
         "tests/data/pdf/2305.03393v1.pdf",
