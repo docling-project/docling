@@ -1,3 +1,20 @@
+## [v2.42.0](https://github.com/docling-project/docling/releases/tag/v2.42.0) - 2025-07-18
+
+### Feature
+
+* Add option to control empty clusters in layout postprocessing ([#1940](https://github.com/docling-project/docling/issues/1940)) ([`a436be7`](https://github.com/docling-project/docling/commit/a436be73676101cc9461a17ae7a9ae72316a5096))
+
+### Fix
+
+* Safe pipeline init, use device_map in transformers models ([#1917](https://github.com/docling-project/docling/issues/1917)) ([`cca05c4`](https://github.com/docling-project/docling/commit/cca05c45eaec154ae8470f9eb3577852d17773cd))
+* Fix HTML table parser and JATS backend bugs ([#1948](https://github.com/docling-project/docling/issues/1948)) ([`e1e3053`](https://github.com/docling-project/docling/commit/e1e305369552b82d3f09f0c113ea8b54d5c90658))
+* KeyError: 'fPr' when processing latex fractions in DOCX files ([#1926](https://github.com/docling-project/docling/issues/1926)) ([`95e7096`](https://github.com/docling-project/docling/commit/95e70962f1d7cf1f339a88fde9c907111e194726))
+* Change granite vision model URL from preview to stable version ([#1925](https://github.com/docling-project/docling/issues/1925)) ([`c5fb353`](https://github.com/docling-project/docling/commit/c5fb353f109dfe79b51c201ebb1ff33fceeae34a))
+
+### Documentation
+
+* Fix typos ([#1943](https://github.com/docling-project/docling/issues/1943)) ([`d6d2dbe`](https://github.com/docling-project/docling/commit/d6d2dbe2f99bd965c1bc8eec3d332d0acf731189))
+
 ## [v2.41.0](https://github.com/docling-project/docling/releases/tag/v2.41.0) - 2025-07-10
 
 ### Feature

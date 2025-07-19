@@ -50,9 +50,7 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
-
-# Module-level lock for pipeline cache
-_pipeline_cache_lock = threading.Lock()
+_PIPELINE_CACHE_LOCK = threading.Lock()
 
 
 class FormatOption(BaseModel):
@@ -322,7 +320,7 @@ class DocumentConverter:
         # Use a composite key to cache pipelines
         cache_key = (pipeline_class, options_hash)
 
-        with _pipeline_cache_lock:
+        with _PIPELINE_CACHE_LOCK:
             if cache_key not in self.initialized_pipelines:
                 _log.info(
                     f"Initializing pipeline for {pipeline_class.__name__} with options hash {options_hash}"
