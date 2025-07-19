@@ -289,7 +289,10 @@ class DocumentConverter:
             # with ThreadPoolExecutor(
             #    max_workers=settings.perf.doc_batch_concurrency
             # ) as pool:
-            #   yield from pool.map(self.process_document, input_batch)
+            #    yield from pool.map(
+            #        partial(self._process_document, raises_on_error=raises_on_error),
+            #        input_batch,
+            #    )
             # Note: PDF backends are not thread-safe, thread pool usage was disabled.
 
             for item in map(
@@ -330,7 +333,7 @@ class DocumentConverter:
                     f"Reusing cached pipeline for {pipeline_class.__name__} with options hash {options_hash}"
                 )
 
-        return self.initialized_pipelines[cache_key]
+            return self.initialized_pipelines[cache_key]
 
     def _process_document(
         self, in_doc: InputDocument, raises_on_error: bool

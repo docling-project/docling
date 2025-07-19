@@ -332,3 +332,29 @@ class ProcessingPipeline(str, Enum):
     STANDARD = "standard"
     VLM = "vlm"
     ASR = "asr"
+
+
+class ThreadedPdfPipelineOptions(PdfPipelineOptions):
+    """Pipeline options for the threaded PDF pipeline with batching and backpressure control"""
+
+    # Batch sizes for different stages
+    ocr_batch_size: int = 4
+    layout_batch_size: int = 4
+    table_batch_size: int = 4
+
+    # Timing control
+    batch_timeout_seconds: float = 2.0
+
+    # Backpressure and queue control
+    queue_max_size: int = 100
+
+    # Pipeline coordination - batch_timeout_seconds is the only safe timeout
+    # stage_timeout_seconds and collection_timeout_seconds removed to prevent data loss
+
+    @classmethod
+    def from_sync_options(
+        cls, sync_options: PdfPipelineOptions
+    ) -> "ThreadedPdfPipelineOptions":
+        """Convert sync options to threaded options"""
+        data = sync_options.model_dump()
+        return cls(**data)
