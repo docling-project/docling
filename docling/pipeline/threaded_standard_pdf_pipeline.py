@@ -61,7 +61,7 @@ _log = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────────────────
 
 
-@dataclass(slots=True)
+@dataclass
 class ThreadedItem:
     """Envelope that travels between pipeline stages."""
 
@@ -73,7 +73,7 @@ class ThreadedItem:
     is_failed: bool = False
 
 
-@dataclass(slots=True)
+@dataclass
 class ProcessingResult:
     """Aggregated outcome of a pipeline run."""
 
@@ -284,7 +284,7 @@ class ThreadedPipelineStage:
                     _log.error("Output queue closed while emitting from %s", self.name)
 
 
-@dataclass(slots=True)
+@dataclass
 class RunContext:
     """Wiring for a single *execute* call."""
 
