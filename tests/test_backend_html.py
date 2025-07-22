@@ -1,8 +1,6 @@
 from io import BytesIO
 from pathlib import Path
 
-import pytest
-
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
@@ -37,17 +35,15 @@ def test_heading_levels():
         if isinstance(item, SectionHeaderItem):
             if item.text == "Etymology":
                 found_lvl_1 = True
+                # h2 becomes level 1 because of h1 as title
                 assert item.level == 1
             elif item.text == "Feeding":
                 found_lvl_2 = True
+                # h3 becomes level 2 because of h1 as title
                 assert item.level == 2
     assert found_lvl_1 and found_lvl_2
 
 
-@pytest.mark.skip(
-    "Temporarily disabled since docling-core>=2.21.0 does not support ordered lists "
-    "with custom start value"
-)
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
