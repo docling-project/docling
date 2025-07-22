@@ -106,6 +106,7 @@ nav:
     - ✨ Enrichment development:
       - "Figure enrichment": examples/develop_picture_enrichment.py
       - "Formula enrichment": examples/develop_formula_understanding.py
+      - "Enrich a DoclingDocument": examples/enrich_doclingdocument.py
     - 🗂️ More examples:
       - examples/rag_milvus.ipynb
       - examples/rag_weaviate.ipynb
