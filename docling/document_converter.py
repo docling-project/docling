@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 from collections.abc import Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
@@ -284,27 +285,33 @@ class DocumentConverter:
             settings.perf.doc_batch_size,  # pass format_options
         ):
             _log.info("Going to convert document batch...")
+            process_func = partial(
+                self._process_document, raises_on_error=raises_on_error
+            )
 
-            # parallel processing only within input_batch
-            # with ThreadPoolExecutor(
-            #    max_workers=settings.perf.doc_batch_concurrency
-            # ) as pool:
-            #    yield from pool.map(
-            #        partial(self._process_document, raises_on_error=raises_on_error),
-            #        input_batch,
-            #    )
-            # Note: PDF backends are not thread-safe, thread pool usage was disabled.
-
-            for item in map(
-                partial(self._process_document, raises_on_error=raises_on_error),
-                input_batch,
+            if (
+                settings.perf.doc_batch_concurrency > 1
+                and settings.perf.doc_batch_size > 1
             ):
-                elapsed = time.monotonic() - start_time
-                start_time = time.monotonic()
-                _log.info(
-                    f"Finished converting document {item.input.file.name} in {elapsed:.2f} sec."
-                )
-                yield item
+                with ThreadPoolExecutor(
+                    max_workers=settings.perf.doc_batch_concurrency
+                ) as pool:
+                    for item in pool.map(
+                        process_func,
+                        input_batch,
+                    ):
+                        yield item
+            else:
+                for item in map(
+                    process_func,
+                    input_batch,
+                ):
+                    elapsed = time.monotonic() - start_time
+                    start_time = time.monotonic()
+                    _log.info(
+                        f"Finished converting document {item.input.file.name} in {elapsed:.2f} sec."
+                    )
+                    yield item
 
     def _get_pipeline(self, doc_format: InputFormat) -> Optional[BasePipeline]:
         """Retrieve or initialize a pipeline, reusing instances based on class and options."""
