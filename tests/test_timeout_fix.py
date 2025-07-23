@@ -62,10 +62,8 @@ class TimeoutTestPipeline(PaginatedPipeline):
         return page
     
     def _determine_status(self, conv_res):
-        """Determine conversion status."""
-        if len(conv_res.pages) < conv_res.input.page_count:
-            return ConversionStatus.PARTIAL_SUCCESS
-        return ConversionStatus.SUCCESS
+        """Determine conversion status - inherit from parent to test the actual fix."""
+        return super()._determine_status(conv_res)
     
     @classmethod
     def get_default_options(cls):
@@ -96,16 +94,14 @@ def test_document_timeout_filters_uninitialized_pages():
     input_doc.file.name = "test.pdf"
     input_doc._backend = MockPdfBackend(input_doc, "test.pdf")
     
-    conv_res = ConversionResult(input=input_doc)
-    
     # Configure pipeline with very short timeout to trigger timeout condition
     pipeline_options = PdfPipelineOptions()
     pipeline_options.document_timeout = 0.05  # 50ms timeout - intentionally short
     
     pipeline = TimeoutTestPipeline(pipeline_options)
     
-    # Process document - this should trigger timeout but not cause AssertionError
-    result = pipeline._build_document(conv_res)
+    # Process document using full pipeline execution - this should trigger timeout but not cause AssertionError
+    result = pipeline.execute(input_doc, raises_on_error=False)
     
     # Verify that uninitialized pages (with size=None) were filtered out
     # This is the key fix - pages with size=None are removed before ReadingOrderModel processes them
@@ -119,9 +115,9 @@ def test_document_timeout_filters_uninitialized_pages():
             f"Page {page.page_no} should have size initialized, got None"
     
     # Status should indicate partial success due to timeout
-    final_status = pipeline._determine_status(result)
-    assert final_status == ConversionStatus.PARTIAL_SUCCESS, \
-        f"Expected PARTIAL_SUCCESS, got {final_status}"
+    # This validates the fix for status preservation
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, \
+        f"Expected PARTIAL_SUCCESS, got {result.status}"
 
 
 def test_readingorder_model_compatibility():
@@ -141,16 +137,14 @@ def test_readingorder_model_compatibility():
     input_doc.file.name = "test.pdf"
     input_doc._backend = MockPdfBackend(input_doc, "test.pdf")
     
-    conv_res = ConversionResult(input=input_doc)
-    
     # Configure pipeline with timeout that allows some pages to be processed
     pipeline_options = PdfPipelineOptions()
     pipeline_options.document_timeout = 0.15  # 150ms timeout
     
     pipeline = TimeoutTestPipeline(pipeline_options)
     
-    # Process document
-    result = pipeline._build_document(conv_res)
+    # Process document using full pipeline execution
+    result = pipeline.execute(input_doc, raises_on_error=False)
     
     # Simulate what ReadingOrderModel expects - all pages should have size
     for page in result.pages:
@@ -162,6 +156,50 @@ def test_readingorder_model_compatibility():
             "Size should have height attribute"
         assert hasattr(page.size, 'width'), \
             "Size should have width attribute"
+
+
+def test_timeout_status_preservation():
+    """
+    Test that ConversionStatus.PARTIAL_SUCCESS set during timeout is preserved 
+    by _determine_status method.
+    
+    This validates the fix for the issue where _determine_status would overwrite
+    the PARTIAL_SUCCESS status that was correctly set due to document_timeout.
+    """
+    
+    # Create a test document
+    input_doc = Mock(spec=InputDocument)
+    input_doc.page_count = 10
+    input_doc.limits = Mock()
+    input_doc.limits.page_range = (1, 10)
+    input_doc.file = Mock()
+    input_doc.file.name = "test.pdf"
+    input_doc._backend = MockPdfBackend(input_doc, "test.pdf")
+    
+    conv_res = ConversionResult(input=input_doc)
+    
+    # Configure pipeline with very short timeout
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.document_timeout = 0.05  # 50ms timeout
+    
+    pipeline = TimeoutTestPipeline(pipeline_options)
+    
+    # Process document - this should trigger timeout and set PARTIAL_SUCCESS
+    result = pipeline._build_document(conv_res)
+    
+    # Verify that timeout was triggered and status was set to PARTIAL_SUCCESS
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, \
+        f"Expected PARTIAL_SUCCESS after timeout, got {result.status}"
+    
+    # Now test that _determine_status preserves the PARTIAL_SUCCESS status
+    final_status = pipeline._determine_status(result)
+    assert final_status == ConversionStatus.PARTIAL_SUCCESS, \
+        f"_determine_status should preserve PARTIAL_SUCCESS from timeout, got {final_status}"
+    
+    # Also test the full pipeline execution to ensure end-to-end behavior
+    final_result = pipeline.execute(input_doc, raises_on_error=False)
+    assert final_result.status == ConversionStatus.PARTIAL_SUCCESS, \
+        f"Final result should maintain PARTIAL_SUCCESS status, got {final_result.status}"
 
 
 def test_no_timeout_scenario():
@@ -176,16 +214,14 @@ def test_no_timeout_scenario():
     input_doc.file.name = "test.pdf"
     input_doc._backend = MockPdfBackend(input_doc, "test.pdf")
     
-    conv_res = ConversionResult(input=input_doc)
-    
     # Configure pipeline with sufficient timeout
     pipeline_options = PdfPipelineOptions()
     pipeline_options.document_timeout = 2.0  # 2 seconds - should be enough
     
     pipeline = TimeoutTestPipeline(pipeline_options)
     
-    # Process document
-    result = pipeline._build_document(conv_res)
+    # Process document using full pipeline execution
+    result = pipeline.execute(input_doc, raises_on_error=False)
     
     # All pages should be processed successfully without timeout
     assert len(result.pages) >= 2, \
@@ -195,3 +231,7 @@ def test_no_timeout_scenario():
     for page in result.pages:
         assert page.size is not None, \
             f"Page {page.page_no} should have size initialized"
+    
+    # Status should be SUCCESS since no timeout occurred
+    assert result.status == ConversionStatus.SUCCESS, \
+        f"Expected SUCCESS without timeout, got {result.status}"

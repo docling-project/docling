@@ -217,7 +217,9 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
         return conv_res
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
-        status = ConversionStatus.SUCCESS
+        # Preserve PARTIAL_SUCCESS status if already set (e.g., due to timeout)
+        status = ConversionStatus.SUCCESS if conv_res.status != ConversionStatus.PARTIAL_SUCCESS else ConversionStatus.PARTIAL_SUCCESS
+        
         for page in conv_res.pages:
             if page._backend is None or not page._backend.is_valid():
                 conv_res.errors.append(
