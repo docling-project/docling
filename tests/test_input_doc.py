@@ -257,7 +257,7 @@ def test_tiff_two_pages():
 
     # Expect two full-page rectangles
     rects_page1 = doc._backend.load_page(0).get_bitmap_rects()
-    rects_page2 = doc._backend.load_page(0).get_bitmap_rects()
+    rects_page2 = doc._backend.load_page(1).get_bitmap_rects()
 
     page1_rect = next(rects_page1)
     page2_rect = next(rects_page2)
