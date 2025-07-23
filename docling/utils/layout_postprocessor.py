@@ -267,8 +267,14 @@ class LayoutPostprocessor:
         # Initial cell assignment
         clusters = self._assign_cells_to_clusters(clusters)
 
-        # Remove clusters with no cells
-        clusters = [cluster for cluster in clusters if cluster.cells]
+        # Remove clusters with no cells (if keep_empty_clusters is False),
+        # but always keep clusters with label DocItemLabel.FORMULA
+        if not self.options.keep_empty_clusters:
+            clusters = [
+                cluster
+                for cluster in clusters
+                if cluster.cells or cluster.label == DocItemLabel.FORMULA
+            ]
 
         # Handle orphaned cells
         unassigned = self._find_unassigned_cells(clusters)

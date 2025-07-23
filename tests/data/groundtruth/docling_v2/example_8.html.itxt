@@ -1,8 +1,0 @@
-item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: section: group header-1
-    item-2 at level 2: section_header: Pivot table with with 1 row header
-      item-3 at level 3: table with [6x4]
-    item-4 at level 2: section_header: Pivot table with 2 row headers
-      item-5 at level 3: table with [6x5]
-    item-6 at level 2: section_header: Equivalent pivot table
-      item-7 at level 3: table with [6x5]
