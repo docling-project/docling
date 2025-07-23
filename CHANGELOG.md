@@ -1,3 +1,14 @@
+## [v2.42.1](https://github.com/docling-project/docling/releases/tag/v2.42.1) - 2025-07-22
+
+### Fix
+
+* Keep formula clusters also when empty ([#1970](https://github.com/docling-project/docling/issues/1970)) ([`67441ca`](https://github.com/docling-project/docling/commit/67441ca4188d532c79df788c461e7f6f7d2f8170))
+
+### Documentation
+
+* Enrich existing DoclingDocument ([#1969](https://github.com/docling-project/docling/issues/1969)) ([`90a7cc4`](https://github.com/docling-project/docling/commit/90a7cc4bdda7272cd87d6f4ab3c0b7966f6e9c73))
+* Add documentation for confidence scores ([#1912](https://github.com/docling-project/docling/issues/1912)) ([`5d98bce`](https://github.com/docling-project/docling/commit/5d98bcea1bd03aff426f903211c931620ff8fcc1))
+
 ## [v2.42.0](https://github.com/docling-project/docling/releases/tag/v2.42.0) - 2025-07-18
 
 ### Feature
