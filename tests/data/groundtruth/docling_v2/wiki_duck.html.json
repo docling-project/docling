@@ -8410,7 +8410,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 2,
-            "text": "Duck\n",
+            "text": "Duck",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -8422,7 +8422,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 2,
-            "text": "\n",
+            "text": "",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8434,7 +8434,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 2,
-            "text": "Bufflehead\n(Bucephala albeola)\n",
+            "text": "Bufflehead\n(Bucephala albeola)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8446,7 +8446,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 2,
-            "text": "Scientific classification \n",
+            "text": "Scientific classification",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -8458,7 +8458,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Domain:\n",
+            "text": "Domain:",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8470,7 +8470,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Eukaryota\n",
+            "text": "Eukaryota",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8482,7 +8482,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Kingdom:\n",
+            "text": "Kingdom:",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8494,7 +8494,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Animalia\n",
+            "text": "Animalia",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8506,7 +8506,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Phylum:\n",
+            "text": "Phylum:",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8518,7 +8518,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Chordata\n",
+            "text": "Chordata",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8530,7 +8530,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Class:\n",
+            "text": "Class:",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8542,7 +8542,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Aves\n",
+            "text": "Aves",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8554,7 +8554,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Order:\n",
+            "text": "Order:",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8566,7 +8566,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Anseriformes\n",
+            "text": "Anseriformes",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8578,7 +8578,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Superfamily:\n",
+            "text": "Superfamily:",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8590,7 +8590,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Anatoidea\n",
+            "text": "Anatoidea",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8602,7 +8602,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Family:\n",
+            "text": "Family:",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8614,7 +8614,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Anatidae\n",
+            "text": "Anatidae",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8626,7 +8626,7 @@
             "end_row_offset_idx": 12,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 2,
-            "text": "Subfamilies\n",
+            "text": "Subfamilies",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -8638,7 +8638,7 @@
             "end_row_offset_idx": 13,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 2,
-            "text": "\nSee text\n\n",
+            "text": "See text",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -8655,7 +8655,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Duck\n",
+              "text": "Duck",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -8667,7 +8667,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Duck\n",
+              "text": "Duck",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -8681,7 +8681,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "\n",
+              "text": "",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8693,7 +8693,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "\n",
+              "text": "",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8707,7 +8707,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Bufflehead\n(Bucephala albeola)\n",
+              "text": "Bufflehead\n(Bucephala albeola)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8719,7 +8719,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Bufflehead\n(Bucephala albeola)\n",
+              "text": "Bufflehead\n(Bucephala albeola)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8733,7 +8733,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Scientific classification \n",
+              "text": "Scientific classification",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -8745,7 +8745,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Scientific classification \n",
+              "text": "Scientific classification",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -8759,7 +8759,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Domain:\n",
+              "text": "Domain:",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8771,7 +8771,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Eukaryota\n",
+              "text": "Eukaryota",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8785,7 +8785,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Kingdom:\n",
+              "text": "Kingdom:",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8797,7 +8797,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Animalia\n",
+              "text": "Animalia",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8811,7 +8811,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Phylum:\n",
+              "text": "Phylum:",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8823,7 +8823,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Chordata\n",
+              "text": "Chordata",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8837,7 +8837,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Class:\n",
+              "text": "Class:",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8849,7 +8849,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Aves\n",
+              "text": "Aves",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8863,7 +8863,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Order:\n",
+              "text": "Order:",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8875,7 +8875,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Anseriformes\n",
+              "text": "Anseriformes",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8889,7 +8889,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Superfamily:\n",
+              "text": "Superfamily:",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8901,7 +8901,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Anatoidea\n",
+              "text": "Anatoidea",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8915,7 +8915,7 @@
               "end_row_offset_idx": 11,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Family:\n",
+              "text": "Family:",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8927,7 +8927,7 @@
               "end_row_offset_idx": 11,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Anatidae\n",
+              "text": "Anatidae",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8941,7 +8941,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Subfamilies\n",
+              "text": "Subfamilies",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -8953,7 +8953,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Subfamilies\n",
+              "text": "Subfamilies",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -8967,7 +8967,7 @@
               "end_row_offset_idx": 13,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "\nSee text\n\n",
+              "text": "See text",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8979,7 +8979,7 @@
               "end_row_offset_idx": 13,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "\nSee text\n\n",
+              "text": "See text",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -9010,7 +9010,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 2,
-            "text": "Authority control databases ",
+            "text": "Authority control databases",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -9034,7 +9034,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "United StatesFranceBnF dataJapanLatviaIsrael",
+            "text": "United States France BnF data Japan Latvia Israel",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -9075,7 +9075,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Authority control databases ",
+              "text": "Authority control databases",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -9087,7 +9087,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 2,
-              "text": "Authority control databases ",
+              "text": "Authority control databases",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -9113,7 +9113,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "United StatesFranceBnF dataJapanLatviaIsrael",
+              "text": "United States France BnF data Japan Latvia Israel",
               "column_header": false,
               "row_header": false,
               "row_section": false

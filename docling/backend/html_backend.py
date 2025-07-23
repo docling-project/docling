@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
 
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
 from bs4.element import PreformattedString
 from docling_core.types.doc import (
     DocItem,
@@ -297,7 +297,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     ):
                         parts.append(child)
                     elif isinstance(child, Tag) and child.name not in ("ul", "ol"):
-                        text_part = child.get_text()
+                        text_part = HTMLDocumentBackend.get_text(child)
                         if text_part:
                             parts.append(text_part)
                 li_text = re.sub(r"\s+|\n+", " ", "".join(parts)).strip()
@@ -418,6 +418,36 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
 
     @staticmethod
+    def get_text(item: PageElement) -> str:
+        """Concatenate all child strings of a PageElement.
+
+        This method is equivalent to `PageElement.get_text()` but also considers
+        certain tags. When called on a <p> or <li> tags, it returns the text with a
+        trailing space, otherwise the text is concatenated without separators.
+        """
+
+        def _extract_text_recursively(item: PageElement) -> list[str]:
+            """Recursively extract text from all child nodes."""
+            result: list[str] = []
+
+            if isinstance(item, NavigableString):
+                result = [item]
+            elif isinstance(item, Tag):
+                tag = cast(Tag, item)
+                parts: list[str] = []
+                for child in tag:
+                    parts.extend(_extract_text_recursively(child))
+                result.append(
+                    "".join(parts) + " " if tag.name in {"p", "li"} else "".join(parts)
+                )
+
+            return result
+
+        parts: list[str] = _extract_text_recursively(item)
+
+        return "".join(parts)
+
+    @staticmethod
     def _get_cell_spans(cell: Tag) -> tuple[int, int]:
         """Extract colspan and rowspan values from a table cell tag.
 
@@ -510,9 +540,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         formula.replace_with(NavigableString(math_formula))
 
                 # TODO: extract content correctly from table-cells with lists
-                text = html_cell.text
-
-                # label = html_cell.name
+                text = HTMLDocumentBackend.get_text(html_cell).strip()
                 col_span, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
                 if row_header:
                     row_span -= 1
