@@ -511,10 +511,10 @@ Duck  at Wikipedia's sister projects
 
 <!-- image -->
 
-| Authority control databases    | Authority control databases                  |
-|--------------------------------|----------------------------------------------|
-| National                       | United StatesFranceBnF dataJapanLatviaIsrael |
-| Other                          | IdRef                                        |
+| Authority control databases   | Authority control databases                       |
+|-------------------------------|---------------------------------------------------|
+| National                      | United States France BnF data Japan Latvia Israel |
+| Other                         | IdRef                                             |
 
 Retrieved from "https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351"
 

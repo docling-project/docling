@@ -1,3 +1,16 @@
+## [v2.42.2](https://github.com/docling-project/docling/releases/tag/v2.42.2) - 2025-07-24
+
+### Fix
+
+* **HTML:** Concatenation of child strings in table cells and list items ([#1981](https://github.com/docling-project/docling/issues/1981)) ([`5132f06`](https://github.com/docling-project/docling/commit/5132f061a8125332ba10a4a30e0dd4973637a11b))
+* **docx:** Adding plain latex equations to table cells ([#1986](https://github.com/docling-project/docling/issues/1986)) ([`0b83609`](https://github.com/docling-project/docling/commit/0b836095319ebf2133c4a3a77602718034915e55))
+* Preserve PARTIAL_SUCCESS status when document timeout hits ([#1975](https://github.com/docling-project/docling/issues/1975)) ([`98e2fcf`](https://github.com/docling-project/docling/commit/98e2fcff63660c158bafb9a1b5584c1439d7a533))
+* Multi-page image support (tiff) ([#1928](https://github.com/docling-project/docling/issues/1928)) ([`8d50a59`](https://github.com/docling-project/docling/commit/8d50a59d4887caac1c214add8037ed0b5250f68c))
+
+### Documentation
+
+* Add chat with dosu ([#1984](https://github.com/docling-project/docling/issues/1984)) ([`7b5f860`](https://github.com/docling-project/docling/commit/7b5f86098d07b734f2b6aa8c88ae7cafa265246a))
+
 ## [v2.42.1](https://github.com/docling-project/docling/releases/tag/v2.42.1) - 2025-07-22
 
 ### Fix
