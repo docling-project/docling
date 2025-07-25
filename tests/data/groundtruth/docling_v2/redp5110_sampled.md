@@ -46,8 +46,8 @@ Front cover
 | 3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .                                       | 21      |
 | . . . . . . . . . . . . . .                                                                                                   |         |
 | 3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . .                                               | 22      |
-| 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . .                                        | 23 23   |
-| 3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . .                                            |         |
+| 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . .                                        | 23      |
+| 3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . .                                            | 23      |
 | 3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .                                   | 24      |
 | 3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .                             | 25      |
 | 3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . .                              | 26      |
