@@ -1,5 +1,4 @@
 # threaded_standard_pdf_pipeline.py
-# pylint: disable=too-many-lines,invalid-name
 """Thread-safe, production-ready PDF pipeline
 ================================================
 A self-contained, thread-safe PDF conversion pipeline exploiting parallelism between pipeline stages and models.
@@ -467,7 +466,7 @@ class ThreadedStandardPdfPipeline(BasePipeline):
         return RunContext(stages=stages, first_stage=preprocess, output_queue=output_q)
 
     # --------------------------------------------------------------------- build
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:  # type: ignore[override]
+    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         """Stream-build the document while interleaving producer and consumer work."""
         run_id = next(self._run_seq)
         assert isinstance(conv_res.input._backend, PdfDocumentBackend)
@@ -572,7 +571,7 @@ class ThreadedStandardPdfPipeline(BasePipeline):
                     p._backend.unload()
 
     # ---------------------------------------------------------------- assemble
-    def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:  # type: ignore[override]
+    def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         elements, headers, body = [], [], []
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
             for p in conv_res.pages:
@@ -588,17 +587,17 @@ class ThreadedStandardPdfPipeline(BasePipeline):
 
     # ---------------------------------------------------------------- misc
     @classmethod
-    def get_default_options(cls) -> ThreadedPdfPipelineOptions:  # type: ignore[override]
+    def get_default_options(cls) -> ThreadedPdfPipelineOptions:
         return ThreadedPdfPipelineOptions()
 
     @classmethod
-    def is_backend_supported(cls, backend: AbstractDocumentBackend) -> bool:  # type: ignore[override]
+    def is_backend_supported(cls, backend: AbstractDocumentBackend) -> bool:
         return isinstance(backend, PdfDocumentBackend)
 
-    def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:  # type: ignore[override]
+    def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
         return conv_res.status
 
-    def _unload(self, conv_res: ConversionResult) -> None:  # type: ignore[override]
+    def _unload(self, conv_res: ConversionResult) -> None:
         for p in conv_res.pages:
             if p._backend is not None:
                 p._backend.unload()
