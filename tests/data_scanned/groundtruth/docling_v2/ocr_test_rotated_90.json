@@ -19,9 +19,6 @@
     "children": [
       {
         "$ref": "#/texts/0"
-      },
-      {
-        "$ref": "#/texts/1"
       }
     ],
     "content_layer": "body",
@@ -36,53 +33,40 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 77.1,
-            "t": 506.07,
-            "r": 126.08,
-            "b": 71.88,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            86
-          ]
-        }
-      ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 131.21,
-            "t": 154.19,
-            "r": 152.2,
-            "b": 74.12,
+            "l": 78.0,
+            "t": 503.2,
+            "r": 123.33,
+            "b": 72.2,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            7
+            86
+          ]
+        },
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 131.67,
+            "t": 150.53,
+            "r": 150.33,
+            "b": 73.53,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            87,
+            94
           ]
         }
       ],
-      "orig": "package",
-      "text": "package"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

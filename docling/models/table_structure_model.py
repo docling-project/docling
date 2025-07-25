@@ -94,7 +94,7 @@ class TableStructureModel(BasePageModel):
     ) -> Path:
         return download_hf_model(
             repo_id="ds4sd/docling-models",
-            revision="v2.2.0",
+            revision="v2.3.0",
             local_dir=local_dir,
             force=force,
             progress=progress,

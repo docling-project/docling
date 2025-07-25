@@ -282,7 +282,7 @@ class LayoutOptions(BaseModel):
     keep_empty_clusters: bool = (
         False  # Whether to keep clusters that contain no text cells
     )
-    model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
+    model_spec: LayoutModelConfig = DOCLING_LAYOUT_HERON
 
 
 class AsrPipelineOptions(PipelineOptions):
