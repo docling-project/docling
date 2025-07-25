@@ -12,10 +12,16 @@ from pydantic import (
 )
 from typing_extensions import deprecated
 
-from docling.datamodel import asr_model_specs
-
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.asr_model_specs import (
+    WHISPER_BASE,
+    WHISPER_LARGE,
+    WHISPER_MEDIUM,
+    WHISPER_SMALL,
+    WHISPER_TINY,
+    WHISPER_TURBO,
+)
 from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_EGRET_LARGE,
     DOCLING_LAYOUT_EGRET_MEDIUM,
@@ -33,6 +39,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InferenceFramework,
     InlineVlmOptions,
     ResponseFormat,
+    TwoStageVlmOptions,
 )
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
@@ -270,8 +277,9 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         False  # (To be used with vlms, or other generative models)
     )
     # If True, text from backend will be used instead of generated text
-    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = (
+    vlm_options: Union[InlineVlmOptions, ApiVlmOptions, TwoStageVlmOptions] = (
         smoldocling_vlm_conversion_options
+        # SMOLDOCLING_TRANSFORMERS
     )
 
 
@@ -286,7 +294,7 @@ class LayoutOptions(BaseModel):
 
 
 class AsrPipelineOptions(PipelineOptions):
-    asr_options: Union[InlineAsrOptions] = asr_model_specs.WHISPER_TINY
+    asr_options: Union[InlineAsrOptions] = WHISPER_TINY
     artifacts_path: Optional[Union[Path, str]] = None
 
 

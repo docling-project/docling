@@ -26,8 +26,6 @@ class LayoutModelConfig(BaseModel):
         return self.repo_id.replace("/", "--")
 
 
-# HuggingFace Layout Models
-
 # Default Docling Layout Model
 DOCLING_LAYOUT_V2 = LayoutModelConfig(
     name="docling_layout_v2",

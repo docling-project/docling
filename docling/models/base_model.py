@@ -3,9 +3,16 @@ from collections.abc import Iterable
 from typing import Generic, Optional, Protocol, Type
 
 from docling_core.types.doc import BoundingBox, DocItem, DoclingDocument, NodeItem
+from PIL import Image
 from typing_extensions import TypeVar
 
-from docling.datamodel.base_models import ItemAndImageEnrichmentElement, Page
+from docling.datamodel.base_models import (
+    Cluster,
+    ItemAndImageEnrichmentElement,
+    Page,
+    TextCell,
+    VlmPredictionToken,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import BaseOptions
 from docling.datamodel.settings import settings
@@ -19,10 +26,37 @@ class BaseModelWithOptions(Protocol):
 
 
 class BasePageModel(ABC):
+    scale: float  # scale with which the page-image needs to be created (dpi = 72*scale)
+    max_size: int  # max size of width/height of page-image
+
     @abstractmethod
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
+        pass
+
+
+class BaseLayoutModel(BasePageModel):
+    @abstractmethod
+    def predict_on_page_image(self, *, page_image: Image.Image) -> list[Cluster]:
+        pass
+
+    @abstractmethod
+    def postprocess_on_page_image(
+        self, *, page: Page, clusters: list[Cluster]
+    ) -> tuple[Page, list[Cluster], list[TextCell]]:
+        pass
+
+
+class BaseVlmModel(BasePageModel):
+    @abstractmethod
+    def get_user_prompt(self, page: Optional[Page]) -> str:
+        pass
+
+    @abstractmethod
+    def predict_on_page_image(
+        self, *, page_image: Image.Image, prompt: str, output_tokens: bool = False
+    ) -> tuple[str, Optional[list[VlmPredictionToken]]]:
         pass
 
 
