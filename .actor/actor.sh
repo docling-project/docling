@@ -273,7 +273,7 @@ sys.exit(1)
 " && echo "API verification succeeded") || echo "API verification failed, but continuing anyway"
 
 # Define API endpoint
-DOCLING_API_ENDPOINT="http://localhost:5001/v1alpha/convert/source"
+DOCLING_API_ENDPOINT="http://docling-serve:5001/v1alpha/convert/source"
 
 
 # --- Processing document ---
