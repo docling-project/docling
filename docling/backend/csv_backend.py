@@ -8,6 +8,7 @@ from typing import Set, Union
 from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -17,8 +18,13 @@ _log = logging.getLogger(__name__)
 class CsvDocumentBackend(DeclarativeDocumentBackend):
     content: StringIO
 
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        backend_options: BackendOptions,
+    ):
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
 
         # Load content
         try:
