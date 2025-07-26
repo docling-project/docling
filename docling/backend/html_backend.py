@@ -3,6 +3,7 @@ import re
 import traceback
 from contextlib import contextmanager
 from copy import deepcopy
+from email.mime import image
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
@@ -28,7 +29,13 @@ from docling_core.types.doc.document import ContentLayer, Formatting, Script
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import override
 
+from docling import backend
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    HTMLBackendOptions,
+    ImageOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -186,9 +193,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
+        backend_options: HTMLBackendOptions,
         original_url: Optional[AnyUrl] = None,
     ):
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
         self.soup: Optional[Tag] = None
         self.path_or_stream = path_or_stream
 
@@ -235,6 +243,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.HTML}
+
+    @classmethod
+    @override
+    def get_default_options(cls) -> HTMLBackendOptions:
+        return HTMLBackendOptions()
 
     @override
     def convert(self) -> DoclingDocument:

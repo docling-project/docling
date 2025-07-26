@@ -26,6 +26,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -33,8 +34,13 @@ _log = logging.getLogger(__name__)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        backend_options: BackendOptions,
+    ):
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
         self.namespaces = {
             "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
             "c": "http://schemas.openxmlformats.org/drawingml/2006/chart",

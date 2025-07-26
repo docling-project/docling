@@ -40,6 +40,7 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -49,9 +50,12 @@ _log = logging.getLogger(__name__)
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     @override
     def __init__(
-        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        backend_options: BackendOptions,
     ) -> None:
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
         self.XML_KEY = (
             "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
         )

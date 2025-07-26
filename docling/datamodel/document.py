@@ -49,13 +49,16 @@ from docling_core.types.legacy_doc.document import (
 )
 from docling_core.utils.file import resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
+from numpy import isin
 from pydantic import BaseModel, Field
 from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
+    DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConfidenceReport,
@@ -118,42 +121,38 @@ class InputDocument(BaseModel):
         path_or_stream: Union[BytesIO, Path],
         format: InputFormat,
         backend: Type[AbstractDocumentBackend],
+        backend_options: BackendOptions,
         filename: Optional[str] = None,
         limits: Optional[DocumentLimits] = None,
-    ):
+    ) -> None:
         super().__init__(
             file="", document_hash="", format=InputFormat.PDF
         )  # initialize with dummy values
 
         self.limits = limits or DocumentLimits()
         self.format = format
+        self.backend_options = backend_options
 
         try:
             if isinstance(path_or_stream, Path):
                 self.file = path_or_stream
                 self.filesize = path_or_stream.stat().st_size
-                if self.filesize > self.limits.max_file_size:
-                    self.valid = False
-                else:
-                    self.document_hash = create_file_hash(path_or_stream)
-                    self._init_doc(backend, path_or_stream)
-
             elif isinstance(path_or_stream, BytesIO):
                 assert filename is not None, (
                     "Can't construct InputDocument from stream without providing filename arg."
                 )
                 self.file = PurePath(filename)
                 self.filesize = path_or_stream.getbuffer().nbytes
-
-                if self.filesize > self.limits.max_file_size:
-                    self.valid = False
-                else:
-                    self.document_hash = create_file_hash(path_or_stream)
-                    self._init_doc(backend, path_or_stream)
             else:
                 raise RuntimeError(
                     f"Unexpected type path_or_stream: {type(path_or_stream)}"
                 )
+
+            if self.filesize > self.limits.max_file_size:
+                self.valid = False
+            else:
+                self.document_hash = create_file_hash(path_or_stream)
+                self._init_doc(backend, path_or_stream)
 
             # For paginated backends, check if the maximum page count is exceeded.
             if self.valid and self._backend.is_valid():
@@ -185,7 +184,15 @@ class InputDocument(BaseModel):
         backend: Type[AbstractDocumentBackend],
         path_or_stream: Union[BytesIO, Path],
     ) -> None:
-        self._backend = backend(self, path_or_stream=path_or_stream)
+        if issubclass(backend, DeclarativeDocumentBackend):
+            self._backend = backend(
+                self,
+                path_or_stream=path_or_stream,
+                backend_options=self.backend_options,
+            )
+        else:
+            self._backend = backend(self, path_or_stream=path_or_stream)
+
         if not self._backend.is_valid():
             self.valid = False
 
@@ -255,27 +262,27 @@ class _DocumentConversionInput(BaseModel):
                     f"Input document {obj.name} with format {format} does not match any allowed format: ({format_options.keys()})"
                 )
                 backend = _DummyBackend
+                backend_options = BackendOptions()
             else:
                 backend = format_options[format].backend
+                backend_options = format_options[format].backend_options
 
+            path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
-                yield InputDocument(
-                    path_or_stream=obj,
-                    format=format,  # type: ignore[arg-type]
-                    filename=obj.name,
-                    limits=self.limits,
-                    backend=backend,
-                )
+                path_or_stream = obj
             elif isinstance(obj, DocumentStream):
-                yield InputDocument(
-                    path_or_stream=obj.stream,
-                    format=format,  # type: ignore[arg-type]
-                    filename=obj.name,
-                    limits=self.limits,
-                    backend=backend,
-                )
+                path_or_stream = obj.stream
             else:
                 raise RuntimeError(f"Unexpected obj type in iterator: {type(obj)}")
+
+            yield InputDocument(
+                path_or_stream=path_or_stream,
+                format=format,  # type: ignore[arg-type]
+                filename=obj.name,
+                limits=self.limits,
+                backend=backend,
+                backend_options=backend_options,
+            )
 
     def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
         content = b""  # empty binary blob
