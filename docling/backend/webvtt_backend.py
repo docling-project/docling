@@ -18,6 +18,7 @@ from pydantic.types import StringConstraints
 from typing_extensions import Self, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -440,8 +441,13 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
     """
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: Union[BytesIO, Path],
+        backend_options: BackendOptions,
+    ):
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
 
         self.content: str = ""
         try:
