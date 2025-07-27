@@ -106,8 +106,10 @@ _EMPTY_DOCLING_DOC = DoclingDocument(name="dummy")
 
 class InputDocument(BaseModel):
     file: PurePath
+    source_url: Optional[str] = None
     document_hash: str  # = None
     valid: bool = True
+    backend_options: BackendOptions
     limits: DocumentLimits = DocumentLimits()
     format: InputFormat  # = None
 
@@ -126,12 +128,18 @@ class InputDocument(BaseModel):
         limits: Optional[DocumentLimits] = None,
     ) -> None:
         super().__init__(
-            file="", document_hash="", format=InputFormat.PDF
+            file="",
+            document_hash="",
+            format=InputFormat.PDF,
+            backend_options=backend_options,
         )  # initialize with dummy values
 
         self.limits = limits or DocumentLimits()
         self.format = format
         self.backend_options = backend_options
+
+        if filename is not None and filename.startswith(("http://", "https://")):
+            self.source_url = filename
 
         try:
             if isinstance(path_or_stream, Path):

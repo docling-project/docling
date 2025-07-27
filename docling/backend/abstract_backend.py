@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Set, Union
+from typing import TYPE_CHECKING, Generic, Set, TypeVar, Union
 
 from docling_core.types.doc import DoclingDocument
 
@@ -58,7 +58,10 @@ class PaginatedDocumentBackend(AbstractDocumentBackend):
         pass
 
 
-class DeclarativeDocumentBackend(AbstractDocumentBackend):
+TBackendOptions = TypeVar("TBackendOptions", bound=BackendOptions)
+
+
+class DeclarativeDocumentBackend(Generic[TBackendOptions], AbstractDocumentBackend):
     """DeclarativeDocumentBackend.
 
     A declarative document backend is a backend that can transform to DoclingDocument
@@ -70,10 +73,10 @@ class DeclarativeDocumentBackend(AbstractDocumentBackend):
         self,
         in_doc: "InputDocument",
         path_or_stream: Union[BytesIO, Path],
-        backend_options: BackendOptions,
+        backend_options: TBackendOptions,
     ) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.backend_options = backend_options
+        self.backend_options: TBackendOptions = backend_options
 
     @abstractmethod
     def convert(self) -> DoclingDocument:
