@@ -35,9 +35,9 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
 
         if self.enabled:
             try:
-                from mlx_vlm import generate, load  # type: ignore
+                from mlx_vlm import generate, load, stream_generate  # type: ignore
                 from mlx_vlm.prompt_utils import apply_chat_template  # type: ignore
-                from mlx_vlm.utils import load_config, stream_generate  # type: ignore
+                from mlx_vlm.utils import load_config  # type: ignore
             except ImportError:
                 raise ImportError(
                     "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` to use MLX VLM models."
