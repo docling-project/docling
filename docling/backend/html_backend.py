@@ -538,7 +538,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 if name == "img":
                     flush_buffer()
                     im_ref3 = self._emit_image(node, doc)
-                    added_refs.append(im_ref3)
+                    if im_ref3:
+                        added_refs.append(im_ref3)
                 elif name in _FORMAT_TAG_MAP:
                     with self._use_format([name]):
                         wk = self._walk(node, doc)
@@ -1013,7 +1014,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 num_rows += 1
         return num_rows, num_cols
 
-    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
+    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         added_refs = []
         tag_name = tag.name.lower()
 
@@ -1021,7 +1022,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
             img_tag = tag.find("img")
             if isinstance(img_tag, Tag):
                 im_ref = self._emit_image(img_tag, doc)
-                added_refs.append(im_ref)
+                if im_ref is not None:
+                    added_refs.append(im_ref)
 
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             heading_refs = self._handle_heading(tag, doc)
@@ -1079,7 +1081,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
             for img_tag in tag("img"):
                 if isinstance(img_tag, Tag):
                     im_ref2 = self._emit_image(tag, doc)
-                    added_refs.append(im_ref2)
+                    if im_ref2 is not None:
+                        added_refs.append(im_ref2)
 
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
@@ -1110,10 +1113,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 self._walk(tag, doc)
         return added_refs
 
-    def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
+    def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:  # noqa: C901
         image_options = self.backend_options.image_options
         if image_options == ImageOptions.NONE:
-            return
+            return None
         figure = img_tag.find_parent("figure")
         caption: AnnotatedTextList = AnnotatedTextList()
 
@@ -1167,7 +1170,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 content_layer=self.content_layer,
             )
             return docling_pic.get_ref()
-        
+
         if self.base_url and not src_url.startswith(("http://", "https://", "data:")):
             src_url = urljoin(self.base_url, src_url)
             _log.debug(f"Resolved relative URL to: {src_url}")
@@ -1202,7 +1205,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 )
                 return docling_pic.get_ref()
 
-
         elif image_options == ImageOptions.REFERENCED:
             try:
                 if src_url.startswith("http"):
@@ -1235,14 +1237,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
             except ValidationError as e:
                 _log.warning(f"Could not create image reference (src={src_url}): {e}")
                 return None
-        
+
         docling_pic = doc.add_picture(
             caption=caption_item,
             parent=parent,
             content_layer=self.content_layer,
         )
         return docling_pic.get_ref()
-
 
     @staticmethod
     def get_text(item: PageElement) -> str:
@@ -1273,7 +1274,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         parts: list[str] = _extract_text_recursively(item)
 
         return "".join(parts)
-    
 
     @staticmethod
     def _clean_unicode(text: str) -> str:
@@ -1341,7 +1341,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         )
 
         return int_spans
-    
+
     @staticmethod
     def _get_attr_as_string(tag: Tag, attr: str, default: str = "") -> str:
         """Get attribute value as string, handling list values."""
