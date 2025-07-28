@@ -1160,6 +1160,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
             )
+        image_options = self.backend_options.image_options
+        if image_options == ImageOptions.NONE:
+            placeholder = doc.add_picture(
+                caption=caption_item,
+                parent=parent,
+                content_layer=self.content_layer,
+            )
+            return placeholder.get_ref()
 
         src_url = self._get_attr_as_string(img_tag, "src")
         if not src_url:
