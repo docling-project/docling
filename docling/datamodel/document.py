@@ -76,7 +76,7 @@ from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash
 
 if TYPE_CHECKING:
-    from docling.datamodel.base_models import BaseFormatOption
+    from docling.document_converter import FormatOption
 
 _log = logging.getLogger(__name__)
 
@@ -117,13 +117,14 @@ class InputDocument(BaseModel):
     page_count: int = 0
 
     _backend: AbstractDocumentBackend  # Internal PDF backend used
+    _backend_options: BackendOptions = BackendOptions()
 
     def __init__(
         self,
         path_or_stream: Union[BytesIO, Path],
         format: InputFormat,
         backend: Type[AbstractDocumentBackend],
-        backend_options: BackendOptions,
+        backend_options: Optional[BackendOptions] = None,
         filename: Optional[str] = None,
         limits: Optional[DocumentLimits] = None,
     ) -> None:
@@ -136,7 +137,8 @@ class InputDocument(BaseModel):
 
         self.limits = limits or DocumentLimits()
         self.format = format
-        self.backend_options = backend_options
+        if backend_options is not None:
+            self.backend_options = backend_options
 
         if filename is not None and filename.startswith(("http://", "https://")):
             self.source_url = filename
@@ -255,7 +257,7 @@ class _DocumentConversionInput(BaseModel):
 
     def docs(
         self,
-        format_options: Mapping[InputFormat, "BaseFormatOption"],
+        format_options: Mapping[InputFormat, "FormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
             obj = (

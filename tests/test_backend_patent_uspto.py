@@ -10,6 +10,7 @@ from docling_core.types import DoclingDocument
 from docling_core.types.doc import DocItemLabel, TableData, TextItem
 
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend, XmlTable
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -47,7 +48,9 @@ def patents() -> list[tuple[Path, DoclingDocument]]:
             format=InputFormat.XML_USPTO,
             backend=PatentUsptoDocumentBackend,
         )
-        backend = PatentUsptoDocumentBackend(in_doc=in_doc, path_or_stream=in_path)
+        backend = PatentUsptoDocumentBackend(
+            in_doc=in_doc, path_or_stream=in_path, backend_options=BackendOptions()
+        )
         logging.info(f"Converting patent from file {in_path}")
         doc = backend.convert()
         assert doc, f"Failed to parse document {in_path}"

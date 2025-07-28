@@ -5,6 +5,7 @@ import pytest
 from openpyxl import load_workbook
 
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
@@ -87,7 +88,9 @@ def test_pages(documents) -> None:
         filename=path.stem,
         backend=MsExcelDocumentBackend,
     )
-    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
+    backend = MsExcelDocumentBackend(
+        in_doc=in_doc, path_or_stream=path, backend_options=BackendOptions()
+    )
     assert backend.page_count() == 4
 
     # number of pages from the converted document
