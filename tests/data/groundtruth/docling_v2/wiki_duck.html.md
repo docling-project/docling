@@ -285,7 +285,7 @@ Mallard landing in approach
 
 <!-- image -->
 
-In most modern classifications, the so-called 'true ducks' belong to the subfamily Anatinae, which is further split into a varying number of tribes.[10] The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks – named for their method of feeding primarily at the surface of fresh water.[11] The 'diving ducks', also named for their primary feeding method, make up the tribe Aythyini.[12] The 'sea ducks' of the tribe Mergini are diving ducks which specialise on fish and shellfish and spend a majority of their lives in saltwater.[13] The tribe Oxyurini contains the 'stifftails', diving ducks notable for their small size and stiff, upright tails.[14]
+In most modern classifications, the so-called 'true ducks' belong to the subfamily Anatinae, which is further split into a varying number of tribes.[10] The largest of these, the Anatini, contains the 'dabbling' or 'river' ducks - named for their method of feeding primarily at the surface of fresh water.[11] The 'diving ducks', also named for their primary feeding method, make up the tribe Aythyini.[12] The 'sea ducks' of the tribe Mergini are diving ducks which specialise on fish and shellfish and spend a majority of their lives in saltwater.[13] The tribe Oxyurini contains the 'stifftails', diving ducks notable for their small size and stiff, upright tails.[14]
 
 A number of other species called ducks are not considered to be 'true ducks', and are typically placed in other subfamilies or tribes. The whistling ducks are assigned either to a tribe (Dendrocygnini) in the subfamily Anatinae or the subfamily Anserinae,[15] or to their own subfamily (Dendrocygninae) or family (Dendrocyganidae).[9][16] The freckled duck of Australia is either the sole member of the tribe Stictonettini in the subfamily Anserinae,[15] or in its own family, the Stictonettinae.[9] The shelducks make up the tribe Tadornini in the family Anserinae in some classifications,[15] and their own subfamily, Tadorninae, in others,[17] while the steamer ducks are either placed in the family Anserinae in the tribe Tachyerini[15] or lumped with the shelducks in the tribe Tadorini.[9] The perching ducks make up in the tribe Cairinini in the subfamily Anserinae in some classifications, while that tribe is eliminated in other classifications and its members assigned to the tribe Anatini.[9] The torrent duck is generally included in the subfamily Anserinae in the monotypic tribe Merganettini,[15] but is sometimes included in the tribe Tadornini.[18] The pink-eared duck is sometimes included as a true duck either in the tribe Anatini[15] or the tribe Malacorhynchini,[19] and other times is included with the shelducks in the tribe Tadornini.[15]
 
@@ -345,7 +345,7 @@ Ducks generally only have one partner at a time, although the partnership usuall
 
 ### Communication
 
-Female mallard ducks (as well as several other species in the genus Anas, such as the American and Pacific black ducks, spot-billed duck, northern pintail and common teal) make the classic "quack" sound while males make a similar but raspier sound that is sometimes written as "breeeeze",[29][self-published source?] but, despite widespread misconceptions, most species of duck do not "quack".[30] In general, ducks make a range of calls, including whistles, cooing, yodels and grunts. For example, the scaup – which are diving ducks – make a noise like "scaup" (hence their name). Calls may be loud displaying calls or quieter contact calls.
+Female mallard ducks (as well as several other species in the genus Anas, such as the American and Pacific black ducks, spot-billed duck, northern pintail and common teal) make the classic "quack" sound while males make a similar but raspier sound that is sometimes written as "breeeeze",[29][self-published source?] but, despite widespread misconceptions, most species of duck do not "quack".[30] In general, ducks make a range of calls, including whistles, cooing, yodels and grunts. For example, the scaup - which are diving ducks - make a noise like "scaup" (hence their name). Calls may be loud displaying calls or quieter contact calls.
 
 A common urban legend claims that duck quacks do not echo; however, this has been proven to be false. This myth was first debunked by the Acoustics Research Centre at the University of Salford in 2003 as part of the British Association's Festival of Science.[31] It was also debunked in one of the earlier episodes of the popular Discovery Channel television show MythBusters.[32]
 
@@ -365,7 +365,7 @@ Adult ducks are fast fliers, but may be caught on the water by large aquatic pre
 
 Main article: Waterfowl hunting
 
-Humans have hunted ducks since prehistoric times. Excavations of middens in California dating to 7800 – 6400 BP have turned up bones of ducks, including at least one now-extinct flightless species.[33] Ducks were captured in "significant numbers" by Holocene inhabitants of the lower Ohio River valley, suggesting they took advantage of the seasonal bounty provided by migrating waterfowl.[34] Neolithic hunters in locations as far apart as the Caribbean,[35] Scandinavia,[36] Egypt,[37] Switzerland,[38] and China relied on ducks as a source of protein for some or all of the year.[39] Archeological evidence shows that Māori people in New Zealand hunted the flightless Finsch's duck, possibly to extinction, though rat predation may also have contributed to its fate.[40] A similar end awaited the Chatham duck, a species with reduced flying capabilities which went extinct shortly after its island was colonised by Polynesian settlers.[41] It is probable that duck eggs were gathered by Neolithic hunter-gathers as well, though hard evidence of this is uncommon.[35][42]
+Humans have hunted ducks since prehistoric times. Excavations of middens in California dating to 7800 - 6400 BP have turned up bones of ducks, including at least one now-extinct flightless species.[33] Ducks were captured in "significant numbers" by Holocene inhabitants of the lower Ohio River valley, suggesting they took advantage of the seasonal bounty provided by migrating waterfowl.[34] Neolithic hunters in locations as far apart as the Caribbean,[35] Scandinavia,[36] Egypt,[37] Switzerland,[38] and China relied on ducks as a source of protein for some or all of the year.[39] Archeological evidence shows that Māori people in New Zealand hunted the flightless Finsch's duck, possibly to extinction, though rat predation may also have contributed to its fate.[40] A similar end awaited the Chatham duck, a species with reduced flying capabilities which went extinct shortly after its island was colonised by Polynesian settlers.[41] It is probable that duck eggs were gathered by Neolithic hunter-gathers as well, though hard evidence of this is uncommon.[35][42]
 
 In many areas, wild ducks (including ducks farmed and released into the wild) are hunted for food or sport,[43] by shooting, or by being trapped using duck decoys. Because an idle floating duck or a duck squatting on land cannot react to fly or move quickly, "a sitting duck" has come to mean "an easy target". These ducks may be contaminated by pollutants such as PCBs.[44]
 
@@ -377,7 +377,7 @@ Indian Runner ducks, a common breed of domestic ducks
 
 <!-- image -->
 
-Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their down). Approximately 3 billion ducks are slaughtered each year for meat worldwide.[45] They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the mallard (Anas platyrhynchos), apart from the Muscovy duck (Cairina moschata).[46][47] The Call duck is another example of a domestic duck breed. Its name comes from its original use established by hunters, as a decoy to attract wild mallards from the sky, into traps set for them on the ground. The call duck is the world's smallest domestic duck breed, as it weighs less than 1 kg (2.2 lb).[48]
+Ducks have many economic uses, being farmed for their meat, eggs, and feathers (particularly their down). Approximately 3 billion ducks are slaughtered each year for meat worldwide.[45] They are also kept and bred by aviculturists and often displayed in zoos. Almost all the varieties of domestic ducks are descended from the mallard (Anas platyrhynchos), apart from the Muscovy duck (Cairina moschata).[46][47] The Call duck is another example of a domestic duck breed. Its name comes from its original use established by hunters, as a decoy to attract wild mallards from the sky, into traps set for them on the ground. The call duck is the world's smallest domestic duck breed, as it weighs less than 1 kg (2.2 lb).[48]
 
 ### Heraldry
 
@@ -410,17 +410,17 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 ### Citations
 
 1. ^ "Duckling". The American Heritage Dictionary of the English Language, Fourth Edition. Houghton Mifflin Company. 2006. Retrieved 2015-05-22.
-2. ^ "Duckling". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000–2006. Retrieved 2015-05-22.
+2. ^ "Duckling". Kernerman English Multilingual Dictionary (Beta Version). K. Dictionaries Ltd. 2000-2006. Retrieved 2015-05-22.
 3. ^ Dohner, Janet Vorwald (2001). The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds. Yale University Press. ISBN 978-0300138139.
 4. ^ Visca, Curt; Visca, Kelley (2003). How to Draw Cartoon Birds. The Rosen Publishing Group. ISBN 9780823961566.
 5. ^ a b c d Carboneras 1992, p. 536.
-6. ^ Livezey 1986, pp. 737–738.
+6. ^ Livezey 1986, pp. 737-738.
 7. ^ Madsen, McHugh &amp; de Kloet 1988, p. 452.
-8. ^ Donne-Goussé, Laudet &amp; Hänni 2002, pp. 353–354.
+8. ^ Donne-Goussé, Laudet &amp; Hänni 2002, pp. 353-354.
 9. ^ a b c d e f Carboneras 1992, p. 540.
 10. ^ Elphick, Dunning &amp; Sibley 2001, p. 191.
 11. ^ Kear 2005, p. 448.
-12. ^ Kear 2005, p. 622–623.
+12. ^ Kear 2005, p. 622-623.
 13. ^ Kear 2005, p. 686.
 14. ^ Elphick, Dunning &amp; Sibley 2001, p. 193.
 15. ^ a b c d e f g Carboneras 1992, p. 537.
@@ -429,13 +429,13 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 18. ^ Carboneras 1992, p. 538.
 19. ^ Christidis &amp; Boles 2008, p. 62.
 20. ^ Shirihai 2008, pp. 239, 245.
-21. ^ a b Pratt, Bruner &amp; Berrett 1987, pp. 98–107.
-22. ^ Fitter, Fitter &amp; Hosking 2000, pp. 52–3.
+21. ^ a b Pratt, Bruner &amp; Berrett 1987, pp. 98-107.
+22. ^ Fitter, Fitter &amp; Hosking 2000, pp. 52-3.
 23. ^ "Pacific Black Duck". www.wiresnr.org. Retrieved 2018-04-27.
 24. ^ Ogden, Evans. "Dabbling Ducks". CWE. Retrieved 2006-11-02.
 25. ^ Karl Mathiesen (16 March 2015). "Don't feed the ducks bread, say conservationists". The Guardian. Retrieved 13 November 2016.
-26. ^ Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology. pp. 187–221. doi:10.1007/978-1-4615-6787-5\_4. ISBN 978-1-4615-6789-9.
-27. ^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). "Long-Term Pair Bonds in Harlequin Ducks". The Condor. 102 (1): 201–205. doi:10.1093/condor/102.1.201. hdl:10315/13797.
+26. ^ Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology. pp. 187-221. doi:10.1007/978-1-4615-6787-5\_4. ISBN 978-1-4615-6789-9.
+27. ^ Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). "Long-Term Pair Bonds in Harlequin Ducks". The Condor. 102 (1): 201-205. doi:10.1093/condor/102.1.201. hdl:10315/13797.
 28. ^ "If You Find An Orphaned Duckling - Wildlife Rehabber". wildliferehabber.com. Archived from the original on 2018-09-23. Retrieved 2018-12-22.
 29. ^ Carver, Heather (2011). The Duck Bible. Lulu.com. ISBN 9780557901562.[self-published source]
 30. ^ Titlow, Budd (2013-09-03). Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends. Rowman &amp; Littlefield. ISBN 9780762797707.
@@ -470,17 +470,17 @@ The 1992 Disney film The Mighty Ducks, starring Emilio Estevez, chose the duck a
 - American Ornithologists' Union (1998). Checklist of North American Birds (PDF). Washington, DC: American Ornithologists' Union. ISBN 978-1-891276-00-2. Archived (PDF) from the original on 2022-10-09.
 - Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). Handbook of the Birds of the World. Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions. ISBN 978-84-87334-10-8.
 - Christidis, Les; Boles, Walter E., eds. (2008). Systematics and Taxonomy of Australian Birds. Collingwood, VIC: Csiro Publishing. ISBN 978-0-643-06511-6.
-- Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). "A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis". Molecular Phylogenetics and Evolution. 23 (3): 339–356. Bibcode:2002MolPE..23..339D. doi:10.1016/S1055-7903(02)00019-2. PMID 12099792.
+- Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). "A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis". Molecular Phylogenetics and Evolution. 23 (3): 339-356. Bibcode:2002MolPE..23..339D. doi:10.1016/S1055-7903(02)00019-2. PMID 12099792.
 - Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). The Sibley Guide to Bird Life and Behaviour. London: Christopher Helm. ISBN 978-0-7136-6250-4.
 - Erlandson, Jon M. (1994). Early Hunter-Gatherers of the California Coast. New York, NY: Springer Science &amp; Business Media. ISBN 978-1-4419-3231-0.
-- Fieldhouse, Paul (2002). Food, Feasts, and Faith: An Encyclopedia of Food Culture in World Religions. Vol. I: A–K. Santa Barbara: ABC-CLIO. ISBN 978-1-61069-412-4.
+- Fieldhouse, Paul (2002). Food, Feasts, and Faith: An Encyclopedia of Food Culture in World Religions. Vol. I: A-K. Santa Barbara: ABC-CLIO. ISBN 978-1-61069-412-4.
 - Fitter, Julian; Fitter, Daniel; Hosking, David (2000). Wildlife of the Galápagos. Princeton, NJ: Princeton University Press. ISBN 978-0-691-10295-5.
 - Higman, B. W. (2012). How Food Made History. Chichester, UK: John Wiley &amp; Sons. ISBN 978-1-4051-8947-7.
 - Hume, Julian H. (2012). Extinct Birds. London: Christopher Helm. ISBN 978-1-4729-3744-5.
 - Jeffries, Richard (2008). Holocene Hunter-Gatherers of the Lower Ohio River Valley. Tuscaloosa: University of Alabama Press. ISBN 978-0-8173-1658-7.
 - Kear, Janet, ed. (2005). Ducks, Geese and Swans: Species Accounts (Cairina to Mergus). Bird Families of the World. Oxford: Oxford University Press. ISBN 978-0-19-861009-0.
-- Livezey, Bradley C. (October 1986). "A phylogenetic analysis of recent Anseriform genera using morphological characters" (PDF). The Auk. 103 (4): 737–754. doi:10.1093/auk/103.4.737. Archived (PDF) from the original on 2022-10-09.
-- Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988). "A partial classification of waterfowl (Anatidae) based on single-copy DNA" (PDF). The Auk. 105 (3): 452–459. doi:10.1093/auk/105.3.452. Archived (PDF) from the original on 2022-10-09.
+- Livezey, Bradley C. (October 1986). "A phylogenetic analysis of recent Anseriform genera using morphological characters" (PDF). The Auk. 103 (4): 737-754. doi:10.1093/auk/103.4.737. Archived (PDF) from the original on 2022-10-09.
+- Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988). "A partial classification of waterfowl (Anatidae) based on single-copy DNA" (PDF). The Auk. 105 (3): 452-459. doi:10.1093/auk/105.3.452. Archived (PDF) from the original on 2022-10-09.
 - Maisels, Charles Keith (1999). Early Civilizations of the Old World. London: Routledge. ISBN 978-0-415-10975-8.
 - Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). A Field Guide to the Birds of Hawaii and the Tropical Pacific. Princeton, NJ: Princeton University Press. ISBN 0-691-02399-9.
 - Rau, Charles (1876). Early Man in Europe. New York: Harper &amp; Brothers. LCCN 05040168.
