@@ -262,6 +262,12 @@ def export_documents(
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
+            if _log.isEnabledFor(logging.INFO):
+                for err in conv_res.errors:
+                    _log.info(
+                        f"  [Failure Detail] Component: {err.component_type}, "
+                        f"Module: {err.module_name}, Message: {err.error_message}"
+                    )
             failure_count += 1
 
     _log.info(
