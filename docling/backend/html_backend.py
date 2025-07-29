@@ -54,6 +54,7 @@ _BLOCK_TAGS: Final = {
     "details",
     "figure",
     "footer",
+    "img",
     "h1",
     "h2",
     "h3",
@@ -1242,6 +1243,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         return None
 
     def _load_image_data(self, src_url: str) -> Optional[bytes]:
+        if src_url.lower().endswith(".svg"):
+            _log.debug(f"Skipping SVG file: {src_url}")
+            return None
+
         try:
             if src_url.startswith(("http://", "https://")):
                 response = requests.get(src_url, stream=True)
