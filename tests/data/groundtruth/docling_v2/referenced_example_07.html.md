@@ -1,0 +1,14 @@
+- Asia
+    - China
+    - Japan
+    - Thailand
+- Europe
+    - UK
+    - Germany
+    - Switzerland
+            - Bern
+            - Aargau
+    - Italy
+            - Piedmont
+            - Liguria
+- Africa

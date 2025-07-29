@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from docling.backend.md_backend import MarkdownDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import DoclingDocument, InputDocument
 from tests.verify_utils import CONFID_PREC, COORD_PREC
@@ -28,8 +29,7 @@ def test_convert_valid():
             backend=cls,
         )
         backend = cls(
-            in_doc=in_doc,
-            path_or_stream=in_path,
+            in_doc=in_doc, path_or_stream=in_path, backend_options=BackendOptions()
         )
         assert backend.is_valid()
 

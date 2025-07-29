@@ -222,6 +222,10 @@ move to sidebar
 
 hide
 
+Page semi-protected
+
+<!-- image -->
+
 From Wikipedia, the free encyclopedia
 
 (Redirected from Duckling)
@@ -515,6 +519,8 @@ Duck  at Wikipedia's sister projects
 |-------------------------------|---------------------------------------------------|
 | National                      | United States France BnF data Japan Latvia Israel |
 | Other                         | IdRef                                             |
+
+<!-- image -->
 
 Retrieved from "https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351"
 

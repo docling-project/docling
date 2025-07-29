@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from docling.backend.msword_backend import MsWordDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -23,13 +24,12 @@ GENERATE = GEN_TEST_DATA
 def test_textbox_extraction():
     in_path = Path("tests/data/docx/textbox.docx")
     in_doc = InputDocument(
-        path_or_stream=in_path,
-        format=InputFormat.DOCX,
-        backend=MsWordDocumentBackend,
+        path_or_stream=in_path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
     )
     backend = MsWordDocumentBackend(
         in_doc=in_doc,
         path_or_stream=in_path,
+        backend_options=BackendOptions(),
     )
     doc = backend.convert()
 
@@ -44,13 +44,10 @@ def test_textbox_extraction():
 def test_heading_levels():
     in_path = Path("tests/data/docx/word_sample.docx")
     in_doc = InputDocument(
-        path_or_stream=in_path,
-        format=InputFormat.DOCX,
-        backend=MsWordDocumentBackend,
+        path_or_stream=in_path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
     )
     backend = MsWordDocumentBackend(
-        in_doc=in_doc,
-        path_or_stream=in_path,
+        in_doc=in_doc, path_or_stream=in_path, backend_options=BackendOptions()
     )
     doc = backend.convert()
 
@@ -141,13 +138,12 @@ def test_text_after_image_anchors():
 
     in_path = Path("tests/data/docx/word_image_anchors.docx")
     in_doc = InputDocument(
-        path_or_stream=in_path,
-        format=InputFormat.DOCX,
-        backend=MsWordDocumentBackend,
+        path_or_stream=in_path, format=InputFormat.DOCX, backend=MsWordDocumentBackend
     )
     backend = MsWordDocumentBackend(
         in_doc=in_doc,
         path_or_stream=in_path,
+        backend_options=BackendOptions(),
     )
     doc = backend.convert()
 

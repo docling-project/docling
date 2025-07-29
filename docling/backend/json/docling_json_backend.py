@@ -6,6 +6,7 @@ from docling_core.types.doc import DoclingDocument
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -13,9 +14,12 @@ from docling.datamodel.document import InputDocument
 class DoclingJSONBackend(DeclarativeDocumentBackend):
     @override
     def __init__(
-        self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        backend_options: BackendOptions,
     ) -> None:
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
 
         # given we need to store any actual conversion exception for raising it from
         # convert(), this captures the successful result or the actual error in a

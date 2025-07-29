@@ -28,6 +28,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -87,7 +88,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     @override
     def __init__(
-        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        backend_options: BackendOptions,
     ) -> None:
         """Initialize the MsExcelDocumentBackend object.
 
@@ -98,7 +102,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Raises:
             RuntimeError: An error occurred parsing the file.
         """
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
 
         # Initialise the parents for the hierarchy
         self.max_levels = 10
