@@ -1,0 +1,15 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: list: group list
+    item-2 at level 2: list_item: My Section
+      item-3 at level 3: list: group list
+        item-4 at level 4: list_item: Some page
+          item-5 at level 5: list: group list
+            item-6 at level 6: list_item: A sub page
+          item-7 at level 5: list: group list
+            item-8 at level 6: inline: group group
+              item-9 at level 7: list: group group
+                item-10 at level 8: list_item: This is my
+              item-11 at level 7: list: group group
+                item-12 at level 8: list_item: Homepage
+            item-13 at level 6: list_item: Main navigation
+    item-14 at level 2: list_item: My organisation
