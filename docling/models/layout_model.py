@@ -4,7 +4,7 @@ import warnings
 from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
 import numpy as np
 from docling_core.types.doc import DocItemLabel
@@ -195,7 +195,7 @@ class LayoutModel(BasePageModel):
                 continue
 
             page_predictions = batch_predictions[valid_page_idx]
-            page_image = valid_page_images[valid_page_idx]
+            page_image = valid_page_images[valid_page_idx]  # type: ignore[assignment]
             page_orientation = valid_page_orientations[valid_page_idx]
             valid_page_idx += 1
 
@@ -207,13 +207,15 @@ class LayoutModel(BasePageModel):
                 bbox = BoundingBox.model_validate(pred_item)
                 if page_orientation:
                     bbox = rotate_bounding_box(
-                        bbox, page_orientation, page_image.size
+                        bbox,
+                        page_orientation,
+                        page_image.size,  # type: ignore[union-attr]
                     ).to_bounding_box()
                 cluster = Cluster(
                     id=ix,
-                     label=label,
-                     confidence=pred_item["confidence"],
-                     bbox=bbox,
+                    label=label,
+                    confidence=pred_item["confidence"],
+                    bbox=bbox,
                     cells=[],
                 )
                 clusters.append(cluster)
@@ -221,9 +223,9 @@ class LayoutModel(BasePageModel):
             if settings.debug.visualize_raw_layout:
                 self.draw_clusters_and_cells_side_by_side(
                     conv_res,
-                            page,
-                            clusters,
-                            mode_prefix="raw",
+                    page,
+                    clusters,
+                    mode_prefix="raw",
                 )
 
             # Apply postprocessing
@@ -253,9 +255,9 @@ class LayoutModel(BasePageModel):
             if settings.debug.visualize_layout:
                 self.draw_clusters_and_cells_side_by_side(
                     conv_res,
-                        page,
-                        processed_clusters,
-                        mode_prefix="postprocessed",
+                    page,
+                    processed_clusters,
+                    mode_prefix="postprocessed",
                 )
 
             yield page
