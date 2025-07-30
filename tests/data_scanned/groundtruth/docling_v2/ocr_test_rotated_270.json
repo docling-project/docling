@@ -4,7 +4,7 @@
   "name": "ocr_test_rotated_270",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 8365439800722100027,
+    "binary_hash": 14476091967263365495,
     "filename": "ocr_test_rotated_270.pdf"
   },
   "furniture": {
@@ -41,10 +41,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 277.42,
-            "t": 722.96,
-            "r": 524.35,
-            "b": 240.9,
+            "l": 240.42,
+            "t": 505.61,
+            "r": 488.23,
+            "b": 23.43,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -60,18 +60,37 @@
         "table_cells": [
           {
             "bbox": {
-              "l": 443.33,
-              "t": 312.0,
-              "r": 490.33,
-              "b": 328.0,
+              "l": 417.67,
+              "t": 134.67,
+              "r": 470.0,
+              "b": 227.33,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
             "end_row_offset_idx": 1,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Vertically merged",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 355.67,
+              "t": 159.0,
+              "r": 371.33,
+              "b": 206.0,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
             "text": "value",
             "column_header": false,
             "row_header": false,
@@ -79,16 +98,54 @@
           },
           {
             "bbox": {
-              "l": 262.33,
-              "t": 296.67,
-              "r": 365.0,
-              "b": 344.0,
+              "l": 275.67,
+              "t": 159.0,
+              "r": 291.67,
+              "b": 206.0,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 422.67,
+              "t": 270.0,
+              "r": 470.0,
+              "b": 401.33,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
             "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Other merged column",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 339.67,
+              "t": 284.33,
+              "r": 387.33,
+              "b": 387.0,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
             "text": "Some other value",
@@ -98,34 +155,91 @@
           },
           {
             "bbox": {
-              "l": 98.0,
-              "t": 296.67,
-              "r": 203.67,
-              "b": 344.0,
+              "l": 260.33,
+              "t": 284.33,
+              "r": 307.33,
+              "b": 387.0,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Some other value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 422.67,
+              "t": 444.0,
+              "r": 470.0,
+              "b": 555.67,
               "coord_origin": "TOPLEFT"
             },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
             "end_row_offset_idx": 1,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Yet another column",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 339.67,
+              "t": 445.67,
+              "r": 387.33,
+              "b": 551.33,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Yet another value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 260.33,
+              "t": 445.67,
+              "r": 307.33,
+              "b": 551.33,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
             "text": "Yet another value",
             "column_header": false,
             "row_header": false,
             "row_section": false
           }
         ],
-        "num_rows": 1,
+        "num_rows": 3,
         "num_cols": 3,
         "grid": [
           [
             {
               "bbox": {
-                "l": 98.0,
-                "t": 296.67,
-                "r": 203.67,
-                "b": 344.0,
+                "l": 417.67,
+                "t": 134.67,
+                "r": 470.0,
+                "b": 227.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
@@ -134,23 +248,82 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Yet another value",
-              "column_header": false,
+              "text": "Vertically merged",
+              "column_header": true,
               "row_header": false,
               "row_section": false
             },
             {
               "bbox": {
-                "l": 262.33,
-                "t": 296.67,
-                "r": 365.0,
-                "b": 344.0,
+                "l": 422.67,
+                "t": 270.0,
+                "r": 470.0,
+                "b": 401.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
               "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Other merged column",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 422.67,
+                "t": 444.0,
+                "r": 470.0,
+                "b": 555.67,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Yet another column",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            }
+          ],
+          [
+            {
+              "bbox": {
+                "l": 355.67,
+                "t": 159.0,
+                "r": 371.33,
+                "b": 206.0,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 339.67,
+                "t": 284.33,
+                "r": 387.33,
+                "b": 387.0,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
               "text": "Some other value",
@@ -160,19 +333,78 @@
             },
             {
               "bbox": {
-                "l": 443.33,
-                "t": 312.0,
-                "r": 490.33,
-                "b": 328.0,
+                "l": 339.67,
+                "t": 445.67,
+                "r": 387.33,
+                "b": 551.33,
                 "coord_origin": "TOPLEFT"
               },
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
+              "text": "Yet another value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            }
+          ],
+          [
+            {
+              "bbox": {
+                "l": 275.67,
+                "t": 159.0,
+                "r": 291.67,
+                "b": 206.0,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
               "text": "value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 260.33,
+                "t": 284.33,
+                "r": 307.33,
+                "b": 387.0,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Some other value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 260.33,
+                "t": 445.67,
+                "r": 307.33,
+                "b": 551.33,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Yet another value",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -188,8 +420,8 @@
   "pages": {
     "1": {
       "size": {
-        "width": 612.0,
-        "height": 792.0
+        "width": 792.0,
+        "height": 612.0
       },
       "page_no": 1
     }

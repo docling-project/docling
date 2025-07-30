@@ -202,6 +202,10 @@ class TableStructureModel(BasePageModel):
                         continue
                     # Rotate and scale table image
                     page_im = cast(Image, page.get_image())
+                    original_scaled_page_size = (
+                        int(page_im.size[0] * self.scale),
+                        int(page_im.size[1] * self.scale),
+                    )
                     scaled_page_im: Image = cast(
                         Image, page.get_image(scale=self.scale)
                     )
@@ -258,10 +262,12 @@ class TableStructureModel(BasePageModel):
                                             scale=self.scale
                                         )
                                     )
+                                    # _rotate_bbox expects the size of the image in
+                                    # which the bbox was found
                                     new_bbox = _rotate_bbox(
                                         new_cell.to_bounding_box(),
-                                        orientation=cells_orientation,
-                                        im_size=scaled_page_im.size,
+                                        orientation=-cells_orientation,
+                                        im_size=original_scaled_page_size,
                                     ).model_dump()
                                     tokens.append(
                                         {
@@ -286,7 +292,11 @@ class TableStructureModel(BasePageModel):
                                         the_bbox
                                     )
                                     element["bbox"]["token"] = text_piece
-
+                                element["bbox"] = _rotate_bbox(
+                                    BoundingBox.model_validate(element["bbox"]),
+                                    orientation=cells_orientation,
+                                    im_size=scaled_page_im.size,
+                                ).model_dump()
                                 tc = TableCell.model_validate(element)
                                 if tc.bbox is not None:
                                     tc.bbox = tc.bbox.scaled(1 / self.scale)
