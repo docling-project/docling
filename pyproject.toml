@@ -92,7 +92,7 @@ ocrmac = ['ocrmac (>=1.0.0,<2.0.0) ; sys_platform == "darwin"']
 vlm = [
   'transformers (>=4.46.0,<5.0.0)',
   'accelerate (>=1.2.1,<2.0.0)',
-  'mlx-vlm (>=0.1.22,<0.2) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
 ]
 rapidocr = [
   'rapidocr-onnxruntime (>=1.4.0,<2.0.0) ; python_version < "3.13"',
