@@ -1,0 +1,5 @@
+<doctag><section_header_level_1><loc_109><loc_79><loc_266><loc_87>1 Mixed table orientation</section_header_level_1>
+<text><loc_109><loc_95><loc_390><loc_108>This section features a paragraph in portrait orientation while adding a table in landscape orientation.</text>
+<picture><loc_121><loc_174><loc_171><loc_278></picture>
+<text><loc_121><loc_348><loc_177><loc_353>Interesting no ?</text>
+</doctag>
