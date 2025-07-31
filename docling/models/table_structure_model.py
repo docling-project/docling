@@ -1,4 +1,5 @@
 import copy
+import operator
 import warnings
 from pathlib import Path
 from typing import Iterable, Optional, Tuple, cast
@@ -189,7 +190,6 @@ class TableStructureModel(BasePageModel):
                     page.predictions.tablestructure = (
                         TableStructurePrediction()
                     )  # dummy
-                    cells_orientation = detect_orientation(page.cells)
                     # Keep only table bboxes
                     in_tables_clusters = [
                         cluster
@@ -197,136 +197,130 @@ class TableStructureModel(BasePageModel):
                         if cluster.label in self._table_labels
                     ]
 
-                    if not len(in_tables_clusters):
+                    if not in_tables_clusters:
                         yield page
                         continue
                     # Rotate and scale table image
                     page_im = cast(Image, page.get_image())
-                    original_scaled_page_size = (
-                        int(page_im.size[0] * self.scale),
-                        int(page_im.size[1] * self.scale),
-                    )
-                    scaled_page_im: Image = cast(
+                    original_scaled_im: Image = cast(
                         Image, page.get_image(scale=self.scale)
                     )
-                    if cells_orientation:
-                        scaled_page_im = scaled_page_im.rotate(
-                            -cells_orientation, expand=True
-                        )
-                    page_input = {
-                        "width": scaled_page_im.size[0],
-                        "height": scaled_page_im.size[1],
-                        "image": numpy.asarray(scaled_page_im),
-                    }
-                    # Rotate and scale table cells
-                    in_tables = [
-                        (
-                            c,
-                            [
-                                round(x) * self.scale
-                                for x in _rotate_bbox(
-                                    c.bbox,
-                                    orientation=-cells_orientation,
-                                    im_size=page_im.size,
-                                )
-                                .to_top_left_origin(page_im.size[1])
-                                .as_tuple()
-                            ],
-                        )
-                        for c in in_tables_clusters
-                    ]
-                    table_clusters, table_bboxes = zip(*in_tables)
+                    original_scaled_page_size = original_scaled_im.size
+                    clusters_with_orientations = sorted(
+                        ((c, detect_orientation(c.cells)) for c in in_tables_clusters),
+                        key=operator.itemgetter(1),
+                    )
 
-                    if len(table_bboxes):
-                        for table_cluster, tbl_box in in_tables:
-                            # Check if word-level cells are available from backend:
-                            sp = page._backend.get_segmented_page()
-                            if sp is not None:
-                                tcells = sp.get_cells_in_bbox(
-                                    cell_unit=TextCellUnit.WORD,
-                                    bbox=table_cluster.bbox,
+                    previous_orientation = None
+                    for table_cluster, table_orientation in clusters_with_orientations:
+                        # Rotate the image if needed
+                        if previous_orientation != table_orientation:
+                            scaled_page_im = original_scaled_im
+                            if table_orientation:
+                                scaled_page_im = original_scaled_im.rotate(
+                                    -table_orientation, expand=True
                                 )
-                                if len(tcells) == 0:
-                                    # In case word-level cells yield empty
-                                    tcells = table_cluster.cells
-                            else:
-                                # Otherwise - we use normal (line/phrase) cells
+                        page_input = {
+                            "width": scaled_page_im.size[0],
+                            "height": scaled_page_im.size[1],
+                            "image": numpy.asarray(scaled_page_im),
+                        }
+                        previous_orientation = table_orientation
+                        # Rotate and scale the table bbox
+                        tbl_box = [
+                            round(x) * self.scale
+                            for x in _rotate_bbox(
+                                table_cluster.bbox,
+                                orientation=-table_orientation,
+                                im_size=page_im.size,
+                            )
+                            .to_top_left_origin(page_im.size[1])
+                            .as_tuple()
+                        ]
+                        # Check if word-level cells are available from backend:
+                        sp = page._backend.get_segmented_page()
+                        if sp is not None:
+                            tcells = sp.get_cells_in_bbox(
+                                cell_unit=TextCellUnit.WORD,
+                                bbox=table_cluster.bbox,
+                            )
+                            if not tcells:
+                                # In case word-level cells yield empty
                                 tcells = table_cluster.cells
-                            tokens = []
-                            for c in tcells:
-                                # Only allow non empty strings (spaces) into the cells of a table
-                                if len(c.text.strip()) > 0:
-                                    new_cell = copy.deepcopy(c)
-                                    new_cell.rect = BoundingRectangle.from_bounding_box(
-                                        new_cell.rect.to_bounding_box().scaled(
-                                            scale=self.scale
-                                        )
+                        else:
+                            # Otherwise - we use normal (line/phrase) cells
+                            tcells = table_cluster.cells
+                        tokens = []
+                        for c in tcells:
+                            # Only allow non empty strings (spaces) into the cells of a table
+                            if c.text.strip():
+                                new_cell = copy.deepcopy(c)
+                                new_cell.rect = BoundingRectangle.from_bounding_box(
+                                    new_cell.rect.to_bounding_box().scaled(
+                                        scale=self.scale
                                     )
-                                    # _rotate_bbox expects the size of the image in
-                                    # which the bbox was found
-                                    new_bbox = _rotate_bbox(
-                                        new_cell.to_bounding_box(),
-                                        orientation=-cells_orientation,
-                                        im_size=original_scaled_page_size,
-                                    ).model_dump()
-                                    tokens.append(
-                                        {
-                                            "id": new_cell.index,
-                                            "text": new_cell.text,
-                                            "bbox": new_bbox,
-                                        }
-                                    )
-                            page_input["tokens"] = tokens
-
-                            tf_output = self.tf_predictor.multi_table_predict(
-                                page_input, [tbl_box], do_matching=self.do_cell_matching
-                            )
-                            table_out = tf_output[0]
-                            table_cells = []
-                            for element in table_out["tf_responses"]:
-                                if not self.do_cell_matching:
-                                    the_bbox = BoundingBox.model_validate(
-                                        element["bbox"]
-                                    ).scaled(1 / self.scale)
-                                    text_piece = page._backend.get_text_in_rect(
-                                        the_bbox
-                                    )
-                                    element["bbox"]["token"] = text_piece
-                                element["bbox"] = _rotate_bbox(
-                                    BoundingBox.model_validate(element["bbox"]),
-                                    orientation=cells_orientation,
-                                    im_size=scaled_page_im.size,
+                                )
+                                # _rotate_bbox expects the size of the image in
+                                # which the bbox was found
+                                new_bbox = _rotate_bbox(
+                                    new_cell.to_bounding_box(),
+                                    orientation=-table_orientation,
+                                    im_size=original_scaled_page_size,
                                 ).model_dump()
-                                tc = TableCell.model_validate(element)
-                                if tc.bbox is not None:
-                                    tc.bbox = tc.bbox.scaled(1 / self.scale)
-                                table_cells.append(tc)
+                                tokens.append(
+                                    {
+                                        "id": new_cell.index,
+                                        "text": new_cell.text,
+                                        "bbox": new_bbox,
+                                    }
+                                )
+                        page_input["tokens"] = tokens
 
-                            assert "predict_details" in table_out
+                    tf_output = self.tf_predictor.multi_table_predict(
+                        page_input, [tbl_box], do_matching=self.do_cell_matching
+                    )
+                    table_out = tf_output[0]
+                    table_cells = []
+                    for element in table_out["tf_responses"]:
+                        if not self.do_cell_matching:
+                            the_bbox = BoundingBox.model_validate(
+                                element["bbox"]
+                            ).scaled(1 / self.scale)
+                            text_piece = page._backend.get_text_in_rect(the_bbox)
+                            element["bbox"]["token"] = text_piece
+                        element["bbox"] = _rotate_bbox(
+                            BoundingBox.model_validate(element["bbox"]),
+                            orientation=table_orientation,
+                            im_size=scaled_page_im.size,
+                        ).model_dump()
+                        tc = TableCell.model_validate(element)
+                        if tc.bbox is not None:
+                            tc.bbox = tc.bbox.scaled(1 / self.scale)
+                        table_cells.append(tc)
 
-                            # Retrieving cols/rows, after post processing:
-                            num_rows = table_out["predict_details"].get("num_rows", 0)
-                            num_cols = table_out["predict_details"].get("num_cols", 0)
-                            otsl_seq = (
-                                table_out["predict_details"]
-                                .get("prediction", {})
-                                .get("rs_seq", [])
-                            )
+                    assert "predict_details" in table_out
 
-                            tbl = Table(
-                                otsl_seq=otsl_seq,
-                                table_cells=table_cells,
-                                num_rows=num_rows,
-                                num_cols=num_cols,
-                                id=table_cluster.id,
-                                page_no=page.page_no,
-                                cluster=table_cluster,
-                                label=table_cluster.label,
-                            )
+                    # Retrieving cols/rows, after post processing:
+                    num_rows = table_out["predict_details"].get("num_rows", 0)
+                    num_cols = table_out["predict_details"].get("num_cols", 0)
+                    otsl_seq = (
+                        table_out["predict_details"]
+                        .get("prediction", {})
+                        .get("rs_seq", [])
+                    )
 
-                            page.predictions.tablestructure.table_map[
-                                table_cluster.id
-                            ] = tbl
+                    tbl = Table(
+                        otsl_seq=otsl_seq,
+                        table_cells=table_cells,
+                        num_rows=num_rows,
+                        num_cols=num_cols,
+                        id=table_cluster.id,
+                        page_no=page.page_no,
+                        cluster=table_cluster,
+                        label=table_cluster.label,
+                    )
+
+                    page.predictions.tablestructure.table_map[table_cluster.id] = tbl
 
                     # For debugging purposes:
                     if settings.debug.visualize_tables:
