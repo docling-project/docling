@@ -1,6 +1,7 @@
 import csv
 import logging
 import re
+import tarfile
 from collections.abc import Iterable
 from enum import Enum
 from io import BytesIO
@@ -314,6 +315,10 @@ class _DocumentConversionInput(BaseModel):
                 elif objname.endswith(".pptx"):
                     mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
+        if mime is not None and mime.lower() == "application/gzip":
+            if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
+                mime = detected_mime
+
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
@@ -456,4 +461,25 @@ class _DocumentConversionInput(BaseModel):
         except csv.Error:
             return None
 
+        return None
+
+    @staticmethod
+    def _detect_mets_gbs(
+        obj: Union[Path, DocumentStream],
+    ) -> Optional[Literal["application/mets+xml"]]:
+        content = obj if isinstance(obj, Path) else obj.stream
+        tar: tarfile.TarFile
+        member: tarfile.TarInfo
+        with tarfile.open(
+            name=content if isinstance(content, Path) else None,
+            fileobj=content if isinstance(content, BytesIO) else None,
+            mode="r:gz",
+        ) as tar:
+            for member in tar.getmembers():
+                if member.name.endswith(".xml"):
+                    file = tar.extractfile(member)
+                    if file is not None:
+                        content_str = file.read().decode(errors="ignore")
+                        if "http://www.loc.gov/METS/" in content_str:
+                            return "application/mets+xml"
         return None
