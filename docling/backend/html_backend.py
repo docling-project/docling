@@ -125,8 +125,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # set the title as furniture, since it is part of the document metadata
         title = self.soup.title
         if title:
+            title_text = title.get_text(separator=" ", strip=True)
+            title_clean = HTMLDocumentBackend._clean_unicode(title_text)
             doc.add_title(
-                text=title.get_text(separator=" ", strip=True),
+                text=title_clean,
+                orig=title_text,
                 content_layer=ContentLayer.FURNITURE,
             )
         # remove scripts/styles
@@ -168,10 +171,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return
             for part in text.split("\n"):
                 seg = part.strip()
+                seg_clean = HTMLDocumentBackend._clean_unicode(seg)
                 if seg:
                     doc.add_text(
-                        DocItemLabel.TEXT,
-                        seg,
+                        label=DocItemLabel.TEXT,
+                        text=seg_clean,
+                        orig=seg,
                         parent=self.parents[self.level],
                         content_layer=self.content_layer,
                     )
@@ -203,13 +208,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.content_layer = ContentLayer.BODY
         level = int(tag_name[1])
         text = tag.get_text(strip=True, separator=" ")
+        text_clean = HTMLDocumentBackend._clean_unicode(text)
         # the first level is for the title item
         if level == 1:
             for key in self.parents.keys():
                 self.parents[key] = None
             self.level = 0
             self.parents[self.level + 1] = doc.add_title(
-                text, content_layer=self.content_layer
+                text=text_clean, orig=text, content_layer=self.content_layer
             )
         # the other levels need to be lowered by 1 if a title was set
         else:
@@ -234,7 +240,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self.level = level
             self.parents[self.level + 1] = doc.add_heading(
                 parent=self.parents[self.level],
-                text=text,
+                text=text_clean,
+                orig=text,
                 level=self.level,
                 content_layer=self.content_layer,
             )
@@ -296,13 +303,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         if text_part:
                             parts.append(text_part)
                 li_text = re.sub(r"\s+|\n+", " ", "".join(parts)).strip()
+                li_clean = HTMLDocumentBackend._clean_unicode(li_text)
 
                 # 3) add the list item
                 if li_text:
                     self.parents[self.level + 1] = doc.add_list_item(
-                        text=li_text,
+                        text=li_clean,
                         enumerated=is_ordered,
                         marker=marker,
+                        orig=li_text,
                         parent=list_group,
                         content_layer=self.content_layer,
                     )
@@ -344,11 +353,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif tag_name in {"p", "address", "summary"}:
             for part in tag.text.split("\n"):
                 seg = part.strip()
+                seg_clean = HTMLDocumentBackend._clean_unicode(seg)
                 if seg:
                     doc.add_text(
-                        parent=self.parents[self.level],
                         label=DocItemLabel.TEXT,
-                        text=seg,
+                        text=seg_clean,
+                        orig=seg,
+                        parent=self.parents[self.level],
                         content_layer=self.content_layer,
                     )
             for img_tag in tag("img"):
@@ -370,10 +381,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif tag_name in {"pre", "code"}:
             # handle monospace code snippets (pre).
             text = tag.get_text(strip=True)
+            text_clean = HTMLDocumentBackend._clean_unicode(text)
             if text:
                 doc.add_code(
                     parent=self.parents[self.level],
-                    text=text,
+                    text=text_clean,
+                    orig=text,
                     content_layer=self.content_layer,
                 )
 
@@ -402,8 +415,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         caption_item: Optional[TextItem] = None
         if caption:
+            caption_clean = HTMLDocumentBackend._clean_unicode(caption)
             caption_item = doc.add_text(
-                DocItemLabel.CAPTION, text=caption, content_layer=self.content_layer
+                label=DocItemLabel.CAPTION,
+                text=caption_clean,
+                orig=caption,
+                content_layer=self.content_layer,
             )
 
         doc.add_picture(
@@ -441,6 +458,46 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         parts: list[str] = _extract_text_recursively(item)
 
         return "".join(parts)
+
+    @staticmethod
+    def _clean_unicode(text: str) -> str:
+        """Replace typical Unicode characters in HTML for text processing.
+
+        Several Unicode characters (e.g., non-printable or formatting) are typically
+        found in HTML but are worth replacing to sanitize text and ensure consistency
+        in text processing tasks.
+
+        Args:
+            text: The original text.
+
+        Returns:
+            The sanitized text without typical Unicode characters.
+        """
+        replacements = {
+            "\u00a0": " ",  # non-breaking space
+            "\u200b": "",  # zero-width space
+            "\u200c": "",  # zero-width non-joiner
+            "\u200d": "",  # zero-width joiner
+            "\u2010": "-",  # hyphen
+            "\u2011": "-",  # non-breaking hyphen
+            "\u2012": "-",  # dash
+            "\u2013": "-",  # dash
+            "\u2014": "-",  # dash
+            "\u2015": "-",  # horizontal bar
+            "\u2018": "'",  # left single quotation mark
+            "\u2019": "'",  # right single quotation mark
+            "\u201c": '"',  # left double quotation mark
+            "\u201d": '"',  # right double quotation mark
+            "\u2026": "...",  # ellipsis
+            "\u00ad": "",  # soft hyphen
+            "\ufeff": "",  # zero width non-break space
+            "\u202f": " ",  # narrow non-break space
+            "\u2060": "",  # word joiner
+        }
+        for raw, clean in replacements.items():
+            text = text.replace(raw, clean)
+
+        return text
 
     @staticmethod
     def _get_cell_spans(cell: Tag) -> tuple[int, int]:

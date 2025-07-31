@@ -100,6 +100,22 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+def test_unicode_characters():
+    raw_html = "<html><body><h1>Hello World!</h1></body></html>".encode()  # noqa: RUF001
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_html),
+    )
+    doc: DoclingDocument = backend.convert()
+    assert doc.texts[0].text == "Hello World!"
+
+
 def get_html_paths():
     # Define the directory you want to search
     directory = Path("./tests/data/html/")
