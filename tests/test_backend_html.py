@@ -116,6 +116,26 @@ def test_unicode_characters():
     assert doc.texts[0].text == "Hello World!"
 
 
+def test_extract_parent_hyperlinks():
+    html_path = Path("./tests/data/html/hyperlink_04.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+    )
+    div_tag = backend.soup.find("div")
+    a_tag = backend.soup.find("a")
+    annotated_text_list = backend._extract_text_and_hyperlink_recursively(
+        div_tag, find_parent_annotation=True
+    )
+    assert str(annotated_text_list[0].hyperlink) == a_tag.get("href")
+
+
 def get_html_paths():
     # Define the directory you want to search
     directory = Path("./tests/data/html/")

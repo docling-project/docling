@@ -1,6 +1,5 @@
 import logging
 import re
-import traceback
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -22,7 +21,7 @@ from docling_core.types.doc import (
     TextItem,
 )
 from docling_core.types.doc.document import ContentLayer
-from pydantic import AnyUrl, BaseModel, ValidationError as PydanticValidationError
+from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
@@ -58,9 +57,6 @@ _BLOCK_TAGS: Final = {
 class _Context(BaseModel):
     list_ordered_flag_by_ref: dict[str, bool] = {}
     list_start_by_ref: dict[str, int] = {}
-
-
-NON_TEXT_TAGS: Final = ["script", "style"]
 
 
 class AnnotatedText(BaseModel):
@@ -332,9 +328,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
 
         tag = cast(Tag, item)
-        if tag.name not in NON_TEXT_TAGS and (
-            not ignore_list or (tag.name not in ["ul", "ol"])
-        ):
+        if not ignore_list or (tag.name not in ["ul", "ol"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name == "a":
                     with self.use_hyperlink(child):
@@ -365,7 +359,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 # ugly fix for relative links since pydantic does not support them.
                 try:
                     AnyUrl(this_href)
-                except PydanticValidationError:
+                except ValidationError:
                     this_href = Path(this_href)
                 self.hyperlink = this_href
             try:
@@ -500,20 +494,51 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
                 # 3) add the list item
                 if li_text:
-                    with self.use_inline_group(min_parts, doc):
-                        for annotated_text in min_parts:
-                            li_text = re.sub(
-                                r"\s+|\n+", " ", annotated_text.text
-                            ).strip()
-                            li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                            self.parents[self.level + 1] = doc.add_list_item(
-                                text=li_clean,
-                                enumerated=is_ordered,
-                                marker=marker,
-                                parent=self.parents[self.level],
-                                content_layer=self.content_layer,
-                                hyperlink=annotated_text.hyperlink,
-                            )
+                    if len(min_parts) > 1:
+                        # create an empty list element in order to hook the inline group onto that one
+                        self.parents[self.level + 1] = doc.add_list_item(
+                            text="",
+                            enumerated=is_ordered,
+                            marker=marker,
+                            parent=list_group,
+                            content_layer=self.content_layer,
+                        )
+                        self.level += 1
+                        with self.use_inline_group(min_parts, doc):
+                            for annotated_text in min_parts:
+                                li_text = re.sub(
+                                    r"\s+|\n+", " ", annotated_text.text
+                                ).strip()
+                                li_clean = HTMLDocumentBackend._clean_unicode(li_text)
+                                doc.add_text(
+                                    parent=self.parents[self.level],
+                                    label=DocItemLabel.TEXT,
+                                    text=li_clean,
+                                    content_layer=self.content_layer,
+                                    hyperlink=annotated_text.hyperlink,
+                                )
+
+                        # 4) recurse into any nested lists, attaching them to this <li> item
+                        for sublist in li({"ul", "ol"}, recursive=False):
+                            if isinstance(sublist, Tag):
+                                self._handle_block(sublist, doc)
+
+                        # now the list element with inline group is not a parent anymore
+                        self.parents[self.level] = None
+                        self.level -= 1
+                    else:
+                        annotated_text = min_parts[0]
+                        li_text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
+                        li_clean = HTMLDocumentBackend._clean_unicode(li_text)
+                        self.parents[self.level + 1] = doc.add_list_item(
+                            text=li_clean,
+                            enumerated=is_ordered,
+                            marker=marker,
+                            orig=li_text,
+                            parent=list_group,
+                            content_layer=self.content_layer,
+                            hyperlink=annotated_text.hyperlink,
+                        )
 
                         # 4) recurse into any nested lists, attaching them to this <li> item
                         for sublist in li({"ul", "ol"}, recursive=False):

@@ -6,10 +6,16 @@ item-0 at level 0: unspecified: group _root_
           item-5 at level 5: list: group list
             item-6 at level 6: list_item: A sub page
           item-7 at level 5: list: group list
-            item-8 at level 6: inline: group group
-              item-9 at level 7: list: group group
-                item-10 at level 8: list_item: This is my
-              item-11 at level 7: list: group group
-                item-12 at level 8: list_item: Homepage
-            item-13 at level 6: list_item: Main navigation
-    item-14 at level 2: list_item: My organisation
+            item-8 at level 6: list_item: 
+              item-9 at level 7: inline: group group
+                item-10 at level 8: text: This is my
+                item-11 at level 8: text: Homepage
+              item-12 at level 7: list: group list
+                item-13 at level 8: list_item: List item inner
+                item-14 at level 8: list_item: 
+                  item-15 at level 9: inline: group group
+                    item-16 at level 10: text: More text
+                    item-17 at level 10: text: with some links
+                    item-18 at level 10: text: and more text.
+            item-19 at level 6: list_item: Main navigation
+    item-20 at level 2: list_item: My organisation

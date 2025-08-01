@@ -9,20 +9,20 @@ hide
 - [2 Taxonomy](#Taxonomy)
 - [3 Morphology](#Morphology)
 - [4 Distribution and habitat](#Distribution_and_habitat)
-    - [5 Behaviour](#Behaviour)     - Toggle Behaviour subsection
-        - [5.1 Feeding](#Feeding)
-        - [5.2 Breeding](#Breeding)
-        - [5.3 Communication](#Communication)
-        - [5.4 Predators](#Predators)
-    - [6 Relationship with humans](#Relationship_with_humans)     - Toggle Relationship with humans subsection
-        - [6.1 Hunting](#Hunting)
-        - [6.2 Domestication](#Domestication)
-        - [6.3 Heraldry](#Heraldry)
-        - [6.4 Cultural references](#Cultural_references)
+- [5 Behaviour](#Behaviour) Toggle Behaviour subsection
+    - [5.1 Feeding](#Feeding)
+    - [5.2 Breeding](#Breeding)
+    - [5.3 Communication](#Communication)
+    - [5.4 Predators](#Predators)
+- [6 Relationship with humans](#Relationship_with_humans) Toggle Relationship with humans subsection
+    - [6.1 Hunting](#Hunting)
+    - [6.2 Domestication](#Domestication)
+    - [6.3 Heraldry](#Heraldry)
+    - [6.4 Cultural references](#Cultural_references)
 - [7 See also](#See_also)
-    - [8 Notes](#Notes)     - Toggle Notes subsection
-        - [8.1 Citations](#Citations)
-        - [8.2 Sources](#Sources)
+- [8 Notes](#Notes) Toggle Notes subsection
+    - [8.1 Citations](#Citations)
+    - [8.2 Sources](#Sources)
 - [9 External links](#External_links)
 
 Toggle the table of contents
@@ -409,84 +409,84 @@ The 1992 Disney film [The Mighty Ducks](/wiki/The_Mighty_Ducks_(film)) , starrin
 
 ### Citations
 
-    1. [^](#cite_ref-1)     1. ["Duckling"](http://dictionary.reference.com/browse/duckling)     1. . The American Heritage Dictionary of the English Language, Fourth Edition . Houghton Mifflin Company. 2006 . Retrieved 2015-05-22 .
-    1. [^](#cite_ref-2)     1. ["Duckling"](http://dictionary.reference.com/browse/duckling)     1. . Kernerman English Multilingual Dictionary (Beta Version) . K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 .
-    1. [^](#cite_ref-3)     1. Dohner, Janet Vorwald (2001).     1. [The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds](https://books.google.com/books?id=WJCTL_mC5w4C&q=male+duck+is+called+a+drake+and+the+female+is+called+a+duck&pg=PA457)     1. . Yale University Press.     1. [ISBN](/wiki/ISBN_(identifier))     1. [978-0300138139](/wiki/Special:BookSources/978-0300138139)     1. .
-    1. [^](#cite_ref-4)     1. Visca, Curt; Visca, Kelley (2003).     1. [How to Draw Cartoon Birds](https://books.google.com/books?id=VqSquCLNrZcC&q=male+duck+is+called+a+drake+and+the+female+is+called+a+duck+%28or+hen%29&pg=PA16)     1. . The Rosen Publishing Group.     1. [ISBN](/wiki/ISBN_(identifier))     1. [9780823961566](/wiki/Special:BookSources/9780823961566)     1. .
-    1. ^     1. [a](#cite_ref-FOOTNOTECarboneras1992536_5-0)     1. [b](#cite_ref-FOOTNOTECarboneras1992536_5-1)     1. [c](#cite_ref-FOOTNOTECarboneras1992536_5-2)     1. [d](#cite_ref-FOOTNOTECarboneras1992536_5-3)     1. [Carboneras 1992](#CITEREFCarboneras1992)     1. , p. 536.
-    1. [^](#cite_ref-FOOTNOTELivezey1986737–738_6-0)     1. [Livezey 1986](#CITEREFLivezey1986)     1. , pp. 737-738.
-    1. [^](#cite_ref-FOOTNOTEMadsenMcHughde_Kloet1988452_7-0)     1. [Madsen, McHugh &amp; de Kloet 1988](#CITEREFMadsenMcHughde_Kloet1988)     1. , p. 452.
-    1. [^](#cite_ref-FOOTNOTEDonne-GousséLaudetHänni2002353–354_8-0)     1. [Donne-Goussé, Laudet &amp; Hänni 2002](#CITEREFDonne-GousséLaudetHänni2002)     1. , pp. 353-354.
-    1. ^     1. [a](#cite_ref-FOOTNOTECarboneras1992540_9-0)     1. [b](#cite_ref-FOOTNOTECarboneras1992540_9-1)     1. [c](#cite_ref-FOOTNOTECarboneras1992540_9-2)     1. [d](#cite_ref-FOOTNOTECarboneras1992540_9-3)     1. [e](#cite_ref-FOOTNOTECarboneras1992540_9-4)     1. [f](#cite_ref-FOOTNOTECarboneras1992540_9-5)     1. [Carboneras 1992](#CITEREFCarboneras1992)     1. , p. 540.
-    1. [^](#cite_ref-FOOTNOTEElphickDunningSibley2001191_10-0)     1. [Elphick, Dunning &amp; Sibley 2001](#CITEREFElphickDunningSibley2001)     1. , p. 191.
-    1. [^](#cite_ref-FOOTNOTEKear2005448_11-0)     1. [Kear 2005](#CITEREFKear2005)     1. , p. 448.
-    1. [^](#cite_ref-FOOTNOTEKear2005622–623_12-0)     1. [Kear 2005](#CITEREFKear2005)     1. , p. 622-623.
-    1. [^](#cite_ref-FOOTNOTEKear2005686_13-0)     1. [Kear 2005](#CITEREFKear2005)     1. , p. 686.
-    1. [^](#cite_ref-FOOTNOTEElphickDunningSibley2001193_14-0)     1. [Elphick, Dunning &amp; Sibley 2001](#CITEREFElphickDunningSibley2001)     1. , p. 193.
-    1. ^     1. [a](#cite_ref-FOOTNOTECarboneras1992537_15-0)     1. [b](#cite_ref-FOOTNOTECarboneras1992537_15-1)     1. [c](#cite_ref-FOOTNOTECarboneras1992537_15-2)     1. [d](#cite_ref-FOOTNOTECarboneras1992537_15-3)     1. [e](#cite_ref-FOOTNOTECarboneras1992537_15-4)     1. [f](#cite_ref-FOOTNOTECarboneras1992537_15-5)     1. [g](#cite_ref-FOOTNOTECarboneras1992537_15-6)     1. [Carboneras 1992](#CITEREFCarboneras1992)     1. , p. 537.
-    1. [^](#cite_ref-FOOTNOTEAmerican_Ornithologists'_Union1998xix_16-0)     1. [American Ornithologists' Union 1998](#CITEREFAmerican_Ornithologists'_Union1998)     1. , p. xix.
-    1. [^](#cite_ref-FOOTNOTEAmerican_Ornithologists'_Union1998_17-0)     1. [American Ornithologists' Union 1998](#CITEREFAmerican_Ornithologists'_Union1998)     1. .
-    1. [^](#cite_ref-FOOTNOTECarboneras1992538_18-0)     1. [Carboneras 1992](#CITEREFCarboneras1992)     1. , p. 538.
-    1. [^](#cite_ref-FOOTNOTEChristidisBoles200862_19-0)     1. [Christidis &amp; Boles 2008](#CITEREFChristidisBoles2008)     1. , p. 62.
-    1. [^](#cite_ref-FOOTNOTEShirihai2008239,_245_20-0)     1. [Shirihai 2008](#CITEREFShirihai2008)     1. , pp. 239, 245.
-    1. ^     1. [a](#cite_ref-FOOTNOTEPrattBrunerBerrett198798–107_21-0)     1. [b](#cite_ref-FOOTNOTEPrattBrunerBerrett198798–107_21-1)     1. [Pratt, Bruner &amp; Berrett 1987](#CITEREFPrattBrunerBerrett1987)     1. , pp. 98-107.
-    1. [^](#cite_ref-FOOTNOTEFitterFitterHosking200052–3_22-0)     1. [Fitter, Fitter &amp; Hosking 2000](#CITEREFFitterFitterHosking2000)     1. , pp. 52-3.
-    1. [^](#cite_ref-23)     1. ["Pacific Black Duck"](http://www.wiresnr.org/pacificblackduck.html)     1. . www.wiresnr.org . Retrieved 2018-04-27 .
-    1. [^](#cite_ref-24)     1. Ogden, Evans.     1. ["Dabbling Ducks"](https://www.sfu.ca/biology/wildberg/species/dabbducks.html)     1. . CWE . Retrieved 2006-11-02 .
-    1. [^](#cite_ref-25)     1. Karl Mathiesen (16 March 2015).     1. ["Don't feed the ducks bread, say conservationists"](https://www.theguardian.com/environment/2015/mar/16/dont-feed-the-ducks-bread-say-conservationists)     1. . The Guardian . Retrieved 13 November 2016 .
-    1. [^](#cite_ref-26)     1. Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology . pp. 187-221.     1. [doi](/wiki/Doi_(identifier))     1. :     1. [10.1007/978-1-4615-6787-5\_4](https://doi.org/10.1007%2F978-1-4615-6787-5_4)     1. .     1. [ISBN](/wiki/ISBN_(identifier))     1. [978-1-4615-6789-9](/wiki/Special:BookSources/978-1-4615-6789-9)     1. .
-    1. [^](#cite_ref-27)     1. Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000).     1. ["Long-Term Pair Bonds in Harlequin Ducks"](https://doi.org/10.1093%2Fcondor%2F102.1.201)     1. . The Condor . 102 (1): 201-205.     1. [doi](/wiki/Doi_(identifier))     1. :     1. [10.1093/condor/102.1.201](https://doi.org/10.1093%2Fcondor%2F102.1.201)     1. .     1. [hdl](/wiki/Hdl_(identifier))     1. :     1. [10315/13797](https://hdl.handle.net/10315%2F13797)     1. .
-    1. [^](#cite_ref-28)     1. ["If You Find An Orphaned Duckling - Wildlife Rehabber"](https://web.archive.org/web/20180923152911/http://wildliferehabber.com/content/if-you-find-duckling)     1. . wildliferehabber.com . Archived from     1. [the original](https://wildliferehabber.com/content/if-you-find-duckling)     1. on 2018-09-23 . Retrieved 2018-12-22 .
-    1. [^](#cite_ref-29)     1. Carver, Heather (2011).     1. [The Duck Bible](https://books.google.com/books?id=VGofAwAAQBAJ&q=mallard+sound+deep+and+raspy&pg=PA39)     1. . Lulu.com.     1. [ISBN](/wiki/ISBN_(identifier))     1. [9780557901562](/wiki/Special:BookSources/9780557901562)     1. . [     1. [self-published source](/wiki/Wikipedia:Verifiability#Self-published_sources)     1. ]
-    1. [^](#cite_ref-30)     1. Titlow, Budd (2013-09-03).     1. [Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends](https://books.google.com/books?id=fXJBBAAAQBAJ&q=Females+of+most+dabbling+ducks+make+the+classic+%22quack%22+sound+but+most+ducks+don%27t+quack&pg=PA123)     1. . Rowman &amp; Littlefield.     1. [ISBN](/wiki/ISBN_(identifier))     1. [9780762797707](/wiki/Special:BookSources/9780762797707)     1. .
-    1. [^](#cite_ref-31)     1. Amos, Jonathan (2003-09-08).     1. ["Sound science is quackers"](http://news.bbc.co.uk/2/hi/science/nature/3086890.stm)     1. . BBC News . Retrieved 2006-11-02 .
-    1. [^](#cite_ref-32)     1. ["Mythbusters Episode 8"](http://mythbustersresults.com/episode8)     1. . 12 December 2003.
-    1. [^](#cite_ref-FOOTNOTEErlandson1994171_33-0)     1. [Erlandson 1994](#CITEREFErlandson1994)     1. , p. 171.
-    1. [^](#cite_ref-FOOTNOTEJeffries2008168,_243_34-0)     1. [Jeffries 2008](#CITEREFJeffries2008)     1. , pp. 168, 243.
-    1. ^     1. [a](#cite_ref-FOOTNOTESued-Badillo200365_35-0)     1. [b](#cite_ref-FOOTNOTESued-Badillo200365_35-1)     1. [Sued-Badillo 2003](#CITEREFSued-Badillo2003)     1. , p. 65.
-    1. [^](#cite_ref-FOOTNOTEThorpe199668_36-0)     1. [Thorpe 1996](#CITEREFThorpe1996)     1. , p. 68.
-    1. [^](#cite_ref-FOOTNOTEMaisels199942_37-0)     1. [Maisels 1999](#CITEREFMaisels1999)     1. , p. 42.
-    1. [^](#cite_ref-FOOTNOTERau1876133_38-0)     1. [Rau 1876](#CITEREFRau1876)     1. , p. 133.
-    1. [^](#cite_ref-FOOTNOTEHigman201223_39-0)     1. [Higman 2012](#CITEREFHigman2012)     1. , p. 23.
-    1. [^](#cite_ref-FOOTNOTEHume201253_40-0)     1. [Hume 2012](#CITEREFHume2012)     1. , p. 53.
-    1. [^](#cite_ref-FOOTNOTEHume201252_41-0)     1. [Hume 2012](#CITEREFHume2012)     1. , p. 52.
-    1. [^](#cite_ref-FOOTNOTEFieldhouse2002167_42-0)     1. [Fieldhouse 2002](#CITEREFFieldhouse2002)     1. , p. 167.
-    1. [^](#cite_ref-43)     1. Livingston, A. D. (1998-01-01).     1. [Guide to Edible Plants and Animals](https://books.google.com/books?id=NViSMffyaSgC&q=%C2%A0%C2%A0In+many+areas,+wild+ducks+of+various+species+are+hunted+for+food+or+sport)     1. . Wordsworth Editions, Limited.     1. [ISBN](/wiki/ISBN_(identifier))     1. [9781853263774](/wiki/Special:BookSources/9781853263774)     1. .
-    1. [^](#cite_ref-44)     1. ["Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl"](https://www.dec.ny.gov/docs/fish_marine_pdf/wfp09a.pdf)     1. (PDF) . New York State Department of Environmental Conservation . US Department of Commerce. December 2008. p. 3.     1. [Archived](https://ghostarchive.org/archive/20221009/https://www.dec.ny.gov/docs/fish_marine_pdf/wfp09a.pdf)     1. (PDF) from the original on 2022-10-09 . Retrieved 2 July 2019 .
-    1. [^](#cite_ref-45)     1. ["FAOSTAT"](http://www.fao.org/faostat/en/#data/QL)     1. . www.fao.org . Retrieved 2019-10-25 .
-    1. [^](#cite_ref-46)     1. ["Anas platyrhynchos, Domestic Duck; DigiMorph Staff - The University of Texas at Austin"](http://digimorph.org/specimens/anas_platyrhynchos/skull/)     1. . Digimorph.org . Retrieved 2012-12-23 .
-    1. [^](#cite_ref-47)     1. Sy Montgomery.     1. ["Mallard; Encyclopædia Britannica"](https://www.britannica.com/eb/topic-360302/mallard)     1. . Britannica.com . Retrieved 2012-12-23 .
-    1. [^](#cite_ref-48)     1. Glenday, Craig (2014).     1. [Guinness World Records](https://archive.org/details/guinnessworldrec0000unse_r3e7/page/135)     1. . Guinness World Records Limited. pp.     1. [135](https://archive.org/details/guinnessworldrec0000unse_r3e7/page/135)     1. .     1. [ISBN](/wiki/ISBN_(identifier))     1. [978-1-908843-15-9](/wiki/Special:BookSources/978-1-908843-15-9)     1. .
-    1. [^](#cite_ref-49)     1. Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147.     1. [ISBN](/wiki/ISBN_(identifier))     1. [951-773-085-3](/wiki/Special:BookSources/951-773-085-3)     1. .
-    1. [^](#cite_ref-50)     1. ["Lubānas simbolika"](http://www.lubana.lv/index.php/lv/homepage/lubanas-pilseta-2)     1. (in Latvian) . Retrieved September 9, 2021 .
-    1. [^](#cite_ref-51)     1. ["Föglö"](http://digi.narc.fi/digi/view.ka?kuid=1738595)     1. (in Swedish) . Retrieved September 9, 2021 .
-    1. [^](#cite_ref-52)     1. Young, Emma.     1. ["World's funniest joke revealed"](https://www.newscientist.com/article/dn2876-worlds-funniest-joke-revealed/)     1. . New Scientist . Retrieved 7 January 2019 .
-    1. [^](#cite_ref-53)     1. ["Howard the Duck (character)"](http://www.comics.org/character/name/Howard%20the%20Duck/sort/chrono/)     1. .     1. [Grand Comics Database](/wiki/Grand_Comics_Database)     1. .
-    1. [^](#cite_ref-54)     1. [Sanderson, Peter](/wiki/Peter_Sanderson)     1. ; Gilbert, Laura (2008). "1970s". Marvel Chronicle A Year by Year History . London, United Kingdom:     1. [Dorling Kindersley](/wiki/Dorling_Kindersley)     1. . p. 161.     1. [ISBN](/wiki/ISBN_(identifier))     1. [978-0756641238](/wiki/Special:BookSources/978-0756641238)     1. . December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.
-    1. [^](#cite_ref-55)     1. ["The Duck"](https://goducks.com/sports/2003/8/28/153778.aspx)     1. . University of Oregon Athletics . Retrieved 2022-01-20 .
+1. [^](#cite_ref-1) ["Duckling"](http://dictionary.reference.com/browse/duckling) . The American Heritage Dictionary of the English Language, Fourth Edition . Houghton Mifflin Company. 2006 . Retrieved 2015-05-22 .
+2. [^](#cite_ref-2) ["Duckling"](http://dictionary.reference.com/browse/duckling) . Kernerman English Multilingual Dictionary (Beta Version) . K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 .
+3. [^](#cite_ref-3) Dohner, Janet Vorwald (2001). [The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds](https://books.google.com/books?id=WJCTL_mC5w4C&q=male+duck+is+called+a+drake+and+the+female+is+called+a+duck&pg=PA457) . Yale University Press. [ISBN](/wiki/ISBN_(identifier)) [978-0300138139](/wiki/Special:BookSources/978-0300138139) .
+4. [^](#cite_ref-4) Visca, Curt; Visca, Kelley (2003). [How to Draw Cartoon Birds](https://books.google.com/books?id=VqSquCLNrZcC&q=male+duck+is+called+a+drake+and+the+female+is+called+a+duck+%28or+hen%29&pg=PA16) . The Rosen Publishing Group. [ISBN](/wiki/ISBN_(identifier)) [9780823961566](/wiki/Special:BookSources/9780823961566) .
+5. ^ [a](#cite_ref-FOOTNOTECarboneras1992536_5-0) [b](#cite_ref-FOOTNOTECarboneras1992536_5-1) [c](#cite_ref-FOOTNOTECarboneras1992536_5-2) [d](#cite_ref-FOOTNOTECarboneras1992536_5-3) [Carboneras 1992](#CITEREFCarboneras1992) , p. 536.
+6. [^](#cite_ref-FOOTNOTELivezey1986737–738_6-0) [Livezey 1986](#CITEREFLivezey1986) , pp. 737-738.
+7. [^](#cite_ref-FOOTNOTEMadsenMcHughde_Kloet1988452_7-0) [Madsen, McHugh &amp; de Kloet 1988](#CITEREFMadsenMcHughde_Kloet1988) , p. 452.
+8. [^](#cite_ref-FOOTNOTEDonne-GousséLaudetHänni2002353–354_8-0) [Donne-Goussé, Laudet &amp; Hänni 2002](#CITEREFDonne-GousséLaudetHänni2002) , pp. 353-354.
+9. ^ [a](#cite_ref-FOOTNOTECarboneras1992540_9-0) [b](#cite_ref-FOOTNOTECarboneras1992540_9-1) [c](#cite_ref-FOOTNOTECarboneras1992540_9-2) [d](#cite_ref-FOOTNOTECarboneras1992540_9-3) [e](#cite_ref-FOOTNOTECarboneras1992540_9-4) [f](#cite_ref-FOOTNOTECarboneras1992540_9-5) [Carboneras 1992](#CITEREFCarboneras1992) , p. 540.
+10. [^](#cite_ref-FOOTNOTEElphickDunningSibley2001191_10-0) [Elphick, Dunning &amp; Sibley 2001](#CITEREFElphickDunningSibley2001) , p. 191.
+11. [^](#cite_ref-FOOTNOTEKear2005448_11-0) [Kear 2005](#CITEREFKear2005) , p. 448.
+12. [^](#cite_ref-FOOTNOTEKear2005622–623_12-0) [Kear 2005](#CITEREFKear2005) , p. 622-623.
+13. [^](#cite_ref-FOOTNOTEKear2005686_13-0) [Kear 2005](#CITEREFKear2005) , p. 686.
+14. [^](#cite_ref-FOOTNOTEElphickDunningSibley2001193_14-0) [Elphick, Dunning &amp; Sibley 2001](#CITEREFElphickDunningSibley2001) , p. 193.
+15. ^ [a](#cite_ref-FOOTNOTECarboneras1992537_15-0) [b](#cite_ref-FOOTNOTECarboneras1992537_15-1) [c](#cite_ref-FOOTNOTECarboneras1992537_15-2) [d](#cite_ref-FOOTNOTECarboneras1992537_15-3) [e](#cite_ref-FOOTNOTECarboneras1992537_15-4) [f](#cite_ref-FOOTNOTECarboneras1992537_15-5) [g](#cite_ref-FOOTNOTECarboneras1992537_15-6) [Carboneras 1992](#CITEREFCarboneras1992) , p. 537.
+16. [^](#cite_ref-FOOTNOTEAmerican_Ornithologists'_Union1998xix_16-0) [American Ornithologists' Union 1998](#CITEREFAmerican_Ornithologists'_Union1998) , p. xix.
+17. [^](#cite_ref-FOOTNOTEAmerican_Ornithologists'_Union1998_17-0) [American Ornithologists' Union 1998](#CITEREFAmerican_Ornithologists'_Union1998) .
+18. [^](#cite_ref-FOOTNOTECarboneras1992538_18-0) [Carboneras 1992](#CITEREFCarboneras1992) , p. 538.
+19. [^](#cite_ref-FOOTNOTEChristidisBoles200862_19-0) [Christidis &amp; Boles 2008](#CITEREFChristidisBoles2008) , p. 62.
+20. [^](#cite_ref-FOOTNOTEShirihai2008239,_245_20-0) [Shirihai 2008](#CITEREFShirihai2008) , pp. 239, 245.
+21. ^ [a](#cite_ref-FOOTNOTEPrattBrunerBerrett198798–107_21-0) [b](#cite_ref-FOOTNOTEPrattBrunerBerrett198798–107_21-1) [Pratt, Bruner &amp; Berrett 1987](#CITEREFPrattBrunerBerrett1987) , pp. 98-107.
+22. [^](#cite_ref-FOOTNOTEFitterFitterHosking200052–3_22-0) [Fitter, Fitter &amp; Hosking 2000](#CITEREFFitterFitterHosking2000) , pp. 52-3.
+23. [^](#cite_ref-23) ["Pacific Black Duck"](http://www.wiresnr.org/pacificblackduck.html) . www.wiresnr.org . Retrieved 2018-04-27 .
+24. [^](#cite_ref-24) Ogden, Evans. ["Dabbling Ducks"](https://www.sfu.ca/biology/wildberg/species/dabbducks.html) . CWE . Retrieved 2006-11-02 .
+25. [^](#cite_ref-25) Karl Mathiesen (16 March 2015). ["Don't feed the ducks bread, say conservationists"](https://www.theguardian.com/environment/2015/mar/16/dont-feed-the-ducks-bread-say-conservationists) . The Guardian . Retrieved 13 November 2016 .
+26. [^](#cite_ref-26) Rohwer, Frank C.; Anderson, Michael G. (1988). "Female-Biased Philopatry, Monogamy, and the Timing of Pair Formation in Migratory Waterfowl". Current Ornithology . pp. 187-221. [doi](/wiki/Doi_(identifier)) : [10.1007/978-1-4615-6787-5\_4](https://doi.org/10.1007%2F978-1-4615-6787-5_4) . [ISBN](/wiki/ISBN_(identifier)) [978-1-4615-6789-9](/wiki/Special:BookSources/978-1-4615-6789-9) .
+27. [^](#cite_ref-27) Smith, Cyndi M.; Cooke, Fred; Robertson, Gregory J.; Goudie, R. Ian; Boyd, W. Sean (2000). ["Long-Term Pair Bonds in Harlequin Ducks"](https://doi.org/10.1093%2Fcondor%2F102.1.201) . The Condor . 102 (1): 201-205. [doi](/wiki/Doi_(identifier)) : [10.1093/condor/102.1.201](https://doi.org/10.1093%2Fcondor%2F102.1.201) . [hdl](/wiki/Hdl_(identifier)) : [10315/13797](https://hdl.handle.net/10315%2F13797) .
+28. [^](#cite_ref-28) ["If You Find An Orphaned Duckling - Wildlife Rehabber"](https://web.archive.org/web/20180923152911/http://wildliferehabber.com/content/if-you-find-duckling) . wildliferehabber.com . Archived from [the original](https://wildliferehabber.com/content/if-you-find-duckling) on 2018-09-23 . Retrieved 2018-12-22 .
+29. [^](#cite_ref-29) Carver, Heather (2011). [The Duck Bible](https://books.google.com/books?id=VGofAwAAQBAJ&q=mallard+sound+deep+and+raspy&pg=PA39) . Lulu.com. [ISBN](/wiki/ISBN_(identifier)) [9780557901562](/wiki/Special:BookSources/9780557901562) . [ [self-published source](/wiki/Wikipedia:Verifiability#Self-published_sources) ]
+30. [^](#cite_ref-30) Titlow, Budd (2013-09-03). [Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends](https://books.google.com/books?id=fXJBBAAAQBAJ&q=Females+of+most+dabbling+ducks+make+the+classic+%22quack%22+sound+but+most+ducks+don%27t+quack&pg=PA123) . Rowman &amp; Littlefield. [ISBN](/wiki/ISBN_(identifier)) [9780762797707](/wiki/Special:BookSources/9780762797707) .
+31. [^](#cite_ref-31) Amos, Jonathan (2003-09-08). ["Sound science is quackers"](http://news.bbc.co.uk/2/hi/science/nature/3086890.stm) . BBC News . Retrieved 2006-11-02 .
+32. [^](#cite_ref-32) ["Mythbusters Episode 8"](http://mythbustersresults.com/episode8) . 12 December 2003.
+33. [^](#cite_ref-FOOTNOTEErlandson1994171_33-0) [Erlandson 1994](#CITEREFErlandson1994) , p. 171.
+34. [^](#cite_ref-FOOTNOTEJeffries2008168,_243_34-0) [Jeffries 2008](#CITEREFJeffries2008) , pp. 168, 243.
+35. ^ [a](#cite_ref-FOOTNOTESued-Badillo200365_35-0) [b](#cite_ref-FOOTNOTESued-Badillo200365_35-1) [Sued-Badillo 2003](#CITEREFSued-Badillo2003) , p. 65.
+36. [^](#cite_ref-FOOTNOTEThorpe199668_36-0) [Thorpe 1996](#CITEREFThorpe1996) , p. 68.
+37. [^](#cite_ref-FOOTNOTEMaisels199942_37-0) [Maisels 1999](#CITEREFMaisels1999) , p. 42.
+38. [^](#cite_ref-FOOTNOTERau1876133_38-0) [Rau 1876](#CITEREFRau1876) , p. 133.
+39. [^](#cite_ref-FOOTNOTEHigman201223_39-0) [Higman 2012](#CITEREFHigman2012) , p. 23.
+40. [^](#cite_ref-FOOTNOTEHume201253_40-0) [Hume 2012](#CITEREFHume2012) , p. 53.
+41. [^](#cite_ref-FOOTNOTEHume201252_41-0) [Hume 2012](#CITEREFHume2012) , p. 52.
+42. [^](#cite_ref-FOOTNOTEFieldhouse2002167_42-0) [Fieldhouse 2002](#CITEREFFieldhouse2002) , p. 167.
+43. [^](#cite_ref-43) Livingston, A. D. (1998-01-01). [Guide to Edible Plants and Animals](https://books.google.com/books?id=NViSMffyaSgC&q=%C2%A0%C2%A0In+many+areas,+wild+ducks+of+various+species+are+hunted+for+food+or+sport) . Wordsworth Editions, Limited. [ISBN](/wiki/ISBN_(identifier)) [9781853263774](/wiki/Special:BookSources/9781853263774) .
+44. [^](#cite_ref-44) ["Study plan for waterfowl injury assessment: Determining PCB concentrations in Hudson river resident waterfowl"](https://www.dec.ny.gov/docs/fish_marine_pdf/wfp09a.pdf) (PDF) . New York State Department of Environmental Conservation . US Department of Commerce. December 2008. p. 3. [Archived](https://ghostarchive.org/archive/20221009/https://www.dec.ny.gov/docs/fish_marine_pdf/wfp09a.pdf) (PDF) from the original on 2022-10-09 . Retrieved 2 July 2019 .
+45. [^](#cite_ref-45) ["FAOSTAT"](http://www.fao.org/faostat/en/#data/QL) . www.fao.org . Retrieved 2019-10-25 .
+46. [^](#cite_ref-46) ["Anas platyrhynchos, Domestic Duck; DigiMorph Staff - The University of Texas at Austin"](http://digimorph.org/specimens/anas_platyrhynchos/skull/) . Digimorph.org . Retrieved 2012-12-23 .
+47. [^](#cite_ref-47) Sy Montgomery. ["Mallard; Encyclopædia Britannica"](https://www.britannica.com/eb/topic-360302/mallard) . Britannica.com . Retrieved 2012-12-23 .
+48. [^](#cite_ref-48) Glenday, Craig (2014). [Guinness World Records](https://archive.org/details/guinnessworldrec0000unse_r3e7/page/135) . Guinness World Records Limited. pp. [135](https://archive.org/details/guinnessworldrec0000unse_r3e7/page/135) . [ISBN](/wiki/ISBN_(identifier)) [978-1-908843-15-9](/wiki/Special:BookSources/978-1-908843-15-9) .
+49. [^](#cite_ref-49) Suomen kunnallisvaakunat (in Finnish). Suomen Kunnallisliitto. 1982. p. 147. [ISBN](/wiki/ISBN_(identifier)) [951-773-085-3](/wiki/Special:BookSources/951-773-085-3) .
+50. [^](#cite_ref-50) ["Lubānas simbolika"](http://www.lubana.lv/index.php/lv/homepage/lubanas-pilseta-2) (in Latvian) . Retrieved September 9, 2021 .
+51. [^](#cite_ref-51) ["Föglö"](http://digi.narc.fi/digi/view.ka?kuid=1738595) (in Swedish) . Retrieved September 9, 2021 .
+52. [^](#cite_ref-52) Young, Emma. ["World's funniest joke revealed"](https://www.newscientist.com/article/dn2876-worlds-funniest-joke-revealed/) . New Scientist . Retrieved 7 January 2019 .
+53. [^](#cite_ref-53) ["Howard the Duck (character)"](http://www.comics.org/character/name/Howard%20the%20Duck/sort/chrono/) . [Grand Comics Database](/wiki/Grand_Comics_Database) .
+54. [^](#cite_ref-54) [Sanderson, Peter](/wiki/Peter_Sanderson) ; Gilbert, Laura (2008). "1970s". Marvel Chronicle A Year by Year History . London, United Kingdom: [Dorling Kindersley](/wiki/Dorling_Kindersley) . p. 161. [ISBN](/wiki/ISBN_(identifier)) [978-0756641238](/wiki/Special:BookSources/978-0756641238) . December saw the debut of the cigar-smoking Howard the Duck. In this story by writer Steve Gerber and artist Val Mayerik, various beings from different realities had begun turning up in the Man-Thing's Florida swamp, including this bad-tempered talking duck.
+55. [^](#cite_ref-55) ["The Duck"](https://goducks.com/sports/2003/8/28/153778.aspx) . University of Oregon Athletics . Retrieved 2022-01-20 .
 
 ### Sources
 
-    - American Ornithologists' Union (1998).     - [Checklist of North American Birds](https://americanornithology.org/wp-content/uploads/2019/07/AOSChecklistTin-Falcon.pdf)     - (PDF) . Washington, DC: American Ornithologists' Union.     - [ISBN](/wiki/ISBN_(identifier))     - [978-1-891276-00-2](/wiki/Special:BookSources/978-1-891276-00-2)     - .     - [Archived](https://ghostarchive.org/archive/20221009/https://americanornithology.org/wp-content/uploads/2019/07/AOSChecklistTin-Falcon.pdf)     - (PDF) from the original on 2022-10-09.
-    - Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). Handbook of the Birds of the World . Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions.     - [ISBN](/wiki/ISBN_(identifier))     - [978-84-87334-10-8](/wiki/Special:BookSources/978-84-87334-10-8)     - .
-    - Christidis, Les; Boles, Walter E., eds. (2008). Systematics and Taxonomy of Australian Birds . Collingwood, VIC: Csiro Publishing.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-643-06511-6](/wiki/Special:BookSources/978-0-643-06511-6)     - .
-    - Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). "A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis". Molecular Phylogenetics and Evolution . 23 (3): 339-356.     - [Bibcode](/wiki/Bibcode_(identifier))     - :     - [2002MolPE..23..339D](https://ui.adsabs.harvard.edu/abs/2002MolPE..23..339D)     - .     - [doi](/wiki/Doi_(identifier))     - :     - [10.1016/S1055-7903(02)00019-2](https://doi.org/10.1016%2FS1055-7903%2802%2900019-2)     - .     - [PMID](/wiki/PMID_(identifier))     - [12099792](https://pubmed.ncbi.nlm.nih.gov/12099792)     - .
-    - Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). The Sibley Guide to Bird Life and Behaviour . London: Christopher Helm.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-7136-6250-4](/wiki/Special:BookSources/978-0-7136-6250-4)     - .
-    - Erlandson, Jon M. (1994).     - [Early Hunter-Gatherers of the California Coast](https://books.google.com/books?id=nGTaBwAAQBAJ&pg=171)     - . New York, NY: Springer Science &amp; Business Media.     - [ISBN](/wiki/ISBN_(identifier))     - [978-1-4419-3231-0](/wiki/Special:BookSources/978-1-4419-3231-0)     - .
-    - Fieldhouse, Paul (2002).     - [Food, Feasts, and Faith: An Encyclopedia of Food Culture in World Religions](https://books.google.com/books?id=P-FqDgAAQBAJ&pg=PA167)     - . Vol. I: A-K. Santa Barbara: ABC-CLIO.     - [ISBN](/wiki/ISBN_(identifier))     - [978-1-61069-412-4](/wiki/Special:BookSources/978-1-61069-412-4)     - .
-    - Fitter, Julian; Fitter, Daniel; Hosking, David (2000). Wildlife of the Galápagos . Princeton, NJ: Princeton University Press.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-691-10295-5](/wiki/Special:BookSources/978-0-691-10295-5)     - .
-    - Higman, B. W. (2012).     - [How Food Made History](https://books.google.com/books?id=YIUoz98yMvgC&pg=RA1-PA1801)     - . Chichester, UK: John Wiley &amp; Sons.     - [ISBN](/wiki/ISBN_(identifier))     - [978-1-4051-8947-7](/wiki/Special:BookSources/978-1-4051-8947-7)     - .
-    - Hume, Julian H. (2012).     - [Extinct Birds](https://books.google.com/books?id=40sxDwAAQBAJ&pg=PA53)     - . London: Christopher Helm.     - [ISBN](/wiki/ISBN_(identifier))     - [978-1-4729-3744-5](/wiki/Special:BookSources/978-1-4729-3744-5)     - .
-    - Jeffries, Richard (2008).     - [Holocene Hunter-Gatherers of the Lower Ohio River Valley](https://archive.org/details/holocenehunterga0000jeff/mode/2up)     - . Tuscaloosa: University of Alabama Press.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-8173-1658-7](/wiki/Special:BookSources/978-0-8173-1658-7)     - .
-    - Kear, Janet, ed. (2005). Ducks, Geese and Swans: Species Accounts ( Cairina to Mergus ) . Bird Families of the World. Oxford: Oxford University Press.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-19-861009-0](/wiki/Special:BookSources/978-0-19-861009-0)     - .
-    - Livezey, Bradley C. (October 1986).     - ["A phylogenetic analysis of recent Anseriform genera using morphological characters"](https://sora.unm.edu/sites/default/files/journals/auk/v103n04/p0737-p0754.pdf)     - (PDF) . The Auk . 103 (4): 737-754.     - [doi](/wiki/Doi_(identifier))     - :     - [10.1093/auk/103.4.737](https://doi.org/10.1093%2Fauk%2F103.4.737)     - .     - [Archived](https://ghostarchive.org/archive/20221009/https://sora.unm.edu/sites/default/files/journals/auk/v103n04/p0737-p0754.pdf)     - (PDF) from the original on 2022-10-09.
-    - Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988).     - ["A partial classification of waterfowl (Anatidae) based on single-copy DNA"](https://sora.unm.edu/sites/default/files/journals/auk/v105n03/p0452-p0459.pdf)     - (PDF) . The Auk . 105 (3): 452-459.     - [doi](/wiki/Doi_(identifier))     - :     - [10.1093/auk/105.3.452](https://doi.org/10.1093%2Fauk%2F105.3.452)     - .     - [Archived](https://ghostarchive.org/archive/20221009/https://sora.unm.edu/sites/default/files/journals/auk/v105n03/p0452-p0459.pdf)     - (PDF) from the original on 2022-10-09.
-    - Maisels, Charles Keith (1999).     - [Early Civilizations of the Old World](https://books.google.com/books?id=I2dgI2ijww8C&pg=PA42)     - . London: Routledge.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-415-10975-8](/wiki/Special:BookSources/978-0-415-10975-8)     - .
-    - Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). A Field Guide to the Birds of Hawaii and the Tropical Pacific . Princeton, NJ: Princeton University Press.     - [ISBN](/wiki/ISBN_(identifier))     - [0-691-02399-9](/wiki/Special:BookSources/0-691-02399-9)     - .
-    - Rau, Charles (1876).     - [Early Man in Europe](https://books.google.com/books?id=9XBgAAAAIAAJ&pg=133)     - . New York: Harper &amp; Brothers.     - [LCCN](/wiki/LCCN_(identifier))     - [05040168](https://lccn.loc.gov/05040168)     - .
-    - Shirihai, Hadoram (2008). A Complete Guide to Antarctic Wildlife . Princeton, NJ, US: Princeton University Press.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-691-13666-0](/wiki/Special:BookSources/978-0-691-13666-0)     - .
-    - Sued-Badillo, Jalil (2003).     - [Autochthonous Societies](https://books.google.com/books?id=zexcW7q-4LgC&pg=PA65)     - . General History of the Caribbean. Paris: UNESCO.     - [ISBN](/wiki/ISBN_(identifier))     - [978-92-3-103832-7](/wiki/Special:BookSources/978-92-3-103832-7)     - .
-    - Thorpe, I. J. (1996).     - [The Origins of Agriculture in Europe](https://books.google.com/books?id=YA-EAgAAQBAJ&pg=PA68)     - . New York: Routledge.     - [ISBN](/wiki/ISBN_(identifier))     - [978-0-415-08009-5](/wiki/Special:BookSources/978-0-415-08009-5)     - .
+- American Ornithologists' Union (1998). [Checklist of North American Birds](https://americanornithology.org/wp-content/uploads/2019/07/AOSChecklistTin-Falcon.pdf) (PDF) . Washington, DC: American Ornithologists' Union. [ISBN](/wiki/ISBN_(identifier)) [978-1-891276-00-2](/wiki/Special:BookSources/978-1-891276-00-2) . [Archived](https://ghostarchive.org/archive/20221009/https://americanornithology.org/wp-content/uploads/2019/07/AOSChecklistTin-Falcon.pdf) (PDF) from the original on 2022-10-09.
+- Carboneras, Carlos (1992). del Hoyo, Josep; Elliott, Andrew; Sargatal, Jordi (eds.). Handbook of the Birds of the World . Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions. [ISBN](/wiki/ISBN_(identifier)) [978-84-87334-10-8](/wiki/Special:BookSources/978-84-87334-10-8) .
+- Christidis, Les; Boles, Walter E., eds. (2008). Systematics and Taxonomy of Australian Birds . Collingwood, VIC: Csiro Publishing. [ISBN](/wiki/ISBN_(identifier)) [978-0-643-06511-6](/wiki/Special:BookSources/978-0-643-06511-6) .
+- Donne-Goussé, Carole; Laudet, Vincent; Hänni, Catherine (July 2002). "A molecular phylogeny of Anseriformes based on mitochondrial DNA analysis". Molecular Phylogenetics and Evolution . 23 (3): 339-356. [Bibcode](/wiki/Bibcode_(identifier)) : [2002MolPE..23..339D](https://ui.adsabs.harvard.edu/abs/2002MolPE..23..339D) . [doi](/wiki/Doi_(identifier)) : [10.1016/S1055-7903(02)00019-2](https://doi.org/10.1016%2FS1055-7903%2802%2900019-2) . [PMID](/wiki/PMID_(identifier)) [12099792](https://pubmed.ncbi.nlm.nih.gov/12099792) .
+- Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001). The Sibley Guide to Bird Life and Behaviour . London: Christopher Helm. [ISBN](/wiki/ISBN_(identifier)) [978-0-7136-6250-4](/wiki/Special:BookSources/978-0-7136-6250-4) .
+- Erlandson, Jon M. (1994). [Early Hunter-Gatherers of the California Coast](https://books.google.com/books?id=nGTaBwAAQBAJ&pg=171) . New York, NY: Springer Science &amp; Business Media. [ISBN](/wiki/ISBN_(identifier)) [978-1-4419-3231-0](/wiki/Special:BookSources/978-1-4419-3231-0) .
+- Fieldhouse, Paul (2002). [Food, Feasts, and Faith: An Encyclopedia of Food Culture in World Religions](https://books.google.com/books?id=P-FqDgAAQBAJ&pg=PA167) . Vol. I: A-K. Santa Barbara: ABC-CLIO. [ISBN](/wiki/ISBN_(identifier)) [978-1-61069-412-4](/wiki/Special:BookSources/978-1-61069-412-4) .
+- Fitter, Julian; Fitter, Daniel; Hosking, David (2000). Wildlife of the Galápagos . Princeton, NJ: Princeton University Press. [ISBN](/wiki/ISBN_(identifier)) [978-0-691-10295-5](/wiki/Special:BookSources/978-0-691-10295-5) .
+- Higman, B. W. (2012). [How Food Made History](https://books.google.com/books?id=YIUoz98yMvgC&pg=RA1-PA1801) . Chichester, UK: John Wiley &amp; Sons. [ISBN](/wiki/ISBN_(identifier)) [978-1-4051-8947-7](/wiki/Special:BookSources/978-1-4051-8947-7) .
+- Hume, Julian H. (2012). [Extinct Birds](https://books.google.com/books?id=40sxDwAAQBAJ&pg=PA53) . London: Christopher Helm. [ISBN](/wiki/ISBN_(identifier)) [978-1-4729-3744-5](/wiki/Special:BookSources/978-1-4729-3744-5) .
+- Jeffries, Richard (2008). [Holocene Hunter-Gatherers of the Lower Ohio River Valley](https://archive.org/details/holocenehunterga0000jeff/mode/2up) . Tuscaloosa: University of Alabama Press. [ISBN](/wiki/ISBN_(identifier)) [978-0-8173-1658-7](/wiki/Special:BookSources/978-0-8173-1658-7) .
+- Kear, Janet, ed. (2005). Ducks, Geese and Swans: Species Accounts ( Cairina to Mergus ) . Bird Families of the World. Oxford: Oxford University Press. [ISBN](/wiki/ISBN_(identifier)) [978-0-19-861009-0](/wiki/Special:BookSources/978-0-19-861009-0) .
+- Livezey, Bradley C. (October 1986). ["A phylogenetic analysis of recent Anseriform genera using morphological characters"](https://sora.unm.edu/sites/default/files/journals/auk/v103n04/p0737-p0754.pdf) (PDF) . The Auk . 103 (4): 737-754. [doi](/wiki/Doi_(identifier)) : [10.1093/auk/103.4.737](https://doi.org/10.1093%2Fauk%2F103.4.737) . [Archived](https://ghostarchive.org/archive/20221009/https://sora.unm.edu/sites/default/files/journals/auk/v103n04/p0737-p0754.pdf) (PDF) from the original on 2022-10-09.
+- Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988). ["A partial classification of waterfowl (Anatidae) based on single-copy DNA"](https://sora.unm.edu/sites/default/files/journals/auk/v105n03/p0452-p0459.pdf) (PDF) . The Auk . 105 (3): 452-459. [doi](/wiki/Doi_(identifier)) : [10.1093/auk/105.3.452](https://doi.org/10.1093%2Fauk%2F105.3.452) . [Archived](https://ghostarchive.org/archive/20221009/https://sora.unm.edu/sites/default/files/journals/auk/v105n03/p0452-p0459.pdf) (PDF) from the original on 2022-10-09.
+- Maisels, Charles Keith (1999). [Early Civilizations of the Old World](https://books.google.com/books?id=I2dgI2ijww8C&pg=PA42) . London: Routledge. [ISBN](/wiki/ISBN_(identifier)) [978-0-415-10975-8](/wiki/Special:BookSources/978-0-415-10975-8) .
+- Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987). A Field Guide to the Birds of Hawaii and the Tropical Pacific . Princeton, NJ: Princeton University Press. [ISBN](/wiki/ISBN_(identifier)) [0-691-02399-9](/wiki/Special:BookSources/0-691-02399-9) .
+- Rau, Charles (1876). [Early Man in Europe](https://books.google.com/books?id=9XBgAAAAIAAJ&pg=133) . New York: Harper &amp; Brothers. [LCCN](/wiki/LCCN_(identifier)) [05040168](https://lccn.loc.gov/05040168) .
+- Shirihai, Hadoram (2008). A Complete Guide to Antarctic Wildlife . Princeton, NJ, US: Princeton University Press. [ISBN](/wiki/ISBN_(identifier)) [978-0-691-13666-0](/wiki/Special:BookSources/978-0-691-13666-0) .
+- Sued-Badillo, Jalil (2003). [Autochthonous Societies](https://books.google.com/books?id=zexcW7q-4LgC&pg=PA65) . General History of the Caribbean. Paris: UNESCO. [ISBN](/wiki/ISBN_(identifier)) [978-92-3-103832-7](/wiki/Special:BookSources/978-92-3-103832-7) .
+- Thorpe, I. J. (1996). [The Origins of Agriculture in Europe](https://books.google.com/books?id=YA-EAgAAQBAJ&pg=PA68) . New York: Routledge. [ISBN](/wiki/ISBN_(identifier)) [978-0-415-08009-5](/wiki/Special:BookSources/978-0-415-08009-5) .
 
 ## External links
 
@@ -494,22 +494,22 @@ Duck at Wikipedia's
 
 [sister projects](/wiki/Wikipedia:Wikimedia_sister_projects)
 
-    - [Definitions](https://en.wiktionary.org/wiki/duck)     - from Wiktionary
+- [Definitions](https://en.wiktionary.org/wiki/duck) from Wiktionary
 <!-- image -->
-    - [Media](https://commons.wikimedia.org/wiki/Anatidae)     - from Commons
+- [Media](https://commons.wikimedia.org/wiki/Anatidae) from Commons
 <!-- image -->
-    - [Quotations](https://en.wikiquote.org/wiki/Birds)     - from Wikiquote
+- [Quotations](https://en.wikiquote.org/wiki/Birds) from Wikiquote
 <!-- image -->
-    - [Recipes](https://en.wikibooks.org/wiki/Cookbook:Duck)     - from Wikibooks
+- [Recipes](https://en.wikibooks.org/wiki/Cookbook:Duck) from Wikibooks
 <!-- image -->
-    - [Taxa](https://species.wikimedia.org/wiki/Anatidae)     - from Wikispecies
+- [Taxa](https://species.wikimedia.org/wiki/Anatidae) from Wikispecies
 <!-- image -->
-    - [Data](https://www.wikidata.org/wiki/Q3736439)     - from Wikidata
+- [Data](https://www.wikidata.org/wiki/Q3736439) from Wikidata
 <!-- image -->
 
-    - [list of books](https://web.archive.org/web/20060613210555/http://seaducks.org/subjects/MIGRATION%20AND%20FLIGHT.htm)     - (useful looking abstracts)
-    - [Ducks on postage stamps](http://www.stampsbook.org/subject/Duck.html)     - [Archived](https://web.archive.org/web/20130513022903/http://www.stampsbook.org/subject/Duck.html)     - 2013-05-13 at the     - [Wayback Machine](/wiki/Wayback_Machine)
-    - [Ducks at a Distance, by Rob Hines](https://gutenberg.org/ebooks/18884)     - at     - [Project Gutenberg](/wiki/Project_Gutenberg)     - - A modern illustrated guide to identification of US waterfowl
+- [list of books](https://web.archive.org/web/20060613210555/http://seaducks.org/subjects/MIGRATION%20AND%20FLIGHT.htm) (useful looking abstracts)
+- [Ducks on postage stamps](http://www.stampsbook.org/subject/Duck.html) [Archived](https://web.archive.org/web/20130513022903/http://www.stampsbook.org/subject/Duck.html) 2013-05-13 at the [Wayback Machine](/wiki/Wayback_Machine)
+- [Ducks at a Distance, by Rob Hines](https://gutenberg.org/ebooks/18884) at [Project Gutenberg](/wiki/Project_Gutenberg) - A modern illustrated guide to identification of US waterfowl
 
 <!-- image -->
 
@@ -558,7 +558,7 @@ Hidden categories:
 - [Articles containing video clips](/wiki/Category:Articles_containing_video_clips)
 
 - This page was last edited on 21 September 2024, at 12:11 (UTC) .
-    - Text is available under the     - [Creative Commons Attribution-ShareAlike License 4.0](//en.wikipedia.org/wiki/Wikipedia:Text_of_the_Creative_Commons_Attribution-ShareAlike_4.0_International_License)     - ; additional terms may apply. By using this site, you agree to the     - [Terms of Use](//foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use)     - and     - [Privacy Policy](//foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy)     - . Wikipedia® is a registered trademark of the     - [Wikimedia Foundation, Inc.](//wikimediafoundation.org)     - , a non-profit organization.
+- Text is available under the [Creative Commons Attribution-ShareAlike License 4.0](//en.wikipedia.org/wiki/Wikipedia:Text_of_the_Creative_Commons_Attribution-ShareAlike_4.0_International_License) ; additional terms may apply. By using this site, you agree to the [Terms of Use](//foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Terms_of_Use) and [Privacy Policy](//foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy) . Wikipedia® is a registered trademark of the [Wikimedia Foundation, Inc.](//wikimediafoundation.org) , a non-profit organization.
 
 - [Privacy policy](https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy)
 - [About Wikipedia](/wiki/Wikipedia:About)
