@@ -1,0 +1,10 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: caption: Image Hyperlink.
+  item-2 at level 1: picture
+    item-2 at level 2: caption: Image Hyperlink.
+  item-3 at level 1: caption: This is an example caption for the image.
+  item-4 at level 1: picture
+    item-4 at level 2: caption: This is an example caption for the image.
+  item-5 at level 1: caption: This is an example caption for the image.
+  item-6 at level 1: picture
+    item-6 at level 2: caption: This is an example caption for the image.

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image Hyperlink and Caption Example</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    figure { max-width: 320px; margin: 2em 0; }
+    figcaption { background: #f3f3f3; color: #333; padding: 6px; text-align: center; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <!-- Image as a hyperlink -->
+  <a href="https://www.example.com" target="_blank">
+    <img src="https://via.placeholder.com/200x100.png?text=Clickable+Image" alt="Clickable Example" />
+  </a>
+
+  <!-- Image with a caption -->
+  <figure>
+    <img src="https://via.placeholder.com/250x150.png?text=Captioned+Image" alt="Image with Caption" />
+    <figcaption>This is an example caption for the image.</figcaption>
+  </figure>
+
+
+  <!-- Image with a caption -->
+  <figure>
+    <a href="https://www.example.com" target="_blank">
+        <img src="https://via.placeholder.com/250x150.png?text=Captioned+Image" alt="Image with Caption" />
+    </a>
+    <figcaption>This is an example <a href="#caption">caption</a> for the image.</figcaption>
+  </figure>
+
+
+</body>
+</html>
