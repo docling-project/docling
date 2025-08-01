@@ -323,9 +323,9 @@ item-0 at level 0: unspecified: group _root_
         item-321 at level 4: text: [ 3 ]
         item-322 at level 4: text: [ 4 ]
       item-323 at level 3: picture
-        item-323 at level 4: caption: Male mallard.
+        item-323 at level 4: caption: Male mallard .
       item-324 at level 3: picture
-        item-324 at level 4: caption: Wood ducks.
+        item-324 at level 4: caption: Wood ducks .
     item-325 at level 2: section_header: Taxonomy
       item-326 at level 3: inline: group group
         item-327 at level 4: text: All ducks belong to the
@@ -449,7 +449,7 @@ item-0 at level 0: unspecified: group _root_
         item-443 at level 4: text: See also:
         item-444 at level 4: text: List of Anseriformes by population
       item-445 at level 3: picture
-        item-445 at level 4: caption: Flying steamer ducks in Ushuaia, Argentina
+        item-445 at level 4: caption: Flying steamer ducks in Ushuaia , Argentina
       item-446 at level 3: inline: group group
         item-447 at level 4: text: Ducks have a
         item-448 at level 4: text: cosmopolitan distribution
@@ -479,7 +479,7 @@ item-0 at level 0: unspecified: group _root_
         item-472 at level 4: text: to such far-flung islands.
         item-473 at level 4: text: [ 21 ]
       item-474 at level 3: picture
-        item-474 at level 4: caption: Female mallard in Cornwall, England
+        item-474 at level 4: caption: Female mallard in Cornwall , England
       item-475 at level 3: inline: group group
         item-476 at level 4: text: Some duck species, mainly those  ...  that form after localised heavy rain.
         item-477 at level 4: text: [ 23 ]
@@ -667,7 +667,7 @@ item-0 at level 0: unspecified: group _root_
           item-656 at level 5: text: Main article:
           item-657 at level 5: text: Domestic duck
         item-658 at level 4: picture
-          item-658 at level 5: caption: Indian Runner ducks, a common breed of domestic ducks
+          item-658 at level 5: caption: Indian Runner ducks , a common breed of domestic ducks
         item-659 at level 4: inline: group group
           item-660 at level 5: text: Ducks have many economic uses, b ... eggs, and feathers (particularly their
           item-661 at level 5: text: down
@@ -686,7 +686,7 @@ item-0 at level 0: unspecified: group _root_
           item-674 at level 5: text: [ 48 ]
       item-675 at level 3: section_header: Heraldry
         item-676 at level 4: picture
-          item-676 at level 5: caption: Three black-colored ducks in the coat of arms of Maaninka[49]
+          item-676 at level 5: caption: Three black-colored ducks in the coat of arms of Maaninka [ 49 ]
         item-677 at level 4: inline: group group
           item-678 at level 5: text: Ducks appear on several
           item-679 at level 5: text: coats of arms
@@ -1402,21 +1402,21 @@ item-0 at level 0: unspecified: group _root_
         item-1389 at level 4: list_item: Mobile view
       item-1390 at level 3: list: group list
         item-1391 at level 4: picture
-          item-1391 at level 5: caption: Wikimedia Foundation
+          item-1391 at level 5: caption: Image Hyperlink.
         item-1392 at level 4: picture
-          item-1392 at level 5: caption: Powered by MediaWiki
+          item-1392 at level 5: caption: Image Hyperlink.
       item-1393 at level 3: list: group list
   item-1394 at level 1: caption: Pacific black duck displaying the characteristic upending "duck"
-  item-1395 at level 1: caption: Male mallard.
-  item-1396 at level 1: caption: Wood ducks.
+  item-1395 at level 1: caption: Male mallard .
+  item-1396 at level 1: caption: Wood ducks .
   item-1397 at level 1: caption: Mallard landing in approach
   item-1398 at level 1: caption: Male Mandarin duck
-  item-1399 at level 1: caption: Flying steamer ducks in Ushuaia, Argentina
-  item-1400 at level 1: caption: Female mallard in Cornwall, England
+  item-1399 at level 1: caption: Flying steamer ducks in Ushuaia , Argentina
+  item-1400 at level 1: caption: Female mallard in Cornwall , England
   item-1401 at level 1: caption: Pecten along the bill
   item-1402 at level 1: caption: A Muscovy duckling
   item-1403 at level 1: caption: Ringed teal
-  item-1404 at level 1: caption: Indian Runner ducks, a common breed of domestic ducks
-  item-1405 at level 1: caption: Three black-colored ducks in the coat of arms of Maaninka[49]
-  item-1406 at level 1: caption: Wikimedia Foundation
-  item-1407 at level 1: caption: Powered by MediaWiki
+  item-1404 at level 1: caption: Indian Runner ducks , a common breed of domestic ducks
+  item-1405 at level 1: caption: Three black-colored ducks in the coat of arms of Maaninka [ 49 ]
+  item-1406 at level 1: caption: Image Hyperlink.
+  item-1407 at level 1: caption: Image Hyperlink.

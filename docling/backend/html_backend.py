@@ -305,7 +305,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if find_parent_annotation:
             this_parent = item.parent
             while this_parent is not None:
-                if this_parent.name == "a":
+                if this_parent.name == "a" and this_parent.get("href"):
                     with self.use_hyperlink(this_parent):
                         return self._extract_text_and_hyperlink_recursively(
                             item, ignore_list
@@ -372,6 +372,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def use_inline_group(
         self, annotated_text_list: AnnotatedTextList, doc: DoclingDocument
     ):
+        """Create an inline group for annotated texts.
+
+        Checks if annotated_text_list has more than one item and if so creates an inline
+        group in which the text elements can then be generated. While the context manager
+        is active the inline group is set as the current parent.
+
+        Args:
+            annotated_text_list (AnnotatedTextList): Annotated text
+            doc (DoclingDocument): Currently used document
+
+        Yields:
+            None: _description_
+        """
         if len(annotated_text_list) > 1:
             inline_fmt = doc.add_group(
                 label=GroupLabel.INLINE,
@@ -641,22 +654,45 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> None:
         figure = img_tag.find_parent("figure")
-        caption: str = ""
+        caption: AnnotatedTextList = AnnotatedTextList()
+
+        # check if the figure has a link - this is HACK:
+        def get_img_hyperlink(img_tag):
+            this_parent = img_tag.parent
+            while this_parent is not None:
+                if this_parent.name == "a" and this_parent.get("href"):
+                    return this_parent.get("href")
+                this_parent = this_parent.parent
+            return None
+
+        if img_hyperlink := get_img_hyperlink(img_tag):
+            caption.append(
+                AnnotatedText(text="Image Hyperlink.", hyperlink=img_hyperlink)
+            )
+
         if isinstance(figure, Tag):
             caption_tag = figure.find("figcaption", recursive=False)
             if isinstance(caption_tag, Tag):
-                caption = caption_tag.get_text()
-        if not caption:
-            caption = str(img_tag.get("alt", "")).strip()
+                caption = self._extract_text_and_hyperlink_recursively(
+                    caption_tag, find_parent_annotation=True
+                )
+        if not caption and img_tag.get("alt"):
+            caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
+
+        caption_anno_text = caption.to_single_text_element()
 
         caption_item: Optional[TextItem] = None
-        if caption:
-            caption_clean = HTMLDocumentBackend._clean_unicode(caption)
+        if caption_anno_text.text:
+            text_clean = HTMLDocumentBackend._clean_unicode(
+                caption_anno_text.text.strip()
+            )
+            print(caption_anno_text)
             caption_item = doc.add_text(
                 label=DocItemLabel.CAPTION,
-                text=caption_clean,
-                orig=caption,
+                text=text_clean,
+                orig=caption_anno_text.text,
                 content_layer=self.content_layer,
+                hyperlink=caption_anno_text.hyperlink,
             )
 
         doc.add_picture(

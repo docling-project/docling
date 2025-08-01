@@ -269,11 +269,11 @@ A duckling is a young duck in downy plumage [[ 1 ]](#cite_note-1) or baby duck, 
 
 A male is called a [drake](https://en.wiktionary.org/wiki/drake) and the female is called a duck, or in [ornithology](/wiki/Ornithology) a hen. [[ 3 ]](#cite_note-3) [[ 4 ]](#cite_note-4)
 
-Male mallard.
+Male mallard .
 
 <!-- image -->
 
-Wood ducks.
+Wood ducks .
 
 <!-- image -->
 
@@ -303,13 +303,13 @@ The drakes of northern species often have extravagant [plumage](/wiki/Plumage) ,
 
 See also: [List of Anseriformes by population](/wiki/List_of_Anseriformes_by_population)
 
-Flying steamer ducks in Ushuaia, Argentina
+Flying steamer ducks in Ushuaia , Argentina
 
 <!-- image -->
 
 Ducks have a [cosmopolitan distribution](/wiki/Cosmopolitan_distribution) , and are found on every continent except Antarctica. [[ 5 ]](#cite_note-FOOTNOTECarboneras1992536-5) Several species manage to live on subantarctic islands, including [South Georgia](/wiki/South_Georgia_and_the_South_Sandwich_Islands) and the [Auckland Islands](/wiki/Auckland_Islands) . [[ 20 ]](#cite_note-FOOTNOTEShirihai2008239,_245-20) Ducks have reached a number of isolated oceanic islands, including the [Hawaiian Islands](/wiki/Hawaiian_Islands) , [Micronesia](/wiki/Micronesia) and the [Galápagos Islands](/wiki/Gal%C3%A1pagos_Islands) , where they are often [vagrants](/wiki/Glossary_of_bird_terms#vagrants) and less often [residents](/wiki/Glossary_of_bird_terms#residents) . [[ 21 ]](#cite_note-FOOTNOTEPrattBrunerBerrett198798–107-21) [[ 22 ]](#cite_note-FOOTNOTEFitterFitterHosking200052–3-22) A handful are [endemic](/wiki/Endemic) to such far-flung islands. [[ 21 ]](#cite_note-FOOTNOTEPrattBrunerBerrett198798–107-21)
 
-Female mallard in Cornwall, England
+Female mallard in Cornwall , England
 
 <!-- image -->
 
@@ -373,7 +373,7 @@ In many areas, wild ducks (including ducks farmed and released into the wild) ar
 
 Main article: [Domestic duck](/wiki/Domestic_duck)
 
-Indian Runner ducks, a common breed of domestic ducks
+Indian Runner ducks , a common breed of domestic ducks
 
 <!-- image -->
 
@@ -381,7 +381,7 @@ Ducks have many economic uses, being farmed for their meat, eggs, and feathers (
 
 ### Heraldry
 
-Three black-colored ducks in the coat of arms of Maaninka[49]
+Three black-colored ducks in the coat of arms of Maaninka [ 49 ]
 
 <!-- image -->
 
@@ -570,9 +570,9 @@ Hidden categories:
 - [Cookie statement](https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Cookie_statement)
 - [Mobile view](//en.m.wikipedia.org/w/index.php?title=Duck&mobileaction=toggle_view_mobile)
 
-Wikimedia Foundation
+Image Hyperlink.
 
 <!-- image -->
-Powered by MediaWiki
+Image Hyperlink.
 
 <!-- image -->
