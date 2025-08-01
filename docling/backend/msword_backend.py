@@ -1108,7 +1108,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 for p in cell.paragraphs:
                     label, level = self._get_label_and_level(p)
                     if label in ["Title", "Heading"]:
-                        _log.info(
+                        _log.debug(
                             "Found heading in table cell: %s, %d", label, level)
                         self._add_header(
                             doc=doc,
