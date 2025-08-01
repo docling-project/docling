@@ -1104,6 +1104,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
                 _log.debug(f"  spanned before row {spanned_idx}")
 
+                # Handle Headings in the cell
+                for p in cell.paragraphs:
+                    label, level = self._get_label_and_level(p)
+                    if label in ["Title", "Heading"]:
+                        _log.info(
+                            "Found heading in table cell: %s, %d", label, level)
+                        self._add_header(
+                            doc=doc,
+                            curr_level=level,
+                            text=p.text,
+                            is_numbered_style=False,
+                        )
+
                 # Detect equations in cell text
                 text, equations = self._handle_equations_in_text(
                     element=cell._element, text=cell.text
