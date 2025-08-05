@@ -512,8 +512,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             str(cell.get("rowspan", "1")),
         )
         int_spans: tuple[int, int] = (
-            int(raw_spans[0]) if raw_spans[0].isnumeric() else 1,
-            int(raw_spans[1]) if raw_spans[0].isnumeric() else 1,
+            # Rawspan could have  number followed by non-digit. e.g:  rowspan=2;align="left" 
+            # prevent ValueError: invalid literal for int() by extracting the starting digits only
+            int(re.search(r'\d+', raw_spans[0]).group()) if raw_spans[0].isnumeric() else 1,
+            int(re.search(r'\d+', raw_spans[1]).group())  if raw_spans[0].isnumeric() else 1,
         )
 
         return int_spans
