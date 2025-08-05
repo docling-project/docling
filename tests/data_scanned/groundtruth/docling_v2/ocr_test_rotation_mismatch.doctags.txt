@@ -1,0 +1,18 @@
+<doctag><picture><loc_241><loc_31><loc_266><loc_49></picture>
+<section_header_level_1><loc_130><loc_61><loc_381><loc_72>THE SLEREXE COMPANY LIMITED</section_header_level_1>
+<text><loc_164><loc_76><loc_347><loc_93>SAPORS LANE BOOLE DORSET BH 25 8 ER TELEPHONE BOOLE (945 13) 51617 TBLEX 123456</text>
+<picture><loc_258><loc_144><loc_278><loc_156></picture>
+<text><loc_81><loc_131><loc_182><loc_138>Our Ref 350 /PJC /EAC</text>
+<text><loc_337><loc_130><loc_429><loc_139>18th January , 1972_</text>
+<text><loc_81><loc_159><loc_176><loc_193>Dr_ P.N. Cundall , Mining Surveys Ltd. Holroyd Road , Reading, Berks</text>
+<text><loc_82><loc_208><loc_132><loc_215>Dear Pete,</text>
+<text><loc_83><loc_220><loc_379><loc_234>Permit me introduce you to the facility of facsimile transmission.</text>
+<text><loc_82><loc_241><loc_423><loc_277>In facsimile a photocell is caused to perform a raster scan over the subject copy = Ihe variations of print density on the document cause the photocell to generate an analogous electrical video signal Ihis signal is used modulate a carrier, which is transmitted to a remote destination over a radio or cable communications to</text>
+<text><loc_82><loc_283><loc_434><loc_319>At the remote terminal demodulation reconstructs the video signal, which is used to modulate the density of print produced by a printing device_ This device is scanning in a raster scan synchronised with that at the transmitting terminal _ As a result, facsimile copy of the subject document is produced.</text>
+<text><loc_107><loc_324><loc_414><loc_333>Probably you have uses for this facility in your organisation.</text>
+<text><loc_264><loc_338><loc_345><loc_347>Yours sincerely,</text>
+<picture><loc_273><loc_357><loc_328><loc_377></picture>
+<text><loc_264><loc_384><loc_430><loc_399>P.J. CROSS Group Leader Facsimile Research</text>
+<page_footer><loc_27><loc_466><loc_40><loc_471>No.</page_footer>
+<page_footer><loc_177><loc_459><loc_312><loc_470>Roglotered in England: No. 2038 Rogistered Office: 80 Vicare</page_footer>
+</doctag>
