@@ -1,0 +1,421 @@
+import math
+import re
+from typing import Iterable, List
+
+import numpy as np
+from pydantic import BaseModel
+
+from docling.datamodel.base_models import Table, TableConfidenceScores, ScoreValue, BoundingBox
+from docling.datamodel.document import ConversionResult, Page
+from docling.models.base_model import BasePageModel
+from docling.utils.profiling import TimeRecorder
+
+
+def _calculate_iou(box1: BoundingBox, box2: BoundingBox) -> float:
+    """
+    Calculates the Intersection over Union (IoU) of two bounding boxes.
+
+    Args:
+        box1 (BoundingBox): The first bounding box.
+        box2 (BoundingBox): The second bounding box.
+
+    Returns:
+        float: The IoU score, a value between 0.0 and 1.0.
+    """
+
+    x1, y1 = box1.l, box1.t
+    x2, y2 = box2.l, box2.t
+    w1, h1 = box1.r - box1.l, box1.b - box1.t
+    w2, h2 = box2.r - box2.l, box2.b - box2.t
+    
+    # Calculate the intersection coordinates
+    x_overlap = max(0, min(x1 + w1, x2 + w2) - max(x1, x2))
+    y_overlap = max(0, min(y1 + h1, y2 + h2) - max(y1, y2))
+    
+    intersection = x_overlap * y_overlap
+    
+    # Calculate the union
+    union = (w1 * h1) + (w2 * h2) - intersection
+    if union == 0:
+        return 0.0
+    
+    return intersection / union
+
+
+def _adjust_scores(scores: List[float], method: str = "sigmoid") -> List[float]:
+    """
+    Adjusts a list of confidence scores using a mathematical transformation.
+
+    Args:
+        scores (List[float]): A list of scores to adjust.
+        method (str): The adjustment method. Options are "sigmoid", "sqrt", or "linear".
+
+    Returns:
+        List[float]: The list of adjusted scores.
+    """
+    adjusted = []
+
+    for s in scores:
+        s = max(0.0, min(1.0, s))  # Clamp between 0 and 1
+        if method == "sigmoid":
+            adjusted.append(1 / (1 + math.exp(-12 * (s - 0.5))))
+        elif method == "sqrt":
+            adjusted.append(math.sqrt(s))
+        else:  # linear
+            adjusted.append(s)
+
+    return adjusted
+
+
+class TableConfidenceOptions(BaseModel):
+    """Placeholder for future configuration options for the model."""
+    pass
+
+
+class TableConfidenceModel(BasePageModel):
+    """
+    Model to score the confidence of detected tables in a document page.
+
+    Each table receives a score based on its structure, text quality, completeness, and layout.
+    """
+    def __init__(self, options: TableConfidenceOptions, enabled: bool = True, adjustment_method: str = "sigmoid"):
+        """
+        Initializes the TableConfidenceModel.
+
+        Args:
+            options (TableConfidenceOptions): Configuration options for the model.
+            enabled (bool): Whether the model is enabled. If False, it will not run.
+            adjustment_method (str): The method to use for adjusting final scores.
+        """
+        super().__init__()
+        self.options = options
+        self.enabled = enabled
+        self.adjustment_method = adjustment_method
+        
+    def __call__(self, conv_res: ConversionResult, page_batch: Iterable[Page]) -> Iterable[Page]:
+        """
+        Processes a batch of pages to calculate confidence scores for each table.
+
+        Args:
+            conv_res (ConversionResult): The document conversion result object.
+            page_batch (Iterable[Page]): An iterable of Page objects.
+
+        Yields:
+            Iterable[Page]: Pages with confidence scores applied to their detected tables.
+        """
+        for page in page_batch:
+            if not self.enabled:
+                yield page
+                continue
+                
+            with TimeRecorder(conv_res, "table_confidence_score"):
+                if page.predictions and getattr(page.predictions, 'tablestructure', None):
+                    table_map = getattr(page.predictions.tablestructure, 'table_map', {})
+                    
+                    for table_id, table in table_map.items():
+                        new_table_scores = self.calculate_scores(table)
+
+                        # Store the scores in page predictions
+                        if not hasattr(page.predictions, "confidence_scores"):
+                            page.predictions.confidence_scores = type("ConfidenceScores", (), {"tables": {}})()
+
+                        page.predictions.confidence_scores.tables[table_id] = new_table_scores
+                        table.detailed_scores = new_table_scores
+
+            yield page
+
+
+    def calculate_scores(self, detected_table: Table) -> TableConfidenceScores:
+        """
+        Orchestrates the calculation of all four individual confidence scores.
+
+        This function acts as the central hub, calling dedicated helper methods for each
+        scoring component (structure, text, completeness, and layout) and aggregating
+        their results into a single comprehensive `TableConfidenceScores` object.
+
+        Args:
+            detected_table (Table): The table object to be scored. It must contain
+                                    the necessary attributes like `table_cells`,
+                                    `num_rows`, `num_cols`, and `cluster`.
+
+        Returns:
+            TableConfidenceScores: An object containing all calculated scores, each
+                                   wrapped in a `ScoreValue` object.
+        """
+        scores = TableConfidenceScores()
+
+        scores.structure_score = self._calculate_structure_score(detected_table)
+        scores.cell_text_score = self._calculate_cell_text_score(detected_table)
+        scores.completeness_score = self._calculate_completeness_score(detected_table)
+        scores.layout_score = self._calculate_layout_score(detected_table)
+        
+        return scores
+        
+    def _calculate_structure_score(self, detected_table: Table) -> ScoreValue:
+        """
+        Evaluates the structural integrity of the table, focusing on how well its cells form a coherent grid.
+
+        The score is a heuristic calculated as follows:
+        1. **Base Score**: Starts with the table's cluster confidence (from the detection model). If not present, a default of 0.5 is used. For very large tables (>100 cells), a higher base score of 0.95 is assigned, assuming they are likely valid.
+        2. **Overlap Penalty**: A penalty is applied for every pair of cells with an IoU (Intersection over Union) of more than 10%. The penalty is scaled by the IoU, so greater overlap results in a larger penalty.
+        3. **Grid Bonus**: A bonus of 0.1 is added if the table has a multi-row or multi-column structure, as this suggests a more legitimate grid than a single-row/column list.
+
+        The final score is clamped between 0.0 and 1.0 and then adjusted using the specified adjustment method (e.g., sigmoid).
+
+        Returns:
+            ScoreValue: The calculated structure score.
+        """
+        # Base score: Use cluster confidence if available, otherwise apply a heuristic based on table size.
+        if detected_table.cluster and detected_table.cluster.confidence:
+            score = detected_table.cluster.confidence
+        elif detected_table.num_rows * detected_table.num_cols > 100:
+            score = 0.95  # Assume high confidence for large tables
+        else:
+            score = 0.5  # Default score for smaller, unconfident tables
+
+        # Penalty for excessive cell overlap. Overlaps suggest a poor grid or merged cells.
+        overlap_penalty = 0.0
+        cells = detected_table.table_cells
+        if cells:
+            num_cells = len(cells)
+            for i in range(num_cells):
+                for j in range(i + 1, num_cells):
+                    iou = _calculate_iou(cells[i].bbox, cells[j].bbox)
+                    if iou > 0.1:
+                        overlap_penalty += iou * 0.3  # Penalize based on the degree of overlap
+
+        score = max(0.0, score - overlap_penalty)
+
+        # Bonus for a multi-row or multi-column structure, as these are more likely to be legitimate tables.
+        if detected_table.num_rows > 1 or detected_table.num_cols > 1:
+            score += 0.1
+
+        # Apply final adjustments and return the score.
+        adjusted = _adjust_scores([score], method=self.adjustment_method)[0]
+        return ScoreValue(adjusted)
+
+    def _calculate_cell_text_score(self, detected_table: Table) -> ScoreValue:
+        """
+        Evaluates the accuracy and consistency of the text recognized within each cell.
+
+        The score is a heuristic blend of multiple factors:
+        1. **Base Score**: The table's cluster confidence. If not present, a default of 0.5 is used.
+        2. **Overlap Penalty**: A small penalty is applied for cell overlaps, as they can lead to corrupted text extraction.
+        3. **Consistency Penalty**: A penalty of 0.05 is applied if a column contains both numeric and non-numeric text, which is a strong sign of a parsing or OCR error.
+        4. **Text Quality Heuristic**: A helper function, `_calculate_text_quality`, scores each cell's text based on content (e.g., numeric codes vs. descriptive text). The average of these scores is blended with the base score (50/50 weighted average).
+        5. **Grid Bonus**: A bonus of 0.05 is added for tables with a non-trivial grid.
+
+        The final blended score is clamped and adjusted.
+
+        Returns:
+            ScoreValue: The calculated cell text score.
+        """
+        score = detected_table.cluster.confidence if detected_table.cluster else 0.5
+
+        def _calculate_text_quality(text: str) -> float:
+            """Calculates a heuristic score for text quality based on content."""
+            if not text or not text.strip():
+                return 0.0
+
+            norm = re.sub(r"\s+", " ", text.lower())
+
+            # Heuristic for numeric IDs or codes (assumed high quality)
+            if re.match(r"^[0-9]+(-[0-9]+)*(\s*and\s*[0-9]+)*$", norm):
+                return 1.0
+            
+            # Heuristics for descriptive text based on length and alphanumeric ratio
+            alpha_ratio = sum(c.isalpha() for c in norm) / max(len(norm), 1)
+
+            if len(norm) > 50:
+                return max(0.8, 0.9 * alpha_ratio + 0.1)
+            elif len(norm) > 20:
+                return max(0.7, 0.9 * alpha_ratio + 0.1)
+            else:
+                return max(0.6, 0.7 * alpha_ratio + 0.3)
+
+        # Base score from cluster confidence or a default value
+        score = detected_table.cluster.confidence if detected_table.cluster else 0.5
+
+        # Apply a penalty for cell overlaps, which can indicate text extraction issues
+        overlap_penalty = sum(
+            0.05 for i, c1 in enumerate(detected_table.table_cells)
+            for c2 in detected_table.table_cells[i+1:]
+            if _calculate_iou(c1.bbox, c2.bbox) > 0.2
+        )
+        score = max(0.0, score - overlap_penalty)
+
+        # Penalize columns with mixed data types (e.g., numbers and text)
+        for col in range(1, detected_table.num_cols + 1):
+            col_texts = [c.text for c in detected_table.table_cells if c.column == col]
+            if col_texts:
+                has_number = any(str(t).replace('.', '', 1).isdigit() for t in col_texts)
+                has_text = any(not str(t).replace('.', '', 1).isdigit() for t in col_texts)
+                if has_number and has_text:
+                    score = max(0.0, score - 0.05)
+        
+        # Calculate the average text quality score for all cells
+        text_scores = [_calculate_text_quality(c.text) for c in detected_table.table_cells]
+        if text_scores:
+            avg_text_score = np.mean(text_scores)
+        else:
+            avg_text_score = 0.0
+
+         # Blend the base score with the heuristic text quality score
+        blended_score = 0.5 * score + 0.5 * avg_text_score
+
+        # Apply a bonus for non-trivial grids
+        if detected_table.num_rows > 1 and detected_table.num_cols > 1:
+            blended_score += 0.05
+
+        #  Finalize and return the adjusted score
+        final_score = min(1.0, blended_score)
+        adjusted = _adjust_scores([final_score], method=self.adjustment_method)[0]
+        return ScoreValue(adjusted)
+
+    def _calculate_completeness_score(self, detected_table: Table) -> ScoreValue:
+        """
+        Measures the completeness of a table based on its fill ratio and column/row density.
+
+        The score is a heuristic calculated as follows:
+        1. **Base Score**: The ratio of filled cells to the total number of expected cells in the grid.
+           - For standard grids, this is `num_rows * num_cols`.
+           - For tables with merged cells, this is the sum of the spans of all detected cells.
+           - For single-row or single-column tables, this is the ratio of filled cells to the total number of detected cells.
+           The filled count is tolerant of invisible OCR characters.
+        2. **Sparse Penalty**: A penalty of 0.1 is applied for each column or row with a fill density below 10%. This helps penalize tables that have large, empty "ghost" rows or columns that were incorrectly detected.
+
+        The final score is clamped to a minimum of 0.0.
+
+        Returns:
+            ScoreValue: The calculated completeness score.
+        """
+        # Handle empty table case
+        if not detected_table.table_cells:
+            return ScoreValue(0.0)
+
+        # Count the number of cells that contain non-empty, OCR-tolerant text.
+        filled_count = sum(
+            (getattr(c, 'row_span', 1) or 1) * (getattr(c, 'col_span', 1) or 1)
+            for c in detected_table.table_cells
+            if c.text and c.text.strip().replace('\u200b', '')
+        )
+
+
+        # Determine the total expected number of cells, accounting for merged cells and table shape.
+        has_merged_cells = any(getattr(c, 'row_span', 1) > 1 or getattr(c, 'col_span', 1) > 1 for c in detected_table.table_cells)
+
+        if detected_table.num_rows <= 1 or detected_table.num_cols <= 1:
+            # For single-row/column tables, completeness is the filled ratio of detected cells
+            total_expected_cells = max(1, len(detected_table.table_cells))
+        elif has_merged_cells:
+            # For tables with merged cells, total expected cells is the sum of all cell spans
+            total_expected_cells = sum(getattr(c, 'row_span', 1) * getattr(c, 'col_span', 1) for c in detected_table.table_cells)
+        else:
+            # For a standard grid, total expected cells is num_rows * num_cols
+            total_expected_cells = detected_table.num_rows * detected_table.num_cols
+
+        if total_expected_cells == 0:
+            return ScoreValue(0.0)
+        
+        base_score = filled_count / total_expected_cells
+
+        # Apply penalties for sparse rows and columns, which can indicate poor extraction.
+        total_penalty = 0.0
+
+        if detected_table.num_cols > 1:
+            sparse_cols = sum(
+                1 for col in range(1, detected_table.num_cols + 1)
+                if sum(
+                    1 for c in detected_table.table_cells
+                    if c.column == col and c.text and c.text.strip().replace('\u200b','')
+                ) / max(1, detected_table.num_rows) < 0.1
+            )
+            total_penalty += (sparse_cols / detected_table.num_cols) * 0.1
+
+        if detected_table.num_rows > 1:
+            sparse_rows = sum(
+                1 for row in range(1, detected_table.num_rows + 1)
+                if sum(
+                    1 for c in detected_table.table_cells
+                    if c.row == row and c.text and c.text.strip().replace('\u200b','')
+                ) / max(1, detected_table.num_cols) < 0.1
+            )
+            total_penalty += (sparse_rows / detected_table.num_rows) * 0.1
+
+        final_score = max(0.0, base_score - total_penalty)
+        return ScoreValue(final_score)
+
+    def _calculate_layout_score(self, detected_table: Table) -> ScoreValue:
+        """
+        Measures the table's visual and structural integrity, including alignment and OTSL markers.
+
+        This score awards points for positive indicators like OTSL markers, a clear grid, and consistent
+        column alignment, while penalizing for irregular bounding boxes or other layout issues.
+
+        This score is a heuristic calculated as follows:
+        1. **Base Score**: A default of 0.5.
+        2. **OTSL Bonus**: A bonus of 0.25 is added if the table has a recognized Open Table Structure Language (OTSL) sequence, which indicates a good structural model.
+        3. **Grid Bonus**: A bonus of 0.25 is added if the table has a clear grid with both rows and columns.
+        4. **Alignment Bonus**: A bonus of up to 0.3 is awarded based on the proportion of columns where cells have a consistent horizontal starting position (low standard deviation of `x` coordinates).
+        5. **Row Height Consistency Bonus**: A bonus of up to 0.2 is given for tables with uniform row heights, calculated using the standard deviation of cell heights.
+        6. **Penalties**:
+           - **Overlap**: A penalty of 0.4 for tables with detected overlaps.
+           - **Fill Ratio**: A penalty of 0.2 if the fill ratio is below 30%.
+           - **Row Height Variation**: A penalty of 0.2 for tables with highly inconsistent row heights.
+           - **Irregular BBoxes**: A significant penalty of 0.6 is applied if any cell has an invalid bounding box (e.g., zero or negative width/height).
+
+        The final score is clamped to the range [0.0, 1.0] and adjusted.
+
+        Returns:
+            ScoreValue: The calculated layout score.
+        """
+        # Start with a base score and check for irregular bounding boxes
+        has_irregular_bboxes = False
+        for cell in detected_table.table_cells:
+            if cell.bbox.width <= 0 or cell.bbox.height <= 0 or cell.bbox.l < 0 or cell.bbox.t < 0:
+                has_irregular_bboxes = True
+                break
+        layout_score = 0.5
+
+        # Bonus for the presence of a known table structure language (OTSL)
+        if detected_table.otsl_seq and "T{" in detected_table.otsl_seq:
+            layout_score += 0.25
+        
+        # Bonus for having a clear grid with both rows and columns
+        if detected_table.num_rows > 0 and detected_table.num_cols > 0:
+            layout_score += 0.25
+        
+        # Calculate bonus for consistent column alignment
+        aligned_fraction = 0.0
+        if detected_table.num_cols > 1 and all(hasattr(c, "column") for c in detected_table.table_cells):
+            consistent_columns = 0
+            for col in range(1, detected_table.num_cols + 1):
+                col_x_coords = [c.bbox.x for c in detected_table.table_cells if c.column == col]
+                if len(col_x_coords) > 1 and np.std(col_x_coords) < 5:
+                    consistent_columns += 1
+            aligned_fraction = consistent_columns / detected_table.num_cols
+            layout_score += 0.3 * aligned_fraction
+        
+        # Calculate bonus for consistent row heights
+        row_heights = [c.bbox.height for c in detected_table.table_cells]
+        if row_heights:
+            max_h = max(row_heights)
+            if max_h > 0:
+                norm_std = min(np.std(row_heights) / max_h, 1.0)
+                layout_score += 0.2 * (1 - norm_std)
+        
+        # Apply penalties for known layout issues
+        if getattr(detected_table, "has_overlaps", False):
+            layout_score -= 0.4
+        if getattr(detected_table, "fill_ratio", 1.0) < 0.3:
+            layout_score -= 0.2
+        if row_heights and max_h > 0 and (np.std(row_heights) / max_h) > 0.5:
+            layout_score -= 0.2
+        if has_irregular_bboxes:
+            layout_score -= 0.6  # Heavy penalty for invalid bounding boxes
+        
+        # Clamp the score to the valid range and apply the final adjustment
+        layout_score = max(0.0, min(1.0, layout_score))
+        if self.adjustment_method:
+            layout_score = _adjust_scores([layout_score], method=self.adjustment_method)[0]
+        return ScoreValue(layout_score)
