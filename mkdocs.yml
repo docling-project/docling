@@ -132,6 +132,7 @@ nav:
       - "RHEL AI": integrations/rhel_ai.md
       - "spaCy": integrations/spacy.md
     - 🗂️ More integrations:
+      - "Arconia": integrations/arconia.md
       - "Cloudera": integrations/cloudera.md
       - "DocETL": integrations/docetl.md
       - "Kotaemon": integrations/kotaemon.md
