@@ -53,11 +53,7 @@ class ApiVlmModel(BasePageModel):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
-                    if callable(self.vlm_options.prompt):
-                        prompt = self.vlm_options.prompt(page.parsed_page)
-                    else:
-                        prompt = self.vlm_options.prompt
-
+                    prompt = self.vlm_options.build_prompt(page.parsed_page)
                     page_tags = api_image_request(
                         image=hi_res_image,
                         prompt=prompt,
@@ -67,8 +63,7 @@ class ApiVlmModel(BasePageModel):
                         **self.params,
                     )
 
-                    if self.vlm_options.decode_response:
-                        page_tags = self.vlm_options.decode_response(page_tags)
+                    page_tags = self.vlm_options.decode_response(page_tags)
                     page.predictions.vlm_response = VlmPrediction(text=page_tags)
 
                 return page
