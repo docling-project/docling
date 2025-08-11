@@ -1,4 +1,4 @@
-Docling is available on the [Langflow][github] visual low-code platform.
+Docling is available on the [Langflow](https://www.langflow.org/) visual low-code platform.
 
 - 📖 [Langflow Docling docs][docs]
 - ▶️ [Langflow Docling video tutorial][video]
