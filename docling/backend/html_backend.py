@@ -511,10 +511,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             str(cell.get("colspan", "1")),
             str(cell.get("rowspan", "1")),
         )
+
+        def _extract_num(s: str) -> int:
+            if s and s[0].isnumeric():
+                match = re.search(r"\d+", s)
+                if match:
+                    return int(match.group())
+            return 1
+
         int_spans: tuple[int, int] = (
-            # colspan could have number followed by non-digit. e.g:  2;align="left"
-            int(re.search(r'\d+', raw_spans[0]).group()) if raw_spans[0][0].isnumeric() else 1,
-            int(re.search(r'\d+', raw_spans[1]).group()) if raw_spans[1][0].isnumeric() else 1,
+            _extract_num(raw_spans[0]),
+            _extract_num(raw_spans[1]),
         )
 
         return int_spans
