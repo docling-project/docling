@@ -14,14 +14,13 @@ from docling_core.types.doc import (
 from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 from pydantic import BaseModel
+from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
-
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 
 class CodeFormulaModelOptions(BaseModel):
@@ -236,7 +235,9 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             },
         ]
 
-        prompt = self._processor.apply_chat_template(messages, add_generation_prompt=True)
+        prompt = self._processor.apply_chat_template(
+            messages, add_generation_prompt=True
+        )
 
         return prompt
 
@@ -299,13 +300,15 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         images: List[Union[Image.Image, np.ndarray]] = []
         elements: List[TextItem] = []
         for el in element_batch:
-            elements.append(el.item)
-            labels.append(el.item.label)
+            elements.append(el.item)  # type: ignore[arg-type]
+            labels.append(el.item.label)  # type: ignore[attr-defined]
             images.append(el.image)
 
         prompts = [self._get_prompt(label) for label in labels]
         inputs = self._processor(
-            text=prompts, images=images, return_tensors="pt",
+            text=prompts,
+            images=images,
+            return_tensors="pt",
         )
         inputs = inputs.to(self.device)
 
