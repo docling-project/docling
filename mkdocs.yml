@@ -81,7 +81,7 @@ nav:
       - "VLM pipeline with SmolDocling": examples/minimal_vlm_pipeline.py
       - "VLM pipeline with remote model": examples/vlm_pipeline_api_model.py
       - "VLM comparison": examples/compare_vlm_models.py
-      - "ASR pipeline with Whisper": examples/minimal_asr_pipeline.py      
+      - "ASR pipeline with Whisper": examples/minimal_asr_pipeline.py
       - "Figure export": examples/export_figures.py
       - "Table export": examples/export_tables.py
       - "Multimodal export": examples/export_multimodal.py
@@ -121,6 +121,7 @@ nav:
       - "Crew AI": integrations/crewai.md
       - "Haystack": integrations/haystack.md
       - "LangChain": integrations/langchain.md
+      - "Langflow": integrations/langflow.md
       - "LlamaIndex": integrations/llamaindex.md
       - "txtai": integrations/txtai.md
     - ⭐️ Featured:
