@@ -5,7 +5,9 @@ import threading
 import time
 from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from functools import partial
+from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
 
@@ -274,6 +276,34 @@ class DocumentConverter:
             raise ConversionError(
                 "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
             )
+
+    @validate_call(config=ConfigDict(strict=True))
+    def convert_string(
+        self,
+        content: str,
+        format: InputFormat,
+        name: str | None,
+    ) -> ConversionResult:
+        name = name or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        if format == InputFormat.MD:
+            if not name.endswith(".md"):
+                name += ".md"
+
+            buff = BytesIO(content.encode("utf-8"))
+            doc_stream = DocumentStream(name=name, stream=buff)
+
+            return self.convert(doc_stream)
+        elif format == InputFormat.HTML:
+            if not name.endswith(".html"):
+                name += ".html"
+
+            buff = BytesIO(content.encode("utf-8"))
+            doc_stream = DocumentStream(name=name, stream=buff)
+
+            return self.convert(doc_stream)
+        else:
+            raise ValueError(f"format {format} is not supported in `convert_string`")
 
     def _convert(
         self, conv_input: _DocumentConversionInput, raises_on_error: bool
