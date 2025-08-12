@@ -9,6 +9,8 @@ from docling.backend.pypdfium2_backend import (
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 @pytest.fixture
@@ -25,6 +27,23 @@ def _get_backend(pdf_doc):
 
     doc_backend = in_doc._backend
     return doc_backend
+
+
+def test_get_text_from_rect_rotated():
+    pdf_doc = Path("./tests/data_scanned/ocr_test_rotation_mismatch.pdf")
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_ocr = True
+
+    doc_converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
+            )
+        }
+    )
+    conv_res = doc_converter.convert(pdf_doc)
+
+    assert "1972" in conv_res.document.export_to_markdown()
 
 
 def test_text_cell_counts():
