@@ -139,6 +139,7 @@ nav:
       - "Kotaemon": integrations/kotaemon.md
       - "OpenContracts": integrations/opencontracts.md
       - "Open WebUI": integrations/openwebui.md
+      - "Quarkus": integrations/quarkus.md
       - "Vectara": integrations/vectara.md
   - Reference:
     - Python API:
