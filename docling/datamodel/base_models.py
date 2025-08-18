@@ -56,7 +56,7 @@ class InputFormat(str, Enum):
     XLSX = "xlsx"
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
-    METS_GBS = "xml_mets_gbs"
+    METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
 
