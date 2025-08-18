@@ -31,7 +31,7 @@ Works on macOS, Linux, and Windows, with support for both x86_64 and arm64 archi
     | Tesseract | System dependency. See description for Tesseract and Tesserocr below.  | `TesseractOcrOptions` |
     | Tesseract CLI | System dependency. See description below. | `TesseractCliOcrOptions` |
     | OcrMac | System dependency. See description below. | `OcrMacOptions` |
-    | [RapidOCR](https://github.com/RapidAI/RapidOCR) | Extra feature not included in Default Docling installation can be installed via `pip install rapidocr_onnxruntime` | `RapidOcrOptions` |
+    | [RapidOCR](https://github.com/RapidAI/RapidOCR) | Extra feature not included in Default Docling installation can be installed via `pip install rapidocr onnxruntime` | `RapidOcrOptions` |
     | [OnnxTR](https://github.com/felixdittrich92/OnnxTR) | Can be installed via the plugin system `pip install "docling-ocr-onnxtr[cpu]"`. Please take a look at [docling-OCR-OnnxTR](https://github.com/felixdittrich92/docling-OCR-OnnxTR).| `OnnxtrOcrOptions` |
 
     The Docling `DocumentConverter` allows to choose the OCR engine with the `ocr_options` settings. For example
