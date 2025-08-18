@@ -161,10 +161,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                         images.append(hi_res_image)
 
                         # Define prompt structure
-                        if callable(self.vlm_options.prompt):
-                            user_prompt = self.vlm_options.prompt(page.parsed_page)
-                        else:
-                            user_prompt = self.vlm_options.prompt
+                        user_prompt = self.vlm_options.build_prompt(page.parsed_page)
 
                         user_prompts.append(user_prompt)
                         pages_with_images.append(page)
@@ -290,7 +287,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             )
 
         decoded_texts: list[str] = decode_fn(
-            trimmed_sequences, skip_special_tokens=True
+            trimmed_sequences, skip_special_tokens=False
         )
 
         # -- Optional logging
