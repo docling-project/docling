@@ -1,6 +1,7 @@
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Generic, Optional, Protocol, Type, Union
+from typing import Any, Generic, Optional, Protocol, Type, Union
 
 import numpy as np
 from docling_core.types.doc import BoundingBox, DocItem, DoclingDocument, NodeItem
@@ -14,6 +15,10 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import BaseOptions
+from docling.datamodel.pipeline_options_vlm_model import (
+    InlineVlmOptions,
+    TransformersPromptStyle,
+)
 from docling.datamodel.settings import settings
 
 
@@ -61,11 +66,57 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
     processes them using process_images, and attaches results back to pages.
     """
 
+    # Type annotations for attributes that subclasses must initialize
+    vlm_options: InlineVlmOptions
+    processor: Any
+
     @abstractmethod
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
         """Extract images from pages, process them, and attach results back."""
+
+    def formulate_prompt(self, user_prompt: str) -> str:
+        """Formulate a prompt for the VLM."""
+        _log = logging.getLogger(__name__)
+
+        if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.RAW:
+            return user_prompt
+
+        elif self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
+            _log.debug("Using specialized prompt for Phi-4")
+            # Note: This might need adjustment for VLLM vs transformers
+            user_prompt_prefix = "<|user|>"
+            assistant_prompt = "<|assistant|>"
+            prompt_suffix = "<|end|>"
+
+            prompt = f"{user_prompt_prefix}<|image_1|>{user_prompt}{prompt_suffix}{assistant_prompt}"
+            _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
+
+            return prompt
+
+        elif self.vlm_options.transformers_prompt_style == TransformersPromptStyle.CHAT:
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "This is a page from a document.",
+                        },
+                        {"type": "image"},
+                        {"type": "text", "text": user_prompt},
+                    ],
+                }
+            ]
+            prompt = self.processor.apply_chat_template(
+                messages, add_generation_prompt=True
+            )
+            return prompt
+
+        raise RuntimeError(
+            f"Unknown prompt style `{self.vlm_options.transformers_prompt_style}`. Valid values are {', '.join(s.value for s in TransformersPromptStyle)}."
+        )
 
 
 EnrichElementT = TypeVar("EnrichElementT", default=NodeItem)

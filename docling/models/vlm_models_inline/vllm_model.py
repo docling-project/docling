@@ -151,47 +151,6 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         for page in valid_pages:
             yield page
 
-    def formulate_prompt(self, user_prompt: str) -> str:
-        """Formulate a prompt for the VLM."""
-
-        if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.RAW:
-            return user_prompt
-
-        elif self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
-            _log.debug("Using specialized prompt for Phi-4")
-            # Note: This might need adjustment for VLLM vs transformers
-            user_prompt_prefix = "<|user|>"
-            assistant_prompt = "<|assistant|>"
-            prompt_suffix = "<|end|>"
-
-            prompt = f"{user_prompt_prefix}<|image_1|>{user_prompt}{prompt_suffix}{assistant_prompt}"
-            _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
-
-            return prompt
-
-        elif self.vlm_options.transformers_prompt_style == TransformersPromptStyle.CHAT:
-            messages = [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "This is a page from a document.",
-                        },
-                        {"type": "image"},
-                        {"type": "text", "text": user_prompt},
-                    ],
-                }
-            ]
-            prompt = self.processor.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True
-            )
-            return prompt
-
-        raise RuntimeError(
-            f"Unknown prompt style `{self.vlm_options.transformers_prompt_style}`. Valid values are {', '.join(s.value for s in TransformersPromptStyle)}."
-        )
-
     def process_images(
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],
@@ -271,6 +230,6 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             )
 
         for output in outputs:
-            yield VlmPrediction(
-                text=output.outputs[0].text, generation_time=generation_time
-            )
+            # Apply decode_response to the output text
+            decoded_text = self.vlm_options.decode_response(output.outputs[0].text)
+            yield VlmPrediction(text=decoded_text, generation_time=generation_time)

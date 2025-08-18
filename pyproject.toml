@@ -93,6 +93,7 @@ vlm = [
   'transformers (>=4.46.0,<5.0.0)',
   'accelerate (>=1.2.1,<2.0.0)',
   'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "linux"',
 ]
 rapidocr = [
   'rapidocr-onnxruntime (>=1.4.0,<2.0.0) ; python_version < "3.13"',
@@ -148,9 +149,6 @@ constraints = [
 [tool.uv]
 package = true
 default-groups = "all"
-
-[tool.uv.sources]
-docling-core = { git = "https://github.com/docling-project/docling-core.git", rev = "cau/refactor-otsl-methods" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]
