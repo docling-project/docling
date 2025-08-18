@@ -16,7 +16,7 @@ from PIL import Image
 from pydantic import BaseModel
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
-from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
@@ -95,7 +95,10 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         self.options = options
 
         if self.enabled:
-            self.device = decide_device(accelerator_options.device)
+            self.device = decide_device(
+                accelerator_options.device,
+                supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
+            )
 
             if artifacts_path is None:
                 artifacts_path = self.download_models()
