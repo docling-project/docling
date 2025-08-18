@@ -2,7 +2,7 @@ import logging
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 from PIL.Image import Image
@@ -59,7 +59,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 artifacts_path = artifacts_path / repo_cache_folder
 
             # Initialize VLLM LLM
-            llm_kwargs = {
+            llm_kwargs: Dict[str, Any] = {
                 "model": str(artifacts_path),
                 "limit_mm_per_prompt": {"image": 1},
                 "trust_remote_code": vlm_options.trust_remote_code,
@@ -219,7 +219,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             llm_inputs.append({"prompt": prompt, "multi_modal_data": {"image": image}})
 
         start_time = time.time()
-        outputs = self.llm.generate(llm_inputs, sampling_params=self.sampling_params)
+        outputs = self.llm.generate(llm_inputs, sampling_params=self.sampling_params)  # type: ignore
         generation_time = time.time() - start_time
 
         # Logging tokens count for the first sample as a representative metric

@@ -316,7 +316,7 @@ class ReadingOrderModel:
             current_list = None
 
             new_item = out_doc.add_text(
-                label=DocItemLabel.FORMULA, text=cap_text, orig=cap_text, prov=prov
+                label=DocItemLabel.FORMULA, text="", orig=cap_text, prov=prov
             )
         else:
             current_list = None
