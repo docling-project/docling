@@ -194,7 +194,7 @@ class ThreadedPipelineStage:
             return
         self._running = True
         self._thread = threading.Thread(
-            target=self._run, name=f"Stage-{self.name}", daemon=False
+            target=self._run, name=f"Stage-{self.name}", daemon=True
         )
         self._thread.start()
 

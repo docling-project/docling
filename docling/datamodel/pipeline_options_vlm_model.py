@@ -26,11 +26,14 @@ class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
     MARKDOWN = "markdown"
     HTML = "html"
+    OTSL = "otsl"
+    PLAINTEXT = "plaintext"
 
 
 class InferenceFramework(str, Enum):
     MLX = "mlx"
     TRANSFORMERS = "transformers"
+    VLLM = "vllm"
 
 
 class TransformersModelType(str, Enum):
@@ -43,6 +46,7 @@ class TransformersModelType(str, Enum):
 class TransformersPromptStyle(str, Enum):
     CHAT = "chat"
     RAW = "raw"
+    NONE = "none"
 
 
 class InlineVlmOptions(BaseVlmOptions):

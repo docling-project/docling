@@ -3,7 +3,11 @@ import logging
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
+
+import numpy as np
+from PIL.Image import Image
+from transformers import StoppingCriteriaList, StopStringCriteria
 
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
@@ -15,7 +19,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.models.base_model import BasePageModel
+from docling.models.base_model import BaseVlmPageModel
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
@@ -25,7 +29,7 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
-class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMixin):
+class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         enabled: bool,
@@ -103,6 +107,8 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 artifacts_path,
                 trust_remote_code=vlm_options.trust_remote_code,
             )
+            self.processor.tokenizer.padding_side = "left"
+
             self.vlm_model = model_cls.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
@@ -122,54 +128,60 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-        for page in page_batch:
+        page_list = list(page_batch)
+        if not page_list:
+            return
+
+        valid_pages = []
+        invalid_pages = []
+
+        for page in page_list:
             assert page._backend is not None
             if not page._backend.is_valid():
-                yield page
+                invalid_pages.append(page)
             else:
-                with TimeRecorder(conv_res, "vlm"):
-                    assert page.size is not None
+                valid_pages.append(page)
 
+        # Process valid pages in batch
+        if valid_pages:
+            with TimeRecorder(conv_res, "vlm"):
+                # Prepare images and prompts for batch processing
+                images = []
+                user_prompts = []
+                pages_with_images = []
+
+                for page in valid_pages:
+                    assert page.size is not None
                     hi_res_image = page.get_image(
                         scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
                     )
 
-                    # Define prompt structure
-                    user_prompt = self.vlm_options.build_prompt(page.parsed_page)
-                    prompt = self.formulate_prompt(user_prompt)
+                    # Only process pages with valid images
+                    if hi_res_image is not None:
+                        images.append(hi_res_image)
 
-                    inputs = self.processor(
-                        text=prompt, images=[hi_res_image], return_tensors="pt"
-                    ).to(self.device)
+                        # Define prompt structure
+                        if callable(self.vlm_options.prompt):
+                            user_prompt = self.vlm_options.prompt(page.parsed_page)
+                        else:
+                            user_prompt = self.vlm_options.prompt
 
-                    start_time = time.time()
-                    # Call model to generate:
-                    generated_ids = self.vlm_model.generate(
-                        **inputs,
-                        max_new_tokens=self.max_new_tokens,
-                        use_cache=self.use_cache,
-                        temperature=self.temperature,
-                        generation_config=self.generation_config,
-                        **self.vlm_options.extra_generation_config,
-                    )
+                        user_prompts.append(user_prompt)
+                        pages_with_images.append(page)
 
-                    generation_time = time.time() - start_time
-                    generated_texts = self.processor.batch_decode(
-                        generated_ids[:, inputs["input_ids"].shape[1] :],
-                        skip_special_tokens=False,
-                    )[0]
+                # Use process_images for the actual inference
+                if images:  # Only if we have valid images
+                    predictions = list(self.process_images(images, user_prompts))
 
-                    num_tokens = len(generated_ids[0])
-                    _log.debug(
-                        f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
-                    )
-                    generated_texts = self.vlm_options.decode_response(generated_texts)
-                    page.predictions.vlm_response = VlmPrediction(
-                        text=generated_texts,
-                        generation_time=generation_time,
-                    )
+                    # Attach results to pages
+                    for page, prediction in zip(pages_with_images, predictions):
+                        page.predictions.vlm_response = prediction
 
-                yield page
+        # Yield all pages (valid and invalid)
+        for page in invalid_pages:
+            yield page
+        for page in valid_pages:
+            yield page
 
     def formulate_prompt(self, user_prompt: str) -> str:
         """Formulate a prompt for the VLM."""
@@ -205,10 +217,132 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 }
             ]
             prompt = self.processor.apply_chat_template(
-                messages, add_generation_prompt=False
+                messages, add_generation_prompt=True
             )
             return prompt
 
         raise RuntimeError(
             f"Uknown prompt style `{self.vlm_options.transformers_prompt_style}`. Valid values are {', '.join(s.value for s in TransformersPromptStyle)}."
         )
+
+    def process_images(
+        self,
+        image_batch: Iterable[Union[Image, np.ndarray]],
+        prompt: Union[str, list[str]],
+    ) -> Iterable[VlmPrediction]:
+        """
+        Batched inference for Hugging Face Image-Text-to-Text VLMs (e.g., SmolDocling / SmolVLM).
+        - Lets the processor handle all padding & batching for text+images.
+        - Trims generated sequences per row using attention_mask (no pad-id fallbacks).
+        - Keeps your formulate_prompt() exactly as-is.
+        """
+        import numpy as np
+        import torch
+        from PIL import Image as PILImage
+
+        # -- Normalize images to RGB PIL (SmolDocling & friends accept PIL/np via processor)
+        pil_images: list[Image] = []
+        for img in image_batch:
+            if isinstance(img, np.ndarray):
+                if img.ndim == 3 and img.shape[2] in (3, 4):
+                    pil_img = PILImage.fromarray(img.astype(np.uint8))
+                elif img.ndim == 2:
+                    pil_img = PILImage.fromarray(img.astype(np.uint8), mode="L")
+                else:
+                    raise ValueError(f"Unsupported numpy array shape: {img.shape}")
+            else:
+                pil_img = img
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+            pil_images.append(pil_img)
+
+        if not pil_images:
+            return
+
+        # -- Normalize prompts (1 per image)
+        if isinstance(prompt, str):
+            user_prompts = [prompt] * len(pil_images)
+        else:
+            if len(prompt) != len(pil_images):
+                raise ValueError(
+                    f"Number of prompts ({len(prompt)}) must match number of images ({len(pil_images)})"
+                )
+            user_prompts = prompt
+
+        # Use your prompt formatter verbatim
+        if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
+            inputs = self.processor(
+                pil_images,
+                return_tensors="pt",
+                padding=True,  # pad across batch for both text and vision
+                # no truncation by default; match SmolDocling examples
+            )
+        else:
+            prompts: list[str] = [self.formulate_prompt(p) for p in user_prompts]
+
+            # -- Processor performs BOTH text+image preprocessing + batch padding (recommended)
+            inputs = self.processor(
+                text=prompts,
+                images=pil_images,
+                return_tensors="pt",
+                padding=True,  # pad across batch for both text and vision
+                # no truncation by default; match SmolDocling examples
+            )
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        # -- Optional stopping criteria
+        stopping_criteria = None
+        if self.vlm_options.stop_strings:
+            stopping_criteria = StoppingCriteriaList(
+                [
+                    StopStringCriteria(
+                        stop_strings=self.vlm_options.stop_strings,
+                        tokenizer=self.processor.tokenizer,
+                    )
+                ]
+            )
+
+        # -- Generate (Image-Text-to-Text class expects these inputs from processor)
+        gen_kwargs = {
+            **inputs,
+            "max_new_tokens": self.max_new_tokens,
+            "use_cache": self.use_cache,
+            "generation_config": self.generation_config,
+            # "temperature": self.temperature,
+            **self.vlm_options.extra_generation_config,
+        }
+        if stopping_criteria is not None:
+            gen_kwargs["stopping_criteria"] = stopping_criteria
+
+        start_time = time.time()
+        with torch.no_grad():
+            generated_ids = self.vlm_model.generate(**gen_kwargs)
+        generation_time = time.time() - start_time
+
+        input_len = inputs["input_ids"].shape[1]  # common right-aligned prompt length
+        trimmed_sequences = generated_ids[:, input_len:]  # only newly generated tokens
+
+        # -- Decode with the processor/tokenizer (skip specials, keep DocTags as text)
+        decode_fn = getattr(self.processor, "batch_decode", None)
+        if decode_fn is None and getattr(self.processor, "tokenizer", None) is not None:
+            decode_fn = self.processor.tokenizer.batch_decode
+        if decode_fn is None:
+            raise RuntimeError(
+                "Neither processor.batch_decode nor tokenizer.batch_decode is available."
+            )
+
+        decoded_texts: list[str] = decode_fn(
+            trimmed_sequences, skip_special_tokens=True
+        )
+
+        # -- Optional logging
+        if generated_ids.shape[0] > 0:
+            _log.debug(
+                f"Generated {int(generated_ids[0].shape[0])} tokens in {generation_time:.2f}s "
+                f"for batch size {generated_ids.shape[0]}."
+            )
+
+        for text in decoded_texts:
+            # Apply decode_response to the output text
+            decoded_text = self.vlm_options.decode_response(text)
+            yield VlmPrediction(text=decoded_text, generation_time=generation_time)

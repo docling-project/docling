@@ -60,6 +60,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
+    GOT2_TRANSFORMERS,
     GRANITE_VISION_OLLAMA,
     GRANITE_VISION_TRANSFORMERS,
     SMOLDOCLING_MLX,
@@ -631,6 +632,8 @@ def convert(  # noqa: C901
                 pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
                 pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
+            elif vlm_model == VlmModelType.GOT_OCR_2:
+                pipeline_options.vlm_options = GOT2_TRANSFORMERS
             elif vlm_model == VlmModelType.SMOLDOCLING:
                 pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":

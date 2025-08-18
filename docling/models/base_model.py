@@ -1,11 +1,17 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Generic, Optional, Protocol, Type
+from typing import Generic, Optional, Protocol, Type, Union
 
+import numpy as np
 from docling_core.types.doc import BoundingBox, DocItem, DoclingDocument, NodeItem
+from PIL.Image import Image
 from typing_extensions import TypeVar
 
-from docling.datamodel.base_models import ItemAndImageEnrichmentElement, Page
+from docling.datamodel.base_models import (
+    ItemAndImageEnrichmentElement,
+    Page,
+    VlmPrediction,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import BaseOptions
 from docling.datamodel.settings import settings
@@ -24,6 +30,42 @@ class BasePageModel(ABC):
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
         pass
+
+
+class BaseVlmModel(ABC):
+    """Base class for Vision-Language Models that adds image processing capability."""
+
+    @abstractmethod
+    def process_images(
+        self,
+        image_batch: Iterable[Union[Image, np.ndarray]],
+        prompt: Union[str, list[str]],
+    ) -> Iterable[VlmPrediction]:
+        """Process raw images without page metadata.
+
+        Args:
+            image_batch: Iterable of PIL Images or numpy arrays
+            prompt: Either:
+                - str: Single prompt used for all images
+                - list[str]: List of prompts (one per image, must match image count)
+
+        Raises:
+            ValueError: If prompt list length doesn't match image count.
+        """
+
+
+class BaseVlmPageModel(BasePageModel, BaseVlmModel):
+    """Base implementation for VLM models that inherit from BasePageModel.
+
+    Provides a default __call__ implementation that extracts images from pages,
+    processes them using process_images, and attaches results back to pages.
+    """
+
+    @abstractmethod
+    def __call__(
+        self, conv_res: ConversionResult, page_batch: Iterable[Page]
+    ) -> Iterable[Page]:
+        """Extract images from pages, process them, and attach results back."""
 
 
 EnrichElementT = TypeVar("EnrichElementT", default=NodeItem)

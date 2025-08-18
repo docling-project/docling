@@ -1,7 +1,7 @@
 import math
 from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (

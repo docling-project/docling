@@ -17,6 +17,9 @@ from docling.utils.profiling import TimeRecorder
 
 class PagePreprocessingOptions(BaseModel):
     images_scale: Optional[float]
+    skip_cell_extraction: bool = (
+        False  # Skip text cell extraction for VLM-only processing
+    )
 
 
 class PagePreprocessingModel(BasePageModel):
@@ -41,7 +44,8 @@ class PagePreprocessingModel(BasePageModel):
             else:
                 with TimeRecorder(conv_res, "page_parse"):
                     page = self._populate_page_images(page)
-                    page = self._parse_page_cells(conv_res, page)
+                    if not self.options.skip_cell_extraction:
+                        page = self._parse_page_cells(conv_res, page)
                 yield page
 
     # Generate the page image and store it in the page object
