@@ -21,7 +21,7 @@ def main():
 
     # Setup RapidOcrOptions for english detection
     det_model_path = os.path.join(
-        download_path, "onnx", "PP-OCRv4","det", "en_PP-OCRv3_det_infer.onnx"
+        download_path, "onnx", "PP-OCRv4", "det", "en_PP-OCRv3_det_infer.onnx"
     )
     rec_model_path = os.path.join(
         download_path, "onnx", "PP-OCRv5", "rec", "ch_PP-OCRv5_rec_server_infer.onnx"
