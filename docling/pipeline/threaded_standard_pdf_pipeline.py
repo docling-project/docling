@@ -569,6 +569,8 @@ class ThreadedStandardPdfPipeline(BasePipeline):
             for p in conv_res.pages:
                 if p._backend is not None:
                     p._backend.unload()
+                    del p.parsed_page
+                    p.parsed_page = None
 
     # ---------------------------------------------------------------- assemble
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:

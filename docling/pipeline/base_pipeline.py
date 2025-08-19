@@ -168,6 +168,8 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                         # Cleanup page backends
                         if not self.keep_backend and p._backend is not None:
                             p._backend.unload()
+                            del p.parsed_page
+                            p.parsed_page = None
 
                     end_batch_time = time.monotonic()
                     total_elapsed_time += end_batch_time - start_batch_time
