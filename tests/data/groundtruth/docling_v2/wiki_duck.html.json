@@ -5490,18 +5490,38 @@
       },
       "children": [
         {
+          "$ref": "#/groups/171"
+        },
+        {
+          "$ref": "#/groups/173"
+        },
+        {
+          "$ref": "#/groups/174"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "footer",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/171",
+      "parent": {
+        "$ref": "#/groups/170"
+      },
+      "children": [
+        {
           "$ref": "#/texts/1226"
         },
         {
           "$ref": "#/texts/1227"
         }
       ],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "name": "list",
       "label": "list"
     },
     {
-      "self_ref": "#/groups/171",
+      "self_ref": "#/groups/172",
       "parent": {
         "$ref": "#/texts/1227"
       },
@@ -5534,14 +5554,14 @@
           "$ref": "#/texts/1236"
         }
       ],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "name": "group",
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/172",
+      "self_ref": "#/groups/173",
       "parent": {
-        "$ref": "#/texts/1157"
+        "$ref": "#/groups/170"
       },
       "children": [
         {
@@ -5572,14 +5592,14 @@
           "$ref": "#/texts/1245"
         }
       ],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "name": "list",
       "label": "list"
     },
     {
-      "self_ref": "#/groups/173",
+      "self_ref": "#/groups/174",
       "parent": {
-        "$ref": "#/texts/1157"
+        "$ref": "#/groups/170"
       },
       "children": [
         {
@@ -5589,12 +5609,12 @@
           "$ref": "#/pictures/24"
         }
       ],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "name": "list",
       "label": "list"
     },
     {
-      "self_ref": "#/groups/174",
+      "self_ref": "#/groups/175",
       "parent": {
         "$ref": "#/texts/1157"
       },
@@ -21472,13 +21492,7 @@
           "$ref": "#/groups/170"
         },
         {
-          "$ref": "#/groups/172"
-        },
-        {
-          "$ref": "#/groups/173"
-        },
-        {
-          "$ref": "#/groups/174"
+          "$ref": "#/groups/175"
         }
       ],
       "content_layer": "body",
@@ -22463,10 +22477,10 @@
     {
       "self_ref": "#/texts/1226",
       "parent": {
-        "$ref": "#/groups/170"
+        "$ref": "#/groups/171"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "This page was last edited on 21 September 2024, at 12:11 (UTC) .",
@@ -22477,14 +22491,14 @@
     {
       "self_ref": "#/texts/1227",
       "parent": {
-        "$ref": "#/groups/170"
+        "$ref": "#/groups/171"
       },
       "children": [
         {
-          "$ref": "#/groups/171"
+          "$ref": "#/groups/172"
         }
       ],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "",
@@ -22495,10 +22509,10 @@
     {
       "self_ref": "#/texts/1228",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "Text is available under the",
@@ -22507,10 +22521,10 @@
     {
       "self_ref": "#/texts/1229",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "Creative Commons Attribution-ShareAlike License 4.0",
@@ -22520,10 +22534,10 @@
     {
       "self_ref": "#/texts/1230",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "; additional terms may apply. By using this site, you agree to the",
@@ -22532,10 +22546,10 @@
     {
       "self_ref": "#/texts/1231",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "Terms of Use",
@@ -22545,10 +22559,10 @@
     {
       "self_ref": "#/texts/1232",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "and",
@@ -22557,10 +22571,10 @@
     {
       "self_ref": "#/texts/1233",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "Privacy Policy",
@@ -22570,10 +22584,10 @@
     {
       "self_ref": "#/texts/1234",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": ". Wikipedia® is a registered trademark of the",
@@ -22582,10 +22596,10 @@
     {
       "self_ref": "#/texts/1235",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": "Wikimedia Foundation, Inc.",
@@ -22595,10 +22609,10 @@
     {
       "self_ref": "#/texts/1236",
       "parent": {
-        "$ref": "#/groups/171"
+        "$ref": "#/groups/172"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "text",
       "prov": [],
       "orig": ", a non-profit organization.",
@@ -22607,10 +22621,10 @@
     {
       "self_ref": "#/texts/1237",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Privacy policy",
@@ -22622,10 +22636,10 @@
     {
       "self_ref": "#/texts/1238",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "About Wikipedia",
@@ -22637,10 +22651,10 @@
     {
       "self_ref": "#/texts/1239",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Disclaimers",
@@ -22652,10 +22666,10 @@
     {
       "self_ref": "#/texts/1240",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Contact Wikipedia",
@@ -22667,10 +22681,10 @@
     {
       "self_ref": "#/texts/1241",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Code of Conduct",
@@ -22682,10 +22696,10 @@
     {
       "self_ref": "#/texts/1242",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Developers",
@@ -22697,10 +22711,10 @@
     {
       "self_ref": "#/texts/1243",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Statistics",
@@ -22712,10 +22726,10 @@
     {
       "self_ref": "#/texts/1244",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Cookie statement",
@@ -22727,10 +22741,10 @@
     {
       "self_ref": "#/texts/1245",
       "parent": {
-        "$ref": "#/groups/172"
+        "$ref": "#/groups/173"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "list_item",
       "prov": [],
       "orig": "Mobile view",
@@ -22745,7 +22759,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "caption",
       "prov": [],
       "orig": "Image Hyperlink.",
@@ -22758,7 +22772,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "caption",
       "prov": [],
       "orig": "Image Hyperlink.",
@@ -23144,10 +23158,10 @@
     {
       "self_ref": "#/pictures/23",
       "parent": {
-        "$ref": "#/groups/173"
+        "$ref": "#/groups/174"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "picture",
       "prov": [],
       "captions": [
@@ -23162,10 +23176,10 @@
     {
       "self_ref": "#/pictures/24",
       "parent": {
-        "$ref": "#/groups/173"
+        "$ref": "#/groups/174"
       },
       "children": [],
-      "content_layer": "body",
+      "content_layer": "furniture",
       "label": "picture",
       "prov": [],
       "captions": [
