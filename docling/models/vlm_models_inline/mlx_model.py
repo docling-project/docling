@@ -84,10 +84,7 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
                         if hi_res_image.mode != "RGB":
                             hi_res_image = hi_res_image.convert("RGB")
 
-                    if callable(self.vlm_options.prompt):
-                        user_prompt = self.vlm_options.prompt(page.parsed_page)
-                    else:
-                        user_prompt = self.vlm_options.prompt
+                    user_prompt = self.vlm_options.build_prompt(page.parsed_page)
                     prompt = self.apply_chat_template(
                         self.processor, self.config, user_prompt, num_images=1
                     )
@@ -142,6 +139,7 @@ class HuggingFaceMlxModel(BasePageModel, HuggingFaceModelDownloadMixin):
                     _log.debug(
                         f"{generation_time:.2f} seconds for {len(tokens)} tokens ({len(tokens) / generation_time} tokens/sec)."
                     )
+                    page_tags = self.vlm_options.decode_response(page_tags)
                     page.predictions.vlm_response = VlmPrediction(
                         text=page_tags,
                         generation_time=generation_time,

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional
 
 from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel
@@ -10,10 +10,16 @@ from docling.datamodel.accelerator_options import AcceleratorDevice
 
 class BaseVlmOptions(BaseModel):
     kind: str
-    prompt: Union[str, Callable[[Optional[SegmentedPage]], str]]
+    prompt: str
     scale: float = 2.0
     max_size: Optional[int] = None
     temperature: float = 0.0
+
+    def build_prompt(self, page: Optional[SegmentedPage]) -> str:
+        return self.prompt
+
+    def decode_response(self, text: str) -> str:
+        return text
 
 
 class ResponseFormat(str, Enum):

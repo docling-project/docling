@@ -8,7 +8,10 @@ from typing import Any, Callable, List
 
 from docling_core.types.doc import NodeItem
 
-from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.abstract_backend import (
+    AbstractDocumentBackend,
+    PaginatedDocumentBackend,
+)
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -126,10 +129,10 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
         yield from page_batch
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
-        if not isinstance(conv_res.input._backend, PdfDocumentBackend):
+        if not isinstance(conv_res.input._backend, PaginatedDocumentBackend):
             raise RuntimeError(
-                f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a PDF backend. "
-                f"Can not convert this with a PDF pipeline. "
+                f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a paginated backend. "
+                f"Can not convert this with a paginated PDF pipeline. "
                 f"Please check your format configuration on DocumentConverter."
             )
             # conv_res.status = ConversionStatus.FAILURE

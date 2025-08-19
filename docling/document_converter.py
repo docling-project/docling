@@ -5,7 +5,9 @@ import threading
 import time
 from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from functools import partial
+from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
 
@@ -18,6 +20,7 @@ from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBacke
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
+from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
@@ -157,6 +160,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.XML_JATS: FormatOption(
             pipeline_cls=SimplePipeline, backend=JatsDocumentBackend
         ),
+        InputFormat.METS_GBS: FormatOption(
+            pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
+        ),
         InputFormat.IMAGE: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=DoclingParseV4DocumentBackend
         ),
@@ -274,6 +280,34 @@ class DocumentConverter:
             raise ConversionError(
                 "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
             )
+
+    @validate_call(config=ConfigDict(strict=True))
+    def convert_string(
+        self,
+        content: str,
+        format: InputFormat,
+        name: Optional[str],
+    ) -> ConversionResult:
+        name = name or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+        if format == InputFormat.MD:
+            if not name.endswith(".md"):
+                name += ".md"
+
+            buff = BytesIO(content.encode("utf-8"))
+            doc_stream = DocumentStream(name=name, stream=buff)
+
+            return self.convert(doc_stream)
+        elif format == InputFormat.HTML:
+            if not name.endswith(".html"):
+                name += ".html"
+
+            buff = BytesIO(content.encode("utf-8"))
+            doc_stream = DocumentStream(name=name, stream=buff)
+
+            return self.convert(doc_stream)
+        else:
+            raise ValueError(f"format {format} is not supported in `convert_string`")
 
     def _convert(
         self, conv_input: _DocumentConversionInput, raises_on_error: bool

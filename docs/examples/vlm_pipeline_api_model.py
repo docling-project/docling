@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from pathlib import Path
@@ -38,57 +39,63 @@ def lms_vlm_options(model: str, prompt: str, format: ResponseFormat):
 
 
 def lms_olmocr_vlm_options(model: str):
-    def _dynamic_olmocr_prompt(page: Optional[SegmentedPage]):
-        if page is None:
-            return (
-                "Below is the image of one page of a document. Just return the plain text"
-                " representation of this document as if you were reading it naturally.\n"
-                "Do not hallucinate.\n"
-            )
+    class OlmocrVlmOptions(ApiVlmOptions):
+        def build_prompt(self, page: Optional[SegmentedPage]) -> str:
+            if page is None:
+                return self.prompt.replace("#RAW_TEXT#", "")
 
-        anchor = [
-            f"Page dimensions: {int(page.dimension.width)}x{int(page.dimension.height)}"
-        ]
+            anchor = [
+                f"Page dimensions: {int(page.dimension.width)}x{int(page.dimension.height)}"
+            ]
 
-        for text_cell in page.textline_cells:
-            if not text_cell.text.strip():
-                continue
-            bbox = text_cell.rect.to_bounding_box().to_bottom_left_origin(
-                page.dimension.height
-            )
-            anchor.append(f"[{int(bbox.l)}x{int(bbox.b)}] {text_cell.text}")
+            for text_cell in page.textline_cells:
+                if not text_cell.text.strip():
+                    continue
+                bbox = text_cell.rect.to_bounding_box().to_bottom_left_origin(
+                    page.dimension.height
+                )
+                anchor.append(f"[{int(bbox.l)}x{int(bbox.b)}] {text_cell.text}")
 
-        for image_cell in page.bitmap_resources:
-            bbox = image_cell.rect.to_bounding_box().to_bottom_left_origin(
-                page.dimension.height
-            )
-            anchor.append(
-                f"[Image {int(bbox.l)}x{int(bbox.b)} to {int(bbox.r)}x{int(bbox.t)}]"
-            )
+            for image_cell in page.bitmap_resources:
+                bbox = image_cell.rect.to_bounding_box().to_bottom_left_origin(
+                    page.dimension.height
+                )
+                anchor.append(
+                    f"[Image {int(bbox.l)}x{int(bbox.b)} to {int(bbox.r)}x{int(bbox.t)}]"
+                )
 
-        if len(anchor) == 1:
-            anchor.append(
-                f"[Image 0x0 to {int(page.dimension.width)}x{int(page.dimension.height)}]"
-            )
+            if len(anchor) == 1:
+                anchor.append(
+                    f"[Image 0x0 to {int(page.dimension.width)}x{int(page.dimension.height)}]"
+                )
 
-        # Original prompt uses cells sorting. We are skipping it in this demo.
+            # Original prompt uses cells sorting. We are skipping it for simplicity.
 
-        base_text = "\n".join(anchor)
+            raw_text = "\n".join(anchor)
 
-        return (
-            f"Below is the image of one page of a document, as well as some raw textual"
-            f" content that was previously extracted for it. Just return the plain text"
-            f" representation of this document as if you were reading it naturally.\n"
-            f"Do not hallucinate.\n"
-            f"RAW_TEXT_START\n{base_text}\nRAW_TEXT_END"
-        )
+            return self.prompt.replace("#RAW_TEXT#", raw_text)
 
-    options = ApiVlmOptions(
+        def decode_response(self, text: str) -> str:
+            # OlmOcr trained to generate json response with language, rotation and other info
+            try:
+                generated_json = json.loads(text)
+            except json.decoder.JSONDecodeError:
+                return ""
+
+            return generated_json["natural_text"]
+
+    options = OlmocrVlmOptions(
         url="http://localhost:1234/v1/chat/completions",
         params=dict(
             model=model,
         ),
-        prompt=_dynamic_olmocr_prompt,
+        prompt=(
+            "Below is the image of one page of a document, as well as some raw textual"
+            " content that was previously extracted for it. Just return the plain text"
+            " representation of this document as if you were reading it naturally.\n"
+            "Do not hallucinate.\n"
+            "RAW_TEXT_START\n#RAW_TEXT#\nRAW_TEXT_END"
+        ),
         timeout=90,
         scale=1.0,
         max_size=1024,  # from OlmOcr pipeline

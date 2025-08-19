@@ -135,10 +135,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                     )
 
                     # Define prompt structure
-                    if callable(self.vlm_options.prompt):
-                        user_prompt = self.vlm_options.prompt(page.parsed_page)
-                    else:
-                        user_prompt = self.vlm_options.prompt
+                    user_prompt = self.vlm_options.build_prompt(page.parsed_page)
                     prompt = self.formulate_prompt(user_prompt)
 
                     inputs = self.processor(
@@ -166,6 +163,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                     _log.debug(
                         f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
                     )
+                    generated_texts = self.vlm_options.decode_response(generated_texts)
                     page.predictions.vlm_response = VlmPrediction(
                         text=generated_texts,
                         generation_time=generation_time,

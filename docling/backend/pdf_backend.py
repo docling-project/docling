@@ -84,9 +84,9 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
 
                 buf.seek(0)
                 self.path_or_stream = buf
-            else:
+            elif self.input_format not in self.supported_formats():
                 raise RuntimeError(
-                    f"Incompatible file format {self.input_format} was passed to a PdfDocumentBackend."
+                    f"Incompatible file format {self.input_format} was passed to a PdfDocumentBackend. Valid format are {','.join(self.supported_formats())}."
                 )
 
     @abstractmethod
@@ -99,7 +99,7 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:
-        return {InputFormat.PDF}
+        return {InputFormat.PDF, InputFormat.IMAGE}
 
     @classmethod
     def supports_pagination(cls) -> bool:
