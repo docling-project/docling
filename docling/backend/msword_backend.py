@@ -67,6 +67,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         self.level = 0
         self.listIter = 0
+        # Track list counters per numId and ilvl
+        self.list_counters: dict[tuple[int, int], int] = {}
 
         self.history: dict[str, Any] = {
             "names": [None],
@@ -314,6 +316,108 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
         return None, None  # If the paragraph is not part of a list
+
+    def _get_list_counter(self, numid: int, ilvl: int) -> int:
+        """Get and increment the counter for a specific numId and ilvl combination."""
+        key = (numid, ilvl)
+        if key not in self.list_counters:
+            self.list_counters[key] = 0
+        self.list_counters[key] += 1
+        return self.list_counters[key]
+
+    def _reset_list_counters_for_new_sequence(self, numid: int):
+        """Reset counters when starting a new numbering sequence."""
+        # Reset all counters for this numid
+        keys_to_reset = [key for key in self.list_counters.keys() if key[0] == numid]
+        for key in keys_to_reset:
+            self.list_counters[key] = 0
+
+    def _is_numbered_list(self, docx_obj: DocxDocument, numId: int, ilvl: int) -> bool:
+        """Check if a list is numbered based on its numFmt value."""
+        try:
+            # Access the numbering part of the document
+            if not hasattr(docx_obj, "part") or not hasattr(docx_obj.part, "package"):
+                return False
+
+            numbering_part = None
+            # Find the numbering part
+            for part in docx_obj.part.package.parts:
+                if "numbering" in part.partname:
+                    numbering_part = part
+                    break
+
+            if numbering_part is None:
+                return False
+
+            # Parse the numbering XML
+            numbering_root = numbering_part.element
+            namespaces = {
+                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            }
+
+            # Find the numbering definition with the given numId
+            num_xpath = f".//w:num[@w:numId='{numId}']"
+            num_element = numbering_root.find(num_xpath, namespaces=namespaces)
+
+            if num_element is None:
+                return False
+
+            # Get the abstractNumId from the num element
+            abstract_num_id_elem = num_element.find(
+                ".//w:abstractNumId", namespaces=namespaces
+            )
+            if abstract_num_id_elem is None:
+                return False
+
+            abstract_num_id = abstract_num_id_elem.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+            )
+            if abstract_num_id is None:
+                return False
+
+            # Find the abstract numbering definition
+            abstract_num_xpath = (
+                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
+            )
+            abstract_num_element = numbering_root.find(
+                abstract_num_xpath, namespaces=namespaces
+            )
+
+            if abstract_num_element is None:
+                return False
+
+            # Find the level definition for the given ilvl
+            lvl_xpath = f".//w:lvl[@w:ilvl='{ilvl}']"
+            lvl_element = abstract_num_element.find(lvl_xpath, namespaces=namespaces)
+
+            if lvl_element is None:
+                return False
+
+            # Get the numFmt element
+            num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
+            if num_fmt_element is None:
+                return False
+
+            num_fmt = num_fmt_element.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+            )
+
+            # Numbered formats include: decimal, lowerRoman, upperRoman, lowerLetter, upperLetter
+            # Bullet formats include: bullet
+            numbered_formats = {
+                "decimal",
+                "lowerRoman",
+                "upperRoman",
+                "lowerLetter",
+                "upperLetter",
+                "decimalZero",
+            }
+
+            return num_fmt in numbered_formats
+
+        except Exception as e:
+            _log.debug(f"Error determining if list is numbered: {e}")
+            return False
 
     def _get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
         parts = self._split_text_and_number(style_label)
@@ -713,8 +817,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
         # Identify whether list is a numbered list or not
-        # is_numbered = "List Bullet" not in paragraph.style.name
-        is_numbered = False
         p_style_id, p_level = self._get_label_and_level(paragraph)
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
@@ -727,6 +829,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and ilevel is not None
             and p_style_id not in ["Title", "Heading"]
         ):
+            # Check if this is actually a numbered list by examining the numFmt
+            is_numbered = self._is_numbered_list(docx_obj, numid, ilevel)
+
             self._add_list_item(
                 doc=doc,
                 numid=numid,
@@ -983,15 +1088,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._prev_numid() is None:  # Open new list
             self.level_at_new_list = level
 
+            # Reset counters for the new numbering sequence
+            self._reset_list_counters_for_new_sequence(numid)
+
             self.parents[level] = doc.add_list_group(
                 name="list", parent=self.parents[level - 1]
             )
 
             # Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
             self._add_formatted_list_item(
                 doc, elements, enum_marker, is_numbered, level
             )
@@ -1005,16 +1114,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + prev_indent + 1,
                 self.level_at_new_list + ilevel + 1,
             ):
-                self.listIter = 0
                 self.parents[i] = doc.add_list_group(
                     name="list", parent=self.parents[i - 1]
                 )
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
             self._add_formatted_list_item(
                 doc,
                 elements,
@@ -1033,10 +1142,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     self.parents[k] = None
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
             self._add_formatted_list_item(
                 doc,
                 elements,
@@ -1044,14 +1154,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 is_numbered,
                 self.level_at_new_list + ilevel,
             )
-            self.listIter = 0
 
         elif self._prev_numid() == numid or prev_indent == ilevel:
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
             self._add_formatted_list_item(
                 doc, elements, enum_marker, is_numbered, level - 1
             )
