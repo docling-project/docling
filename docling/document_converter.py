@@ -20,6 +20,7 @@ from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBacke
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
+from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
@@ -158,6 +159,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         ),
         InputFormat.XML_JATS: FormatOption(
             pipeline_cls=SimplePipeline, backend=JatsDocumentBackend
+        ),
+        InputFormat.METS_GBS: FormatOption(
+            pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
         ),
         InputFormat.IMAGE: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=DoclingParseV4DocumentBackend

@@ -26,6 +26,7 @@ from rich.console import Console
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -609,9 +610,18 @@ def convert(  # noqa: C901
                 backend=backend,  # pdf_backend
             )
 
+            # METS GBS options
+            mets_gbs_options = pipeline_options.model_copy()
+            mets_gbs_options.do_ocr = False
+            mets_gbs_format_option = PdfFormatOption(
+                pipeline_options=mets_gbs_options,
+                backend=MetsGbsDocumentBackend,
+            )
+
             format_options = {
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: pdf_format_option,
+                InputFormat.METS_GBS: mets_gbs_format_option,
             }
 
         elif pipeline == ProcessingPipeline.VLM:
