@@ -42,7 +42,7 @@ class RapidOcrModel(BaseOcrModel):
 
         if self.enabled:
             try:
-                from rapidocr import RapidOCR, EngineType  # type: ignore
+                from rapidocr import EngineType, RapidOCR  # type: ignore
             except ImportError:
                 raise ImportError(
                     "RapidOCR is not installed. Please install it via `pip install rapidocr onnxruntime` to use this OCR engine. "
