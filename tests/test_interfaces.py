@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -24,6 +25,8 @@ def converter():
     pipeline_options.do_ocr = False
     pipeline_options.do_table_structure = True
     pipeline_options.table_structure_options.do_cell_matching = True
+    pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
+    pipeline_options.generate_parsed_pages = True
 
     converter = DocumentConverter(
         format_options={

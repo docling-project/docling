@@ -20,7 +20,7 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult, InputDocument
-from docling.datamodel.pipeline_options import PipelineOptions
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -168,6 +168,12 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                         # Cleanup page backends
                         if not self.keep_backend and p._backend is not None:
                             p._backend.unload()
+                        if (
+                            isinstance(self.pipeline_options, PdfPipelineOptions)
+                            and not self.pipeline_options.generate_parsed_pages
+                        ):
+                            del p.parsed_page
+                            p.parsed_page = None
 
                     end_batch_time = time.monotonic()
                     total_elapsed_time += end_batch_time - start_batch_time

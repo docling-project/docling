@@ -38,6 +38,7 @@ _BLOCK_TAGS: Final = {
     "address",
     "details",
     "figure",
+    "footer",
     "h1",
     "h2",
     "h3",
@@ -639,10 +640,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         hyperlink=annotated_text.hyperlink,
                     )
 
-        elif tag_name == "details":
-            # handle details and its content.
+        elif tag_name in {"details", "footer"}:
+            if tag_name == "footer":
+                current_layer = self.content_layer
+                self.content_layer = ContentLayer.FURNITURE
             self.parents[self.level + 1] = doc.add_group(
-                name="details",
+                name=tag_name,
                 label=GroupLabel.SECTION,
                 parent=self.parents[self.level],
                 content_layer=self.content_layer,
@@ -651,6 +654,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self._walk(tag, doc)
             self.parents[self.level + 1] = None
             self.level -= 1
+            if tag_name == "footer":
+                self.content_layer = current_layer
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> None:
         figure = img_tag.find_parent("figure")
@@ -686,7 +691,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             text_clean = HTMLDocumentBackend._clean_unicode(
                 caption_anno_text.text.strip()
             )
-            print(caption_anno_text)
             caption_item = doc.add_text(
                 label=DocItemLabel.CAPTION,
                 text=text_clean,

@@ -565,10 +565,12 @@ class ThreadedStandardPdfPipeline(BasePipeline):
         if not self.keep_images:
             for p in conv_res.pages:
                 p._image_cache = {}
-        if not self.keep_backend:
-            for p in conv_res.pages:
-                if p._backend is not None:
-                    p._backend.unload()
+        for p in conv_res.pages:
+            if not self.keep_backend and p._backend is not None:
+                p._backend.unload()
+            if not self.pipeline_options.generate_parsed_pages:
+                del p.parsed_page
+                p.parsed_page = None
 
     # ---------------------------------------------------------------- assemble
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
