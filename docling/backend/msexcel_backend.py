@@ -5,6 +5,7 @@ from typing import Any, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
+    ContentLayer,
     CoordOrigin,
     DocItem,
     DoclingDocument,
@@ -186,12 +187,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if self.workbook is not None:
             # Iterate over all sheets
             for sheet_name in self.workbook.sheetnames:
-                sheet = self.workbook[sheet_name]
-                if sheet.sheet_state != Worksheet.SHEETSTATE_VISIBLE:
-                    _log.info(f"Ignore invisible sheet: {sheet_name}")
-                    continue
                 _log.info(f"Processing sheet: {sheet_name}")
 
+                sheet = self.workbook[sheet_name]
                 page_no = self.workbook.index(sheet) + 1
                 # do not rely on sheet.max_column, sheet.max_row if there are images
                 page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
@@ -200,6 +198,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     parent=None,
                     label=GroupLabel.SECTION,
                     name=f"sheet: {sheet_name}",
+                    content_layer=self._get_sheet_content_layer(sheet),
                 )
                 doc = self._convert_sheet(doc, sheet)
                 width, height = self._find_page_size(doc, page_no)
@@ -240,6 +239,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
 
         if self.workbook is not None:
+            content_layer = self._get_sheet_content_layer(sheet)
             tables = self._find_data_tables(sheet)
 
             for excel_table in tables:
@@ -285,6 +285,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             origin=CoordOrigin.TOPLEFT,
                         ),
                     ),
+                    content_layer=content_layer,
                 )
 
         return doc
@@ -489,6 +490,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             The updated DoclingDocument.
         """
         if self.workbook is not None:
+            content_layer = self._get_sheet_content_layer(sheet)
             # Iterate over byte images in the sheet
             for item in sheet._images:  # type: ignore[attr-defined]
                 try:
@@ -514,6 +516,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                                 anchor, origin=CoordOrigin.TOPLEFT
                             ),
                         ),
+                        content_layer=content_layer,
                     )
                 except Exception:
                     _log.error("could not extract the image from excel sheets")
@@ -539,3 +542,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
 
         return (right - left, bottom - top)
+
+    @staticmethod
+    def _get_sheet_content_layer(sheet: Worksheet) -> ContentLayer | None:
+        return (
+            None
+            if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE
+            else ContentLayer.INVISIBLE
+        )
