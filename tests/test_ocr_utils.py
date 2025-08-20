@@ -57,14 +57,14 @@ RECT_270 = BoundingRectangle(
 @pytest.mark.parametrize(
     ["bbox", "im_size", "angle", "expected_rectangle"],
     [
-        # (BBOX, IM_SIZE, 0, RECT),
-        # (BBOX, IM_SIZE, 90, RECT_90),
+        (BBOX, IM_SIZE, 0, RECT),
+        (BBOX, IM_SIZE, 90, RECT_90),
         (BBOX, IM_SIZE, 180, RECT_180),
-        # (BBOX, IM_SIZE, 270, RECT_270),
-        # (BBOX, IM_SIZE, 360, RECT),
-        # (BBOX, IM_SIZE, -90, RECT_270),
+        (BBOX, IM_SIZE, 270, RECT_270),
+        (BBOX, IM_SIZE, 360, RECT),
+        (BBOX, IM_SIZE, -90, RECT_270),
         (BBOX, IM_SIZE, -180, RECT_180),
-        # (BBOX, IM_SIZE, -270, RECT_90),
+        (BBOX, IM_SIZE, -270, RECT_90),
     ],
 )
 def test_rotate_bounding_box(
