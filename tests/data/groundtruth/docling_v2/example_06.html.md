@@ -12,4 +12,4 @@ Heading for the details element
 
 Description of the details element.
 
-This is a fourth div with a bold paragraph.
+This is a fourth div with a **bold** paragraph.

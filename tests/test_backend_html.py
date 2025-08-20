@@ -208,6 +208,6 @@ def test_html_furniture():
         included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
     )
     assert md_all == (
-        "Initial content with some bold text\n\n# Main Heading\n\nSome Content\n\n"
+        "Initial content with some **bold text**\n\n# Main Heading\n\nSome Content\n\n"
         "Some Footer Content"
     )
