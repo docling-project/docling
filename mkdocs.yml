@@ -54,6 +54,8 @@ theme:
 nav:
   - Home:
     - "Docling": index.md
+    - Getting started:
+      - Getting started: getting_started/index.md
     - Installation:
       - Installation: installation/index.md
     - Usage:
@@ -156,6 +158,10 @@ markdown_extensions:
       slugify: !!python/object/apply:pymdownx.slugs.slugify
         kwds:
           case: lower
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
   - admonition
   - pymdownx.details
   - attr_list
@@ -175,3 +181,10 @@ plugins:
 
 extra_css:
   - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/docling-project/docling
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/docling/

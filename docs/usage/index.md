@@ -2,7 +2,7 @@
 
 ### Convert a single document
 
-To convert individual PDF documents, use `convert()`, for example:
+To convert a document, use `convert()`, for example:
 
 ```python
 from docling.document_converter import DocumentConverter
@@ -12,6 +12,8 @@ converter = DocumentConverter()
 result = converter.convert(source)
 print(result.document.export_to_markdown())  # output: "### Docling Technical Report[...]"
 ```
+
+Feel free to check out the [supported document formats](./supported_formats.md)
 
 ### CLI
 
