@@ -60,7 +60,7 @@ class RapidOcrModel(BaseOcrModel):
                 "paddle": EngineType.PADDLE,
                 "torch": EngineType.TORCH,
             }
-            backend_enum = _ALIASES.get(self.options.backend, EngineType.TORCH)
+            backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
 
             self.reader = RapidOCR(
                 params={
