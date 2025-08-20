@@ -99,6 +99,8 @@ class RapidOcrOptions(OcrOptions):
     # For more details on the following options visit
     # https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
 
+    # https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr/usage/#__tabbed_3_4
+    backend: Literal["onnxruntime", "openvino", "paddle", "torch"] = "onnxruntime"
     text_score: float = 0.5  # same default as rapidocr
 
     use_det: Optional[bool] = None  # same default as rapidocr

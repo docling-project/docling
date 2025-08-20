@@ -42,7 +42,7 @@ class RapidOcrModel(BaseOcrModel):
 
         if self.enabled:
             try:
-                from rapidocr import RapidOCR  # type: ignore
+                from rapidocr import RapidOCR, EngineType  # type: ignore
             except ImportError:
                 raise ImportError(
                     "RapidOCR is not installed. Please install it via `pip install rapidocr onnxruntime` to use this OCR engine. "
@@ -54,6 +54,13 @@ class RapidOcrModel(BaseOcrModel):
             use_cuda = str(AcceleratorDevice.CUDA.value).lower() in device
             use_dml = accelerator_options.device == AcceleratorDevice.AUTO
             intra_op_num_threads = accelerator_options.num_threads
+            _ALIASES = {
+                "onnxruntime": EngineType.ONNXRUNTIME,
+                "openvino": EngineType.OPENVINO,
+                "paddle": EngineType.PADDLE,
+                "torch": EngineType.TORCH,
+            }
+            backend_enum = _ALIASES.get(self.options.backend, EngineType.TORCH)
 
             self.reader = RapidOCR(
                 params={
@@ -76,6 +83,9 @@ class RapidOcrModel(BaseOcrModel):
                     "Rec.use_cuda": use_cuda,
                     "Rec.use_dml": use_dml,
                     "Rec.intra_op_num_threads": intra_op_num_threads,
+                    "Det.engine_type": backend_enum,
+                    "Cls.engine_type": backend_enum,
+                    "Rec.engine_type": backend_enum,
                 }
             )
 
@@ -103,11 +113,14 @@ class RapidOcrModel(BaseOcrModel):
                             scale=self.scale, cropbox=ocr_rect
                         )
                         im = numpy.array(high_res_image)
-                        result, _ = self.reader(
+                        result = self.reader(
                             im,
                             use_det=self.options.use_det,
                             use_cls=self.options.use_cls,
                             use_rec=self.options.use_rec,
+                        )
+                        result = list(
+                            zip(result.boxes.tolist(), result.txts, result.scores)
                         )
 
                         del high_res_image
