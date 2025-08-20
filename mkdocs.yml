@@ -96,6 +96,8 @@ nav:
       - examples/serialization.ipynb
       - examples/hybrid_chunking.ipynb
       - examples/advanced_chunking_and_serialization.ipynb
+    - ✂️ Data Preparation and Embedding Pipeline:
+      - examples/dpk-ingest-chunck-tokenize.ipynb
     - 🤖 RAG with AI dev frameworks:
       - examples/rag_haystack.ipynb
       - examples/rag_langchain.ipynb
