@@ -117,10 +117,11 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     "flash_attention_2"
                     if self.device.startswith("cuda")
                     and accelerator_options.cuda_use_flash_attention2
-                    else "eager"
+                    else "sdpa"
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
             )
+            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
@@ -263,14 +264,19 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             "max_new_tokens": self.max_new_tokens,
             "use_cache": self.use_cache,
             "generation_config": self.generation_config,
-            # "temperature": self.temperature,
             **self.vlm_options.extra_generation_config,
         }
+        if self.temperature > 0:
+            gen_kwargs["do_sample"] = True
+            gen_kwargs["temperature"] = self.temperature
+        else:
+            gen_kwargs["do_sample"] = False
+
         if stopping_criteria is not None:
             gen_kwargs["stopping_criteria"] = stopping_criteria
 
         start_time = time.time()
-        with torch.no_grad():
+        with torch.inference_mode():
             generated_ids = self.vlm_model.generate(**gen_kwargs)
         generation_time = time.time() - start_time
 
