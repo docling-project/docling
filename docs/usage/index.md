@@ -20,7 +20,7 @@ print(doc.export_to_markdown())  # output: "### Docling Technical Report[...]"
 ```
 
 Docling supports a wide array of [file formats](./supported_formats.md) and, as outlined in the
-[Architecture](../concepts/architecture.md) guide, provides a versatile document model along with a full suite of
+[architecture](../concepts/architecture.md) guide, provides a versatile document model along with a full suite of
 supported operations.
 
 ### CLI

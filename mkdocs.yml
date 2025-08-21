@@ -60,7 +60,7 @@ nav:
       - Installation: installation/index.md
     - Usage:
       - Usage: usage/index.md
-      - Advanced options: usage/advanced.md
+      - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
@@ -162,7 +162,6 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
-
   - admonition
   - pymdownx.details
   - attr_list
