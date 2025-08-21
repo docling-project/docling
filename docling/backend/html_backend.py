@@ -329,7 +329,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         flush_buffer()
 
-    def _collect_parent_format_tags(self, item: PageElement) -> list[str]:
+    @staticmethod
+    def _collect_parent_format_tags(item: PageElement) -> list[str]:
         tags = []
         for format_tag in _FORMAT_TAG_MAP:
             this_parent = item.parent
