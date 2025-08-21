@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Union, cast
+from typing import Any, Optional, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -544,7 +544,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return (right - left, bottom - top)
 
     @staticmethod
-    def _get_sheet_content_layer(sheet: Worksheet) -> ContentLayer | None:
+    def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:
         return (
             None
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE
