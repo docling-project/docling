@@ -60,6 +60,7 @@ nav:
       - Installation: installation/index.md
     - Usage:
       - Usage: usage/index.md
+      - Advanced options: usage/advanced.md
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md

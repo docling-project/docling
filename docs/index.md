@@ -42,7 +42,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 Check out our [getting started](./getting_started/index.md) page to get the ball rolling!
 
-## Live AI-powered support
+## Live assistant
 
 Do you want to leverage the power of AI and get live support on Docling?
 Try out the [Chat with Dosu](https://app.dosu.dev/097760a8-135e-4789-8234-90c8837d7f1c/ask?utm_source=github) functionalities provided by our friends at [Dosu](https://dosu.dev/).
