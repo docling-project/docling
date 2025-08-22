@@ -40,6 +40,7 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
     ],
+    torch_dtype="bfloat16",
     scale=2.0,
     temperature=0.0,
     stop_strings=["</doctag>", "<end_of_utterance>"],
@@ -70,6 +71,7 @@ SMOLVLM256_TRANSFORMERS = InlineVlmOptions(
         AcceleratorDevice.CUDA,
         # AcceleratorDevice.MPS,
     ],
+    torch_dtype="bfloat16",
     scale=2.0,
     temperature=0.0,
 )
