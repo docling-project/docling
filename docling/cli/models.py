@@ -183,15 +183,6 @@ def download_hf_repo(
     else:
         typer.secho(f"\nModels downloaded into: {output_dir}.", fg="green")
 
-        console.print(
-            "\n",
-            "Docling can now be configured for running offline using the local artifacts.\n\n",
-            "Using the CLI:",
-            f"`docling --artifacts-path={output_dir} FILE`",
-            "\n",
-            "Using Python: see the documentation at <https://docling-project.github.io/docling/usage>.",
-        )
-
 
 click_app = typer.main.get_command(app)
 
