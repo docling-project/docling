@@ -550,8 +550,8 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/14",
@@ -571,8 +571,8 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "2."
     },
     {
       "self_ref": "#/texts/15",
@@ -592,8 +592,8 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "3."
     },
     {
       "self_ref": "#/texts/16",
