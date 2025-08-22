@@ -296,6 +296,11 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             trimmed_sequences, skip_special_tokens=False
         )
 
+        # -- Clip off pad tokens from decoded texts
+        pad_token = self.processor.tokenizer.pad_token
+        if pad_token:
+            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
         # -- Optional logging
         if generated_ids.shape[0] > 0:
             _log.debug(
