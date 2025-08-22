@@ -188,7 +188,7 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                         break
 
                     _log.debug(
-                        f"Finished converting page batch time={end_batch_time:.3f}"
+                        f"Finished converting pages {len(page_batch)}/{len(conv_res.pages)} time={end_batch_time:.3f}"
                     )
 
             except Exception as e:
