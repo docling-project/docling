@@ -134,7 +134,7 @@ def download_hf_repo(
     models: Annotated[
         list[str],
         typer.Argument(
-            help="Specific models to download from HuggiFace identified by their repo id. For example: ds4sd/docling-models .",
+            help="Specific models to download from HuggingFace identified by their repo id. For example: ds4sd/docling-models .",
         ),
     ],
     output_dir: Annotated[
