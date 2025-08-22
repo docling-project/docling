@@ -479,6 +479,13 @@ def convert(  # noqa: C901
             "--logo", callback=logo_callback, is_eager=True, help="Docling logo"
         ),
     ] = None,
+    page_batch_size: Annotated[
+        int,
+        typer.Option(
+            "--page-batch-size",
+            help=f"Number of pages processed in one batch. Default: {settings.perf.page_batch_size}",
+        ),
+    ] = settings.perf.page_batch_size,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -493,6 +500,7 @@ def convert(  # noqa: C901
     settings.debug.visualize_layout = debug_visualize_layout
     settings.debug.visualize_tables = debug_visualize_tables
     settings.debug.visualize_ocr = debug_visualize_ocr
+    settings.perf.page_batch_size = page_batch_size
 
     if from_formats is None:
         from_formats = list(InputFormat)
