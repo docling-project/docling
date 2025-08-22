@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from docling.datamodel.settings import settings
+from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.model_downloader import download_models
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -112,6 +113,70 @@ def download(
         with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
         with_easyocr=_AvailableModels.EASYOCR in to_download,
     )
+
+    if quiet:
+        typer.echo(output_dir)
+    else:
+        typer.secho(f"\nModels downloaded into: {output_dir}.", fg="green")
+
+        console.print(
+            "\n",
+            "Docling can now be configured for running offline using the local artifacts.\n\n",
+            "Using the CLI:",
+            f"`docling --artifacts-path={output_dir} FILE`",
+            "\n",
+            "Using Python: see the documentation at <https://docling-project.github.io/docling/usage>.",
+        )
+
+
+@app.command("download-hf-repo")
+def download_hf_repo(
+    models: Annotated[
+        list[str],
+        typer.Argument(
+            help="Specific models to download from HuggiFace identified by their repo id. For example: ds4sd/docling-models .",
+        ),
+    ],
+    output_dir: Annotated[
+        Path,
+        typer.Option(
+            ...,
+            "-o",
+            "--output-dir",
+            help="The directory where to download the models.",
+        ),
+    ] = (settings.cache_dir / "models"),
+    force: Annotated[
+        bool, typer.Option(..., help="If true, the download will be forced.")
+    ] = False,
+    quiet: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            "-q",
+            "--quiet",
+            help="No extra output is generated, the CLI prints only the directory with the cached models.",
+        ),
+    ] = False,
+):
+    if not quiet:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="[blue]%(message)s[/blue]",
+            datefmt="[%X]",
+            handlers=[RichHandler(show_level=False, show_time=False, markup=True)],
+        )
+
+    for item in models:
+        typer.secho(f"\nDownloading {item} model from HuggingFace...")
+        download_hf_model(
+            repo_id=item,
+            # would be better to reuse "repo_cache_folder" property: https://github.com/docling-project/docling/blob/main/docling/datamodel/pipeline_options_vlm_model.py#L76
+            # but creating options objects seams like an overkill
+            local_dir=output_dir / item.replace("/", "--"),
+            force=force,
+            progress=(not quiet),
+        )
 
     if quiet:
         typer.echo(output_dir)
