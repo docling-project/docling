@@ -20,6 +20,13 @@ Models downloaded into $HOME/.cache/docling/models.
 
 Alternatively, models can be programmatically downloaded using `docling.utils.model_downloader.download_models()`.
 
+Also, you can use `download-hf-repo` parameter to download arbitrary models from HuggingFace by specifying repo id:
+
+```sh
+$ docling-tools models download-hf-repo ds4sd/SmolDocling-256M-preview
+Downloading ds4sd/SmolDocling-256M-preview model from HuggingFace...
+```
+
 **Step 2: Use the prefetched models**
 
 ```python
