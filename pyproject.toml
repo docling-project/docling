@@ -93,7 +93,7 @@ vlm = [
   'transformers (>=4.46.0,<5.0.0)',
   'accelerate (>=1.2.1,<2.0.0)',
   'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
-  'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "linux"',
+  'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "linux" and platform_machine == "x86_64"',
 ]
 rapidocr = [
   'rapidocr-onnxruntime (>=1.4.0,<2.0.0) ; python_version < "3.13"',
