@@ -190,3 +190,6 @@ extra:
       link: https://github.com/docling-project/docling
     - icon: fontawesome/brands/linkedin
       link: https://linkedin.com/company/docling/
+  analytics:
+    provider: google
+    property: G-MP75NXFDH4
