@@ -257,9 +257,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 orig=title_text,
                 content_layer=ContentLayer.FURNITURE,
             )
-        # remove scripts/styles
+        # remove script and style tags
         for tag in self.soup(["script", "style"]):
             tag.decompose()
+        # remove any hidden tag
+        for tag in self.soup(hidden=True):
+            tag.decompose()
+
         content = self.soup.body or self.soup
         # normalize <br> tags
         for br in content("br"):
