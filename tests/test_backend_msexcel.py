@@ -87,13 +87,14 @@ def test_pages(documents) -> None:
         backend=MsExcelDocumentBackend,
     )
     backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=path)
-    assert backend.page_count() == 3
+    assert backend.page_count() == 4
 
     # number of pages from the converted document
     doc = next(item for path, item in documents if path.stem == "test-01")
-    assert len(doc.pages) == 3
+    assert len(doc.pages) == 4
 
     # page sizes as number of cells
     assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
+    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
