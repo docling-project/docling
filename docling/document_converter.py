@@ -9,7 +9,7 @@ from datetime import datetime
 from functools import partial
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, model_validator, validate_call
 
@@ -303,6 +303,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
     ) -> ExtractionResult:
         all_res = self.extract_all(
             source=[source],
@@ -311,6 +312,7 @@ class DocumentConverter:
             max_file_size=max_file_size,
             headers=headers,
             page_range=page_range,
+            template=template,
         )
         return next(all_res)
 
@@ -323,6 +325,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
     ) -> Iterator[ExtractionResult]:
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
@@ -332,7 +335,9 @@ class DocumentConverter:
         conv_input = _DocumentConversionInput(
             path_or_stream_iterator=source, limits=limits, headers=headers
         )
-        ext_res_iter = self._extract(conv_input, raises_on_error=raises_on_error)
+        ext_res_iter = self._extract(
+            conv_input, raises_on_error=raises_on_error, template=template
+        )
 
         had_result = False
         for ext_res in ext_res_iter:
@@ -419,7 +424,10 @@ class DocumentConverter:
                     yield item
 
     def _extract(
-        self, conv_input: _DocumentConversionInput, raises_on_error: bool
+        self,
+        conv_input: _DocumentConversionInput,
+        raises_on_error: bool,
+        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
     ) -> Iterator[ExtractionResult]:
         start_time = time.monotonic()
 
@@ -429,7 +437,9 @@ class DocumentConverter:
         ):
             _log.info("Going to extract document batch...")
             process_func = partial(
-                self._process_document_extraction, raises_on_error=raises_on_error
+                self._process_document_extraction,
+                raises_on_error=raises_on_error,
+                template=template,
             )
 
             if (
@@ -510,14 +520,17 @@ class DocumentConverter:
         return conv_res
 
     def _process_document_extraction(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
     ) -> ExtractionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
         )
         if valid:
             ext_res = self._execute_extraction_pipeline(
-                in_doc, raises_on_error=raises_on_error
+                in_doc, raises_on_error=raises_on_error, template=template
             )
         else:
             error_message = f"File format not allowed: {in_doc.file}"
@@ -566,14 +579,19 @@ class DocumentConverter:
         return conv_res
 
     def _execute_extraction_pipeline(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
     ) -> ExtractionResult:
         if in_doc.valid:
             # Use the same backend as conversion to get the document structure
             # The extraction pipeline will handle the actual extraction
             pipeline = self._get_extraction_pipeline()
             if pipeline is not None:
-                ext_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
+                ext_res = pipeline.execute(
+                    in_doc, raises_on_error=raises_on_error, template=template
+                )
             else:
                 if raises_on_error:
                     raise ConversionError(
