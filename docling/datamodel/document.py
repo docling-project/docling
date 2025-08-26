@@ -8,6 +8,7 @@ from io import BytesIO
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
+    Any,
     Dict,
     List,
     Literal,
@@ -211,6 +212,13 @@ class ConversionResult(BaseModel):
     @deprecated("Use document instead.")
     def legacy_document(self):
         return docling_document_to_legacy(self.document)
+
+
+class ExtractionResult(BaseModel):
+    input: InputDocument
+    status: ConversionStatus = ConversionStatus.PENDING
+    errors: List[ErrorItem] = []
+    data: Dict[str, Any] = Field(default_factory=dict)
 
 
 class _DummyBackend(AbstractDocumentBackend):

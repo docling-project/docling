@@ -295,6 +295,12 @@ class AsrPipelineOptions(PipelineOptions):
     artifacts_path: Optional[Union[Path, str]] = None
 
 
+class ExtractionPipelineOptions(BaseOptions):
+    """Options for extraction pipeline."""
+
+    kind: ClassVar[str] = "extraction_pipeline_options"
+
+
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Options for the PDF pipeline."""
 
