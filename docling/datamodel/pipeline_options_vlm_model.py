@@ -82,17 +82,6 @@ class InlineVlmOptions(BaseVlmOptions):
         return self.repo_id.replace("/", "--")
 
 
-class NuExtractVlmOptions(InlineVlmOptions):
-    kind: Literal["nuextract_model_options"] = "nuextract_model_options"
-
-    document_type: Literal["image", "text"] = "image"
-
-    torch_dtype: Optional[str] = "bfloat16"
-    transformers_prompt_style: TransformersPromptStyle = TransformersPromptStyle.CHAT
-    response_format: ResponseFormat = ResponseFormat.PLAINTEXT
-    inference_framework: InferenceFramework = InferenceFramework.TRANSFORMERS
-
-
 @deprecated("Use InlineVlmOptions instead.")
 class HuggingFaceVlmOptions(InlineVlmOptions):
     pass

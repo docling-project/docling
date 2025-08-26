@@ -9,7 +9,7 @@ from datetime import datetime
 from functools import partial
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, model_validator, validate_call
 
@@ -53,6 +53,7 @@ from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.types import ExtractionTemplateType
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
@@ -230,9 +231,9 @@ class DocumentConverter:
     def _get_extraction_pipeline(self) -> ExtractionVlmPipeline:
         """Get or create the extraction pipeline instance."""
         if self._extraction_pipeline is None:
-            from docling.datamodel.pipeline_options import ExtractionPipelineOptions
+            from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
 
-            options = ExtractionPipelineOptions()
+            options = VlmExtractionPipelineOptions()
             self._extraction_pipeline = ExtractionVlmPipeline(pipeline_options=options)
         return self._extraction_pipeline
 
@@ -303,7 +304,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
-        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
+        template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
         all_res = self.extract_all(
             source=[source],
@@ -325,7 +326,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
-        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
+        template: Optional[ExtractionTemplateType] = None,
     ) -> Iterator[ExtractionResult]:
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
@@ -427,7 +428,7 @@ class DocumentConverter:
         self,
         conv_input: _DocumentConversionInput,
         raises_on_error: bool,
-        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
+        template: Optional[ExtractionTemplateType] = None,
     ) -> Iterator[ExtractionResult]:
         start_time = time.monotonic()
 
@@ -523,7 +524,7 @@ class DocumentConverter:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
+        template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
@@ -582,7 +583,7 @@ class DocumentConverter:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        template: Optional[Union[str, Dict[str, Any], BaseModel]] = None,
+        template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
         if in_doc.valid:
             # Use the same backend as conversion to get the document structure

@@ -37,6 +37,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
+    NU_EXTRACT_2B_TRANSFORMERS,
     SMOLDOCLING_MLX as smoldocling_vlm_mlx_conversion_options,
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
@@ -249,9 +250,6 @@ class OcrEngine(str, Enum):
 class PipelineOptions(BaseModel):
     """Base pipeline options."""
 
-    create_legacy_output: bool = (
-        True  # This default will be set to False on a future version of docling
-    )
     document_timeout: Optional[float] = None
     accelerator_options: AcceleratorOptions = AcceleratorOptions()
     enable_remote_services: bool = False
@@ -295,10 +293,13 @@ class AsrPipelineOptions(PipelineOptions):
     artifacts_path: Optional[Union[Path, str]] = None
 
 
-class ExtractionPipelineOptions(BaseOptions):
+class VlmExtractionPipelineOptions(PipelineOptions):
     """Options for extraction pipeline."""
 
     kind: ClassVar[str] = "extraction_pipeline_options"
+
+    artifacts_path: Optional[Union[Path, str]] = None
+    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = NU_EXTRACT_2B_TRANSFORMERS
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):

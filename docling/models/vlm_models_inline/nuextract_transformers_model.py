@@ -12,9 +12,7 @@ from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
 from docling.datamodel.base_models import VlmPrediction
-from docling.datamodel.pipeline_options_vlm_model import (
-    NuExtractVlmOptions,
-)
+from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BaseVlmModel
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
@@ -23,15 +21,16 @@ from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)
 
+
 # Source code from https://huggingface.co/numind/NuExtract-2.0-8B
 def process_all_vision_info(messages, examples=None):
     """
     Process vision information from both messages and in-context examples, supporting batch processing.
-    
+
     Args:
         messages: List of message dictionaries (single input) OR list of message lists (batch input)
         examples: Optional list of example dictionaries (single input) OR list of example lists (batch)
-    
+
     Returns:
         A flat list of all images in the correct order:
         - For single input: example images followed by message images
@@ -39,37 +38,49 @@ def process_all_vision_info(messages, examples=None):
         - Returns None if no images were found
     """
     try:
-        from qwen_vl_utils import process_vision_info, fetch_image
+        from qwen_vl_utils import fetch_image, process_vision_info
     except ImportError:
         raise ImportError(
-                    "qwen-vl-utils is required for NuExtractTransformersModel. "
-                    "Please install it with: pip install qwen-vl-utils"
-                )
+            "qwen-vl-utils is required for NuExtractTransformersModel. "
+            "Please install it with: pip install qwen-vl-utils"
+        )
 
+    from qwen_vl_utils import fetch_image, process_vision_info
 
-    from qwen_vl_utils import process_vision_info, fetch_image
-    
     # Helper function to extract images from examples
     def extract_example_images(example_item):
         if not example_item:
             return []
-            
+
         # Handle both list of examples and single example
-        examples_to_process = example_item if isinstance(example_item, list) else [example_item]
+        examples_to_process = (
+            example_item if isinstance(example_item, list) else [example_item]
+        )
         images = []
-        
+
         for example in examples_to_process:
-            if isinstance(example.get('input'), dict) and example['input'].get('type') == 'image':
-                images.append(fetch_image(example['input']))
-                
+            if (
+                isinstance(example.get("input"), dict)
+                and example["input"].get("type") == "image"
+            ):
+                images.append(fetch_image(example["input"]))
+
         return images
-    
+
     # Normalize inputs to always be batched format
     is_batch = messages and isinstance(messages[0], list)
     messages_batch = messages if is_batch else [messages]
-    is_batch_examples = examples and isinstance(examples, list) and (isinstance(examples[0], list) or examples[0] is None)
-    examples_batch = examples if is_batch_examples else ([examples] if examples is not None else None)
-    
+    is_batch_examples = (
+        examples
+        and isinstance(examples, list)
+        and (isinstance(examples[0], list) or examples[0] is None)
+    )
+    examples_batch = (
+        examples
+        if is_batch_examples
+        else ([examples] if examples is not None else None)
+    )
+
     # Ensure examples batch matches messages batch if provided
     if examples and len(examples_batch) != len(messages_batch):
         if not is_batch and len(examples_batch) == 1:
@@ -77,7 +88,7 @@ def process_all_vision_info(messages, examples=None):
             pass
         else:
             raise ValueError("Examples batch length must match messages batch length")
-    
+
     # Process all inputs, maintaining correct order
     all_images = []
     for i, message_group in enumerate(messages_batch):
@@ -85,12 +96,13 @@ def process_all_vision_info(messages, examples=None):
         if examples and i < len(examples_batch):
             input_example_images = extract_example_images(examples_batch[i])
             all_images.extend(input_example_images)
-        
+
         # Get message images for this input
         input_message_images = process_vision_info(message_group)[0] or []
         all_images.extend(input_message_images)
-    
+
     return all_images if all_images else None
+
 
 class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
     def __init__(
@@ -98,7 +110,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         enabled: bool,
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
-        vlm_options: NuExtractVlmOptions,
+        vlm_options: InlineVlmOptions,
     ):
         self.enabled = enabled
         self.vlm_options = vlm_options
@@ -106,8 +118,6 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         if self.enabled:
             import torch
 
-            # Check for qwen-vl-utils dependency
-            
             self.device = decide_device(
                 accelerator_options.device,
                 supported_devices=vlm_options.supported_devices,
@@ -155,7 +165,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
     ) -> Iterable[VlmPrediction]:
         """
         Batched inference for NuExtract VLM using the specialized input format.
-        
+
         Args:
             image_batch: Iterable of PIL Images or numpy arrays
             prompt: Either:
@@ -208,7 +218,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             [
                 {
                     "role": "user",
-                    "content": [x['document']],
+                    "content": [x["document"]],
                 }
             ]
             for x in inputs
@@ -218,16 +228,16 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         texts = [
             self.processor.tokenizer.apply_chat_template(
                 messages[i],
-                template=x['template'],
+                template=x["template"],
                 tokenize=False,
-                add_generation_prompt=True
+                add_generation_prompt=True,
             )
             for i, x in enumerate(inputs)
         ]
 
         # Process vision inputs using qwen-vl-utils
         image_inputs = process_all_vision_info(messages)
-        
+
         # Process with the processor
         processor_inputs = self.processor(
             text=texts,
@@ -262,17 +272,17 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
 
         # Decode with the processor/tokenizer
         decoded_texts: list[str] = self.processor.batch_decode(
-            trimmed_sequences, 
-            skip_special_tokens=True, 
-            clean_up_tokenization_spaces=False
+            trimmed_sequences,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False,
         )
 
         # Optional logging
-        if generated_ids.shape[0] > 0: # type: ignore
+        if generated_ids.shape[0] > 0:  # type: ignore
             _log.debug(
                 f"Generated {int(generated_ids[0].shape[0])} tokens in {generation_time:.2f}s "
                 f"for batch size {generated_ids.shape[0]}."
-            ) 
+            )
 
         for text in decoded_texts:
             # Apply decode_response to the output text
