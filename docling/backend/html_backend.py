@@ -467,13 +467,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @contextmanager
     def _use_hyperlink(self, tag: Tag):
+        old_hyperlink: Union[AnyUrl, Path, None] = None
+        new_hyperlink: Union[AnyUrl, Path, None] = None
         this_href = tag.get("href")
         if this_href is None:
             yield None
         else:
             if isinstance(this_href, str) and this_href:
-                old_hyperlink: Union[AnyUrl, Path, None] = self.hyperlink
-                new_hyperlink: Union[AnyUrl, Path, None] = None
+                old_hyperlink = self.hyperlink
                 if self.original_url is not None:
                     this_href = urljoin(str(self.original_url), str(this_href))
                 # ugly fix for relative links since pydantic does not support them.
