@@ -247,8 +247,10 @@ class OcrEngine(str, Enum):
     RAPIDOCR = "rapidocr"
 
 
-class PipelineOptions(BaseModel):
+class PipelineOptions(BaseOptions):
     """Base pipeline options."""
+
+    kind: ClassVar[str] = "pipeline_options"
 
     document_timeout: Optional[float] = None
     accelerator_options: AcceleratorOptions = AcceleratorOptions()

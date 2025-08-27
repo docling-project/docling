@@ -38,6 +38,20 @@ class BaseExtractionPipeline(ABC):
 
         return ext_res
 
+    @abstractmethod
+    def _extract_data(
+        self,
+        ext_res: ExtractionResult,
+        template: Optional[ExtractionTemplateType] = None,
+    ) -> ExtractionResult:
+        """Subclass must populate ext_res.pages/errors and return the result."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
+        """Subclass must decide SUCCESS/PARTIAL_SUCCESS/FAILURE based on ext_res."""
+        raise NotImplementedError
+
     @classmethod
     @abstractmethod
     def get_default_options(cls) -> BaseOptions:

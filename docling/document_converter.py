@@ -36,7 +36,6 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import (
     ConversionResult,
-    ExtractionResult,
     InputDocument,
     _DocumentConversionInput,
 )
@@ -205,8 +204,6 @@ class DocumentConverter:
         self.initialized_pipelines: Dict[
             Tuple[Type[BasePipeline], str], BasePipeline
         ] = {}
-        # Simple extraction pipeline instance (no caching needed for experimental version)
-        self._extraction_pipeline: Optional[ExtractionVlmPipeline] = None
 
     def _get_initialized_pipelines(
         self,
@@ -227,15 +224,6 @@ class DocumentConverter:
             raise ConversionError(
                 f"No pipeline could be initialized for format {format}"
             )
-
-    def _get_extraction_pipeline(self) -> ExtractionVlmPipeline:
-        """Get or create the extraction pipeline instance."""
-        if self._extraction_pipeline is None:
-            from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
-
-            options = VlmExtractionPipelineOptions()
-            self._extraction_pipeline = ExtractionVlmPipeline(pipeline_options=options)
-        return self._extraction_pipeline
 
     @validate_call(config=ConfigDict(strict=True))
     def convert(
@@ -293,69 +281,6 @@ class DocumentConverter:
         if not had_result and raises_on_error:
             raise ConversionError(
                 "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
-            )
-
-    @validate_call(config=ConfigDict(strict=True))
-    def extract(
-        self,
-        source: Union[Path, str, DocumentStream],
-        headers: Optional[Dict[str, str]] = None,
-        raises_on_error: bool = True,
-        max_num_pages: int = sys.maxsize,
-        max_file_size: int = sys.maxsize,
-        page_range: PageRange = DEFAULT_PAGE_RANGE,
-        template: Optional[ExtractionTemplateType] = None,
-    ) -> ExtractionResult:
-        all_res = self.extract_all(
-            source=[source],
-            raises_on_error=raises_on_error,
-            max_num_pages=max_num_pages,
-            max_file_size=max_file_size,
-            headers=headers,
-            page_range=page_range,
-            template=template,
-        )
-        return next(all_res)
-
-    @validate_call(config=ConfigDict(strict=True))
-    def extract_all(
-        self,
-        source: Iterable[Union[Path, str, DocumentStream]],
-        headers: Optional[Dict[str, str]] = None,
-        raises_on_error: bool = True,
-        max_num_pages: int = sys.maxsize,
-        max_file_size: int = sys.maxsize,
-        page_range: PageRange = DEFAULT_PAGE_RANGE,
-        template: Optional[ExtractionTemplateType] = None,
-    ) -> Iterator[ExtractionResult]:
-        limits = DocumentLimits(
-            max_num_pages=max_num_pages,
-            max_file_size=max_file_size,
-            page_range=page_range,
-        )
-        conv_input = _DocumentConversionInput(
-            path_or_stream_iterator=source, limits=limits, headers=headers
-        )
-        ext_res_iter = self._extract(
-            conv_input, raises_on_error=raises_on_error, template=template
-        )
-
-        had_result = False
-        for ext_res in ext_res_iter:
-            had_result = True
-            if raises_on_error and ext_res.status not in {
-                ConversionStatus.SUCCESS,
-                ConversionStatus.PARTIAL_SUCCESS,
-            }:
-                raise ConversionError(
-                    f"Extraction failed for: {ext_res.input.file} with status: {ext_res.status}"
-                )
-            else:
-                yield ext_res
-
-        if not had_result and raises_on_error:
-            raise ConversionError(
-                "Extraction failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
             )
 
     @validate_call(config=ConfigDict(strict=True))
@@ -424,49 +349,6 @@ class DocumentConverter:
                     )
                     yield item
 
-    def _extract(
-        self,
-        conv_input: _DocumentConversionInput,
-        raises_on_error: bool,
-        template: Optional[ExtractionTemplateType] = None,
-    ) -> Iterator[ExtractionResult]:
-        start_time = time.monotonic()
-
-        for input_batch in chunkify(
-            conv_input.docs(self.format_to_options),
-            settings.perf.doc_batch_size,
-        ):
-            _log.info("Going to extract document batch...")
-            process_func = partial(
-                self._process_document_extraction,
-                raises_on_error=raises_on_error,
-                template=template,
-            )
-
-            if (
-                settings.perf.doc_batch_concurrency > 1
-                and settings.perf.doc_batch_size > 1
-            ):
-                with ThreadPoolExecutor(
-                    max_workers=settings.perf.doc_batch_concurrency
-                ) as pool:
-                    for item in pool.map(
-                        process_func,
-                        input_batch,
-                    ):
-                        yield item
-            else:
-                for item in map(
-                    process_func,
-                    input_batch,
-                ):
-                    elapsed = time.monotonic() - start_time
-                    start_time = time.monotonic()
-                    _log.info(
-                        f"Finished extracting document {item.input.file.name} in {elapsed:.2f} sec."
-                    )
-                    yield item
-
     def _get_pipeline(self, doc_format: InputFormat) -> Optional[BasePipeline]:
         """Retrieve or initialize a pipeline, reusing instances based on class and options."""
         fopt = self.format_to_options.get(doc_format)
@@ -520,35 +402,6 @@ class DocumentConverter:
 
         return conv_res
 
-    def _process_document_extraction(
-        self,
-        in_doc: InputDocument,
-        raises_on_error: bool,
-        template: Optional[ExtractionTemplateType] = None,
-    ) -> ExtractionResult:
-        valid = (
-            self.allowed_formats is not None and in_doc.format in self.allowed_formats
-        )
-        if valid:
-            ext_res = self._execute_extraction_pipeline(
-                in_doc, raises_on_error=raises_on_error, template=template
-            )
-        else:
-            error_message = f"File format not allowed: {in_doc.file}"
-            if raises_on_error:
-                raise ConversionError(error_message)
-            else:
-                error_item = ErrorItem(
-                    component_type=DoclingComponentType.USER_INPUT,
-                    module_name="",
-                    error_message=error_message,
-                )
-                ext_res = ExtractionResult(
-                    input=in_doc, status=ConversionStatus.SKIPPED, errors=[error_item]
-                )
-
-        return ext_res
-
     def _execute_pipeline(
         self, in_doc: InputDocument, raises_on_error: bool
     ) -> ConversionResult:
@@ -578,40 +431,3 @@ class DocumentConverter:
                 # TODO add error log why it failed.
 
         return conv_res
-
-    def _execute_extraction_pipeline(
-        self,
-        in_doc: InputDocument,
-        raises_on_error: bool,
-        template: Optional[ExtractionTemplateType] = None,
-    ) -> ExtractionResult:
-        if in_doc.valid:
-            # Use the same backend as conversion to get the document structure
-            # The extraction pipeline will handle the actual extraction
-            pipeline = self._get_extraction_pipeline()
-            if pipeline is not None:
-                ext_res = pipeline.execute(
-                    in_doc, raises_on_error=raises_on_error, template=template
-                )
-            else:
-                if raises_on_error:
-                    raise ConversionError(
-                        f"No extraction pipeline could be initialized for {in_doc.file}."
-                    )
-                else:
-                    ext_res = ExtractionResult(
-                        input=in_doc,
-                        status=ConversionStatus.FAILURE,
-                    )
-        else:
-            if raises_on_error:
-                raise ConversionError(f"Input document {in_doc.file} is not valid.")
-            else:
-                # invalid doc or not of desired format
-                ext_res = ExtractionResult(
-                    input=in_doc,
-                    status=ConversionStatus.FAILURE,
-                )
-                # TODO add error log why it failed.
-
-        return ext_res
