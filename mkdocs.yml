@@ -48,7 +48,7 @@ theme:
     - navigation.path
     - navigation.sections  # <=
     - navigation.top
-    - navigation.tracking
+    # - navigation.tracking
     - search.suggest
     - toc.follow
 nav:
