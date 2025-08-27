@@ -15,14 +15,15 @@ class ExampleTemplate(BaseModel):
     bill_no: str = Field(
         examples=["A123", "5414"]
     )  # provide some examples, but not the actual value of the test sample
-    total: int = Field(
-        default=10, examples=[20]
+    total: float = Field(
+        default=10.0, examples=[20.0]
     )  # provide a default value and some examples
 
 
 @pytest.fixture
 def converter() -> DocumentConverter:
     """Create a document converter instance for testing."""
+
     return DocumentConverter(allowed_formats=[InputFormat.IMAGE, InputFormat.PDF])
 
 
@@ -30,19 +31,23 @@ def converter() -> DocumentConverter:
 def test_file_path() -> Path:
     """Get the path to the test QR bill image."""
     return Path(__file__).parent / "data_scanned" / "qr_bill_example.jpg"
+    # return Path("tests/data/pdf/code_and_formula.pdf")
 
 
 def test_extraction_with_string_template(
     converter: DocumentConverter, test_file_path: Path
 ) -> None:
     """Test extraction using string template."""
-    str_templ = '{"bill_no": "string", "total": "integer"}'
+    str_templ = '{"bill_no": "string", "total": "number"}'
 
     result = converter.extract(test_file_path, template=str_templ)
 
+    print(result.pages)
+
     assert result.status is not None
-    assert result.data["bill_no"] == "3139"
-    assert result.data["total"] == 3949.75
+    assert len(result.pages) == 1
+    assert result.pages[0].extracted_data["bill_no"] == "3139"
+    assert result.pages[0].extracted_data["total"] == 3949.75
 
 
 def test_extraction_with_dict_template(
@@ -51,13 +56,14 @@ def test_extraction_with_dict_template(
     """Test extraction using dictionary template."""
     dict_templ = {
         "bill_no": "string",
-        "total": "integer",
+        "total": "number",
     }
 
     result = converter.extract(test_file_path, template=dict_templ)
 
-    assert result.data["bill_no"] == "3139"
-    assert result.data["total"] == 3949.75
+    assert len(result.pages) == 1
+    assert result.pages[0].extracted_data["bill_no"] == "3139"
+    assert result.pages[0].extracted_data["total"] == 3949.75
 
 
 def test_extraction_with_pydantic_instance_template(
@@ -68,8 +74,9 @@ def test_extraction_with_pydantic_instance_template(
 
     result = converter.extract(test_file_path, template=pydantic_instance_templ)
 
-    assert result.data["bill_no"] == "3139"
-    assert result.data["total"] == 3949.75
+    assert len(result.pages) == 1
+    assert result.pages[0].extracted_data["bill_no"] == "3139"
+    assert result.pages[0].extracted_data["total"] == 3949.75
 
 
 def test_extraction_with_pydantic_class_template(
@@ -80,5 +87,6 @@ def test_extraction_with_pydantic_class_template(
 
     result = converter.extract(test_file_path, template=pydantic_class_templ)
 
-    assert result.data["bill_no"] == "3139"
-    assert result.data["total"] == 3949.75
+    assert len(result.pages) == 1
+    assert result.pages[0].extracted_data["bill_no"] == "3139"
+    assert result.pages[0].extracted_data["total"] == 3949.75

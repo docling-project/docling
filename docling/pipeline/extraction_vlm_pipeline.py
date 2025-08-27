@@ -9,8 +9,12 @@ from pydantic import BaseModel
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.datamodel.base_models import ConversionStatus
-from docling.datamodel.document import ExtractionResult, InputDocument
-from docling.datamodel.pipeline_options import VlmExtractionPipelineOptions
+from docling.datamodel.document import (
+    ExtractedPageData,
+    ExtractionResult,
+    InputDocument,
+)
+from docling.datamodel.pipeline_options import BaseOptions, VlmExtractionPipelineOptions
 from docling.models.vlm_models_inline.nuextract_transformers_model import (
     NuExtractTransformersModel,
 )
@@ -47,7 +51,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             images = self._get_images_from_input(ext_res.input)
             if not images:
                 ext_res.status = ConversionStatus.FAILURE
-                ext_res.data = {"error": "No images found in document"}
+                ext_res.errors.append({"message": "No images found in document"})
                 return ext_res
 
             # Use provided template or default prompt
@@ -57,49 +61,54 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                 prompt = "Extract all text and structured information from this document. Return as JSON."
 
             # Process all images with VLM model
-            all_extracted_data = []
             for i, image in enumerate(images):
-                predictions = list(self.vlm_model.process_images([image], prompt))
+                page_number = i + 1
+                try:
+                    predictions = list(self.vlm_model.process_images([image], prompt))
 
-                if predictions:
-                    # Parse the extracted text as JSON if possible, otherwise use as-is
-                    extracted_text = predictions[0].text
-                    try:
-                        import json
+                    if predictions:
+                        # Parse the extracted text as JSON if possible, otherwise use as-is
+                        extracted_text = predictions[0].text
+                        extracted_data = None
 
-                        extracted_data = json.loads(extracted_text)
-                        extracted_data["page"] = i + 1  # Add page number
-                    except (json.JSONDecodeError, ValueError):
-                        # If not valid JSON, store as text
-                        extracted_data = {
-                            "page": i + 1,
-                            "extracted_text": extracted_text,
-                        }
+                        try:
+                            extracted_data = json.loads(extracted_text)
+                        except (json.JSONDecodeError, ValueError):
+                            # If not valid JSON, keep extracted_data as None
+                            pass
 
-                    all_extracted_data.append(extracted_data)
-                else:
-                    all_extracted_data.append(
-                        {"page": i + 1, "error": "No extraction result"}
+                        # Create page data with proper structure
+                        page_data = ExtractedPageData(
+                            page_no=page_number,
+                            extracted_data=extracted_data,
+                            raw_text=extracted_text,  # Always populate raw_text
+                        )
+                        ext_res.pages.append(page_data)
+                    else:
+                        # Add error page data
+                        page_data = ExtractedPageData(
+                            page_no=page_number,
+                            extracted_data=None,
+                            errors=["No extraction result from VLM model"],
+                        )
+                        ext_res.pages.append(page_data)
+
+                except Exception as e:
+                    _log.error(f"Error processing page {page_number}: {e}")
+                    page_data = ExtractedPageData(
+                        page_no=page_number, extracted_data=None, errors=[str(e)]
                     )
-
-            # Combine all page results
-            if len(all_extracted_data) == 1:
-                ext_res.data = all_extracted_data[0]
-            else:
-                ext_res.data = {
-                    "pages": all_extracted_data,
-                    "total_pages": len(all_extracted_data),
-                }
+                    ext_res.pages.append(page_data)
 
         except Exception as e:
             _log.error(f"Error during extraction: {e}")
-            ext_res.data = {"error": str(e)}
+            ext_res.errors.append({"message": str(e)})
 
         return ext_res
 
     def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
         """Determine the status based on extraction results."""
-        if ext_res.data and "error" not in ext_res.data:
+        if ext_res.pages and not any(page.errors for page in ext_res.pages):
             return ConversionStatus.SUCCESS
         else:
             return ConversionStatus.FAILURE
@@ -155,5 +164,5 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             raise ValueError(f"Unsupported template type: {type(template)}")
 
     @classmethod
-    def get_default_options(cls) -> VlmExtractionPipelineOptions:
+    def get_default_options(cls) -> BaseOptions:
         return VlmExtractionPipelineOptions()
