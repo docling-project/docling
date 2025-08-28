@@ -59,12 +59,17 @@ _log = logging.getLogger(__name__)
 _PIPELINE_CACHE_LOCK = threading.Lock()
 
 
-class FormatOption(BaseModel):
-    pipeline_cls: Type[BasePipeline]
+class BaseFormatOption(BaseModel):
+    """Base class for format options used by _DocumentConversionInput."""
+
     pipeline_options: Optional[PipelineOptions] = None
     backend: Type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class FormatOption(BaseFormatOption):
+    pipeline_cls: Type[BasePipeline]
 
     @model_validator(mode="after")
     def set_optional_field_default(self) -> "FormatOption":
@@ -193,7 +198,7 @@ class DocumentConverter:
         self.allowed_formats = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
-        self.format_to_options = {
+        self.format_to_options: Dict[InputFormat, FormatOption] = {
             format: (
                 _get_default_option(format=format)
                 if (custom_option := (format_options or {}).get(format)) is None

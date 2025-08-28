@@ -281,7 +281,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         if generated_ids.shape[0] > 0:  # type: ignore
             _log.debug(
                 f"Generated {int(generated_ids[0].shape[0])} tokens in {generation_time:.2f}s "
-                f"for batch size {generated_ids.shape[0]}."
+                f"for batch size {generated_ids.shape[0]}."  # type: ignore
             )
 
         for text in decoded_texts:

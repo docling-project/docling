@@ -301,7 +301,7 @@ class VlmExtractionPipelineOptions(PipelineOptions):
     kind: ClassVar[str] = "extraction_pipeline_options"
 
     artifacts_path: Optional[Union[Path, str]] = None
-    vlm_options: Union[InlineVlmOptions, ApiVlmOptions] = NU_EXTRACT_2B_TRANSFORMERS
+    vlm_options: Union[InlineVlmOptions] = NU_EXTRACT_2B_TRANSFORMERS
 
 
 class PdfPipelineOptions(PaginatedPipelineOptions):

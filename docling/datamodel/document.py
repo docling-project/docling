@@ -2,7 +2,7 @@ import csv
 import logging
 import re
 import tarfile
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
@@ -73,7 +73,9 @@ from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash
 
 if TYPE_CHECKING:
-    from docling.document_converter import FormatOption
+    from docling.document_converter import BaseFormatOption, FormatOption
+    from docling.document_extractor import ExtractionFormatOption
+
 
 _log = logging.getLogger(__name__)
 
@@ -268,7 +270,8 @@ class _DocumentConversionInput(BaseModel):
     limits: Optional[DocumentLimits] = DocumentLimits()
 
     def docs(
-        self, format_options: Dict[InputFormat, "FormatOption"]
+        self,
+        format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
             obj = (

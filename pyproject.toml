@@ -257,6 +257,7 @@ module = [
   "transformers.*",
   "pylatexenc.*",
   "vllm.*",
+  "qwen_vl_utils.*",
 ]
 ignore_missing_imports = true
 
