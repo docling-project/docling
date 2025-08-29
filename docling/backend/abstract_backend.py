@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING, Set, Union
 
 from docling_core.types.doc import DoclingDocument
 
-from docling.backend.pdf_backend import PdfPageBackend
-
 if TYPE_CHECKING:
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.document import InputDocument
