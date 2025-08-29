@@ -53,7 +53,7 @@ def main():
 
     conv_res = doc_converter.convert(input_doc_path)
     conv_doc = conv_res.document
-    doc_filename = conv_res.input.file
+    doc_filename = conv_res.input.file.name
 
     # Save markdown with embedded pictures in original text
     md_filename = output_dir / f"{doc_filename}-with-images-orig.md"
@@ -66,8 +66,11 @@ def main():
 
         elif isinstance(element, TableItem):
             for cell in element.data.table_cells:
-                cell.text = translate(text=element.text)
+                cell.text = translate(text=cell.text)
 
     # Save markdown with embedded pictures in translated text
     md_filename = output_dir / f"{doc_filename}-with-images-translated.md"
     conv_doc.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
+
+if __name__ == "__main__":
+    main()
