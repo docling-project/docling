@@ -49,20 +49,27 @@ from docling.datamodel.settings import (
 from docling.exceptions import ConversionError
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
+from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
+from docling.types import ExtractionTemplateType
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 _PIPELINE_CACHE_LOCK = threading.Lock()
 
 
-class FormatOption(BaseModel):
-    pipeline_cls: Type[BasePipeline]
+class BaseFormatOption(BaseModel):
+    """Base class for format options used by _DocumentConversionInput."""
+
     pipeline_options: Optional[PipelineOptions] = None
     backend: Type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class FormatOption(BaseFormatOption):
+    pipeline_cls: Type[BasePipeline]
 
     @model_validator(mode="after")
     def set_optional_field_default(self) -> "FormatOption":
@@ -191,7 +198,7 @@ class DocumentConverter:
         self.allowed_formats = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
-        self.format_to_options = {
+        self.format_to_options: Dict[InputFormat, FormatOption] = {
             format: (
                 _get_default_option(format=format)
                 if (custom_option := (format_options or {}).get(format)) is None

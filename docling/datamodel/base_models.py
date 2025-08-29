@@ -1,7 +1,7 @@
 import math
 from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -31,6 +31,18 @@ from pydantic import (
 
 if TYPE_CHECKING:
     from docling.backend.pdf_backend import PdfPageBackend
+
+from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.datamodel.pipeline_options import PipelineOptions
+
+
+class BaseFormatOption(BaseModel):
+    """Base class for format options used by _DocumentConversionInput."""
+
+    pipeline_options: Optional[PipelineOptions] = None
+    backend: Type[AbstractDocumentBackend]
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ConversionStatus(str, Enum):

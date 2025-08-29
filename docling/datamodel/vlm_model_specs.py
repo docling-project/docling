@@ -247,6 +247,23 @@ DOLPHIN_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# NuExtract
+NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
+    repo_id="numind/NuExtract-2.0-2B",
+    prompt="",  # This won't be used, template is passed separately
+    torch_dtype="bfloat16",
+    inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+    response_format=ResponseFormat.PLAINTEXT,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+    ],
+    scale=2.0,
+    temperature=0.0,
+)
+
 
 class VlmModelType(str, Enum):
     SMOLDOCLING = "smoldocling"
