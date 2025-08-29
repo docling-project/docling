@@ -74,6 +74,7 @@ from docling.document_converter import (
     FormatOption,
     PdfFormatOption,
 )
+from docling.pipeline.factory import get_pipeline_factory
 from docling.models.factories import get_ocr_factory
 from docling.postprocess.factory import get_postprocessor_factory
 from docling.pipeline.asr_pipeline import AsrPipeline
@@ -326,6 +327,12 @@ def convert(  # noqa: C901
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
     ] = ProcessingPipeline.STANDARD,
+    pipeline_plugin: Annotated[
+        Optional[str],
+        typer.Option(
+            ..., help="Optional external pipeline kind to use (from plugins)",
+        ),
+    ] = None,
     vlm_model: Annotated[
         VlmModelType,
         typer.Option(..., help="Choose the VLM model to use with PDF or image files."),
@@ -588,7 +595,14 @@ def convert(  # noqa: C901
 
         format_options: Dict[InputFormat, FormatOption] = {}
 
-        if pipeline == ProcessingPipeline.STANDARD:
+        if pipeline_plugin is not None:
+            # Use external pipeline for PDF/IMAGE via plugin factory
+            pp_factory = get_pipeline_factory(allow_external_plugins=allow_external_plugins)
+            plugin_options = pp_factory.create_options(kind=pipeline_plugin)
+            plugin_cls = pp_factory.classes[type(plugin_options)]
+            pdf_format_option = PdfFormatOption(pipeline_cls=plugin_cls, pipeline_options=plugin_options)
+            format_options = {InputFormat.PDF: pdf_format_option, InputFormat.IMAGE: pdf_format_option}
+        elif pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
