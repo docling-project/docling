@@ -1204,7 +1204,7 @@ examples = [
 
 [[package]]
 name = "docling-core"
-version = "2.45.0"
+version = "2.46.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonref" },
@@ -1218,9 +1218,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/57/e8/957a263fa00e8e0185589e36812f904618a597d77656187202f4b6bc78f1/docling_core-2.45.0.tar.gz", hash = "sha256:21ae79263f234ec5ed660b0b508019480adf16ddfa81cea60cd3a9f986f9abf1", size = 159058, upload-time = "2025-08-20T12:36:50.649Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/7c/7f70a695b324b230790d5a92c4d2851358c9465f5b17860e0c1c07dd7dad/docling_core-2.46.0.tar.gz", hash = "sha256:f8f5d1583b35b3e9ddac46f2b47d7ec218f914803a7edf46ad3392da870f4d88", size = 160789, upload-time = "2025-09-01T09:30:52.428Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cf/69/ea4ffb14ea5cd43c243be20a03b7b1f12a99f11ac3108f62ef45edf74c18/docling_core-2.45.0-py3-none-any.whl", hash = "sha256:043b2eb75ef48208fe43139aeee828b3d48941ed7083ed714851eee9f6f5c4f3", size = 163251, upload-time = "2025-08-20T12:36:48.858Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/c2/674bf25baa178af9f8397e48997205a3f5ab0382d35f68f1d64d92ed79af/docling_core-2.46.0-py3-none-any.whl", hash = "sha256:890e375bc569ccfd9499aa8f8c635c8714e5e8ab27f901a862ba84dd4fcb3e0c", size = 164097, upload-time = "2025-09-01T09:30:50.794Z" },
 ]
 
 [package.optional-dependencies]
