@@ -1175,7 +1175,7 @@ chunking = [
 [[package]]
 name = "docling-ibm-models"
 version = "3.9.0"
-source = { git = "https://github.com/docling-project/docling-ibm-models.git?branch=nli%2Ffix_reading_order#70ee786528446ad9c436492e6d6232236b49ba0c" }
+source = { git = "https://github.com/docling-project/docling-ibm-models.git?branch=nli%2Ffix_reading_order#38db36e65dddedde05f44e17e83f78f37ae09a97" }
 dependencies = [
     { name = "accelerate" },
     { name = "docling-core" },
