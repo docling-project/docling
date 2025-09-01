@@ -72,5 +72,6 @@ def main():
     md_filename = output_dir / f"{doc_filename}-with-images-translated.md"
     conv_doc.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
 
+
 if __name__ == "__main__":
     main()
