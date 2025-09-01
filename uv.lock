@@ -1071,7 +1071,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
     { name = "docling-core", extras = ["chunking"], specifier = ">=2.42.0,<3.0.0" },
-    { name = "docling-ibm-models", specifier = ">=3.9.0,<4" },
+    { name = "docling-ibm-models", git = "https://github.com/docling-project/docling-ibm-models.git?branch=nli%2Ffix_reading_order" },
     { name = "docling-parse", specifier = ">=4.2.2,<5.0.0" },
     { name = "easyocr", specifier = ">=1.7,<2.0" },
     { name = "filetype", specifier = ">=1.2.0,<2.0.0" },
@@ -1175,7 +1175,7 @@ chunking = [
 [[package]]
 name = "docling-ibm-models"
 version = "3.9.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/docling-project/docling-ibm-models.git?branch=nli%2Ffix_reading_order#70ee786528446ad9c436492e6d6232236b49ba0c" }
 dependencies = [
     { name = "accelerate" },
     { name = "docling-core" },
@@ -1194,10 +1194,6 @@ dependencies = [
     { name = "torchvision", version = "0.23.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
     { name = "tqdm" },
     { name = "transformers" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/15/4e/8fdc66af4390d4cfa6ecfe27a03bdbacde96f80dda4baff7f01f5dae8b04/docling_ibm_models-3.9.0.tar.gz", hash = "sha256:e3f866371df86a85abc2ae88fa05a9e56e3ae3b5e6512bec9cc5b6e12096af50", size = 86575, upload-time = "2025-07-23T14:18:29.579Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f0/74/9ff640777c35b7a5347e53d55fe8103ee621bd1c72e820456673f59f1184/docling_ibm_models-3.9.0-py3-none-any.whl", hash = "sha256:cde63a13314c72c969a355cd4dfea8aa253d14ff8fb7fd4bc15d6e2c9d161c4d", size = 86602, upload-time = "2025-07-23T14:18:28.354Z" },
 ]
 
 [[package]]

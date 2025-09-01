@@ -151,6 +151,9 @@ constraints = [
 package = true
 default-groups = "all"
 
+[tool.uv.sources]
+docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models.git", branch = "nli/fix_reading_order" }
+
 [tool.setuptools.packages.find]
 include = ["docling*"]
 
