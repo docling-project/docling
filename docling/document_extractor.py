@@ -3,29 +3,17 @@ import logging
 import sys
 import threading
 import time
+import warnings
 from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, Union
 
-from pydantic import BaseModel, ConfigDict, model_validator, validate_call
+from pydantic import ConfigDict, model_validator, validate_call
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.asciidoc_backend import AsciiDocBackend
-from docling.backend.csv_backend import CsvDocumentBackend
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
-from docling.backend.html_backend import HTMLDocumentBackend
-from docling.backend.json.docling_json_backend import DoclingJSONBackend
-from docling.backend.md_backend import MarkdownDocumentBackend
-from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
-from docling.backend.msexcel_backend import MsExcelDocumentBackend
-from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
-from docling.backend.msword_backend import MsWordDocumentBackend
-from docling.backend.noop_backend import NoOpBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
-from docling.backend.xml.jats_backend import JatsDocumentBackend
-from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -137,12 +125,12 @@ class DocumentExtractor:
     def extract(
         self,
         source: Union[Path, str, DocumentStream],
+        template: ExtractionTemplateType,
         headers: Optional[Dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
-        template: Optional[ExtractionTemplateType] = None,
     ) -> ExtractionResult:
         all_res = self.extract_all(
             source=[source],
@@ -159,13 +147,20 @@ class DocumentExtractor:
     def extract_all(
         self,
         source: Iterable[Union[Path, str, DocumentStream]],
+        template: ExtractionTemplateType,
         headers: Optional[Dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
-        template: Optional[ExtractionTemplateType] = None,
     ) -> Iterator[ExtractionResult]:
+        warnings.warn(
+            "The extract API is currently experimental and may change without prior notice.\n"
+            "Only PDF and image formats are supported.",
+            UserWarning,
+            stacklevel=2,
+        )
+
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
@@ -203,7 +198,7 @@ class DocumentExtractor:
         self,
         conv_input: _DocumentConversionInput,
         raises_on_error: bool,
-        template: Optional[ExtractionTemplateType] = None,
+        template: ExtractionTemplateType,
     ) -> Iterator[ExtractionResult]:
         start_time = time.monotonic()
 
@@ -246,7 +241,7 @@ class DocumentExtractor:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        template: Optional[ExtractionTemplateType] = None,
+        template: ExtractionTemplateType,
     ) -> ExtractionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
@@ -273,7 +268,7 @@ class DocumentExtractor:
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        template: Optional[ExtractionTemplateType] = None,
+        template: ExtractionTemplateType,
     ) -> ExtractionResult:
         if not in_doc.valid:
             if raises_on_error:

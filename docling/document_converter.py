@@ -49,10 +49,8 @@ from docling.datamodel.settings import (
 from docling.exceptions import ConversionError
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.base_pipeline import BasePipeline
-from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
 from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
-from docling.types import ExtractionTemplateType
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
