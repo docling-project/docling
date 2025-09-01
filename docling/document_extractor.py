@@ -86,7 +86,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
 
 
 class DocumentExtractor:
-    """Standalone extractor that mirrors DocumentConverter's surface.
+    """Standalone extractor class.
 
     Public API:
         - `extract(...) -> ExtractionResult`
