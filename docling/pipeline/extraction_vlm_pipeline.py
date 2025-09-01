@@ -82,8 +82,10 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                 prompt = "Extract all text and structured information from this document. Return as JSON."
 
             # Process all images with VLM model
+            start_page, end_page = ext_res.input.limits.page_range
             for i, image in enumerate(images):
-                page_number = i + 1
+                # Calculate the actual page number based on the filtered range
+                page_number = start_page + i
                 try:
                     predictions = list(self.vlm_model.process_images([image], prompt))
 
@@ -150,21 +152,28 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             assert isinstance(backend, PdfDocumentBackend)
             # Use the backend's pagination interface
             page_count = backend.page_count()
-            _log.info(f"Processing {page_count} pages for extraction")
+
+            # Respect page range limits, following the same pattern as PaginatedPipeline
+            start_page, end_page = input_doc.limits.page_range
+            _log.info(
+                f"Processing pages {start_page}-{end_page} of {page_count} total pages for extraction"
+            )
 
             for page_num in range(page_count):
-                try:
-                    page_backend = backend.load_page(page_num)
-                    if page_backend.is_valid():
-                        # Get page image at a reasonable scale
-                        page_image = page_backend.get_page_image(
-                            scale=self.pipeline_options.vlm_options.scale
-                        )
-                        images.append(page_image)
-                    else:
-                        _log.warning(f"Page {page_num} backend is not valid")
-                except Exception as e:
-                    _log.error(f"Error loading page {page_num}: {e}")
+                # Only process pages within the specified range (0-based indexing)
+                if start_page - 1 <= page_num <= end_page - 1:
+                    try:
+                        page_backend = backend.load_page(page_num)
+                        if page_backend.is_valid():
+                            # Get page image at a reasonable scale
+                            page_image = page_backend.get_page_image(
+                                scale=self.pipeline_options.vlm_options.scale
+                            )
+                            images.append(page_image)
+                        else:
+                            _log.warning(f"Page {page_num + 1} backend is not valid")
+                    except Exception as e:
+                        _log.error(f"Error loading page {page_num + 1}: {e}")
 
         except Exception as e:
             _log.error(f"Error getting images from input document: {e}")

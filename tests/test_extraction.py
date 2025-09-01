@@ -2,6 +2,7 @@
 Test unit for document extraction functionality.
 """
 
+import os
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,8 @@ from pydantic import BaseModel, Field
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter
 from docling.document_extractor import DocumentExtractor
+
+IS_CI = bool(os.getenv("CI"))
 
 
 class ExampleTemplate(BaseModel):
@@ -35,6 +38,9 @@ def test_file_path() -> Path:
     # return Path("tests/data/pdf/code_and_formula.pdf")
 
 
+@pytest.mark.skipif(
+    IS_CI, reason="Skipping test in CI because the dataset is too heavy."
+)
 def test_extraction_with_string_template(
     extractor: DocumentExtractor, test_file_path: Path
 ) -> None:
@@ -51,6 +57,9 @@ def test_extraction_with_string_template(
     assert result.pages[0].extracted_data["total"] == 3949.75
 
 
+@pytest.mark.skipif(
+    IS_CI, reason="Skipping test in CI because the dataset is too heavy."
+)
 def test_extraction_with_dict_template(
     extractor: DocumentExtractor, test_file_path: Path
 ) -> None:
@@ -67,6 +76,9 @@ def test_extraction_with_dict_template(
     assert result.pages[0].extracted_data["total"] == 3949.75
 
 
+@pytest.mark.skipif(
+    IS_CI, reason="Skipping test in CI because the dataset is too heavy."
+)
 def test_extraction_with_pydantic_instance_template(
     extractor: DocumentExtractor, test_file_path: Path
 ) -> None:
@@ -80,6 +92,9 @@ def test_extraction_with_pydantic_instance_template(
     assert result.pages[0].extracted_data["total"] == 3949.75
 
 
+@pytest.mark.skipif(
+    IS_CI, reason="Skipping test in CI because the dataset is too heavy."
+)
 def test_extraction_with_pydantic_class_template(
     extractor: DocumentExtractor, test_file_path: Path
 ) -> None:
