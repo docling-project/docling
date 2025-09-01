@@ -239,15 +239,18 @@ class LayoutPostprocessor:
         final_clusters = self._sort_clusters(
             self.regular_clusters + self.special_clusters, mode="id"
         )
-        for cluster in final_clusters:
-            cluster.cells = self._sort_cells(cluster.cells)
-            # Also sort cells in children if any
-            for child in cluster.children:
-                child.cells = self._sort_cells(child.cells)
 
-        assert self.page.parsed_page is not None
-        self.page.parsed_page.textline_cells = self.cells
-        self.page.parsed_page.has_lines = len(self.cells) > 0
+        # Conditionally process cells if not skipping cell assignment
+        if not self.options.skip_cell_assignment:
+            for cluster in final_clusters:
+                cluster.cells = self._sort_cells(cluster.cells)
+                # Also sort cells in children if any
+                for child in cluster.children:
+                    child.cells = self._sort_cells(child.cells)
+
+            assert self.page.parsed_page is not None
+            self.page.parsed_page.textline_cells = self.cells
+            self.page.parsed_page.has_lines = len(self.cells) > 0
 
         return final_clusters, self.cells
 
@@ -264,36 +267,38 @@ class LayoutPostprocessor:
             if cluster.label in self.LABEL_REMAPPING:
                 cluster.label = self.LABEL_REMAPPING[cluster.label]
 
-        # Initial cell assignment
-        clusters = self._assign_cells_to_clusters(clusters)
+        # Conditionally assign cells to clusters
+        if not self.options.skip_cell_assignment:
+            # Initial cell assignment
+            clusters = self._assign_cells_to_clusters(clusters)
 
-        # Remove clusters with no cells (if keep_empty_clusters is False),
-        # but always keep clusters with label DocItemLabel.FORMULA
-        if not self.options.keep_empty_clusters:
-            clusters = [
-                cluster
-                for cluster in clusters
-                if cluster.cells or cluster.label == DocItemLabel.FORMULA
-            ]
+            # Remove clusters with no cells (if keep_empty_clusters is False),
+            # but always keep clusters with label DocItemLabel.FORMULA
+            if not self.options.keep_empty_clusters:
+                clusters = [
+                    cluster
+                    for cluster in clusters
+                    if cluster.cells or cluster.label == DocItemLabel.FORMULA
+                ]
 
-        # Handle orphaned cells
-        unassigned = self._find_unassigned_cells(clusters)
-        if unassigned and self.options.create_orphan_clusters:
-            next_id = max((c.id for c in self.all_clusters), default=0) + 1
-            orphan_clusters = []
-            for i, cell in enumerate(unassigned):
-                conf = cell.confidence
+            # Handle orphaned cells
+            unassigned = self._find_unassigned_cells(clusters)
+            if unassigned and self.options.create_orphan_clusters:
+                next_id = max((c.id for c in self.all_clusters), default=0) + 1
+                orphan_clusters = []
+                for i, cell in enumerate(unassigned):
+                    conf = cell.confidence
 
-                orphan_clusters.append(
-                    Cluster(
-                        id=next_id + i,
-                        label=DocItemLabel.TEXT,
-                        bbox=cell.to_bounding_box(),
-                        confidence=conf,
-                        cells=[cell],
+                    orphan_clusters.append(
+                        Cluster(
+                            id=next_id + i,
+                            label=DocItemLabel.TEXT,
+                            bbox=cell.to_bounding_box(),
+                            confidence=conf,
+                            cells=[cell],
+                        )
                     )
-                )
-            clusters.extend(orphan_clusters)
+                clusters.extend(orphan_clusters)
 
         # Iterative refinement
         prev_count = len(clusters) + 1
@@ -350,12 +355,15 @@ class LayoutPostprocessor:
                         b=max(c.bbox.b for c in contained),
                     )
 
-                # Collect all cells from children
-                all_cells = []
-                for child in contained:
-                    all_cells.extend(child.cells)
-                special.cells = self._deduplicate_cells(all_cells)
-                special.cells = self._sort_cells(special.cells)
+                # Conditionally collect cells from children
+                if not self.options.skip_cell_assignment:
+                    all_cells = []
+                    for child in contained:
+                        all_cells.extend(child.cells)
+                    special.cells = self._deduplicate_cells(all_cells)
+                    special.cells = self._sort_cells(special.cells)
+                else:
+                    special.cells = []
 
         picture_clusters = [
             c for c in special_clusters if c.label == DocItemLabel.PICTURE

@@ -1,5 +1,6 @@
 import logging
 import re
+import traceback
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -20,7 +21,7 @@ from docling_core.types.doc import (
     TableData,
     TextItem,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.document import ContentLayer, Formatting, Script
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import override
 
@@ -38,19 +39,38 @@ _BLOCK_TAGS: Final = {
     "address",
     "details",
     "figure",
+    "footer",
     "h1",
     "h2",
     "h3",
     "h4",
     "h5",
     "h6",
+    "ol",
     "p",
     "pre",
-    "code",
-    "ul",
-    "ol",
     "summary",
     "table",
+    "ul",
+}
+
+_CODE_TAG_SET: Final = {"code", "kbd", "samp"}
+
+_FORMAT_TAG_MAP: Final = {
+    "b": {"bold": True},
+    "strong": {"bold": True},
+    "i": {"italic": True},
+    "em": {"italic": True},
+    "var": {"italic": True},
+    # "mark",
+    # "small",
+    "s": {"strikethrough": True},
+    "del": {"strikethrough": True},
+    "u": {"underline": True},
+    "ins": {"underline": True},
+    "sub": {"script": Script.SUB},
+    "sup": {"script": Script.SUPER},
+    **{k: {} for k in _CODE_TAG_SET},
 }
 
 
@@ -62,23 +82,42 @@ class _Context(BaseModel):
 class AnnotatedText(BaseModel):
     text: str
     hyperlink: Union[AnyUrl, Path, None] = None
+    formatting: Union[Formatting, None] = None
+    code: bool = False
 
 
 class AnnotatedTextList(list):
     def to_single_text_element(self) -> AnnotatedText:
         current_h = None
         current_text = ""
+        current_f = None
+        current_code = False
         for at in self:
             t = at.text
             h = at.hyperlink
+            f = at.formatting
+            c = at.code
             current_text += t.strip() + " "
+            if f is not None and current_f is None:
+                current_f = f
+            elif f is not None and current_f is not None and f != current_f:
+                _log.warning(
+                    f"Clashing formatting: '{f}' and '{current_f}'! Chose '{current_f}'"
+                )
             if h is not None and current_h is None:
                 current_h = h
             elif h is not None and current_h is not None and h != current_h:
                 _log.warning(
                     f"Clashing hyperlinks: '{h}' and '{current_h}'! Chose '{current_h}'"
                 )
-        return AnnotatedText(text=current_text.strip(), hyperlink=current_h)
+            current_code = c if c else current_code
+
+        return AnnotatedText(
+            text=current_text.strip(),
+            hyperlink=current_h,
+            formatting=current_f,
+            code=current_code,
+        )
 
     def simplify_text_elements(self) -> "AnnotatedTextList":
         simplified = AnnotatedTextList()
@@ -86,21 +125,37 @@ class AnnotatedTextList(list):
             return self
         text = self[0].text
         hyperlink = self[0].hyperlink
+        formatting = self[0].formatting
+        code = self[0].code
         last_elm = text
         for i in range(1, len(self)):
-            if hyperlink == self[i].hyperlink:
+            if (
+                hyperlink == self[i].hyperlink
+                and formatting == self[i].formatting
+                and code == self[i].code
+            ):
                 sep = " "
                 if not self[i].text.strip() or not last_elm.strip():
                     sep = ""
                 text += sep + self[i].text
                 last_elm = self[i].text
             else:
-                simplified.append(AnnotatedText(text=text, hyperlink=hyperlink))
+                simplified.append(
+                    AnnotatedText(
+                        text=text, hyperlink=hyperlink, formatting=formatting, code=code
+                    )
+                )
                 text = self[i].text
                 last_elm = text
                 hyperlink = self[i].hyperlink
+                formatting = self[i].formatting
+                code = self[i].code
         if text:
-            simplified.append(AnnotatedText(text=text, hyperlink=hyperlink))
+            simplified.append(
+                AnnotatedText(
+                    text=text, hyperlink=hyperlink, formatting=formatting, code=code
+                )
+            )
         return simplified
 
     def split_by_newline(self):
@@ -141,8 +196,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.ctx = _Context()
         for i in range(self.max_levels):
             self.parents[i] = None
-        self.hyperlink = None
+        self.hyperlink: Union[AnyUrl, Path, None] = None
         self.original_url = original_url
+        self.format_tags: list[str] = []
 
         try:
             raw = (
@@ -201,9 +257,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 orig=title_text,
                 content_layer=ContentLayer.FURNITURE,
             )
-        # remove scripts/styles
+        # remove script and style tags
         for tag in self.soup(["script", "style"]):
             tag.decompose()
+        # remove any hidden tag
+        for tag in self.soup(hidden=True):
+            tag.decompose()
+
         content = self.soup.body or self.soup
         # normalize <br> tags
         for br in content("br"):
@@ -234,7 +294,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         def flush_buffer():
             if not buffer:
                 return
-            annotated_text_list = buffer.simplify_text_elements()
+            annotated_text_list: AnnotatedTextList = buffer.simplify_text_elements()
             parts = annotated_text_list.split_by_newline()
             buffer.clear()
 
@@ -242,19 +302,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return
 
             for annotated_text_list in parts:
-                with self.use_inline_group(annotated_text_list, doc):
+                with self._use_inline_group(annotated_text_list, doc):
                     for annotated_text in annotated_text_list:
                         if annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(
                                 annotated_text.text.strip()
                             )
-                            doc.add_text(
-                                parent=self.parents[self.level],
-                                label=DocItemLabel.TEXT,
-                                text=seg_clean,
-                                content_layer=self.content_layer,
-                                hyperlink=annotated_text.hyperlink,
-                            )
+                            if annotated_text.code:
+                                doc.add_code(
+                                    parent=self.parents[self.level],
+                                    text=seg_clean,
+                                    content_layer=self.content_layer,
+                                    formatting=annotated_text.formatting,
+                                    hyperlink=annotated_text.hyperlink,
+                                )
+                            else:
+                                doc.add_text(
+                                    parent=self.parents[self.level],
+                                    label=DocItemLabel.TEXT,
+                                    text=seg_clean,
+                                    content_layer=self.content_layer,
+                                    formatting=annotated_text.formatting,
+                                    hyperlink=annotated_text.hyperlink,
+                                )
 
         for node in element.contents:
             if isinstance(node, Tag):
@@ -262,8 +332,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if name == "img":
                     flush_buffer()
                     self._emit_image(node, doc)
+                elif name in _FORMAT_TAG_MAP:
+                    with self._use_format([name]):
+                        self._walk(node, doc)
                 elif name == "a":
-                    with self.use_hyperlink(node):
+                    with self._use_hyperlink(node):
                         self._walk(node, doc)
                 elif name in _BLOCK_TAGS:
                     flush_buffer()
@@ -291,6 +364,27 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         flush_buffer()
 
+    @staticmethod
+    def _collect_parent_format_tags(item: PageElement) -> list[str]:
+        tags = []
+        for format_tag in _FORMAT_TAG_MAP:
+            this_parent = item.parent
+            while this_parent is not None:
+                if this_parent.name == format_tag:
+                    tags.append(format_tag)
+                    break
+                this_parent = this_parent.parent
+        return tags
+
+    @property
+    def _formatting(self):
+        kwargs = {}
+        for t in self.format_tags:
+            kwargs.update(_FORMAT_TAG_MAP[t])
+        if not kwargs:
+            return None
+        return Formatting(**kwargs)
+
     def _extract_text_and_hyperlink_recursively(
         self,
         item: PageElement,
@@ -301,15 +395,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         result: AnnotatedTextList = AnnotatedTextList()
 
         # If find_parent_annotation, make sure that we keep track of
-        # any a-tag that has been present in the DOM-parents already.
+        # any a- or formatting-tag that has been present in the
+        # DOM-parents already.
         if find_parent_annotation:
+            format_tags = self._collect_parent_format_tags(item)
             this_parent = item.parent
             while this_parent is not None:
                 if this_parent.name == "a" and this_parent.get("href"):
-                    with self.use_hyperlink(this_parent):
-                        return self._extract_text_and_hyperlink_recursively(
-                            item, ignore_list
-                        )
+                    with self._use_format(format_tags):
+                        with self._use_hyperlink(this_parent):
+                            return self._extract_text_and_hyperlink_recursively(
+                                item, ignore_list
+                            )
                 this_parent = this_parent.parent
 
         if isinstance(item, PreformattedString):
@@ -317,21 +414,43 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         if isinstance(item, NavigableString):
             text = item.strip()
+            code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             if text:
                 return AnnotatedTextList(
-                    [AnnotatedText(text=text, hyperlink=self.hyperlink)]
+                    [
+                        AnnotatedText(
+                            text=text,
+                            hyperlink=self.hyperlink,
+                            formatting=self._formatting,
+                            code=code,
+                        )
+                    ]
                 )
             if keep_newlines and item.strip("\n\r") == "":
                 return AnnotatedTextList(
-                    [AnnotatedText(text="\n", hyperlink=self.hyperlink)]
+                    [
+                        AnnotatedText(
+                            text="\n",
+                            hyperlink=self.hyperlink,
+                            formatting=self._formatting,
+                            code=code,
+                        )
+                    ]
                 )
             return AnnotatedTextList()
 
         tag = cast(Tag, item)
         if not ignore_list or (tag.name not in ["ul", "ol"]):
             for child in tag:
-                if isinstance(child, Tag) and child.name == "a":
-                    with self.use_hyperlink(child):
+                if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
+                    with self._use_format([child.name]):
+                        result.extend(
+                            self._extract_text_and_hyperlink_recursively(
+                                child, ignore_list, keep_newlines=keep_newlines
+                            )
+                        )
+                elif isinstance(child, Tag) and child.name == "a":
+                    with self._use_hyperlink(child):
                         result.extend(
                             self._extract_text_and_hyperlink_recursively(
                                 child, ignore_list, keep_newlines=keep_newlines
@@ -347,29 +466,41 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return result
 
     @contextmanager
-    def use_hyperlink(self, tag):
+    def _use_hyperlink(self, tag: Tag):
         this_href = tag.get("href")
         if this_href is None:
             yield None
         else:
-            if this_href:
-                old_hyperlink = self.hyperlink
+            if isinstance(this_href, str) and this_href:
+                old_hyperlink: Union[AnyUrl, Path, None] = self.hyperlink
+                new_hyperlink: Union[AnyUrl, Path, None] = None
                 if self.original_url is not None:
-                    this_href = urljoin(self.original_url, this_href)
+                    this_href = urljoin(str(self.original_url), str(this_href))
                 # ugly fix for relative links since pydantic does not support them.
                 try:
-                    AnyUrl(this_href)
+                    new_hyperlink = AnyUrl(this_href)
                 except ValidationError:
-                    this_href = Path(this_href)
-                self.hyperlink = this_href
+                    new_hyperlink = Path(this_href)
+                self.hyperlink = new_hyperlink
             try:
                 yield None
             finally:
-                if this_href:
+                if new_hyperlink:
                     self.hyperlink = old_hyperlink
 
     @contextmanager
-    def use_inline_group(
+    def _use_format(self, tags: list[str]):
+        if not tags:
+            yield None
+        else:
+            self.format_tags.extend(tags)
+            try:
+                yield None
+            finally:
+                self.format_tags = self.format_tags[: -len(tags)]
+
+    @contextmanager
+    def _use_inline_group(
         self, annotated_text_list: AnnotatedTextList, doc: DoclingDocument
     ):
         """Create an inline group for annotated texts.
@@ -381,9 +512,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         Args:
             annotated_text_list (AnnotatedTextList): Annotated text
             doc (DoclingDocument): Currently used document
-
-        Yields:
-            None: _description_
         """
         if len(annotated_text_list) > 1:
             inline_fmt = doc.add_group(
@@ -400,6 +528,57 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self.level -= 1
         else:
             yield None
+
+    @contextmanager
+    def _use_details(self, tag: Tag, doc: DoclingDocument):
+        """Create a group with the content of a details tag.
+
+        While the context manager is active, the hierarchy level is set one
+        level higher as the cuurent parent.
+
+        Args:
+            tag: The details tag.
+            doc: Currently used document.
+        """
+        self.parents[self.level + 1] = doc.add_group(
+            name=tag.name,
+            label=GroupLabel.SECTION,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+        )
+        self.level += 1
+        try:
+            yield None
+        finally:
+            self.parents[self.level + 1] = None
+            self.level -= 1
+
+    @contextmanager
+    def _use_footer(self, tag: Tag, doc: DoclingDocument):
+        """Create a group with a footer.
+
+        Create a group with the content of a footer tag. While the context manager
+        is active, the hierarchy level is set one level higher as the cuurent parent.
+
+        Args:
+            tag: The footer tag.
+            doc: Currently used document.
+        """
+        current_layer = self.content_layer
+        self.content_layer = ContentLayer.FURNITURE
+        self.parents[self.level + 1] = doc.add_group(
+            name=tag.name,
+            label=GroupLabel.SECTION,
+            parent=self.parents[self.level],
+            content_layer=self.content_layer,
+        )
+        self.level += 1
+        try:
+            yield None
+        finally:
+            self.parents[self.level + 1] = None
+            self.level -= 1
+            self.content_layer = current_layer
 
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> None:
         tag_name = tag.name.lower()
@@ -419,6 +598,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[self.level + 1] = doc.add_title(
                 text_clean,
                 content_layer=self.content_layer,
+                formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
             )
         # the other levels need to be lowered by 1 if a title was set
@@ -448,6 +628,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 orig=annotated_text.text,
                 level=self.level,
                 content_layer=self.content_layer,
+                formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
             )
         self.level += 1
@@ -517,19 +698,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             content_layer=self.content_layer,
                         )
                         self.level += 1
-                        with self.use_inline_group(min_parts, doc):
+                        with self._use_inline_group(min_parts, doc):
                             for annotated_text in min_parts:
                                 li_text = re.sub(
                                     r"\s+|\n+", " ", annotated_text.text
                                 ).strip()
                                 li_clean = HTMLDocumentBackend._clean_unicode(li_text)
-                                doc.add_text(
-                                    parent=self.parents[self.level],
-                                    label=DocItemLabel.TEXT,
-                                    text=li_clean,
-                                    content_layer=self.content_layer,
-                                    hyperlink=annotated_text.hyperlink,
-                                )
+                                if annotated_text.code:
+                                    doc.add_code(
+                                        parent=self.parents[self.level],
+                                        text=li_clean,
+                                        content_layer=self.content_layer,
+                                        formatting=annotated_text.formatting,
+                                        hyperlink=annotated_text.hyperlink,
+                                    )
+                                else:
+                                    doc.add_text(
+                                        parent=self.parents[self.level],
+                                        label=DocItemLabel.TEXT,
+                                        text=li_clean,
+                                        content_layer=self.content_layer,
+                                        formatting=annotated_text.formatting,
+                                        hyperlink=annotated_text.hyperlink,
+                                    )
 
                         # 4) recurse into any nested lists, attaching them to this <li> item
                         for sublist in li({"ul", "ol"}, recursive=False):
@@ -550,6 +741,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             orig=li_text,
                             parent=list_group,
                             content_layer=self.content_layer,
+                            formatting=annotated_text.formatting,
                             hyperlink=annotated_text.hyperlink,
                         )
 
@@ -591,19 +783,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             text_list = self._extract_text_and_hyperlink_recursively(
                 tag, find_parent_annotation=True
             )
-            annotated_texts = text_list.simplify_text_elements()
+            annotated_texts: AnnotatedTextList = text_list.simplify_text_elements()
             for part in annotated_texts.split_by_newline():
-                with self.use_inline_group(part, doc):
+                with self._use_inline_group(part, doc):
                     for annotated_text in part:
                         if seg := annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(seg)
-                            doc.add_text(
-                                parent=self.parents[self.level],
-                                label=DocItemLabel.TEXT,
-                                text=seg_clean,
-                                content_layer=self.content_layer,
-                                hyperlink=annotated_text.hyperlink,
-                            )
+                            if annotated_text.code:
+                                doc.add_code(
+                                    parent=self.parents[self.level],
+                                    text=seg_clean,
+                                    content_layer=self.content_layer,
+                                    formatting=annotated_text.formatting,
+                                    hyperlink=annotated_text.hyperlink,
+                                )
+                            else:
+                                doc.add_text(
+                                    parent=self.parents[self.level],
+                                    label=DocItemLabel.TEXT,
+                                    text=seg_clean,
+                                    content_layer=self.content_layer,
+                                    formatting=annotated_text.formatting,
+                                    hyperlink=annotated_text.hyperlink,
+                                )
 
             for img_tag in tag("img"):
                 if isinstance(img_tag, Tag):
@@ -621,13 +823,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     content_layer=self.content_layer,
                 )
 
-        elif tag_name in {"pre", "code"}:
+        elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
             text_list = self._extract_text_and_hyperlink_recursively(
-                tag, find_parent_annotation=True
+                tag, find_parent_annotation=True, keep_newlines=True
             )
             annotated_texts = text_list.simplify_text_elements()
-            with self.use_inline_group(annotated_texts, doc):
+            with self._use_inline_group(annotated_texts, doc):
                 for annotated_text in annotated_texts:
                     text_clean = HTMLDocumentBackend._clean_unicode(
                         annotated_text.text.strip()
@@ -636,21 +838,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         parent=self.parents[self.level],
                         text=text_clean,
                         content_layer=self.content_layer,
+                        formatting=annotated_text.formatting,
                         hyperlink=annotated_text.hyperlink,
                     )
 
+        elif tag_name == "footer":
+            with self._use_footer(tag, doc):
+                self._walk(tag, doc)
+
         elif tag_name == "details":
-            # handle details and its content.
-            self.parents[self.level + 1] = doc.add_group(
-                name="details",
-                label=GroupLabel.SECTION,
-                parent=self.parents[self.level],
-                content_layer=self.content_layer,
-            )
-            self.level += 1
-            self._walk(tag, doc)
-            self.parents[self.level + 1] = None
-            self.level -= 1
+            with self._use_details(tag, doc):
+                self._walk(tag, doc)
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> None:
         figure = img_tag.find_parent("figure")
@@ -686,12 +884,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             text_clean = HTMLDocumentBackend._clean_unicode(
                 caption_anno_text.text.strip()
             )
-            print(caption_anno_text)
             caption_item = doc.add_text(
                 label=DocItemLabel.CAPTION,
                 text=text_clean,
                 orig=caption_anno_text.text,
                 content_layer=self.content_layer,
+                formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
             )
 

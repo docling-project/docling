@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "ocr_test_rotated_180",
   "origin": {
     "mimetype": "application/pdf",
@@ -42,10 +42,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 441.25,
-            "t": 151.91,
-            "r": 522.04,
-            "b": 131.87,
+            "l": 441.26,
+            "t": 151.88,
+            "r": 522.03,
+            "b": 131.89,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

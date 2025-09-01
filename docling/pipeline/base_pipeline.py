@@ -20,7 +20,7 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult, InputDocument
-from docling.datamodel.pipeline_options import PipelineOptions
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -146,6 +146,7 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                     conv_res.pages.append(Page(page_no=i))
 
             try:
+                total_pages_processed = 0
                 # Iterate batches of pages (page_batch_size) in the doc
                 for page_batch in chunkify(
                     conv_res.pages, settings.perf.page_batch_size
@@ -168,6 +169,12 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                         # Cleanup page backends
                         if not self.keep_backend and p._backend is not None:
                             p._backend.unload()
+                        if (
+                            isinstance(self.pipeline_options, PdfPipelineOptions)
+                            and not self.pipeline_options.generate_parsed_pages
+                        ):
+                            del p.parsed_page
+                            p.parsed_page = None
 
                     end_batch_time = time.monotonic()
                     total_elapsed_time += end_batch_time - start_batch_time
@@ -180,9 +187,9 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                         )
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                         break
-
+                    total_pages_processed += len(page_batch)
                     _log.debug(
-                        f"Finished converting page batch time={end_batch_time:.3f}"
+                        f"Finished converting pages {total_pages_processed}/{len(conv_res.pages)} time={end_batch_time:.3f}"
                     )
 
             except Exception as e:

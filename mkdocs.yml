@@ -54,10 +54,13 @@ theme:
 nav:
   - Home:
     - "Docling": index.md
+    - Getting started:
+      - Getting started: getting_started/index.md
     - Installation:
       - Installation: installation/index.md
     - Usage:
       - Usage: usage/index.md
+      - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
@@ -96,6 +99,8 @@ nav:
       - examples/serialization.ipynb
       - examples/hybrid_chunking.ipynb
       - examples/advanced_chunking_and_serialization.ipynb
+    - ✂️ Data Preparation and Embedding Pipeline:
+      - examples/dpk-ingest-chunck-tokenize.ipynb
     - 🤖 RAG with AI dev frameworks:
       - examples/rag_haystack.ipynb
       - examples/rag_langchain.ipynb
@@ -156,6 +161,9 @@ markdown_extensions:
       slugify: !!python/object/apply:pymdownx.slugs.slugify
         kwds:
           case: lower
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - admonition
   - pymdownx.details
   - attr_list
@@ -175,3 +183,13 @@ plugins:
 
 extra_css:
   - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/docling-project/docling
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/docling/
+  analytics:
+    provider: google
+    property: G-MP75NXFDH4

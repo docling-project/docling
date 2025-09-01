@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "hyperlink_01",
   "origin": {
     "mimetype": "text/html",
@@ -34,6 +34,12 @@
       "children": [
         {
           "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
         }
       ],
       "content_layer": "body",
@@ -50,12 +56,6 @@
       "children": [
         {
           "$ref": "#/groups/0"
-        },
-        {
-          "$ref": "#/texts/2"
-        },
-        {
-          "$ref": "#/texts/3"
         }
       ],
       "content_layer": "body",
@@ -79,7 +79,7 @@
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -92,7 +92,7 @@
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",

@@ -55,8 +55,8 @@ def test_e2e_webp_conversions():
         TesseractCliOcrOptions(force_full_page_ocr=True, lang=["auto"]),
     ]
 
-    # rapidocr is only available for Python >=3.6,<3.13
-    if sys.version_info < (3, 13):
+    # rapidocr is only available for Python >=3.6,<3.14
+    if sys.version_info < (3, 14):
         engines.append(RapidOcrOptions())
         engines.append(RapidOcrOptions(force_full_page_ocr=True))
 

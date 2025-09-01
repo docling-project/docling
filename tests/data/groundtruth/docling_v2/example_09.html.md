@@ -27,6 +27,6 @@ HTML
 
 Docling has three backends for parsing HTML files:
 
-1. HTMLDocumentBackend Ignores images
-2. HTMLDocumentBackendImagesInline Extracts images inline
-3. HTMLDocumentBackendImagesReferenced Extracts images as references
+1. **HTMLDocumentBackend** Ignores images
+2. **HTMLDocumentBackendImagesInline** Extracts images inline
+3. **HTMLDocumentBackendImagesReferenced** Extracts images as references

@@ -5,918 +5,6 @@
       "width": 595.0,
       "height": 842.0
     },
-    "parsed_page": {
-      "dimension": {
-        "angle": 0.0,
-        "rect": {
-          "r_x0": 0.0,
-          "r_y0": 0.0,
-          "r_x1": 842.0,
-          "r_y1": 0.0,
-          "r_x2": 842.0,
-          "r_y2": 595.0,
-          "r_x3": 0.0,
-          "r_y3": 595.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "boundary_type": "crop_box",
-        "art_bbox": {
-          "l": 0.0,
-          "t": 595.0,
-          "r": 842.0,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "bleed_bbox": {
-          "l": 0.0,
-          "t": 595.0,
-          "r": 842.0,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "crop_bbox": {
-          "l": 0.0,
-          "t": 595.0,
-          "r": 842.0,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "media_bbox": {
-          "l": 0.0,
-          "t": 595.0,
-          "r": 842.0,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "trim_bbox": {
-          "l": 0.0,
-          "t": 595.0,
-          "r": 842.0,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        }
-      },
-      "bitmap_resources": [],
-      "char_cells": [],
-      "word_cells": [],
-      "textline_cells": [
-        {
-          "index": 0,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 153.94,
-            "r_y0": 122.38,
-            "r_x1": 452.05,
-            "r_y1": 122.38,
-            "r_x2": 452.05,
-            "r_y2": 102.67,
-            "r_x3": 153.94,
-            "r_y3": 102.67,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "THE SLEREXE COMPANY LIMITED",
-          "orig": "THE SLEREXE COMPANY LIMITED",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 1,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 194.26,
-            "r_y0": 140.74,
-            "r_x1": 414.18,
-            "r_y1": 140.74,
-            "r_x2": 414.18,
-            "r_y2": 124.67,
-            "r_x3": 194.26,
-            "r_y3": 124.67,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "SAPORS LANE - BOOLE - DORSET - BH 25 8 ER",
-          "orig": "SAPORS LANE - BOOLE - DORSET - BH 25 8 ER",
-          "text_direction": "left_to_right",
-          "confidence": 0.5,
-          "from_ocr": true
-        },
-        {
-          "index": 2,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 206.48,
-            "r_y0": 156.67,
-            "r_x1": 401.96,
-            "r_y1": 156.67,
-            "r_x2": 401.96,
-            "r_y2": 143.19,
-            "r_x3": 206.48,
-            "r_y3": 143.19,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "TELEPHONE BOOLE (945 13) 51617 - TELEX 123456",
-          "orig": "TELEPHONE BOOLE (945 13) 51617 - TELEX 123456",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 3,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 95.3,
-            "r_y0": 233.75,
-            "r_x1": 215.03,
-            "r_y1": 233.75,
-            "r_x2": 215.03,
-            "r_y2": 221.51,
-            "r_x3": 95.3,
-            "r_y3": 221.51,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Our Ref. 350/PJC/EAC",
-          "orig": "Our Ref. 350/PJC/EAC",
-          "text_direction": "left_to_right",
-          "confidence": 0.5,
-          "from_ocr": true
-        },
-        {
-          "index": 4,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 397.07,
-            "r_y0": 233.75,
-            "r_x1": 513.14,
-            "r_y1": 233.75,
-            "r_x2": 513.14,
-            "r_y2": 219.0,
-            "r_x3": 397.07,
-            "r_y3": 219.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "18th January, 1972.",
-          "orig": "18th January, 1972.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 5,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.74,
-            "r_y0": 281.48,
-            "r_x1": 196.7,
-            "r_y1": 281.48,
-            "r_x2": 196.7,
-            "r_y2": 268.0,
-            "r_x3": 97.74,
-            "r_y3": 268.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Dr. P.N. Cundall,",
-          "orig": "Dr. P.N. Cundall,",
-          "text_direction": "left_to_right",
-          "confidence": 0.5,
-          "from_ocr": true
-        },
-        {
-          "index": 6,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.74,
-            "r_y0": 292.5,
-            "r_x1": 213.81,
-            "r_y1": 292.5,
-            "r_x2": 213.81,
-            "r_y2": 279.0,
-            "r_x3": 97.74,
-            "r_y3": 279.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Mining Surveys Ltd.,",
-          "orig": "Mining Surveys Ltd.,",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 7,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 96.52,
-            "r_y0": 304.74,
-            "r_x1": 173.49,
-            "r_y1": 304.74,
-            "r_x2": 173.49,
-            "r_y2": 292.33,
-            "r_x3": 96.52,
-            "r_y3": 292.33,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Holroyd Road,",
-          "orig": "Holroyd Road,",
-          "text_direction": "left_to_right",
-          "confidence": 0.5,
-          "from_ocr": true
-        },
-        {
-          "index": 8,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 96.52,
-            "r_y0": 316.97,
-            "r_x1": 145.39,
-            "r_y1": 316.97,
-            "r_x2": 145.39,
-            "r_y2": 303.51,
-            "r_x3": 96.52,
-            "r_y3": 303.51,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Reading,",
-          "orig": "Reading,",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 9,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.65,
-            "r_y0": 325.85,
-            "r_x1": 130.82,
-            "r_y1": 325.85,
-            "r_x2": 130.82,
-            "r_y2": 315.44,
-            "r_x3": 97.65,
-            "r_y3": 315.44,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Berks.",
-          "orig": "Berks.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 10,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 98.93,
-            "r_y0": 362.41,
-            "r_x1": 156.41,
-            "r_y1": 362.41,
-            "r_x2": 156.41,
-            "r_y2": 351.09,
-            "r_x3": 98.93,
-            "r_y3": 351.09,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Dear Pete,",
-          "orig": "Dear Pete,",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 11,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 127.06,
-            "r_y0": 384.33,
-            "r_x1": 449.61,
-            "r_y1": 384.33,
-            "r_x2": 449.61,
-            "r_y2": 373.27,
-            "r_x3": 127.06,
-            "r_y3": 373.27,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Permit me to introduce you to the facility of facsimile",
-          "orig": "Permit me to introduce you to the facility of facsimile",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 12,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.74,
-            "r_y0": 396.52,
-            "r_x1": 174.71,
-            "r_y1": 396.52,
-            "r_x2": 174.71,
-            "r_y2": 384.28,
-            "r_x3": 97.74,
-            "r_y3": 384.28,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "transmission.",
-          "orig": "transmission.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 13,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 125.84,
-            "r_y0": 418.67,
-            "r_x1": 500.92,
-            "r_y1": 418.67,
-            "r_x2": 500.92,
-            "r_y2": 409.99,
-            "r_x3": 125.84,
-            "r_y3": 409.99,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "In facsimile a photocell is caused to perform a raster scan over",
-          "orig": "In facsimile a photocell is caused to perform a raster scan over",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 14,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 201.59,
-            "r_y0": 432.01,
-            "r_x1": 485.04,
-            "r_y1": 432.01,
-            "r_x2": 485.04,
-            "r_y2": 418.55,
-            "r_x3": 201.59,
-            "r_y3": 418.55,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "The variations of print density on the document",
-          "orig": "The variations of print density on the document",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 15,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.74,
-            "r_y0": 444.33,
-            "r_x1": 499.7,
-            "r_y1": 444.33,
-            "r_x2": 499.7,
-            "r_y2": 432.0,
-            "r_x3": 97.74,
-            "r_y3": 432.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "cause the photocell to generate an analogous electrical video signal.",
-          "orig": "cause the photocell to generate an analogous electrical video signal.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 16,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 98.91,
-            "r_y0": 457.03,
-            "r_x1": 494.87,
-            "r_y1": 457.03,
-            "r_x2": 494.87,
-            "r_y2": 441.31,
-            "r_x3": 98.91,
-            "r_y3": 441.31,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "This signal is used to modulate a carrier, which is transmitted to a",
-          "orig": "This signal is used to modulate a carrier, which is transmitted to a",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 17,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 98.96,
-            "r_y0": 465.06,
-            "r_x1": 454.5,
-            "r_y1": 465.06,
-            "r_x2": 454.5,
-            "r_y2": 454.0,
-            "r_x3": 98.96,
-            "r_y3": 454.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "remote destination over a radio or cable communications link.",
-          "orig": "remote destination over a radio or cable communications link.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 18,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 125.84,
-            "r_y0": 492.0,
-            "r_x1": 472.82,
-            "r_y1": 492.0,
-            "r_x2": 472.82,
-            "r_y2": 478.52,
-            "r_x3": 125.84,
-            "r_y3": 478.52,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "At the remote terminal, demodulation reconstructs the video",
-          "orig": "At the remote terminal, demodulation reconstructs the video",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 19,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 98.96,
-            "r_y0": 501.77,
-            "r_x1": 494.82,
-            "r_y1": 501.77,
-            "r_x2": 494.82,
-            "r_y2": 490.67,
-            "r_x3": 98.96,
-            "r_y3": 490.67,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "signal, which is used to modulate the density of print produced by \u2039",
-          "orig": "signal, which is used to modulate the density of print produced by \u2039",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 20,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.74,
-            "r_y0": 512.79,
-            "r_x1": 513.14,
-            "r_y1": 512.79,
-            "r_x2": 513.14,
-            "r_y2": 500.55,
-            "r_x3": 97.74,
-            "r_y3": 500.55,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "printing device. This device is scanning in a raster scan synchronised",
-          "orig": "printing device. This device is scanning in a raster scan synchronised",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 21,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.7,
-            "r_y0": 525.06,
-            "r_x1": 329.94,
-            "r_y1": 525.06,
-            "r_x2": 329.94,
-            "r_y2": 511.44,
-            "r_x3": 97.7,
-            "r_y3": 511.44,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "with that at the transmitting terminal.",
-          "orig": "with that at the transmitting terminal.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 22,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 332.19,
-            "r_y0": 527.1,
-            "r_x1": 480.33,
-            "r_y1": 527.1,
-            "r_x2": 480.33,
-            "r_y2": 511.35,
-            "r_x3": 332.19,
-            "r_y3": 511.35,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "As a result, a facsimile",
-          "orig": "As a result, a facsimile",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 23,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 97.74,
-            "r_y0": 538.49,
-            "r_x1": 338.43,
-            "r_y1": 538.49,
-            "r_x2": 338.43,
-            "r_y2": 523.67,
-            "r_x3": 97.74,
-            "r_y3": 523.67,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "copy of the subject document is produced.",
-          "orig": "copy of the subject document is produced.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 24,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 127.06,
-            "r_y0": 560.67,
-            "r_x1": 491.15,
-            "r_y1": 560.67,
-            "r_x2": 491.15,
-            "r_y2": 547.0,
-            "r_x3": 127.06,
-            "r_y3": 547.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Probably you have uses for this facility in your organisation.",
-          "orig": "Probably you have uses for this facility in your organisation.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 25,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 310.33,
-            "r_y0": 585.0,
-            "r_x1": 409.29,
-            "r_y1": 585.0,
-            "r_x2": 409.29,
-            "r_y2": 571.53,
-            "r_x3": 310.33,
-            "r_y3": 571.53,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Yours sincerely,",
-          "orig": "Yours sincerely,",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 26,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 322.55,
-            "r_y0": 637.62,
-            "r_x1": 387.3,
-            "r_y1": 637.62,
-            "r_x2": 387.3,
-            "r_y2": 602.13,
-            "r_x3": 322.55,
-            "r_y3": 602.13,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Phil.",
-          "orig": "Phil.",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 27,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 310.3,
-            "r_y0": 660.99,
-            "r_x1": 376.33,
-            "r_y1": 660.99,
-            "r_x2": 376.33,
-            "r_y2": 646.07,
-            "r_x3": 310.3,
-            "r_y3": 646.07,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "P.J. CROSS",
-          "orig": "P.J. CROSS",
-          "text_direction": "left_to_right",
-          "confidence": 0.5,
-          "from_ocr": true
-        },
-        {
-          "index": 28,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 310.33,
-            "r_y0": 672.0,
-            "r_x1": 509.48,
-            "r_y1": 672.0,
-            "r_x2": 509.48,
-            "r_y2": 658.33,
-            "r_x3": 310.33,
-            "r_y3": 658.33,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Group Leader - Facsimile Research",
-          "orig": "Group Leader - Facsimile Research",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 29,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 32.99,
-            "r_y0": 794.33,
-            "r_x1": 53.76,
-            "r_y1": 794.33,
-            "r_x2": 53.76,
-            "r_y2": 785.67,
-            "r_x3": 32.99,
-            "r_y3": 785.67,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "No. 1",
-          "orig": "No. 1",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 30,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 249.24,
-            "r_y0": 784.48,
-            "r_x1": 362.86,
-            "r_y1": 784.48,
-            "r_x2": 362.86,
-            "r_y2": 774.67,
-            "r_x3": 249.24,
-            "r_y3": 774.67,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "\u2022gistered in England: No. 20:",
-          "orig": "\u2022gistered in England: No. 20:",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 31,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 212.59,
-            "r_y0": 789.37,
-            "r_x1": 278.56,
-            "r_y1": 789.37,
-            "r_x2": 278.56,
-            "r_y2": 783.26,
-            "r_x3": 212.59,
-            "r_y3": 783.26,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Registered Office:",
-          "orig": "Registered Office:",
-          "text_direction": "left_to_right",
-          "confidence": 1.0,
-          "from_ocr": true
-        },
-        {
-          "index": 32,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 299.33,
-            "r_y0": 789.38,
-            "r_x1": 320.1,
-            "r_y1": 789.38,
-            "r_x2": 320.1,
-            "r_y2": 782.0,
-            "r_x3": 299.33,
-            "r_y3": 782.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "\u2022 Vica",
-          "orig": "\u2022 Vica",
-          "text_direction": "left_to_right",
-          "confidence": 0.5,
-          "from_ocr": true
-        },
-        {
-          "index": 33,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 329.88,
-            "r_y0": 791.82,
-            "r_x1": 406.85,
-            "r_y1": 791.82,
-            "r_x2": 406.85,
-            "r_y2": 782.0,
-            "r_x3": 329.88,
-            "r_y3": 782.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Lane, Ilford. Easex.",
-          "orig": "Lane, Ilford. Easex.",
-          "text_direction": "left_to_right",
-          "confidence": 0.5,
-          "from_ocr": true
-        }
-      ],
-      "has_chars": false,
-      "has_words": false,
-      "has_lines": true,
-      "image": null,
-      "lines": []
-    },
     "predictions": {
       "layout": {
         "clusters": [
@@ -1237,14 +325,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 96.52,
-                  "r_y0": 316.97,
-                  "r_x1": 145.39,
-                  "r_y1": 316.97,
-                  "r_x2": 145.39,
-                  "r_y2": 303.51,
-                  "r_x3": 96.52,
-                  "r_y3": 303.51,
+                  "r_x0": 96.46,
+                  "r_y0": 317.21,
+                  "r_x1": 145.45,
+                  "r_y1": 317.21,
+                  "r_x2": 145.45,
+                  "r_y2": 303.28,
+                  "r_x3": 96.46,
+                  "r_y3": 303.28,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "Reading,",
@@ -1364,7 +452,7 @@
                 "id": 3,
                 "label": "text",
                 "bbox": {
-                  "l": 96.52,
+                  "l": 96.46,
                   "t": 268.0,
                   "r": 213.81,
                   "b": 325.85,
@@ -1456,14 +544,14 @@
                       "a": 255
                     },
                     "rect": {
-                      "r_x0": 96.52,
-                      "r_y0": 316.97,
-                      "r_x1": 145.39,
-                      "r_y1": 316.97,
-                      "r_x2": 145.39,
-                      "r_y2": 303.51,
-                      "r_x3": 96.52,
-                      "r_y3": 303.51,
+                      "r_x0": 96.46,
+                      "r_y0": 317.21,
+                      "r_x1": 145.45,
+                      "r_y1": 317.21,
+                      "r_x2": 145.45,
+                      "r_y2": 303.28,
+                      "r_x3": 96.46,
+                      "r_y3": 303.28,
                       "coord_origin": "TOPLEFT"
                     },
                     "text": "Reading,",
@@ -1768,13 +856,13 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 125.84,
-                  "r_y0": 492.0,
+                  "r_x0": 127.06,
+                  "r_y0": 490.76,
                   "r_x1": 472.82,
-                  "r_y1": 492.0,
+                  "r_y1": 490.76,
                   "r_x2": 472.82,
                   "r_y2": 478.52,
-                  "r_x3": 125.84,
+                  "r_x3": 127.06,
                   "r_y3": 478.52,
                   "coord_origin": "TOPLEFT"
                 },
@@ -2731,14 +1819,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 96.52,
-                  "r_y0": 316.97,
-                  "r_x1": 145.39,
-                  "r_y1": 316.97,
-                  "r_x2": 145.39,
-                  "r_y2": 303.51,
-                  "r_x3": 96.52,
-                  "r_y3": 303.51,
+                  "r_x0": 96.46,
+                  "r_y0": 317.21,
+                  "r_x1": 145.45,
+                  "r_y1": 317.21,
+                  "r_x2": 145.45,
+                  "r_y2": 303.28,
+                  "r_x3": 96.46,
+                  "r_y3": 303.28,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "Reading,",
@@ -2858,7 +1946,7 @@
                 "id": 3,
                 "label": "text",
                 "bbox": {
-                  "l": 96.52,
+                  "l": 96.46,
                   "t": 268.0,
                   "r": 213.81,
                   "b": 325.85,
@@ -2950,14 +2038,14 @@
                       "a": 255
                     },
                     "rect": {
-                      "r_x0": 96.52,
-                      "r_y0": 316.97,
-                      "r_x1": 145.39,
-                      "r_y1": 316.97,
-                      "r_x2": 145.39,
-                      "r_y2": 303.51,
-                      "r_x3": 96.52,
-                      "r_y3": 303.51,
+                      "r_x0": 96.46,
+                      "r_y0": 317.21,
+                      "r_x1": 145.45,
+                      "r_y1": 317.21,
+                      "r_x2": 145.45,
+                      "r_y2": 303.28,
+                      "r_x3": 96.46,
+                      "r_y3": 303.28,
                       "coord_origin": "TOPLEFT"
                     },
                     "text": "Reading,",
@@ -3286,13 +2374,13 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 125.84,
-                  "r_y0": 492.0,
+                  "r_x0": 127.06,
+                  "r_y0": 490.76,
                   "r_x1": 472.82,
-                  "r_y1": 492.0,
+                  "r_y1": 490.76,
                   "r_x2": 472.82,
                   "r_y2": 478.52,
-                  "r_x3": 125.84,
+                  "r_x3": 127.06,
                   "r_y3": 478.52,
                   "coord_origin": "TOPLEFT"
                 },
@@ -4302,14 +3390,14 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 96.52,
-                  "r_y0": 316.97,
-                  "r_x1": 145.39,
-                  "r_y1": 316.97,
-                  "r_x2": 145.39,
-                  "r_y2": 303.51,
-                  "r_x3": 96.52,
-                  "r_y3": 303.51,
+                  "r_x0": 96.46,
+                  "r_y0": 317.21,
+                  "r_x1": 145.45,
+                  "r_y1": 317.21,
+                  "r_x2": 145.45,
+                  "r_y2": 303.28,
+                  "r_x3": 96.46,
+                  "r_y3": 303.28,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "Reading,",
@@ -4429,7 +3517,7 @@
                 "id": 3,
                 "label": "text",
                 "bbox": {
-                  "l": 96.52,
+                  "l": 96.46,
                   "t": 268.0,
                   "r": 213.81,
                   "b": 325.85,
@@ -4521,14 +3609,14 @@
                       "a": 255
                     },
                     "rect": {
-                      "r_x0": 96.52,
-                      "r_y0": 316.97,
-                      "r_x1": 145.39,
-                      "r_y1": 316.97,
-                      "r_x2": 145.39,
-                      "r_y2": 303.51,
-                      "r_x3": 96.52,
-                      "r_y3": 303.51,
+                      "r_x0": 96.46,
+                      "r_y0": 317.21,
+                      "r_x1": 145.45,
+                      "r_y1": 317.21,
+                      "r_x2": 145.45,
+                      "r_y2": 303.28,
+                      "r_x3": 96.46,
+                      "r_y3": 303.28,
                       "coord_origin": "TOPLEFT"
                     },
                     "text": "Reading,",
@@ -4857,13 +3945,13 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 125.84,
-                  "r_y0": 492.0,
+                  "r_x0": 127.06,
+                  "r_y0": 490.76,
                   "r_x1": 472.82,
-                  "r_y1": 492.0,
+                  "r_y1": 490.76,
                   "r_x2": 472.82,
                   "r_y2": 478.52,
-                  "r_x3": 125.84,
+                  "r_x3": 127.06,
                   "r_y3": 478.52,
                   "coord_origin": "TOPLEFT"
                 },
@@ -5541,6 +4629,7 @@
           "text": "\u00b7gistered in England: No. 20: Registered Office: \u00b7 Vica Lane, Ilford. Easex."
         }
       ]
-    }
+    },
+    "parsed_page": null
   }
 ]

@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "ocr_test_rotation_mismatch",
   "origin": {
     "mimetype": "application/pdf",
@@ -239,7 +239,7 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 96.52,
+            "l": 96.46,
             "t": 574.0,
             "r": 213.81,
             "b": 516.15,

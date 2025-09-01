@@ -60,10 +60,12 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
+    GOT2_TRANSFORMERS,
     GRANITE_VISION_OLLAMA,
     GRANITE_VISION_TRANSFORMERS,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
+    SMOLDOCLING_VLLM,
     VlmModelType,
 )
 from docling.document_converter import (
@@ -477,6 +479,13 @@ def convert(  # noqa: C901
             "--logo", callback=logo_callback, is_eager=True, help="Docling logo"
         ),
     ] = None,
+    page_batch_size: Annotated[
+        int,
+        typer.Option(
+            "--page-batch-size",
+            help=f"Number of pages processed in one batch. Default: {settings.perf.page_batch_size}",
+        ),
+    ] = settings.perf.page_batch_size,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -491,6 +500,7 @@ def convert(  # noqa: C901
     settings.debug.visualize_layout = debug_visualize_layout
     settings.debug.visualize_tables = debug_visualize_tables
     settings.debug.visualize_ocr = debug_visualize_ocr
+    settings.perf.page_batch_size = page_batch_size
 
     if from_formats is None:
         from_formats = list(InputFormat)
@@ -631,6 +641,8 @@ def convert(  # noqa: C901
                 pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
                 pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
+            elif vlm_model == VlmModelType.GOT_OCR_2:
+                pipeline_options.vlm_options = GOT2_TRANSFORMERS
             elif vlm_model == VlmModelType.SMOLDOCLING:
                 pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":
@@ -643,6 +655,8 @@ def convert(  # noqa: C901
                             "To run SmolDocling faster, please install mlx-vlm:\n"
                             "pip install mlx-vlm"
                         )
+            elif vlm_model == VlmModelType.SMOLDOCLING_VLLM:
+                pipeline_options.vlm_options = SMOLDOCLING_VLLM
 
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options

@@ -26,11 +26,14 @@ class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
     MARKDOWN = "markdown"
     HTML = "html"
+    OTSL = "otsl"
+    PLAINTEXT = "plaintext"
 
 
 class InferenceFramework(str, Enum):
     MLX = "mlx"
     TRANSFORMERS = "transformers"
+    VLLM = "vllm"
 
 
 class TransformersModelType(str, Enum):
@@ -43,6 +46,7 @@ class TransformersModelType(str, Enum):
 class TransformersPromptStyle(str, Enum):
     CHAT = "chat"
     RAW = "raw"
+    NONE = "none"
 
 
 class InlineVlmOptions(BaseVlmOptions):
@@ -68,6 +72,7 @@ class InlineVlmOptions(BaseVlmOptions):
 
     stop_strings: List[str] = []
     extra_generation_config: Dict[str, Any] = {}
+    extra_processor_kwargs: Dict[str, Any] = {}
 
     use_kv_cache: bool = True
     max_new_tokens: int = 4096

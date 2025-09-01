@@ -1,4 +1,4 @@
-With Docling v2, we introduce a unified document representation format called `DoclingDocument`. It is defined as a
+With Docling v2, we introduced a unified document representation format called `DoclingDocument`. It is defined as a
 pydantic datatype, which can express several features common to documents, such as:
 
 * Text, Tables, Pictures, and more

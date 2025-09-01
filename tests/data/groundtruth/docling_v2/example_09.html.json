@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "example_09",
   "origin": {
     "mimetype": "text/html",
@@ -77,6 +77,23 @@
           "$ref": "#/texts/13"
         },
         {
+          "$ref": "#/texts/16"
+        },
+        {
+          "$ref": "#/texts/19"
+        }
+      ],
+      "content_layer": "body",
+      "name": "ordered list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/texts/13"
+      },
+      "children": [
+        {
           "$ref": "#/texts/14"
         },
         {
@@ -84,8 +101,42 @@
         }
       ],
       "content_layer": "body",
-      "name": "ordered list",
-      "label": "list"
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/texts/16"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/17"
+        },
+        {
+          "$ref": "#/texts/18"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/texts/19"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/20"
+        },
+        {
+          "$ref": "#/texts/21"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -132,7 +183,7 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Docling simplifies document processing, parsing diverse formats — including HTML — and providing seamless integrations with the gen AI ecosystem.",
+      "orig": "Docling simplifies document processing, parsing diverse formats - including HTML - and providing seamless integrations with the gen AI ecosystem.",
       "text": "Docling simplifies document processing, parsing diverse formats - including HTML - and providing seamless integrations with the gen AI ecosystem."
     },
     {
@@ -285,42 +336,147 @@
       "parent": {
         "$ref": "#/groups/1"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
       "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "HTMLDocumentBackend Ignores images",
-      "text": "HTMLDocumentBackend Ignores images",
+      "orig": "",
+      "text": "",
       "enumerated": true,
       "marker": ""
     },
     {
       "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [],
-      "orig": "HTMLDocumentBackendImagesInline Extracts images inline",
-      "text": "HTMLDocumentBackendImagesInline Extracts images inline",
-      "enumerated": true,
-      "marker": ""
+      "orig": "HTMLDocumentBackend",
+      "text": "HTMLDocumentBackend",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Ignores images",
+      "text": "Ignores images"
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/3"
+        }
+      ],
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
-      "orig": "HTMLDocumentBackendImagesReferenced Extracts images as references",
-      "text": "HTMLDocumentBackendImagesReferenced Extracts images as references",
+      "orig": "",
+      "text": "",
       "enumerated": true,
       "marker": ""
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "HTMLDocumentBackendImagesInline",
+      "text": "HTMLDocumentBackendImagesInline",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Extracts images inline",
+      "text": "Extracts images inline"
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/4"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": true,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "HTMLDocumentBackendImagesReferenced",
+      "text": "HTMLDocumentBackendImagesReferenced",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Extracts images as references",
+      "text": "Extracts images as references"
     }
   ],
   "pictures": [

@@ -99,6 +99,8 @@ class RapidOcrOptions(OcrOptions):
     # For more details on the following options visit
     # https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
 
+    # https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr/usage/#__tabbed_3_4
+    backend: Literal["onnxruntime", "openvino", "paddle", "torch"] = "onnxruntime"
     text_score: float = 0.5  # same default as rapidocr
 
     use_det: Optional[bool] = None  # same default as rapidocr
@@ -111,6 +113,7 @@ class RapidOcrOptions(OcrOptions):
     cls_model_path: Optional[str] = None  # same default as rapidocr
     rec_model_path: Optional[str] = None  # same default as rapidocr
     rec_keys_path: Optional[str] = None  # same default as rapidocr
+    rec_font_path: Optional[str] = None  # same default as rapidocr
 
     model_config = ConfigDict(
         extra="forbid",
@@ -282,6 +285,9 @@ class LayoutOptions(BaseModel):
     keep_empty_clusters: bool = (
         False  # Whether to keep clusters that contain no text cells
     )
+    skip_cell_assignment: bool = (
+        False  # Skip cell-to-cluster assignment for VLM-only processing
+    )
     model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 
@@ -323,9 +329,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         ),
     )
 
-    generate_parsed_pages: Literal[True] = (
-        True  # Always True since parsed_page is now mandatory
-    )
+    generate_parsed_pages: bool = False
 
 
 class ProcessingPipeline(str, Enum):

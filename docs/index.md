@@ -40,16 +40,11 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ## Get started
 
-<div class="grid">
-  <a href="concepts/" class="card"><b>Concepts</b><br />Learn Docling fundamentals</a>
-  <a href="examples/" class="card"><b>Examples</b><br />Try out recipes for various use cases, including conversion, RAG, and more</a>
-  <a href="integrations/" class="card"><b>Integrations</b><br />Check out integrations with popular frameworks and tools</a>
-  <a href="reference/document_converter/" class="card"><b>Reference</b><br />See more API details</a>
-</div>
+Check out our [getting started](./getting_started/index.md) page to get the ball rolling!
 
 ## Live assistant
 
-Do you want to leverage the power of AI and get a live support on Docling?
+Do you want to leverage the power of AI and get live support on Docling?
 Try out the [Chat with Dosu](https://app.dosu.dev/097760a8-135e-4789-8234-90c8837d7f1c/ask?utm_source=github) functionalities provided by our friends at [Dosu](https://dosu.dev/).
 
 [![Chat with Dosu](https://dosu.dev/dosu-chat-badge.svg)](https://app.dosu.dev/097760a8-135e-4789-8234-90c8837d7f1c/ask?utm_source=github)

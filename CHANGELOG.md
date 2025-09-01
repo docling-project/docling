@@ -1,3 +1,51 @@
+## [v2.48.0](https://github.com/docling-project/docling/releases/tag/v2.48.0) - 2025-08-26
+
+### Feature
+
+* Upgrade to RapidOCR 3.x ([#2088](https://github.com/docling-project/docling/issues/2088)) ([`3f60a0f`](https://github.com/docling-project/docling/commit/3f60a0fa7814aa36f396131e53b0ca6982b7638e))
+
+### Fix
+
+* **html:** Preserve code blocks in list items ([#2131](https://github.com/docling-project/docling/issues/2131)) ([`fa3327e`](https://github.com/docling-project/docling/commit/fa3327e1a6f7f4de6d5fd1f83588d6b5cac324ca))
+
+## [v2.47.1](https://github.com/docling-project/docling/releases/tag/v2.47.1) - 2025-08-23
+
+### Fix
+
+* Vllm extra only for linux x86_64 ([#2126](https://github.com/docling-project/docling/issues/2126)) ([`488f6cd`](https://github.com/docling-project/docling/commit/488f6cdd2da1e6065e56843413b56b41cb208b2c))
+
+## [v2.47.0](https://github.com/docling-project/docling/releases/tag/v2.47.0) - 2025-08-22
+
+### Feature
+
+* **CLI:** Option to download arbitrary HuggingFace model ([#2123](https://github.com/docling-project/docling/issues/2123)) ([`cdf079d`](https://github.com/docling-project/docling/commit/cdf079dd06955358d5bb74d6d3be9dee7b30c082))
+* Batching support for VLMs in transformers backend, add initial VLLM backend ([#2094](https://github.com/docling-project/docling/issues/2094)) ([`3c660c0`](https://github.com/docling-project/docling/commit/3c660c051180720c6ae2321f1243a9a3b9696ddc))
+* **html:** Support formatting tags in HTML texts ([#2111](https://github.com/docling-project/docling/issues/2111)) ([`94fcc46`](https://github.com/docling-project/docling/commit/94fcc46aa9098fe70450046bd97f8df7f93bce33))
+
+### Fix
+
+* Improve numbered list detection for msword docs ([#2100](https://github.com/docling-project/docling/issues/2100)) ([`3f03709`](https://github.com/docling-project/docling/commit/3f03709885a7280d6ca389816002ea606c3778d6))
+
+### Documentation
+
+* DPK pipeline example using docling library ([#2112](https://github.com/docling-project/docling/issues/2112)) ([`e76298c`](https://github.com/docling-project/docling/commit/e76298c40d9a860fe5c8e2d5922397eed4a71763))
+* Add Getting Started page ([#2113](https://github.com/docling-project/docling/issues/2113)) ([`8996d61`](https://github.com/docling-project/docling/commit/8996d612aa47c5d500ddefcab4e1d42a87f19033))
+
+## [v2.46.0](https://github.com/docling-project/docling/releases/tag/v2.46.0) - 2025-08-20
+
+### Feature
+
+* New code formula model ([#2042](https://github.com/docling-project/docling/issues/2042)) ([`d2494da`](https://github.com/docling-project/docling/commit/d2494da8b84c37731dd25b2f82d6559539ab4cb2))
+
+### Fix
+
+* **HTML:** Parse footer tag as a group in furniture content layer ([#2106](https://github.com/docling-project/docling/issues/2106)) ([`c5f2e2f`](https://github.com/docling-project/docling/commit/c5f2e2fdd68365f1dfa18d462f1e8051cd1089da))
+
+### Performance
+
+* Clean up resources with docling-parse v4, no parsed_page output by default ([#2105](https://github.com/docling-project/docling/issues/2105)) ([`5f57ff2`](https://github.com/docling-project/docling/commit/5f57ff2a45eaf1f2feb63080e9590ad6b9d4ea1e))
+* Speed up function `_parse_orientation` ([#1934](https://github.com/docling-project/docling/issues/1934)) ([`8820b55`](https://github.com/docling-project/docling/commit/8820b5558ba18306cfa7a2def3f04cbd480fef94))
+
 ## [v2.45.0](https://github.com/docling-project/docling/releases/tag/v2.45.0) - 2025-08-18
 
 ### Feature
