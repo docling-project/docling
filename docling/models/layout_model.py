@@ -122,8 +122,8 @@ class LayoutModel(BasePageModel):
         left_clusters = [c for c in clusters if c.label not in exclude_labels]
         right_clusters = [c for c in clusters if c.label in exclude_labels]
         # Create a deep copy of the original image for both sides
-        left_image = copy.deepcopy(page.image)
-        right_image = copy.deepcopy(page.image)
+        left_image = page.image.copy()
+        right_image = page.image.copy()
 
         # Draw clusters on both images
         draw_clusters(left_image, left_clusters, scale_x, scale_y)

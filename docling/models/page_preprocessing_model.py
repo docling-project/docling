@@ -86,7 +86,7 @@ class PagePreprocessingModel(BasePageModel):
 
         # DEBUG code:
         def draw_text_boxes(image, cells, show: bool = False):
-            draw = ImageDraw.Draw(image)
+            draw = ImageDraw.Draw(image.copy())
             for c in cells:
                 x0, y0, x1, y1 = (
                     c.to_bounding_box().l,
