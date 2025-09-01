@@ -250,8 +250,6 @@ class OcrEngine(str, Enum):
 class PipelineOptions(BaseOptions):
     """Base pipeline options."""
 
-    kind: ClassVar[str] = "pipeline_options"
-
     document_timeout: Optional[float] = None
     accelerator_options: AcceleratorOptions = AcceleratorOptions()
     enable_remote_services: bool = False
@@ -297,8 +295,6 @@ class AsrPipelineOptions(PipelineOptions):
 
 class VlmExtractionPipelineOptions(PipelineOptions):
     """Options for extraction pipeline."""
-
-    kind: ClassVar[str] = "extraction_pipeline_options"
 
     artifacts_path: Optional[Union[Path, str]] = None
     vlm_options: Union[InlineVlmOptions] = NU_EXTRACT_2B_TRANSFORMERS

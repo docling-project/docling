@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from docling.datamodel.base_models import ConversionStatus, ErrorItem
-from docling.datamodel.document import ExtractionResult, InputDocument
+from docling.datamodel.document import InputDocument
+from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
 from docling.datamodel.pipeline_options import BaseOptions
-from docling.types import ExtractionTemplateType
 
 _log = logging.getLogger(__name__)
 

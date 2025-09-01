@@ -10,10 +10,11 @@ from pydantic import BaseModel
 from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, ErrorItem
-from docling.datamodel.document import (
+from docling.datamodel.document import InputDocument
+from docling.datamodel.extraction import (
     ExtractedPageData,
     ExtractionResult,
-    InputDocument,
+    ExtractionTemplateType,
 )
 from docling.datamodel.pipeline_options import BaseOptions, VlmExtractionPipelineOptions
 from docling.datamodel.settings import settings
@@ -21,7 +22,6 @@ from docling.models.vlm_models_inline.nuextract_transformers_model import (
     NuExtractTransformersModel,
 )
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
-from docling.types import ExtractionTemplateType
 from docling.utils.accelerator_utils import decide_device
 
 _log = logging.getLogger(__name__)

@@ -28,6 +28,7 @@ from docling.backend.noop_backend import NoOpBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.base_models import (
+    BaseFormatOption,
     ConversionStatus,
     DoclingComponentType,
     DocumentStream,
@@ -55,15 +56,6 @@ from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 _PIPELINE_CACHE_LOCK = threading.Lock()
-
-
-class BaseFormatOption(BaseModel):
-    """Base class for format options used by _DocumentConversionInput."""
-
-    pipeline_options: Optional[PipelineOptions] = None
-    backend: Type[AbstractDocumentBackend]
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class FormatOption(BaseFormatOption):

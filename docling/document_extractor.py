@@ -15,6 +15,7 @@ from pydantic import ConfigDict, model_validator, validate_call
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import (
+    BaseFormatOption,
     ConversionStatus,
     DoclingComponentType,
     DocumentStream,
@@ -22,10 +23,10 @@ from docling.datamodel.base_models import (
     InputFormat,
 )
 from docling.datamodel.document import (
-    ExtractionResult,
     InputDocument,
     _DocumentConversionInput,  # intentionally reused builder
 )
+from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
 from docling.datamodel.pipeline_options import PipelineOptions
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
@@ -33,11 +34,9 @@ from docling.datamodel.settings import (
     PageRange,
     settings,
 )
-from docling.document_converter import BaseFormatOption
 from docling.exceptions import ConversionError
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
 from docling.pipeline.extraction_vlm_pipeline import ExtractionVlmPipeline
-from docling.types import ExtractionTemplateType
 from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)

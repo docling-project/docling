@@ -73,9 +73,7 @@ from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash
 
 if TYPE_CHECKING:
-    from docling.document_converter import BaseFormatOption, FormatOption
-    from docling.document_extractor import ExtractionFormatOption
-
+    from docling.datamodel.base_models import BaseFormatOption
 
 _log = logging.getLogger(__name__)
 
@@ -214,35 +212,6 @@ class ConversionResult(BaseModel):
     @deprecated("Use document instead.")
     def legacy_document(self):
         return docling_document_to_legacy(self.document)
-
-
-class ExtractedPageData(BaseModel):
-    """Data model for extracted content from a single page."""
-
-    page_no: int = Field(..., description="1-indexed page number")
-    extracted_data: Optional[Dict[str, Any]] = Field(
-        None, description="Extracted structured data from the page"
-    )
-    raw_text: Optional[str] = Field(
-        None, description="Raw extracted text if structured parsing failed"
-    )
-    errors: List[str] = Field(
-        default_factory=list,
-        description="Any errors encountered during extraction for this page",
-    )
-
-
-class ExtractionResult(BaseModel):
-    """Result of document extraction with consistent structure for single and multi-page documents."""
-
-    input: InputDocument
-    status: ConversionStatus = ConversionStatus.PENDING
-    errors: List[ErrorItem] = []
-
-    # Pages field - always a list for consistency
-    pages: List[ExtractedPageData] = Field(
-        default_factory=list, description="Extracted data from each page"
-    )
 
 
 class _DummyBackend(AbstractDocumentBackend):
