@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "right_to_left_03",
   "origin": {
     "mimetype": "application/pdf",
@@ -24,13 +24,16 @@
         "$ref": "#/pictures/0"
       },
       {
-        "$ref": "#/texts/1"
-      },
-      {
         "$ref": "#/texts/2"
       },
       {
         "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/texts/14"
+      },
+      {
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/31"
@@ -79,10 +82,18 @@
         },
         {
           "$ref": "#/texts/13"
-        },
-        {
-          "$ref": "#/texts/14"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "key_value_area"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
         {
           "$ref": "#/texts/15"
         },
@@ -120,7 +131,7 @@
           "$ref": "#/texts/26"
         },
         {
-          "$ref": "#/groups/1"
+          "$ref": "#/texts/27"
         },
         {
           "$ref": "#/texts/28"
@@ -134,21 +145,7 @@
       ],
       "content_layer": "body",
       "name": "group",
-      "label": "form_area"
-    },
-    {
-      "self_ref": "#/groups/1",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/27"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "list"
+      "label": "key_value_area"
     }
   ],
   "texts": [
@@ -183,11 +180,11 @@
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/pictures/0"
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -205,8 +202,7 @@
         }
       ],
       "orig": "\u0634\u0631\u06a9\u062a \u0628\u0648\u0631\u0633 \u06a9\u0627\u0644\u0627\u06cc \u0627\u064a\u0631\u0627\u0646",
-      "text": "\u0634\u0631\u06a9\u062a \u0628\u0648\u0631\u0633 \u06a9\u0627\u0644\u0627\u06cc \u0627\u064a\u0631\u0627\u0646",
-      "level": 1
+      "text": "\u0634\u0631\u06a9\u062a \u0628\u0648\u0631\u0633 \u06a9\u0627\u0644\u0627\u06cc \u0627\u064a\u0631\u0627\u0646"
     },
     {
       "self_ref": "#/texts/2",
@@ -513,7 +509,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "checkbox_selected",
+      "label": "checkbox_unselected",
       "prov": [
         {
           "page_no": 1,
@@ -536,7 +532,7 @@
     {
       "self_ref": "#/texts/14",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -564,7 +560,7 @@
     {
       "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -591,7 +587,7 @@
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -618,7 +614,7 @@
     {
       "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -645,7 +641,7 @@
     {
       "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -672,7 +668,7 @@
     {
       "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -699,7 +695,7 @@
     {
       "self_ref": "#/texts/20",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -726,7 +722,7 @@
     {
       "self_ref": "#/texts/21",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -753,7 +749,7 @@
     {
       "self_ref": "#/texts/22",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -780,7 +776,7 @@
     {
       "self_ref": "#/texts/23",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -807,7 +803,7 @@
     {
       "self_ref": "#/texts/24",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -834,7 +830,7 @@
     {
       "self_ref": "#/texts/25",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -861,7 +857,7 @@
     {
       "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -892,7 +888,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -910,14 +906,12 @@
         }
       ],
       "orig": "\u062d\u062f\u0627\u0642\u0644 \u062f\u0631\u0635\u062f \u0639\u0631\u0636\u0647 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f/ \u06a9\u0644 \u0641\u0631\u0648\u0634/ \u0641\u0631\u0648\u0634 \u062f\u0627\u062e\u0644\u06cc",
-      "text": "\u062d\u062f\u0627\u0642\u0644 \u062f\u0631\u0635\u062f \u0639\u0631\u0636\u0647 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f/ \u06a9\u0644 \u0641\u0631\u0648\u0634/ \u0641\u0631\u0648\u0634 \u062f\u0627\u062e\u0644\u06cc",
-      "enumerated": false,
-      "marker": ""
+      "text": "\u062d\u062f\u0627\u0642\u0644 \u062f\u0631\u0635\u062f \u0639\u0631\u0636\u0647 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f/ \u06a9\u0644 \u0641\u0631\u0648\u0634/ \u0641\u0631\u0648\u0634 \u062f\u0627\u062e\u0644\u06cc"
     },
     {
       "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -944,7 +938,7 @@
     {
       "self_ref": "#/texts/29",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -971,7 +965,7 @@
     {
       "self_ref": "#/texts/30",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -1029,17 +1023,21 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        }
+      ],
       "content_layer": "body",
       "label": "picture",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 388.67,
-            "t": 806.32,
-            "r": 482.45,
-            "b": 739.05,
+            "l": 388.58,
+            "t": 806.0,
+            "r": 482.48,
+            "b": 739.03,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

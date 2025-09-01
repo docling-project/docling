@@ -1,7 +1,7 @@
 import math
 from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Annotated, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -56,6 +56,7 @@ class InputFormat(str, Enum):
     XLSX = "xlsx"
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
+    METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
 
@@ -81,6 +82,7 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.CSV: ["csv"],
     InputFormat.XLSX: ["xlsx", "xlsm"],
     InputFormat.XML_USPTO: ["xml", "txt"],
+    InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
     InputFormat.AUDIO: ["wav", "mp3"],
 }
@@ -113,6 +115,7 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     ],
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
+    InputFormat.METS_GBS: ["application/mets+xml"],
     InputFormat.JSON_DOCLING: ["application/json"],
     InputFormat.AUDIO: ["audio/x-wav", "audio/mpeg", "audio/wav", "audio/mp3"],
 }

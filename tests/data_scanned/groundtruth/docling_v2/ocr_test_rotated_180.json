@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "ocr_test_rotated_180",
   "origin": {
     "mimetype": "application/pdf",
@@ -19,6 +19,9 @@
     "children": [
       {
         "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
       }
     ],
     "content_layer": "body",
@@ -39,20 +42,47 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 92.0,
-            "t": 150.26,
-            "r": 523.0,
-            "b": 77.92,
+            "l": 441.26,
+            "t": 151.88,
+            "r": 522.03,
+            "b": 131.89,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            94
+            7
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
+      "orig": "package",
+      "text": "package"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 89.24,
+            "t": 124.75,
+            "r": 523.21,
+            "b": 77.02,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            86
+          ]
+        }
+      ],
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
     }
   ],
   "pictures": [],

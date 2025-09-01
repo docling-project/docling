@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "ocr_test",
   "origin": {
     "mimetype": "application/pdf",
@@ -39,10 +39,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 71.03,
-            "t": 765.95,
-            "r": 505.7,
-            "b": 687.87,
+            "l": 69.68,
+            "t": 764.92,
+            "r": 504.87,
+            "b": 689.01,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

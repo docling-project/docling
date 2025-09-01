@@ -1,0 +1,49 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.6.0",
+  "name": "hyperlink_04",
+  "origin": {
+    "mimetype": "text/html",
+    "binary_hash": 14205970924528394626,
+    "filename": "hyperlink_04.html"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is some text.",
+      "text": "This is some text.",
+      "hyperlink": "/start.html"
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}

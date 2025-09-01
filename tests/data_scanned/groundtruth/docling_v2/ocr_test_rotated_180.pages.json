@@ -5,443 +5,6 @@
       "width": 595.2,
       "height": 841.92
     },
-    "parsed_page": {
-      "dimension": {
-        "angle": 0.0,
-        "rect": {
-          "r_x0": 0.0,
-          "r_y0": 0.0,
-          "r_x1": 595.2,
-          "r_y1": 0.0,
-          "r_x2": 595.2,
-          "r_y2": 841.92,
-          "r_x3": 0.0,
-          "r_y3": 841.92,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "boundary_type": "crop_box",
-        "art_bbox": {
-          "l": 0.0,
-          "t": 841.92,
-          "r": 595.2,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "bleed_bbox": {
-          "l": 0.0,
-          "t": 841.92,
-          "r": 595.2,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "crop_bbox": {
-          "l": 0.0,
-          "t": 841.92,
-          "r": 595.2,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "media_bbox": {
-          "l": 0.0,
-          "t": 841.92,
-          "r": 595.2,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        },
-        "trim_bbox": {
-          "l": 0.0,
-          "t": 841.92,
-          "r": 595.2,
-          "b": 0.0,
-          "coord_origin": "BOTTOMLEFT"
-        }
-      },
-      "bitmap_resources": [],
-      "char_cells": [],
-      "word_cells": [],
-      "textline_cells": [
-        {
-          "index": 0,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 521.33,
-            "r_y0": 745.33,
-            "r_x1": 451.33,
-            "r_y1": 745.33,
-            "r_x2": 451.33,
-            "r_y2": 764.0,
-            "r_x3": 521.33,
-            "r_y3": 764.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Docling",
-          "orig": "Docling",
-          "text_direction": "left_to_right",
-          "confidence": 0.92,
-          "from_ocr": true
-        },
-        {
-          "index": 1,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 444.67,
-            "r_y0": 749.33,
-            "r_x1": 370.67,
-            "r_y1": 749.33,
-            "r_x2": 370.67,
-            "r_y2": 764.0,
-            "r_x3": 444.67,
-            "r_y3": 764.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "bundles",
-          "orig": "bundles",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 2,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 363.33,
-            "r_y0": 749.33,
-            "r_x1": 326.33,
-            "r_y1": 749.33,
-            "r_x2": 326.33,
-            "r_y2": 764.0,
-            "r_x3": 363.33,
-            "r_y3": 764.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "PDF",
-          "orig": "PDF",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 3,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 320.33,
-            "r_y0": 749.33,
-            "r_x1": 224.0,
-            "r_y1": 749.33,
-            "r_x2": 224.0,
-            "r_y2": 764.0,
-            "r_x3": 320.33,
-            "r_y3": 764.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "document",
-          "orig": "document",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 4,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 218.0,
-            "r_y0": 749.33,
-            "r_x1": 116.33,
-            "r_y1": 749.33,
-            "r_x2": 116.33,
-            "r_y2": 764.0,
-            "r_x3": 218.0,
-            "r_y3": 764.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "conversion",
-          "orig": "conversion",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 5,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 110.0,
-            "r_y0": 749.33,
-            "r_x1": 92.0,
-            "r_y1": 749.33,
-            "r_x2": 92.0,
-            "r_y2": 762.33,
-            "r_x3": 110.0,
-            "r_y3": 762.33,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "to",
-          "orig": "to",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 6,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 523.0,
-            "r_y0": 722.33,
-            "r_x1": 474.0,
-            "r_y1": 722.33,
-            "r_x2": 474.0,
-            "r_y2": 737.33,
-            "r_x3": 523.0,
-            "r_y3": 737.33,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "JSON",
-          "orig": "JSON",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 7,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 466.33,
-            "r_y0": 722.33,
-            "r_x1": 433.0,
-            "r_y1": 722.33,
-            "r_x2": 433.0,
-            "r_y2": 737.0,
-            "r_x3": 466.33,
-            "r_y3": 737.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "and",
-          "orig": "and",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 8,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 425.0,
-            "r_y0": 722.33,
-            "r_x1": 329.67,
-            "r_y1": 722.33,
-            "r_x2": 329.67,
-            "r_y2": 737.0,
-            "r_x3": 425.0,
-            "r_y3": 737.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "Markdown",
-          "orig": "Markdown",
-          "text_direction": "left_to_right",
-          "confidence": 0.91,
-          "from_ocr": true
-        },
-        {
-          "index": 9,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 322.0,
-            "r_y0": 722.67,
-            "r_x1": 307.67,
-            "r_y1": 722.67,
-            "r_x2": 307.67,
-            "r_y2": 737.0,
-            "r_x3": 322.0,
-            "r_y3": 737.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "in",
-          "orig": "in",
-          "text_direction": "left_to_right",
-          "confidence": 0.93,
-          "from_ocr": true
-        },
-        {
-          "index": 10,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 300.67,
-            "r_y0": 722.33,
-            "r_x1": 279.33,
-            "r_y1": 722.33,
-            "r_x2": 279.33,
-            "r_y2": 733.33,
-            "r_x3": 300.67,
-            "r_y3": 733.33,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "an",
-          "orig": "an",
-          "text_direction": "left_to_right",
-          "confidence": 0.93,
-          "from_ocr": true
-        },
-        {
-          "index": 11,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 272.33,
-            "r_y0": 718.67,
-            "r_x1": 229.67,
-            "r_y1": 718.67,
-            "r_x2": 229.67,
-            "r_y2": 733.33,
-            "r_x3": 272.33,
-            "r_y3": 733.33,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "easy",
-          "orig": "easy",
-          "text_direction": "left_to_right",
-          "confidence": 0.94,
-          "from_ocr": true
-        },
-        {
-          "index": 12,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 224.33,
-            "r_y0": 722.33,
-            "r_x1": 191.0,
-            "r_y1": 722.33,
-            "r_x2": 191.0,
-            "r_y2": 737.0,
-            "r_x3": 224.33,
-            "r_y3": 737.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "self",
-          "orig": "self",
-          "text_direction": "left_to_right",
-          "confidence": 0.95,
-          "from_ocr": true
-        },
-        {
-          "index": 13,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 185.0,
-            "r_y0": 722.33,
-            "r_x1": 92.0,
-            "r_y1": 722.33,
-            "r_x2": 92.0,
-            "r_y2": 737.0,
-            "r_x3": 185.0,
-            "r_y3": 737.0,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "contained",
-          "orig": "contained",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        },
-        {
-          "index": 14,
-          "rgba": {
-            "r": 0,
-            "g": 0,
-            "b": 0,
-            "a": 255
-          },
-          "rect": {
-            "r_x0": 521.67,
-            "r_y0": 691.67,
-            "r_x1": 444.67,
-            "r_y1": 691.67,
-            "r_x2": 444.67,
-            "r_y2": 710.33,
-            "r_x3": 521.67,
-            "r_y3": 710.33,
-            "coord_origin": "TOPLEFT"
-          },
-          "text": "package",
-          "orig": "package",
-          "text_direction": "left_to_right",
-          "confidence": 0.96,
-          "from_ocr": true
-        }
-      ],
-      "has_chars": false,
-      "has_words": false,
-      "has_lines": true,
-      "image": null,
-      "lines": []
-    },
     "predictions": {
       "layout": {
         "clusters": [
@@ -449,13 +12,13 @@
             "id": 0,
             "label": "text",
             "bbox": {
-              "l": 92.0,
-              "t": 691.67,
-              "r": 523.0,
-              "b": 764.0,
+              "l": 89.24,
+              "t": 717.17,
+              "r": 523.21,
+              "b": 764.9,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.787,
+            "confidence": 0.732,
             "cells": [
               {
                 "index": 0,
@@ -466,20 +29,20 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 521.33,
-                  "r_y0": 745.33,
-                  "r_x1": 451.33,
-                  "r_y1": 745.33,
-                  "r_x2": 451.33,
-                  "r_y2": 764.0,
-                  "r_x3": 521.33,
-                  "r_y3": 764.0,
+                  "r_x0": 89.24,
+                  "r_y0": 764.9,
+                  "r_x1": 521.99,
+                  "r_y1": 764.9,
+                  "r_x2": 521.99,
+                  "r_y2": 744.09,
+                  "r_x3": 89.24,
+                  "r_y3": 744.09,
                   "coord_origin": "TOPLEFT"
                 },
-                "text": "Docling",
-                "orig": "Docling",
+                "text": "Docling bundles PDF document conversion to",
+                "orig": "Docling bundles PDF document conversion to",
                 "text_direction": "left_to_right",
-                "confidence": 0.92,
+                "confidence": 1.0,
                 "from_ocr": true
               },
               {
@@ -491,22 +54,37 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 444.67,
-                  "r_y0": 749.33,
-                  "r_x1": 370.67,
-                  "r_y1": 749.33,
-                  "r_x2": 370.67,
-                  "r_y2": 764.0,
-                  "r_x3": 444.67,
-                  "r_y3": 764.0,
+                  "r_x0": 89.24,
+                  "r_y0": 739.2,
+                  "r_x1": 523.21,
+                  "r_y1": 739.2,
+                  "r_x2": 523.21,
+                  "r_y2": 717.17,
+                  "r_x3": 89.24,
+                  "r_y3": 717.17,
                   "coord_origin": "TOPLEFT"
                 },
-                "text": "bundles",
-                "orig": "bundles",
+                "text": "JSON and Markdown in an easy self contained",
+                "orig": "JSON and Markdown in an easy self contained",
                 "text_direction": "left_to_right",
-                "confidence": 0.96,
+                "confidence": 1.0,
                 "from_ocr": true
-              },
+              }
+            ],
+            "children": []
+          },
+          {
+            "id": 2,
+            "label": "text",
+            "bbox": {
+              "l": 441.26,
+              "t": 690.04,
+              "r": 522.03,
+              "b": 710.03,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.598,
+            "cells": [
               {
                 "index": 2,
                 "rgba": {
@@ -516,320 +94,20 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 363.33,
-                  "r_y0": 749.33,
-                  "r_x1": 326.33,
-                  "r_y1": 749.33,
-                  "r_x2": 326.33,
-                  "r_y2": 764.0,
-                  "r_x3": 363.33,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "PDF",
-                "orig": "PDF",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 3,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 320.33,
-                  "r_y0": 749.33,
-                  "r_x1": 224.0,
-                  "r_y1": 749.33,
-                  "r_x2": 224.0,
-                  "r_y2": 764.0,
-                  "r_x3": 320.33,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "document",
-                "orig": "document",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 4,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 218.0,
-                  "r_y0": 749.33,
-                  "r_x1": 116.33,
-                  "r_y1": 749.33,
-                  "r_x2": 116.33,
-                  "r_y2": 764.0,
-                  "r_x3": 218.0,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "conversion",
-                "orig": "conversion",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 5,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 110.0,
-                  "r_y0": 749.33,
-                  "r_x1": 92.0,
-                  "r_y1": 749.33,
-                  "r_x2": 92.0,
-                  "r_y2": 762.33,
-                  "r_x3": 110.0,
-                  "r_y3": 762.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "to",
-                "orig": "to",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 6,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 523.0,
-                  "r_y0": 722.33,
-                  "r_x1": 474.0,
-                  "r_y1": 722.33,
-                  "r_x2": 474.0,
-                  "r_y2": 737.33,
-                  "r_x3": 523.0,
-                  "r_y3": 737.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "JSON",
-                "orig": "JSON",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 7,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 466.33,
-                  "r_y0": 722.33,
-                  "r_x1": 433.0,
-                  "r_y1": 722.33,
-                  "r_x2": 433.0,
-                  "r_y2": 737.0,
-                  "r_x3": 466.33,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "and",
-                "orig": "and",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 8,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 425.0,
-                  "r_y0": 722.33,
-                  "r_x1": 329.67,
-                  "r_y1": 722.33,
-                  "r_x2": 329.67,
-                  "r_y2": 737.0,
-                  "r_x3": 425.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "Markdown",
-                "orig": "Markdown",
-                "text_direction": "left_to_right",
-                "confidence": 0.91,
-                "from_ocr": true
-              },
-              {
-                "index": 9,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 322.0,
-                  "r_y0": 722.67,
-                  "r_x1": 307.67,
-                  "r_y1": 722.67,
-                  "r_x2": 307.67,
-                  "r_y2": 737.0,
-                  "r_x3": 322.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "in",
-                "orig": "in",
-                "text_direction": "left_to_right",
-                "confidence": 0.93,
-                "from_ocr": true
-              },
-              {
-                "index": 10,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 300.67,
-                  "r_y0": 722.33,
-                  "r_x1": 279.33,
-                  "r_y1": 722.33,
-                  "r_x2": 279.33,
-                  "r_y2": 733.33,
-                  "r_x3": 300.67,
-                  "r_y3": 733.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "an",
-                "orig": "an",
-                "text_direction": "left_to_right",
-                "confidence": 0.93,
-                "from_ocr": true
-              },
-              {
-                "index": 11,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 272.33,
-                  "r_y0": 718.67,
-                  "r_x1": 229.67,
-                  "r_y1": 718.67,
-                  "r_x2": 229.67,
-                  "r_y2": 733.33,
-                  "r_x3": 272.33,
-                  "r_y3": 733.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "easy",
-                "orig": "easy",
-                "text_direction": "left_to_right",
-                "confidence": 0.94,
-                "from_ocr": true
-              },
-              {
-                "index": 12,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 224.33,
-                  "r_y0": 722.33,
-                  "r_x1": 191.0,
-                  "r_y1": 722.33,
-                  "r_x2": 191.0,
-                  "r_y2": 737.0,
-                  "r_x3": 224.33,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "self",
-                "orig": "self",
-                "text_direction": "left_to_right",
-                "confidence": 0.95,
-                "from_ocr": true
-              },
-              {
-                "index": 13,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 185.0,
-                  "r_y0": 722.33,
-                  "r_x1": 92.0,
-                  "r_y1": 722.33,
-                  "r_x2": 92.0,
-                  "r_y2": 737.0,
-                  "r_x3": 185.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "contained",
-                "orig": "contained",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 14,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 521.67,
-                  "r_y0": 691.67,
-                  "r_x1": 444.67,
-                  "r_y1": 691.67,
-                  "r_x2": 444.67,
-                  "r_y2": 710.33,
-                  "r_x3": 521.67,
-                  "r_y3": 710.33,
+                  "r_x0": 441.26,
+                  "r_y0": 710.03,
+                  "r_x1": 522.03,
+                  "r_y1": 710.03,
+                  "r_x2": 522.03,
+                  "r_y2": 690.04,
+                  "r_x3": 441.26,
+                  "r_y3": 690.04,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "package",
                 "orig": "package",
                 "text_direction": "left_to_right",
-                "confidence": 0.96,
+                "confidence": 1.0,
                 "from_ocr": true
               }
             ],
@@ -854,13 +132,13 @@
             "id": 0,
             "label": "text",
             "bbox": {
-              "l": 92.0,
-              "t": 691.67,
-              "r": 523.0,
-              "b": 764.0,
+              "l": 89.24,
+              "t": 717.17,
+              "r": 523.21,
+              "b": 764.9,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.787,
+            "confidence": 0.732,
             "cells": [
               {
                 "index": 0,
@@ -871,20 +149,20 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 521.33,
-                  "r_y0": 745.33,
-                  "r_x1": 451.33,
-                  "r_y1": 745.33,
-                  "r_x2": 451.33,
-                  "r_y2": 764.0,
-                  "r_x3": 521.33,
-                  "r_y3": 764.0,
+                  "r_x0": 89.24,
+                  "r_y0": 764.9,
+                  "r_x1": 521.99,
+                  "r_y1": 764.9,
+                  "r_x2": 521.99,
+                  "r_y2": 744.09,
+                  "r_x3": 89.24,
+                  "r_y3": 744.09,
                   "coord_origin": "TOPLEFT"
                 },
-                "text": "Docling",
-                "orig": "Docling",
+                "text": "Docling bundles PDF document conversion to",
+                "orig": "Docling bundles PDF document conversion to",
                 "text_direction": "left_to_right",
-                "confidence": 0.92,
+                "confidence": 1.0,
                 "from_ocr": true
               },
               {
@@ -896,22 +174,43 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 444.67,
-                  "r_y0": 749.33,
-                  "r_x1": 370.67,
-                  "r_y1": 749.33,
-                  "r_x2": 370.67,
-                  "r_y2": 764.0,
-                  "r_x3": 444.67,
-                  "r_y3": 764.0,
+                  "r_x0": 89.24,
+                  "r_y0": 739.2,
+                  "r_x1": 523.21,
+                  "r_y1": 739.2,
+                  "r_x2": 523.21,
+                  "r_y2": 717.17,
+                  "r_x3": 89.24,
+                  "r_y3": 717.17,
                   "coord_origin": "TOPLEFT"
                 },
-                "text": "bundles",
-                "orig": "bundles",
+                "text": "JSON and Markdown in an easy self contained",
+                "orig": "JSON and Markdown in an easy self contained",
                 "text_direction": "left_to_right",
-                "confidence": 0.96,
+                "confidence": 1.0,
                 "from_ocr": true
-              },
+              }
+            ],
+            "children": []
+          },
+          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
+        },
+        {
+          "label": "text",
+          "id": 2,
+          "page_no": 0,
+          "cluster": {
+            "id": 2,
+            "label": "text",
+            "bbox": {
+              "l": 441.26,
+              "t": 690.04,
+              "r": 522.03,
+              "b": 710.03,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.598,
+            "cells": [
               {
                 "index": 2,
                 "rgba": {
@@ -921,326 +220,26 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 363.33,
-                  "r_y0": 749.33,
-                  "r_x1": 326.33,
-                  "r_y1": 749.33,
-                  "r_x2": 326.33,
-                  "r_y2": 764.0,
-                  "r_x3": 363.33,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "PDF",
-                "orig": "PDF",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 3,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 320.33,
-                  "r_y0": 749.33,
-                  "r_x1": 224.0,
-                  "r_y1": 749.33,
-                  "r_x2": 224.0,
-                  "r_y2": 764.0,
-                  "r_x3": 320.33,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "document",
-                "orig": "document",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 4,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 218.0,
-                  "r_y0": 749.33,
-                  "r_x1": 116.33,
-                  "r_y1": 749.33,
-                  "r_x2": 116.33,
-                  "r_y2": 764.0,
-                  "r_x3": 218.0,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "conversion",
-                "orig": "conversion",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 5,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 110.0,
-                  "r_y0": 749.33,
-                  "r_x1": 92.0,
-                  "r_y1": 749.33,
-                  "r_x2": 92.0,
-                  "r_y2": 762.33,
-                  "r_x3": 110.0,
-                  "r_y3": 762.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "to",
-                "orig": "to",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 6,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 523.0,
-                  "r_y0": 722.33,
-                  "r_x1": 474.0,
-                  "r_y1": 722.33,
-                  "r_x2": 474.0,
-                  "r_y2": 737.33,
-                  "r_x3": 523.0,
-                  "r_y3": 737.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "JSON",
-                "orig": "JSON",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 7,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 466.33,
-                  "r_y0": 722.33,
-                  "r_x1": 433.0,
-                  "r_y1": 722.33,
-                  "r_x2": 433.0,
-                  "r_y2": 737.0,
-                  "r_x3": 466.33,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "and",
-                "orig": "and",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 8,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 425.0,
-                  "r_y0": 722.33,
-                  "r_x1": 329.67,
-                  "r_y1": 722.33,
-                  "r_x2": 329.67,
-                  "r_y2": 737.0,
-                  "r_x3": 425.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "Markdown",
-                "orig": "Markdown",
-                "text_direction": "left_to_right",
-                "confidence": 0.91,
-                "from_ocr": true
-              },
-              {
-                "index": 9,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 322.0,
-                  "r_y0": 722.67,
-                  "r_x1": 307.67,
-                  "r_y1": 722.67,
-                  "r_x2": 307.67,
-                  "r_y2": 737.0,
-                  "r_x3": 322.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "in",
-                "orig": "in",
-                "text_direction": "left_to_right",
-                "confidence": 0.93,
-                "from_ocr": true
-              },
-              {
-                "index": 10,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 300.67,
-                  "r_y0": 722.33,
-                  "r_x1": 279.33,
-                  "r_y1": 722.33,
-                  "r_x2": 279.33,
-                  "r_y2": 733.33,
-                  "r_x3": 300.67,
-                  "r_y3": 733.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "an",
-                "orig": "an",
-                "text_direction": "left_to_right",
-                "confidence": 0.93,
-                "from_ocr": true
-              },
-              {
-                "index": 11,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 272.33,
-                  "r_y0": 718.67,
-                  "r_x1": 229.67,
-                  "r_y1": 718.67,
-                  "r_x2": 229.67,
-                  "r_y2": 733.33,
-                  "r_x3": 272.33,
-                  "r_y3": 733.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "easy",
-                "orig": "easy",
-                "text_direction": "left_to_right",
-                "confidence": 0.94,
-                "from_ocr": true
-              },
-              {
-                "index": 12,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 224.33,
-                  "r_y0": 722.33,
-                  "r_x1": 191.0,
-                  "r_y1": 722.33,
-                  "r_x2": 191.0,
-                  "r_y2": 737.0,
-                  "r_x3": 224.33,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "self",
-                "orig": "self",
-                "text_direction": "left_to_right",
-                "confidence": 0.95,
-                "from_ocr": true
-              },
-              {
-                "index": 13,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 185.0,
-                  "r_y0": 722.33,
-                  "r_x1": 92.0,
-                  "r_y1": 722.33,
-                  "r_x2": 92.0,
-                  "r_y2": 737.0,
-                  "r_x3": 185.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "contained",
-                "orig": "contained",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 14,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 521.67,
-                  "r_y0": 691.67,
-                  "r_x1": 444.67,
-                  "r_y1": 691.67,
-                  "r_x2": 444.67,
-                  "r_y2": 710.33,
-                  "r_x3": 521.67,
-                  "r_y3": 710.33,
+                  "r_x0": 441.26,
+                  "r_y0": 710.03,
+                  "r_x1": 522.03,
+                  "r_y1": 710.03,
+                  "r_x2": 522.03,
+                  "r_y2": 690.04,
+                  "r_x3": 441.26,
+                  "r_y3": 690.04,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "package",
                 "orig": "package",
                 "text_direction": "left_to_right",
-                "confidence": 0.96,
+                "confidence": 1.0,
                 "from_ocr": true
               }
             ],
             "children": []
           },
-          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
+          "text": "package"
         }
       ],
       "body": [
@@ -1252,13 +251,13 @@
             "id": 0,
             "label": "text",
             "bbox": {
-              "l": 92.0,
-              "t": 691.67,
-              "r": 523.0,
-              "b": 764.0,
+              "l": 89.24,
+              "t": 717.17,
+              "r": 523.21,
+              "b": 764.9,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.787,
+            "confidence": 0.732,
             "cells": [
               {
                 "index": 0,
@@ -1269,20 +268,20 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 521.33,
-                  "r_y0": 745.33,
-                  "r_x1": 451.33,
-                  "r_y1": 745.33,
-                  "r_x2": 451.33,
-                  "r_y2": 764.0,
-                  "r_x3": 521.33,
-                  "r_y3": 764.0,
+                  "r_x0": 89.24,
+                  "r_y0": 764.9,
+                  "r_x1": 521.99,
+                  "r_y1": 764.9,
+                  "r_x2": 521.99,
+                  "r_y2": 744.09,
+                  "r_x3": 89.24,
+                  "r_y3": 744.09,
                   "coord_origin": "TOPLEFT"
                 },
-                "text": "Docling",
-                "orig": "Docling",
+                "text": "Docling bundles PDF document conversion to",
+                "orig": "Docling bundles PDF document conversion to",
                 "text_direction": "left_to_right",
-                "confidence": 0.92,
+                "confidence": 1.0,
                 "from_ocr": true
               },
               {
@@ -1294,22 +293,43 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 444.67,
-                  "r_y0": 749.33,
-                  "r_x1": 370.67,
-                  "r_y1": 749.33,
-                  "r_x2": 370.67,
-                  "r_y2": 764.0,
-                  "r_x3": 444.67,
-                  "r_y3": 764.0,
+                  "r_x0": 89.24,
+                  "r_y0": 739.2,
+                  "r_x1": 523.21,
+                  "r_y1": 739.2,
+                  "r_x2": 523.21,
+                  "r_y2": 717.17,
+                  "r_x3": 89.24,
+                  "r_y3": 717.17,
                   "coord_origin": "TOPLEFT"
                 },
-                "text": "bundles",
-                "orig": "bundles",
+                "text": "JSON and Markdown in an easy self contained",
+                "orig": "JSON and Markdown in an easy self contained",
                 "text_direction": "left_to_right",
-                "confidence": 0.96,
+                "confidence": 1.0,
                 "from_ocr": true
-              },
+              }
+            ],
+            "children": []
+          },
+          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
+        },
+        {
+          "label": "text",
+          "id": 2,
+          "page_no": 0,
+          "cluster": {
+            "id": 2,
+            "label": "text",
+            "bbox": {
+              "l": 441.26,
+              "t": 690.04,
+              "r": 522.03,
+              "b": 710.03,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 0.598,
+            "cells": [
               {
                 "index": 2,
                 "rgba": {
@@ -1319,329 +339,30 @@
                   "a": 255
                 },
                 "rect": {
-                  "r_x0": 363.33,
-                  "r_y0": 749.33,
-                  "r_x1": 326.33,
-                  "r_y1": 749.33,
-                  "r_x2": 326.33,
-                  "r_y2": 764.0,
-                  "r_x3": 363.33,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "PDF",
-                "orig": "PDF",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 3,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 320.33,
-                  "r_y0": 749.33,
-                  "r_x1": 224.0,
-                  "r_y1": 749.33,
-                  "r_x2": 224.0,
-                  "r_y2": 764.0,
-                  "r_x3": 320.33,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "document",
-                "orig": "document",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 4,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 218.0,
-                  "r_y0": 749.33,
-                  "r_x1": 116.33,
-                  "r_y1": 749.33,
-                  "r_x2": 116.33,
-                  "r_y2": 764.0,
-                  "r_x3": 218.0,
-                  "r_y3": 764.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "conversion",
-                "orig": "conversion",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 5,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 110.0,
-                  "r_y0": 749.33,
-                  "r_x1": 92.0,
-                  "r_y1": 749.33,
-                  "r_x2": 92.0,
-                  "r_y2": 762.33,
-                  "r_x3": 110.0,
-                  "r_y3": 762.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "to",
-                "orig": "to",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 6,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 523.0,
-                  "r_y0": 722.33,
-                  "r_x1": 474.0,
-                  "r_y1": 722.33,
-                  "r_x2": 474.0,
-                  "r_y2": 737.33,
-                  "r_x3": 523.0,
-                  "r_y3": 737.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "JSON",
-                "orig": "JSON",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 7,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 466.33,
-                  "r_y0": 722.33,
-                  "r_x1": 433.0,
-                  "r_y1": 722.33,
-                  "r_x2": 433.0,
-                  "r_y2": 737.0,
-                  "r_x3": 466.33,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "and",
-                "orig": "and",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 8,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 425.0,
-                  "r_y0": 722.33,
-                  "r_x1": 329.67,
-                  "r_y1": 722.33,
-                  "r_x2": 329.67,
-                  "r_y2": 737.0,
-                  "r_x3": 425.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "Markdown",
-                "orig": "Markdown",
-                "text_direction": "left_to_right",
-                "confidence": 0.91,
-                "from_ocr": true
-              },
-              {
-                "index": 9,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 322.0,
-                  "r_y0": 722.67,
-                  "r_x1": 307.67,
-                  "r_y1": 722.67,
-                  "r_x2": 307.67,
-                  "r_y2": 737.0,
-                  "r_x3": 322.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "in",
-                "orig": "in",
-                "text_direction": "left_to_right",
-                "confidence": 0.93,
-                "from_ocr": true
-              },
-              {
-                "index": 10,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 300.67,
-                  "r_y0": 722.33,
-                  "r_x1": 279.33,
-                  "r_y1": 722.33,
-                  "r_x2": 279.33,
-                  "r_y2": 733.33,
-                  "r_x3": 300.67,
-                  "r_y3": 733.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "an",
-                "orig": "an",
-                "text_direction": "left_to_right",
-                "confidence": 0.93,
-                "from_ocr": true
-              },
-              {
-                "index": 11,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 272.33,
-                  "r_y0": 718.67,
-                  "r_x1": 229.67,
-                  "r_y1": 718.67,
-                  "r_x2": 229.67,
-                  "r_y2": 733.33,
-                  "r_x3": 272.33,
-                  "r_y3": 733.33,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "easy",
-                "orig": "easy",
-                "text_direction": "left_to_right",
-                "confidence": 0.94,
-                "from_ocr": true
-              },
-              {
-                "index": 12,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 224.33,
-                  "r_y0": 722.33,
-                  "r_x1": 191.0,
-                  "r_y1": 722.33,
-                  "r_x2": 191.0,
-                  "r_y2": 737.0,
-                  "r_x3": 224.33,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "self",
-                "orig": "self",
-                "text_direction": "left_to_right",
-                "confidence": 0.95,
-                "from_ocr": true
-              },
-              {
-                "index": 13,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 185.0,
-                  "r_y0": 722.33,
-                  "r_x1": 92.0,
-                  "r_y1": 722.33,
-                  "r_x2": 92.0,
-                  "r_y2": 737.0,
-                  "r_x3": 185.0,
-                  "r_y3": 737.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "contained",
-                "orig": "contained",
-                "text_direction": "left_to_right",
-                "confidence": 0.96,
-                "from_ocr": true
-              },
-              {
-                "index": 14,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 521.67,
-                  "r_y0": 691.67,
-                  "r_x1": 444.67,
-                  "r_y1": 691.67,
-                  "r_x2": 444.67,
-                  "r_y2": 710.33,
-                  "r_x3": 521.67,
-                  "r_y3": 710.33,
+                  "r_x0": 441.26,
+                  "r_y0": 710.03,
+                  "r_x1": 522.03,
+                  "r_y1": 710.03,
+                  "r_x2": 522.03,
+                  "r_y2": 690.04,
+                  "r_x3": 441.26,
+                  "r_y3": 690.04,
                   "coord_origin": "TOPLEFT"
                 },
                 "text": "package",
                 "orig": "package",
                 "text_direction": "left_to_right",
-                "confidence": 0.96,
+                "confidence": 1.0,
                 "from_ocr": true
               }
             ],
             "children": []
           },
-          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
+          "text": "package"
         }
       ],
       "headers": []
-    }
+    },
+    "parsed_page": null
   }
 ]

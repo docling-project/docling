@@ -13,473 +13,1485 @@ item-0 at level 0: unspecified: group _root_
           item-12 at level 5: list: group list
         item-13 at level 4: list_item: 4 Distribution and habitat
           item-14 at level 5: list: group list
-        item-15 at level 4: list_item: 5 Behaviour Toggle Behaviour subsection
-          item-16 at level 5: list: group list
-            item-17 at level 6: list_item: 5.1 Feeding
-              item-18 at level 7: list: group list
-            item-19 at level 6: list_item: 5.2 Breeding
-              item-20 at level 7: list: group list
-            item-21 at level 6: list_item: 5.3 Communication
-              item-22 at level 7: list: group list
-            item-23 at level 6: list_item: 5.4 Predators
-              item-24 at level 7: list: group list
-        item-25 at level 4: list_item: 6 Relationship with humans Toggle Relationship with humans subsection
-          item-26 at level 5: list: group list
-            item-27 at level 6: list_item: 6.1 Hunting
-              item-28 at level 7: list: group list
-            item-29 at level 6: list_item: 6.2 Domestication
-              item-30 at level 7: list: group list
-            item-31 at level 6: list_item: 6.3 Heraldry
-              item-32 at level 7: list: group list
-            item-33 at level 6: list_item: 6.4 Cultural references
+        item-15 at level 4: list_item: 
+          item-16 at level 5: inline: group group
+            item-17 at level 6: text: 5 Behaviour
+            item-18 at level 6: text: Toggle Behaviour subsection
+          item-19 at level 5: list: group list
+            item-20 at level 6: list_item: 5.1 Feeding
+              item-21 at level 7: list: group list
+            item-22 at level 6: list_item: 5.2 Breeding
+              item-23 at level 7: list: group list
+            item-24 at level 6: list_item: 5.3 Communication
+              item-25 at level 7: list: group list
+            item-26 at level 6: list_item: 5.4 Predators
+              item-27 at level 7: list: group list
+        item-28 at level 4: list_item: 
+          item-29 at level 5: inline: group group
+            item-30 at level 6: text: 6 Relationship with humans
+            item-31 at level 6: text: Toggle Relationship with humans subsection
+          item-32 at level 5: list: group list
+            item-33 at level 6: list_item: 6.1 Hunting
               item-34 at level 7: list: group list
-        item-35 at level 4: list_item: 7 See also
-          item-36 at level 5: list: group list
-        item-37 at level 4: list_item: 8 Notes Toggle Notes subsection
-          item-38 at level 5: list: group list
-            item-39 at level 6: list_item: 8.1 Citations
+            item-35 at level 6: list_item: 6.2 Domestication
+              item-36 at level 7: list: group list
+            item-37 at level 6: list_item: 6.3 Heraldry
+              item-38 at level 7: list: group list
+            item-39 at level 6: list_item: 6.4 Cultural references
               item-40 at level 7: list: group list
-            item-41 at level 6: list_item: 8.2 Sources
-              item-42 at level 7: list: group list
-        item-43 at level 4: list_item: 9 External links
-          item-44 at level 5: list: group list
-      item-45 at level 3: text: Toggle the table of contents
-  item-46 at level 1: title: Duck
-    item-47 at level 2: text: 136 languages
-    item-48 at level 2: list: group list
-      item-49 at level 3: list_item: Acèh
-      item-50 at level 3: list_item: Afrikaans
-      item-51 at level 3: list_item: Alemannisch
-      item-52 at level 3: list_item: አማርኛ
-      item-53 at level 3: list_item: Ænglisc
-      item-54 at level 3: list_item: العربية
-      item-55 at level 3: list_item: Aragonés
-      item-56 at level 3: list_item: ܐܪܡܝܐ
-      item-57 at level 3: list_item: Armãneashti
-      item-58 at level 3: list_item: Asturianu
-      item-59 at level 3: list_item: Atikamekw
-      item-60 at level 3: list_item: Авар
-      item-61 at level 3: list_item: Aymar aru
-      item-62 at level 3: list_item: تۆرکجه
-      item-63 at level 3: list_item: Basa Bali
-      item-64 at level 3: list_item: বাংলা
-      item-65 at level 3: list_item: 閩南語 / Bân-lâm-gú
-      item-66 at level 3: list_item: Беларуская
-      item-67 at level 3: list_item: Беларуская (тарашкевіца)
-      item-68 at level 3: list_item: Bikol Central
-      item-69 at level 3: list_item: Български
-      item-70 at level 3: list_item: Brezhoneg
-      item-71 at level 3: list_item: Буряад
-      item-72 at level 3: list_item: Català
-      item-73 at level 3: list_item: Чӑвашла
-      item-74 at level 3: list_item: Čeština
-      item-75 at level 3: list_item: ChiShona
-      item-76 at level 3: list_item: Cymraeg
-      item-77 at level 3: list_item: Dagbanli
-      item-78 at level 3: list_item: Dansk
-      item-79 at level 3: list_item: Deitsch
-      item-80 at level 3: list_item: Deutsch
-      item-81 at level 3: list_item: डोटेली
-      item-82 at level 3: list_item: Ελληνικά
-      item-83 at level 3: list_item: Emiliàn e rumagnòl
-      item-84 at level 3: list_item: Español
-      item-85 at level 3: list_item: Esperanto
-      item-86 at level 3: list_item: Euskara
-      item-87 at level 3: list_item: فارسی
-      item-88 at level 3: list_item: Français
-      item-89 at level 3: list_item: Gaeilge
-      item-90 at level 3: list_item: Galego
-      item-91 at level 3: list_item: ГӀалгӀай
-      item-92 at level 3: list_item: 贛語
-      item-93 at level 3: list_item: گیلکی
-      item-94 at level 3: list_item: 𐌲𐌿𐍄𐌹𐍃𐌺
-      item-95 at level 3: list_item: गोंयची कोंकणी / Gõychi Konknni
-      item-96 at level 3: list_item: 客家語 / Hak-kâ-ngî
-      item-97 at level 3: list_item: 한국어
-      item-98 at level 3: list_item: Hausa
-      item-99 at level 3: list_item: Հայերեն
-      item-100 at level 3: list_item: हिन्दी
-      item-101 at level 3: list_item: Hrvatski
-      item-102 at level 3: list_item: Ido
-      item-103 at level 3: list_item: Bahasa Indonesia
-      item-104 at level 3: list_item: Iñupiatun
-      item-105 at level 3: list_item: Íslenska
-      item-106 at level 3: list_item: Italiano
-      item-107 at level 3: list_item: עברית
-      item-108 at level 3: list_item: Jawa
-      item-109 at level 3: list_item: ಕನ್ನಡ
-      item-110 at level 3: list_item: Kapampangan
-      item-111 at level 3: list_item: ქართული
-      item-112 at level 3: list_item: कॉशुर / کٲشُر
-      item-113 at level 3: list_item: Қазақша
-      item-114 at level 3: list_item: Ikirundi
-      item-115 at level 3: list_item: Kongo
-      item-116 at level 3: list_item: Kreyòl ayisyen
-      item-117 at level 3: list_item: Кырык мары
-      item-118 at level 3: list_item: ລາວ
-      item-119 at level 3: list_item: Latina
-      item-120 at level 3: list_item: Latviešu
-      item-121 at level 3: list_item: Lietuvių
-      item-122 at level 3: list_item: Li Niha
-      item-123 at level 3: list_item: Ligure
-      item-124 at level 3: list_item: Limburgs
-      item-125 at level 3: list_item: Lingála
-      item-126 at level 3: list_item: Malagasy
-      item-127 at level 3: list_item: മലയാളം
-      item-128 at level 3: list_item: मराठी
-      item-129 at level 3: list_item: مازِرونی
-      item-130 at level 3: list_item: Bahasa Melayu
-      item-131 at level 3: list_item: ꯃꯤꯇꯩ ꯂꯣꯟ
-      item-132 at level 3: list_item: 閩東語 / Mìng-dĕ̤ng-ngṳ̄
-      item-133 at level 3: list_item: Мокшень
-      item-134 at level 3: list_item: Монгол
-      item-135 at level 3: list_item: မြန်မာဘာသာ
-      item-136 at level 3: list_item: Nederlands
-      item-137 at level 3: list_item: Nedersaksies
-      item-138 at level 3: list_item: नेपाली
-      item-139 at level 3: list_item: नेपाल भाषा
-      item-140 at level 3: list_item: 日本語
-      item-141 at level 3: list_item: Нохчийн
-      item-142 at level 3: list_item: Norsk nynorsk
-      item-143 at level 3: list_item: Occitan
-      item-144 at level 3: list_item: Oromoo
-      item-145 at level 3: list_item: ਪੰਜਾਬੀ
-      item-146 at level 3: list_item: Picard
-      item-147 at level 3: list_item: Plattdüütsch
-      item-148 at level 3: list_item: Polski
-      item-149 at level 3: list_item: Português
-      item-150 at level 3: list_item: Qırımtatarca
-      item-151 at level 3: list_item: Română
-      item-152 at level 3: list_item: Русский
-      item-153 at level 3: list_item: Саха тыла
-      item-154 at level 3: list_item: ᱥᱟᱱᱛᱟᱲᱤ
-      item-155 at level 3: list_item: Sardu
-      item-156 at level 3: list_item: Scots
-      item-157 at level 3: list_item: Seeltersk
-      item-158 at level 3: list_item: Shqip
-      item-159 at level 3: list_item: Sicilianu
-      item-160 at level 3: list_item: සිංහල
-      item-161 at level 3: list_item: Simple English
-      item-162 at level 3: list_item: سنڌي
-      item-163 at level 3: list_item: کوردی
-      item-164 at level 3: list_item: Српски / srpski
-      item-165 at level 3: list_item: Srpskohrvatski / српскохрватски
-      item-166 at level 3: list_item: Sunda
-      item-167 at level 3: list_item: Svenska
-      item-168 at level 3: list_item: Tagalog
-      item-169 at level 3: list_item: தமிழ்
-      item-170 at level 3: list_item: Taqbaylit
-      item-171 at level 3: list_item: Татарча / tatarça
-      item-172 at level 3: list_item: ไทย
-      item-173 at level 3: list_item: Türkçe
-      item-174 at level 3: list_item: Українська
-      item-175 at level 3: list_item: ئۇيغۇرچە / Uyghurche
-      item-176 at level 3: list_item: Vahcuengh
-      item-177 at level 3: list_item: Tiếng Việt
-      item-178 at level 3: list_item: Walon
-      item-179 at level 3: list_item: 文言
-      item-180 at level 3: list_item: Winaray
-      item-181 at level 3: list_item: 吴语
-      item-182 at level 3: list_item: 粵語
-      item-183 at level 3: list_item: Žemaitėška
-      item-184 at level 3: list_item: 中文
-    item-185 at level 2: text: Edit links
-    item-186 at level 2: list: group list
-      item-187 at level 3: list_item: Article
-      item-188 at level 3: list_item: Talk
-    item-189 at level 2: text: English
-    item-190 at level 2: list: group list
-    item-191 at level 2: list: group list
-      item-192 at level 3: list_item: Read
-      item-193 at level 3: list_item: View source
-      item-194 at level 3: list_item: View history
-    item-195 at level 2: text: Tools
-    item-196 at level 2: text: Tools
-    item-197 at level 2: text: move to sidebar
-    item-198 at level 2: text: hide
-    item-199 at level 2: text: Actions
+        item-41 at level 4: list_item: 7 See also
+          item-42 at level 5: list: group list
+        item-43 at level 4: list_item: 
+          item-44 at level 5: inline: group group
+            item-45 at level 6: text: 8 Notes
+            item-46 at level 6: text: Toggle Notes subsection
+          item-47 at level 5: list: group list
+            item-48 at level 6: list_item: 8.1 Citations
+              item-49 at level 7: list: group list
+            item-50 at level 6: list_item: 8.2 Sources
+              item-51 at level 7: list: group list
+        item-52 at level 4: list_item: 9 External links
+          item-53 at level 5: list: group list
+      item-54 at level 3: text: Toggle the table of contents
+  item-55 at level 1: title: Duck
+    item-56 at level 2: text: 136 languages
+    item-57 at level 2: list: group list
+      item-58 at level 3: list_item: Acèh
+      item-59 at level 3: list_item: Afrikaans
+      item-60 at level 3: list_item: Alemannisch
+      item-61 at level 3: list_item: አማርኛ
+      item-62 at level 3: list_item: Ænglisc
+      item-63 at level 3: list_item: العربية
+      item-64 at level 3: list_item: Aragonés
+      item-65 at level 3: list_item: ܐܪܡܝܐ
+      item-66 at level 3: list_item: Armãneashti
+      item-67 at level 3: list_item: Asturianu
+      item-68 at level 3: list_item: Atikamekw
+      item-69 at level 3: list_item: Авар
+      item-70 at level 3: list_item: Aymar aru
+      item-71 at level 3: list_item: تۆرکجه
+      item-72 at level 3: list_item: Basa Bali
+      item-73 at level 3: list_item: বাংলা
+      item-74 at level 3: list_item: 閩南語 / Bân-lâm-gú
+      item-75 at level 3: list_item: Беларуская
+      item-76 at level 3: list_item: Беларуская (тарашкевіца)
+      item-77 at level 3: list_item: Bikol Central
+      item-78 at level 3: list_item: Български
+      item-79 at level 3: list_item: Brezhoneg
+      item-80 at level 3: list_item: Буряад
+      item-81 at level 3: list_item: Català
+      item-82 at level 3: list_item: Чӑвашла
+      item-83 at level 3: list_item: Čeština
+      item-84 at level 3: list_item: ChiShona
+      item-85 at level 3: list_item: Cymraeg
+      item-86 at level 3: list_item: Dagbanli
+      item-87 at level 3: list_item: Dansk
+      item-88 at level 3: list_item: Deitsch
+      item-89 at level 3: list_item: Deutsch
+      item-90 at level 3: list_item: डोटेली
+      item-91 at level 3: list_item: Ελληνικά
+      item-92 at level 3: list_item: Emiliàn e rumagnòl
+      item-93 at level 3: list_item: Español
+      item-94 at level 3: list_item: Esperanto
+      item-95 at level 3: list_item: Euskara
+      item-96 at level 3: list_item: فارسی
+      item-97 at level 3: list_item: Français
+      item-98 at level 3: list_item: Gaeilge
+      item-99 at level 3: list_item: Galego
+      item-100 at level 3: list_item: ГӀалгӀай
+      item-101 at level 3: list_item: 贛語
+      item-102 at level 3: list_item: گیلکی
+      item-103 at level 3: list_item: 𐌲𐌿𐍄𐌹𐍃𐌺
+      item-104 at level 3: list_item: गोंयची कोंकणी / Gõychi Konknni
+      item-105 at level 3: list_item: 客家語 / Hak-kâ-ngî
+      item-106 at level 3: list_item: 한국어
+      item-107 at level 3: list_item: Hausa
+      item-108 at level 3: list_item: Հայերեն
+      item-109 at level 3: list_item: हिन्दी
+      item-110 at level 3: list_item: Hrvatski
+      item-111 at level 3: list_item: Ido
+      item-112 at level 3: list_item: Bahasa Indonesia
+      item-113 at level 3: list_item: Iñupiatun
+      item-114 at level 3: list_item: Íslenska
+      item-115 at level 3: list_item: Italiano
+      item-116 at level 3: list_item: עברית
+      item-117 at level 3: list_item: Jawa
+      item-118 at level 3: list_item: ಕನ್ನಡ
+      item-119 at level 3: list_item: Kapampangan
+      item-120 at level 3: list_item: ქართული
+      item-121 at level 3: list_item: कॉशुर / کٲشُر
+      item-122 at level 3: list_item: Қазақша
+      item-123 at level 3: list_item: Ikirundi
+      item-124 at level 3: list_item: Kongo
+      item-125 at level 3: list_item: Kreyòl ayisyen
+      item-126 at level 3: list_item: Кырык мары
+      item-127 at level 3: list_item: ລາວ
+      item-128 at level 3: list_item: Latina
+      item-129 at level 3: list_item: Latviešu
+      item-130 at level 3: list_item: Lietuvių
+      item-131 at level 3: list_item: Li Niha
+      item-132 at level 3: list_item: Ligure
+      item-133 at level 3: list_item: Limburgs
+      item-134 at level 3: list_item: Lingála
+      item-135 at level 3: list_item: Malagasy
+      item-136 at level 3: list_item: മലയാളം
+      item-137 at level 3: list_item: मराठी
+      item-138 at level 3: list_item: مازِرونی
+      item-139 at level 3: list_item: Bahasa Melayu
+      item-140 at level 3: list_item: ꯃꯤꯇꯩ ꯂꯣꯟ
+      item-141 at level 3: list_item: 閩東語 / Mìng-dĕ̤ng-ngṳ̄
+      item-142 at level 3: list_item: Мокшень
+      item-143 at level 3: list_item: Монгол
+      item-144 at level 3: list_item: မြန်မာဘာသာ
+      item-145 at level 3: list_item: Nederlands
+      item-146 at level 3: list_item: Nedersaksies
+      item-147 at level 3: list_item: नेपाली
+      item-148 at level 3: list_item: नेपाल भाषा
+      item-149 at level 3: list_item: 日本語
+      item-150 at level 3: list_item: Нохчийн
+      item-151 at level 3: list_item: Norsk nynorsk
+      item-152 at level 3: list_item: Occitan
+      item-153 at level 3: list_item: Oromoo
+      item-154 at level 3: list_item: ਪੰਜਾਬੀ
+      item-155 at level 3: list_item: Picard
+      item-156 at level 3: list_item: Plattdüütsch
+      item-157 at level 3: list_item: Polski
+      item-158 at level 3: list_item: Português
+      item-159 at level 3: list_item: Qırımtatarca
+      item-160 at level 3: list_item: Română
+      item-161 at level 3: list_item: Русский
+      item-162 at level 3: list_item: Саха тыла
+      item-163 at level 3: list_item: ᱥᱟᱱᱛᱟᱲᱤ
+      item-164 at level 3: list_item: Sardu
+      item-165 at level 3: list_item: Scots
+      item-166 at level 3: list_item: Seeltersk
+      item-167 at level 3: list_item: Shqip
+      item-168 at level 3: list_item: Sicilianu
+      item-169 at level 3: list_item: සිංහල
+      item-170 at level 3: list_item: Simple English
+      item-171 at level 3: list_item: سنڌي
+      item-172 at level 3: list_item: کوردی
+      item-173 at level 3: list_item: Српски / srpski
+      item-174 at level 3: list_item: Srpskohrvatski / српскохрватски
+      item-175 at level 3: list_item: Sunda
+      item-176 at level 3: list_item: Svenska
+      item-177 at level 3: list_item: Tagalog
+      item-178 at level 3: list_item: தமிழ்
+      item-179 at level 3: list_item: Taqbaylit
+      item-180 at level 3: list_item: Татарча / tatarça
+      item-181 at level 3: list_item: ไทย
+      item-182 at level 3: list_item: Türkçe
+      item-183 at level 3: list_item: Українська
+      item-184 at level 3: list_item: ئۇيغۇرچە / Uyghurche
+      item-185 at level 3: list_item: Vahcuengh
+      item-186 at level 3: list_item: Tiếng Việt
+      item-187 at level 3: list_item: Walon
+      item-188 at level 3: list_item: 文言
+      item-189 at level 3: list_item: Winaray
+      item-190 at level 3: list_item: 吴语
+      item-191 at level 3: list_item: 粵語
+      item-192 at level 3: list_item: Žemaitėška
+      item-193 at level 3: list_item: 中文
+    item-194 at level 2: text: Edit links
+    item-195 at level 2: list: group list
+      item-196 at level 3: list_item: Article
+      item-197 at level 3: list_item: Talk
+    item-198 at level 2: text: English
+    item-199 at level 2: list: group list
     item-200 at level 2: list: group list
       item-201 at level 3: list_item: Read
       item-202 at level 3: list_item: View source
       item-203 at level 3: list_item: View history
-    item-204 at level 2: text: General
-    item-205 at level 2: list: group list
-      item-206 at level 3: list_item: What links here
-      item-207 at level 3: list_item: Related changes
-      item-208 at level 3: list_item: Upload file
-      item-209 at level 3: list_item: Special pages
-      item-210 at level 3: list_item: Permanent link
-      item-211 at level 3: list_item: Page information
-      item-212 at level 3: list_item: Cite this page
-      item-213 at level 3: list_item: Get shortened URL
-      item-214 at level 3: list_item: Download QR code
-      item-215 at level 3: list_item: Wikidata item
-    item-216 at level 2: text: Print/export
-    item-217 at level 2: list: group list
-      item-218 at level 3: list_item: Download as PDF
-      item-219 at level 3: list_item: Printable version
-    item-220 at level 2: text: In other projects
-    item-221 at level 2: list: group list
-      item-222 at level 3: list_item: Wikimedia Commons
-      item-223 at level 3: list_item: Wikiquote
-    item-224 at level 2: text: Appearance
-    item-225 at level 2: text: move to sidebar
-    item-226 at level 2: text: hide
-    item-227 at level 2: text: From Wikipedia, the free encyclopedia
-    item-228 at level 2: text: (Redirected from Duckling)
-    item-229 at level 2: text: Common name for many species of bird
-    item-230 at level 2: text: This article is about the bird.  ... other uses, see Duck (disambiguation).
-    item-231 at level 2: text: "Duckling" redirects here. For other uses, see Duckling (disambiguation).
-    item-232 at level 2: picture
-    item-233 at level 2: picture
-    item-234 at level 2: table with [13x2]
-    item-235 at level 2: text: Duck is the common name for nume ... und in both fresh water and sea water.
-    item-236 at level 2: text: Ducks are sometimes confused wit ...  divers, grebes, gallinules and coots.
-    item-237 at level 2: section_header: Etymology
-      item-238 at level 3: text: The word duck comes from Old Eng ... h duiken and German tauchen 'to dive'.
-      item-239 at level 3: picture
-        item-239 at level 4: caption: Pacific black duck displaying the characteristic upending "duck"
-      item-240 at level 3: text: This word replaced Old English e ... nskrit ātí 'water bird', among others.
-      item-241 at level 3: text: A duckling is a young duck in do ... , is sometimes labelled as a duckling.
-      item-242 at level 3: text: A male is called a drake and the ... a duck, or in ornithology a hen.[3][4]
-      item-243 at level 3: picture
-        item-243 at level 4: caption: Male mallard.
-      item-244 at level 3: picture
-        item-244 at level 4: caption: Wood ducks.
-    item-245 at level 2: section_header: Taxonomy
-      item-246 at level 3: text: All ducks belong to the biologic ... ationships between various species.[9]
-      item-247 at level 3: picture
-        item-247 at level 4: caption: Mallard landing in approach
-      item-248 at level 3: text: In most modern classifications,  ... all size and stiff, upright tails.[14]
-      item-249 at level 3: text: A number of other species called ...  shelducks in the tribe Tadornini.[15]
-    item-250 at level 2: section_header: Morphology
-      item-251 at level 3: picture
-        item-251 at level 4: caption: Male Mandarin duck
-      item-252 at level 3: text: The overall body plan of ducks i ... is moult typically precedes migration.
-      item-253 at level 3: text: The drakes of northern species o ... rkscrew shaped vagina to prevent rape.
-    item-254 at level 2: section_header: Distribution and habitat
-      item-255 at level 3: text: See also: List of Anseriformes by population
-      item-256 at level 3: picture
-        item-256 at level 4: caption: Flying steamer ducks in Ushuaia, Argentina
-      item-257 at level 3: text: Ducks have a cosmopolitan distri ... endemic to such far-flung islands.[21]
-      item-258 at level 3: picture
-        item-258 at level 4: caption: Female mallard in Cornwall, England
-      item-259 at level 3: text: Some duck species, mainly those  ... t form after localised heavy rain.[23]
-    item-260 at level 2: section_header: Behaviour
-      item-261 at level 3: section_header: Feeding
-        item-262 at level 4: picture
-          item-262 at level 5: caption: Pecten along the bill
-        item-263 at level 4: text: Ducks eat food sources such as g ... amphibians, worms, and small molluscs.
-        item-264 at level 4: text: Dabbling ducks feed on the surfa ... thers and to hold slippery food items.
-        item-265 at level 4: text: Diving ducks and sea ducks forag ... ave more difficulty taking off to fly.
-        item-266 at level 4: text: A few specialized species such a ... apted to catch and swallow large fish.
-        item-267 at level 4: text: The others have the characterist ... e nostrils come out through hard horn.
-        item-268 at level 4: text: The Guardian published an articl ...  the ducks and pollutes waterways.[25]
-      item-269 at level 3: section_header: Breeding
-        item-270 at level 4: picture
-          item-270 at level 5: caption: A Muscovy duckling
-        item-271 at level 4: text: Ducks generally only have one pa ... st and led her ducklings to water.[28]
-      item-272 at level 3: section_header: Communication
-        item-273 at level 4: text: Female mallard ducks (as well as ... laying calls or quieter contact calls.
-        item-274 at level 4: text: A common urban legend claims tha ... annel television show MythBusters.[32]
-      item-275 at level 3: section_header: Predators
-        item-276 at level 4: picture
-          item-276 at level 5: caption: Ringed teal
-        item-277 at level 4: text: Ducks have many predators. Duckl ... or large birds, such as hawks or owls.
-        item-278 at level 4: text: Adult ducks are fast fliers, but ... its speed and strength to catch ducks.
-    item-279 at level 2: section_header: Relationship with humans
-      item-280 at level 3: section_header: Hunting
-        item-281 at level 4: text: Main article: Waterfowl hunting
-        item-282 at level 4: text: Humans have hunted ducks since p ...  evidence of this is uncommon.[35][42]
-        item-283 at level 4: text: In many areas, wild ducks (inclu ... inated by pollutants such as PCBs.[44]
-      item-284 at level 3: section_header: Domestication
-        item-285 at level 4: text: Main article: Domestic duck
-        item-286 at level 4: picture
-          item-286 at level 5: caption: Indian Runner ducks, a common breed of domestic ducks
-        item-287 at level 4: text: Ducks have many economic uses, b ... it weighs less than 1 kg (2.2 lb).[48]
-      item-288 at level 3: section_header: Heraldry
-        item-289 at level 4: picture
-          item-289 at level 5: caption: Three black-colored ducks in the coat of arms of Maaninka[49]
-        item-290 at level 4: text: Ducks appear on several coats of ... the coat of arms of Föglö (Åland).[51]
-      item-291 at level 3: section_header: Cultural references
-        item-292 at level 4: text: In 2002, psychologist Richard Wi ... 54] and was made into a movie in 1986.
-        item-293 at level 4: text: The 1992 Disney film The Mighty  ...  Ducks minor league baseball team.[55]
-    item-294 at level 2: section_header: See also
-      item-295 at level 3: list: group list
-        item-296 at level 4: list_item: Birds portal
-        item-297 at level 4: picture
-      item-298 at level 3: list: group list
-        item-299 at level 4: list_item: Domestic duck
-        item-300 at level 4: list_item: Duck as food
-        item-301 at level 4: list_item: Duck test
-        item-302 at level 4: list_item: Duck breeds
-        item-303 at level 4: list_item: Fictional ducks
-        item-304 at level 4: list_item: Rubber duck
-    item-305 at level 2: section_header: Notes
-      item-306 at level 3: section_header: Citations
-        item-307 at level 4: list: group ordered list
-          item-308 at level 5: list_item: ^ "Duckling". The American Herit ... n Company. 2006. Retrieved 2015-05-22.
-          item-309 at level 5: list_item: ^ "Duckling". Kernerman English  ...  Ltd. 2000–2006. Retrieved 2015-05-22.
-          item-310 at level 5: list_item: ^ Dohner, Janet Vorwald (2001).  ... University Press. ISBN 978-0300138139.
-          item-311 at level 5: list_item: ^ Visca, Curt; Visca, Kelley (20 ...  Publishing Group. ISBN 9780823961566.
-          item-312 at level 5: list_item: ^ a b c d Carboneras 1992, p. 536.
-          item-313 at level 5: list_item: ^ Livezey 1986, pp. 737–738.
-          item-314 at level 5: list_item: ^ Madsen, McHugh & de Kloet 1988, p. 452.
-          item-315 at level 5: list_item: ^ Donne-Goussé, Laudet & Hänni 2002, pp. 353–354.
-          item-316 at level 5: list_item: ^ a b c d e f Carboneras 1992, p. 540.
-          item-317 at level 5: list_item: ^ Elphick, Dunning & Sibley 2001, p. 191.
-          item-318 at level 5: list_item: ^ Kear 2005, p. 448.
-          item-319 at level 5: list_item: ^ Kear 2005, p. 622–623.
-          item-320 at level 5: list_item: ^ Kear 2005, p. 686.
-          item-321 at level 5: list_item: ^ Elphick, Dunning & Sibley 2001, p. 193.
-          item-322 at level 5: list_item: ^ a b c d e f g Carboneras 1992, p. 537.
-          item-323 at level 5: list_item: ^ American Ornithologists' Union 1998, p. xix.
-          item-324 at level 5: list_item: ^ American Ornithologists' Union 1998.
-          item-325 at level 5: list_item: ^ Carboneras 1992, p. 538.
-          item-326 at level 5: list_item: ^ Christidis & Boles 2008, p. 62.
-          item-327 at level 5: list_item: ^ Shirihai 2008, pp. 239, 245.
-          item-328 at level 5: list_item: ^ a b Pratt, Bruner & Berrett 1987, pp. 98–107.
-          item-329 at level 5: list_item: ^ Fitter, Fitter & Hosking 2000, pp. 52–3.
-          item-330 at level 5: list_item: ^ "Pacific Black Duck". www.wiresnr.org. Retrieved 2018-04-27.
-          item-331 at level 5: list_item: ^ Ogden, Evans. "Dabbling Ducks". CWE. Retrieved 2006-11-02.
-          item-332 at level 5: list_item: ^ Karl Mathiesen (16 March 2015) ...  Guardian. Retrieved 13 November 2016.
-          item-333 at level 5: list_item: ^ Rohwer, Frank C.; Anderson, Mi ... 4615-6787-5_4. ISBN 978-1-4615-6789-9.
-          item-334 at level 5: list_item: ^ Smith, Cyndi M.; Cooke, Fred;  ... 093/condor/102.1.201. hdl:10315/13797.
-          item-335 at level 5: list_item: ^ "If You Find An Orphaned Duckl ... l on 2018-09-23. Retrieved 2018-12-22.
-          item-336 at level 5: list_item: ^ Carver, Heather (2011). The Du ...  9780557901562.[self-published source]
-          item-337 at level 5: list_item: ^ Titlow, Budd (2013-09-03). Bir ... man & Littlefield. ISBN 9780762797707.
-          item-338 at level 5: list_item: ^ Amos, Jonathan (2003-09-08). " ... kers". BBC News. Retrieved 2006-11-02.
-          item-339 at level 5: list_item: ^ "Mythbusters Episode 8". 12 December 2003.
-          item-340 at level 5: list_item: ^ Erlandson 1994, p. 171.
-          item-341 at level 5: list_item: ^ Jeffries 2008, pp. 168, 243.
-          item-342 at level 5: list_item: ^ a b Sued-Badillo 2003, p. 65.
-          item-343 at level 5: list_item: ^ Thorpe 1996, p. 68.
-          item-344 at level 5: list_item: ^ Maisels 1999, p. 42.
-          item-345 at level 5: list_item: ^ Rau 1876, p. 133.
-          item-346 at level 5: list_item: ^ Higman 2012, p. 23.
-          item-347 at level 5: list_item: ^ Hume 2012, p. 53.
-          item-348 at level 5: list_item: ^ Hume 2012, p. 52.
-          item-349 at level 5: list_item: ^ Fieldhouse 2002, p. 167.
-          item-350 at level 5: list_item: ^ Livingston, A. D. (1998-01-01) ... Editions, Limited. ISBN 9781853263774.
-          item-351 at level 5: list_item: ^ "Study plan for waterfowl inju ...  on 2022-10-09. Retrieved 2 July 2019.
-          item-352 at level 5: list_item: ^ "FAOSTAT". www.fao.org. Retrieved 2019-10-25.
-          item-353 at level 5: list_item: ^ "Anas platyrhynchos, Domestic  ... . Digimorph.org. Retrieved 2012-12-23.
-          item-354 at level 5: list_item: ^ Sy Montgomery. "Mallard; Encyc ...  Britannica.com. Retrieved 2012-12-23.
-          item-355 at level 5: list_item: ^ Glenday, Craig (2014). Guinnes ... ited. pp. 135. ISBN 978-1-908843-15-9.
-          item-356 at level 5: list_item: ^ Suomen kunnallisvaakunat (in F ... tto. 1982. p. 147. ISBN 951-773-085-3.
-          item-357 at level 5: list_item: ^ "Lubānas simbolika" (in Latvian). Retrieved September 9, 2021.
-          item-358 at level 5: list_item: ^ "Föglö" (in Swedish). Retrieved September 9, 2021.
-          item-359 at level 5: list_item: ^ Young, Emma. "World's funniest ... w Scientist. Retrieved 7 January 2019.
-          item-360 at level 5: list_item: ^ "Howard the Duck (character)". Grand Comics Database.
-          item-361 at level 5: list_item: ^ Sanderson, Peter; Gilbert, Lau ... luding this bad-tempered talking duck.
-          item-362 at level 5: list_item: ^ "The Duck". University of Oregon Athletics. Retrieved 2022-01-20.
-      item-363 at level 3: section_header: Sources
-        item-364 at level 4: list: group list
-          item-365 at level 5: list_item: American Ornithologists' Union ( ... (PDF) from the original on 2022-10-09.
-          item-366 at level 5: list_item: Carboneras, Carlos (1992). del H ... Lynx Edicions. ISBN 978-84-87334-10-8.
-          item-367 at level 5: list_item: Christidis, Les; Boles, Walter E ... ro Publishing. ISBN 978-0-643-06511-6.
-          item-368 at level 5: list_item: Donne-Goussé, Carole; Laudet, Vi ... /S1055-7903(02)00019-2. PMID 12099792.
-          item-369 at level 5: list_item: Elphick, Chris; Dunning, John B. ... istopher Helm. ISBN 978-0-7136-6250-4.
-          item-370 at level 5: list_item: Erlandson, Jon M. (1994). Early  ... usiness Media. ISBN 978-1-4419-3231-0.
-          item-371 at level 5: list_item: Fieldhouse, Paul (2002). Food, F ... ara: ABC-CLIO. ISBN 978-1-61069-412-4.
-          item-372 at level 5: list_item: Fitter, Julian; Fitter, Daniel;  ... versity Press. ISBN 978-0-691-10295-5.
-          item-373 at level 5: list_item: Higman, B. W. (2012). How Food M ...  Wiley & Sons. ISBN 978-1-4051-8947-7.
-          item-374 at level 5: list_item: Hume, Julian H. (2012). Extinct  ... istopher Helm. ISBN 978-1-4729-3744-5.
-          item-375 at level 5: list_item: Jeffries, Richard (2008). Holoce ... Alabama Press. ISBN 978-0-8173-1658-7.
-          item-376 at level 5: list_item: Kear, Janet, ed. (2005). Ducks,  ... versity Press. ISBN 978-0-19-861009-0.
-          item-377 at level 5: list_item: Livezey, Bradley C. (October 198 ... (PDF) from the original on 2022-10-09.
-          item-378 at level 5: list_item: Madsen, Cort S.; McHugh, Kevin P ... (PDF) from the original on 2022-10-09.
-          item-379 at level 5: list_item: Maisels, Charles Keith (1999). E ... on: Routledge. ISBN 978-0-415-10975-8.
-          item-380 at level 5: list_item: Pratt, H. Douglas; Bruner, Phill ...  University Press. ISBN 0-691-02399-9.
-          item-381 at level 5: list_item: Rau, Charles (1876). Early Man i ... ork: Harper & Brothers. LCCN 05040168.
-          item-382 at level 5: list_item: Shirihai, Hadoram (2008). A Comp ... versity Press. ISBN 978-0-691-13666-0.
-          item-383 at level 5: list_item: Sued-Badillo, Jalil (2003). Auto ... Paris: UNESCO. ISBN 978-92-3-103832-7.
-          item-384 at level 5: list_item: Thorpe, I. J. (1996). The Origin ... rk: Routledge. ISBN 978-0-415-08009-5.
-    item-385 at level 2: section_header: External links
-      item-386 at level 3: text: Duck  at Wikipedia's sister projects
-      item-387 at level 3: list: group list
-        item-388 at level 4: list_item: Definitions from Wiktionary
-        item-389 at level 4: picture
-        item-390 at level 4: list_item: Media from Commons
-        item-391 at level 4: picture
-        item-392 at level 4: list_item: Quotations from Wikiquote
-        item-393 at level 4: picture
-        item-394 at level 4: list_item: Recipes from Wikibooks
-        item-395 at level 4: picture
-        item-396 at level 4: list_item: Taxa from Wikispecies
-        item-397 at level 4: picture
-        item-398 at level 4: list_item: Data from Wikidata
-        item-399 at level 4: picture
-      item-400 at level 3: list: group list
-        item-401 at level 4: list_item: list of books (useful looking abstracts)
-        item-402 at level 4: list_item: Ducks on postage stamps Archived 2013-05-13 at the Wayback Machine
-        item-403 at level 4: list_item: Ducks at a Distance, by Rob Hine ... uide to identification of US waterfowl
-      item-404 at level 3: picture
-      item-405 at level 3: table with [3x2]
-      item-406 at level 3: text: Retrieved from "https://en.wikip ... index.php?title=Duck&oldid=1246843351"
-      item-407 at level 3: text: Categories:
-      item-408 at level 3: list: group list
-        item-409 at level 4: list_item: Ducks
-        item-410 at level 4: list_item: Game birds
-        item-411 at level 4: list_item: Bird common names
-      item-412 at level 3: text: Hidden categories:
-      item-413 at level 3: list: group list
-        item-414 at level 4: list_item: All accuracy disputes
-        item-415 at level 4: list_item: Accuracy disputes from February 2020
-        item-416 at level 4: list_item: CS1 Finnish-language sources (fi)
-        item-417 at level 4: list_item: CS1 Latvian-language sources (lv)
-        item-418 at level 4: list_item: CS1 Swedish-language sources (sv)
-        item-419 at level 4: list_item: Articles with short description
-        item-420 at level 4: list_item: Short description is different from Wikidata
-        item-421 at level 4: list_item: Wikipedia indefinitely move-protected pages
-        item-422 at level 4: list_item: Wikipedia indefinitely semi-protected pages
-        item-423 at level 4: list_item: Articles with 'species' microformats
-        item-424 at level 4: list_item: Articles containing Old English (ca. 450-1100)-language text
-        item-425 at level 4: list_item: Articles containing Dutch-language text
-        item-426 at level 4: list_item: Articles containing German-language text
-        item-427 at level 4: list_item: Articles containing Norwegian-language text
-        item-428 at level 4: list_item: Articles containing Lithuanian-language text
-        item-429 at level 4: list_item: Articles containing Ancient Greek (to 1453)-language text
-        item-430 at level 4: list_item: All articles with self-published sources
-        item-431 at level 4: list_item: Articles with self-published sources from February 2020
-        item-432 at level 4: list_item: All articles with unsourced statements
-        item-433 at level 4: list_item: Articles with unsourced statements from January 2022
-        item-434 at level 4: list_item: CS1: long volume value
-        item-435 at level 4: list_item: Pages using Sister project links with wikidata mismatch
-        item-436 at level 4: list_item: Pages using Sister project links with hidden wikidata
-        item-437 at level 4: list_item: Webarchive template wayback links
-        item-438 at level 4: list_item: Articles with Project Gutenberg links
-        item-439 at level 4: list_item: Articles containing video clips
-      item-440 at level 3: list: group list
-        item-441 at level 4: list_item: This page was last edited on 21 September 2024, at 12:11 (UTC).
-        item-442 at level 4: list_item: Text is available under the Crea ... tion, Inc., a non-profit organization.
-      item-443 at level 3: list: group list
-        item-444 at level 4: list_item: Privacy policy
-        item-445 at level 4: list_item: About Wikipedia
-        item-446 at level 4: list_item: Disclaimers
-        item-447 at level 4: list_item: Contact Wikipedia
-        item-448 at level 4: list_item: Code of Conduct
-        item-449 at level 4: list_item: Developers
-        item-450 at level 4: list_item: Statistics
-        item-451 at level 4: list_item: Cookie statement
-        item-452 at level 4: list_item: Mobile view
-      item-453 at level 3: list: group list
-        item-454 at level 4: picture
-          item-454 at level 5: caption: Wikimedia Foundation
-        item-455 at level 4: picture
-          item-455 at level 5: caption: Powered by MediaWiki
-      item-456 at level 3: list: group list
-  item-457 at level 1: caption: Pacific black duck displaying the characteristic upending "duck"
-  item-458 at level 1: caption: Male mallard.
-  item-459 at level 1: caption: Wood ducks.
-  item-460 at level 1: caption: Mallard landing in approach
-  item-461 at level 1: caption: Male Mandarin duck
-  item-462 at level 1: caption: Flying steamer ducks in Ushuaia, Argentina
-  item-463 at level 1: caption: Female mallard in Cornwall, England
-  item-464 at level 1: caption: Pecten along the bill
-  item-465 at level 1: caption: A Muscovy duckling
-  item-466 at level 1: caption: Ringed teal
-  item-467 at level 1: caption: Indian Runner ducks, a common breed of domestic ducks
-  item-468 at level 1: caption: Three black-colored ducks in the coat of arms of Maaninka[49]
-  item-469 at level 1: caption: Wikimedia Foundation
-  item-470 at level 1: caption: Powered by MediaWiki
+    item-204 at level 2: text: Tools
+    item-205 at level 2: text: Tools
+    item-206 at level 2: text: move to sidebar
+    item-207 at level 2: text: hide
+    item-208 at level 2: text: Actions
+    item-209 at level 2: list: group list
+      item-210 at level 3: list_item: Read
+      item-211 at level 3: list_item: View source
+      item-212 at level 3: list_item: View history
+    item-213 at level 2: text: General
+    item-214 at level 2: list: group list
+      item-215 at level 3: list_item: What links here
+      item-216 at level 3: list_item: Related changes
+      item-217 at level 3: list_item: Upload file
+      item-218 at level 3: list_item: Special pages
+      item-219 at level 3: list_item: Permanent link
+      item-220 at level 3: list_item: Page information
+      item-221 at level 3: list_item: Cite this page
+      item-222 at level 3: list_item: Get shortened URL
+      item-223 at level 3: list_item: Download QR code
+      item-224 at level 3: list_item: Wikidata item
+    item-225 at level 2: text: Print/export
+    item-226 at level 2: list: group list
+      item-227 at level 3: list_item: Download as PDF
+      item-228 at level 3: list_item: Printable version
+    item-229 at level 2: text: In other projects
+    item-230 at level 2: list: group list
+      item-231 at level 3: list_item: Wikimedia Commons
+      item-232 at level 3: list_item: Wikiquote
+    item-233 at level 2: text: Appearance
+    item-234 at level 2: text: move to sidebar
+    item-235 at level 2: text: hide
+    item-236 at level 2: text: From Wikipedia, the free encyclopedia
+    item-237 at level 2: inline: group group
+      item-238 at level 3: text: (Redirected from
+      item-239 at level 3: text: Duckling
+      item-240 at level 3: text: )
+    item-241 at level 2: text: Common name for many species of bird
+    item-242 at level 2: inline: group group
+      item-243 at level 3: text: This article is about the bird. For duck as a food, see
+      item-244 at level 3: text: Duck as food
+      item-245 at level 3: text: . For other uses, see
+      item-246 at level 3: text: Duck (disambiguation)
+      item-247 at level 3: text: .
+    item-248 at level 2: inline: group group
+      item-249 at level 3: text: "Duckling" redirects here. For other uses, see
+      item-250 at level 3: text: Duckling (disambiguation)
+      item-251 at level 3: text: .
+    item-252 at level 2: picture
+    item-253 at level 2: picture
+    item-254 at level 2: table with [13x2]
+    item-255 at level 2: inline: group group
+      item-256 at level 3: text: Duck
+      item-257 at level 3: text: is the common name for numerous species of
+      item-258 at level 3: text: waterfowl
+      item-259 at level 3: text: in the
+      item-260 at level 3: text: family
+      item-261 at level 3: text: Anatidae
+      item-262 at level 3: text: . Ducks are generally smaller and shorter-necked than
+      item-263 at level 3: text: swans
+      item-264 at level 3: text: and
+      item-265 at level 3: text: geese
+      item-266 at level 3: text: , which are members of the same  ...  among several subfamilies, they are a
+      item-267 at level 3: text: form taxon
+      item-268 at level 3: text: ; they do not represent a
+      item-269 at level 3: text: monophyletic group
+      item-270 at level 3: text: (the group of all descendants of ... not considered ducks. Ducks are mostly
+      item-271 at level 3: text: aquatic birds
+      item-272 at level 3: text: , and may be found in both fresh water and sea water.
+    item-273 at level 2: inline: group group
+      item-274 at level 3: text: Ducks are sometimes confused wit ... ater birds with similar forms, such as
+      item-275 at level 3: text: loons
+      item-276 at level 3: text: or divers,
+      item-277 at level 3: text: grebes
+      item-278 at level 3: text: ,
+      item-279 at level 3: text: gallinules
+      item-280 at level 3: text: and
+      item-281 at level 3: text: coots
+      item-282 at level 3: text: .
+    item-283 at level 2: section_header: Etymology
+      item-284 at level 3: inline: group group
+        item-285 at level 4: text: The word
+        item-286 at level 4: text: duck
+        item-287 at level 4: text: comes from
+        item-288 at level 4: text: Old English
+        item-289 at level 4: text: dūce
+        item-290 at level 4: text: 'diver', a derivative of the verb *
+        item-291 at level 4: text: dūcan
+        item-292 at level 4: text: 'to duck, bend down low as if to ... because of the way many species in the
+        item-293 at level 4: text: dabbling duck
+        item-294 at level 4: text: group feed by upending; compare with
+        item-295 at level 4: text: Dutch
+        item-296 at level 4: text: duiken
+        item-297 at level 4: text: and
+        item-298 at level 4: text: German
+        item-299 at level 4: text: tauchen
+        item-300 at level 4: text: 'to dive'.
+      item-301 at level 3: picture
+        item-301 at level 4: caption: Pacific black duck displaying the characteristic upending "duck"
+      item-302 at level 3: inline: group group
+        item-303 at level 4: text: This word replaced Old English
+        item-304 at level 4: text: ened
+        item-305 at level 4: text: /
+        item-306 at level 4: text: ænid
+        item-307 at level 4: text: 'duck', possibly to avoid confusion with other words, such as
+        item-308 at level 4: text: ende
+        item-309 at level 4: text: 'end' with similar forms. Other  ... languages still have similar words for
+        item-310 at level 4: text: duck
+        item-311 at level 4: text: , for example, Dutch
+        item-312 at level 4: text: eend
+        item-313 at level 4: text: , German
+        item-314 at level 4: text: Ente
+        item-315 at level 4: text: and
+        item-316 at level 4: text: Norwegian
+        item-317 at level 4: text: and
+        item-318 at level 4: text: . The word
+        item-319 at level 4: text: ened
+        item-320 at level 4: text: /
+        item-321 at level 4: text: ænid
+        item-322 at level 4: text: was inherited from
+        item-323 at level 4: text: Proto-Indo-European
+        item-324 at level 4: text: ;
+        item-325 at level 4: text: cf.
+        item-326 at level 4: text: Latin
+        item-327 at level 4: text: anas
+        item-328 at level 4: text: "duck",
+        item-329 at level 4: text: Lithuanian
+        item-330 at level 4: text: ántis
+        item-331 at level 4: text: 'duck',
+        item-332 at level 4: text: Ancient Greek
+        item-333 at level 4: text: νῆσσα / νῆττα (
+        item-334 at level 4: text: nēssa
+        item-335 at level 4: text: /
+        item-336 at level 4: text: nētta
+        item-337 at level 4: text: ) 'duck', and
+        item-338 at level 4: text: Sanskrit
+        item-339 at level 4: text: ātí
+        item-340 at level 4: text: 'water bird', among others.
+      item-341 at level 3: inline: group group
+        item-342 at level 4: text: A duckling is a young duck in downy plumage
+        item-343 at level 4: text: [ 1 ]
+        item-344 at level 4: text: or baby duck,
+        item-345 at level 4: text: [ 2 ]
+        item-346 at level 4: text: but in the food trade a young do ... , is sometimes labelled as a duckling.
+      item-347 at level 3: inline: group group
+        item-348 at level 4: text: A male is called a
+        item-349 at level 4: text: drake
+        item-350 at level 4: text: and the female is called a duck, or in
+        item-351 at level 4: text: ornithology
+        item-352 at level 4: text: a hen.
+        item-353 at level 4: text: [ 3 ]
+        item-354 at level 4: text: [ 4 ]
+      item-355 at level 3: picture
+        item-355 at level 4: caption: Male mallard .
+      item-356 at level 3: picture
+        item-356 at level 4: caption: Wood ducks .
+    item-357 at level 2: section_header: Taxonomy
+      item-358 at level 3: inline: group group
+        item-359 at level 4: text: All ducks belong to the
+        item-360 at level 4: text: biological order
+        item-361 at level 4: text: Anseriformes
+        item-362 at level 4: text: , a group that contains the ducks, geese and swans, as well as the
+        item-363 at level 4: text: screamers
+        item-364 at level 4: text: , and the
+        item-365 at level 4: text: magpie goose
+        item-366 at level 4: text: .
+        item-367 at level 4: text: [ 5 ]
+        item-368 at level 4: text: All except the screamers belong to the
+        item-369 at level 4: text: biological family
+        item-370 at level 4: text: Anatidae
+        item-371 at level 4: text: .
+        item-372 at level 4: text: [ 5 ]
+        item-373 at level 4: text: Within the family, ducks are spl ... erable disagreement among taxonomists.
+        item-374 at level 4: text: [ 5 ]
+        item-375 at level 4: text: Some base their decisions on
+        item-376 at level 4: text: morphological characteristics
+        item-377 at level 4: text: , others on shared behaviours or genetic studies.
+        item-378 at level 4: text: [ 6 ]
+        item-379 at level 4: text: [ 7 ]
+        item-380 at level 4: text: The number of suggested subfamil ... taining ducks ranges from two to five.
+        item-381 at level 4: text: [ 8 ]
+        item-382 at level 4: text: [ 9 ]
+        item-383 at level 4: text: The significant level of
+        item-384 at level 4: text: hybridisation
+        item-385 at level 4: text: that occurs among wild ducks com ... relationships between various species.
+        item-386 at level 4: text: [ 9 ]
+      item-387 at level 3: picture
+        item-387 at level 4: caption: Mallard landing in approach
+      item-388 at level 3: inline: group group
+        item-389 at level 4: text: In most modern classifications,  ... split into a varying number of tribes.
+        item-390 at level 4: text: [ 10 ]
+        item-391 at level 4: text: The largest of these, the Anatin ... imarily at the surface of fresh water.
+        item-392 at level 4: text: [ 11 ]
+        item-393 at level 4: text: The 'diving ducks', also named f ... ng method, make up the tribe Aythyini.
+        item-394 at level 4: text: [ 12 ]
+        item-395 at level 4: text: The 'sea ducks' of the tribe Mer ...  majority of their lives in saltwater.
+        item-396 at level 4: text: [ 13 ]
+        item-397 at level 4: text: The tribe Oxyurini contains the  ... r small size and stiff, upright tails.
+        item-398 at level 4: text: [ 14 ]
+      item-399 at level 3: inline: group group
+        item-400 at level 4: text: A number of other species called ... ed in other subfamilies or tribes. The
+        item-401 at level 4: text: whistling ducks
+        item-402 at level 4: text: are assigned either to a tribe ( ... y Anatinae or the subfamily Anserinae,
+        item-403 at level 4: text: [ 15 ]
+        item-404 at level 4: text: or to their own subfamily (Dendrocygninae) or family (Dendrocyganidae).
+        item-405 at level 4: text: [ 9 ]
+        item-406 at level 4: text: [ 16 ]
+        item-407 at level 4: text: The
+        item-408 at level 4: text: freckled duck
+        item-409 at level 4: text: of Australia is either the sole  ... ctonettini in the subfamily Anserinae,
+        item-410 at level 4: text: [ 15 ]
+        item-411 at level 4: text: or in its own family, the Stictonettinae.
+        item-412 at level 4: text: [ 9 ]
+        item-413 at level 4: text: The
+        item-414 at level 4: text: shelducks
+        item-415 at level 4: text: make up the tribe Tadornini in t ... ily Anserinae in some classifications,
+        item-416 at level 4: text: [ 15 ]
+        item-417 at level 4: text: and their own subfamily, Tadorninae, in others,
+        item-418 at level 4: text: [ 17 ]
+        item-419 at level 4: text: while the
+        item-420 at level 4: text: steamer ducks
+        item-421 at level 4: text: are either placed in the family Anserinae in the tribe Tachyerini
+        item-422 at level 4: text: [ 15 ]
+        item-423 at level 4: text: or lumped with the shelducks in the tribe Tadorini.
+        item-424 at level 4: text: [ 9 ]
+        item-425 at level 4: text: The
+        item-426 at level 4: text: perching ducks
+        item-427 at level 4: text: make up in the tribe Cairinini i ... members assigned to the tribe Anatini.
+        item-428 at level 4: text: [ 9 ]
+        item-429 at level 4: text: The
+        item-430 at level 4: text: torrent duck
+        item-431 at level 4: text: is generally included in the sub ... e in the monotypic tribe Merganettini,
+        item-432 at level 4: text: [ 15 ]
+        item-433 at level 4: text: but is sometimes included in the tribe Tadornini.
+        item-434 at level 4: text: [ 18 ]
+        item-435 at level 4: text: The
+        item-436 at level 4: text: pink-eared duck
+        item-437 at level 4: text: is sometimes included as a true duck either in the tribe Anatini
+        item-438 at level 4: text: [ 15 ]
+        item-439 at level 4: text: or the tribe Malacorhynchini,
+        item-440 at level 4: text: [ 19 ]
+        item-441 at level 4: text: and other times is included with the shelducks in the tribe Tadornini.
+        item-442 at level 4: text: [ 15 ]
+    item-443 at level 2: section_header: Morphology
+      item-444 at level 3: picture
+        item-444 at level 4: caption: Male Mandarin duck
+      item-445 at level 3: inline: group group
+        item-446 at level 4: text: The overall
+        item-447 at level 4: text: body plan
+        item-448 at level 4: text: of ducks is elongated and broad, ... t from this in being more rounded. The
+        item-449 at level 4: text: bill
+        item-450 at level 4: text: is usually broad and contains serrated
+        item-451 at level 4: text: pectens
+        item-452 at level 4: text: , which are particularly well de ... e generally short and pointed, and the
+        item-453 at level 4: text: flight
+        item-454 at level 4: text: of ducks requires fast continuou ...  strong wing muscles. Three species of
+        item-455 at level 4: text: steamer duck
+        item-456 at level 4: text: are almost flightless, however.  ...  duck are temporarily flightless while
+        item-457 at level 4: text: moulting
+        item-458 at level 4: text: ; they seek out protected habita ...  period. This moult typically precedes
+        item-459 at level 4: text: migration
+        item-460 at level 4: text: .
+      item-461 at level 3: inline: group group
+        item-462 at level 4: text: The drakes of northern species often have extravagant
+        item-463 at level 4: text: plumage
+        item-464 at level 4: text: , but that is
+        item-465 at level 4: text: moulted
+        item-466 at level 4: text: in summer to give a more female- ... n resident species typically show less
+        item-467 at level 4: text: sexual dimorphism
+        item-468 at level 4: text: , although there are exceptions such as the
+        item-469 at level 4: text: paradise shelduck
+        item-470 at level 4: text: of
+        item-471 at level 4: text: New Zealand
+        item-472 at level 4: text: , which is both strikingly sexua ... rkscrew shaped vagina to prevent rape.
+    item-473 at level 2: section_header: Distribution and habitat
+      item-474 at level 3: inline: group group
+        item-475 at level 4: text: See also:
+        item-476 at level 4: text: List of Anseriformes by population
+      item-477 at level 3: picture
+        item-477 at level 4: caption: Flying steamer ducks in Ushuaia , Argentina
+      item-478 at level 3: inline: group group
+        item-479 at level 4: text: Ducks have a
+        item-480 at level 4: text: cosmopolitan distribution
+        item-481 at level 4: text: , and are found on every continent except Antarctica.
+        item-482 at level 4: text: [ 5 ]
+        item-483 at level 4: text: Several species manage to live on subantarctic islands, including
+        item-484 at level 4: text: South Georgia
+        item-485 at level 4: text: and the
+        item-486 at level 4: text: Auckland Islands
+        item-487 at level 4: text: .
+        item-488 at level 4: text: [ 20 ]
+        item-489 at level 4: text: Ducks have reached a number of isolated oceanic islands, including the
+        item-490 at level 4: text: Hawaiian Islands
+        item-491 at level 4: text: ,
+        item-492 at level 4: text: Micronesia
+        item-493 at level 4: text: and the
+        item-494 at level 4: text: Galápagos Islands
+        item-495 at level 4: text: , where they are often
+        item-496 at level 4: text: vagrants
+        item-497 at level 4: text: and less often
+        item-498 at level 4: text: residents
+        item-499 at level 4: text: .
+        item-500 at level 4: text: [ 21 ]
+        item-501 at level 4: text: [ 22 ]
+        item-502 at level 4: text: A handful are
+        item-503 at level 4: text: endemic
+        item-504 at level 4: text: to such far-flung islands.
+        item-505 at level 4: text: [ 21 ]
+      item-506 at level 3: picture
+        item-506 at level 4: caption: Female mallard in Cornwall , England
+      item-507 at level 3: inline: group group
+        item-508 at level 4: text: Some duck species, mainly those  ...  that form after localised heavy rain.
+        item-509 at level 4: text: [ 23 ]
+    item-510 at level 2: section_header: Behaviour
+      item-511 at level 3: section_header: Feeding
+        item-512 at level 4: picture
+          item-512 at level 5: caption: Pecten along the bill
+        item-513 at level 4: inline: group group
+          item-514 at level 5: text: Ducks eat food sources such as
+          item-515 at level 5: text: grasses
+          item-516 at level 5: text: , aquatic plants, fish, insects, small amphibians, worms, and small
+          item-517 at level 5: text: molluscs
+          item-518 at level 5: text: .
+        item-519 at level 4: inline: group group
+          item-520 at level 5: text: Dabbling ducks
+          item-521 at level 5: text: feed on the surface of water or  ... -ending without completely submerging.
+          item-522 at level 5: text: [ 24 ]
+          item-523 at level 5: text: Along the edge of the bill, there is a comb-like structure called a
+          item-524 at level 5: text: pecten
+          item-525 at level 5: text: . This strains the water squirti ... thers and to hold slippery food items.
+        item-526 at level 4: inline: group group
+          item-527 at level 5: text: Diving ducks
+          item-528 at level 5: text: and
+          item-529 at level 5: text: sea ducks
+          item-530 at level 5: text: forage deep underwater. To be ab ... ave more difficulty taking off to fly.
+        item-531 at level 4: inline: group group
+          item-532 at level 5: text: A few specialized species such as the
+          item-533 at level 5: text: mergansers
+          item-534 at level 5: text: are adapted to catch and swallow large fish.
+        item-535 at level 4: inline: group group
+          item-536 at level 5: text: The others have the characteristic wide flat bill adapted to
+          item-537 at level 5: text: dredging
+          item-538 at level 5: text: -type jobs such as pulling up wa ... y when digging into sediment it has no
+          item-539 at level 5: text: cere
+          item-540 at level 5: text: , but the nostrils come out through hard horn.
+        item-541 at level 4: inline: group group
+          item-542 at level 5: text: The Guardian
+          item-543 at level 5: text: published an article advising th ... hould not be fed with bread because it
+          item-544 at level 5: text: damages the health of the ducks
+          item-545 at level 5: text: and pollutes waterways.
+          item-546 at level 5: text: [ 25 ]
+      item-547 at level 3: section_header: Breeding
+        item-548 at level 4: picture
+          item-548 at level 5: caption: A Muscovy duckling
+        item-549 at level 4: inline: group group
+          item-550 at level 5: text: Ducks generally
+          item-551 at level 5: text: only have one partner at a time
+          item-552 at level 5: text: , although the partnership usually only lasts one year.
+          item-553 at level 5: text: [ 26 ]
+          item-554 at level 5: text: Larger species and the more sede ... e pair-bonds that last numerous years.
+          item-555 at level 5: text: [ 27 ]
+          item-556 at level 5: text: Most duck species breed once a y ... ng to do so in favourable conditions (
+          item-557 at level 5: text: spring
+          item-558 at level 5: text: /summer or wet seasons). Ducks also tend to make a
+          item-559 at level 5: text: nest
+          item-560 at level 5: text: before breeding, and, after hatc ... out of (such as nesting in an enclosed
+          item-561 at level 5: text: courtyard
+          item-562 at level 5: text: ) or are not prospering due to g ... e nest and led her ducklings to water.
+          item-563 at level 5: text: [ 28 ]
+      item-564 at level 3: section_header: Communication
+        item-565 at level 4: inline: group group
+          item-566 at level 5: text: Female
+          item-567 at level 5: text: mallard
+          item-568 at level 5: text: ducks (as well as several other species in the genus
+          item-569 at level 5: text: Anas
+          item-570 at level 5: text: , such as the
+          item-571 at level 5: text: American
+          item-572 at level 5: text: and
+          item-573 at level 5: text: Pacific black ducks
+          item-574 at level 5: text: ,
+          item-575 at level 5: text: spot-billed duck
+          item-576 at level 5: text: ,
+          item-577 at level 5: text: northern pintail
+          item-578 at level 5: text: and
+          item-579 at level 5: text: common teal
+          item-580 at level 5: text: ) make the classic "quack" sound ... at is sometimes written as "breeeeze",
+          item-581 at level 5: text: [ 29 ]
+          item-582 at level 5: text: [
+          item-583 at level 5: text: self-published source?
+          item-584 at level 5: text: ]
+          item-585 at level 5: text: but, despite widespread misconce ... , most species of duck do not "quack".
+          item-586 at level 5: text: [ 30 ]
+          item-587 at level 5: text: In general, ducks make a range of
+          item-588 at level 5: text: calls
+          item-589 at level 5: text: , including whistles, cooing, yodels and grunts. For example, the
+          item-590 at level 5: text: scaup
+          item-591 at level 5: text: - which are
+          item-592 at level 5: text: diving ducks
+          item-593 at level 5: text: - make a noise like "scaup" (hen ... laying calls or quieter contact calls.
+        item-594 at level 4: inline: group group
+          item-595 at level 5: text: A common
+          item-596 at level 5: text: urban legend
+          item-597 at level 5: text: claims that duck quacks do not e ... y the Acoustics Research Centre at the
+          item-598 at level 5: text: University of Salford
+          item-599 at level 5: text: in 2003 as part of the
+          item-600 at level 5: text: British Association
+          item-601 at level 5: text: 's Festival of Science.
+          item-602 at level 5: text: [ 31 ]
+          item-603 at level 5: text: It was also debunked in
+          item-604 at level 5: text: one of the earlier episodes
+          item-605 at level 5: text: of the popular Discovery Channel television show
+          item-606 at level 5: text: MythBusters
+          item-607 at level 5: text: .
+          item-608 at level 5: text: [ 32 ]
+      item-609 at level 3: section_header: Predators
+        item-610 at level 4: picture
+          item-610 at level 5: caption: Ringed teal
+        item-611 at level 4: inline: group group
+          item-612 at level 5: text: Ducks have many predators. Duckl ... ory birds but also for large fish like
+          item-613 at level 5: text: pike
+          item-614 at level 5: text: ,
+          item-615 at level 5: text: crocodilians
+          item-616 at level 5: text: , predatory
+          item-617 at level 5: text: testudines
+          item-618 at level 5: text: such as the
+          item-619 at level 5: text: alligator snapping turtle
+          item-620 at level 5: text: , and other aquatic hunters, including fish-eating birds such as
+          item-621 at level 5: text: herons
+          item-622 at level 5: text: . Ducks' nests are raided by lan ... naware on the nest by mammals, such as
+          item-623 at level 5: text: foxes
+          item-624 at level 5: text: , or large birds, such as
+          item-625 at level 5: text: hawks
+          item-626 at level 5: text: or
+          item-627 at level 5: text: owls
+          item-628 at level 5: text: .
+        item-629 at level 4: inline: group group
+          item-630 at level 5: text: Adult ducks are fast fliers, but ... ng big fish such as the North American
+          item-631 at level 5: text: muskie
+          item-632 at level 5: text: and the European
+          item-633 at level 5: text: pike
+          item-634 at level 5: text: . In flight, ducks are safe from ... a few predators such as humans and the
+          item-635 at level 5: text: peregrine falcon
+          item-636 at level 5: text: , which uses its speed and strength to catch ducks.
+    item-637 at level 2: section_header: Relationship with humans
+      item-638 at level 3: section_header: Hunting
+        item-639 at level 4: inline: group group
+          item-640 at level 5: text: Main article:
+          item-641 at level 5: text: Waterfowl hunting
+        item-642 at level 4: inline: group group
+          item-643 at level 5: text: Humans have hunted ducks since prehistoric times. Excavations of
+          item-644 at level 5: text: middens
+          item-645 at level 5: text: in California dating to 7800 - 6400
+          item-646 at level 5: text: BP
+          item-647 at level 5: text: have turned up bones of ducks, i ... st one now-extinct flightless species.
+          item-648 at level 5: text: [ 33 ]
+          item-649 at level 5: text: Ducks were captured in "significant numbers" by
+          item-650 at level 5: text: Holocene
+          item-651 at level 5: text: inhabitants of the lower
+          item-652 at level 5: text: Ohio River
+          item-653 at level 5: text: valley, suggesting they took adv ... ounty provided by migrating waterfowl.
+          item-654 at level 5: text: [ 34 ]
+          item-655 at level 5: text: Neolithic hunters in locations as far apart as the Caribbean,
+          item-656 at level 5: text: [ 35 ]
+          item-657 at level 5: text: Scandinavia,
+          item-658 at level 5: text: [ 36 ]
+          item-659 at level 5: text: Egypt,
+          item-660 at level 5: text: [ 37 ]
+          item-661 at level 5: text: Switzerland,
+          item-662 at level 5: text: [ 38 ]
+          item-663 at level 5: text: and China relied on ducks as a s ... f protein for some or all of the year.
+          item-664 at level 5: text: [ 39 ]
+          item-665 at level 5: text: Archeological evidence shows that
+          item-666 at level 5: text: Māori people
+          item-667 at level 5: text: in New Zealand hunted the flightless
+          item-668 at level 5: text: Finsch's duck
+          item-669 at level 5: text: , possibly to extinction, though ... may also have contributed to its fate.
+          item-670 at level 5: text: [ 40 ]
+          item-671 at level 5: text: A similar end awaited the
+          item-672 at level 5: text: Chatham duck
+          item-673 at level 5: text: , a species with reduced flying  ...  was colonised by Polynesian settlers.
+          item-674 at level 5: text: [ 41 ]
+          item-675 at level 5: text: It is probable that duck eggs we ... ugh hard evidence of this is uncommon.
+          item-676 at level 5: text: [ 35 ]
+          item-677 at level 5: text: [ 42 ]
+        item-678 at level 4: inline: group group
+          item-679 at level 5: text: In many areas, wild ducks (inclu ... he wild) are hunted for food or sport,
+          item-680 at level 5: text: [ 43 ]
+          item-681 at level 5: text: by shooting, or by being trapped using
+          item-682 at level 5: text: duck decoys
+          item-683 at level 5: text: . Because an idle floating duck  ... n "an easy target". These ducks may be
+          item-684 at level 5: text: contaminated by pollutants
+          item-685 at level 5: text: such as
+          item-686 at level 5: text: PCBs
+          item-687 at level 5: text: .
+          item-688 at level 5: text: [ 44 ]
+      item-689 at level 3: section_header: Domestication
+        item-690 at level 4: inline: group group
+          item-691 at level 5: text: Main article:
+          item-692 at level 5: text: Domestic duck
+        item-693 at level 4: picture
+          item-693 at level 5: caption: Indian Runner ducks , a common breed of domestic ducks
+        item-694 at level 4: inline: group group
+          item-695 at level 5: text: Ducks have many economic uses, b ... eggs, and feathers (particularly their
+          item-696 at level 5: text: down
+          item-697 at level 5: text: ). Approximately 3 billion ducks ... ughtered each year for meat worldwide.
+          item-698 at level 5: text: [ 45 ]
+          item-699 at level 5: text: They are also kept and bred by a ...  domestic ducks are descended from the
+          item-700 at level 5: text: mallard
+          item-701 at level 5: text: (
+          item-702 at level 5: text: Anas platyrhynchos
+          item-703 at level 5: text: ), apart from the
+          item-704 at level 5: text: Muscovy duck
+          item-705 at level 5: text: (
+          item-706 at level 5: text: Cairina moschata
+          item-707 at level 5: text: ).
+          item-708 at level 5: text: [ 46 ]
+          item-709 at level 5: text: [ 47 ]
+          item-710 at level 5: text: The
+          item-711 at level 5: text: Call duck
+          item-712 at level 5: text: is another example of a domestic ...  as it weighs less than 1 kg (2.2 lb).
+          item-713 at level 5: text: [ 48 ]
+      item-714 at level 3: section_header: Heraldry
+        item-715 at level 4: picture
+          item-715 at level 5: caption: Three black-colored ducks in the coat of arms of Maaninka [ 49 ]
+        item-716 at level 4: inline: group group
+          item-717 at level 5: text: Ducks appear on several
+          item-718 at level 5: text: coats of arms
+          item-719 at level 5: text: , including the coat of arms of
+          item-720 at level 5: text: Lubāna
+          item-721 at level 5: text: (
+          item-722 at level 5: text: Latvia
+          item-723 at level 5: text: )
+          item-724 at level 5: text: [ 50 ]
+          item-725 at level 5: text: and the coat of arms of
+          item-726 at level 5: text: Föglö
+          item-727 at level 5: text: (
+          item-728 at level 5: text: Åland
+          item-729 at level 5: text: ).
+          item-730 at level 5: text: [ 51 ]
+      item-731 at level 3: section_header: Cultural references
+        item-732 at level 4: inline: group group
+          item-733 at level 5: text: In 2002, psychologist
+          item-734 at level 5: text: Richard Wiseman
+          item-735 at level 5: text: and colleagues at the
+          item-736 at level 5: text: University of Hertfordshire
+          item-737 at level 5: text: ,
+          item-738 at level 5: text: UK
+          item-739 at level 5: text: , finished a year-long
+          item-740 at level 5: text: LaughLab
+          item-741 at level 5: text: experiment, concluding that of a ...  involving an animal, make it a duck."
+          item-742 at level 5: text: [ 52 ]
+          item-743 at level 5: text: The word "duck" may have become an
+          item-744 at level 5: text: inherently funny word
+          item-745 at level 5: text: in many languages, possibly beca ... n their looks or behavior. Of the many
+          item-746 at level 5: text: ducks in fiction
+          item-747 at level 5: text: , many are cartoon characters, such as
+          item-748 at level 5: text: Walt Disney
+          item-749 at level 5: text: 's
+          item-750 at level 5: text: Donald Duck
+          item-751 at level 5: text: , and
+          item-752 at level 5: text: Warner Bros.
+          item-753 at level 5: text: '
+          item-754 at level 5: text: Daffy Duck
+          item-755 at level 5: text: .
+          item-756 at level 5: text: Howard the Duck
+          item-757 at level 5: text: started as a comic book character in 1973
+          item-758 at level 5: text: [ 53 ]
+          item-759 at level 5: text: [ 54 ]
+          item-760 at level 5: text: and was made into a
+          item-761 at level 5: text: movie
+          item-762 at level 5: text: in 1986.
+        item-763 at level 4: inline: group group
+          item-764 at level 5: text: The 1992 Disney film
+          item-765 at level 5: text: The Mighty Ducks
+          item-766 at level 5: text: , starring
+          item-767 at level 5: text: Emilio Estevez
+          item-768 at level 5: text: , chose the duck as the mascot f ... e nickname and mascot for the eventual
+          item-769 at level 5: text: National Hockey League
+          item-770 at level 5: text: professional team of the
+          item-771 at level 5: text: Anaheim Ducks
+          item-772 at level 5: text: , who were founded with the name the Mighty Ducks of Anaheim.
+          item-773 at level 5: text: [
+          item-774 at level 5: text: citation needed
+          item-775 at level 5: text: ]
+          item-776 at level 5: text: The duck is also the nickname of the
+          item-777 at level 5: text: University of Oregon
+          item-778 at level 5: text: sports teams as well as the
+          item-779 at level 5: text: Long Island Ducks
+          item-780 at level 5: text: minor league
+          item-781 at level 5: text: baseball
+          item-782 at level 5: text: team.
+          item-783 at level 5: text: [ 55 ]
+    item-784 at level 2: section_header: See also
+      item-785 at level 3: list: group list
+        item-786 at level 4: list_item: Birds portal
+        item-787 at level 4: picture
+      item-788 at level 3: list: group list
+        item-789 at level 4: list_item: Domestic duck
+        item-790 at level 4: list_item: Duck as food
+        item-791 at level 4: list_item: Duck test
+        item-792 at level 4: list_item: Duck breeds
+        item-793 at level 4: list_item: Fictional ducks
+        item-794 at level 4: list_item: Rubber duck
+    item-795 at level 2: section_header: Notes
+      item-796 at level 3: section_header: Citations
+        item-797 at level 4: list: group ordered list
+          item-798 at level 5: list_item: 
+            item-799 at level 6: inline: group group
+              item-800 at level 7: text: ^
+              item-801 at level 7: text: "Duckling"
+              item-802 at level 7: text: .
+              item-803 at level 7: text: The American Heritage Dictionary of the English Language, Fourth Edition
+              item-804 at level 7: text: . Houghton Mifflin Company. 2006 . Retrieved 2015-05-22 .
+          item-805 at level 5: list_item: 
+            item-806 at level 6: inline: group group
+              item-807 at level 7: text: ^
+              item-808 at level 7: text: "Duckling"
+              item-809 at level 7: text: .
+              item-810 at level 7: text: Kernerman English Multilingual Dictionary (Beta Version)
+              item-811 at level 7: text: . K. Dictionaries Ltd. 2000-2006 . Retrieved 2015-05-22 .
+          item-812 at level 5: list_item: 
+            item-813 at level 6: inline: group group
+              item-814 at level 7: text: ^
+              item-815 at level 7: text: Dohner, Janet Vorwald (2001).
+              item-816 at level 7: text: The Encyclopedia of Historic and Endangered Livestock and Poultry Breeds
+              item-817 at level 7: text: . Yale University Press.
+              item-818 at level 7: text: ISBN
+              item-819 at level 7: text: 978-0300138139
+              item-820 at level 7: text: .
+          item-821 at level 5: list_item: 
+            item-822 at level 6: inline: group group
+              item-823 at level 7: text: ^
+              item-824 at level 7: text: Visca, Curt; Visca, Kelley (2003).
+              item-825 at level 7: text: How to Draw Cartoon Birds
+              item-826 at level 7: text: . The Rosen Publishing Group.
+              item-827 at level 7: text: ISBN
+              item-828 at level 7: text: 9780823961566
+              item-829 at level 7: text: .
+          item-830 at level 5: list_item: 
+            item-831 at level 6: inline: group group
+              item-832 at level 7: text: ^
+              item-833 at level 7: text: a
+              item-834 at level 7: text: b
+              item-835 at level 7: text: c
+              item-836 at level 7: text: d
+              item-837 at level 7: text: Carboneras 1992
+              item-838 at level 7: text: , p. 536.
+          item-839 at level 5: list_item: 
+            item-840 at level 6: inline: group group
+              item-841 at level 7: text: ^
+              item-842 at level 7: text: Livezey 1986
+              item-843 at level 7: text: , pp. 737-738.
+          item-844 at level 5: list_item: 
+            item-845 at level 6: inline: group group
+              item-846 at level 7: text: ^
+              item-847 at level 7: text: Madsen, McHugh & de Kloet 1988
+              item-848 at level 7: text: , p. 452.
+          item-849 at level 5: list_item: 
+            item-850 at level 6: inline: group group
+              item-851 at level 7: text: ^
+              item-852 at level 7: text: Donne-Goussé, Laudet & Hänni 2002
+              item-853 at level 7: text: , pp. 353-354.
+          item-854 at level 5: list_item: 
+            item-855 at level 6: inline: group group
+              item-856 at level 7: text: ^
+              item-857 at level 7: text: a
+              item-858 at level 7: text: b
+              item-859 at level 7: text: c
+              item-860 at level 7: text: d
+              item-861 at level 7: text: e
+              item-862 at level 7: text: f
+              item-863 at level 7: text: Carboneras 1992
+              item-864 at level 7: text: , p. 540.
+          item-865 at level 5: list_item: 
+            item-866 at level 6: inline: group group
+              item-867 at level 7: text: ^
+              item-868 at level 7: text: Elphick, Dunning & Sibley 2001
+              item-869 at level 7: text: , p. 191.
+          item-870 at level 5: list_item: 
+            item-871 at level 6: inline: group group
+              item-872 at level 7: text: ^
+              item-873 at level 7: text: Kear 2005
+              item-874 at level 7: text: , p. 448.
+          item-875 at level 5: list_item: 
+            item-876 at level 6: inline: group group
+              item-877 at level 7: text: ^
+              item-878 at level 7: text: Kear 2005
+              item-879 at level 7: text: , p. 622-623.
+          item-880 at level 5: list_item: 
+            item-881 at level 6: inline: group group
+              item-882 at level 7: text: ^
+              item-883 at level 7: text: Kear 2005
+              item-884 at level 7: text: , p. 686.
+          item-885 at level 5: list_item: 
+            item-886 at level 6: inline: group group
+              item-887 at level 7: text: ^
+              item-888 at level 7: text: Elphick, Dunning & Sibley 2001
+              item-889 at level 7: text: , p. 193.
+          item-890 at level 5: list_item: 
+            item-891 at level 6: inline: group group
+              item-892 at level 7: text: ^
+              item-893 at level 7: text: a
+              item-894 at level 7: text: b
+              item-895 at level 7: text: c
+              item-896 at level 7: text: d
+              item-897 at level 7: text: e
+              item-898 at level 7: text: f
+              item-899 at level 7: text: g
+              item-900 at level 7: text: Carboneras 1992
+              item-901 at level 7: text: , p. 537.
+          item-902 at level 5: list_item: 
+            item-903 at level 6: inline: group group
+              item-904 at level 7: text: ^
+              item-905 at level 7: text: American Ornithologists' Union 1998
+              item-906 at level 7: text: , p. xix.
+          item-907 at level 5: list_item: 
+            item-908 at level 6: inline: group group
+              item-909 at level 7: text: ^
+              item-910 at level 7: text: American Ornithologists' Union 1998
+              item-911 at level 7: text: .
+          item-912 at level 5: list_item: 
+            item-913 at level 6: inline: group group
+              item-914 at level 7: text: ^
+              item-915 at level 7: text: Carboneras 1992
+              item-916 at level 7: text: , p. 538.
+          item-917 at level 5: list_item: 
+            item-918 at level 6: inline: group group
+              item-919 at level 7: text: ^
+              item-920 at level 7: text: Christidis & Boles 2008
+              item-921 at level 7: text: , p. 62.
+          item-922 at level 5: list_item: 
+            item-923 at level 6: inline: group group
+              item-924 at level 7: text: ^
+              item-925 at level 7: text: Shirihai 2008
+              item-926 at level 7: text: , pp. 239, 245.
+          item-927 at level 5: list_item: 
+            item-928 at level 6: inline: group group
+              item-929 at level 7: text: ^
+              item-930 at level 7: text: a
+              item-931 at level 7: text: b
+              item-932 at level 7: text: Pratt, Bruner & Berrett 1987
+              item-933 at level 7: text: , pp. 98-107.
+          item-934 at level 5: list_item: 
+            item-935 at level 6: inline: group group
+              item-936 at level 7: text: ^
+              item-937 at level 7: text: Fitter, Fitter & Hosking 2000
+              item-938 at level 7: text: , pp. 52-3.
+          item-939 at level 5: list_item: 
+            item-940 at level 6: inline: group group
+              item-941 at level 7: text: ^
+              item-942 at level 7: text: "Pacific Black Duck"
+              item-943 at level 7: text: .
+              item-944 at level 7: text: www.wiresnr.org
+              item-945 at level 7: text: . Retrieved 2018-04-27 .
+          item-946 at level 5: list_item: 
+            item-947 at level 6: inline: group group
+              item-948 at level 7: text: ^
+              item-949 at level 7: text: Ogden, Evans.
+              item-950 at level 7: text: "Dabbling Ducks"
+              item-951 at level 7: text: . CWE . Retrieved 2006-11-02 .
+          item-952 at level 5: list_item: 
+            item-953 at level 6: inline: group group
+              item-954 at level 7: text: ^
+              item-955 at level 7: text: Karl Mathiesen (16 March 2015).
+              item-956 at level 7: text: "Don't feed the ducks bread, say conservationists"
+              item-957 at level 7: text: .
+              item-958 at level 7: text: The Guardian
+              item-959 at level 7: text: . Retrieved 13 November 2016 .
+          item-960 at level 5: list_item: 
+            item-961 at level 6: inline: group group
+              item-962 at level 7: text: ^
+              item-963 at level 7: text: Rohwer, Frank C.; Anderson, Mich ... air Formation in Migratory Waterfowl".
+              item-964 at level 7: text: Current Ornithology
+              item-965 at level 7: text: . pp. 187-221.
+              item-966 at level 7: text: doi
+              item-967 at level 7: text: :
+              item-968 at level 7: text: 10.1007/978-1-4615-6787-5_4
+              item-969 at level 7: text: .
+              item-970 at level 7: text: ISBN
+              item-971 at level 7: text: 978-1-4615-6789-9
+              item-972 at level 7: text: .
+          item-973 at level 5: list_item: 
+            item-974 at level 6: inline: group group
+              item-975 at level 7: text: ^
+              item-976 at level 7: text: Smith, Cyndi M.; Cooke, Fred; Ro ...  Goudie, R. Ian; Boyd, W. Sean (2000).
+              item-977 at level 7: text: "Long-Term Pair Bonds in Harlequin Ducks"
+              item-978 at level 7: text: .
+              item-979 at level 7: text: The Condor
+              item-980 at level 7: text: .
+              item-981 at level 7: text: 102
+              item-982 at level 7: text: (1): 201-205.
+              item-983 at level 7: text: doi
+              item-984 at level 7: text: :
+              item-985 at level 7: text: 10.1093/condor/102.1.201
+              item-986 at level 7: text: .
+              item-987 at level 7: text: hdl
+              item-988 at level 7: text: :
+              item-989 at level 7: text: 10315/13797
+              item-990 at level 7: text: .
+          item-991 at level 5: list_item: 
+            item-992 at level 6: inline: group group
+              item-993 at level 7: text: ^
+              item-994 at level 7: text: "If You Find An Orphaned Duckling - Wildlife Rehabber"
+              item-995 at level 7: text: .
+              item-996 at level 7: text: wildliferehabber.com
+              item-997 at level 7: text: . Archived from
+              item-998 at level 7: text: the original
+              item-999 at level 7: text: on 2018-09-23 . Retrieved 2018-12-22 .
+          item-1000 at level 5: list_item: 
+            item-1001 at level 6: inline: group group
+              item-1002 at level 7: text: ^
+              item-1003 at level 7: text: Carver, Heather (2011).
+              item-1004 at level 7: text: The Duck Bible
+              item-1005 at level 7: text: . Lulu.com.
+              item-1006 at level 7: text: ISBN
+              item-1007 at level 7: text: 9780557901562
+              item-1008 at level 7: text: .
+              item-1009 at level 7: text: [
+              item-1010 at level 7: text: self-published source
+              item-1011 at level 7: text: ]
+          item-1012 at level 5: list_item: 
+            item-1013 at level 6: inline: group group
+              item-1014 at level 7: text: ^
+              item-1015 at level 7: text: Titlow, Budd (2013-09-03).
+              item-1016 at level 7: text: Bird Brains: Inside the Strange Minds of Our Fine Feathered Friends
+              item-1017 at level 7: text: . Rowman & Littlefield.
+              item-1018 at level 7: text: ISBN
+              item-1019 at level 7: text: 9780762797707
+              item-1020 at level 7: text: .
+          item-1021 at level 5: list_item: 
+            item-1022 at level 6: inline: group group
+              item-1023 at level 7: text: ^
+              item-1024 at level 7: text: Amos, Jonathan (2003-09-08).
+              item-1025 at level 7: text: "Sound science is quackers"
+              item-1026 at level 7: text: .
+              item-1027 at level 7: text: BBC News
+              item-1028 at level 7: text: . Retrieved 2006-11-02 .
+          item-1029 at level 5: list_item: 
+            item-1030 at level 6: inline: group group
+              item-1031 at level 7: text: ^
+              item-1032 at level 7: text: "Mythbusters Episode 8"
+              item-1033 at level 7: text: . 12 December 2003.
+          item-1034 at level 5: list_item: 
+            item-1035 at level 6: inline: group group
+              item-1036 at level 7: text: ^
+              item-1037 at level 7: text: Erlandson 1994
+              item-1038 at level 7: text: , p. 171.
+          item-1039 at level 5: list_item: 
+            item-1040 at level 6: inline: group group
+              item-1041 at level 7: text: ^
+              item-1042 at level 7: text: Jeffries 2008
+              item-1043 at level 7: text: , pp. 168, 243.
+          item-1044 at level 5: list_item: 
+            item-1045 at level 6: inline: group group
+              item-1046 at level 7: text: ^
+              item-1047 at level 7: text: a
+              item-1048 at level 7: text: b
+              item-1049 at level 7: text: Sued-Badillo 2003
+              item-1050 at level 7: text: , p. 65.
+          item-1051 at level 5: list_item: 
+            item-1052 at level 6: inline: group group
+              item-1053 at level 7: text: ^
+              item-1054 at level 7: text: Thorpe 1996
+              item-1055 at level 7: text: , p. 68.
+          item-1056 at level 5: list_item: 
+            item-1057 at level 6: inline: group group
+              item-1058 at level 7: text: ^
+              item-1059 at level 7: text: Maisels 1999
+              item-1060 at level 7: text: , p. 42.
+          item-1061 at level 5: list_item: 
+            item-1062 at level 6: inline: group group
+              item-1063 at level 7: text: ^
+              item-1064 at level 7: text: Rau 1876
+              item-1065 at level 7: text: , p. 133.
+          item-1066 at level 5: list_item: 
+            item-1067 at level 6: inline: group group
+              item-1068 at level 7: text: ^
+              item-1069 at level 7: text: Higman 2012
+              item-1070 at level 7: text: , p. 23.
+          item-1071 at level 5: list_item: 
+            item-1072 at level 6: inline: group group
+              item-1073 at level 7: text: ^
+              item-1074 at level 7: text: Hume 2012
+              item-1075 at level 7: text: , p. 53.
+          item-1076 at level 5: list_item: 
+            item-1077 at level 6: inline: group group
+              item-1078 at level 7: text: ^
+              item-1079 at level 7: text: Hume 2012
+              item-1080 at level 7: text: , p. 52.
+          item-1081 at level 5: list_item: 
+            item-1082 at level 6: inline: group group
+              item-1083 at level 7: text: ^
+              item-1084 at level 7: text: Fieldhouse 2002
+              item-1085 at level 7: text: , p. 167.
+          item-1086 at level 5: list_item: 
+            item-1087 at level 6: inline: group group
+              item-1088 at level 7: text: ^
+              item-1089 at level 7: text: Livingston, A. D. (1998-01-01).
+              item-1090 at level 7: text: Guide to Edible Plants and Animals
+              item-1091 at level 7: text: . Wordsworth Editions, Limited.
+              item-1092 at level 7: text: ISBN
+              item-1093 at level 7: text: 9781853263774
+              item-1094 at level 7: text: .
+          item-1095 at level 5: list_item: 
+            item-1096 at level 6: inline: group group
+              item-1097 at level 7: text: ^
+              item-1098 at level 7: text: "Study plan for waterfowl injury ... ns in Hudson river resident waterfowl"
+              item-1099 at level 7: text: (PDF) .
+              item-1100 at level 7: text: New York State Department of Environmental Conservation
+              item-1101 at level 7: text: . US Department of Commerce. December 2008. p. 3.
+              item-1102 at level 7: text: Archived
+              item-1103 at level 7: text: (PDF) from the original on 2022-10-09 . Retrieved 2 July 2019 .
+          item-1104 at level 5: list_item: 
+            item-1105 at level 6: inline: group group
+              item-1106 at level 7: text: ^
+              item-1107 at level 7: text: "FAOSTAT"
+              item-1108 at level 7: text: .
+              item-1109 at level 7: text: www.fao.org
+              item-1110 at level 7: text: . Retrieved 2019-10-25 .
+          item-1111 at level 5: list_item: 
+            item-1112 at level 6: inline: group group
+              item-1113 at level 7: text: ^
+              item-1114 at level 7: text: "Anas platyrhynchos, Domestic Du ... f - The University of Texas at Austin"
+              item-1115 at level 7: text: . Digimorph.org . Retrieved 2012-12-23 .
+          item-1116 at level 5: list_item: 
+            item-1117 at level 6: inline: group group
+              item-1118 at level 7: text: ^
+              item-1119 at level 7: text: Sy Montgomery.
+              item-1120 at level 7: text: "Mallard; Encyclopædia Britannica"
+              item-1121 at level 7: text: .
+              item-1122 at level 7: text: Britannica.com
+              item-1123 at level 7: text: . Retrieved 2012-12-23 .
+          item-1124 at level 5: list_item: 
+            item-1125 at level 6: inline: group group
+              item-1126 at level 7: text: ^
+              item-1127 at level 7: text: Glenday, Craig (2014).
+              item-1128 at level 7: text: Guinness World Records
+              item-1129 at level 7: text: . Guinness World Records Limited. pp.
+              item-1130 at level 7: text: 135
+              item-1131 at level 7: text: .
+              item-1132 at level 7: text: ISBN
+              item-1133 at level 7: text: 978-1-908843-15-9
+              item-1134 at level 7: text: .
+          item-1135 at level 5: list_item: 
+            item-1136 at level 6: inline: group group
+              item-1137 at level 7: text: ^
+              item-1138 at level 7: text: Suomen kunnallisvaakunat
+              item-1139 at level 7: text: (in Finnish). Suomen Kunnallisliitto. 1982. p. 147.
+              item-1140 at level 7: text: ISBN
+              item-1141 at level 7: text: 951-773-085-3
+              item-1142 at level 7: text: .
+          item-1143 at level 5: list_item: 
+            item-1144 at level 6: inline: group group
+              item-1145 at level 7: text: ^
+              item-1146 at level 7: text: "Lubānas simbolika"
+              item-1147 at level 7: text: (in Latvian) . Retrieved September 9, 2021 .
+          item-1148 at level 5: list_item: 
+            item-1149 at level 6: inline: group group
+              item-1150 at level 7: text: ^
+              item-1151 at level 7: text: "Föglö"
+              item-1152 at level 7: text: (in Swedish) . Retrieved September 9, 2021 .
+          item-1153 at level 5: list_item: 
+            item-1154 at level 6: inline: group group
+              item-1155 at level 7: text: ^
+              item-1156 at level 7: text: Young, Emma.
+              item-1157 at level 7: text: "World's funniest joke revealed"
+              item-1158 at level 7: text: .
+              item-1159 at level 7: text: New Scientist
+              item-1160 at level 7: text: . Retrieved 7 January 2019 .
+          item-1161 at level 5: list_item: 
+            item-1162 at level 6: inline: group group
+              item-1163 at level 7: text: ^
+              item-1164 at level 7: text: "Howard the Duck (character)"
+              item-1165 at level 7: text: .
+              item-1166 at level 7: text: Grand Comics Database
+              item-1167 at level 7: text: .
+          item-1168 at level 5: list_item: 
+            item-1169 at level 6: inline: group group
+              item-1170 at level 7: text: ^
+              item-1171 at level 7: text: Sanderson, Peter
+              item-1172 at level 7: text: ; Gilbert, Laura (2008). "1970s".
+              item-1173 at level 7: text: Marvel Chronicle A Year by Year History
+              item-1174 at level 7: text: . London, United Kingdom:
+              item-1175 at level 7: text: Dorling Kindersley
+              item-1176 at level 7: text: . p. 161.
+              item-1177 at level 7: text: ISBN
+              item-1178 at level 7: text: 978-0756641238
+              item-1179 at level 7: text: . December saw the debut of the  ... luding this bad-tempered talking duck.
+          item-1180 at level 5: list_item: 
+            item-1181 at level 6: inline: group group
+              item-1182 at level 7: text: ^
+              item-1183 at level 7: text: "The Duck"
+              item-1184 at level 7: text: .
+              item-1185 at level 7: text: University of Oregon Athletics
+              item-1186 at level 7: text: . Retrieved 2022-01-20 .
+      item-1187 at level 3: section_header: Sources
+        item-1188 at level 4: list: group list
+          item-1189 at level 5: list_item: 
+            item-1190 at level 6: inline: group group
+              item-1191 at level 7: text: American Ornithologists' Union (1998).
+              item-1192 at level 7: text: Checklist of North American Birds
+              item-1193 at level 7: text: (PDF) . Washington, DC: American Ornithologists' Union.
+              item-1194 at level 7: text: ISBN
+              item-1195 at level 7: text: 978-1-891276-00-2
+              item-1196 at level 7: text: .
+              item-1197 at level 7: text: Archived
+              item-1198 at level 7: text: (PDF) from the original on 2022-10-09.
+          item-1199 at level 5: list_item: 
+            item-1200 at level 6: inline: group group
+              item-1201 at level 7: text: Carboneras, Carlos (1992). del H ... liott, Andrew; Sargatal, Jordi (eds.).
+              item-1202 at level 7: text: Handbook of the Birds of the World
+              item-1203 at level 7: text: . Vol. 1: Ostrich to Ducks. Barcelona: Lynx Edicions.
+              item-1204 at level 7: text: ISBN
+              item-1205 at level 7: text: 978-84-87334-10-8
+              item-1206 at level 7: text: .
+          item-1207 at level 5: list_item: 
+            item-1208 at level 6: inline: group group
+              item-1209 at level 7: text: Christidis, Les; Boles, Walter E., eds. (2008).
+              item-1210 at level 7: text: Systematics and Taxonomy of Australian Birds
+              item-1211 at level 7: text: . Collingwood, VIC: Csiro Publishing.
+              item-1212 at level 7: text: ISBN
+              item-1213 at level 7: text: 978-0-643-06511-6
+              item-1214 at level 7: text: .
+          item-1215 at level 5: list_item: 
+            item-1216 at level 6: inline: group group
+              item-1217 at level 7: text: Donne-Goussé, Carole; Laudet, Vi ...  based on mitochondrial DNA analysis".
+              item-1218 at level 7: text: Molecular Phylogenetics and Evolution
+              item-1219 at level 7: text: .
+              item-1220 at level 7: text: 23
+              item-1221 at level 7: text: (3): 339-356.
+              item-1222 at level 7: text: Bibcode
+              item-1223 at level 7: text: :
+              item-1224 at level 7: text: 2002MolPE..23..339D
+              item-1225 at level 7: text: .
+              item-1226 at level 7: text: doi
+              item-1227 at level 7: text: :
+              item-1228 at level 7: text: 10.1016/S1055-7903(02)00019-2
+              item-1229 at level 7: text: .
+              item-1230 at level 7: text: PMID
+              item-1231 at level 7: text: 12099792
+              item-1232 at level 7: text: .
+          item-1233 at level 5: list_item: 
+            item-1234 at level 6: inline: group group
+              item-1235 at level 7: text: Elphick, Chris; Dunning, John B. Jr.; Sibley, David, eds. (2001).
+              item-1236 at level 7: text: The Sibley Guide to Bird Life and Behaviour
+              item-1237 at level 7: text: . London: Christopher Helm.
+              item-1238 at level 7: text: ISBN
+              item-1239 at level 7: text: 978-0-7136-6250-4
+              item-1240 at level 7: text: .
+          item-1241 at level 5: list_item: 
+            item-1242 at level 6: inline: group group
+              item-1243 at level 7: text: Erlandson, Jon M. (1994).
+              item-1244 at level 7: text: Early Hunter-Gatherers of the California Coast
+              item-1245 at level 7: text: . New York, NY: Springer Science & Business Media.
+              item-1246 at level 7: text: ISBN
+              item-1247 at level 7: text: 978-1-4419-3231-0
+              item-1248 at level 7: text: .
+          item-1249 at level 5: list_item: 
+            item-1250 at level 6: inline: group group
+              item-1251 at level 7: text: Fieldhouse, Paul (2002).
+              item-1252 at level 7: text: Food, Feasts, and Faith: An Ency ... dia of Food Culture in World Religions
+              item-1253 at level 7: text: . Vol. I: A-K. Santa Barbara: ABC-CLIO.
+              item-1254 at level 7: text: ISBN
+              item-1255 at level 7: text: 978-1-61069-412-4
+              item-1256 at level 7: text: .
+          item-1257 at level 5: list_item: 
+            item-1258 at level 6: inline: group group
+              item-1259 at level 7: text: Fitter, Julian; Fitter, Daniel; Hosking, David (2000).
+              item-1260 at level 7: text: Wildlife of the Galápagos
+              item-1261 at level 7: text: . Princeton, NJ: Princeton University Press.
+              item-1262 at level 7: text: ISBN
+              item-1263 at level 7: text: 978-0-691-10295-5
+              item-1264 at level 7: text: .
+          item-1265 at level 5: list_item: 
+            item-1266 at level 6: inline: group group
+              item-1267 at level 7: text: Higman, B. W. (2012).
+              item-1268 at level 7: text: How Food Made History
+              item-1269 at level 7: text: . Chichester, UK: John Wiley & Sons.
+              item-1270 at level 7: text: ISBN
+              item-1271 at level 7: text: 978-1-4051-8947-7
+              item-1272 at level 7: text: .
+          item-1273 at level 5: list_item: 
+            item-1274 at level 6: inline: group group
+              item-1275 at level 7: text: Hume, Julian H. (2012).
+              item-1276 at level 7: text: Extinct Birds
+              item-1277 at level 7: text: . London: Christopher Helm.
+              item-1278 at level 7: text: ISBN
+              item-1279 at level 7: text: 978-1-4729-3744-5
+              item-1280 at level 7: text: .
+          item-1281 at level 5: list_item: 
+            item-1282 at level 6: inline: group group
+              item-1283 at level 7: text: Jeffries, Richard (2008).
+              item-1284 at level 7: text: Holocene Hunter-Gatherers of the Lower Ohio River Valley
+              item-1285 at level 7: text: . Tuscaloosa: University of Alabama Press.
+              item-1286 at level 7: text: ISBN
+              item-1287 at level 7: text: 978-0-8173-1658-7
+              item-1288 at level 7: text: .
+          item-1289 at level 5: list_item: 
+            item-1290 at level 6: inline: group group
+              item-1291 at level 7: text: Kear, Janet, ed. (2005).
+              item-1292 at level 7: text: Ducks, Geese and Swans: Species Accounts (
+              item-1293 at level 7: text: Cairina
+              item-1294 at level 7: text: to
+              item-1295 at level 7: text: Mergus
+              item-1296 at level 7: text: )
+              item-1297 at level 7: text: . Bird Families of the World. Oxford: Oxford University Press.
+              item-1298 at level 7: text: ISBN
+              item-1299 at level 7: text: 978-0-19-861009-0
+              item-1300 at level 7: text: .
+          item-1301 at level 5: list_item: 
+            item-1302 at level 6: inline: group group
+              item-1303 at level 7: text: Livezey, Bradley C. (October 1986).
+              item-1304 at level 7: text: "A phylogenetic analysis of rece ... genera using morphological characters"
+              item-1305 at level 7: text: (PDF) .
+              item-1306 at level 7: text: The Auk
+              item-1307 at level 7: text: .
+              item-1308 at level 7: text: 103
+              item-1309 at level 7: text: (4): 737-754.
+              item-1310 at level 7: text: doi
+              item-1311 at level 7: text: :
+              item-1312 at level 7: text: 10.1093/auk/103.4.737
+              item-1313 at level 7: text: .
+              item-1314 at level 7: text: Archived
+              item-1315 at level 7: text: (PDF) from the original on 2022-10-09.
+          item-1316 at level 5: list_item: 
+            item-1317 at level 6: inline: group group
+              item-1318 at level 7: text: Madsen, Cort S.; McHugh, Kevin P.; de Kloet, Siwo R. (July 1988).
+              item-1319 at level 7: text: "A partial classification of wat ... l (Anatidae) based on single-copy DNA"
+              item-1320 at level 7: text: (PDF) .
+              item-1321 at level 7: text: The Auk
+              item-1322 at level 7: text: .
+              item-1323 at level 7: text: 105
+              item-1324 at level 7: text: (3): 452-459.
+              item-1325 at level 7: text: doi
+              item-1326 at level 7: text: :
+              item-1327 at level 7: text: 10.1093/auk/105.3.452
+              item-1328 at level 7: text: .
+              item-1329 at level 7: text: Archived
+              item-1330 at level 7: text: (PDF) from the original on 2022-10-09.
+          item-1331 at level 5: list_item: 
+            item-1332 at level 6: inline: group group
+              item-1333 at level 7: text: Maisels, Charles Keith (1999).
+              item-1334 at level 7: text: Early Civilizations of the Old World
+              item-1335 at level 7: text: . London: Routledge.
+              item-1336 at level 7: text: ISBN
+              item-1337 at level 7: text: 978-0-415-10975-8
+              item-1338 at level 7: text: .
+          item-1339 at level 5: list_item: 
+            item-1340 at level 6: inline: group group
+              item-1341 at level 7: text: Pratt, H. Douglas; Bruner, Phillip L.; Berrett, Delwyn G. (1987).
+              item-1342 at level 7: text: A Field Guide to the Birds of Hawaii and the Tropical Pacific
+              item-1343 at level 7: text: . Princeton, NJ: Princeton University Press.
+              item-1344 at level 7: text: ISBN
+              item-1345 at level 7: text: 0-691-02399-9
+              item-1346 at level 7: text: .
+          item-1347 at level 5: list_item: 
+            item-1348 at level 6: inline: group group
+              item-1349 at level 7: text: Rau, Charles (1876).
+              item-1350 at level 7: text: Early Man in Europe
+              item-1351 at level 7: text: . New York: Harper & Brothers.
+              item-1352 at level 7: text: LCCN
+              item-1353 at level 7: text: 05040168
+              item-1354 at level 7: text: .
+          item-1355 at level 5: list_item: 
+            item-1356 at level 6: inline: group group
+              item-1357 at level 7: text: Shirihai, Hadoram (2008).
+              item-1358 at level 7: text: A Complete Guide to Antarctic Wildlife
+              item-1359 at level 7: text: . Princeton, NJ, US: Princeton University Press.
+              item-1360 at level 7: text: ISBN
+              item-1361 at level 7: text: 978-0-691-13666-0
+              item-1362 at level 7: text: .
+          item-1363 at level 5: list_item: 
+            item-1364 at level 6: inline: group group
+              item-1365 at level 7: text: Sued-Badillo, Jalil (2003).
+              item-1366 at level 7: text: Autochthonous Societies
+              item-1367 at level 7: text: . General History of the Caribbean. Paris: UNESCO.
+              item-1368 at level 7: text: ISBN
+              item-1369 at level 7: text: 978-92-3-103832-7
+              item-1370 at level 7: text: .
+          item-1371 at level 5: list_item: 
+            item-1372 at level 6: inline: group group
+              item-1373 at level 7: text: Thorpe, I. J. (1996).
+              item-1374 at level 7: text: The Origins of Agriculture in Europe
+              item-1375 at level 7: text: . New York: Routledge.
+              item-1376 at level 7: text: ISBN
+              item-1377 at level 7: text: 978-0-415-08009-5
+              item-1378 at level 7: text: .
+    item-1379 at level 2: section_header: External links
+      item-1380 at level 3: inline: group group
+        item-1381 at level 4: text: Duck
+        item-1382 at level 4: text: at Wikipedia's
+        item-1383 at level 4: text: sister projects
+      item-1384 at level 3: list: group list
+        item-1385 at level 4: list_item: 
+          item-1386 at level 5: inline: group group
+            item-1387 at level 6: text: Definitions
+            item-1388 at level 6: text: from Wiktionary
+        item-1389 at level 4: picture
+        item-1390 at level 4: list_item: 
+          item-1391 at level 5: inline: group group
+            item-1392 at level 6: text: Media
+            item-1393 at level 6: text: from Commons
+        item-1394 at level 4: picture
+        item-1395 at level 4: list_item: 
+          item-1396 at level 5: inline: group group
+            item-1397 at level 6: text: Quotations
+            item-1398 at level 6: text: from Wikiquote
+        item-1399 at level 4: picture
+        item-1400 at level 4: list_item: 
+          item-1401 at level 5: inline: group group
+            item-1402 at level 6: text: Recipes
+            item-1403 at level 6: text: from Wikibooks
+        item-1404 at level 4: picture
+        item-1405 at level 4: list_item: 
+          item-1406 at level 5: inline: group group
+            item-1407 at level 6: text: Taxa
+            item-1408 at level 6: text: from Wikispecies
+        item-1409 at level 4: picture
+        item-1410 at level 4: list_item: 
+          item-1411 at level 5: inline: group group
+            item-1412 at level 6: text: Data
+            item-1413 at level 6: text: from Wikidata
+        item-1414 at level 4: picture
+      item-1415 at level 3: list: group list
+        item-1416 at level 4: list_item: 
+          item-1417 at level 5: inline: group group
+            item-1418 at level 6: text: list of books
+            item-1419 at level 6: text: (useful looking abstracts)
+        item-1420 at level 4: list_item: 
+          item-1421 at level 5: inline: group group
+            item-1422 at level 6: text: Ducks on postage stamps
+            item-1423 at level 6: text: Archived
+            item-1424 at level 6: text: 2013-05-13 at the
+            item-1425 at level 6: text: Wayback Machine
+        item-1426 at level 4: list_item: 
+          item-1427 at level 5: inline: group group
+            item-1428 at level 6: text: Ducks at a Distance, by Rob Hines
+            item-1429 at level 6: text: at
+            item-1430 at level 6: text: Project Gutenberg
+            item-1431 at level 6: text: - A modern illustrated guide to identification of US waterfowl
+      item-1432 at level 3: picture
+      item-1433 at level 3: table with [3x2]
+      item-1434 at level 3: inline: group group
+        item-1435 at level 4: text: Retrieved from "
+        item-1436 at level 4: text: https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351
+        item-1437 at level 4: text: "
+      item-1438 at level 3: text: Categories
+      item-1439 at level 3: text: :
+      item-1440 at level 3: list: group list
+        item-1441 at level 4: list_item: Ducks
+        item-1442 at level 4: list_item: Game birds
+        item-1443 at level 4: list_item: Bird common names
+      item-1444 at level 3: text: Hidden categories:
+      item-1445 at level 3: list: group list
+        item-1446 at level 4: list_item: All accuracy disputes
+        item-1447 at level 4: list_item: Accuracy disputes from February 2020
+        item-1448 at level 4: list_item: CS1 Finnish-language sources (fi)
+        item-1449 at level 4: list_item: CS1 Latvian-language sources (lv)
+        item-1450 at level 4: list_item: CS1 Swedish-language sources (sv)
+        item-1451 at level 4: list_item: Articles with short description
+        item-1452 at level 4: list_item: Short description is different from Wikidata
+        item-1453 at level 4: list_item: Wikipedia indefinitely move-protected pages
+        item-1454 at level 4: list_item: Wikipedia indefinitely semi-protected pages
+        item-1455 at level 4: list_item: Articles with 'species' microformats
+        item-1456 at level 4: list_item: Articles containing Old English (ca. 450-1100)-language text
+        item-1457 at level 4: list_item: Articles containing Dutch-language text
+        item-1458 at level 4: list_item: Articles containing German-language text
+        item-1459 at level 4: list_item: Articles containing Norwegian-language text
+        item-1460 at level 4: list_item: Articles containing Lithuanian-language text
+        item-1461 at level 4: list_item: Articles containing Ancient Greek (to 1453)-language text
+        item-1462 at level 4: list_item: All articles with self-published sources
+        item-1463 at level 4: list_item: Articles with self-published sources from February 2020
+        item-1464 at level 4: list_item: All articles with unsourced statements
+        item-1465 at level 4: list_item: Articles with unsourced statements from January 2022
+        item-1466 at level 4: list_item: CS1: long volume value
+        item-1467 at level 4: list_item: Pages using Sister project links with wikidata mismatch
+        item-1468 at level 4: list_item: Pages using Sister project links with hidden wikidata
+        item-1469 at level 4: list_item: Webarchive template wayback links
+        item-1470 at level 4: list_item: Articles with Project Gutenberg links
+        item-1471 at level 4: list_item: Articles containing video clips
+      item-1472 at level 3: list: group list
+  item-1473 at level 1: caption: Pacific black duck displaying the characteristic upending "duck"
+  item-1474 at level 1: caption: Male mallard .
+  item-1475 at level 1: caption: Wood ducks .
+  item-1476 at level 1: caption: Mallard landing in approach
+  item-1477 at level 1: caption: Male Mandarin duck
+  item-1478 at level 1: caption: Flying steamer ducks in Ushuaia , Argentina
+  item-1479 at level 1: caption: Female mallard in Cornwall , England
+  item-1480 at level 1: caption: Pecten along the bill
+  item-1481 at level 1: caption: A Muscovy duckling
+  item-1482 at level 1: caption: Ringed teal
+  item-1483 at level 1: caption: Indian Runner ducks , a common breed of domestic ducks
+  item-1484 at level 1: caption: Three black-colored ducks in the coat of arms of Maaninka [ 49 ]

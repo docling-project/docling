@@ -12,9 +12,9 @@ Paragraph 2.1.2
 
 #### Test 2:
 
-- List item a
-- List item b
-- List item c
+1. List item a
+2. List item b
+3. List item c
 
 #### Test 3:
 

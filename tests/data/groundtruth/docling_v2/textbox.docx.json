@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "textbox",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -890,8 +890,8 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "1."
     },
     {
       "self_ref": "#/texts/27",
@@ -911,8 +911,8 @@
         "strikethrough": false,
         "script": "baseline"
       },
-      "enumerated": false,
-      "marker": ""
+      "enumerated": true,
+      "marker": "2."
     },
     {
       "self_ref": "#/texts/28",

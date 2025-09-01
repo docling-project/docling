@@ -18,10 +18,19 @@ item-0 at level 0: unspecified: group _root_
       item-13 at level 3: section_header: Three backends for handling HTML files
         item-14 at level 4: text: Docling has three backends for parsing HTML files:
         item-15 at level 4: list: group ordered list
-          item-16 at level 5: list_item: HTMLDocumentBackend Ignores images
-          item-17 at level 5: list_item: HTMLDocumentBackendImagesInline Extracts images inline
-          item-18 at level 5: list_item: HTMLDocumentBackendImagesReferenced Extracts images as references
-  item-19 at level 1: caption: Docling
-  item-20 at level 1: caption: PDF
-  item-21 at level 1: caption: DOCX
-  item-22 at level 1: caption: HTML
+          item-16 at level 5: list_item: 
+            item-17 at level 6: inline: group group
+              item-18 at level 7: text: HTMLDocumentBackend
+              item-19 at level 7: text: Ignores images
+          item-20 at level 5: list_item: 
+            item-21 at level 6: inline: group group
+              item-22 at level 7: text: HTMLDocumentBackendImagesInline
+              item-23 at level 7: text: Extracts images inline
+          item-24 at level 5: list_item: 
+            item-25 at level 6: inline: group group
+              item-26 at level 7: text: HTMLDocumentBackendImagesReferenced
+              item-27 at level 7: text: Extracts images as references
+  item-28 at level 1: caption: Docling
+  item-29 at level 1: caption: PDF
+  item-30 at level 1: caption: DOCX
+  item-31 at level 1: caption: HTML

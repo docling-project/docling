@@ -42,10 +42,10 @@ class RapidOcrModel(BaseOcrModel):
 
         if self.enabled:
             try:
-                from rapidocr_onnxruntime import RapidOCR  # type: ignore
+                from rapidocr import EngineType, RapidOCR  # type: ignore
             except ImportError:
                 raise ImportError(
-                    "RapidOCR is not installed. Please install it via `pip install rapidocr_onnxruntime` to use this OCR engine. "
+                    "RapidOCR is not installed. Please install it via `pip install rapidocr onnxruntime` to use this OCR engine. "
                     "Alternatively, Docling has support for other OCR engines. See the documentation."
                 )
 
@@ -54,21 +54,40 @@ class RapidOcrModel(BaseOcrModel):
             use_cuda = str(AcceleratorDevice.CUDA.value).lower() in device
             use_dml = accelerator_options.device == AcceleratorDevice.AUTO
             intra_op_num_threads = accelerator_options.num_threads
+            _ALIASES = {
+                "onnxruntime": EngineType.ONNXRUNTIME,
+                "openvino": EngineType.OPENVINO,
+                "paddle": EngineType.PADDLE,
+                "torch": EngineType.TORCH,
+            }
+            backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
 
             self.reader = RapidOCR(
-                text_score=self.options.text_score,
-                cls_use_cuda=use_cuda,
-                rec_use_cuda=use_cuda,
-                det_use_cuda=use_cuda,
-                det_use_dml=use_dml,
-                cls_use_dml=use_dml,
-                rec_use_dml=use_dml,
-                intra_op_num_threads=intra_op_num_threads,
-                print_verbose=self.options.print_verbose,
-                det_model_path=self.options.det_model_path,
-                cls_model_path=self.options.cls_model_path,
-                rec_model_path=self.options.rec_model_path,
-                rec_keys_path=self.options.rec_keys_path,
+                params={
+                    # Global settings (these are still correct)
+                    "Global.text_score": self.options.text_score,
+                    # "Global.verbose": self.options.print_verbose,
+                    # Detection model settings
+                    "Det.model_path": self.options.det_model_path,
+                    "Det.use_cuda": use_cuda,
+                    "Det.use_dml": use_dml,
+                    "Det.intra_op_num_threads": intra_op_num_threads,
+                    # Classification model settings
+                    "Cls.model_path": self.options.cls_model_path,
+                    "Cls.use_cuda": use_cuda,
+                    "Cls.use_dml": use_dml,
+                    "Cls.intra_op_num_threads": intra_op_num_threads,
+                    # Recognition model settings
+                    "Rec.model_path": self.options.rec_model_path,
+                    "Rec.font_path": self.options.rec_font_path,
+                    "Rec.keys_path": self.options.rec_keys_path,
+                    "Rec.use_cuda": use_cuda,
+                    "Rec.use_dml": use_dml,
+                    "Rec.intra_op_num_threads": intra_op_num_threads,
+                    "Det.engine_type": backend_enum,
+                    "Cls.engine_type": backend_enum,
+                    "Rec.engine_type": backend_enum,
+                }
             )
 
     def __call__(
@@ -95,11 +114,14 @@ class RapidOcrModel(BaseOcrModel):
                             scale=self.scale, cropbox=ocr_rect
                         )
                         im = numpy.array(high_res_image)
-                        result, _ = self.reader(
+                        result = self.reader(
                             im,
                             use_det=self.options.use_det,
                             use_cls=self.options.use_cls,
                             use_rec=self.options.use_rec,
+                        )
+                        result = list(
+                            zip(result.boxes.tolist(), result.txts, result.scores)
                         )
 
                         del high_res_image

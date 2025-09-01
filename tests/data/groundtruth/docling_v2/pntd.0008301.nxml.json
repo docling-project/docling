@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "pntd.0008301",
   "origin": {
     "mimetype": "application/xml",
@@ -5839,7 +5839,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": " Number of total districts",
+            "text": "Number of total districts",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -6642,7 +6642,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": " Number of total districts",
+              "text": "Number of total districts",
               "column_header": false,
               "row_header": false,
               "row_section": false

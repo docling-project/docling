@@ -27,6 +27,7 @@ def get_converter():
     pipeline_options.do_table_structure = True
     pipeline_options.table_structure_options.do_cell_matching = True
     pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
+    pipeline_options.generate_parsed_pages = True
 
     converter = DocumentConverter(
         format_options={

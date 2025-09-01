@@ -1,6 +1,6 @@
 [project]
 name = "docling"
-version = "2.42.1"  # DO NOT EDIT, updated automatically
+version = "2.48.0"  # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -45,10 +45,10 @@ requires-python = '>=3.9,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
   'docling-core[chunking] (>=2.42.0,<3.0.0)',
-  'docling-parse (>=4.0.0,<5.0.0)',
-  "docling-ibm-models>=3.6.0,<4",
+  'docling-parse (>=4.2.2,<5.0.0)',
+  "docling-ibm-models>=3.9.0,<4",
   'filetype (>=1.2.0,<2.0.0)',
-  'pypdfium2 (>=4.30.0,<5.0.0)',
+  'pypdfium2 (>=4.30.0,!=4.30.1,<5.0.0)',
   'pydantic-settings (>=2.3.0,<3.0.0)',
   'huggingface_hub (>=0.23,<1)',
   'requests (>=2.32.2,<3.0.0)',
@@ -92,11 +92,13 @@ ocrmac = ['ocrmac (>=1.0.0,<2.0.0) ; sys_platform == "darwin"']
 vlm = [
   'transformers (>=4.46.0,<5.0.0)',
   'accelerate (>=1.2.1,<2.0.0)',
-  'mlx-vlm (>=0.1.22,<0.2) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "linux" and platform_machine == "x86_64"',
 ]
 rapidocr = [
-  'rapidocr-onnxruntime (>=1.4.0,<2.0.0) ; python_version < "3.13"',
+  'rapidocr (>=3.3,<4.0.0) ; python_version < "3.14"',
   'onnxruntime (>=1.7.0,<2.0.0)',
+    "modelscope>=1.29.0",
   # 'onnxruntime (>=1.7.0,<2.0.0) ; python_version >= "3.10"',
   # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
 ]
@@ -148,8 +150,6 @@ constraints = [
 [tool.uv]
 package = true
 default-groups = "all"
-
-[tool.uv.sources]
 
 [tool.setuptools.packages.find]
 include = ["docling*"]
@@ -254,6 +254,7 @@ module = [
   "huggingface_hub.*",
   "transformers.*",
   "pylatexenc.*",
+  "vllm.*",
 ]
 ignore_missing_imports = true
 

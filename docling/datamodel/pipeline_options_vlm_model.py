@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional
 
 from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel
@@ -10,21 +10,30 @@ from docling.datamodel.accelerator_options import AcceleratorDevice
 
 class BaseVlmOptions(BaseModel):
     kind: str
-    prompt: Union[str, Callable[[Optional[SegmentedPage]], str]]
+    prompt: str
     scale: float = 2.0
     max_size: Optional[int] = None
     temperature: float = 0.0
+
+    def build_prompt(self, page: Optional[SegmentedPage]) -> str:
+        return self.prompt
+
+    def decode_response(self, text: str) -> str:
+        return text
 
 
 class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
     MARKDOWN = "markdown"
     HTML = "html"
+    OTSL = "otsl"
+    PLAINTEXT = "plaintext"
 
 
 class InferenceFramework(str, Enum):
     MLX = "mlx"
     TRANSFORMERS = "transformers"
+    VLLM = "vllm"
 
 
 class TransformersModelType(str, Enum):
@@ -37,6 +46,7 @@ class TransformersModelType(str, Enum):
 class TransformersPromptStyle(str, Enum):
     CHAT = "chat"
     RAW = "raw"
+    NONE = "none"
 
 
 class InlineVlmOptions(BaseVlmOptions):
@@ -62,6 +72,7 @@ class InlineVlmOptions(BaseVlmOptions):
 
     stop_strings: List[str] = []
     extra_generation_config: Dict[str, Any] = {}
+    extra_processor_kwargs: Dict[str, Any] = {}
 
     use_kv_cache: bool = True
     max_new_tokens: int = 4096

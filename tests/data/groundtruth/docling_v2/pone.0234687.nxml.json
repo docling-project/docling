@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "pone.0234687",
   "origin": {
     "mimetype": "application/xml",
@@ -4166,7 +4166,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Ground corn",
+            "text": "Ground corn",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -4298,7 +4298,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Soybean meal",
+            "text": "Soybean meal",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -4430,7 +4430,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Corn silage",
+            "text": "Corn silage",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -4562,7 +4562,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Ann temperate pasture",
+            "text": "Ann temperate pasture",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -4694,7 +4694,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Ann tropical pasture",
+            "text": "Ann tropical pasture",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -4826,7 +4826,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Perenn tropical pasture",
+            "text": "Perenn tropical pasture",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -4970,7 +4970,7 @@
             "end_row_offset_idx": 13,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Organic matter",
+            "text": "Organic matter",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -5102,7 +5102,7 @@
             "end_row_offset_idx": 14,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Crude protein",
+            "text": "Crude protein",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -5234,7 +5234,7 @@
             "end_row_offset_idx": 15,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Neutral detergent fibre",
+            "text": "Neutral detergent fibre",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -5366,7 +5366,7 @@
             "end_row_offset_idx": 16,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Acid detergent fibre",
+            "text": "Acid detergent fibre",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -5498,7 +5498,7 @@
             "end_row_offset_idx": 17,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Ether extract",
+            "text": "Ether extract",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -5642,7 +5642,7 @@
             "end_row_offset_idx": 19,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    OM digestibility, %",
+            "text": "OM digestibility, %",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -5774,7 +5774,7 @@
             "end_row_offset_idx": 20,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    NEL, Mcal (kg DM)-1",
+            "text": "NEL, Mcal (kg DM)-1",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -5906,7 +5906,7 @@
             "end_row_offset_idx": 21,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    MP, g (kg DM)-1",
+            "text": "MP, g (kg DM)-1",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -6713,7 +6713,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Ground corn",
+              "text": "Ground corn",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -6847,7 +6847,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Soybean meal",
+              "text": "Soybean meal",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -6981,7 +6981,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Corn silage",
+              "text": "Corn silage",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -7115,7 +7115,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Ann temperate pasture",
+              "text": "Ann temperate pasture",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -7249,7 +7249,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Ann tropical pasture",
+              "text": "Ann tropical pasture",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -7383,7 +7383,7 @@
               "end_row_offset_idx": 11,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Perenn tropical pasture",
+              "text": "Perenn tropical pasture",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -7651,7 +7651,7 @@
               "end_row_offset_idx": 13,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Organic matter",
+              "text": "Organic matter",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -7785,7 +7785,7 @@
               "end_row_offset_idx": 14,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Crude protein",
+              "text": "Crude protein",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -7919,7 +7919,7 @@
               "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Neutral detergent fibre",
+              "text": "Neutral detergent fibre",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8053,7 +8053,7 @@
               "end_row_offset_idx": 16,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Acid detergent fibre",
+              "text": "Acid detergent fibre",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8187,7 +8187,7 @@
               "end_row_offset_idx": 17,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Ether extract",
+              "text": "Ether extract",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8455,7 +8455,7 @@
               "end_row_offset_idx": 19,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    OM digestibility, %",
+              "text": "OM digestibility, %",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8589,7 +8589,7 @@
               "end_row_offset_idx": 20,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    NEL, Mcal (kg DM)-1",
+              "text": "NEL, Mcal (kg DM)-1",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8723,7 +8723,7 @@
               "end_row_offset_idx": 21,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    MP, g (kg DM)-1",
+              "text": "MP, g (kg DM)-1",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -8998,7 +8998,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Corn grain",
+            "text": "Corn grain",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -9058,7 +9058,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Soybean",
+            "text": "Soybean",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -9178,7 +9178,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Corn silageb",
+            "text": "Corn silageb",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -9238,7 +9238,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Annual ryegrassc",
+            "text": "Annual ryegrassc",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -9298,7 +9298,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Pearl milletd",
+            "text": "Pearl milletd",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -9358,7 +9358,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Kikuyu grasse",
+            "text": "Kikuyu grasse",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -9547,7 +9547,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Corn grain",
+              "text": "Corn grain",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -9609,7 +9609,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Soybean",
+              "text": "Soybean",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -9733,7 +9733,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Corn silageb",
+              "text": "Corn silageb",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -9795,7 +9795,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Annual ryegrassc",
+              "text": "Annual ryegrassc",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -9857,7 +9857,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Pearl milletd",
+              "text": "Pearl milletd",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -9919,7 +9919,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Kikuyu grasse",
+              "text": "Kikuyu grasse",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -10182,7 +10182,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    N organic fertilizer, kg ha-1a",
+            "text": "N organic fertilizer, kg ha-1a",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10242,7 +10242,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    N synthetic fertilizer",
+            "text": "N synthetic fertilizer",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10302,7 +10302,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    N from residual DM, kg ha-1b",
+            "text": "N from residual DM, kg ha-1b",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10362,7 +10362,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Emission fator, kg N2O-N (kg N)-1c",
+            "text": "Emission fator, kg N2O-N (kg N)-1c",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10422,7 +10422,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg N2O ha-1 from direct emissions",
+            "text": "kg N2O ha-1 from direct emissions",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10542,7 +10542,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg NH3-N+NOx-N (kg organic N)-1b",
+            "text": "kg NH3-N+NOx-N (kg organic N)-1b",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10602,7 +10602,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg NH3-N+NOx-N (kg synthetic N)-1b",
+            "text": "kg NH3-N+NOx-N (kg synthetic N)-1b",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10662,7 +10662,7 @@
             "end_row_offset_idx": 12,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg N2O-N (kg NH3-N+NOx-N)-1b",
+            "text": "kg N2O-N (kg NH3-N+NOx-N)-1b",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10722,7 +10722,7 @@
             "end_row_offset_idx": 13,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg N2O ha-1 from NH3+NOx volatilized",
+            "text": "kg N2O ha-1 from NH3+NOx volatilized",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10842,7 +10842,7 @@
             "end_row_offset_idx": 15,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg N losses by leaching (kg N)-1b",
+            "text": "kg N losses by leaching (kg N)-1b",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10902,7 +10902,7 @@
             "end_row_offset_idx": 16,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg N2O-N (kg N leaching)-1",
+            "text": "kg N2O-N (kg N leaching)-1",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -10962,7 +10962,7 @@
             "end_row_offset_idx": 17,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    kg N2O ha-1 from N losses by leaching",
+            "text": "kg N2O ha-1 from N losses by leaching",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -11873,7 +11873,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    N organic fertilizer, kg ha-1a",
+              "text": "N organic fertilizer, kg ha-1a",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -11935,7 +11935,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    N synthetic fertilizer",
+              "text": "N synthetic fertilizer",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -11997,7 +11997,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    N from residual DM, kg ha-1b",
+              "text": "N from residual DM, kg ha-1b",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12059,7 +12059,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Emission fator, kg N2O-N (kg N)-1c",
+              "text": "Emission fator, kg N2O-N (kg N)-1c",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12121,7 +12121,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg N2O ha-1 from direct emissions",
+              "text": "kg N2O ha-1 from direct emissions",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12245,7 +12245,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg NH3-N+NOx-N (kg organic N)-1b",
+              "text": "kg NH3-N+NOx-N (kg organic N)-1b",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12307,7 +12307,7 @@
               "end_row_offset_idx": 11,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg NH3-N+NOx-N (kg synthetic N)-1b",
+              "text": "kg NH3-N+NOx-N (kg synthetic N)-1b",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12369,7 +12369,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg N2O-N (kg NH3-N+NOx-N)-1b",
+              "text": "kg N2O-N (kg NH3-N+NOx-N)-1b",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12431,7 +12431,7 @@
               "end_row_offset_idx": 13,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg N2O ha-1 from NH3+NOx volatilized",
+              "text": "kg N2O ha-1 from NH3+NOx volatilized",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12555,7 +12555,7 @@
               "end_row_offset_idx": 15,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg N losses by leaching (kg N)-1b",
+              "text": "kg N losses by leaching (kg N)-1b",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12617,7 +12617,7 @@
               "end_row_offset_idx": 16,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg N2O-N (kg N leaching)-1",
+              "text": "kg N2O-N (kg N leaching)-1",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12679,7 +12679,7 @@
               "end_row_offset_idx": 17,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    kg N2O ha-1 from N losses by leaching",
+              "text": "kg N2O ha-1 from N losses by leaching",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -13780,7 +13780,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Fuel for manure handling",
+            "text": "Fuel for manure handling",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -13828,7 +13828,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Machinery for manure handling",
+            "text": "Machinery for manure handling",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -13924,7 +13924,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Electricity for milking",
+            "text": "Electricity for milking",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -13972,7 +13972,7 @@
             "end_row_offset_idx": 12,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "    Electricity for lightingd",
+            "text": "Electricity for lightingd",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -14375,7 +14375,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Fuel for manure handling",
+              "text": "Fuel for manure handling",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -14425,7 +14425,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Machinery for manure handling",
+              "text": "Machinery for manure handling",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -14525,7 +14525,7 @@
               "end_row_offset_idx": 11,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Electricity for milking",
+              "text": "Electricity for milking",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -14575,7 +14575,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "    Electricity for lightingd",
+              "text": "Electricity for lightingd",
               "column_header": false,
               "row_header": false,
               "row_section": false

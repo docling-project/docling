@@ -1,3 +1,105 @@
+## [v2.48.0](https://github.com/docling-project/docling/releases/tag/v2.48.0) - 2025-08-26
+
+### Feature
+
+* Upgrade to RapidOCR 3.x ([#2088](https://github.com/docling-project/docling/issues/2088)) ([`3f60a0f`](https://github.com/docling-project/docling/commit/3f60a0fa7814aa36f396131e53b0ca6982b7638e))
+
+### Fix
+
+* **html:** Preserve code blocks in list items ([#2131](https://github.com/docling-project/docling/issues/2131)) ([`fa3327e`](https://github.com/docling-project/docling/commit/fa3327e1a6f7f4de6d5fd1f83588d6b5cac324ca))
+
+## [v2.47.1](https://github.com/docling-project/docling/releases/tag/v2.47.1) - 2025-08-23
+
+### Fix
+
+* Vllm extra only for linux x86_64 ([#2126](https://github.com/docling-project/docling/issues/2126)) ([`488f6cd`](https://github.com/docling-project/docling/commit/488f6cdd2da1e6065e56843413b56b41cb208b2c))
+
+## [v2.47.0](https://github.com/docling-project/docling/releases/tag/v2.47.0) - 2025-08-22
+
+### Feature
+
+* **CLI:** Option to download arbitrary HuggingFace model ([#2123](https://github.com/docling-project/docling/issues/2123)) ([`cdf079d`](https://github.com/docling-project/docling/commit/cdf079dd06955358d5bb74d6d3be9dee7b30c082))
+* Batching support for VLMs in transformers backend, add initial VLLM backend ([#2094](https://github.com/docling-project/docling/issues/2094)) ([`3c660c0`](https://github.com/docling-project/docling/commit/3c660c051180720c6ae2321f1243a9a3b9696ddc))
+* **html:** Support formatting tags in HTML texts ([#2111](https://github.com/docling-project/docling/issues/2111)) ([`94fcc46`](https://github.com/docling-project/docling/commit/94fcc46aa9098fe70450046bd97f8df7f93bce33))
+
+### Fix
+
+* Improve numbered list detection for msword docs ([#2100](https://github.com/docling-project/docling/issues/2100)) ([`3f03709`](https://github.com/docling-project/docling/commit/3f03709885a7280d6ca389816002ea606c3778d6))
+
+### Documentation
+
+* DPK pipeline example using docling library ([#2112](https://github.com/docling-project/docling/issues/2112)) ([`e76298c`](https://github.com/docling-project/docling/commit/e76298c40d9a860fe5c8e2d5922397eed4a71763))
+* Add Getting Started page ([#2113](https://github.com/docling-project/docling/issues/2113)) ([`8996d61`](https://github.com/docling-project/docling/commit/8996d612aa47c5d500ddefcab4e1d42a87f19033))
+
+## [v2.46.0](https://github.com/docling-project/docling/releases/tag/v2.46.0) - 2025-08-20
+
+### Feature
+
+* New code formula model ([#2042](https://github.com/docling-project/docling/issues/2042)) ([`d2494da`](https://github.com/docling-project/docling/commit/d2494da8b84c37731dd25b2f82d6559539ab4cb2))
+
+### Fix
+
+* **HTML:** Parse footer tag as a group in furniture content layer ([#2106](https://github.com/docling-project/docling/issues/2106)) ([`c5f2e2f`](https://github.com/docling-project/docling/commit/c5f2e2fdd68365f1dfa18d462f1e8051cd1089da))
+
+### Performance
+
+* Clean up resources with docling-parse v4, no parsed_page output by default ([#2105](https://github.com/docling-project/docling/issues/2105)) ([`5f57ff2`](https://github.com/docling-project/docling/commit/5f57ff2a45eaf1f2feb63080e9590ad6b9d4ea1e))
+* Speed up function `_parse_orientation` ([#1934](https://github.com/docling-project/docling/issues/1934)) ([`8820b55`](https://github.com/docling-project/docling/commit/8820b5558ba18306cfa7a2def3f04cbd480fef94))
+
+## [v2.45.0](https://github.com/docling-project/docling/releases/tag/v2.45.0) - 2025-08-18
+
+### Feature
+
+* Add backend for METS with Google Books profile ([#1989](https://github.com/docling-project/docling/issues/1989)) ([`31087f3`](https://github.com/docling-project/docling/commit/31087f3fcc2edb6e7c01cc444cf1bd93689999a6))
+* **html:** Support in-line anchor tags in HTML texts ([#1659](https://github.com/docling-project/docling/issues/1659)) ([`9687297`](https://github.com/docling-project/docling/commit/968729726224279e688d5bdb0fccd2ed1a739aaa))
+* **vlm:** Ability to preprocess VLM response ([#1907](https://github.com/docling-project/docling/issues/1907)) ([`5f050f9`](https://github.com/docling-project/docling/commit/5f050f94e19aeb9ea4e4457c20a55d31d1211567))
+
+### Documentation
+
+* Add docling Quarkus integration ([#2083](https://github.com/docling-project/docling/issues/2083)) ([`76c1fbd`](https://github.com/docling-project/docling/commit/76c1fbd6e8255d63cf483fd3d3465f13fd34a4ef))
+
+## [v2.44.0](https://github.com/docling-project/docling/releases/tag/v2.44.0) - 2025-08-12
+
+### Feature
+
+* Add convert_string to document-converter ([#2069](https://github.com/docling-project/docling/issues/2069)) ([`b09033c`](https://github.com/docling-project/docling/commit/b09033cb73e3d99bb8b299675a539b4f10e41cb1))
+
+### Fix
+
+* **html:** Parse rawspan and colspan when they include non numerical values ([#2048](https://github.com/docling-project/docling/issues/2048)) ([`ed56f2d`](https://github.com/docling-project/docling/commit/ed56f2de5d58d8257df09beadc03bfddd521511a))
+* Support new mlx-vlm module ([#2001](https://github.com/docling-project/docling/issues/2001)) ([`0130e3a`](https://github.com/docling-project/docling/commit/0130e3ae96bf7679e28ce1ec939ac750c71c6756))
+* Extend error reporting when verbose logging is enabled ([#2017](https://github.com/docling-project/docling/issues/2017)) ([`2eb760d`](https://github.com/docling-project/docling/commit/2eb760d060911102be6f58fc1322b648e11099ab))
+* **HTML:** Replace non-standard Unicode characters ([#2006](https://github.com/docling-project/docling/issues/2006)) ([`86f7012`](https://github.com/docling-project/docling/commit/86f70128aae9a4c4187c69757e77ebf90c8cf0c0))
+
+### Documentation
+
+* Add Langflow integration ([#2068](https://github.com/docling-project/docling/issues/2068)) ([`e2cca93`](https://github.com/docling-project/docling/commit/e2cca931be24f05de843e074a91a0a0fa53a1393))
+* Add Arconia integration ([#2061](https://github.com/docling-project/docling/issues/2061)) ([`bfda6d3`](https://github.com/docling-project/docling/commit/bfda6d34d87965056fd0f7f4adcca6613f89ea3a))
+
+## [v2.43.0](https://github.com/docling-project/docling/releases/tag/v2.43.0) - 2025-07-28
+
+### Feature
+
+* Threaded PDF pipeline ([#1951](https://github.com/docling-project/docling/issues/1951)) ([`aed772a`](https://github.com/docling-project/docling/commit/aed772ab332a9c4d2a95875c249f8646268b016d))
+
+### Fix
+
+* **markdown:** Ensure correct parsing of nested lists ([#1995](https://github.com/docling-project/docling/issues/1995)) ([`aec29a7`](https://github.com/docling-project/docling/commit/aec29a73152ef09028ebf09d9527e15cda8d1437))
+* **HTML:** Remove an unnecessary print command ([#1988](https://github.com/docling-project/docling/issues/1988)) ([`945721a`](https://github.com/docling-project/docling/commit/945721a15dde80bbf836df8d87f278cf9a1baa51))
+
+## [v2.42.2](https://github.com/docling-project/docling/releases/tag/v2.42.2) - 2025-07-24
+
+### Fix
+
+* **HTML:** Concatenation of child strings in table cells and list items ([#1981](https://github.com/docling-project/docling/issues/1981)) ([`5132f06`](https://github.com/docling-project/docling/commit/5132f061a8125332ba10a4a30e0dd4973637a11b))
+* **docx:** Adding plain latex equations to table cells ([#1986](https://github.com/docling-project/docling/issues/1986)) ([`0b83609`](https://github.com/docling-project/docling/commit/0b836095319ebf2133c4a3a77602718034915e55))
+* Preserve PARTIAL_SUCCESS status when document timeout hits ([#1975](https://github.com/docling-project/docling/issues/1975)) ([`98e2fcf`](https://github.com/docling-project/docling/commit/98e2fcff63660c158bafb9a1b5584c1439d7a533))
+* Multi-page image support (tiff) ([#1928](https://github.com/docling-project/docling/issues/1928)) ([`8d50a59`](https://github.com/docling-project/docling/commit/8d50a59d4887caac1c214add8037ed0b5250f68c))
+
+### Documentation
+
+* Add chat with dosu ([#1984](https://github.com/docling-project/docling/issues/1984)) ([`7b5f860`](https://github.com/docling-project/docling/commit/7b5f86098d07b734f2b6aa8c88ae7cafa265246a))
+
 ## [v2.42.1](https://github.com/docling-project/docling/releases/tag/v2.42.1) - 2025-07-22
 
 ### Fix

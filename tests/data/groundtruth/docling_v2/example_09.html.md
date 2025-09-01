@@ -4,7 +4,7 @@ Docling
 
 <!-- image -->
 
-Docling simplifies document processing, parsing diverse formats — including HTML — and providing seamless integrations with the gen AI ecosystem.
+Docling simplifies document processing, parsing diverse formats - including HTML - and providing seamless integrations with the gen AI ecosystem.
 
 ## Supported file formats
 
@@ -27,6 +27,6 @@ HTML
 
 Docling has three backends for parsing HTML files:
 
-1. HTMLDocumentBackend Ignores images
-2. HTMLDocumentBackendImagesInline Extracts images inline
-3. HTMLDocumentBackendImagesReferenced Extracts images as references
+1. **HTMLDocumentBackend** Ignores images
+2. **HTMLDocumentBackendImagesInline** Extracts images inline
+3. **HTMLDocumentBackendImagesReferenced** Extracts images as references

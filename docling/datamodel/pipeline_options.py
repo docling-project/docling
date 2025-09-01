@@ -99,6 +99,8 @@ class RapidOcrOptions(OcrOptions):
     # For more details on the following options visit
     # https://rapidai.github.io/RapidOCRDocs/install_usage/api/RapidOCR/
 
+    # https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr/usage/#__tabbed_3_4
+    backend: Literal["onnxruntime", "openvino", "paddle", "torch"] = "onnxruntime"
     text_score: float = 0.5  # same default as rapidocr
 
     use_det: Optional[bool] = None  # same default as rapidocr
@@ -111,6 +113,7 @@ class RapidOcrOptions(OcrOptions):
     cls_model_path: Optional[str] = None  # same default as rapidocr
     rec_model_path: Optional[str] = None  # same default as rapidocr
     rec_keys_path: Optional[str] = None  # same default as rapidocr
+    rec_font_path: Optional[str] = None  # same default as rapidocr
 
     model_config = ConfigDict(
         extra="forbid",
@@ -283,6 +286,9 @@ class LayoutOptions(BaseModel):
         False  # Whether to keep clusters that contain no text cells
     )
     model_spec: LayoutModelConfig = DOCLING_LAYOUT_HERON
+    skip_cell_assignment: bool = (
+        False  # Skip cell-to-cluster assignment for VLM-only processing
+    )
 
 
 class AsrPipelineOptions(PipelineOptions):
@@ -323,12 +329,25 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         ),
     )
 
-    generate_parsed_pages: Literal[True] = (
-        True  # Always True since parsed_page is now mandatory
-    )
+    generate_parsed_pages: bool = False
 
 
 class ProcessingPipeline(str, Enum):
     STANDARD = "standard"
     VLM = "vlm"
     ASR = "asr"
+
+
+class ThreadedPdfPipelineOptions(PdfPipelineOptions):
+    """Pipeline options for the threaded PDF pipeline with batching and backpressure control"""
+
+    # Batch sizes for different stages
+    ocr_batch_size: int = 4
+    layout_batch_size: int = 4
+    table_batch_size: int = 4
+
+    # Timing control
+    batch_timeout_seconds: float = 2.0
+
+    # Backpressure and queue control
+    queue_max_size: int = 100
