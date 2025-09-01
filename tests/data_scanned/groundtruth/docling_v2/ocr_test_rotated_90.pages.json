@@ -10,7 +10,7 @@
         "clusters": [
           {
             "id": 0,
-            "label": "page_header",
+            "label": "text",
             "bbox": {
               "l": 77.1,
               "t": 89.13,
@@ -18,7 +18,7 @@
               "b": 523.32,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.602,
+            "confidence": 0.601,
             "cells": [
               {
                 "index": 0,
@@ -74,7 +74,7 @@
             "children": []
           },
           {
-            "id": 1,
+            "id": 11,
             "label": "text",
             "bbox": {
               "l": 131.21,
@@ -83,7 +83,7 @@
               "b": 521.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.523,
+            "confidence": 1.0,
             "cells": [
               {
                 "index": 2,
@@ -125,12 +125,12 @@
     "assembled": {
       "elements": [
         {
-          "label": "page_header",
+          "label": "text",
           "id": 0,
           "page_no": 0,
           "cluster": {
             "id": 0,
-            "label": "page_header",
+            "label": "text",
             "bbox": {
               "l": 77.1,
               "t": 89.13,
@@ -138,7 +138,7 @@
               "b": 523.32,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.602,
+            "confidence": 0.601,
             "cells": [
               {
                 "index": 0,
@@ -197,10 +197,10 @@
         },
         {
           "label": "text",
-          "id": 1,
+          "id": 11,
           "page_no": 0,
           "cluster": {
-            "id": 1,
+            "id": 11,
             "label": "text",
             "bbox": {
               "l": 131.21,
@@ -209,7 +209,7 @@
               "b": 521.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.523,
+            "confidence": 1.0,
             "cells": [
               {
                 "index": 2,
@@ -245,59 +245,11 @@
       "body": [
         {
           "label": "text",
-          "id": 1,
-          "page_no": 0,
-          "cluster": {
-            "id": 1,
-            "label": "text",
-            "bbox": {
-              "l": 131.21,
-              "t": 441.01,
-              "r": 152.2,
-              "b": 521.08,
-              "coord_origin": "TOPLEFT"
-            },
-            "confidence": 0.523,
-            "cells": [
-              {
-                "index": 2,
-                "rgba": {
-                  "r": 0,
-                  "g": 0,
-                  "b": 0,
-                  "a": 255
-                },
-                "rect": {
-                  "r_x0": 131.21,
-                  "r_y0": 521.08,
-                  "r_x1": 152.2,
-                  "r_y1": 521.08,
-                  "r_x2": 152.2,
-                  "r_y2": 441.01,
-                  "r_x3": 131.21,
-                  "r_y3": 441.01,
-                  "coord_origin": "TOPLEFT"
-                },
-                "text": "package",
-                "orig": "package",
-                "text_direction": "left_to_right",
-                "confidence": 1.0,
-                "from_ocr": true
-              }
-            ],
-            "children": []
-          },
-          "text": "package"
-        }
-      ],
-      "headers": [
-        {
-          "label": "page_header",
           "id": 0,
           "page_no": 0,
           "cluster": {
             "id": 0,
-            "label": "page_header",
+            "label": "text",
             "bbox": {
               "l": 77.1,
               "t": 89.13,
@@ -305,7 +257,7 @@
               "b": 523.32,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.602,
+            "confidence": 0.601,
             "cells": [
               {
                 "index": 0,
@@ -361,8 +313,55 @@
             "children": []
           },
           "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
+        },
+        {
+          "label": "text",
+          "id": 11,
+          "page_no": 0,
+          "cluster": {
+            "id": 11,
+            "label": "text",
+            "bbox": {
+              "l": 131.21,
+              "t": 441.01,
+              "r": 152.2,
+              "b": 521.08,
+              "coord_origin": "TOPLEFT"
+            },
+            "confidence": 1.0,
+            "cells": [
+              {
+                "index": 2,
+                "rgba": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 255
+                },
+                "rect": {
+                  "r_x0": 131.21,
+                  "r_y0": 521.08,
+                  "r_x1": 152.2,
+                  "r_y1": 521.08,
+                  "r_x2": 152.2,
+                  "r_y2": 441.01,
+                  "r_x3": 131.21,
+                  "r_y3": 441.01,
+                  "coord_origin": "TOPLEFT"
+                },
+                "text": "package",
+                "orig": "package",
+                "text_direction": "left_to_right",
+                "confidence": 1.0,
+                "from_ocr": true
+              }
+            ],
+            "children": []
+          },
+          "text": "package"
         }
-      ]
+      ],
+      "headers": []
     },
     "parsed_page": null
   }

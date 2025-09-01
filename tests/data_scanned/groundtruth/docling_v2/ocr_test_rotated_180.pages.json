@@ -13,12 +13,12 @@
             "label": "text",
             "bbox": {
               "l": 89.24,
-              "t": 717.17,
+              "t": 690.04,
               "r": 523.21,
               "b": 764.9,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.732,
+            "confidence": 0.787,
             "cells": [
               {
                 "index": 0,
@@ -69,22 +69,7 @@
                 "text_direction": "left_to_right",
                 "confidence": 1.0,
                 "from_ocr": true
-              }
-            ],
-            "children": []
-          },
-          {
-            "id": 2,
-            "label": "text",
-            "bbox": {
-              "l": 441.26,
-              "t": 690.04,
-              "r": 522.03,
-              "b": 710.03,
-              "coord_origin": "TOPLEFT"
-            },
-            "confidence": 0.598,
-            "cells": [
+              },
               {
                 "index": 2,
                 "rgba": {
@@ -133,12 +118,12 @@
             "label": "text",
             "bbox": {
               "l": 89.24,
-              "t": 717.17,
+              "t": 690.04,
               "r": 523.21,
               "b": 764.9,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.732,
+            "confidence": 0.787,
             "cells": [
               {
                 "index": 0,
@@ -189,28 +174,7 @@
                 "text_direction": "left_to_right",
                 "confidence": 1.0,
                 "from_ocr": true
-              }
-            ],
-            "children": []
-          },
-          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
-        },
-        {
-          "label": "text",
-          "id": 2,
-          "page_no": 0,
-          "cluster": {
-            "id": 2,
-            "label": "text",
-            "bbox": {
-              "l": 441.26,
-              "t": 690.04,
-              "r": 522.03,
-              "b": 710.03,
-              "coord_origin": "TOPLEFT"
-            },
-            "confidence": 0.598,
-            "cells": [
+              },
               {
                 "index": 2,
                 "rgba": {
@@ -239,7 +203,7 @@
             ],
             "children": []
           },
-          "text": "package"
+          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
         }
       ],
       "body": [
@@ -252,12 +216,12 @@
             "label": "text",
             "bbox": {
               "l": 89.24,
-              "t": 717.17,
+              "t": 690.04,
               "r": 523.21,
               "b": 764.9,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.732,
+            "confidence": 0.787,
             "cells": [
               {
                 "index": 0,
@@ -308,28 +272,7 @@
                 "text_direction": "left_to_right",
                 "confidence": 1.0,
                 "from_ocr": true
-              }
-            ],
-            "children": []
-          },
-          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
-        },
-        {
-          "label": "text",
-          "id": 2,
-          "page_no": 0,
-          "cluster": {
-            "id": 2,
-            "label": "text",
-            "bbox": {
-              "l": 441.26,
-              "t": 690.04,
-              "r": 522.03,
-              "b": 710.03,
-              "coord_origin": "TOPLEFT"
-            },
-            "confidence": 0.598,
-            "cells": [
+              },
               {
                 "index": 2,
                 "rgba": {
@@ -358,7 +301,7 @@
             ],
             "children": []
           },
-          "text": "package"
+          "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
         }
       ],
       "headers": []
