@@ -30,7 +30,7 @@ def _get_backend(pdf_doc):
 
 
 def test_get_text_from_rect_rotated():
-    pdf_doc = Path("./tests/data_scanned/ocr_test_rotation_mismatch.pdf")
+    pdf_doc = Path("./tests/data_scanned/sample_with_rotation_mismatch.pdf")
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
 

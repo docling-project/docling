@@ -31,7 +31,8 @@ def get_pdf_paths():
     directory = Path("./tests/data_scanned")
 
     # List all PDF files in the directory and its subdirectories
-    pdf_files = sorted(directory.rglob("*.pdf"))
+    pdf_files = sorted(directory.rglob("ocr_test*.pdf"))
+
     return pdf_files
 
 
