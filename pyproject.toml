@@ -1,6 +1,6 @@
 [project]
 name = "docling"
-version = "2.48.0"  # DO NOT EDIT, updated automatically
+version = "2.49.0"  # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -71,6 +71,7 @@ dependencies = [
   # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
   # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
   "accelerate>=1.0.0,<2",
+  "polyfactory>=2.22.2",
 ]
 
 [project.urls]
@@ -94,6 +95,7 @@ vlm = [
   'accelerate (>=1.2.1,<2.0.0)',
   'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "linux" and platform_machine == "x86_64"',
+  "qwen-vl-utils>=0.0.11",
 ]
 rapidocr = [
   'rapidocr (>=3.3,<4.0.0) ; python_version < "3.14"',
@@ -258,6 +260,7 @@ module = [
   "transformers.*",
   "pylatexenc.*",
   "vllm.*",
+  "qwen_vl_utils.*",
 ]
 ignore_missing_imports = true
 
