@@ -3,6 +3,8 @@
 
 I was trying to understand how Docling works and found that the concepts page was basically empty - it just said "browse core concepts" without explaining anything. So I wrote this overview to help other users understand the system before diving into the code.
 
+> **Note**: This documentation was created to address the empty documentation pages issue and improve user onboarding experience.
+
 ## System Architecture
 
 ### [Architecture Overview](architecture.md)
