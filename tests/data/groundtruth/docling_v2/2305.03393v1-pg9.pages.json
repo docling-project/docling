@@ -72551,7 +72551,7 @@
               "b": 102.04,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.937,
+            "confidence": 0.941,
             "cells": [
               {
                 "index": 0,
@@ -72591,7 +72591,7 @@
               "b": 102.04,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.886,
+            "confidence": 0.833,
             "cells": [
               {
                 "index": 1,
@@ -72622,7 +72622,7 @@
             "children": []
           },
           {
-            "id": 4,
+            "id": 5,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -72631,7 +72631,7 @@
               "b": 152.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.981,
+            "confidence": 0.976,
             "cells": [
               {
                 "index": 2,
@@ -72721,7 +72721,7 @@
               "b": 178.38,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.958,
+            "confidence": 0.946,
             "cells": [
               {
                 "index": 5,
@@ -72786,7 +72786,7 @@
               "b": 255.07,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.988,
             "cells": [
               {
                 "index": 7,
@@ -72992,7 +72992,7 @@
             "children": []
           },
           {
-            "id": 5,
+            "id": 4,
             "label": "caption",
             "bbox": {
               "l": 134.76,
@@ -73001,7 +73001,7 @@
               "b": 327.24,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.959,
+            "confidence": 0.977,
             "cells": [
               {
                 "index": 15,
@@ -73360,10 +73360,10 @@
             "id": 0,
             "label": "table",
             "bbox": {
-              "l": 139.67,
-              "t": 337.55,
-              "r": 475.01,
-              "b": 469.49,
+              "l": 139.31,
+              "t": 336.92,
+              "r": 475.05,
+              "b": 469.88,
               "coord_origin": "TOPLEFT"
             },
             "confidence": 0.99,
@@ -75096,7 +75096,7 @@
             ],
             "children": [
               {
-                "id": 11,
+                "id": 12,
                 "label": "text",
                 "bbox": {
                   "l": 160.37,
@@ -75136,7 +75136,7 @@
                 "children": []
               },
               {
-                "id": 12,
+                "id": 13,
                 "label": "text",
                 "bbox": {
                   "l": 144.59,
@@ -75176,7 +75176,7 @@
                 "children": []
               },
               {
-                "id": 13,
+                "id": 14,
                 "label": "text",
                 "bbox": {
                   "l": 207.97,
@@ -75216,7 +75216,7 @@
                 "children": []
               },
               {
-                "id": 14,
+                "id": 15,
                 "label": "text",
                 "bbox": {
                   "l": 192.19,
@@ -75256,7 +75256,7 @@
                 "children": []
               },
               {
-                "id": 15,
+                "id": 16,
                 "label": "text",
                 "bbox": {
                   "l": 239.8,
@@ -75296,7 +75296,7 @@
                 "children": []
               },
               {
-                "id": 16,
+                "id": 17,
                 "label": "text",
                 "bbox": {
                   "l": 324.67,
@@ -75336,7 +75336,7 @@
                 "children": []
               },
               {
-                "id": 17,
+                "id": 18,
                 "label": "text",
                 "bbox": {
                   "l": 396.27,
@@ -75376,7 +75376,7 @@
                 "children": []
               },
               {
-                "id": 18,
+                "id": 19,
                 "label": "text",
                 "bbox": {
                   "l": 394.93,
@@ -75416,7 +75416,7 @@
                 "children": []
               },
               {
-                "id": 19,
+                "id": 20,
                 "label": "text",
                 "bbox": {
                   "l": 430.77,
@@ -75456,7 +75456,7 @@
                 "children": []
               },
               {
-                "id": 20,
+                "id": 21,
                 "label": "text",
                 "bbox": {
                   "l": 427.15,
@@ -75496,7 +75496,7 @@
                 "children": []
               },
               {
-                "id": 21,
+                "id": 22,
                 "label": "text",
                 "bbox": {
                   "l": 286.69,
@@ -75536,7 +75536,7 @@
                 "children": []
               },
               {
-                "id": 22,
+                "id": 23,
                 "label": "text",
                 "bbox": {
                   "l": 320.7,
@@ -75576,7 +75576,7 @@
                 "children": []
               },
               {
-                "id": 23,
+                "id": 24,
                 "label": "text",
                 "bbox": {
                   "l": 369.31,
@@ -75616,7 +75616,7 @@
                 "children": []
               },
               {
-                "id": 24,
+                "id": 25,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -75656,7 +75656,7 @@
                 "children": []
               },
               {
-                "id": 25,
+                "id": 26,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -75696,7 +75696,7 @@
                 "children": []
               },
               {
-                "id": 26,
+                "id": 27,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -75736,7 +75736,7 @@
                 "children": []
               },
               {
-                "id": 27,
+                "id": 28,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -75776,7 +75776,7 @@
                 "children": []
               },
               {
-                "id": 28,
+                "id": 29,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -75816,7 +75816,7 @@
                 "children": []
               },
               {
-                "id": 29,
+                "id": 30,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -75856,7 +75856,7 @@
                 "children": []
               },
               {
-                "id": 30,
+                "id": 31,
                 "label": "text",
                 "bbox": {
                   "l": 397.27,
@@ -75896,7 +75896,7 @@
                 "children": []
               },
               {
-                "id": 31,
+                "id": 32,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -75936,7 +75936,7 @@
                 "children": []
               },
               {
-                "id": 32,
+                "id": 33,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -75976,7 +75976,7 @@
                 "children": []
               },
               {
-                "id": 33,
+                "id": 34,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -76016,7 +76016,7 @@
                 "children": []
               },
               {
-                "id": 34,
+                "id": 35,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -76056,7 +76056,7 @@
                 "children": []
               },
               {
-                "id": 35,
+                "id": 36,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -76096,7 +76096,7 @@
                 "children": []
               },
               {
-                "id": 36,
+                "id": 37,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -76136,7 +76136,7 @@
                 "children": []
               },
               {
-                "id": 37,
+                "id": 38,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -76176,7 +76176,7 @@
                 "children": []
               },
               {
-                "id": 38,
+                "id": 39,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -76216,7 +76216,7 @@
                 "children": []
               },
               {
-                "id": 39,
+                "id": 40,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -76256,7 +76256,7 @@
                 "children": []
               },
               {
-                "id": 40,
+                "id": 41,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -76296,7 +76296,7 @@
                 "children": []
               },
               {
-                "id": 41,
+                "id": 42,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -76336,7 +76336,7 @@
                 "children": []
               },
               {
-                "id": 42,
+                "id": 43,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -76376,7 +76376,7 @@
                 "children": []
               },
               {
-                "id": 43,
+                "id": 44,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -76416,7 +76416,7 @@
                 "children": []
               },
               {
-                "id": 44,
+                "id": 45,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -76456,7 +76456,7 @@
                 "children": []
               },
               {
-                "id": 45,
+                "id": 46,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -76496,7 +76496,7 @@
                 "children": []
               },
               {
-                "id": 46,
+                "id": 47,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -76536,7 +76536,7 @@
                 "children": []
               },
               {
-                "id": 47,
+                "id": 48,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -76576,7 +76576,7 @@
                 "children": []
               },
               {
-                "id": 48,
+                "id": 49,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -76616,7 +76616,7 @@
                 "children": []
               },
               {
-                "id": 49,
+                "id": 50,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -76656,7 +76656,7 @@
                 "children": []
               },
               {
-                "id": 50,
+                "id": 51,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -76696,7 +76696,7 @@
                 "children": []
               },
               {
-                "id": 51,
+                "id": 52,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -76736,7 +76736,7 @@
                 "children": []
               },
               {
-                "id": 52,
+                "id": 53,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -76776,7 +76776,7 @@
                 "children": []
               },
               {
-                "id": 53,
+                "id": 54,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -76816,7 +76816,7 @@
                 "children": []
               },
               {
-                "id": 54,
+                "id": 55,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -76856,7 +76856,7 @@
                 "children": []
               },
               {
-                "id": 55,
+                "id": 56,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -76896,7 +76896,7 @@
                 "children": []
               },
               {
-                "id": 56,
+                "id": 57,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -76936,7 +76936,7 @@
                 "children": []
               },
               {
-                "id": 57,
+                "id": 58,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -76976,7 +76976,7 @@
                 "children": []
               },
               {
-                "id": 58,
+                "id": 59,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -77016,7 +77016,7 @@
                 "children": []
               },
               {
-                "id": 59,
+                "id": 60,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -77056,7 +77056,7 @@
                 "children": []
               },
               {
-                "id": 60,
+                "id": 61,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -77096,7 +77096,7 @@
                 "children": []
               },
               {
-                "id": 61,
+                "id": 62,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -77136,7 +77136,7 @@
                 "children": []
               },
               {
-                "id": 62,
+                "id": 63,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -77176,7 +77176,7 @@
                 "children": []
               },
               {
-                "id": 63,
+                "id": 64,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -77216,7 +77216,7 @@
                 "children": []
               },
               {
-                "id": 64,
+                "id": 65,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -77256,7 +77256,7 @@
                 "children": []
               },
               {
-                "id": 65,
+                "id": 66,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -77296,7 +77296,7 @@
                 "children": []
               },
               {
-                "id": 66,
+                "id": 67,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -77336,7 +77336,7 @@
                 "children": []
               },
               {
-                "id": 67,
+                "id": 68,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -77376,7 +77376,7 @@
                 "children": []
               },
               {
-                "id": 68,
+                "id": 69,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -77416,7 +77416,7 @@
                 "children": []
               },
               {
-                "id": 69,
+                "id": 70,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -77456,7 +77456,7 @@
                 "children": []
               },
               {
-                "id": 70,
+                "id": 71,
                 "label": "text",
                 "bbox": {
                   "l": 329.02,
@@ -77496,7 +77496,7 @@
                 "children": []
               },
               {
-                "id": 71,
+                "id": 72,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -77536,7 +77536,7 @@
                 "children": []
               },
               {
-                "id": 72,
+                "id": 73,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -77576,7 +77576,7 @@
                 "children": []
               },
               {
-                "id": 73,
+                "id": 74,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -77616,7 +77616,7 @@
                 "children": []
               },
               {
-                "id": 74,
+                "id": 75,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -77656,7 +77656,7 @@
                 "children": []
               },
               {
-                "id": 75,
+                "id": 76,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -77696,7 +77696,7 @@
                 "children": []
               },
               {
-                "id": 76,
+                "id": 77,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -77736,7 +77736,7 @@
                 "children": []
               },
               {
-                "id": 77,
+                "id": 78,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -77776,7 +77776,7 @@
                 "children": []
               },
               {
-                "id": 78,
+                "id": 79,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -77816,7 +77816,7 @@
                 "children": []
               },
               {
-                "id": 79,
+                "id": 80,
                 "label": "text",
                 "bbox": {
                   "l": 446.65,
@@ -77867,7 +77867,7 @@
               "b": 517.35,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.959,
+            "confidence": 0.95,
             "cells": [
               {
                 "index": 98,
@@ -77923,7 +77923,7 @@
             "children": []
           },
           {
-            "id": 3,
+            "id": 2,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -77932,7 +77932,7 @@
               "b": 617.47,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.986,
             "cells": [
               {
                 "index": 100,
@@ -78188,7 +78188,7 @@
             "children": []
           },
           {
-            "id": 2,
+            "id": 3,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -78197,7 +78197,7 @@
               "b": 665.29,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.983,
             "cells": [
               {
                 "index": 110,
@@ -78314,10 +78314,10 @@
               "id": 0,
               "label": "table",
               "bbox": {
-                "l": 139.67,
-                "t": 337.55,
-                "r": 475.01,
-                "b": 469.49,
+                "l": 139.31,
+                "t": 336.92,
+                "r": 475.05,
+                "b": 469.88,
                 "coord_origin": "TOPLEFT"
               },
               "confidence": 0.99,
@@ -80050,7 +80050,7 @@
               ],
               "children": [
                 {
-                  "id": 11,
+                  "id": 12,
                   "label": "text",
                   "bbox": {
                     "l": 160.37,
@@ -80090,7 +80090,7 @@
                   "children": []
                 },
                 {
-                  "id": 12,
+                  "id": 13,
                   "label": "text",
                   "bbox": {
                     "l": 144.59,
@@ -80130,7 +80130,7 @@
                   "children": []
                 },
                 {
-                  "id": 13,
+                  "id": 14,
                   "label": "text",
                   "bbox": {
                     "l": 207.97,
@@ -80170,7 +80170,7 @@
                   "children": []
                 },
                 {
-                  "id": 14,
+                  "id": 15,
                   "label": "text",
                   "bbox": {
                     "l": 192.19,
@@ -80210,7 +80210,7 @@
                   "children": []
                 },
                 {
-                  "id": 15,
+                  "id": 16,
                   "label": "text",
                   "bbox": {
                     "l": 239.8,
@@ -80250,7 +80250,7 @@
                   "children": []
                 },
                 {
-                  "id": 16,
+                  "id": 17,
                   "label": "text",
                   "bbox": {
                     "l": 324.67,
@@ -80290,7 +80290,7 @@
                   "children": []
                 },
                 {
-                  "id": 17,
+                  "id": 18,
                   "label": "text",
                   "bbox": {
                     "l": 396.27,
@@ -80330,7 +80330,7 @@
                   "children": []
                 },
                 {
-                  "id": 18,
+                  "id": 19,
                   "label": "text",
                   "bbox": {
                     "l": 394.93,
@@ -80370,7 +80370,7 @@
                   "children": []
                 },
                 {
-                  "id": 19,
+                  "id": 20,
                   "label": "text",
                   "bbox": {
                     "l": 430.77,
@@ -80410,7 +80410,7 @@
                   "children": []
                 },
                 {
-                  "id": 20,
+                  "id": 21,
                   "label": "text",
                   "bbox": {
                     "l": 427.15,
@@ -80450,7 +80450,7 @@
                   "children": []
                 },
                 {
-                  "id": 21,
+                  "id": 22,
                   "label": "text",
                   "bbox": {
                     "l": 286.69,
@@ -80490,7 +80490,7 @@
                   "children": []
                 },
                 {
-                  "id": 22,
+                  "id": 23,
                   "label": "text",
                   "bbox": {
                     "l": 320.7,
@@ -80530,7 +80530,7 @@
                   "children": []
                 },
                 {
-                  "id": 23,
+                  "id": 24,
                   "label": "text",
                   "bbox": {
                     "l": 369.31,
@@ -80570,7 +80570,7 @@
                   "children": []
                 },
                 {
-                  "id": 24,
+                  "id": 25,
                   "label": "text",
                   "bbox": {
                     "l": 161.91,
@@ -80610,7 +80610,7 @@
                   "children": []
                 },
                 {
-                  "id": 25,
+                  "id": 26,
                   "label": "text",
                   "bbox": {
                     "l": 209.51,
@@ -80650,7 +80650,7 @@
                   "children": []
                 },
                 {
-                  "id": 26,
+                  "id": 27,
                   "label": "text",
                   "bbox": {
                     "l": 246.71,
@@ -80690,7 +80690,7 @@
                   "children": []
                 },
                 {
-                  "id": 27,
+                  "id": 28,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -80730,7 +80730,7 @@
                   "children": []
                 },
                 {
-                  "id": 28,
+                  "id": 29,
                   "label": "text",
                   "bbox": {
                     "l": 326.72,
@@ -80770,7 +80770,7 @@
                   "children": []
                 },
                 {
-                  "id": 29,
+                  "id": 30,
                   "label": "text",
                   "bbox": {
                     "l": 363.68,
@@ -80810,7 +80810,7 @@
                   "children": []
                 },
                 {
-                  "id": 30,
+                  "id": 31,
                   "label": "text",
                   "bbox": {
                     "l": 397.27,
@@ -80850,7 +80850,7 @@
                   "children": []
                 },
                 {
-                  "id": 31,
+                  "id": 32,
                   "label": "text",
                   "bbox": {
                     "l": 439.53,
@@ -80890,7 +80890,7 @@
                   "children": []
                 },
                 {
-                  "id": 32,
+                  "id": 33,
                   "label": "text",
                   "bbox": {
                     "l": 245.18,
@@ -80930,7 +80930,7 @@
                   "children": []
                 },
                 {
-                  "id": 33,
+                  "id": 34,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -80970,7 +80970,7 @@
                   "children": []
                 },
                 {
-                  "id": 34,
+                  "id": 35,
                   "label": "text",
                   "bbox": {
                     "l": 326.72,
@@ -81010,7 +81010,7 @@
                   "children": []
                 },
                 {
-                  "id": 35,
+                  "id": 36,
                   "label": "text",
                   "bbox": {
                     "l": 363.68,
@@ -81050,7 +81050,7 @@
                   "children": []
                 },
                 {
-                  "id": 36,
+                  "id": 37,
                   "label": "text",
                   "bbox": {
                     "l": 396.21,
@@ -81090,7 +81090,7 @@
                   "children": []
                 },
                 {
-                  "id": 37,
+                  "id": 38,
                   "label": "text",
                   "bbox": {
                     "l": 440.77,
@@ -81130,7 +81130,7 @@
                   "children": []
                 },
                 {
-                  "id": 38,
+                  "id": 39,
                   "label": "text",
                   "bbox": {
                     "l": 161.91,
@@ -81170,7 +81170,7 @@
                   "children": []
                 },
                 {
-                  "id": 39,
+                  "id": 40,
                   "label": "text",
                   "bbox": {
                     "l": 209.51,
@@ -81210,7 +81210,7 @@
                   "children": []
                 },
                 {
-                  "id": 40,
+                  "id": 41,
                   "label": "text",
                   "bbox": {
                     "l": 246.71,
@@ -81250,7 +81250,7 @@
                   "children": []
                 },
                 {
-                  "id": 41,
+                  "id": 42,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -81290,7 +81290,7 @@
                   "children": []
                 },
                 {
-                  "id": 42,
+                  "id": 43,
                   "label": "text",
                   "bbox": {
                     "l": 326.72,
@@ -81330,7 +81330,7 @@
                   "children": []
                 },
                 {
-                  "id": 43,
+                  "id": 44,
                   "label": "text",
                   "bbox": {
                     "l": 363.68,
@@ -81370,7 +81370,7 @@
                   "children": []
                 },
                 {
-                  "id": 44,
+                  "id": 45,
                   "label": "text",
                   "bbox": {
                     "l": 394.62,
@@ -81410,7 +81410,7 @@
                   "children": []
                 },
                 {
-                  "id": 45,
+                  "id": 46,
                   "label": "text",
                   "bbox": {
                     "l": 439.53,
@@ -81450,7 +81450,7 @@
                   "children": []
                 },
                 {
-                  "id": 46,
+                  "id": 47,
                   "label": "text",
                   "bbox": {
                     "l": 245.18,
@@ -81490,7 +81490,7 @@
                   "children": []
                 },
                 {
-                  "id": 47,
+                  "id": 48,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -81530,7 +81530,7 @@
                   "children": []
                 },
                 {
-                  "id": 48,
+                  "id": 49,
                   "label": "text",
                   "bbox": {
                     "l": 326.72,
@@ -81570,7 +81570,7 @@
                   "children": []
                 },
                 {
-                  "id": 49,
+                  "id": 50,
                   "label": "text",
                   "bbox": {
                     "l": 362.09,
@@ -81610,7 +81610,7 @@
                   "children": []
                 },
                 {
-                  "id": 50,
+                  "id": 51,
                   "label": "text",
                   "bbox": {
                     "l": 396.21,
@@ -81650,7 +81650,7 @@
                   "children": []
                 },
                 {
-                  "id": 51,
+                  "id": 52,
                   "label": "text",
                   "bbox": {
                     "l": 440.77,
@@ -81690,7 +81690,7 @@
                   "children": []
                 },
                 {
-                  "id": 52,
+                  "id": 53,
                   "label": "text",
                   "bbox": {
                     "l": 161.91,
@@ -81730,7 +81730,7 @@
                   "children": []
                 },
                 {
-                  "id": 53,
+                  "id": 54,
                   "label": "text",
                   "bbox": {
                     "l": 209.51,
@@ -81770,7 +81770,7 @@
                   "children": []
                 },
                 {
-                  "id": 54,
+                  "id": 55,
                   "label": "text",
                   "bbox": {
                     "l": 246.71,
@@ -81810,7 +81810,7 @@
                   "children": []
                 },
                 {
-                  "id": 55,
+                  "id": 56,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -81850,7 +81850,7 @@
                   "children": []
                 },
                 {
-                  "id": 56,
+                  "id": 57,
                   "label": "text",
                   "bbox": {
                     "l": 326.72,
@@ -81890,7 +81890,7 @@
                   "children": []
                 },
                 {
-                  "id": 57,
+                  "id": 58,
                   "label": "text",
                   "bbox": {
                     "l": 363.68,
@@ -81930,7 +81930,7 @@
                   "children": []
                 },
                 {
-                  "id": 58,
+                  "id": 59,
                   "label": "text",
                   "bbox": {
                     "l": 394.62,
@@ -81970,7 +81970,7 @@
                   "children": []
                 },
                 {
-                  "id": 59,
+                  "id": 60,
                   "label": "text",
                   "bbox": {
                     "l": 439.53,
@@ -82010,7 +82010,7 @@
                   "children": []
                 },
                 {
-                  "id": 60,
+                  "id": 61,
                   "label": "text",
                   "bbox": {
                     "l": 245.18,
@@ -82050,7 +82050,7 @@
                   "children": []
                 },
                 {
-                  "id": 61,
+                  "id": 62,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -82090,7 +82090,7 @@
                   "children": []
                 },
                 {
-                  "id": 62,
+                  "id": 63,
                   "label": "text",
                   "bbox": {
                     "l": 326.72,
@@ -82130,7 +82130,7 @@
                   "children": []
                 },
                 {
-                  "id": 63,
+                  "id": 64,
                   "label": "text",
                   "bbox": {
                     "l": 362.09,
@@ -82170,7 +82170,7 @@
                   "children": []
                 },
                 {
-                  "id": 64,
+                  "id": 65,
                   "label": "text",
                   "bbox": {
                     "l": 396.21,
@@ -82210,7 +82210,7 @@
                   "children": []
                 },
                 {
-                  "id": 65,
+                  "id": 66,
                   "label": "text",
                   "bbox": {
                     "l": 440.77,
@@ -82250,7 +82250,7 @@
                   "children": []
                 },
                 {
-                  "id": 66,
+                  "id": 67,
                   "label": "text",
                   "bbox": {
                     "l": 161.91,
@@ -82290,7 +82290,7 @@
                   "children": []
                 },
                 {
-                  "id": 67,
+                  "id": 68,
                   "label": "text",
                   "bbox": {
                     "l": 209.51,
@@ -82330,7 +82330,7 @@
                   "children": []
                 },
                 {
-                  "id": 68,
+                  "id": 69,
                   "label": "text",
                   "bbox": {
                     "l": 246.71,
@@ -82370,7 +82370,7 @@
                   "children": []
                 },
                 {
-                  "id": 69,
+                  "id": 70,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -82410,7 +82410,7 @@
                   "children": []
                 },
                 {
-                  "id": 70,
+                  "id": 71,
                   "label": "text",
                   "bbox": {
                     "l": 329.02,
@@ -82450,7 +82450,7 @@
                   "children": []
                 },
                 {
-                  "id": 71,
+                  "id": 72,
                   "label": "text",
                   "bbox": {
                     "l": 362.09,
@@ -82490,7 +82490,7 @@
                   "children": []
                 },
                 {
-                  "id": 72,
+                  "id": 73,
                   "label": "text",
                   "bbox": {
                     "l": 394.62,
@@ -82530,7 +82530,7 @@
                   "children": []
                 },
                 {
-                  "id": 73,
+                  "id": 74,
                   "label": "text",
                   "bbox": {
                     "l": 439.53,
@@ -82570,7 +82570,7 @@
                   "children": []
                 },
                 {
-                  "id": 74,
+                  "id": 75,
                   "label": "text",
                   "bbox": {
                     "l": 245.18,
@@ -82610,7 +82610,7 @@
                   "children": []
                 },
                 {
-                  "id": 75,
+                  "id": 76,
                   "label": "text",
                   "bbox": {
                     "l": 289.02,
@@ -82650,7 +82650,7 @@
                   "children": []
                 },
                 {
-                  "id": 76,
+                  "id": 77,
                   "label": "text",
                   "bbox": {
                     "l": 326.72,
@@ -82690,7 +82690,7 @@
                   "children": []
                 },
                 {
-                  "id": 77,
+                  "id": 78,
                   "label": "text",
                   "bbox": {
                     "l": 363.68,
@@ -82730,7 +82730,7 @@
                   "children": []
                 },
                 {
-                  "id": 78,
+                  "id": 79,
                   "label": "text",
                   "bbox": {
                     "l": 396.21,
@@ -82770,7 +82770,7 @@
                   "children": []
                 },
                 {
-                  "id": 79,
+                  "id": 80,
                   "label": "text",
                   "bbox": {
                     "l": 446.65,
@@ -82828,8 +82828,8 @@
               "ched",
               "ched",
               "ched",
-              "ched",
-              "ched",
+              "ucel",
+              "ucel",
               "nl",
               "fcel",
               "fcel",
@@ -82949,57 +82949,19 @@
               },
               {
                 "bbox": {
-                  "l": 396.27,
-                  "t": 341.63,
-                  "r": 417.12,
-                  "b": 350.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "row_span": 1,
-                "col_span": 1,
-                "start_row_offset_idx": 0,
-                "end_row_offset_idx": 1,
-                "start_col_offset_idx": 6,
-                "end_col_offset_idx": 7,
-                "text": "mAP",
-                "column_header": true,
-                "row_header": false,
-                "row_section": false
-              },
-              {
-                "bbox": {
                   "l": 394.93,
-                  "t": 352.59,
+                  "t": 341.63,
                   "r": 418.47,
                   "b": 360.96,
                   "coord_origin": "TOPLEFT"
                 },
-                "row_span": 1,
+                "row_span": 2,
                 "col_span": 1,
-                "start_row_offset_idx": 1,
+                "start_row_offset_idx": 0,
                 "end_row_offset_idx": 2,
                 "start_col_offset_idx": 6,
                 "end_col_offset_idx": 7,
-                "text": "(0.75)",
-                "column_header": true,
-                "row_header": false,
-                "row_section": false
-              },
-              {
-                "bbox": {
-                  "l": 430.77,
-                  "t": 341.63,
-                  "r": 467.14,
-                  "b": 350.0,
-                  "coord_origin": "TOPLEFT"
-                },
-                "row_span": 1,
-                "col_span": 1,
-                "start_row_offset_idx": 0,
-                "end_row_offset_idx": 1,
-                "start_col_offset_idx": 7,
-                "end_col_offset_idx": 8,
-                "text": "Inference",
+                "text": "mAP (0.75)",
                 "column_header": true,
                 "row_header": false,
                 "row_section": false
@@ -83007,18 +82969,18 @@
               {
                 "bbox": {
                   "l": 427.15,
-                  "t": 352.59,
+                  "t": 341.63,
                   "r": 470.77,
                   "b": 360.96,
                   "coord_origin": "TOPLEFT"
                 },
-                "row_span": 1,
+                "row_span": 2,
                 "col_span": 1,
-                "start_row_offset_idx": 1,
+                "start_row_offset_idx": 0,
                 "end_row_offset_idx": 2,
                 "start_col_offset_idx": 7,
                 "end_col_offset_idx": 8,
-                "text": "time (secs)",
+                "text": "Inference time (secs)",
                 "column_header": true,
                 "row_header": false,
                 "row_section": false
@@ -83712,7 +83674,7 @@
               "b": 102.04,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.937,
+            "confidence": 0.941,
             "cells": [
               {
                 "index": 0,
@@ -83758,7 +83720,7 @@
               "b": 102.04,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.886,
+            "confidence": 0.833,
             "cells": [
               {
                 "index": 1,
@@ -83792,10 +83754,10 @@
         },
         {
           "label": "text",
-          "id": 4,
+          "id": 5,
           "page_no": 0,
           "cluster": {
-            "id": 4,
+            "id": 5,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -83804,7 +83766,7 @@
               "b": 152.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.981,
+            "confidence": 0.976,
             "cells": [
               {
                 "index": 2,
@@ -83900,7 +83862,7 @@
               "b": 178.38,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.958,
+            "confidence": 0.946,
             "cells": [
               {
                 "index": 5,
@@ -83971,7 +83933,7 @@
               "b": 255.07,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.988,
             "cells": [
               {
                 "index": 7,
@@ -84180,10 +84142,10 @@
         },
         {
           "label": "caption",
-          "id": 5,
+          "id": 4,
           "page_no": 0,
           "cluster": {
-            "id": 5,
+            "id": 4,
             "label": "caption",
             "bbox": {
               "l": 134.76,
@@ -84192,7 +84154,7 @@
               "b": 327.24,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.959,
+            "confidence": 0.977,
             "cells": [
               {
                 "index": 15,
@@ -84557,10 +84519,10 @@
             "id": 0,
             "label": "table",
             "bbox": {
-              "l": 139.67,
-              "t": 337.55,
-              "r": 475.01,
-              "b": 469.49,
+              "l": 139.31,
+              "t": 336.92,
+              "r": 475.05,
+              "b": 469.88,
               "coord_origin": "TOPLEFT"
             },
             "confidence": 0.99,
@@ -86293,7 +86255,7 @@
             ],
             "children": [
               {
-                "id": 11,
+                "id": 12,
                 "label": "text",
                 "bbox": {
                   "l": 160.37,
@@ -86333,7 +86295,7 @@
                 "children": []
               },
               {
-                "id": 12,
+                "id": 13,
                 "label": "text",
                 "bbox": {
                   "l": 144.59,
@@ -86373,7 +86335,7 @@
                 "children": []
               },
               {
-                "id": 13,
+                "id": 14,
                 "label": "text",
                 "bbox": {
                   "l": 207.97,
@@ -86413,7 +86375,7 @@
                 "children": []
               },
               {
-                "id": 14,
+                "id": 15,
                 "label": "text",
                 "bbox": {
                   "l": 192.19,
@@ -86453,7 +86415,7 @@
                 "children": []
               },
               {
-                "id": 15,
+                "id": 16,
                 "label": "text",
                 "bbox": {
                   "l": 239.8,
@@ -86493,7 +86455,7 @@
                 "children": []
               },
               {
-                "id": 16,
+                "id": 17,
                 "label": "text",
                 "bbox": {
                   "l": 324.67,
@@ -86533,7 +86495,7 @@
                 "children": []
               },
               {
-                "id": 17,
+                "id": 18,
                 "label": "text",
                 "bbox": {
                   "l": 396.27,
@@ -86573,7 +86535,7 @@
                 "children": []
               },
               {
-                "id": 18,
+                "id": 19,
                 "label": "text",
                 "bbox": {
                   "l": 394.93,
@@ -86613,7 +86575,7 @@
                 "children": []
               },
               {
-                "id": 19,
+                "id": 20,
                 "label": "text",
                 "bbox": {
                   "l": 430.77,
@@ -86653,7 +86615,7 @@
                 "children": []
               },
               {
-                "id": 20,
+                "id": 21,
                 "label": "text",
                 "bbox": {
                   "l": 427.15,
@@ -86693,7 +86655,7 @@
                 "children": []
               },
               {
-                "id": 21,
+                "id": 22,
                 "label": "text",
                 "bbox": {
                   "l": 286.69,
@@ -86733,7 +86695,7 @@
                 "children": []
               },
               {
-                "id": 22,
+                "id": 23,
                 "label": "text",
                 "bbox": {
                   "l": 320.7,
@@ -86773,7 +86735,7 @@
                 "children": []
               },
               {
-                "id": 23,
+                "id": 24,
                 "label": "text",
                 "bbox": {
                   "l": 369.31,
@@ -86813,7 +86775,7 @@
                 "children": []
               },
               {
-                "id": 24,
+                "id": 25,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -86853,7 +86815,7 @@
                 "children": []
               },
               {
-                "id": 25,
+                "id": 26,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -86893,7 +86855,7 @@
                 "children": []
               },
               {
-                "id": 26,
+                "id": 27,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -86933,7 +86895,7 @@
                 "children": []
               },
               {
-                "id": 27,
+                "id": 28,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -86973,7 +86935,7 @@
                 "children": []
               },
               {
-                "id": 28,
+                "id": 29,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -87013,7 +86975,7 @@
                 "children": []
               },
               {
-                "id": 29,
+                "id": 30,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -87053,7 +87015,7 @@
                 "children": []
               },
               {
-                "id": 30,
+                "id": 31,
                 "label": "text",
                 "bbox": {
                   "l": 397.27,
@@ -87093,7 +87055,7 @@
                 "children": []
               },
               {
-                "id": 31,
+                "id": 32,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -87133,7 +87095,7 @@
                 "children": []
               },
               {
-                "id": 32,
+                "id": 33,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -87173,7 +87135,7 @@
                 "children": []
               },
               {
-                "id": 33,
+                "id": 34,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -87213,7 +87175,7 @@
                 "children": []
               },
               {
-                "id": 34,
+                "id": 35,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -87253,7 +87215,7 @@
                 "children": []
               },
               {
-                "id": 35,
+                "id": 36,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -87293,7 +87255,7 @@
                 "children": []
               },
               {
-                "id": 36,
+                "id": 37,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -87333,7 +87295,7 @@
                 "children": []
               },
               {
-                "id": 37,
+                "id": 38,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -87373,7 +87335,7 @@
                 "children": []
               },
               {
-                "id": 38,
+                "id": 39,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -87413,7 +87375,7 @@
                 "children": []
               },
               {
-                "id": 39,
+                "id": 40,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -87453,7 +87415,7 @@
                 "children": []
               },
               {
-                "id": 40,
+                "id": 41,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -87493,7 +87455,7 @@
                 "children": []
               },
               {
-                "id": 41,
+                "id": 42,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -87533,7 +87495,7 @@
                 "children": []
               },
               {
-                "id": 42,
+                "id": 43,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -87573,7 +87535,7 @@
                 "children": []
               },
               {
-                "id": 43,
+                "id": 44,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -87613,7 +87575,7 @@
                 "children": []
               },
               {
-                "id": 44,
+                "id": 45,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -87653,7 +87615,7 @@
                 "children": []
               },
               {
-                "id": 45,
+                "id": 46,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -87693,7 +87655,7 @@
                 "children": []
               },
               {
-                "id": 46,
+                "id": 47,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -87733,7 +87695,7 @@
                 "children": []
               },
               {
-                "id": 47,
+                "id": 48,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -87773,7 +87735,7 @@
                 "children": []
               },
               {
-                "id": 48,
+                "id": 49,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -87813,7 +87775,7 @@
                 "children": []
               },
               {
-                "id": 49,
+                "id": 50,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -87853,7 +87815,7 @@
                 "children": []
               },
               {
-                "id": 50,
+                "id": 51,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -87893,7 +87855,7 @@
                 "children": []
               },
               {
-                "id": 51,
+                "id": 52,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -87933,7 +87895,7 @@
                 "children": []
               },
               {
-                "id": 52,
+                "id": 53,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -87973,7 +87935,7 @@
                 "children": []
               },
               {
-                "id": 53,
+                "id": 54,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -88013,7 +87975,7 @@
                 "children": []
               },
               {
-                "id": 54,
+                "id": 55,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -88053,7 +88015,7 @@
                 "children": []
               },
               {
-                "id": 55,
+                "id": 56,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -88093,7 +88055,7 @@
                 "children": []
               },
               {
-                "id": 56,
+                "id": 57,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -88133,7 +88095,7 @@
                 "children": []
               },
               {
-                "id": 57,
+                "id": 58,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -88173,7 +88135,7 @@
                 "children": []
               },
               {
-                "id": 58,
+                "id": 59,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -88213,7 +88175,7 @@
                 "children": []
               },
               {
-                "id": 59,
+                "id": 60,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -88253,7 +88215,7 @@
                 "children": []
               },
               {
-                "id": 60,
+                "id": 61,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -88293,7 +88255,7 @@
                 "children": []
               },
               {
-                "id": 61,
+                "id": 62,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -88333,7 +88295,7 @@
                 "children": []
               },
               {
-                "id": 62,
+                "id": 63,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -88373,7 +88335,7 @@
                 "children": []
               },
               {
-                "id": 63,
+                "id": 64,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -88413,7 +88375,7 @@
                 "children": []
               },
               {
-                "id": 64,
+                "id": 65,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -88453,7 +88415,7 @@
                 "children": []
               },
               {
-                "id": 65,
+                "id": 66,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -88493,7 +88455,7 @@
                 "children": []
               },
               {
-                "id": 66,
+                "id": 67,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -88533,7 +88495,7 @@
                 "children": []
               },
               {
-                "id": 67,
+                "id": 68,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -88573,7 +88535,7 @@
                 "children": []
               },
               {
-                "id": 68,
+                "id": 69,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -88613,7 +88575,7 @@
                 "children": []
               },
               {
-                "id": 69,
+                "id": 70,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -88653,7 +88615,7 @@
                 "children": []
               },
               {
-                "id": 70,
+                "id": 71,
                 "label": "text",
                 "bbox": {
                   "l": 329.02,
@@ -88693,7 +88655,7 @@
                 "children": []
               },
               {
-                "id": 71,
+                "id": 72,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -88733,7 +88695,7 @@
                 "children": []
               },
               {
-                "id": 72,
+                "id": 73,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -88773,7 +88735,7 @@
                 "children": []
               },
               {
-                "id": 73,
+                "id": 74,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -88813,7 +88775,7 @@
                 "children": []
               },
               {
-                "id": 74,
+                "id": 75,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -88853,7 +88815,7 @@
                 "children": []
               },
               {
-                "id": 75,
+                "id": 76,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -88893,7 +88855,7 @@
                 "children": []
               },
               {
-                "id": 76,
+                "id": 77,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -88933,7 +88895,7 @@
                 "children": []
               },
               {
-                "id": 77,
+                "id": 78,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -88973,7 +88935,7 @@
                 "children": []
               },
               {
-                "id": 78,
+                "id": 79,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -89013,7 +88975,7 @@
                 "children": []
               },
               {
-                "id": 79,
+                "id": 80,
                 "label": "text",
                 "bbox": {
                   "l": 446.65,
@@ -89071,8 +89033,8 @@
             "ched",
             "ched",
             "ched",
-            "ched",
-            "ched",
+            "ucel",
+            "ucel",
             "nl",
             "fcel",
             "fcel",
@@ -89192,57 +89154,19 @@
             },
             {
               "bbox": {
-                "l": 396.27,
-                "t": 341.63,
-                "r": 417.12,
-                "b": 350.0,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
-              "text": "mAP",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false
-            },
-            {
-              "bbox": {
                 "l": 394.93,
-                "t": 352.59,
+                "t": 341.63,
                 "r": 418.47,
                 "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "(0.75)",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false
-            },
-            {
-              "bbox": {
-                "l": 430.77,
-                "t": 341.63,
-                "r": 467.14,
-                "b": 350.0,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "Inference",
+              "text": "mAP (0.75)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -89250,18 +89174,18 @@
             {
               "bbox": {
                 "l": 427.15,
-                "t": 352.59,
+                "t": 341.63,
                 "r": 470.77,
                 "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 7,
               "end_col_offset_idx": 8,
-              "text": "time (secs)",
+              "text": "Inference time (secs)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -89947,7 +89871,7 @@
               "b": 517.35,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.959,
+            "confidence": 0.95,
             "cells": [
               {
                 "index": 98,
@@ -90006,10 +89930,10 @@
         },
         {
           "label": "text",
-          "id": 3,
+          "id": 2,
           "page_no": 0,
           "cluster": {
-            "id": 3,
+            "id": 2,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -90018,7 +89942,7 @@
               "b": 617.47,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.986,
             "cells": [
               {
                 "index": 100,
@@ -90277,10 +90201,10 @@
         },
         {
           "label": "text",
-          "id": 2,
+          "id": 3,
           "page_no": 0,
           "cluster": {
-            "id": 2,
+            "id": 3,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -90289,7 +90213,7 @@
               "b": 665.29,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.983,
             "cells": [
               {
                 "index": 110,
@@ -90400,10 +90324,10 @@
       "body": [
         {
           "label": "text",
-          "id": 4,
+          "id": 5,
           "page_no": 0,
           "cluster": {
-            "id": 4,
+            "id": 5,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -90412,7 +90336,7 @@
               "b": 152.08,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.981,
+            "confidence": 0.976,
             "cells": [
               {
                 "index": 2,
@@ -90508,7 +90432,7 @@
               "b": 178.38,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.958,
+            "confidence": 0.946,
             "cells": [
               {
                 "index": 5,
@@ -90579,7 +90503,7 @@
               "b": 255.07,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.988,
             "cells": [
               {
                 "index": 7,
@@ -90788,10 +90712,10 @@
         },
         {
           "label": "caption",
-          "id": 5,
+          "id": 4,
           "page_no": 0,
           "cluster": {
-            "id": 5,
+            "id": 4,
             "label": "caption",
             "bbox": {
               "l": 134.76,
@@ -90800,7 +90724,7 @@
               "b": 327.24,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.959,
+            "confidence": 0.977,
             "cells": [
               {
                 "index": 15,
@@ -91165,10 +91089,10 @@
             "id": 0,
             "label": "table",
             "bbox": {
-              "l": 139.67,
-              "t": 337.55,
-              "r": 475.01,
-              "b": 469.49,
+              "l": 139.31,
+              "t": 336.92,
+              "r": 475.05,
+              "b": 469.88,
               "coord_origin": "TOPLEFT"
             },
             "confidence": 0.99,
@@ -92901,7 +92825,7 @@
             ],
             "children": [
               {
-                "id": 11,
+                "id": 12,
                 "label": "text",
                 "bbox": {
                   "l": 160.37,
@@ -92941,7 +92865,7 @@
                 "children": []
               },
               {
-                "id": 12,
+                "id": 13,
                 "label": "text",
                 "bbox": {
                   "l": 144.59,
@@ -92981,7 +92905,7 @@
                 "children": []
               },
               {
-                "id": 13,
+                "id": 14,
                 "label": "text",
                 "bbox": {
                   "l": 207.97,
@@ -93021,7 +92945,7 @@
                 "children": []
               },
               {
-                "id": 14,
+                "id": 15,
                 "label": "text",
                 "bbox": {
                   "l": 192.19,
@@ -93061,7 +92985,7 @@
                 "children": []
               },
               {
-                "id": 15,
+                "id": 16,
                 "label": "text",
                 "bbox": {
                   "l": 239.8,
@@ -93101,7 +93025,7 @@
                 "children": []
               },
               {
-                "id": 16,
+                "id": 17,
                 "label": "text",
                 "bbox": {
                   "l": 324.67,
@@ -93141,7 +93065,7 @@
                 "children": []
               },
               {
-                "id": 17,
+                "id": 18,
                 "label": "text",
                 "bbox": {
                   "l": 396.27,
@@ -93181,7 +93105,7 @@
                 "children": []
               },
               {
-                "id": 18,
+                "id": 19,
                 "label": "text",
                 "bbox": {
                   "l": 394.93,
@@ -93221,7 +93145,7 @@
                 "children": []
               },
               {
-                "id": 19,
+                "id": 20,
                 "label": "text",
                 "bbox": {
                   "l": 430.77,
@@ -93261,7 +93185,7 @@
                 "children": []
               },
               {
-                "id": 20,
+                "id": 21,
                 "label": "text",
                 "bbox": {
                   "l": 427.15,
@@ -93301,7 +93225,7 @@
                 "children": []
               },
               {
-                "id": 21,
+                "id": 22,
                 "label": "text",
                 "bbox": {
                   "l": 286.69,
@@ -93341,7 +93265,7 @@
                 "children": []
               },
               {
-                "id": 22,
+                "id": 23,
                 "label": "text",
                 "bbox": {
                   "l": 320.7,
@@ -93381,7 +93305,7 @@
                 "children": []
               },
               {
-                "id": 23,
+                "id": 24,
                 "label": "text",
                 "bbox": {
                   "l": 369.31,
@@ -93421,7 +93345,7 @@
                 "children": []
               },
               {
-                "id": 24,
+                "id": 25,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -93461,7 +93385,7 @@
                 "children": []
               },
               {
-                "id": 25,
+                "id": 26,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -93501,7 +93425,7 @@
                 "children": []
               },
               {
-                "id": 26,
+                "id": 27,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -93541,7 +93465,7 @@
                 "children": []
               },
               {
-                "id": 27,
+                "id": 28,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -93581,7 +93505,7 @@
                 "children": []
               },
               {
-                "id": 28,
+                "id": 29,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -93621,7 +93545,7 @@
                 "children": []
               },
               {
-                "id": 29,
+                "id": 30,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -93661,7 +93585,7 @@
                 "children": []
               },
               {
-                "id": 30,
+                "id": 31,
                 "label": "text",
                 "bbox": {
                   "l": 397.27,
@@ -93701,7 +93625,7 @@
                 "children": []
               },
               {
-                "id": 31,
+                "id": 32,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -93741,7 +93665,7 @@
                 "children": []
               },
               {
-                "id": 32,
+                "id": 33,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -93781,7 +93705,7 @@
                 "children": []
               },
               {
-                "id": 33,
+                "id": 34,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -93821,7 +93745,7 @@
                 "children": []
               },
               {
-                "id": 34,
+                "id": 35,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -93861,7 +93785,7 @@
                 "children": []
               },
               {
-                "id": 35,
+                "id": 36,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -93901,7 +93825,7 @@
                 "children": []
               },
               {
-                "id": 36,
+                "id": 37,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -93941,7 +93865,7 @@
                 "children": []
               },
               {
-                "id": 37,
+                "id": 38,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -93981,7 +93905,7 @@
                 "children": []
               },
               {
-                "id": 38,
+                "id": 39,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -94021,7 +93945,7 @@
                 "children": []
               },
               {
-                "id": 39,
+                "id": 40,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -94061,7 +93985,7 @@
                 "children": []
               },
               {
-                "id": 40,
+                "id": 41,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -94101,7 +94025,7 @@
                 "children": []
               },
               {
-                "id": 41,
+                "id": 42,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -94141,7 +94065,7 @@
                 "children": []
               },
               {
-                "id": 42,
+                "id": 43,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -94181,7 +94105,7 @@
                 "children": []
               },
               {
-                "id": 43,
+                "id": 44,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -94221,7 +94145,7 @@
                 "children": []
               },
               {
-                "id": 44,
+                "id": 45,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -94261,7 +94185,7 @@
                 "children": []
               },
               {
-                "id": 45,
+                "id": 46,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -94301,7 +94225,7 @@
                 "children": []
               },
               {
-                "id": 46,
+                "id": 47,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -94341,7 +94265,7 @@
                 "children": []
               },
               {
-                "id": 47,
+                "id": 48,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -94381,7 +94305,7 @@
                 "children": []
               },
               {
-                "id": 48,
+                "id": 49,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -94421,7 +94345,7 @@
                 "children": []
               },
               {
-                "id": 49,
+                "id": 50,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -94461,7 +94385,7 @@
                 "children": []
               },
               {
-                "id": 50,
+                "id": 51,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -94501,7 +94425,7 @@
                 "children": []
               },
               {
-                "id": 51,
+                "id": 52,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -94541,7 +94465,7 @@
                 "children": []
               },
               {
-                "id": 52,
+                "id": 53,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -94581,7 +94505,7 @@
                 "children": []
               },
               {
-                "id": 53,
+                "id": 54,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -94621,7 +94545,7 @@
                 "children": []
               },
               {
-                "id": 54,
+                "id": 55,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -94661,7 +94585,7 @@
                 "children": []
               },
               {
-                "id": 55,
+                "id": 56,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -94701,7 +94625,7 @@
                 "children": []
               },
               {
-                "id": 56,
+                "id": 57,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -94741,7 +94665,7 @@
                 "children": []
               },
               {
-                "id": 57,
+                "id": 58,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -94781,7 +94705,7 @@
                 "children": []
               },
               {
-                "id": 58,
+                "id": 59,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -94821,7 +94745,7 @@
                 "children": []
               },
               {
-                "id": 59,
+                "id": 60,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -94861,7 +94785,7 @@
                 "children": []
               },
               {
-                "id": 60,
+                "id": 61,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -94901,7 +94825,7 @@
                 "children": []
               },
               {
-                "id": 61,
+                "id": 62,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -94941,7 +94865,7 @@
                 "children": []
               },
               {
-                "id": 62,
+                "id": 63,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -94981,7 +94905,7 @@
                 "children": []
               },
               {
-                "id": 63,
+                "id": 64,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -95021,7 +94945,7 @@
                 "children": []
               },
               {
-                "id": 64,
+                "id": 65,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -95061,7 +94985,7 @@
                 "children": []
               },
               {
-                "id": 65,
+                "id": 66,
                 "label": "text",
                 "bbox": {
                   "l": 440.77,
@@ -95101,7 +95025,7 @@
                 "children": []
               },
               {
-                "id": 66,
+                "id": 67,
                 "label": "text",
                 "bbox": {
                   "l": 161.91,
@@ -95141,7 +95065,7 @@
                 "children": []
               },
               {
-                "id": 67,
+                "id": 68,
                 "label": "text",
                 "bbox": {
                   "l": 209.51,
@@ -95181,7 +95105,7 @@
                 "children": []
               },
               {
-                "id": 68,
+                "id": 69,
                 "label": "text",
                 "bbox": {
                   "l": 246.71,
@@ -95221,7 +95145,7 @@
                 "children": []
               },
               {
-                "id": 69,
+                "id": 70,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -95261,7 +95185,7 @@
                 "children": []
               },
               {
-                "id": 70,
+                "id": 71,
                 "label": "text",
                 "bbox": {
                   "l": 329.02,
@@ -95301,7 +95225,7 @@
                 "children": []
               },
               {
-                "id": 71,
+                "id": 72,
                 "label": "text",
                 "bbox": {
                   "l": 362.09,
@@ -95341,7 +95265,7 @@
                 "children": []
               },
               {
-                "id": 72,
+                "id": 73,
                 "label": "text",
                 "bbox": {
                   "l": 394.62,
@@ -95381,7 +95305,7 @@
                 "children": []
               },
               {
-                "id": 73,
+                "id": 74,
                 "label": "text",
                 "bbox": {
                   "l": 439.53,
@@ -95421,7 +95345,7 @@
                 "children": []
               },
               {
-                "id": 74,
+                "id": 75,
                 "label": "text",
                 "bbox": {
                   "l": 245.18,
@@ -95461,7 +95385,7 @@
                 "children": []
               },
               {
-                "id": 75,
+                "id": 76,
                 "label": "text",
                 "bbox": {
                   "l": 289.02,
@@ -95501,7 +95425,7 @@
                 "children": []
               },
               {
-                "id": 76,
+                "id": 77,
                 "label": "text",
                 "bbox": {
                   "l": 326.72,
@@ -95541,7 +95465,7 @@
                 "children": []
               },
               {
-                "id": 77,
+                "id": 78,
                 "label": "text",
                 "bbox": {
                   "l": 363.68,
@@ -95581,7 +95505,7 @@
                 "children": []
               },
               {
-                "id": 78,
+                "id": 79,
                 "label": "text",
                 "bbox": {
                   "l": 396.21,
@@ -95621,7 +95545,7 @@
                 "children": []
               },
               {
-                "id": 79,
+                "id": 80,
                 "label": "text",
                 "bbox": {
                   "l": 446.65,
@@ -95679,8 +95603,8 @@
             "ched",
             "ched",
             "ched",
-            "ched",
-            "ched",
+            "ucel",
+            "ucel",
             "nl",
             "fcel",
             "fcel",
@@ -95800,57 +95724,19 @@
             },
             {
               "bbox": {
-                "l": 396.27,
-                "t": 341.63,
-                "r": 417.12,
-                "b": 350.0,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
-              "text": "mAP",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false
-            },
-            {
-              "bbox": {
                 "l": 394.93,
-                "t": 352.59,
+                "t": 341.63,
                 "r": 418.47,
                 "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "(0.75)",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false
-            },
-            {
-              "bbox": {
-                "l": 430.77,
-                "t": 341.63,
-                "r": 467.14,
-                "b": 350.0,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "Inference",
+              "text": "mAP (0.75)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -95858,18 +95744,18 @@
             {
               "bbox": {
                 "l": 427.15,
-                "t": 352.59,
+                "t": 341.63,
                 "r": 470.77,
                 "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 7,
               "end_col_offset_idx": 8,
-              "text": "time (secs)",
+              "text": "Inference time (secs)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -96555,7 +96441,7 @@
               "b": 517.35,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.959,
+            "confidence": 0.95,
             "cells": [
               {
                 "index": 98,
@@ -96614,10 +96500,10 @@
         },
         {
           "label": "text",
-          "id": 3,
+          "id": 2,
           "page_no": 0,
           "cluster": {
-            "id": 3,
+            "id": 2,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -96626,7 +96512,7 @@
               "b": 617.47,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.986,
             "cells": [
               {
                 "index": 100,
@@ -96885,10 +96771,10 @@
         },
         {
           "label": "text",
-          "id": 2,
+          "id": 3,
           "page_no": 0,
           "cluster": {
-            "id": 2,
+            "id": 3,
             "label": "text",
             "bbox": {
               "l": 134.76,
@@ -96897,7 +96783,7 @@
               "b": 665.29,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.985,
+            "confidence": 0.983,
             "cells": [
               {
                 "index": 110,
@@ -97020,7 +96906,7 @@
               "b": 102.04,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.937,
+            "confidence": 0.941,
             "cells": [
               {
                 "index": 0,
@@ -97066,7 +96952,7 @@
               "b": 102.04,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.886,
+            "confidence": 0.833,
             "cells": [
               {
                 "index": 1,

@@ -28,6 +28,7 @@ from docling.backend.noop_backend import NoOpBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.base_models import (
+    BaseFormatOption,
     ConversionStatus,
     DoclingComponentType,
     DocumentStream,
@@ -58,12 +59,8 @@ _log = logging.getLogger(__name__)
 _PIPELINE_CACHE_LOCK = threading.Lock()
 
 
-class FormatOption(BaseModel):
+class FormatOption(BaseFormatOption):
     pipeline_cls: Type[BasePipeline]
-    pipeline_options: Optional[PipelineOptions] = None
-    backend: Type[AbstractDocumentBackend]
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @model_validator(mode="after")
     def set_optional_field_default(self) -> "FormatOption":
@@ -192,7 +189,7 @@ class DocumentConverter:
         self.allowed_formats = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
-        self.format_to_options = {
+        self.format_to_options: Dict[InputFormat, FormatOption] = {
             format: (
                 _get_default_option(format=format)
                 if (custom_option := (format_options or {}).get(format)) is None

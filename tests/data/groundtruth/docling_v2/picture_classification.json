@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "picture_classification",
   "origin": {
     "mimetype": "application/pdf",
@@ -313,10 +313,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.92,
-            "t": 487.11,
-            "r": 475.66,
-            "b": 281.78,
+            "l": 134.71,
+            "t": 487.7,
+            "r": 475.67,
+            "b": 282.37,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -350,10 +350,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 218.82,
-            "t": 513.98,
-            "r": 391.96,
-            "b": 283.11,
+            "l": 218.88,
+            "t": 514.02,
+            "r": 392.18,
+            "b": 283.26,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

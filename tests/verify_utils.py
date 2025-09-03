@@ -391,6 +391,7 @@ def verify_conversion_result_v2(
     generate: bool = False,
     ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
+    verify_doctags: bool = True,
     indent: int = 2,
 ):
     PageList = TypeAdapter(List[Page])
@@ -463,10 +464,6 @@ def verify_conversion_result_v2(
                 f"Mismatch in PDF cell prediction for {input_path}"
             )
 
-        # assert verify_output(
-        #    doc_pred, doc_true
-        # ), f"Mismatch in JSON prediction for {input_path}"
-
         assert verify_docitems(doc_pred, doc_true, fuzzy=fuzzy), (
             f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
         )
@@ -475,9 +472,10 @@ def verify_conversion_result_v2(
             f"Mismatch in Markdown prediction for {input_path}"
         )
 
-        assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
-            f"Mismatch in DocTags prediction for {input_path}"
-        )
+        if verify_doctags:
+            assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
+                f"Mismatch in DocTags prediction for {input_path}"
+            )
 
 
 def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):

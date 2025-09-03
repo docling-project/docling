@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "ocr_test_rotated_90",
   "origin": {
     "mimetype": "application/pdf",
@@ -19,9 +19,6 @@
     "children": [
       {
         "$ref": "#/texts/0"
-      },
-      {
-        "$ref": "#/texts/1"
       }
     ],
     "content_layer": "body",
@@ -36,8 +33,8 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
+      "content_layer": "body",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
@@ -52,20 +49,7 @@
             0,
             86
           ]
-        }
-      ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
+        },
         {
           "page_no": 1,
           "bbox": {
@@ -76,13 +60,13 @@
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
-            0,
-            7
+            87,
+            94
           ]
         }
       ],
-      "orig": "package",
-      "text": "package"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

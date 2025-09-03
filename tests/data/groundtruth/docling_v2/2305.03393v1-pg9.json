@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "2305.03393v1-pg9",
   "origin": {
     "mimetype": "application/pdf",
@@ -315,10 +315,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 139.67,
-            "t": 454.45,
-            "r": 475.01,
-            "b": 322.51,
+            "l": 139.31,
+            "t": 455.08,
+            "r": 475.05,
+            "b": 322.12,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -414,57 +414,19 @@
           },
           {
             "bbox": {
-              "l": 396.27,
-              "t": 341.63,
-              "r": 417.12,
-              "b": 350.0,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 6,
-            "end_col_offset_idx": 7,
-            "text": "mAP",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false
-          },
-          {
-            "bbox": {
               "l": 394.93,
-              "t": 352.59,
+              "t": 341.63,
               "r": 418.47,
               "b": 360.96,
               "coord_origin": "TOPLEFT"
             },
-            "row_span": 1,
+            "row_span": 2,
             "col_span": 1,
-            "start_row_offset_idx": 1,
+            "start_row_offset_idx": 0,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 6,
             "end_col_offset_idx": 7,
-            "text": "(0.75)",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false
-          },
-          {
-            "bbox": {
-              "l": 430.77,
-              "t": 341.63,
-              "r": 467.14,
-              "b": 350.0,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 7,
-            "end_col_offset_idx": 8,
-            "text": "Inference",
+            "text": "mAP (0.75)",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -472,18 +434,18 @@
           {
             "bbox": {
               "l": 427.15,
-              "t": 352.59,
+              "t": 341.63,
               "r": 470.77,
               "b": 360.96,
               "coord_origin": "TOPLEFT"
             },
-            "row_span": 1,
+            "row_span": 2,
             "col_span": 1,
-            "start_row_offset_idx": 1,
+            "start_row_offset_idx": 0,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 7,
             "end_col_offset_idx": 8,
-            "text": "time (secs)",
+            "text": "Inference time (secs)",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -1274,38 +1236,38 @@
             },
             {
               "bbox": {
-                "l": 396.27,
+                "l": 394.93,
                 "t": 341.63,
-                "r": 417.12,
-                "b": 350.0,
+                "r": 418.47,
+                "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "mAP",
+              "text": "mAP (0.75)",
               "column_header": true,
               "row_header": false,
               "row_section": false
             },
             {
               "bbox": {
-                "l": 430.77,
+                "l": 427.15,
                 "t": 341.63,
-                "r": 467.14,
-                "b": 350.0,
+                "r": 470.77,
+                "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
               "start_col_offset_idx": 7,
               "end_col_offset_idx": 8,
-              "text": "Inference",
+              "text": "Inference time (secs)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -1429,18 +1391,18 @@
             {
               "bbox": {
                 "l": 394.93,
-                "t": 352.59,
+                "t": 341.63,
                 "r": 418.47,
                 "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "(0.75)",
+              "text": "mAP (0.75)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -1448,18 +1410,18 @@
             {
               "bbox": {
                 "l": 427.15,
-                "t": 352.59,
+                "t": 341.63,
                 "r": 470.77,
                 "b": 360.96,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 7,
               "end_col_offset_idx": 8,
-              "text": "time (secs)",
+              "text": "Inference time (secs)",
               "column_header": true,
               "row_header": false,
               "row_section": false
