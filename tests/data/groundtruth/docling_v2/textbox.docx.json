@@ -132,13 +132,10 @@
         "$ref": "#/texts/47"
       },
       {
-        "$ref": "#/texts/48"
-      },
-      {
-        "$ref": "#/texts/49"
-      },
-      {
         "$ref": "#/groups/14"
+      },
+      {
+        "$ref": "#/texts/50"
       },
       {
         "$ref": "#/texts/51"
@@ -150,13 +147,13 @@
         "$ref": "#/texts/53"
       },
       {
-        "$ref": "#/texts/54"
-      },
-      {
         "$ref": "#/groups/16"
       },
       {
-        "$ref": "#/texts/58"
+        "$ref": "#/texts/55"
+      },
+      {
+        "$ref": "#/texts/56"
       },
       {
         "$ref": "#/groups/17"
@@ -165,10 +162,16 @@
         "$ref": "#/texts/60"
       },
       {
-        "$ref": "#/texts/61"
+        "$ref": "#/groups/18"
       },
       {
         "$ref": "#/texts/62"
+      },
+      {
+        "$ref": "#/texts/63"
+      },
+      {
+        "$ref": "#/texts/64"
       }
     ],
     "content_layer": "body",
@@ -407,7 +410,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/50"
+          "$ref": "#/texts/48"
+        },
+        {
+          "$ref": "#/texts/49"
         }
       ],
       "content_layer": "body",
@@ -435,13 +441,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/55"
-        },
-        {
-          "$ref": "#/texts/56"
-        },
-        {
-          "$ref": "#/texts/57"
+          "$ref": "#/texts/54"
         }
       ],
       "content_layer": "body",
@@ -455,7 +455,27 @@
       },
       "children": [
         {
+          "$ref": "#/texts/57"
+        },
+        {
+          "$ref": "#/texts/58"
+        },
+        {
           "$ref": "#/texts/59"
+        }
+      ],
+      "content_layer": "body",
+      "name": "textbox",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/61"
         }
       ],
       "content_layer": "body",
@@ -1172,29 +1192,24 @@
     {
       "self_ref": "#/texts/48",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "Whether the test results are positive for a legally designated infectious disease.",
+      "text": "Whether the test results are positive for a legally designated infectious disease.",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/49",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/groups/14"
       },
@@ -1202,8 +1217,8 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
+      "orig": "No",
+      "text": "No",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -1211,6 +1226,18 @@
         "strikethrough": false,
         "script": "baseline"
       }
+    },
+    {
+      "self_ref": "#/texts/50",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/51",
@@ -1258,6 +1285,25 @@
     {
       "self_ref": "#/texts/54",
       "parent": {
+        "$ref": "#/groups/16"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "Yes",
+      "text": "Yes",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/55",
+      "parent": {
         "$ref": "#/body"
       },
       "children": [],
@@ -1268,9 +1314,21 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/56",
       "parent": {
-        "$ref": "#/groups/16"
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/57",
+      "parent": {
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -1287,40 +1345,9 @@
       }
     },
     {
-      "self_ref": "#/texts/56",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/57",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "The Health Bureau will carry out subsequent related epidemic prevention measures and follow-up, and will request assistance from the Centers for Disease Control if necessary.",
-      "text": "The Health Bureau will carry out subsequent related epidemic prevention measures and follow-up, and will request assistance from the Centers for Disease Control if necessary.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
       "self_ref": "#/texts/58",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/17"
       },
       "children": [],
       "content_layer": "body",
@@ -1338,8 +1365,8 @@
       "content_layer": "body",
       "label": "paragraph",
       "prov": [],
-      "orig": "No",
-      "text": "No",
+      "orig": "The Health Bureau will carry out subsequent related epidemic prevention measures and follow-up, and will request assistance from the Centers for Disease Control if necessary.",
+      "text": "The Health Bureau will carry out subsequent related epidemic prevention measures and follow-up, and will request assistance from the Centers for Disease Control if necessary.",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -1363,6 +1390,25 @@
     {
       "self_ref": "#/texts/61",
       "parent": {
+        "$ref": "#/groups/18"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "No",
+      "text": "No",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/62",
+      "parent": {
         "$ref": "#/body"
       },
       "children": [],
@@ -1373,7 +1419,19 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/62",
+      "self_ref": "#/texts/63",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/body"
       },

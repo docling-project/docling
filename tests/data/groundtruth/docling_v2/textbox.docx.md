@@ -36,6 +36,10 @@ The Health Bureau will handle **reporting and specimen collection** .
 
 **Whether the epidemic has eased.**
 
+**Whether the test results are positive for a legally designated infectious disease.**
+
+No
+
 Yes
 
 Yes
