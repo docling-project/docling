@@ -1,2 +1,2 @@
-<doctag><otsl><loc_44><loc_72><loc_348><loc_273><ched>Vertically merged<ched>Other merged column<ched>Yet another column<nl><fcel>value<fcel>Some other value<fcel>Yet another value<nl><fcel>value<fcel>Some other value<fcel>Yet another value<nl></otsl>
+<doctag><otsl><loc_43><loc_72><loc_348><loc_274><ched>Vertically merged<ched>Other merged column<ched>Yet another column<nl><fcel>value<fcel>Some other value<fcel>Yet another value<nl><fcel>value<fcel>Some other value<fcel>Yet another value<nl></otsl>
 </doctag>

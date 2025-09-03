@@ -276,51 +276,53 @@ class TableStructureModel(BasePageModel):
                                 )
                         page_input["tokens"] = tokens
 
-                    tf_output = self.tf_predictor.multi_table_predict(
-                        page_input, [tbl_box], do_matching=self.do_cell_matching
-                    )
-                    table_out = tf_output[0]
-                    table_cells = []
-                    for element in table_out["tf_responses"]:
-                        if not self.do_cell_matching:
-                            the_bbox = BoundingBox.model_validate(
-                                element["bbox"]
-                            ).scaled(1 / self.scale)
-                            text_piece = page._backend.get_text_in_rect(the_bbox)
-                            element["bbox"]["token"] = text_piece
-                        element["bbox"] = _rotate_bbox(
-                            BoundingBox.model_validate(element["bbox"]),
-                            orientation=table_orientation,
-                            im_size=scaled_page_im.size,
-                        ).model_dump()
-                        tc = TableCell.model_validate(element)
-                        if tc.bbox is not None:
-                            tc.bbox = tc.bbox.scaled(1 / self.scale)
-                        table_cells.append(tc)
+                        tf_output = self.tf_predictor.multi_table_predict(
+                            page_input, [tbl_box], do_matching=self.do_cell_matching
+                        )
+                        table_out = tf_output[0]
+                        table_cells = []
+                        for element in table_out["tf_responses"]:
+                            if not self.do_cell_matching:
+                                the_bbox = BoundingBox.model_validate(
+                                    element["bbox"]
+                                ).scaled(1 / self.scale)
+                                text_piece = page._backend.get_text_in_rect(the_bbox)
+                                element["bbox"]["token"] = text_piece
+                            element["bbox"] = _rotate_bbox(
+                                BoundingBox.model_validate(element["bbox"]),
+                                orientation=table_orientation,
+                                im_size=scaled_page_im.size,
+                            ).model_dump()
+                            tc = TableCell.model_validate(element)
+                            if tc.bbox is not None:
+                                tc.bbox = tc.bbox.scaled(1 / self.scale)
+                            table_cells.append(tc)
 
-                    assert "predict_details" in table_out
+                        assert "predict_details" in table_out
 
-                    # Retrieving cols/rows, after post processing:
-                    num_rows = table_out["predict_details"].get("num_rows", 0)
-                    num_cols = table_out["predict_details"].get("num_cols", 0)
-                    otsl_seq = (
-                        table_out["predict_details"]
-                        .get("prediction", {})
-                        .get("rs_seq", [])
-                    )
+                        # Retrieving cols/rows, after post processing:
+                        num_rows = table_out["predict_details"].get("num_rows", 0)
+                        num_cols = table_out["predict_details"].get("num_cols", 0)
+                        otsl_seq = (
+                            table_out["predict_details"]
+                            .get("prediction", {})
+                            .get("rs_seq", [])
+                        )
 
-                    tbl = Table(
-                        otsl_seq=otsl_seq,
-                        table_cells=table_cells,
-                        num_rows=num_rows,
-                        num_cols=num_cols,
-                        id=table_cluster.id,
-                        page_no=page.page_no,
-                        cluster=table_cluster,
-                        label=table_cluster.label,
-                    )
+                        tbl = Table(
+                            otsl_seq=otsl_seq,
+                            table_cells=table_cells,
+                            num_rows=num_rows,
+                            num_cols=num_cols,
+                            id=table_cluster.id,
+                            page_no=page.page_no,
+                            cluster=table_cluster,
+                            label=table_cluster.label,
+                        )
 
-                    page.predictions.tablestructure.table_map[table_cluster.id] = tbl
+                        page.predictions.tablestructure.table_map[table_cluster.id] = (
+                            tbl
+                        )
 
                     # For debugging purposes:
                     if settings.debug.visualize_tables:

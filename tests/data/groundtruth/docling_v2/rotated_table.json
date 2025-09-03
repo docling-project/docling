@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "rotated_table",
   "origin": {
     "mimetype": "application/pdf",
@@ -27,7 +27,10 @@
         "$ref": "#/pictures/0"
       },
       {
-        "$ref": "#/texts/16"
+        "$ref": "#/tables/0"
+      },
+      {
+        "$ref": "#/texts/14"
       }
     ],
     "content_layer": "body",
@@ -98,6 +101,33 @@
       },
       "children": [],
       "content_layer": "body",
+      "label": "caption",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 220.96,
+            "t": 418.76,
+            "r": 233.49,
+            "b": 256.74,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            37
+          ]
+        }
+      ],
+      "orig": "Table 1: This is a table rotated 90 \u00b0",
+      "text": "Table 1: This is a table rotated 90 \u00b0"
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/pictures/0"
+      },
+      "children": [],
+      "content_layer": "body",
       "label": "text",
       "prov": [
         {
@@ -119,7 +149,7 @@
       "text": "Column 1"
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -146,7 +176,7 @@
       "text": "Column 2"
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -173,7 +203,7 @@
       "text": "Column 3"
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -200,7 +230,7 @@
       "text": "There"
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -227,7 +257,7 @@
       "text": "should"
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -254,7 +284,7 @@
       "text": "be"
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -281,7 +311,7 @@
       "text": "something"
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -308,7 +338,7 @@
       "text": "written"
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -335,7 +365,7 @@
       "text": "here"
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -362,7 +392,7 @@
       "text": "But also here"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/pictures/0"
       },
@@ -389,88 +419,7 @@
       "text": "And here"
     },
     {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/pictures/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 223.46,
-            "t": 296.86,
-            "r": 232.2,
-            "b": 256.74,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            8
-          ]
-        }
-      ],
-      "orig": "Table 1:",
-      "text": "Table 1:"
-    },
-    {
       "self_ref": "#/texts/14",
-      "parent": {
-        "$ref": "#/pictures/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 223.49,
-            "t": 412.12,
-            "r": 232.19,
-            "b": 301.29,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            26
-          ]
-        }
-      ],
-      "orig": "This is a table rotated 90",
-      "text": "This is a table rotated 90"
-    },
-    {
-      "self_ref": "#/texts/15",
-      "parent": {
-        "$ref": "#/pictures/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 220.96,
-            "t": 418.76,
-            "r": 233.49,
-            "b": 415.44,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "\u00b0",
-      "text": "\u00b0"
-    },
-    {
-      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/body"
       },
@@ -539,12 +488,6 @@
         },
         {
           "$ref": "#/texts/13"
-        },
-        {
-          "$ref": "#/texts/14"
-        },
-        {
-          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
@@ -553,10 +496,45 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 147.32,
+            "l": 147.8,
             "t": 484.66,
-            "r": 233.56,
-            "b": 191.34,
+            "r": 224.59,
+            "b": 192.04,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "captions": [
+        {
+          "$ref": "#/texts/2"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    }
+  ],
+  "tables": [
+    {
+      "self_ref": "#/tables/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 147.8,
+            "t": 484.66,
+            "r": 224.59,
+            "b": 192.04,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -568,10 +546,249 @@
       "captions": [],
       "references": [],
       "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "bbox": {
+              "l": 156.65,
+              "t": 551.15,
+              "r": 165.36,
+              "b": 593.76,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Column 1",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 156.65,
+              "t": 454.15,
+              "r": 165.36,
+              "b": 496.77,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Column 2",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 156.65,
+              "t": 357.16,
+              "r": 165.36,
+              "b": 399.77,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Column 3",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 173.61,
+              "t": 508.72,
+              "r": 206.22,
+              "b": 593.76,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "There should be something written here",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 173.61,
+              "t": 438.7,
+              "r": 182.31,
+              "b": 496.77,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "But also here",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 173.61,
+              "t": 359.62,
+              "r": 182.31,
+              "b": 399.77,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "And here",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          }
+        ],
+        "num_rows": 2,
+        "num_cols": 3,
+        "grid": [
+          [
+            {
+              "bbox": {
+                "l": 156.65,
+                "t": 551.15,
+                "r": 165.36,
+                "b": 593.76,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Column 1",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 156.65,
+                "t": 454.15,
+                "r": 165.36,
+                "b": 496.77,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Column 2",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 156.65,
+                "t": 357.16,
+                "r": 165.36,
+                "b": 399.77,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Column 3",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            }
+          ],
+          [
+            {
+              "bbox": {
+                "l": 173.61,
+                "t": 508.72,
+                "r": 206.22,
+                "b": 593.76,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "There should be something written here",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 173.61,
+                "t": 438.7,
+                "r": 182.31,
+                "b": 496.77,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "But also here",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 173.61,
+                "t": 359.62,
+                "r": 182.31,
+                "b": 399.77,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "And here",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            }
+          ]
+        ]
+      },
       "annotations": []
     }
   ],
-  "tables": [],
   "key_value_items": [],
   "form_items": [],
   "pages": {
