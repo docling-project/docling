@@ -45,10 +45,15 @@ class DoclingParseV4PageBackend(PdfPageBackend):
         if self._dpage is not None:
             return
 
+        # we will not extract the chars or lines explicitely, not necessary.
         seg_page = self._dp_doc.get_page(
             self._page_no + 1,
+            keep_chars=False,
+            keep_lines=False,
+            keep_bitmaps = True,
             create_words=self._create_words,
             create_textlines=self._create_textlines,
+            do_sanitization = False,
         )
 
         # In Docling, all TextCell instances are expected with top-left origin.
