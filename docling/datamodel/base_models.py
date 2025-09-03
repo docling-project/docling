@@ -200,12 +200,59 @@ class ContainerElement(
     pass
 
 
+# Create a type alias for score values
+ScoreValue = float
+
+
+class TableConfidenceScores(BaseModel):
+    """Holds the individual confidence scores for a single table."""
+    structure_score: ScoreValue = np.nan
+    cell_text_score: ScoreValue = np.nan
+    completeness_score: ScoreValue = np.nan
+    layout_score: ScoreValue = np.nan
+
+    @computed_field
+    @property
+    def total_table_score(self) -> ScoreValue:
+        """
+        Calculates the weighted average of the individual confidence scores to produce a single total score.
+
+        The weights are:
+        - **Structure Score**: `0.3`
+        - **Cell Text Score**: `0.3`
+        - **Completeness Score**: `0.2`
+        - **Layout Score**: `0.2
+
+        These weights are designed to give a balanced, all-purpose score. Data integrity metrics
+        (**structure** and **text**) are weighted more heavily, as they are often the most critical
+        for data extraction.
+
+        Returns:
+            ScoreValue: Weighted average score for the table.
+        """
+        scores = [self.structure_score, self.cell_text_score, self.completeness_score, self.layout_score]
+
+        weights = [0.3, 0.3, 0.2, 0.2]
+        valid_scores_and_weights = [(s, w) for s, w in zip(scores, weights) if not math.isnan(s)]
+
+        if not valid_scores_and_weights:
+            return np.nan
+
+        valid_scores = [s for s, w in valid_scores_and_weights]
+        valid_weights = [w for s, w in valid_scores_and_weights]
+
+        normalized_weights = [w / sum(valid_weights) for w in valid_weights]
+        
+        return ScoreValue(np.average(valid_scores, weights=normalized_weights))
+
+
 class Table(BasePageElement):
     otsl_seq: List[str]
     num_rows: int = 0
     num_cols: int = 0
     table_cells: List[TableCell]
-
+    detailed_scores: Optional[TableConfidenceScores] = None
+    
 
 class TableStructurePrediction(BaseModel):
     table_map: Dict[int, Table] = {}
@@ -242,12 +289,99 @@ class EquationPrediction(BaseModel):
     equation_map: Dict[int, TextElement] = {}
 
 
+class QualityGrade(str, Enum):
+    POOR = "poor"
+    FAIR = "fair"
+    GOOD = "good"
+    EXCELLENT = "excellent"
+    UNSPECIFIED = "unspecified"
+
+
+class PageConfidenceScores(BaseModel):
+    parse_score: ScoreValue = np.nan
+    layout_score: ScoreValue = np.nan
+    ocr_score: ScoreValue = np.nan
+    tables: Dict[int, TableConfidenceScores] = Field(default_factory=dict)
+    
+    @computed_field  # type: ignore
+    @property
+    def table_score(self) -> ScoreValue:
+        if not self.tables:
+            return np.nan
+        return ScoreValue(np.nanmean([t.total_table_score for t in self.tables.values()]))
+    
+    def _score_to_grade(self, score: ScoreValue) -> QualityGrade:
+        if score < 0.5:
+            return QualityGrade.POOR
+        elif score < 0.8:
+            return QualityGrade.FAIR
+        elif score < 0.9:
+            return QualityGrade.GOOD
+        elif score >= 0.9:
+            return QualityGrade.EXCELLENT
+
+        return QualityGrade.UNSPECIFIED
+
+    @computed_field  # type: ignore
+    @property
+    def mean_grade(self) -> QualityGrade:
+        return self._score_to_grade(self.mean_score)
+
+    @computed_field  # type: ignore
+    @property
+    def low_grade(self) -> QualityGrade:
+        return self._score_to_grade(self.low_score)
+
+    @computed_field  # type: ignore
+    @property
+    def mean_score(self) -> ScoreValue:
+        return ScoreValue(
+            np.nanmean(
+                [
+                    self.ocr_score,
+                    self.table_score,
+                    self.layout_score,
+                    self.parse_score,
+                ]
+            )
+        )
+
+    @computed_field  # type: ignore
+    @property
+    def low_score(self) -> ScoreValue:
+        return ScoreValue(
+            np.nanquantile(
+                [
+                    self.ocr_score,
+                    self.table_score,
+                    self.layout_score,
+                    self.parse_score,
+                ],
+                q=0.05,
+            )
+        )
+
+class ConfidenceReport(BaseModel):
+    pages: Dict[int, PageConfidenceScores] = Field(
+        default_factory=lambda: defaultdict(PageConfidenceScores)
+    )
+    # The document-level scores are no longer properties, they are fields
+    # that the pipeline will set from the aggregated page scores.
+    mean_score: ScoreValue = np.nan
+    low_score: ScoreValue = np.nan
+    ocr_score: ScoreValue = np.nan
+    table_score: ScoreValue = np.nan
+    layout_score: ScoreValue = np.nan
+    parse_score: ScoreValue = np.nan
+
+
 class PagePredictions(BaseModel):
     layout: Optional[LayoutPrediction] = None
     tablestructure: Optional[TableStructurePrediction] = None
     figures_classification: Optional[FigureClassificationPrediction] = None
     equations_prediction: Optional[EquationPrediction] = None
     vlm_response: Optional[VlmPrediction] = None
+    confidence_scores: PageConfidenceScores = Field(default_factory=PageConfidenceScores)
 
 
 PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
@@ -273,7 +407,7 @@ class Page(BaseModel):
     # page_hash: Optional[str] = None
     size: Optional[Size] = None
     parsed_page: Optional[SegmentedPdfPage] = None
-    predictions: PagePredictions = PagePredictions()
+    predictions: PagePredictions = Field(default_factory=PagePredictions)
     assembled: Optional[AssembledUnit] = None
 
     _backend: Optional["PdfPageBackend"] = (
@@ -357,97 +491,3 @@ class OpenAiApiResponse(BaseModel):
     choices: List[OpenAiResponseChoice]
     created: int
     usage: OpenAiResponseUsage
-
-
-# Create a type alias for score values
-ScoreValue = float
-
-
-class QualityGrade(str, Enum):
-    POOR = "poor"
-    FAIR = "fair"
-    GOOD = "good"
-    EXCELLENT = "excellent"
-    UNSPECIFIED = "unspecified"
-
-
-class PageConfidenceScores(BaseModel):
-    parse_score: ScoreValue = np.nan
-    layout_score: ScoreValue = np.nan
-    table_score: ScoreValue = np.nan
-    ocr_score: ScoreValue = np.nan
-
-    def _score_to_grade(self, score: ScoreValue) -> QualityGrade:
-        if score < 0.5:
-            return QualityGrade.POOR
-        elif score < 0.8:
-            return QualityGrade.FAIR
-        elif score < 0.9:
-            return QualityGrade.GOOD
-        elif score >= 0.9:
-            return QualityGrade.EXCELLENT
-
-        return QualityGrade.UNSPECIFIED
-
-    @computed_field  # type: ignore
-    @property
-    def mean_grade(self) -> QualityGrade:
-        return self._score_to_grade(self.mean_score)
-
-    @computed_field  # type: ignore
-    @property
-    def low_grade(self) -> QualityGrade:
-        return self._score_to_grade(self.low_score)
-
-    @computed_field  # type: ignore
-    @property
-    def mean_score(self) -> ScoreValue:
-        return ScoreValue(
-            np.nanmean(
-                [
-                    self.ocr_score,
-                    self.table_score,
-                    self.layout_score,
-                    self.parse_score,
-                ]
-            )
-        )
-
-    @computed_field  # type: ignore
-    @property
-    def low_score(self) -> ScoreValue:
-        return ScoreValue(
-            np.nanquantile(
-                [
-                    self.ocr_score,
-                    self.table_score,
-                    self.layout_score,
-                    self.parse_score,
-                ],
-                q=0.05,
-            )
-        )
-
-
-class ConfidenceReport(PageConfidenceScores):
-    pages: Dict[int, PageConfidenceScores] = Field(
-        default_factory=lambda: defaultdict(PageConfidenceScores)
-    )
-
-    @computed_field  # type: ignore
-    @property
-    def mean_score(self) -> ScoreValue:
-        return ScoreValue(
-            np.nanmean(
-                [c.mean_score for c in self.pages.values()],
-            )
-        )
-
-    @computed_field  # type: ignore
-    @property
-    def low_score(self) -> ScoreValue:
-        return ScoreValue(
-            np.nanmean(
-                [c.low_score for c in self.pages.values()],
-            )
-        )
