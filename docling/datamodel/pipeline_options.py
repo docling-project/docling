@@ -283,10 +283,10 @@ class LayoutOptions(BaseModel):
     keep_empty_clusters: bool = (
         False  # Whether to keep clusters that contain no text cells
     )
+    model_spec: LayoutModelConfig = DOCLING_LAYOUT_HERON
     skip_cell_assignment: bool = (
         False  # Skip cell-to-cluster assignment for VLM-only processing
     )
-    model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 
 class AsrPipelineOptions(PipelineOptions):

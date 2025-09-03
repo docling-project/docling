@@ -1,3 +1,13 @@
+## [v2.50.0](https://github.com/docling-project/docling/releases/tag/v2.50.0) - 2025-09-03
+
+### Feature
+
+* Heron layout model as new default ([#1971](https://github.com/docling-project/docling/issues/1971)) ([`e38aa0f`](https://github.com/docling-project/docling/commit/e38aa0f7f2e8a7881c0f97131bf776556778f9a2))
+
+### Fix
+
+* **html:** Access to variable not yet declared ([#2171](https://github.com/docling-project/docling/issues/2171)) ([`293e81b`](https://github.com/docling-project/docling/commit/293e81bf9d341edd1d35f3b66faf726b82ad4885))
+
 ## [v2.49.0](https://github.com/docling-project/docling/releases/tag/v2.49.0) - 2025-09-01
 
 ### Feature

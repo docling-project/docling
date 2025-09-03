@@ -24,7 +24,16 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
       },
       {
         "$ref": "#/texts/6"
@@ -147,7 +156,7 @@
         "$ref": "#/texts/110"
       },
       {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       {
         "$ref": "#/texts/116"
@@ -168,13 +177,13 @@
         "$ref": "#/texts/173"
       },
       {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/1"
       },
       {
-        "$ref": "#/texts/176"
+        "$ref": "#/texts/177"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       {
         "$ref": "#/texts/181"
@@ -201,10 +210,10 @@
         "$ref": "#/texts/188"
       },
       {
-        "$ref": "#/texts/189"
+        "$ref": "#/pictures/3"
       },
       {
-        "$ref": "#/pictures/3"
+        "$ref": "#/texts/253"
       },
       {
         "$ref": "#/texts/254"
@@ -222,10 +231,10 @@
         "$ref": "#/texts/258"
       },
       {
-        "$ref": "#/texts/259"
+        "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/tables/0"
+        "$ref": "#/texts/260"
       },
       {
         "$ref": "#/texts/261"
@@ -237,22 +246,22 @@
         "$ref": "#/texts/263"
       },
       {
-        "$ref": "#/texts/264"
+        "$ref": "#/tables/1"
       },
       {
         "$ref": "#/texts/265"
       },
       {
-        "$ref": "#/tables/1"
-      },
-      {
-        "$ref": "#/texts/267"
-      },
-      {
-        "$ref": "#/texts/268"
+        "$ref": "#/texts/266"
       },
       {
         "$ref": "#/pictures/4"
+      },
+      {
+        "$ref": "#/texts/354"
+      },
+      {
+        "$ref": "#/texts/355"
       },
       {
         "$ref": "#/texts/356"
@@ -261,13 +270,13 @@
         "$ref": "#/texts/357"
       },
       {
-        "$ref": "#/texts/358"
-      },
-      {
-        "$ref": "#/texts/359"
-      },
-      {
         "$ref": "#/pictures/5"
+      },
+      {
+        "$ref": "#/texts/370"
+      },
+      {
+        "$ref": "#/texts/371"
       },
       {
         "$ref": "#/texts/372"
@@ -285,31 +294,22 @@
         "$ref": "#/texts/376"
       },
       {
-        "$ref": "#/texts/377"
+        "$ref": "#/groups/3"
       },
       {
-        "$ref": "#/texts/378"
+        "$ref": "#/texts/381"
+      },
+      {
+        "$ref": "#/texts/382"
+      },
+      {
+        "$ref": "#/groups/4"
+      },
+      {
+        "$ref": "#/texts/396"
       },
       {
         "$ref": "#/groups/5"
-      },
-      {
-        "$ref": "#/texts/383"
-      },
-      {
-        "$ref": "#/texts/384"
-      },
-      {
-        "$ref": "#/groups/6"
-      },
-      {
-        "$ref": "#/texts/398"
-      },
-      {
-        "$ref": "#/texts/399"
-      },
-      {
-        "$ref": "#/groups/7"
       }
     ],
     "content_layer": "body",
@@ -319,29 +319,6 @@
   "groups": [
     {
       "self_ref": "#/groups/0",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/2"
-        },
-        {
-          "$ref": "#/texts/3"
-        },
-        {
-          "$ref": "#/texts/4"
-        },
-        {
-          "$ref": "#/texts/5"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "key_value_area"
-    },
-    {
-      "self_ref": "#/groups/1",
       "parent": {
         "$ref": "#/body"
       },
@@ -367,21 +344,7 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/pictures/2"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/158"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/3",
+      "self_ref": "#/groups/1",
       "parent": {
         "$ref": "#/body"
       },
@@ -391,6 +354,9 @@
         },
         {
           "$ref": "#/texts/175"
+        },
+        {
+          "$ref": "#/texts/176"
         }
       ],
       "content_layer": "body",
@@ -398,14 +364,11 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/4",
+      "self_ref": "#/groups/2",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/177"
-        },
         {
           "$ref": "#/texts/178"
         },
@@ -421,22 +384,22 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/5",
+      "self_ref": "#/groups/3",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
         {
+          "$ref": "#/texts/377"
+        },
+        {
+          "$ref": "#/texts/378"
+        },
+        {
           "$ref": "#/texts/379"
         },
         {
           "$ref": "#/texts/380"
-        },
-        {
-          "$ref": "#/texts/381"
-        },
-        {
-          "$ref": "#/texts/382"
         }
       ],
       "content_layer": "body",
@@ -444,11 +407,17 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/6",
+      "self_ref": "#/groups/4",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/383"
+        },
+        {
+          "$ref": "#/texts/384"
+        },
         {
           "$ref": "#/texts/385"
         },
@@ -481,12 +450,6 @@
         },
         {
           "$ref": "#/texts/395"
-        },
-        {
-          "$ref": "#/texts/396"
-        },
-        {
-          "$ref": "#/texts/397"
         }
       ],
       "content_layer": "body",
@@ -494,11 +457,20 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/7",
+      "self_ref": "#/groups/5",
       "parent": {
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/397"
+        },
+        {
+          "$ref": "#/texts/398"
+        },
+        {
+          "$ref": "#/texts/399"
+        },
         {
           "$ref": "#/texts/400"
         },
@@ -507,15 +479,6 @@
         },
         {
           "$ref": "#/texts/402"
-        },
-        {
-          "$ref": "#/texts/403"
-        },
-        {
-          "$ref": "#/texts/404"
-        },
-        {
-          "$ref": "#/texts/405"
         }
       ],
       "content_layer": "body",
@@ -582,7 +545,7 @@
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -599,17 +562,17 @@
           },
           "charspan": [
             0,
-            208
+            193
           ]
         }
       ],
-      "orig": "Maksym Lysak [0000 - 0002 - 3723 - 6960] , Ahmed Nassar [0000 - 0002 - 9468 - 0822] , Nikolaos Livathinos [0000 - 0001 - 8513 - 3491] , Christoph Auer [0000 - 0001 - 5761 - 0422] , [0000 - 0002 - 8088 - 0823]",
-      "text": "Maksym Lysak [0000 - 0002 - 3723 - 6960] , Ahmed Nassar [0000 - 0002 - 9468 - 0822] , Nikolaos Livathinos [0000 - 0001 - 8513 - 3491] , Christoph Auer [0000 - 0001 - 5761 - 0422] , [0000 - 0002 - 8088 - 0823]"
+      "orig": "Maksym Lysak [0000 -0002 -3723 -6960] , Ahmed Nassar [0000 -0002 -9468 -0822] , Nikolaos Livathinos [0000 -0001 -8513 -3491] , Christoph Auer [0000 -0001 -5761 -0422] , [0000 -0002 -8088 -0823]",
+      "text": "Maksym Lysak [0000 -0002 -3723 -6960] , Ahmed Nassar [0000 -0002 -9468 -0822] , Nikolaos Livathinos [0000 -0001 -8513 -3491] , Christoph Auer [0000 -0001 -5761 -0422] , [0000 -0002 -8088 -0823]"
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -636,7 +599,7 @@
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -663,7 +626,7 @@
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -3530,7 +3493,7 @@
     {
       "self_ref": "#/texts/111",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -3559,7 +3522,7 @@
     {
       "self_ref": "#/texts/112",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -3588,7 +3551,7 @@
     {
       "self_ref": "#/texts/113",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -3617,7 +3580,7 @@
     {
       "self_ref": "#/texts/114",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -3646,7 +3609,7 @@
     {
       "self_ref": "#/texts/115",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -4809,11 +4772,11 @@
     {
       "self_ref": "#/texts/158",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/pictures/2"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 7,
@@ -4831,9 +4794,7 @@
         }
       ],
       "orig": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\"",
-      "text": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\"",
-      "enumerated": false,
-      "marker": ""
+      "text": "4 - 2d merges: \"C\", \"L\", \"U\", \"X\""
     },
     {
       "self_ref": "#/texts/159",
@@ -5244,7 +5205,7 @@
     {
       "self_ref": "#/texts/174",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -5273,7 +5234,7 @@
     {
       "self_ref": "#/texts/175",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -5302,11 +5263,11 @@
     {
       "self_ref": "#/texts/176",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "list_item",
       "prov": [
         {
           "page_no": 7,
@@ -5324,17 +5285,18 @@
         }
       ],
       "orig": "3. Cross cell rule :",
-      "text": "3. Cross cell rule :",
-      "level": 1
+      "text": "Cross cell rule :",
+      "enumerated": true,
+      "marker": "3."
     },
     {
       "self_ref": "#/texts/177",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 7,
@@ -5352,14 +5314,12 @@
         }
       ],
       "orig": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
-      "text": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell.",
-      "enumerated": false,
-      "marker": ""
+      "text": "The left neighbour of an \"X\" cell must be either another \"X\" cell or a \"U\" cell, and the upper neighbour of an \"X\" cell must be either another \"X\" cell or an \"L\" cell."
     },
     {
       "self_ref": "#/texts/178",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -5388,7 +5348,7 @@
     {
       "self_ref": "#/texts/179",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -5417,7 +5377,7 @@
     {
       "self_ref": "#/texts/180",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -5511,48 +5471,21 @@
           "bbox": {
             "l": 134.76,
             "t": 700.51,
-            "r": 139.37,
-            "b": 689.22,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            1
-          ]
-        }
-      ],
-      "orig": "8",
-      "text": "8"
-    },
-    {
-      "self_ref": "#/texts/184",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
-      "prov": [
-        {
-          "page_no": 8,
-          "bbox": {
-            "l": 167.81,
-            "t": 700.51,
             "r": 231.72,
             "b": 689.22,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            16
+            18
           ]
         }
       ],
-      "orig": "M. Lysak, et al.",
-      "text": "M. Lysak, et al."
+      "orig": "8 M. Lysak, et al.",
+      "text": "8 M. Lysak, et al."
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/body"
       },
@@ -5579,7 +5512,7 @@
       "text": "reduces significantly the column drift seen in the HTML based models (see Figure 5)."
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/body"
       },
@@ -5607,7 +5540,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/body"
       },
@@ -5634,7 +5567,7 @@
       "text": "The design of OTSL allows to validate a table structure easily on an unfinished sequence. The detection of an invalid sequence token is a clear indication of a prediction mistake, however a valid sequence by itself does not guarantee prediction correctness. Different heuristics can be used to correct token errors in an invalid sequence and thus increase the chances for accurate predictions. Such heuristics can be applied either after the prediction of each token, or at the end on the entire predicted sequence. For example a simple heuristic which can correct the predicted OTSL sequence on-the-fly is to verify if the token with the highest prediction confidence invalidates the predicted sequence, and replace it by the token with the next highest confidence until OTSL rules are satisfied."
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/body"
       },
@@ -5662,7 +5595,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/body"
       },
@@ -5689,7 +5622,7 @@
       "text": "To evaluate the impact of OTSL on prediction accuracy and inference times, we conducted a series of experiments based on the TableFormer model (Figure 4) with two objectives: Firstly we evaluate the prediction quality and performance of OTSL vs. HTML after performing Hyper Parameter Optimization (HPO) on the canonical PubTabNet data set. Secondly we pick the best hyper-parameters found in the first step and evaluate how OTSL impacts the performance of TableFormer after training on other publicly available data sets (FinTabNet, PubTables-1M [14]). The ground truth (GT) from all data sets has been converted into OTSL format for this purpose, and will be made publicly available."
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5716,7 +5649,7 @@
       "text": "Fig. 4. Architecture sketch of the TableFormer model, which is a representative for the Im2Seq approach."
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/190",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5743,7 +5676,7 @@
       "text": "1."
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/191",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5770,7 +5703,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/192",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5797,7 +5730,7 @@
       "text": "Amount"
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5824,7 +5757,7 @@
       "text": "Names"
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5851,7 +5784,7 @@
       "text": "1000"
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/195",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5878,7 +5811,7 @@
       "text": "500"
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/196",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5905,7 +5838,7 @@
       "text": "3500"
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/197",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5932,7 +5865,7 @@
       "text": "150"
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/198",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5959,7 +5892,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/199",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -5986,7 +5919,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/200",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6013,7 +5946,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/201",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6040,7 +5973,7 @@
       "text": "unit"
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/202",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6067,7 +6000,7 @@
       "text": "2."
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/203",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6094,7 +6027,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/204",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6121,7 +6054,7 @@
       "text": "3."
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/205",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6148,7 +6081,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/206",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6175,7 +6108,7 @@
       "text": "4."
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/207",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6202,7 +6135,7 @@
       "text": "Item"
     },
     {
-      "self_ref": "#/texts/209",
+      "self_ref": "#/texts/208",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6229,7 +6162,7 @@
       "text": "Extracted"
     },
     {
-      "self_ref": "#/texts/210",
+      "self_ref": "#/texts/209",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6256,7 +6189,7 @@
       "text": "Table Images"
     },
     {
-      "self_ref": "#/texts/211",
+      "self_ref": "#/texts/210",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6283,7 +6216,7 @@
       "text": "Standardized"
     },
     {
-      "self_ref": "#/texts/212",
+      "self_ref": "#/texts/211",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6310,7 +6243,7 @@
       "text": "Images"
     },
     {
-      "self_ref": "#/texts/213",
+      "self_ref": "#/texts/212",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6337,7 +6270,7 @@
       "text": "BBox"
     },
     {
-      "self_ref": "#/texts/214",
+      "self_ref": "#/texts/213",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6364,7 +6297,7 @@
       "text": "Decoder"
     },
     {
-      "self_ref": "#/texts/215",
+      "self_ref": "#/texts/214",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6391,7 +6324,7 @@
       "text": "BBoxes"
     },
     {
-      "self_ref": "#/texts/216",
+      "self_ref": "#/texts/215",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6418,7 +6351,7 @@
       "text": "BBoxes can be"
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/216",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6445,7 +6378,7 @@
       "text": "traced back to the"
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/217",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6472,7 +6405,7 @@
       "text": "original image to"
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/218",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6499,7 +6432,7 @@
       "text": "extract content"
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/219",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6526,7 +6459,7 @@
       "text": "Structure Tags sequence"
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/220",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6553,7 +6486,7 @@
       "text": "provide full description of"
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/221",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6580,7 +6513,7 @@
       "text": "the table structure"
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/222",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6607,7 +6540,7 @@
       "text": "Structure Tags"
     },
     {
-      "self_ref": "#/texts/224",
+      "self_ref": "#/texts/223",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6634,7 +6567,7 @@
       "text": "in OTSL format"
     },
     {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/224",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6661,7 +6594,7 @@
       "text": "BBoxes in sync"
     },
     {
-      "self_ref": "#/texts/226",
+      "self_ref": "#/texts/225",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6688,7 +6621,7 @@
       "text": "with tag sequence"
     },
     {
-      "self_ref": "#/texts/227",
+      "self_ref": "#/texts/226",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6715,7 +6648,7 @@
       "text": "Encoder"
     },
     {
-      "self_ref": "#/texts/228",
+      "self_ref": "#/texts/227",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6742,7 +6675,7 @@
       "text": "Structure"
     },
     {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/228",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6769,7 +6702,7 @@
       "text": "Decoder"
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6796,7 +6729,7 @@
       "text": "[x1, y2, x2, y2]"
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6823,7 +6756,7 @@
       "text": "[x1', y2', x2', y2']"
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6850,7 +6783,7 @@
       "text": "[x1'', y2'', x2'', y2'']"
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/232",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6877,7 +6810,7 @@
       "text": "..."
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6904,7 +6837,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/235",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6931,7 +6864,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/236",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6958,7 +6891,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/237",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -6985,7 +6918,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/238",
+      "self_ref": "#/texts/237",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7012,7 +6945,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/239",
+      "self_ref": "#/texts/238",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7039,7 +6972,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/240",
+      "self_ref": "#/texts/239",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7066,7 +6999,7 @@
       "text": "C C"
     },
     {
-      "self_ref": "#/texts/241",
+      "self_ref": "#/texts/240",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7093,7 +7026,7 @@
       "text": "C C C"
     },
     {
-      "self_ref": "#/texts/242",
+      "self_ref": "#/texts/241",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7120,7 +7053,7 @@
       "text": "C C C"
     },
     {
-      "self_ref": "#/texts/243",
+      "self_ref": "#/texts/242",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7147,7 +7080,7 @@
       "text": "C C C"
     },
     {
-      "self_ref": "#/texts/244",
+      "self_ref": "#/texts/243",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7174,7 +7107,7 @@
       "text": "C C C"
     },
     {
-      "self_ref": "#/texts/245",
+      "self_ref": "#/texts/244",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7201,7 +7134,7 @@
       "text": "NL"
     },
     {
-      "self_ref": "#/texts/246",
+      "self_ref": "#/texts/245",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7228,7 +7161,7 @@
       "text": "NL"
     },
     {
-      "self_ref": "#/texts/247",
+      "self_ref": "#/texts/246",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7255,7 +7188,7 @@
       "text": "NL"
     },
     {
-      "self_ref": "#/texts/248",
+      "self_ref": "#/texts/247",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7282,7 +7215,7 @@
       "text": "NL"
     },
     {
-      "self_ref": "#/texts/249",
+      "self_ref": "#/texts/248",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7309,7 +7242,7 @@
       "text": "NL"
     },
     {
-      "self_ref": "#/texts/250",
+      "self_ref": "#/texts/249",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7336,7 +7269,7 @@
       "text": "L"
     },
     {
-      "self_ref": "#/texts/251",
+      "self_ref": "#/texts/250",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7363,7 +7296,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/252",
+      "self_ref": "#/texts/251",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7390,7 +7323,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/253",
+      "self_ref": "#/texts/252",
       "parent": {
         "$ref": "#/pictures/3"
       },
@@ -7417,7 +7350,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/254",
+      "self_ref": "#/texts/253",
       "parent": {
         "$ref": "#/body"
       },
@@ -7444,7 +7377,7 @@
       "text": "We rely on standard metrics such as Tree Edit Distance score (TEDs) for table structure prediction, and Mean Average Precision (mAP) with 0.75 Intersection Over Union (IOU) threshold for the bounding-box predictions of table cells. The predicted OTSL structures were converted back to HTML format in"
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/254",
       "parent": {
         "$ref": "#/body"
       },
@@ -7471,7 +7404,7 @@
       "text": "Optimized Table Tokenization for Table Structure Recognition"
     },
     {
-      "self_ref": "#/texts/256",
+      "self_ref": "#/texts/255",
       "parent": {
         "$ref": "#/body"
       },
@@ -7498,7 +7431,7 @@
       "text": "9"
     },
     {
-      "self_ref": "#/texts/257",
+      "self_ref": "#/texts/256",
       "parent": {
         "$ref": "#/body"
       },
@@ -7525,7 +7458,7 @@
       "text": "order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz."
     },
     {
-      "self_ref": "#/texts/258",
+      "self_ref": "#/texts/257",
       "parent": {
         "$ref": "#/body"
       },
@@ -7553,7 +7486,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/258",
       "parent": {
         "$ref": "#/body"
       },
@@ -7580,7 +7513,7 @@
       "text": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. 1. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a 2x speed up in the inference runtime over HTML."
     },
     {
-      "self_ref": "#/texts/260",
+      "self_ref": "#/texts/259",
       "parent": {
         "$ref": "#/tables/0"
       },
@@ -7607,7 +7540,7 @@
       "text": "Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart."
     },
     {
-      "self_ref": "#/texts/261",
+      "self_ref": "#/texts/260",
       "parent": {
         "$ref": "#/body"
       },
@@ -7635,7 +7568,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/262",
+      "self_ref": "#/texts/261",
       "parent": {
         "$ref": "#/body"
       },
@@ -7662,7 +7595,7 @@
       "text": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables."
     },
     {
-      "self_ref": "#/texts/263",
+      "self_ref": "#/texts/262",
       "parent": {
         "$ref": "#/body"
       },
@@ -7689,7 +7622,7 @@
       "text": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation."
     },
     {
-      "self_ref": "#/texts/264",
+      "self_ref": "#/texts/263",
       "parent": {
         "$ref": "#/body"
       },
@@ -7702,48 +7635,21 @@
           "bbox": {
             "l": 134.76,
             "t": 700.51,
-            "r": 143.98,
-            "b": 689.22,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "10",
-      "text": "10"
-    },
-    {
-      "self_ref": "#/texts/265",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
-      "prov": [
-        {
-          "page_no": 10,
-          "bbox": {
-            "l": 167.82,
-            "t": 700.51,
             "r": 231.72,
             "b": 689.22,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            16
+            19
           ]
         }
       ],
-      "orig": "M. Lysak, et al.",
-      "text": "M. Lysak, et al."
+      "orig": "10 M. Lysak, et al.",
+      "text": "10 M. Lysak, et al."
     },
     {
-      "self_ref": "#/texts/266",
+      "self_ref": "#/texts/264",
       "parent": {
         "$ref": "#/tables/1"
       },
@@ -7770,7 +7676,7 @@
       "text": "Table 2. TSR and cell detection results compared between OTSL and HTML on the PubTabNet [22], FinTabNet [21] and PubTables-1M [14] data sets using TableFormer [9] (with enc=6, dec=6, heads=8)."
     },
     {
-      "self_ref": "#/texts/267",
+      "self_ref": "#/texts/265",
       "parent": {
         "$ref": "#/body"
       },
@@ -7798,7 +7704,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/268",
+      "self_ref": "#/texts/266",
       "parent": {
         "$ref": "#/body"
       },
@@ -7825,7 +7731,7 @@
       "text": "To illustrate the qualitative differences between OTSL and HTML, Figure 5 demonstrates less overlap and more accurate bounding boxes with OTSL. In Figure 6, OTSL proves to be more effective in handling tables with longer token sequences, resulting in even more precise structure prediction and bounding boxes."
     },
     {
-      "self_ref": "#/texts/269",
+      "self_ref": "#/texts/267",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7852,7 +7758,7 @@
       "text": "Fig. 5. The OTSL model produces more accurate bounding boxes with less overlap (E) than the HTML model (D), when predicting the structure of a sparse table (A), at twice the inference speed because of shorter sequence length (B),(C). \"PMC2807444_006_00.png\" PubTabNet. \u03bc"
     },
     {
-      "self_ref": "#/texts/270",
+      "self_ref": "#/texts/268",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7879,7 +7785,7 @@
       "text": "<table>"
     },
     {
-      "self_ref": "#/texts/271",
+      "self_ref": "#/texts/269",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7906,7 +7812,7 @@
       "text": "<tr><td></td><td colspan=\"4\"></td><td colspan=\"6\"></td><td colspan=\"3\"></td></tr>"
     },
     {
-      "self_ref": "#/texts/272",
+      "self_ref": "#/texts/270",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7933,7 +7839,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/273",
+      "self_ref": "#/texts/271",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7960,7 +7866,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/274",
+      "self_ref": "#/texts/272",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -7987,7 +7893,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/275",
+      "self_ref": "#/texts/273",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8014,7 +7920,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/276",
+      "self_ref": "#/texts/274",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8041,7 +7947,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/277",
+      "self_ref": "#/texts/275",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8068,7 +7974,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/278",
+      "self_ref": "#/texts/276",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8095,7 +8001,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/279",
+      "self_ref": "#/texts/277",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8122,7 +8028,7 @@
       "text": "<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>"
     },
     {
-      "self_ref": "#/texts/280",
+      "self_ref": "#/texts/278",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8149,7 +8055,7 @@
       "text": "</table>"
     },
     {
-      "self_ref": "#/texts/281",
+      "self_ref": "#/texts/279",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8176,7 +8082,7 @@
       "text": "C C L L L C L L L L L C L L NL"
     },
     {
-      "self_ref": "#/texts/282",
+      "self_ref": "#/texts/280",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8203,7 +8109,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/283",
+      "self_ref": "#/texts/281",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8230,7 +8136,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/284",
+      "self_ref": "#/texts/282",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8257,7 +8163,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/285",
+      "self_ref": "#/texts/283",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8284,7 +8190,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/286",
+      "self_ref": "#/texts/284",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8311,7 +8217,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/287",
+      "self_ref": "#/texts/285",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8338,7 +8244,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/288",
+      "self_ref": "#/texts/286",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8365,7 +8271,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/289",
+      "self_ref": "#/texts/287",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8392,7 +8298,7 @@
       "text": "C C C C C C C C C C C C C C NL"
     },
     {
-      "self_ref": "#/texts/290",
+      "self_ref": "#/texts/288",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8419,7 +8325,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/291",
+      "self_ref": "#/texts/289",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8446,7 +8352,7 @@
       "text": "# tokens:"
     },
     {
-      "self_ref": "#/texts/292",
+      "self_ref": "#/texts/290",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8473,7 +8379,7 @@
       "text": "258"
     },
     {
-      "self_ref": "#/texts/293",
+      "self_ref": "#/texts/291",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8500,7 +8406,7 @@
       "text": "OTSL"
     },
     {
-      "self_ref": "#/texts/294",
+      "self_ref": "#/texts/292",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8527,7 +8433,7 @@
       "text": "# tokens:"
     },
     {
-      "self_ref": "#/texts/295",
+      "self_ref": "#/texts/293",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8554,7 +8460,7 @@
       "text": "135"
     },
     {
-      "self_ref": "#/texts/296",
+      "self_ref": "#/texts/294",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8581,7 +8487,7 @@
       "text": "B"
     },
     {
-      "self_ref": "#/texts/297",
+      "self_ref": "#/texts/295",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8608,7 +8514,7 @@
       "text": "A"
     },
     {
-      "self_ref": "#/texts/298",
+      "self_ref": "#/texts/296",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8635,7 +8541,7 @@
       "text": "D"
     },
     {
-      "self_ref": "#/texts/299",
+      "self_ref": "#/texts/297",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8662,7 +8568,7 @@
       "text": "E"
     },
     {
-      "self_ref": "#/texts/300",
+      "self_ref": "#/texts/298",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8689,7 +8595,7 @@
       "text": "C"
     },
     {
-      "self_ref": "#/texts/301",
+      "self_ref": "#/texts/299",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8716,7 +8622,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/302",
+      "self_ref": "#/texts/300",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8743,7 +8649,7 @@
       "text": "OTSL"
     },
     {
-      "self_ref": "#/texts/303",
+      "self_ref": "#/texts/301",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8770,7 +8676,7 @@
       "text": "HTML model shows"
     },
     {
-      "self_ref": "#/texts/304",
+      "self_ref": "#/texts/302",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8797,7 +8703,7 @@
       "text": "bounding box drifting"
     },
     {
-      "self_ref": "#/texts/305",
+      "self_ref": "#/texts/303",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8824,7 +8730,7 @@
       "text": "OTSL model shows"
     },
     {
-      "self_ref": "#/texts/306",
+      "self_ref": "#/texts/304",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8851,7 +8757,7 @@
       "text": "clean bounding box"
     },
     {
-      "self_ref": "#/texts/307",
+      "self_ref": "#/texts/305",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8878,7 +8784,7 @@
       "text": "alignment"
     },
     {
-      "self_ref": "#/texts/308",
+      "self_ref": "#/texts/306",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8905,7 +8811,7 @@
       "text": "\u2264"
     },
     {
-      "self_ref": "#/texts/309",
+      "self_ref": "#/texts/307",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8932,7 +8838,7 @@
       "text": "\u03bc"
     },
     {
-      "self_ref": "#/texts/310",
+      "self_ref": "#/texts/308",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8959,7 +8865,7 @@
       "text": "S"
     },
     {
-      "self_ref": "#/texts/311",
+      "self_ref": "#/texts/309",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -8986,7 +8892,7 @@
       "text": "I"
     },
     {
-      "self_ref": "#/texts/312",
+      "self_ref": "#/texts/310",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9013,7 +8919,7 @@
       "text": "R"
     },
     {
-      "self_ref": "#/texts/313",
+      "self_ref": "#/texts/311",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9040,7 +8946,7 @@
       "text": "ST"
     },
     {
-      "self_ref": "#/texts/314",
+      "self_ref": "#/texts/312",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9067,7 +8973,7 @@
       "text": "0.03"
     },
     {
-      "self_ref": "#/texts/315",
+      "self_ref": "#/texts/313",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9094,7 +9000,7 @@
       "text": "0.06"
     },
     {
-      "self_ref": "#/texts/316",
+      "self_ref": "#/texts/314",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9121,7 +9027,7 @@
       "text": "0.12"
     },
     {
-      "self_ref": "#/texts/317",
+      "self_ref": "#/texts/315",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9148,7 +9054,7 @@
       "text": "0.25"
     },
     {
-      "self_ref": "#/texts/318",
+      "self_ref": "#/texts/316",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9175,7 +9081,7 @@
       "text": "0.5"
     },
     {
-      "self_ref": "#/texts/319",
+      "self_ref": "#/texts/317",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9202,7 +9108,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/320",
+      "self_ref": "#/texts/318",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9229,7 +9135,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/321",
+      "self_ref": "#/texts/319",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9256,7 +9162,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/322",
+      "self_ref": "#/texts/320",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9283,7 +9189,7 @@
       "text": "8"
     },
     {
-      "self_ref": "#/texts/323",
+      "self_ref": "#/texts/321",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9310,7 +9216,7 @@
       "text": "16"
     },
     {
-      "self_ref": "#/texts/324",
+      "self_ref": "#/texts/322",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9337,7 +9243,7 @@
       "text": "32"
     },
     {
-      "self_ref": "#/texts/325",
+      "self_ref": "#/texts/323",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9364,7 +9270,7 @@
       "text": "64"
     },
     {
-      "self_ref": "#/texts/326",
+      "self_ref": "#/texts/324",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9391,7 +9297,7 @@
       "text": "\u2265"
     },
     {
-      "self_ref": "#/texts/327",
+      "self_ref": "#/texts/325",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9418,7 +9324,7 @@
       "text": "128"
     },
     {
-      "self_ref": "#/texts/328",
+      "self_ref": "#/texts/326",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9445,7 +9351,7 @@
       "text": "63"
     },
     {
-      "self_ref": "#/texts/329",
+      "self_ref": "#/texts/327",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9472,7 +9378,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/330",
+      "self_ref": "#/texts/328",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9499,7 +9405,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/331",
+      "self_ref": "#/texts/329",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9526,7 +9432,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/332",
+      "self_ref": "#/texts/330",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9553,7 +9459,7 @@
       "text": "199"
     },
     {
-      "self_ref": "#/texts/333",
+      "self_ref": "#/texts/331",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9580,7 +9486,7 @@
       "text": "5"
     },
     {
-      "self_ref": "#/texts/334",
+      "self_ref": "#/texts/332",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9607,7 +9513,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/335",
+      "self_ref": "#/texts/333",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9634,7 +9540,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/336",
+      "self_ref": "#/texts/334",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9661,7 +9567,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/337",
+      "self_ref": "#/texts/335",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9688,7 +9594,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/338",
+      "self_ref": "#/texts/336",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9715,7 +9621,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/339",
+      "self_ref": "#/texts/337",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9742,7 +9648,7 @@
       "text": "416"
     },
     {
-      "self_ref": "#/texts/340",
+      "self_ref": "#/texts/338",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9769,7 +9675,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/341",
+      "self_ref": "#/texts/339",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9796,7 +9702,7 @@
       "text": "230"
     },
     {
-      "self_ref": "#/texts/342",
+      "self_ref": "#/texts/340",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9823,7 +9729,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/343",
+      "self_ref": "#/texts/341",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9850,7 +9756,7 @@
       "text": "9"
     },
     {
-      "self_ref": "#/texts/344",
+      "self_ref": "#/texts/342",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9877,7 +9783,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/345",
+      "self_ref": "#/texts/343",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9904,7 +9810,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/346",
+      "self_ref": "#/texts/344",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9931,7 +9837,7 @@
       "text": "276"
     },
     {
-      "self_ref": "#/texts/347",
+      "self_ref": "#/texts/345",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9958,7 +9864,7 @@
       "text": "2"
     },
     {
-      "self_ref": "#/texts/348",
+      "self_ref": "#/texts/346",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -9985,7 +9891,7 @@
       "text": "12"
     },
     {
-      "self_ref": "#/texts/349",
+      "self_ref": "#/texts/347",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10012,7 +9918,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/350",
+      "self_ref": "#/texts/348",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10039,7 +9945,7 @@
       "text": "320"
     },
     {
-      "self_ref": "#/texts/351",
+      "self_ref": "#/texts/349",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10066,7 +9972,7 @@
       "text": "1"
     },
     {
-      "self_ref": "#/texts/352",
+      "self_ref": "#/texts/350",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10093,7 +9999,7 @@
       "text": "4"
     },
     {
-      "self_ref": "#/texts/353",
+      "self_ref": "#/texts/351",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10120,7 +10026,7 @@
       "text": "20"
     },
     {
-      "self_ref": "#/texts/354",
+      "self_ref": "#/texts/352",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10147,7 +10053,7 @@
       "text": "2013"
     },
     {
-      "self_ref": "#/texts/355",
+      "self_ref": "#/texts/353",
       "parent": {
         "$ref": "#/pictures/4"
       },
@@ -10174,7 +10080,7 @@
       "text": "3"
     },
     {
-      "self_ref": "#/texts/356",
+      "self_ref": "#/texts/354",
       "parent": {
         "$ref": "#/body"
       },
@@ -10201,7 +10107,7 @@
       "text": "\u03bc"
     },
     {
-      "self_ref": "#/texts/357",
+      "self_ref": "#/texts/355",
       "parent": {
         "$ref": "#/body"
       },
@@ -10228,7 +10134,7 @@
       "text": "\u2265"
     },
     {
-      "self_ref": "#/texts/358",
+      "self_ref": "#/texts/356",
       "parent": {
         "$ref": "#/body"
       },
@@ -10255,7 +10161,7 @@
       "text": "Optimized Table Tokenization for Table Structure Recognition"
     },
     {
-      "self_ref": "#/texts/359",
+      "self_ref": "#/texts/357",
       "parent": {
         "$ref": "#/body"
       },
@@ -10282,7 +10188,7 @@
       "text": "11"
     },
     {
-      "self_ref": "#/texts/360",
+      "self_ref": "#/texts/358",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10309,7 +10215,7 @@
       "text": "Fig. 6. Visualization of predicted structure and detected bounding boxes on a complex table with many rows. The OTSL model (B) captured repeating pattern of horizontally merged cells from the GT (A), unlike the HTML model (C). The HTML model also didn't complete the HTML sequence correctly and displayed a lot more of drift and overlap of bounding boxes. \"PMC5406406_003_01.png\" PubTabNet."
     },
     {
-      "self_ref": "#/texts/361",
+      "self_ref": "#/texts/359",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10336,7 +10242,7 @@
       "text": "B"
     },
     {
-      "self_ref": "#/texts/362",
+      "self_ref": "#/texts/360",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10363,7 +10269,7 @@
       "text": "C"
     },
     {
-      "self_ref": "#/texts/363",
+      "self_ref": "#/texts/361",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10390,7 +10296,7 @@
       "text": "Incorrect end of HTML sequence"
     },
     {
-      "self_ref": "#/texts/364",
+      "self_ref": "#/texts/362",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10417,7 +10323,7 @@
       "text": "Horizontally merged cells are not present"
     },
     {
-      "self_ref": "#/texts/365",
+      "self_ref": "#/texts/363",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10444,7 +10350,7 @@
       "text": "Repeating pattern is well represented in predictions"
     },
     {
-      "self_ref": "#/texts/366",
+      "self_ref": "#/texts/364",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10471,7 +10377,7 @@
       "text": "Repeating pattern of"
     },
     {
-      "self_ref": "#/texts/367",
+      "self_ref": "#/texts/365",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10498,7 +10404,7 @@
       "text": "horizontally merged cells"
     },
     {
-      "self_ref": "#/texts/368",
+      "self_ref": "#/texts/366",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10525,7 +10431,7 @@
       "text": "A"
     },
     {
-      "self_ref": "#/texts/369",
+      "self_ref": "#/texts/367",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10552,7 +10458,7 @@
       "text": "Bounding box drifting at the end"
     },
     {
-      "self_ref": "#/texts/370",
+      "self_ref": "#/texts/368",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10579,7 +10485,7 @@
       "text": "OTSL"
     },
     {
-      "self_ref": "#/texts/371",
+      "self_ref": "#/texts/369",
       "parent": {
         "$ref": "#/pictures/5"
       },
@@ -10606,7 +10512,7 @@
       "text": "HTML"
     },
     {
-      "self_ref": "#/texts/372",
+      "self_ref": "#/texts/370",
       "parent": {
         "$ref": "#/body"
       },
@@ -10633,7 +10539,7 @@
       "text": "12"
     },
     {
-      "self_ref": "#/texts/373",
+      "self_ref": "#/texts/371",
       "parent": {
         "$ref": "#/body"
       },
@@ -10660,7 +10566,7 @@
       "text": "M. Lysak, et al."
     },
     {
-      "self_ref": "#/texts/374",
+      "self_ref": "#/texts/372",
       "parent": {
         "$ref": "#/body"
       },
@@ -10688,7 +10594,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/375",
+      "self_ref": "#/texts/373",
       "parent": {
         "$ref": "#/body"
       },
@@ -10715,7 +10621,7 @@
       "text": "We demonstrated that representing tables in HTML for the task of table structure recognition with Im2Seq models is ill-suited and has serious limitations. Furthermore, we presented in this paper an Optimized Table Structure Language (OTSL) which, when compared to commonly used general purpose languages, has several key benefits."
     },
     {
-      "self_ref": "#/texts/376",
+      "self_ref": "#/texts/374",
       "parent": {
         "$ref": "#/body"
       },
@@ -10742,7 +10648,7 @@
       "text": "First and foremost, given the same network configuration, inference time for a table-structure prediction is about 2 times faster compared to the conventional HTML approach. This is primarily owed to the shorter sequence length of the OTSL representation. Additional performance benefits can be obtained with HPO (hyper parameter optimization). As we demonstrate in our experiments, models trained on OTSL can be significantly smaller, e.g. by reducing the number of encoder and decoder layers, while preserving comparatively good prediction quality. This can further improve inference performance, yielding 5-6 times faster inference speed in OTSL with prediction quality comparable to models trained on HTML (see Table 1)."
     },
     {
-      "self_ref": "#/texts/377",
+      "self_ref": "#/texts/375",
       "parent": {
         "$ref": "#/body"
       },
@@ -10769,7 +10675,7 @@
       "text": "Secondly, OTSL has more inherent structure and a significantly restricted vocabulary size. This allows autoregressive models to perform better in the TED metric, but especially with regards to prediction accuracy of the table-cell bounding boxes (see Table 2). As shown in Figure 5, we observe that the OTSL drastically reduces the drift for table cell bounding boxes at high row count and in sparse tables. This leads to more accurate predictions and a significant reduction in post-processing complexity, which is an undesired necessity in HTML-based Im2Seq models. Significant novelty lies in OTSL syntactical rules, which are few, simple and always backwards looking. Each new token can be validated only by analyzing the sequence of previous tokens, without requiring the entire sequence to detect mistakes. This in return allows to perform structural error detection and correction on-the-fly during sequence generation."
     },
     {
-      "self_ref": "#/texts/378",
+      "self_ref": "#/texts/376",
       "parent": {
         "$ref": "#/body"
       },
@@ -10797,9 +10703,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/379",
+      "self_ref": "#/texts/377",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -10826,9 +10732,9 @@
       "marker": "1."
     },
     {
-      "self_ref": "#/texts/380",
+      "self_ref": "#/texts/378",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -10855,9 +10761,9 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/381",
+      "self_ref": "#/texts/379",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -10884,9 +10790,9 @@
       "marker": "3."
     },
     {
-      "self_ref": "#/texts/382",
+      "self_ref": "#/texts/380",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -10913,7 +10819,7 @@
       "marker": "4."
     },
     {
-      "self_ref": "#/texts/383",
+      "self_ref": "#/texts/381",
       "parent": {
         "$ref": "#/body"
       },
@@ -10940,7 +10846,7 @@
       "text": "Optimized Table Tokenization for Table Structure Recognition"
     },
     {
-      "self_ref": "#/texts/384",
+      "self_ref": "#/texts/382",
       "parent": {
         "$ref": "#/body"
       },
@@ -10967,9 +10873,9 @@
       "text": "13"
     },
     {
-      "self_ref": "#/texts/385",
+      "self_ref": "#/texts/383",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -10996,9 +10902,9 @@
       "marker": "5."
     },
     {
-      "self_ref": "#/texts/386",
+      "self_ref": "#/texts/384",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11025,9 +10931,9 @@
       "marker": "7."
     },
     {
-      "self_ref": "#/texts/387",
+      "self_ref": "#/texts/385",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11054,9 +10960,9 @@
       "marker": "6."
     },
     {
-      "self_ref": "#/texts/388",
+      "self_ref": "#/texts/386",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11083,9 +10989,9 @@
       "marker": "8."
     },
     {
-      "self_ref": "#/texts/389",
+      "self_ref": "#/texts/387",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11112,9 +11018,9 @@
       "marker": "9."
     },
     {
-      "self_ref": "#/texts/390",
+      "self_ref": "#/texts/388",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11141,9 +11047,9 @@
       "marker": "10."
     },
     {
-      "self_ref": "#/texts/391",
+      "self_ref": "#/texts/389",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11170,9 +11076,9 @@
       "marker": "11."
     },
     {
-      "self_ref": "#/texts/392",
+      "self_ref": "#/texts/390",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11199,9 +11105,9 @@
       "marker": "13."
     },
     {
-      "self_ref": "#/texts/393",
+      "self_ref": "#/texts/391",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11228,9 +11134,9 @@
       "marker": "12."
     },
     {
-      "self_ref": "#/texts/394",
+      "self_ref": "#/texts/392",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11257,9 +11163,9 @@
       "marker": "14."
     },
     {
-      "self_ref": "#/texts/395",
+      "self_ref": "#/texts/393",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11286,9 +11192,9 @@
       "marker": "15."
     },
     {
-      "self_ref": "#/texts/396",
+      "self_ref": "#/texts/394",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11315,9 +11221,9 @@
       "marker": "16."
     },
     {
-      "self_ref": "#/texts/397",
+      "self_ref": "#/texts/395",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -11344,7 +11250,7 @@
       "marker": "17."
     },
     {
-      "self_ref": "#/texts/398",
+      "self_ref": "#/texts/396",
       "parent": {
         "$ref": "#/body"
       },
@@ -11357,50 +11263,23 @@
           "bbox": {
             "l": 134.76,
             "t": 700.51,
-            "r": 143.98,
-            "b": 689.22,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            2
-          ]
-        }
-      ],
-      "orig": "14",
-      "text": "14"
-    },
-    {
-      "self_ref": "#/texts/399",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
-      "prov": [
-        {
-          "page_no": 14,
-          "bbox": {
-            "l": 167.82,
-            "t": 700.51,
             "r": 231.72,
             "b": 689.22,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            16
+            19
           ]
         }
       ],
-      "orig": "M. Lysak, et al.",
-      "text": "M. Lysak, et al."
+      "orig": "14 M. Lysak, et al.",
+      "text": "14 M. Lysak, et al."
     },
     {
-      "self_ref": "#/texts/400",
+      "self_ref": "#/texts/397",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -11427,9 +11306,9 @@
       "marker": "18."
     },
     {
-      "self_ref": "#/texts/401",
+      "self_ref": "#/texts/398",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -11456,9 +11335,9 @@
       "marker": "19."
     },
     {
-      "self_ref": "#/texts/402",
+      "self_ref": "#/texts/399",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -11485,9 +11364,9 @@
       "marker": "20."
     },
     {
-      "self_ref": "#/texts/403",
+      "self_ref": "#/texts/400",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -11514,9 +11393,9 @@
       "marker": "21."
     },
     {
-      "self_ref": "#/texts/404",
+      "self_ref": "#/texts/401",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -11543,9 +11422,9 @@
       "marker": "22."
     },
     {
-      "self_ref": "#/texts/405",
+      "self_ref": "#/texts/402",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -11784,10 +11663,10 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 148.45,
-            "t": 583.63,
-            "r": 464.36,
-            "b": 366.15,
+            "l": 149.36,
+            "t": 584.07,
+            "r": 464.12,
+            "b": 366.34,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -11821,10 +11700,10 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 137.41,
-            "t": 558.49,
-            "r": 476.56,
-            "b": 451.77,
+            "l": 136.8,
+            "t": 558.12,
+            "r": 476.91,
+            "b": 452.23,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -11966,7 +11845,7 @@
           "$ref": "#/texts/157"
         },
         {
-          "$ref": "#/groups/2"
+          "$ref": "#/texts/158"
         },
         {
           "$ref": "#/texts/159"
@@ -12014,10 +11893,10 @@
         {
           "page_no": 7,
           "bbox": {
-            "l": 164.65,
-            "t": 628.2,
-            "r": 449.55,
-            "b": 511.66,
+            "l": 164.34,
+            "t": 628.69,
+            "r": 449.27,
+            "b": 511.71,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -12041,6 +11920,9 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/189"
+        },
         {
           "$ref": "#/texts/190"
         },
@@ -12229,9 +12111,6 @@
         },
         {
           "$ref": "#/texts/252"
-        },
-        {
-          "$ref": "#/texts/253"
         }
       ],
       "content_layer": "body",
@@ -12240,10 +12119,10 @@
         {
           "page_no": 8,
           "bbox": {
-            "l": 140.71,
-            "t": 283.94,
-            "r": 472.73,
-            "b": 198.32,
+            "l": 141.1,
+            "t": 284.91,
+            "r": 472.9,
+            "b": 198.44,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -12254,7 +12133,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/190"
+          "$ref": "#/texts/189"
         }
       ],
       "references": [],
@@ -12267,6 +12146,12 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/267"
+        },
+        {
+          "$ref": "#/texts/268"
+        },
         {
           "$ref": "#/texts/269"
         },
@@ -12521,12 +12406,6 @@
         },
         {
           "$ref": "#/texts/353"
-        },
-        {
-          "$ref": "#/texts/354"
-        },
-        {
-          "$ref": "#/texts/355"
         }
       ],
       "content_layer": "body",
@@ -12535,10 +12414,10 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 162.67,
-            "t": 347.38,
-            "r": 451.7,
-            "b": 128.79,
+            "l": 162.2,
+            "t": 348.16,
+            "r": 451.6,
+            "b": 128.62,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -12549,7 +12428,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/269"
+          "$ref": "#/texts/267"
         }
       ],
       "references": [],
@@ -12562,6 +12441,12 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/358"
+        },
+        {
+          "$ref": "#/texts/359"
+        },
         {
           "$ref": "#/texts/360"
         },
@@ -12591,12 +12476,6 @@
         },
         {
           "$ref": "#/texts/369"
-        },
-        {
-          "$ref": "#/texts/370"
-        },
-        {
-          "$ref": "#/texts/371"
         }
       ],
       "content_layer": "body",
@@ -12605,9 +12484,9 @@
         {
           "page_no": 11,
           "bbox": {
-            "l": 168.39,
-            "t": 610.03,
-            "r": 447.35,
+            "l": 167.45,
+            "t": 609.66,
+            "r": 446.33,
             "b": 158.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -12619,7 +12498,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/360"
+          "$ref": "#/texts/358"
         }
       ],
       "references": [],
@@ -12635,7 +12514,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/260"
+          "$ref": "#/texts/259"
         }
       ],
       "content_layer": "body",
@@ -12644,10 +12523,10 @@
         {
           "page_no": 9,
           "bbox": {
-            "l": 139.67,
-            "t": 454.43,
-            "r": 475.0,
-            "b": 322.53,
+            "l": 139.4,
+            "t": 454.94,
+            "r": 474.98,
+            "b": 322.25,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -12658,7 +12537,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/260"
+          "$ref": "#/texts/259"
         }
       ],
       "references": [],
@@ -12743,57 +12622,19 @@
           },
           {
             "bbox": {
-              "l": 396.27,
-              "t": 339.46,
-              "r": 417.13,
-              "b": 350.75,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 6,
-            "end_col_offset_idx": 7,
-            "text": "mAP",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false
-          },
-          {
-            "bbox": {
               "l": 394.93,
-              "t": 350.42,
+              "t": 339.46,
               "r": 418.47,
               "b": 361.7,
               "coord_origin": "TOPLEFT"
             },
-            "row_span": 1,
+            "row_span": 2,
             "col_span": 1,
-            "start_row_offset_idx": 1,
+            "start_row_offset_idx": 0,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 6,
             "end_col_offset_idx": 7,
-            "text": "(0.75)",
-            "column_header": true,
-            "row_header": false,
-            "row_section": false
-          },
-          {
-            "bbox": {
-              "l": 430.77,
-              "t": 339.46,
-              "r": 467.14,
-              "b": 350.75,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 7,
-            "end_col_offset_idx": 8,
-            "text": "Inference",
+            "text": "mAP (0.75)",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -12801,18 +12642,18 @@
           {
             "bbox": {
               "l": 427.15,
-              "t": 350.42,
+              "t": 339.46,
               "r": 470.76,
               "b": 361.7,
               "coord_origin": "TOPLEFT"
             },
-            "row_span": 1,
+            "row_span": 2,
             "col_span": 1,
-            "start_row_offset_idx": 1,
+            "start_row_offset_idx": 0,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 7,
             "end_col_offset_idx": 8,
-            "text": "time (secs)",
+            "text": "Inference time (secs)",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -13603,38 +13444,38 @@
             },
             {
               "bbox": {
-                "l": 396.27,
+                "l": 394.93,
                 "t": 339.46,
-                "r": 417.13,
-                "b": 350.75,
+                "r": 418.47,
+                "b": 361.7,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "mAP",
+              "text": "mAP (0.75)",
               "column_header": true,
               "row_header": false,
               "row_section": false
             },
             {
               "bbox": {
-                "l": 430.77,
+                "l": 427.15,
                 "t": 339.46,
-                "r": 467.14,
-                "b": 350.75,
+                "r": 470.76,
+                "b": 361.7,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
               "start_col_offset_idx": 7,
               "end_col_offset_idx": 8,
-              "text": "Inference",
+              "text": "Inference time (secs)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -13758,18 +13599,18 @@
             {
               "bbox": {
                 "l": 394.93,
-                "t": 350.42,
+                "t": 339.46,
                 "r": 418.47,
                 "b": 361.7,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 6,
               "end_col_offset_idx": 7,
-              "text": "(0.75)",
+              "text": "mAP (0.75)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -13777,18 +13618,18 @@
             {
               "bbox": {
                 "l": 427.15,
-                "t": 350.42,
+                "t": 339.46,
                 "r": 470.76,
                 "b": 361.7,
                 "coord_origin": "TOPLEFT"
               },
-              "row_span": 1,
+              "row_span": 2,
               "col_span": 1,
-              "start_row_offset_idx": 1,
+              "start_row_offset_idx": 0,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 7,
               "end_col_offset_idx": 8,
-              "text": "time (secs)",
+              "text": "Inference time (secs)",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -14421,7 +14262,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/266"
+          "$ref": "#/texts/264"
         }
       ],
       "content_layer": "body",
@@ -14430,10 +14271,10 @@
         {
           "page_no": 10,
           "bbox": {
-            "l": 143.64,
-            "t": 635.65,
-            "r": 470.85,
-            "b": 528.74,
+            "l": 143.75,
+            "t": 635.88,
+            "r": 471.02,
+            "b": 528.99,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
@@ -14444,7 +14285,7 @@
       ],
       "captions": [
         {
-          "$ref": "#/texts/266"
+          "$ref": "#/texts/264"
         }
       ],
       "references": [],

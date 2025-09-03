@@ -11030,7 +11030,7 @@
               "b": 137.52,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.963,
+            "confidence": 0.957,
             "cells": [
               {
                 "index": 0,
@@ -11070,7 +11070,7 @@
               "b": 290.0,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.99,
             "cells": [
               {
                 "index": 1,
@@ -11560,7 +11560,7 @@
               "b": 537.95,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.948,
+            "confidence": 0.925,
             "cells": [
               {
                 "index": 20,
@@ -11600,7 +11600,7 @@
               "b": 669.46,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.986,
+            "confidence": 0.989,
             "cells": [
               {
                 "index": 21,
@@ -12090,7 +12090,7 @@
               "b": 704.54,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.865,
+            "confidence": 0.793,
             "cells": [
               {
                 "index": 40,
@@ -12124,13 +12124,13 @@
             "id": 2,
             "label": "picture",
             "bbox": {
-              "l": 134.92,
-              "t": 304.89,
-              "r": 475.66,
-              "b": 510.22,
+              "l": 134.71,
+              "t": 304.3,
+              "r": 475.67,
+              "b": 509.63,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.98,
+            "confidence": 0.976,
             "cells": [],
             "children": []
           }
@@ -12159,7 +12159,7 @@
               "b": 137.52,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.963,
+            "confidence": 0.957,
             "cells": [
               {
                 "index": 0,
@@ -12205,7 +12205,7 @@
               "b": 290.0,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.99,
             "cells": [
               {
                 "index": 1,
@@ -12701,7 +12701,7 @@
               "b": 537.95,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.948,
+            "confidence": 0.925,
             "cells": [
               {
                 "index": 20,
@@ -12747,7 +12747,7 @@
               "b": 669.46,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.986,
+            "confidence": 0.989,
             "cells": [
               {
                 "index": 21,
@@ -13243,7 +13243,7 @@
               "b": 704.54,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.865,
+            "confidence": 0.793,
             "cells": [
               {
                 "index": 40,
@@ -13283,13 +13283,13 @@
             "id": 2,
             "label": "picture",
             "bbox": {
-              "l": 134.92,
-              "t": 304.89,
-              "r": 475.66,
-              "b": 510.22,
+              "l": 134.71,
+              "t": 304.3,
+              "r": 475.67,
+              "b": 509.63,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.98,
+            "confidence": 0.976,
             "cells": [],
             "children": []
           },
@@ -13315,7 +13315,7 @@
               "b": 137.52,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.963,
+            "confidence": 0.957,
             "cells": [
               {
                 "index": 0,
@@ -13361,7 +13361,7 @@
               "b": 290.0,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.99,
             "cells": [
               {
                 "index": 1,
@@ -13857,7 +13857,7 @@
               "b": 537.95,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.948,
+            "confidence": 0.925,
             "cells": [
               {
                 "index": 20,
@@ -13903,7 +13903,7 @@
               "b": 669.46,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.986,
+            "confidence": 0.989,
             "cells": [
               {
                 "index": 21,
@@ -14393,13 +14393,13 @@
             "id": 2,
             "label": "picture",
             "bbox": {
-              "l": 134.92,
-              "t": 304.89,
-              "r": 475.66,
-              "b": 510.22,
+              "l": 134.71,
+              "t": 304.3,
+              "r": 475.67,
+              "b": 509.63,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.98,
+            "confidence": 0.976,
             "cells": [],
             "children": []
           },
@@ -14425,7 +14425,7 @@
               "b": 704.54,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.865,
+            "confidence": 0.793,
             "cells": [
               {
                 "index": 40,
@@ -25917,7 +25917,7 @@
       "layout": {
         "clusters": [
           {
-            "id": 1,
+            "id": 0,
             "label": "text",
             "bbox": {
               "l": 133.77,
@@ -25926,7 +25926,7 @@
               "b": 268.17,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.993,
             "cells": [
               {
                 "index": 0,
@@ -26516,7 +26516,7 @@
               "b": 532.03,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.949,
+            "confidence": 0.955,
             "cells": [
               {
                 "index": 23,
@@ -26547,7 +26547,7 @@
             "children": []
           },
           {
-            "id": 0,
+            "id": 1,
             "label": "text",
             "bbox": {
               "l": 133.77,
@@ -26556,7 +26556,7 @@
               "b": 674.65,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.993,
             "cells": [
               {
                 "index": 24,
@@ -27096,7 +27096,7 @@
               "b": 704.54,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.889,
+            "confidence": 0.883,
             "cells": [
               {
                 "index": 45,
@@ -27130,13 +27130,13 @@
             "id": 2,
             "label": "picture",
             "bbox": {
-              "l": 218.82,
-              "t": 278.02,
-              "r": 391.96,
-              "b": 508.89,
+              "l": 218.88,
+              "t": 277.98,
+              "r": 392.18,
+              "b": 508.74,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.984,
+            "confidence": 0.989,
             "cells": [],
             "children": []
           }
@@ -27153,10 +27153,10 @@
       "elements": [
         {
           "label": "text",
-          "id": 1,
+          "id": 0,
           "page_no": 1,
           "cluster": {
-            "id": 1,
+            "id": 0,
             "label": "text",
             "bbox": {
               "l": 133.77,
@@ -27165,7 +27165,7 @@
               "b": 268.17,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.993,
             "cells": [
               {
                 "index": 0,
@@ -27761,7 +27761,7 @@
               "b": 532.03,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.949,
+            "confidence": 0.955,
             "cells": [
               {
                 "index": 23,
@@ -27795,10 +27795,10 @@
         },
         {
           "label": "text",
-          "id": 0,
+          "id": 1,
           "page_no": 1,
           "cluster": {
-            "id": 0,
+            "id": 1,
             "label": "text",
             "bbox": {
               "l": 133.77,
@@ -27807,7 +27807,7 @@
               "b": 674.65,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.993,
             "cells": [
               {
                 "index": 24,
@@ -28353,7 +28353,7 @@
               "b": 704.54,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.889,
+            "confidence": 0.883,
             "cells": [
               {
                 "index": 45,
@@ -28393,13 +28393,13 @@
             "id": 2,
             "label": "picture",
             "bbox": {
-              "l": 218.82,
-              "t": 278.02,
-              "r": 391.96,
-              "b": 508.89,
+              "l": 218.88,
+              "t": 277.98,
+              "r": 392.18,
+              "b": 508.74,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.984,
+            "confidence": 0.989,
             "cells": [],
             "children": []
           },
@@ -28413,10 +28413,10 @@
       "body": [
         {
           "label": "text",
-          "id": 1,
+          "id": 0,
           "page_no": 1,
           "cluster": {
-            "id": 1,
+            "id": 0,
             "label": "text",
             "bbox": {
               "l": 133.77,
@@ -28425,7 +28425,7 @@
               "b": 268.17,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.993,
             "cells": [
               {
                 "index": 0,
@@ -29021,7 +29021,7 @@
               "b": 532.03,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.949,
+            "confidence": 0.955,
             "cells": [
               {
                 "index": 23,
@@ -29055,10 +29055,10 @@
         },
         {
           "label": "text",
-          "id": 0,
+          "id": 1,
           "page_no": 1,
           "cluster": {
-            "id": 0,
+            "id": 1,
             "label": "text",
             "bbox": {
               "l": 133.77,
@@ -29067,7 +29067,7 @@
               "b": 674.65,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.987,
+            "confidence": 0.993,
             "cells": [
               {
                 "index": 24,
@@ -29607,13 +29607,13 @@
             "id": 2,
             "label": "picture",
             "bbox": {
-              "l": 218.82,
-              "t": 278.02,
-              "r": 391.96,
-              "b": 508.89,
+              "l": 218.88,
+              "t": 277.98,
+              "r": 392.18,
+              "b": 508.74,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.984,
+            "confidence": 0.989,
             "cells": [],
             "children": []
           },
@@ -29639,7 +29639,7 @@
               "b": 704.54,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.889,
+            "confidence": 0.883,
             "cells": [
               {
                 "index": 45,

@@ -4,6 +4,7 @@ from typing import Optional
 
 from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2
 from docling.datamodel.pipeline_options import (
+    LayoutOptions,
     granite_picture_description,
     smolvlm_picture_description,
 )
@@ -47,7 +48,7 @@ def download_models(
     if with_layout:
         _log.info("Downloading layout model...")
         LayoutModel.download_models(
-            local_dir=output_dir / DOCLING_LAYOUT_V2.model_repo_folder,
+            local_dir=output_dir / LayoutOptions().model_spec.model_repo_folder,
             force=force,
             progress=progress,
         )
