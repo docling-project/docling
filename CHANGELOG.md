@@ -1,3 +1,13 @@
+## [v2.48.0](https://github.com/docling-project/docling/releases/tag/v2.48.0) - 2025-08-26
+
+### Feature
+
+* Upgrade to RapidOCR 3.x ([#2088](https://github.com/docling-project/docling/issues/2088)) ([`3f60a0f`](https://github.com/docling-project/docling/commit/3f60a0fa7814aa36f396131e53b0ca6982b7638e))
+
+### Fix
+
+* **html:** Preserve code blocks in list items ([#2131](https://github.com/docling-project/docling/issues/2131)) ([`fa3327e`](https://github.com/docling-project/docling/commit/fa3327e1a6f7f4de6d5fd1f83588d6b5cac324ca))
+
 ## [v2.47.1](https://github.com/docling-project/docling/releases/tag/v2.47.1) - 2025-08-23
 
 ### Fix
