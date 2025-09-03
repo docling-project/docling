@@ -46,7 +46,7 @@ dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
   'docling-core[chunking] (>=2.42.0,<3.0.0)',
   'docling-parse (>=4.2.2,<5.0.0)',
-  "docling-ibm-models>=3.9.0,<4",
+  "docling-ibm-models>=3.9.1,<4",
   'filetype (>=1.2.0,<2.0.0)',
   'pypdfium2 (>=4.30.0,!=4.30.1,<5.0.0)',
   'pydantic-settings (>=2.3.0,<3.0.0)',
@@ -152,9 +152,6 @@ constraints = [
 [tool.uv]
 package = true
 default-groups = "all"
-
-[tool.uv.sources]
-docling-ibm-models = { git = "https://github.com/docling-project/docling-ibm-models.git", branch = "nli/fix_reading_order" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]
