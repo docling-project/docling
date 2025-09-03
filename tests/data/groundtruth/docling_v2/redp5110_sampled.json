@@ -1269,12 +1269,12 @@
           },
           "charspan": [
             0,
-            352
+            351
           ]
         }
       ],
-      "orig": "/g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85 /g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86",
-      "text": "/g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85 /g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86",
+      "orig": "/g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85/g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86",
+      "text": "/g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85/g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86",
       "enumerated": false,
       "marker": ""
     },
@@ -8871,7 +8871,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Authors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -8947,7 +8947,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "Comments welcome . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -9061,7 +9061,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.1 Security fundamentals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -9099,7 +9099,7 @@
             "end_row_offset_idx": 11,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "1.2 Current state of IBM i security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -9289,7 +9289,7 @@
             "end_row_offset_idx": 16,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1 Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -9517,7 +9517,7 @@
             "end_row_offset_idx": 22,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "2.1.6 Change Function Usage CL command . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -9897,7 +9897,7 @@
             "end_row_offset_idx": 32,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.3 VERIFY_GROUP_FOR_USER function . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -9935,7 +9935,7 @@
             "end_row_offset_idx": 33,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .",
+            "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -10030,7 +10030,7 @@
             "end_row_offset_idx": 36,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . .",
+            "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -10068,7 +10068,7 @@
             "end_row_offset_idx": 37,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . .",
+            "text": "3.6.2 Creating group profiles for the users and their roles . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -10106,7 +10106,7 @@
             "end_row_offset_idx": 38,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.3 Demonstrating data access without RCAC . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -10220,7 +10220,7 @@
             "end_row_offset_idx": 41,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+            "text": "3.6.6 Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -10480,7 +10480,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "Authors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -10560,7 +10560,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "Comments welcome . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -10680,7 +10680,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "1.1 Security fundamentals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -10720,7 +10720,7 @@
               "end_row_offset_idx": 11,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "1.2 Current state of IBM i security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -10920,7 +10920,7 @@
               "end_row_offset_idx": 16,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "2.1 Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -11160,7 +11160,7 @@
               "end_row_offset_idx": 22,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "2.1.6 Change Function Usage CL command . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -11560,7 +11560,7 @@
               "end_row_offset_idx": 32,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.3 VERIFY_GROUP_FOR_USER function . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -11600,7 +11600,7 @@
               "end_row_offset_idx": 33,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .",
+              "text": "3.4 Establishing and controlling accessibility by using the RCAC rule text . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -11713,7 +11713,7 @@
               "end_row_offset_idx": 36,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . .",
+              "text": "3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -11753,7 +11753,7 @@
               "end_row_offset_idx": 37,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . .",
+              "text": "3.6.2 Creating group profiles for the users and their roles . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -11793,7 +11793,7 @@
               "end_row_offset_idx": 38,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6.3 Demonstrating data access without RCAC . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -11913,7 +11913,7 @@
               "end_row_offset_idx": 41,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
+              "text": "3.6.6 Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -12142,7 +12142,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(30)",
+            "text": "V ARCHAR(30)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -12199,7 +12199,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(10)",
+            "text": "V ARCHAR(10)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -12218,7 +12218,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Name of the user profile that has a usage setting for this function.",
+            "text": "Name of the user profile that has a usage setting f or this function.",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -12256,7 +12256,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(7)",
+            "text": "V ARCHAR(7)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -12313,7 +12313,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(5)",
+            "text": "V ARCHAR(5)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -12332,7 +12332,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Type of user profile: /SM590000 USER: The user profile is a user. /SM590000 GROUP: The user profile is a group.",
+            "text": "T ype of user profile: /SM590000 USER: The user profile is a user . /SM590000 GROUP: The user profile is a group .",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -12434,7 +12434,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(30)",
+              "text": "V ARCHAR(30)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12493,7 +12493,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(10)",
+              "text": "V ARCHAR(10)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12512,7 +12512,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Name of the user profile that has a usage setting for this function.",
+              "text": "Name of the user profile that has a usage setting f or this function.",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12552,7 +12552,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(7)",
+              "text": "V ARCHAR(7)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12611,7 +12611,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(5)",
+              "text": "V ARCHAR(5)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12630,7 +12630,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Type of user profile: /SM590000 USER: The user profile is a user. /SM590000 GROUP: The user profile is a group.",
+              "text": "T ype of user profile: /SM590000 USER: The user profile is a user . /SM590000 GROUP: The user profile is a group .",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -12862,7 +12862,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "CHGQRYA command targeting a different user's job",
+            "text": "CHGQRYA command targeting a diff erent user's job",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -12919,7 +12919,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "STRDBMON or ENDDBMON commands targeting a different user's job",
+            "text": "STRDBMON or ENDDBMON commands targeting a diff erent user's job",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -13071,7 +13071,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "QUSRJOBI() API format 900 or System i Navigator's SQL Details for Job",
+            "text": "QUSRJOBI() API f ormat 900 or System i Navigator's SQL Details f or Job",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -13299,7 +13299,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "ANALYZE PLAN CACHE procedure",
+            "text": "ANAL YZE PLAN CACHE procedure",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -13470,7 +13470,7 @@
             "end_row_offset_idx": 12,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "MODIFY PLAN CACHE PROPERTIES procedure (currently does not check authority)",
+            "text": "MODIFY PLAN CACHE PROPER TIES procedure (currently does not check authority)",
             "column_header": false,
             "row_header": true,
             "row_section": false
@@ -13800,7 +13800,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "CHGQRYA command targeting a different user's job",
+              "text": "CHGQRYA command targeting a diff erent user's job",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -13895,7 +13895,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "STRDBMON or ENDDBMON commands targeting a different user's job",
+              "text": "STRDBMON or ENDDBMON commands targeting a diff erent user's job",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -14099,7 +14099,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "QUSRJOBI() API format 900 or System i Navigator's SQL Details for Job",
+              "text": "QUSRJOBI() API f ormat 900 or System i Navigator's SQL Details f or Job",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -14405,7 +14405,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "ANALYZE PLAN CACHE procedure",
+              "text": "ANAL YZE PLAN CACHE procedure",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -14690,7 +14690,7 @@
               "end_row_offset_idx": 12,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "MODIFY PLAN CACHE PROPERTIES procedure (currently does not check authority)",
+              "text": "MODIFY PLAN CACHE PROPER TIES procedure (currently does not check authority)",
               "column_header": false,
               "row_header": true,
               "row_section": false
@@ -14977,7 +14977,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "The effective user of the thread excluding adopted authority.",
+            "text": "The eff ective user of the thread e xcluding adopted authority .",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15015,7 +15015,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "The effective user of the thread including adopted authority. When no adopted authority is present, this has the same value as USER.",
+            "text": "The eff ective user of the thread including adopted authority . When no adopted authority is present, this has the same v alue as USER.",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15136,7 +15136,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "The effective user of the thread excluding adopted authority.",
+              "text": "The eff ective user of the thread e xcluding adopted authority .",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -15176,7 +15176,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "The effective user of the thread including adopted authority. When no adopted authority is present, this has the same value as USER.",
+              "text": "The eff ective user of the thread including adopted authority . When no adopted authority is present, this has the same v alue as USER.",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -15296,7 +15296,7 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Type",
+            "text": "T ype",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -15353,7 +15353,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(255)",
+            "text": "V ARCHAR(255)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15391,7 +15391,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "CLIENT_IPADDR",
+            "text": "CLIENT_IP ADDR",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15410,7 +15410,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(128)",
+            "text": "V ARCHAR(128)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15486,7 +15486,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Port used by the current client to communicate with the server",
+            "text": "P or t used by the current client to communicate with the ser v er",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15505,7 +15505,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "PACKAGE_NAME",
+            "text": "P ACKAGE_NAME",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15524,7 +15524,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(128)",
+            "text": "V ARCHAR(128)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15562,7 +15562,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "PACKAGE_SCHEMA",
+            "text": "P ACKAGE_SCHEMA",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15581,7 +15581,7 @@
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(128)",
+            "text": "V ARCHAR(128)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15619,7 +15619,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "PACKAGE_VERSION",
+            "text": "P A CKAGE_VERSION",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15638,7 +15638,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(64)",
+            "text": "V ARCHAR(64)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15657,7 +15657,7 @@
             "end_row_offset_idx": 7,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Version identifier of the currently running package",
+            "text": "V ersion identifier of the currently running package",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15695,7 +15695,7 @@
             "end_row_offset_idx": 8,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(128)",
+            "text": "V ARCHAR(128)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15752,7 +15752,7 @@
             "end_row_offset_idx": 9,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "VARCHAR(128)",
+            "text": "V ARCHAR(128)",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15828,7 +15828,7 @@
             "end_row_offset_idx": 10,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Type of the currently running routine",
+            "text": "T ype of the currently running routine",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15871,7 +15871,7 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Type",
+              "text": "T ype",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -15930,7 +15930,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(255)",
+              "text": "V ARCHAR(255)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -15970,7 +15970,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "CLIENT_IPADDR",
+              "text": "CLIENT_IP ADDR",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -15989,7 +15989,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(128)",
+              "text": "V ARCHAR(128)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16067,7 +16067,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Port used by the current client to communicate with the server",
+              "text": "P or t used by the current client to communicate with the ser v er",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16088,7 +16088,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "PACKAGE_NAME",
+              "text": "P ACKAGE_NAME",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16107,7 +16107,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(128)",
+              "text": "V ARCHAR(128)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16147,7 +16147,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "PACKAGE_SCHEMA",
+              "text": "P ACKAGE_SCHEMA",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16166,7 +16166,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(128)",
+              "text": "V ARCHAR(128)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16206,7 +16206,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "PACKAGE_VERSION",
+              "text": "P A CKAGE_VERSION",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16225,7 +16225,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(64)",
+              "text": "V ARCHAR(64)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16244,7 +16244,7 @@
               "end_row_offset_idx": 7,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Version identifier of the currently running package",
+              "text": "V ersion identifier of the currently running package",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16284,7 +16284,7 @@
               "end_row_offset_idx": 8,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(128)",
+              "text": "V ARCHAR(128)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16343,7 +16343,7 @@
               "end_row_offset_idx": 9,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "VARCHAR(128)",
+              "text": "V ARCHAR(128)",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -16421,7 +16421,7 @@
               "end_row_offset_idx": 10,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Type of the currently running routine",
+              "text": "T ype of the currently running routine",
               "column_header": false,
               "row_header": false,
               "row_section": false

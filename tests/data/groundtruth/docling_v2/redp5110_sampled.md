@@ -15,24 +15,24 @@ Front cover
 | Trademarks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .      | viii    |
 | DB2 for i Center of Excellence . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                  | . ix    |
 | Preface . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   | . xi    |
-| Authors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  | . xi    |
+| Authors . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . | . xi    |
 | Now you can become a published author, too! . . . . . . . . . . . . . . . . . . . . . . . . . . . .                           | xiii    |
-| Comments welcome. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .             | xiii    |
+| Comments welcome . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .            | xiii    |
 | Stay connected to IBM Redbooks . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                    | xiv     |
 | Chapter 1. Securing and protecting IBM DB2 data . . . . . . . . . . . . . . . . . . . . . .                                   | . 1     |
-| 1.1 Security fundamentals. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .              | . 2     |
-| 1.2 Current state of IBM i security. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                | . 2     |
+| 1.1 Security fundamentals . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .             | . 2     |
+| 1.2 Current state of IBM i security . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .               | . 2     |
 | 1.3 DB2 for i security controls . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .             | . 3     |
 | 1.3.1 Existing row and column control . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                         | . 4     |
 | 1.3.2 New controls: Row and Column Access Control. . . . . . . . . . . . . . . . . . . .                                      | . 5     |
 | Chapter 2. Roles and separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                           | . 7     |
-| 2.1 Roles. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .    | . 8     |
+| 2.1 Roles . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   | . 8     |
 | 2.1.1 DDM and DRDA application server access: QIBM_DB_DDMDRDA . . . .                                                         | . 8     |
 | 2.1.2 Toolbox application server access: QIBM_DB_ZDA. . . . . . . . . . . . . . . . .                                         | . 8     |
 | 2.1.3 Database Administrator function: QIBM_DB_SQLADM . . . . . . . . . . . . . .                                             | . 9     |
 | 2.1.4 Database Information function: QIBM_DB_SYSMON . . . . . . . . . . . . . . .                                             | . 9     |
 | 2.1.5 Security Administrator function: QIBM_DB_SECADM . . . . . . . . . . . . . . .                                           | . 9     |
-| 2.1.6 Change Function Usage CL command. . . . . . . . . . . . . . . . . . . . . . . . . . .                                   | 10      |
+| 2.1.6 Change Function Usage CL command . . . . . . . . . . . . . . . . . . . . . . . . . . .                                  | 10      |
 | 2.1.7 Verifying function usage IDs for RCAC with the FUNCTION_USAGE view                                                      | 10      |
 | 2.2 Separation of duties . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .            | 10      |
 | Chapter 3. Row and Column Access Control . . . . . . . . . . . . . . . . . . . . . . . . . . .                                | 13      |
@@ -42,16 +42,16 @@ Front cover
 | 3.2 Special registers and built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . .                       | 18      |
 | 3.2.1 Special registers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .               | 18      |
 | 3.2.2 Built-in global variables . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                 | 19      |
-| 3.3 VERIFY_GROUP_FOR_USER function. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                                 | 20      |
-| 3.4 Establishing and controlling accessibility by using the RCAC rule text. . . . . . .                                       | 21      |
+| 3.3 VERIFY_GROUP_FOR_USER function . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                                | 20      |
+| 3.4 Establishing and controlling accessibility by using the RCAC rule text . . . . . . .                                      | 21      |
 | . . . . . . . . . . . . . .                                                                                                   |         |
 | 3.6 Human resources example . . . . . . . . . . . . . . . . . . . . . . . . . .                                               | 22      |
-| 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . .                                        | 23      |
-| 3.6.2 Creating group profiles for the users and their roles. . . . . . . . . . . .                                            | 23      |
-| 3.6.3 Demonstrating data access without RCAC. . . . . . . . . . . . . . . . . . . . . . . .                                   | 24      |
+| 3.6.1 Assigning the QIBM_DB_SECADM function ID to the consultants. . . . . . . . . . . .                                      | 23      |
+| 3.6.2 Creating group profiles for the users and their roles . . . . . . . . . . .                                             | 23      |
+| 3.6.3 Demonstrating data access without RCAC . . . . . . . . . . . . . . . . . . . . . . . .                                  | 24      |
 | 3.6.4 Defining and creating row permissions . . . . . . . . . . . . . . . . . . . . . . . . . . .                             | 25      |
 | 3.6.5 Defining and creating column masks . . . . . . . . . . . . . . . . . . . . . . . . . . . .                              | 26      |
-| 3.6.6 Activating RCAC. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                  | 28      |
+| 3.6.6 Activating RCAC . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .                 | 28      |
 | Demonstrating data access with a view and                                                                                     |         |
 | 3.6.8 RCAC . . . . . . . . . . . . . . . . .                                                                                  | 32      |
 
@@ -64,7 +64,7 @@ Solution Brief IBM Systems Lab Services and Training
 ## Highlights
 
 - /g115/g3 /g40/g81/g75/g68/g81/g70/g72/g3 /g87/g75/g72/g3 /g83/g72/g85/g73/g82/g85/g80/g68/g81/g70/g72/g3 /g82/g73/g3 /g92/g82/g88/g85/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g82/g83/g72/g85/g68/g87/g76/g82/g81/g86
-- /g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85 /g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86
+- /g115/g3 /g40/g68/g85/g81/g3 /g74/g85/g72/g68/g87/g72/g85/g3 /g85/g72/g87/g88/g85/g81/g3 /g82/g81/g3 /g44/g55/g3 /g83/g85 /g82/g77/g72/g70/g87/g86/g3 /g87/g75/g85 /g82/g88/g74/g75/g3 /g80/g82/g71/g72/g85/g81/g76/g93/g68/g87/g76/g82/g81/g3 /g82/g73/g3 /g71/g68/g87/g68/g69/g68/g86/g72/g3 /g68/g81/g71/g3 /g68/g83/g83/g79/g76/g70/g68/g87/g76/g82/g81/g86
 - /g115/g3 /g53/g72/g79/g92/g3 /g82/g81/g3 /g44/g37/g48/g3 /g72/g91/g83/g72/g85/g87/g3 /g70/g82/g81/g86/g88/g79/g87/g76/g81/g74/g15/g3 /g86/g78/g76/g79/g79/g86/g3 /g86/g75/g68/g85/g76/g81/g74/g3 /g68/g81/g71/g3 /g85/g72/g81/g82/g90/g81/g3 /g86/g72/g85/g89/g76/g70/g72/g86
 - /g115/g3 /g55 /g68/g78/g72/g3 /g68/g71/g89/g68/g81/g87/g68/g74/g72/g3 /g82/g73/g3 /g68/g70/g70/g72/g86/g86/g3 /g87/g82/g3 /g68/g3 /g90/g82/g85/g79/g71/g90/g76/g71/g72/g3 /g86/g82/g88/g85/g70/g72/g3 /g82/g73/g3 /g72/g91/g83/g72/g85/g87/g76/g86/g72
 
@@ -191,12 +191,12 @@ The FUNCTION\_USAGE view contains function usage configuration details. Table 2-
 
 Table 2-1   FUNCTION\_USAGE view
 
-| Column name   | Data type   | Description                                                                                                                                               |
-|---------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| FUNCTION_ID   | VARCHAR(30) | ID of the function.                                                                                                                                       |
-| USER_NAME     | VARCHAR(10) | Name of the user profile that has a usage setting for this function.                                                                                      |
-| USAGE         | VARCHAR(7)  | Usage setting: /SM590000 ALLOWED: The user profile is allowed to use the function. /SM590000 DENIED: The user profile is not allowed to use the function. |
-| USER_TYPE     | VARCHAR(5)  | Type of user profile: /SM590000 USER: The user profile is a user. /SM590000 GROUP: The user profile is a group.                                           |
+| Column name   | Data type    | Description                                                                                                                                               |
+|---------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| FUNCTION_ID   | V ARCHAR(30) | ID of the function.                                                                                                                                       |
+| USER_NAME     | V ARCHAR(10) | Name of the user profile that has a usage setting f or this function.                                                                                     |
+| USAGE         | V ARCHAR(7)  | Usage setting: /SM590000 ALLOWED: The user profile is allowed to use the function. /SM590000 DENIED: The user profile is not allowed to use the function. |
+| USER_TYPE     | V ARCHAR(5)  | T ype of user profile: /SM590000 USER: The user profile is a user . /SM590000 GROUP: The user profile is a group .                                        |
 
 To discover who has authorization to define and manage RCAC, you can use the query that is shown in Example 2-1.
 
@@ -234,20 +234,20 @@ Table 2-2 shows a comparison of the different function usage IDs and *JOBCTL aut
 
 Table 2-2    Comparison of the different function usage IDs and *JOBCTL authority
 
-| User action                                                                 | *JOBCTL   | QIBM_DB_SECADM   | QIBM_DB_SQLADM   | QIBM_DB_SYSMON   | No Authority   |
-|-----------------------------------------------------------------------------|-----------|------------------|------------------|------------------|----------------|
-| SET CURRENT DEGREE (SQL statement)                                          | X         |                  | X                |                  |                |
-| CHGQRYA command targeting a different user's job                            | X         |                  | X                |                  |                |
-| STRDBMON or ENDDBMON commands targeting a different user's job              | X         |                  | X                |                  |                |
-| STRDBMON or ENDDBMON commands targeting a job that matches the current user | X         |                  | X                | X                | X              |
-| QUSRJOBI() API format 900 or System i Navigator's SQL Details for Job       | X         |                  | X                | X                |                |
-| Visual Explain within Run SQL scripts                                       | X         |                  | X                | X                | X              |
-| Visual Explain outside of Run SQL scripts                                   | X         |                  | X                |                  |                |
-| ANALYZE PLAN CACHE procedure                                                | X         |                  | X                |                  |                |
-| DUMP PLAN CACHE procedure                                                   | X         |                  | X                |                  |                |
-| MODIFY PLAN CACHE procedure                                                 | X         |                  | X                |                  |                |
-| MODIFY PLAN CACHE PROPERTIES procedure (currently does not check authority) | X         |                  | X                |                  |                |
-| CHANGE PLAN CACHE SIZE procedure (currently does not check authority)       | X         |                  | X                |                  |                |
+| User action                                                                  | *JOBCTL   | QIBM_DB_SECADM   | QIBM_DB_SQLADM   | QIBM_DB_SYSMON   | No Authority   |
+|------------------------------------------------------------------------------|-----------|------------------|------------------|------------------|----------------|
+| SET CURRENT DEGREE (SQL statement)                                           | X         |                  | X                |                  |                |
+| CHGQRYA command targeting a diff erent user's job                            | X         |                  | X                |                  |                |
+| STRDBMON or ENDDBMON commands targeting a diff erent user's job              | X         |                  | X                |                  |                |
+| STRDBMON or ENDDBMON commands targeting a job that matches the current user  | X         |                  | X                | X                | X              |
+| QUSRJOBI() API f ormat 900 or System i Navigator's SQL Details f or Job      | X         |                  | X                | X                |                |
+| Visual Explain within Run SQL scripts                                        | X         |                  | X                | X                | X              |
+| Visual Explain outside of Run SQL scripts                                    | X         |                  | X                |                  |                |
+| ANAL YZE PLAN CACHE procedure                                                | X         |                  | X                |                  |                |
+| DUMP PLAN CACHE procedure                                                    | X         |                  | X                |                  |                |
+| MODIFY PLAN CACHE procedure                                                  | X         |                  | X                |                  |                |
+| MODIFY PLAN CACHE PROPER TIES procedure (currently does not check authority) | X         |                  | X                |                  |                |
+| CHANGE PLAN CACHE SIZE procedure (currently does not check authority)        | X         |                  | X                |                  |                |
 
 The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.
 
@@ -263,11 +263,11 @@ Table 3-1 summarizes these special registers and their values.
 
 Table 3-1   Special registers and their corresponding values
 
-| Special register     | Corresponding value                                                                                                                  |
-|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| USER or SESSION_USER | The effective user of the thread excluding adopted authority.                                                                        |
-| CURRENT_USER         | The effective user of the thread including adopted authority. When no adopted authority is present, this has the same value as USER. |
-| SYSTEM_USER          | The authorization ID that initiated the connection.                                                                                  |
+| Special register     | Corresponding value                                                                                                                     |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| USER or SESSION_USER | The eff ective user of the thread e xcluding adopted authority .                                                                        |
+| CURRENT_USER         | The eff ective user of the thread including adopted authority . When no adopted authority is present, this has the same v alue as USER. |
+| SYSTEM_USER          | The authorization ID that initiated the connection.                                                                                     |
 
 Figure 3-5 shows the difference in the special register values when an adopted authority is used:
 
@@ -291,17 +291,17 @@ Table 3-2 lists the nine built-in global variables.
 
 Table 3-2   Built-in global variables
 
-| Global variable       | Type         | Description                                                    |
-|-----------------------|--------------|----------------------------------------------------------------|
-| CLIENT_HOST           | VARCHAR(255) | Host name of the current client as returned by the system      |
-| CLIENT_IPADDR         | VARCHAR(128) | IP address of the current client as returned by the system     |
-| CLIENT_PORT           | INTEGER      | Port used by the current client to communicate with the server |
-| PACKAGE_NAME          | VARCHAR(128) | Name of the currently running package                          |
-| PACKAGE_SCHEMA        | VARCHAR(128) | Schema name of the currently running package                   |
-| PACKAGE_VERSION       | VARCHAR(64)  | Version identifier of the currently running package            |
-| ROUTINE_SCHEMA        | VARCHAR(128) | Schema name of the currently running routine                   |
-| ROUTINE_SPECIFIC_NAME | VARCHAR(128) | Name of the currently running routine                          |
-| ROUTINE_TYPE          | CHAR(1)      | Type of the currently running routine                          |
+| Global variable       | T ype         | Description                                                        |
+|-----------------------|---------------|--------------------------------------------------------------------|
+| CLIENT_HOST           | V ARCHAR(255) | Host name of the current client as returned by the system          |
+| CLIENT_IP ADDR        | V ARCHAR(128) | IP address of the current client as returned by the system         |
+| CLIENT_PORT           | INTEGER       | P or t used by the current client to communicate with the ser v er |
+| P ACKAGE_NAME         | V ARCHAR(128) | Name of the currently running package                              |
+| P ACKAGE_SCHEMA       | V ARCHAR(128) | Schema name of the currently running package                       |
+| P A CKAGE_VERSION     | V ARCHAR(64)  | V ersion identifier of the currently running package               |
+| ROUTINE_SCHEMA        | V ARCHAR(128) | Schema name of the currently running routine                       |
+| ROUTINE_SPECIFIC_NAME | V ARCHAR(128) | Name of the currently running routine                              |
+| ROUTINE_TYPE          | CHAR(1)       | T ype of the currently running routine                             |
 
 ## 3.3  VERIFY\_GROUP\_FOR\_USER function
 

@@ -12679,7 +12679,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "# enc-layers",
+            "text": "# enc-la y ers",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -12698,7 +12698,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "# dec-layers",
+            "text": "# dec-la y ers",
             "column_header": true,
             "row_header": false,
             "row_section": false
@@ -13501,7 +13501,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "# enc-layers",
+              "text": "# enc-la y ers",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -13520,7 +13520,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "# dec-layers",
+              "text": "# dec-la y ers",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -13655,7 +13655,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "# enc-layers",
+              "text": "# enc-la y ers",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -13674,7 +13674,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "# dec-layers",
+              "text": "# dec-la y ers",
               "column_header": true,
               "row_header": false,
               "row_section": false
@@ -14617,7 +14617,7 @@
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "PubTabNet",
+            "text": "PubT abNet",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -14750,7 +14750,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "FinTabNet",
+            "text": "FinT abNet",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -14883,7 +14883,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "PubTables-1M",
+            "text": "PubT ables-1M",
             "column_header": false,
             "row_header": false,
             "row_section": false
@@ -15291,7 +15291,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "PubTabNet",
+              "text": "PubT abNet",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -15426,7 +15426,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "FinTabNet",
+              "text": "FinT abNet",
               "column_header": false,
               "row_header": false,
               "row_section": false
@@ -15561,7 +15561,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "PubTables-1M",
+              "text": "PubT ables-1M",
               "column_header": false,
               "row_header": false,
               "row_section": false
