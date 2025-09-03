@@ -1,3 +1,20 @@
+## [v2.49.0](https://github.com/docling-project/docling/releases/tag/v2.49.0) - 2025-09-01
+
+### Feature
+
+* [Beta] Extraction with schema ([#2138](https://github.com/docling-project/docling/issues/2138)) ([`9f4bc5b`](https://github.com/docling-project/docling/commit/9f4bc5b2f19d700208b0b233c88fbe960758bdbd))
+* **msexcel:** Set ContentLayer.INVISIBLE for invisible sheet ([#1876](https://github.com/docling-project/docling/issues/1876)) ([`a283ccf`](https://github.com/docling-project/docling/commit/a283ccff25a25ebbe6e9b2decfaaad6f300597db))
+
+### Fix
+
+* **pypdfium2:** Fix OCR bounding box misalignment caused by mismatched rotation metadata ([#2039](https://github.com/docling-project/docling/issues/2039)) ([`4d94e38`](https://github.com/docling-project/docling/commit/4d94e382239b19fc06b13317c80b4772a94f5269))
+* Translation example ([#2166](https://github.com/docling-project/docling/issues/2166)) ([`9f0286b`](https://github.com/docling-project/docling/commit/9f0286bcac75870a2cf5a119813791aa46538d55))
+* Extend offline mode for rapidocr fonts ([#2155](https://github.com/docling-project/docling/issues/2155)) ([`9904d14`](https://github.com/docling-project/docling/commit/9904d14e6a9bdc641f796382140967d11f315ea7))
+
+### Documentation
+
+* Enrich landing pages ([#2165](https://github.com/docling-project/docling/issues/2165)) ([`96cab6b`](https://github.com/docling-project/docling/commit/96cab6b536e532980b5130faf22be39f977a4d4b))
+
 ## [v2.48.0](https://github.com/docling-project/docling/releases/tag/v2.48.0) - 2025-08-26
 
 ### Feature

@@ -1,3 +1,4 @@
+
 # Core Concepts
 
 I was trying to understand how Docling works and found that the concepts page was basically empty - it just said "browse core concepts" without explaining anything. So I wrote this overview to help other users understand the system before diving into the code.
@@ -90,3 +91,10 @@ If something doesn't make sense:
 - **Discussions** - Ask questions and share ideas
 - **Documentation** - Explore other sections for more details
 - **Examples** - See practical implementations of these concepts
+<div class="grid" style="text-align: center">
+    <div class="card">
+        <img loading="lazy" alt="Docling architecture" src="../assets/docling_arch.png" width="75%" />
+        <hr />
+        Docling architecture outline
+    </div>
+</div>

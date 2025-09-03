@@ -1,3 +1,4 @@
+
 # Examples
 
 I was trying to learn Docling and found that the examples page was basically empty - it just said "use navigation to browse examples" which wasn't helpful at all. So I organized all the existing examples and added descriptions to make them actually useful.
@@ -108,3 +109,15 @@ Now that you can actually find examples, try:
 - **[Concepts](../concepts/)** - Understand how Docling works
 - **[Integrations](../integrations/)** - Connect with other tools
 - **[API Reference](../reference/)** - Technical details
+<div class="grid" style="text-align: center">
+    <div class="card">
+        Visual grounding
+        <hr />
+        <img loading="lazy" alt="RAG with visual grounding" src="../assets/visual_grounding.png" height="150px" />
+    </div>
+    <div class="card">
+        Picture annotations
+        <hr />
+        <img loading="lazy" alt="Picture annotation" src="../assets/picture_annotations.png" height="150px" />
+    </div>
+</div>
