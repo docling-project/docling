@@ -50,10 +50,10 @@ class DoclingParseV4PageBackend(PdfPageBackend):
             self._page_no + 1,
             keep_chars=False,
             keep_lines=False,
-            keep_bitmaps = True,
+            keep_bitmaps=True,
             create_words=self._create_words,
             create_textlines=self._create_textlines,
-            do_sanitization = False,
+            do_sanitization=False,
         )
 
         # In Docling, all TextCell instances are expected with top-left origin.
