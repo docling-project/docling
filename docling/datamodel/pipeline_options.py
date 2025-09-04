@@ -237,7 +237,9 @@ class PdfBackend(str, Enum):
 
 
 # Define an enum for the ocr engines
-@deprecated("Use ocr_factory.registered_enum")
+@deprecated(
+    "Use get_ocr_factory().registered_kind to get a list of registered OCR engines."
+)
 class OcrEngine(str, Enum):
     """Enum of valid OCR engines."""
 
