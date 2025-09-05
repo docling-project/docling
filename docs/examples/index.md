@@ -8,7 +8,6 @@ Here some of our picks to get you started:
 - examples for ✍️ [serialization](./serialization.ipynb) and ✂️ [chunking](./hybrid_chunking.ipynb), including [user-defined customizations](./advanced_chunking_and_serialization.ipynb)
 - 🖼️ [picture annotations](./pictures_description.ipynb) and [enrichments](./enrich_doclingdocument.py)
 
-
 👈 ... and there is much more: explore all the examples using the navigation menu on the side
 
 <div class="grid" style="text-align: center">
