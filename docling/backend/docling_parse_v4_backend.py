@@ -30,12 +30,20 @@ class DoclingParseV4PageBackend(PdfPageBackend):
         page_no: int,
         create_words: bool = True,
         create_textlines: bool = True,
+        keep_chars: bool = True,
+        keep_lines: bool = True,
+        keep_images: bool = True,
     ):
         self._ppage = page_obj
         self._dp_doc = dp_doc
         self._page_no = page_no
+
         self._create_words = create_words
         self._create_textlines = create_textlines
+
+        self._keep_chars = keep_chars
+        self._keep_lines = keep_lines
+        self._keep_images = keep_images
 
         self._dpage: Optional[SegmentedPdfPage] = None
         self._unloaded = False
@@ -47,9 +55,9 @@ class DoclingParseV4PageBackend(PdfPageBackend):
 
         seg_page = self._dp_doc.get_page(
             self._page_no + 1,
-            keep_chars=True,
-            keep_lines=True,
-            keep_bitmaps=True,
+            keep_chars=self._keep_chars,
+            keep_lines=self._keep_lines,
+            keep_bitmaps=self._keep_images,
             create_words=self._create_words,
             create_textlines=self._create_textlines,
             enforce_same_font=True,
