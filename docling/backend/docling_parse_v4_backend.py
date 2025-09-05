@@ -30,8 +30,8 @@ class DoclingParseV4PageBackend(PdfPageBackend):
         page_no: int,
         create_words: bool = True,
         create_textlines: bool = True,
-        keep_chars: bool = True,
-        keep_lines: bool = True,
+        keep_chars: bool = False,
+        keep_lines: bool = False,
         keep_images: bool = True,
     ):
         self._ppage = page_obj
