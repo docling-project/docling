@@ -19,9 +19,6 @@
     "children": [
       {
         "$ref": "#/texts/0"
-      },
-      {
-        "$ref": "#/texts/1"
       }
     ],
     "content_layer": "body",
@@ -42,47 +39,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 441.26,
-            "t": 151.88,
-            "r": 522.03,
-            "b": 131.89,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            7
-          ]
-        }
-      ],
-      "orig": "package",
-      "text": "package"
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
             "l": 89.24,
-            "t": 124.75,
+            "t": 151.88,
             "r": 523.21,
             "b": 77.02,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            86
+            94
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained"
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],

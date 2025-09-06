@@ -3,6 +3,14 @@
 
 I was trying to learn Docling and found that the examples page was basically empty - it just said "use navigation to browse examples" which wasn't helpful at all. So I organized all the existing examples and added descriptions to make them actually useful.
 
+Here are some quick highlights to get you started:
+
+- 🔀 conversion examples ranging from [simple conversion to Markdown](./minimal.py) and export of [figures](./export_figures.py) & [tables](./export_tables.py), to [VLM](./minimal_vlm_pipeline.py) and [audio](./minimal_asr_pipeline.py) pipelines
+- 💬 various RAG examples, e.g. based on [LangChain](./rag_langchain.ipynb), [LlamaIndex](./rag_llamaindex.ipynb), or [Haystack](./rag_haystack.ipynb), including [visual grounding](./visual_grounding.ipynb), and using different vector stores like [Milvus](./rag_milvus.ipynb), [Weaviate](./rag_weaviate.ipynb), or [Qdrant](./retrieval_qdrant.ipynb)
+- 📤 [{==\[:fontawesome-solid-flask:{ title="beta feature" } beta\]==} structured data extraction](./extraction.ipynb)
+- examples for ✍️ [serialization](./serialization.ipynb) and ✂️ [chunking](./hybrid_chunking.ipynb), including [user-defined customizations](./advanced_chunking_and_serialization.ipynb)
+- 🖼️ [picture annotations](./pictures_description.ipynb) and [enrichments](./enrich_doclingdocument.py)
+
 ## Quick Start Examples
 
 ### Basic Usage
@@ -36,9 +44,11 @@ I was trying to learn Docling and found that the examples page was basically emp
 - **[Minimal VLM Pipeline](minimal_vlm_pipeline.py)** - Basic VLM setup and usage
 - **[Compare VLM Models](compare_vlm_models.py)** - Evaluate different vision models
 - **[Visual Grounding](visual_grounding.ipynb)** - Advanced visual understanding
+  ![Visual Grounding Example](example_visual_grounding.png)
 
 ### Image Processing
 - **[Picture Description](pictures_description.ipynb)** - Extract text and descriptions from images
+  ![Picture Annotations Example](example_picture_annotations.png)
 - **[Picture Description API](pictures_description_api.py)** - Using external APIs for image analysis
 - **[Inspect Picture Content](inspect_picture_content.py)** - Analyze image content and structure
 - **[Export Figures](export_figures.py)** - Extract and process figures from documents

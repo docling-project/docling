@@ -1,3 +1,24 @@
+## [v2.51.0](https://github.com/docling-project/docling/releases/tag/v2.51.0) - 2025-09-05
+
+### Feature
+
+* Updating default parameters to get better performance with docling-parse ([#2208](https://github.com/docling-project/docling/issues/2208)) ([`b49d1ad`](https://github.com/docling-project/docling/commit/b49d1ad4f1af6eeadc3f8d0e35123dc52c6e228e))
+* Updated the backend for new docling-parse ([#2187](https://github.com/docling-project/docling/issues/2187)) ([`b3d7542`](https://github.com/docling-project/docling/commit/b3d754206172d08d6d01f29f132dcb66383f955b))
+
+### Documentation
+
+* Add information extraction example ([#2199](https://github.com/docling-project/docling/issues/2199)) ([`a9f41b0`](https://github.com/docling-project/docling/commit/a9f41b088eae6f1ffe34d567057f80180f445a05))
+
+## [v2.50.0](https://github.com/docling-project/docling/releases/tag/v2.50.0) - 2025-09-03
+
+### Feature
+
+* Heron layout model as new default ([#1971](https://github.com/docling-project/docling/issues/1971)) ([`e38aa0f`](https://github.com/docling-project/docling/commit/e38aa0f7f2e8a7881c0f97131bf776556778f9a2))
+
+### Fix
+
+* **html:** Access to variable not yet declared ([#2171](https://github.com/docling-project/docling/issues/2171)) ([`293e81b`](https://github.com/docling-project/docling/commit/293e81bf9d341edd1d35f3b66faf726b82ad4885))
+
 ## [v2.49.0](https://github.com/docling-project/docling/releases/tag/v2.49.0) - 2025-09-01
 
 ### Feature

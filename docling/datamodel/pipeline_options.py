@@ -237,7 +237,9 @@ class PdfBackend(str, Enum):
 
 
 # Define an enum for the ocr engines
-@deprecated("Use ocr_factory.registered_enum")
+@deprecated(
+    "Use get_ocr_factory().registered_kind to get a list of registered OCR engines."
+)
 class OcrEngine(str, Enum):
     """Enum of valid OCR engines."""
 
@@ -283,10 +285,10 @@ class LayoutOptions(BaseModel):
     keep_empty_clusters: bool = (
         False  # Whether to keep clusters that contain no text cells
     )
+    model_spec: LayoutModelConfig = DOCLING_LAYOUT_HERON
     skip_cell_assignment: bool = (
         False  # Skip cell-to-cluster assignment for VLM-only processing
     )
-    model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
 
 
 class AsrPipelineOptions(PipelineOptions):

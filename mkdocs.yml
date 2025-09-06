@@ -37,6 +37,7 @@ theme:
     - content.tabs.link
     - content.code.annotate
     - content.code.copy
+    - content.tooltips
     - announce.dismiss
     - navigation.footer
     - navigation.tabs
@@ -99,8 +100,8 @@ nav:
       - examples/serialization.ipynb
       - examples/hybrid_chunking.ipynb
       - examples/advanced_chunking_and_serialization.ipynb
-    - ✂️ Data Preparation and Embedding Pipeline:
-      - examples/dpk-ingest-chunck-tokenize.ipynb
+    - 📤 Information extraction:
+      - examples/extraction.ipynb
     - 🤖 RAG with AI dev frameworks:
       - examples/rag_haystack.ipynb
       - examples/rag_langchain.ipynb
@@ -114,6 +115,7 @@ nav:
       - "Formula enrichment": examples/develop_formula_understanding.py
       - "Enrich a DoclingDocument": examples/enrich_doclingdocument.py
     - 🗂️ More examples:
+      - examples/dpk-ingest-chunk-tokenize.ipynb
       - examples/rag_milvus.ipynb
       - examples/rag_weaviate.ipynb
       - RAG with Granite [↗]: https://github.com/ibm-granite-community/granite-snack-cookbook/blob/main/recipes/RAG/Granite_Docling_RAG.ipynb
@@ -155,6 +157,7 @@ nav:
       - CLI reference: reference/cli.md
 
 markdown_extensions:
+  - pymdownx.critic
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true

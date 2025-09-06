@@ -29,16 +29,19 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ## Features
 
-* 🗂️  Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, images (PNG, TIFF, JPEG, ...), and more
+* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, images (PNG, TIFF, JPEG, ...), and more
 * 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 * 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-* ↪️  Various [export formats][supported_formats] and options, including Markdown, HTML, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
+* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
 * 🔒 Local execution capabilities for sensitive data and air-gapped environments
 * 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
 * 🔍 Extensive OCR support for scanned PDFs and images
 * 👓 Support of several Visual Language Models ([SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview))
-* 🎙️  Support for Audio with Automatic Speech Recognition (ASR) models
+* 🎙️ Audio support with Automatic Speech Recognition (ASR) models
 * 💻 Simple and convenient CLI
+
+### What's new
+* 📤 Structured [information extraction][extraction] \[🧪 beta\]
 
 ### Coming soon
 
@@ -150,3 +153,4 @@ The project was started by the AI for knowledge team at IBM Research Zurich.
 [supported_formats]: https://docling-project.github.io/docling/usage/supported_formats/
 [docling_document]: https://docling-project.github.io/docling/concepts/docling_document/
 [integrations]: https://docling-project.github.io/docling/integrations/
+[extraction]: https://docling-project.github.io/docling/examples/extraction/

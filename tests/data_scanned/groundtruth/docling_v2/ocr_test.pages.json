@@ -18,7 +18,7 @@
               "b": 152.91,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.972,
+            "confidence": 0.862,
             "cells": [
               {
                 "index": 0,
@@ -123,7 +123,7 @@
               "b": 152.91,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.972,
+            "confidence": 0.862,
             "cells": [
               {
                 "index": 0,
@@ -221,7 +221,7 @@
               "b": 152.91,
               "coord_origin": "TOPLEFT"
             },
-            "confidence": 0.972,
+            "confidence": 0.862,
             "cells": [
               {
                 "index": 0,
