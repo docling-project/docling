@@ -38,17 +38,19 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 🔍 Extensive OCR support for scanned PDFs and images
 * 👓 Support of several Visual Language Models ([SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview))
 * 🎙️ Audio support with Automatic Speech Recognition (ASR) models
-* 🔌 Connect to any agent using the [MCP Server](https://github.com/docling-project/docling-mcp)
+* 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
 * 💻 Simple and convenient CLI
 
 ### What's new
 * 📤 Structured [information extraction][extraction] \[🧪 beta\]
+* 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
 
 ### Coming soon
 
 * 📝 Metadata extraction, including title, authors, references & language
 * 📝 Chart understanding (Barchart, Piechart, LinePlot, etc)
 * 📝 Complex chemistry understanding (Molecular structures)
+* 📝 Parsing of Web Video Text Tracks (WebVTT) files
 
 ## Installation
 
@@ -74,7 +76,7 @@ result = converter.convert(source)
 print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
 ```
 
-More [advanced usage options](https://docling-project.github.io/docling/usage/) are available in
+More [advanced usage options](https://docling-project.github.io/docling/usage/advanced_options/) are available in
 the docs.
 
 ## CLI
@@ -92,32 +94,6 @@ docling --pipeline vlm --vlm-model smoldocling https://arxiv.org/pdf/2206.01062
 This will use MLX acceleration on supported Apple Silicon hardware.
 
 Read more [here](https://docling-project.github.io/docling/usage/)
-
-## MCP
-
-Docling has an MCP Server that allow you to experiment with document processing in different MCP Clients. Adding Docling MCP in your favorite client is usually as simple as adding the following entry in the configuration file:
-
-```json
-{
-  "mcpServers": {
-    "docling": {
-      "command": "uvx",
-      "args": [
-        "--from=docling-mcp",
-        "docling-mcp-server"
-      ]
-    }
-  }
-}
-```
-
-When using Claude for Desktop, simply edit the config file `claude_desktop_config.json` with the snippet above or the example provided [here](https://github.com/docling-project/docling-mcp/blob/main/docs/integrations/claude_desktop_config.json).
-
-In **[LM Studio](https://lmstudio.ai/)**, edit the `mcp.json` file with the appropriate section or simply clik on the button below for a direct install.
-
-[![Add MCP Server docling to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=docling&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLWZyb209ZG9jbGluZy1tY3AiLCJkb2NsaW5nLW1jcC1zZXJ2ZXIiXX0%3D)
-
-See the [Docling MCP Server repository](https://github.com/docling-project/docling-mcp) for all details.
 
 ## Documentation
 

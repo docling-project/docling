@@ -65,6 +65,7 @@ nav:
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
+      - MCP server: usage/mcp.md
     - FAQ:
       - FAQ: faq/index.md
   - Concepts:

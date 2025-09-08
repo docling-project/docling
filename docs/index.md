@@ -30,6 +30,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 🔍 Extensive OCR support for scanned PDFs and images
 * 👓 Support of several Visual Language Models ([SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview))
 * 🎙️  Support for Audio with Automatic Speech Recognition (ASR) models
+* 🔌 Connect to any agent using the [Docling MCP](https://docling-project.github.io/docling/usage/mcp/) server
 * 💻 Simple and convenient CLI
 
 ### Coming soon
