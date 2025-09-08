@@ -43,6 +43,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ### What's new
 * 📤 Structured [information extraction][extraction] \[🧪 beta\]
+* 📑 New layout model (**Heron**) by default, for faster PDF parsing
 * 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
 
 ### Coming soon
