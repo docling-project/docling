@@ -28,11 +28,14 @@ class BBox:
 
 
 class Cell:
-    def __init__(self, text, bbox, row, column):
+    def __init__(self, text, bbox, row, column, row_span=1, col_span=1):
         self.text = text
         self.bbox = bbox
-        self.row = row
-        self.column = column
+        self.start_row_offset_idx = row - 1
+        self.end_row_offset_idx = self.start_row_offset_idx + (row_span - 1)
+
+        self.start_col_offset_idx = column - 1
+        self.end_col_offset_idx = self.start_col_offset_idx + (col_span - 1)
 
 
 class Cluster:

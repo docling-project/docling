@@ -246,7 +246,10 @@ class TableConfidenceModel(BasePageModel):
 
         # Penalize columns with mixed data types (e.g., numbers and text)
         for col in range(1, detected_table.num_cols + 1):
-            col_texts = [c.text for c in detected_table.table_cells if c.column == col]
+            col_texts = [
+                c.text for c in detected_table.table_cells
+                if c.start_col_offset_idx <= col <= c.end_col_offset_idx
+            ]
             if col_texts:
                 has_number = any(str(t).replace('.', '', 1).isdigit() for t in col_texts)
                 has_text = any(not str(t).replace('.', '', 1).isdigit() for t in col_texts)
@@ -327,17 +330,19 @@ class TableConfidenceModel(BasePageModel):
                 1 for col in range(1, detected_table.num_cols + 1)
                 if sum(
                     1 for c in detected_table.table_cells
-                    if c.column == col and c.text and c.text.strip().replace('\u200b','')
+                    if c.start_col_offset_idx <= col <= c.end_col_offset_idx and c.text
+                    and c.text.strip().replace('\u200b','')
                 ) / max(1, detected_table.num_rows) < 0.1
             )
             total_penalty += (sparse_cols / detected_table.num_cols) * 0.1
 
         if detected_table.num_rows > 1:
             sparse_rows = sum(
-                1 for row in range(1, detected_table.num_rows + 1)
+                1 for row in range(detected_table.num_rows)  # 0-based
                 if sum(
                     1 for c in detected_table.table_cells
-                    if c.row == row and c.text and c.text.strip().replace('\u200b','')
+                    if c.start_row_offset_idx <= row <= c.end_row_offset_idx
+                    and c.text and c.text.strip().replace('\u200b','')
                 ) / max(1, detected_table.num_cols) < 0.1
             )
             total_penalty += (sparse_rows / detected_table.num_rows) * 0.1
@@ -387,10 +392,14 @@ class TableConfidenceModel(BasePageModel):
         
         # Calculate bonus for consistent column alignment
         aligned_fraction = 0.0
-        if detected_table.num_cols > 1 and all(hasattr(c, "column") for c in detected_table.table_cells):
+        if detected_table.num_cols > 1:
             consistent_columns = 0
-            for col in range(1, detected_table.num_cols + 1):
-                col_x_coords = [c.bbox.x for c in detected_table.table_cells if c.column == col]
+            for col in range(detected_table.num_cols):  # zero-based index
+                col_x_coords = [
+                    c.bbox.l  # use left edge for alignment
+                    for c in detected_table.table_cells
+                    if c.start_col_offset_idx <= col <= c.end_col_offset_idx
+                ]
                 if len(col_x_coords) > 1 and np.std(col_x_coords) < 5:
                     consistent_columns += 1
             aligned_fraction = consistent_columns / detected_table.num_cols
