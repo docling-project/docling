@@ -32,8 +32,6 @@ from docling.models.table_structure_model import TableStructureModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.model_downloader import download_models
 from docling.utils.profiling import ProfilingScope, TimeRecorder
-from docling.models.table_confidence_model import TableConfidenceModel, TableConfidenceOptions
-
 
 _log = logging.getLogger(__name__)
 
@@ -88,12 +86,6 @@ class StandardPdfPipeline(PaginatedPipeline):
                 artifacts_path=artifacts_path,
                 options=pipeline_options.table_structure_options,
                 accelerator_options=pipeline_options.accelerator_options,
-            ),
-            
-            # TableConfidenceModel
-            TableConfidenceModel(
-                enabled=pipeline_options.do_table_structure, # Only run if table structure detection is on
-                options=TableConfidenceOptions(),
             ),
             # Page assemble
             PageAssembleModel(options=PageAssembleOptions()),
@@ -258,11 +250,6 @@ class StandardPdfPipeline(PaginatedPipeline):
                                 cropped_im, dpi=int(72 * scale)
                             )
 
-            if len(conv_res.pages) > 0:
-                for page in conv_res.pages:
-                    if page.predictions.confidence_scores and page.predictions.confidence_scores.tables:
-                        conv_res.confidence.pages[page.page_no] = page.predictions.confidence_scores
-            
             # Aggregate confidence values for document:
             if len(conv_res.pages) > 0:
                 with warnings.catch_warnings():

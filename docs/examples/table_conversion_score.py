@@ -1,14 +1,119 @@
 import math
-import re
-from typing import Iterable, List
-
+import logging
 import numpy as np
-from pydantic import BaseModel
+import re
+from typing import Iterable, List, Optional, Dict
+from collections import defaultdict
+from pydantic import BaseModel, Field, computed_field
 
-from docling.datamodel.base_models import Table, TableConfidenceScores, ScoreValue, BoundingBox
+from docling.datamodel.base_models import (
+    QualityGrade,
+    PageConfidenceScores as BasePageConfidenceScores,
+    ConfidenceReport as BaseConfidenceReport,
+)
+
+from docling.datamodel.base_models import Table, ScoreValue, BoundingBox
 from docling.datamodel.document import ConversionResult, Page
 from docling.models.base_model import BasePageModel
 from docling.utils.profiling import TimeRecorder
+
+_log = logging.getLogger(__name__)
+
+
+class TableConfidenceOptions(BaseModel):
+    """Placeholder for future configuration options for the model."""
+    # Order: [structure_score, cell_text_score, completeness_score, layout_score]
+    weights: List[float] = Field(default_factory=lambda: [0.3, 0.3, 0.2, 0.2])
+
+
+class TableConfidenceScores(BaseModel):
+    """Holds the individual confidence scores for a single table."""
+    structure_score: float = np.nan
+    cell_text_score: float = np.nan
+    completeness_score: float = np.nan
+    layout_score: float = np.nan
+    options: TableConfidenceOptions
+
+    def total_table_score(self, weights: List[float] = None) -> float:
+        """
+        Calculates the weighted average of the individual confidence scores 
+        to produce a single total score.
+        """
+        scores = [
+            self.structure_score,
+            self.cell_text_score,
+            self.completeness_score,
+            self.layout_score,
+        ]
+
+        weights = self.options.weights
+        valid = [(s, w) for s, w in zip(scores, weights) if not math.isnan(s)]
+        if not valid:
+            return np.nan
+
+        scores, weights = zip(*valid)
+        weights = [w / sum(weights) for w in weights]
+        return float(np.average(scores, weights=weights))
+
+    def _score_to_grade(self, score: float) -> QualityGrade:
+        if score < 0.5:
+            return QualityGrade.POOR
+        elif score < 0.8:
+            return QualityGrade.FAIR
+        elif score < 0.9:
+            return QualityGrade.GOOD
+        else:
+            return QualityGrade.EXCELLENT
+
+    @property
+    def grade(self, weights: List[float] = None) -> QualityGrade:
+        return self._score_to_grade(self.total_table_score(weights=weights))
+
+
+class PageConfidenceScores(BasePageConfidenceScores):
+    tables: Dict[int, TableConfidenceScores] = Field(default_factory=dict)
+
+    @property
+    def table_score(self) -> float:
+        if not self.tables:
+            return np.nan
+        return float(np.nanmean([t.total_table_score for t in self.tables.values()]))
+    
+    @classmethod
+    def from_base(cls, base: BasePageConfidenceScores) -> "PageConfidenceScores":
+        """
+        Convert a base PageConfidenceScores into the extended version.
+        Preserves existing fields and initializes `tables` empty.
+        """
+        return cls(
+            parse_score=base.parse_score,
+            layout_score=base.layout_score,
+            ocr_score=base.ocr_score,
+            # old base had table_score as a scalar — drop into tables if needed
+            tables={},
+        )
+
+
+class ConfidenceReport(BaseConfidenceReport):
+    pages: Dict[int, PageConfidenceScores] = Field(
+        default_factory=lambda: defaultdict(PageConfidenceScores)
+    )
+
+    # Document-level fields
+    ocr_score: float = np.nan
+    table_score: float = np.nan
+    layout_score: float = np.nan
+    parse_score: float = np.nan
+
+    @classmethod
+    def from_base(cls, base: BaseConfidenceReport) -> "ConfidenceReport":
+        return cls(
+            pages={pid: PageConfidenceScores.from_base(p) for pid, p in base.pages.items()},
+            ocr_score=getattr(base, "ocr_score", np.nan),
+            table_score=getattr(base, "table_score", np.nan),
+            layout_score=getattr(base, "layout_score", np.nan),
+            parse_score=getattr(base, "parse_score", np.nan),
+        )
 
 
 def _calculate_iou(box1: BoundingBox, box2: BoundingBox) -> float:
@@ -67,11 +172,6 @@ def _adjust_scores(scores: List[float], method: str = "sigmoid") -> List[float]:
     return adjusted
 
 
-class TableConfidenceOptions(BaseModel):
-    """Placeholder for future configuration options for the model."""
-    pass
-
-
 class TableConfidenceModel(BasePageModel):
     """
     Model to score the confidence of detected tables in a document page.
@@ -91,38 +191,51 @@ class TableConfidenceModel(BasePageModel):
         self.options = options
         self.enabled = enabled
         self.adjustment_method = adjustment_method
+    
+    def compute_page_scores(self, conv_res: ConversionResult, pages: Iterable[Page]) -> Dict[int, PageConfidenceScores]:
+        """
+        Computes table confidence scores for each page.
+
+        Args:
+            pages (Iterable[Page]): List of pages to process.
+
+        Returns:
+            Dict[int, PageConfidenceScores]: Mapping of page_no → confidence scores.
+        """
+        page_scores: Dict[int, PageConfidenceScores] = {}
+
+        for page in pages:
+            with TimeRecorder(conv_res, "table_confidence_score"):
+                if not page.predictions or not getattr(page.predictions, "tablestructure", None):
+                    continue
+
+                table_map = getattr(page.predictions.tablestructure, "table_map", {})
+                page_conf = PageConfidenceScores()
+
+                for table_id, table in table_map.items():
+                    table_score = self.calculate_scores(table)
+                    page_conf.tables[table_id] = table_score
+
+                if page_conf.tables:
+                    page_scores[page.page_no] = page_conf
+
+        return page_scores
         
-    def __call__(self, conv_res: ConversionResult, page_batch: Iterable[Page]) -> Iterable[Page]:
+    def __call__(self, conv_res: ConversionResult, pages: Iterable[Page] = None) -> Iterable[Page]:
         """
         Processes a batch of pages to calculate confidence scores for each table.
 
         Args:
-            conv_res (ConversionResult): The document conversion result object.
-            page_batch (Iterable[Page]): An iterable of Page objects.
+            conv_res (ConversionResult)
+            pages (Iterable[Page], optional): Defaults to all pages in conv_res.
 
-        Yields:
-            Iterable[Page]: Pages with confidence scores applied to their detected tables.
+        Returns:
+            Dict[int, PageConfidenceScores]: page_no → scores
         """
-        for page in page_batch:
-            if not self.enabled:
-                yield page
-                continue
-                
-            with TimeRecorder(conv_res, "table_confidence_score"):
-                if page.predictions and getattr(page.predictions, 'tablestructure', None):
-                    table_map = getattr(page.predictions.tablestructure, 'table_map', {})
-                    
-                    for table_id, table in table_map.items():
-                        new_table_scores = self.calculate_scores(table)
+        if pages is None:
+            pages = conv_res.pages
 
-                        # Store the scores in page predictions
-                        if not hasattr(page.predictions, "confidence_scores"):
-                            page.predictions.confidence_scores = type("ConfidenceScores", (), {"tables": {}})()
-
-                        page.predictions.confidence_scores.tables[table_id] = new_table_scores
-                        table.detailed_scores = new_table_scores
-
-            yield page
+        return self.compute_page_scores(conv_res, pages)
 
 
     def calculate_scores(self, detected_table: Table) -> TableConfidenceScores:
@@ -142,7 +255,7 @@ class TableConfidenceModel(BasePageModel):
             TableConfidenceScores: An object containing all calculated scores, each
                                    wrapped in a `ScoreValue` object.
         """
-        scores = TableConfidenceScores()
+        scores = TableConfidenceScores(options=self.options)
 
         scores.structure_score = self._calculate_structure_score(detected_table)
         scores.cell_text_score = self._calculate_cell_text_score(detected_table)
@@ -428,3 +541,65 @@ class TableConfidenceModel(BasePageModel):
         if self.adjustment_method:
             layout_score = _adjust_scores([layout_score], method=self.adjustment_method)[0]
         return ScoreValue(layout_score)
+
+
+def main():
+    from pathlib import Path
+    from docling.datamodel.pipeline_options import TableStructureOptions, TableFormerMode
+    from docling.document_converter import DocumentConverter, PdfFormatOption
+    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.datamodel.base_models import InputFormat
+
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_pdf_path = data_folder / "pdf/2206.01062.pdf"
+
+    # Configure table structure to use the ACCURATE mode
+    table_options = TableStructureOptions(
+        table_former_mode=TableFormerMode.ACCURATE
+    )
+
+    # 1. Define the pipeline options, ensuring table structure is enabled.
+    pipeline_options = PdfPipelineOptions(
+        do_ocr=True,
+        force_full_page_ocr=True,
+        do_table_structure=True,
+        table_structure_options=table_options,
+        # ocr_options = EasyOcrOptions(force_full_page_ocr=True)
+    )
+    
+    # 2. Instantiate the DocumentConverter with the pipeline options.
+    doc_converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options
+            )
+        }
+    )
+
+    # 3. Run the conversion.
+    conv_result: ConversionResult = doc_converter.convert(source=input_pdf_path)
+
+    table_options = TableConfidenceOptions(
+        # If not specified, uses default weights
+        # Order: [structure_score, cell_text_score, completeness_score, layout_score]
+        weights=[0.25, 0.25, 0.25, 0.25]
+    )
+
+    # 4. Compute Table Conversion Confidence Scores as post-processing step.
+    table_conf_model = TableConfidenceModel(
+        options=table_options,
+        enabled=True,
+        adjustment_method="sigmoid"
+    )
+
+    # 5. Get table confidence mapping
+    table_scores = table_conf_model(conv_result)
+
+    for page_no, page_conf in table_scores.items():
+        print(f"Page {page_no}:")
+        for table_id, t_score in page_conf.tables.items():
+            print(f"Table {table_id}: scores=<{t_score}>, grade={t_score.grade}")
+
+
+if __name__ == "__main__":
+    main()
