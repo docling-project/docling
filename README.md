@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/docling-project-docling-badge.png)](https://mseep.ai/app/docling-project-docling)
+
 <p align="center">
   <a href="https://github.com/docling-project/docling">
     <img loading="lazy" alt="Docling" src="https://github.com/docling-project/docling/raw/main/docs/assets/docling_processing.png" width="100%"/>
