@@ -117,10 +117,11 @@ nav:
       - "Enrich a DoclingDocument": examples/enrich_doclingdocument.py
     - 🗂️ More examples:
       - examples/dpk-ingest-chunk-tokenize.ipynb
-      - examples/rag_milvus.ipynb
-      - examples/rag_weaviate.ipynb
-      - RAG with Granite [↗]: https://github.com/ibm-granite-community/granite-snack-cookbook/blob/main/recipes/RAG/Granite_Docling_RAG.ipynb
       - examples/rag_azuresearch.ipynb
+      - RAG with Granite [↗]: https://github.com/ibm-granite-community/granite-snack-cookbook/blob/main/recipes/RAG/Granite_Docling_RAG.ipynb
+      - examples/rag_milvus.ipynb
+      - examples/rag_opensearch.ipynb
+      - examples/rag_weaviate.ipynb
       - examples/retrieval_qdrant.ipynb
   - Integrations:
     - Integrations: integrations/index.md
