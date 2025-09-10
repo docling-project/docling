@@ -194,6 +194,9 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             class ExtractionTemplateFactory(ModelFactory[template]):  # type: ignore
                 __use_examples__ = True  # prefer Field(examples=...) when present
                 __use_defaults__ = True  # use field defaults instead of random values
+                __check_model__ = (
+                    True  # setting the value to avoid deprecation warnings
+                )
 
             return ExtractionTemplateFactory.build().model_dump_json(indent=2)  # type: ignore
         else:
