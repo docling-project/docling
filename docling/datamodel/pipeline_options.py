@@ -135,6 +135,8 @@ class EasyOcrOptions(OcrOptions):
     recog_network: Optional[str] = "standard"
     download_enabled: bool = True
 
+    suppress_mps_warnings: bool = True
+
     model_config = ConfigDict(
         extra="forbid",
         protected_namespaces=(),

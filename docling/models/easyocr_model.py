@@ -79,7 +79,8 @@ class EasyOcrModel(BaseOcrModel):
                 model_storage_directory = str(artifacts_path / self._model_repo_folder)
 
             with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message=".*pin_memory.*MPS.*")
+                if self.options.suppress_mps_warnings:
+                    warnings.filterwarnings("ignore", message=".*pin_memory.*MPS.*")
                 self.reader = easyocr.Reader(
                     lang_list=self.options.lang,
                     gpu=use_gpu,
@@ -151,9 +152,10 @@ class EasyOcrModel(BaseOcrModel):
                         im = numpy.array(high_res_image)
 
                         with warnings.catch_warnings():
-                            warnings.filterwarnings(
-                                "ignore", message=".*pin_memory.*MPS.*"
-                            )
+                            if self.options.suppress_mps_warnings:
+                                warnings.filterwarnings(
+                                    "ignore", message=".*pin_memory.*MPS.*"
+                                )
 
                             result = self.reader.readtext(im)
 
