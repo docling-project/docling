@@ -78,14 +78,16 @@ class EasyOcrModel(BaseOcrModel):
                 download_enabled = False
                 model_storage_directory = str(artifacts_path / self._model_repo_folder)
 
-            self.reader = easyocr.Reader(
-                lang_list=self.options.lang,
-                gpu=use_gpu,
-                model_storage_directory=model_storage_directory,
-                recog_network=self.options.recog_network,
-                download_enabled=download_enabled,
-                verbose=False,
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=".*pin_memory.*MPS.*")
+                self.reader = easyocr.Reader(
+                    lang_list=self.options.lang,
+                    gpu=use_gpu,
+                    model_storage_directory=model_storage_directory,
+                    recog_network=self.options.recog_network,
+                    download_enabled=download_enabled,
+                    verbose=False,
+                )
 
     @staticmethod
     def download_models(
@@ -147,7 +149,13 @@ class EasyOcrModel(BaseOcrModel):
                             scale=self.scale, cropbox=ocr_rect
                         )
                         im = numpy.array(high_res_image)
-                        result = self.reader.readtext(im)
+
+                        with warnings.catch_warnings():
+                            warnings.filterwarnings(
+                                "ignore", message=".*pin_memory.*MPS.*"
+                            )
+
+                            result = self.reader.readtext(im)
 
                         del high_res_image
                         del im
