@@ -144,7 +144,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             self.vlm_model = AutoModelForImageTextToText.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
-                torch_dtype=self.vlm_options.torch_dtype,
+                dtype=self.vlm_options.torch_dtype,
                 _attn_implementation=(
                     "flash_attention_2"
                     if self.device.startswith("cuda")

@@ -67,7 +67,7 @@ class PictureDescriptionVlmModel(
                 self.model = AutoModelForImageTextToText.from_pretrained(
                     artifacts_path,
                     device_map=self.device,
-                    torch_dtype=torch.bfloat16,
+                    dtype=torch.bfloat16,
                     _attn_implementation=(
                         "flash_attention_2"
                         if self.device.startswith("cuda")
