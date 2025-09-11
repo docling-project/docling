@@ -48,6 +48,7 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
+    ConvertPipelineOptions,
     EasyOcrOptions,
     OcrOptions,
     PaginatedPipelineOptions,
@@ -71,8 +72,13 @@ from docling.datamodel.vlm_model_specs import (
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
+    ExcelFormatOption,
     FormatOption,
+    HTMLFormatOption,
+    MarkdownFormatOption,
     PdfFormatOption,
+    PowerpointFormatOption,
+    WordFormatOption,
 )
 from docling.models.factories import get_ocr_factory
 from docling.pipeline.asr_pipeline import AsrPipeline
@@ -626,10 +632,33 @@ def convert(  # noqa: C901
                 backend=MetsGbsDocumentBackend,
             )
 
+            # SimplePipeline options
+            simple_format_option = ConvertPipelineOptions(
+                do_picture_description=enrich_picture_description,
+                do_picture_classification=enrich_picture_classes,
+            )
+            if artifacts_path is not None:
+                simple_format_option.artifacts_path = artifacts_path
+
             format_options = {
                 InputFormat.PDF: pdf_format_option,
                 InputFormat.IMAGE: pdf_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
+                InputFormat.DOCX: WordFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.PPTX: PowerpointFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.XLSX: ExcelFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.HTML: HTMLFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.MD: MarkdownFormatOption(
+                    pipeline_options=simple_format_option
+                ),
             }
 
         elif pipeline == ProcessingPipeline.VLM:
