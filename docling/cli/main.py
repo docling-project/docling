@@ -64,6 +64,8 @@ from docling.datamodel.vlm_model_specs import (
     GOT2_TRANSFORMERS,
     GRANITE_VISION_OLLAMA,
     GRANITE_VISION_TRANSFORMERS,
+    GRANITEDOCLING_MLX,
+    GRANITEDOCLING_TRANSFORMERS,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
     SMOLDOCLING_VLLM,
@@ -679,6 +681,18 @@ def convert(  # noqa: C901
                         import mlx_vlm
 
                         pipeline_options.vlm_options = SMOLDOCLING_MLX
+                    except ImportError:
+                        _log.warning(
+                            "To run SmolDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
+            elif vlm_model == VlmModelType.GRANITEDOCLING:
+                pipeline_options.vlm_options = GRANITEDOCLING_TRANSFORMERS
+                if sys.platform == "darwin":
+                    try:
+                        import mlx_vlm
+
+                        pipeline_options.vlm_options = GRANITEDOCLING_MLX
                     except ImportError:
                         _log.warning(
                             "To run SmolDocling faster, please install mlx-vlm:\n"
