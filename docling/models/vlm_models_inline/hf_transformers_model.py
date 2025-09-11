@@ -162,7 +162,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                         images.append(hi_res_image)
 
                         # Define prompt structure
-                        user_prompt = self.vlm_options.build_prompt(page.parsed_page)
+                        user_prompt = self.vlm_options.build_prompt(page)
 
                         user_prompts.append(user_prompt)
                         pages_with_images.append(page)
