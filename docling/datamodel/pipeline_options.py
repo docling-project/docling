@@ -259,11 +259,21 @@ class PipelineOptions(BaseOptions):
     accelerator_options: AcceleratorOptions = AcceleratorOptions()
     enable_remote_services: bool = False
     allow_external_plugins: bool = False
-
-
-class PaginatedPipelineOptions(PipelineOptions):
     artifacts_path: Optional[Union[Path, str]] = None
 
+
+class ConvertPipelineOptions(PipelineOptions):
+    """Base convert pipeline options."""
+
+    do_picture_classification: bool = False  # True: classify pictures in documents
+
+    do_picture_description: bool = False  # True: run describe pictures in documents
+    picture_description_options: PictureDescriptionBaseOptions = (
+        smolvlm_picture_description
+    )
+
+
+class PaginatedPipelineOptions(ConvertPipelineOptions):
     images_scale: float = 1.0
     generate_page_images: bool = False
     generate_picture_images: bool = False
@@ -295,13 +305,11 @@ class LayoutOptions(BaseModel):
 
 class AsrPipelineOptions(PipelineOptions):
     asr_options: Union[InlineAsrOptions] = asr_model_specs.WHISPER_TINY
-    artifacts_path: Optional[Union[Path, str]] = None
 
 
 class VlmExtractionPipelineOptions(PipelineOptions):
     """Options for extraction pipeline."""
 
-    artifacts_path: Optional[Union[Path, str]] = None
     vlm_options: Union[InlineVlmOptions] = NU_EXTRACT_2B_TRANSFORMERS
 
 
@@ -312,8 +320,6 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     do_ocr: bool = True  # True: perform OCR, replace programmatic PDF text
     do_code_enrichment: bool = False  # True: perform code OCR
     do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
-    do_picture_classification: bool = False  # True: classify pictures in documents
-    do_picture_description: bool = False  # True: run describe pictures in documents
     force_backend_text: bool = (
         False  # (To be used with vlms, or other generative models)
     )
@@ -321,9 +327,6 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
 
     table_structure_options: TableStructureOptions = TableStructureOptions()
     ocr_options: OcrOptions = EasyOcrOptions()
-    picture_description_options: PictureDescriptionBaseOptions = (
-        smolvlm_picture_description
-    )
     layout_options: LayoutOptions = LayoutOptions()
 
     images_scale: float = 1.0

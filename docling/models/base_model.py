@@ -4,7 +4,13 @@ from collections.abc import Iterable
 from typing import Any, Generic, Optional, Protocol, Type, Union
 
 import numpy as np
-from docling_core.types.doc import BoundingBox, DocItem, DoclingDocument, NodeItem
+from docling_core.types.doc import (
+    BoundingBox,
+    DocItem,
+    DoclingDocument,
+    NodeItem,
+    PictureItem,
+)
 from PIL.Image import Image
 from typing_extensions import TypeVar
 
@@ -164,8 +170,17 @@ class BaseItemAndImageEnrichmentModel(
             return None
 
         assert isinstance(element, DocItem)
-        element_prov = element.prov[0]
 
+        # Allow the case of documents without page images but embedded images (e.g. Word and HTML docs)
+        if len(element.prov) == 0 and isinstance(element, PictureItem):
+            embedded_im = element.get_image(conv_res.document)
+            if embedded_im is not None:
+                return ItemAndImageEnrichmentElement(item=element, image=embedded_im)
+            else:
+                return None
+
+        # Crop the image form the page
+        element_prov = element.prov[0]
         bbox = element_prov.bbox
         width = bbox.r - bbox.l
         height = bbox.t - bbox.b
@@ -183,4 +198,14 @@ class BaseItemAndImageEnrichmentModel(
         cropped_image = conv_res.pages[page_ix].get_image(
             scale=self.images_scale, cropbox=expanded_bbox
         )
+
+        # Allow for images being embedded without the page backend or page images
+        if cropped_image is None and isinstance(element, PictureItem):
+            embedded_im = element.get_image(conv_res.document)
+            if embedded_im is not None:
+                return ItemAndImageEnrichmentElement(item=element, image=embedded_im)
+            else:
+                return None
+
+        # Return the proper cropped image
         return ItemAndImageEnrichmentElement(item=element, image=cropped_image)

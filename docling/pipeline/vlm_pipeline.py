@@ -54,18 +54,6 @@ class VlmPipeline(PaginatedPipeline):
 
         self.pipeline_options: VlmPipelineOptions
 
-        artifacts_path: Optional[Path] = None
-        if pipeline_options.artifacts_path is not None:
-            artifacts_path = Path(pipeline_options.artifacts_path).expanduser()
-        elif settings.artifacts_path is not None:
-            artifacts_path = Path(settings.artifacts_path).expanduser()
-
-        if artifacts_path is not None and not artifacts_path.is_dir():
-            raise RuntimeError(
-                f"The value of {artifacts_path=} is not valid. "
-                "When defined, it must point to a folder containing all models required by the pipeline."
-            )
-
         # force_backend_text = False - use text that is coming from VLM response
         # force_backend_text = True - get text from backend using bounding boxes predicted by SmolDocling doctags
         self.force_backend_text = (
@@ -89,7 +77,7 @@ class VlmPipeline(PaginatedPipeline):
                 self.build_pipe = [
                     HuggingFaceMlxModel(
                         enabled=True,  # must be always enabled for this pipeline to make sense.
-                        artifacts_path=artifacts_path,
+                        artifacts_path=self.artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
                     ),
@@ -98,7 +86,7 @@ class VlmPipeline(PaginatedPipeline):
                 self.build_pipe = [
                     HuggingFaceTransformersVlmModel(
                         enabled=True,  # must be always enabled for this pipeline to make sense.
-                        artifacts_path=artifacts_path,
+                        artifacts_path=self.artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
                     ),
@@ -109,7 +97,7 @@ class VlmPipeline(PaginatedPipeline):
                 self.build_pipe = [
                     VllmVlmModel(
                         enabled=True,  # must be always enabled for this pipeline to make sense.
-                        artifacts_path=artifacts_path,
+                        artifacts_path=self.artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
                     ),

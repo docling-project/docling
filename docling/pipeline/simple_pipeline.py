@@ -6,21 +6,21 @@ from docling.backend.abstract_backend import (
 )
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import PipelineOptions
-from docling.pipeline.base_pipeline import BasePipeline
+from docling.datamodel.pipeline_options import ConvertPipelineOptions
+from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
 
 
-class SimplePipeline(BasePipeline):
+class SimplePipeline(ConvertPipeline):
     """SimpleModelPipeline.
 
     This class is used at the moment for formats / backends
     which produce straight DoclingDocument output.
     """
 
-    def __init__(self, pipeline_options: PipelineOptions):
+    def __init__(self, pipeline_options: ConvertPipelineOptions):
         super().__init__(pipeline_options)
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
@@ -47,8 +47,8 @@ class SimplePipeline(BasePipeline):
         return ConversionStatus.SUCCESS
 
     @classmethod
-    def get_default_options(cls) -> PipelineOptions:
-        return PipelineOptions()
+    def get_default_options(cls) -> ConvertPipelineOptions:
+        return ConvertPipelineOptions()
 
     @classmethod
     def is_backend_supported(cls, backend: AbstractDocumentBackend):

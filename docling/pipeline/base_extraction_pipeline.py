@@ -1,18 +1,32 @@
 import logging
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Optional
 
 from docling.datamodel.base_models import ConversionStatus, ErrorItem
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import ExtractionResult, ExtractionTemplateType
-from docling.datamodel.pipeline_options import BaseOptions
+from docling.datamodel.pipeline_options import BaseOptions, PipelineOptions
+from docling.datamodel.settings import settings
 
 _log = logging.getLogger(__name__)
 
 
 class BaseExtractionPipeline(ABC):
-    def __init__(self, pipeline_options: BaseOptions):
+    def __init__(self, pipeline_options: PipelineOptions):
         self.pipeline_options = pipeline_options
+
+        self.artifacts_path: Optional[Path] = None
+        if pipeline_options.artifacts_path is not None:
+            self.artifacts_path = Path(pipeline_options.artifacts_path).expanduser()
+        elif settings.artifacts_path is not None:
+            self.artifacts_path = Path(settings.artifacts_path).expanduser()
+
+        if self.artifacts_path is not None and not self.artifacts_path.is_dir():
+            raise RuntimeError(
+                f"The value of {self.artifacts_path=} is not valid. "
+                "When defined, it must point to a folder containing all models required by the pipeline."
+            )
 
     def execute(
         self,
@@ -54,5 +68,5 @@ class BaseExtractionPipeline(ABC):
 
     @classmethod
     @abstractmethod
-    def get_default_options(cls) -> BaseOptions:
+    def get_default_options(cls) -> PipelineOptions:
         pass

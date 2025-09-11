@@ -1,7 +1,6 @@
 import inspect
 import json
 import logging
-from pathlib import Path
 from typing import Optional
 
 from PIL.Image import Image
@@ -16,7 +15,10 @@ from docling.datamodel.extraction import (
     ExtractionResult,
     ExtractionTemplateType,
 )
-from docling.datamodel.pipeline_options import BaseOptions, VlmExtractionPipelineOptions
+from docling.datamodel.pipeline_options import (
+    PipelineOptions,
+    VlmExtractionPipelineOptions,
+)
 from docling.datamodel.settings import settings
 from docling.models.vlm_models_inline.nuextract_transformers_model import (
     NuExtractTransformersModel,
@@ -35,22 +37,10 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         self.accelerator_options = pipeline_options.accelerator_options
         self.pipeline_options: VlmExtractionPipelineOptions
 
-        artifacts_path: Optional[Path] = None
-        if pipeline_options.artifacts_path is not None:
-            artifacts_path = Path(pipeline_options.artifacts_path).expanduser()
-        elif settings.artifacts_path is not None:
-            artifacts_path = Path(settings.artifacts_path).expanduser()
-
-        if artifacts_path is not None and not artifacts_path.is_dir():
-            raise RuntimeError(
-                f"The value of {artifacts_path=} is not valid. "
-                "When defined, it must point to a folder containing all models required by the pipeline."
-            )
-
         # Create VLM model instance
         self.vlm_model = NuExtractTransformersModel(
             enabled=True,
-            artifacts_path=artifacts_path,  # Will download automatically
+            artifacts_path=self.artifacts_path,  # Will download automatically
             accelerator_options=self.accelerator_options,
             vlm_options=pipeline_options.vlm_options,
         )
@@ -203,5 +193,5 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
             raise ValueError(f"Unsupported template type: {type(template)}")
 
     @classmethod
-    def get_default_options(cls) -> BaseOptions:
+    def get_default_options(cls) -> PipelineOptions:
         return VlmExtractionPipelineOptions()
