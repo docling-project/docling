@@ -79,9 +79,7 @@ def test_e2e_conversions():
                 RapidOcrOptions(
                     force_full_page_ocr=True,
                     rec_font_path="test",
-                    rapidocr_params={
-                        "Rec.font_path": None
-                    },  # should overwrite rec_font_path
+                    rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
                 ),
                 False,
             )
