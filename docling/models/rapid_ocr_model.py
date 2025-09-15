@@ -62,32 +62,40 @@ class RapidOcrModel(BaseOcrModel):
             }
             backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
 
+            params = {
+                # Global settings (these are still correct)
+                "Global.text_score": self.options.text_score,
+                "Global.font_path": self.options.font_path,
+                # "Global.verbose": self.options.print_verbose,
+                # Detection model settings
+                "Det.model_path": self.options.det_model_path,
+                "Det.use_cuda": use_cuda,
+                "Det.use_dml": use_dml,
+                "Det.intra_op_num_threads": intra_op_num_threads,
+                # Classification model settings
+                "Cls.model_path": self.options.cls_model_path,
+                "Cls.use_cuda": use_cuda,
+                "Cls.use_dml": use_dml,
+                "Cls.intra_op_num_threads": intra_op_num_threads,
+                # Recognition model settings
+                "Rec.model_path": self.options.rec_model_path,
+                "Rec.font_path": self.options.rec_font_path,
+                "Rec.keys_path": self.options.rec_keys_path,
+                "Rec.use_cuda": use_cuda,
+                "Rec.use_dml": use_dml,
+                "Rec.intra_op_num_threads": intra_op_num_threads,
+                "Det.engine_type": backend_enum,
+                "Cls.engine_type": backend_enum,
+                "Rec.engine_type": backend_enum,
+            }
+
+            user_params = self.options.rapidocr_params
+            if user_params:
+                _log.debug("Overwriting RapidOCR params with user-provided values.")
+                params.update(user_params)
+
             self.reader = RapidOCR(
-                params={
-                    # Global settings (these are still correct)
-                    "Global.text_score": self.options.text_score,
-                    # "Global.verbose": self.options.print_verbose,
-                    # Detection model settings
-                    "Det.model_path": self.options.det_model_path,
-                    "Det.use_cuda": use_cuda,
-                    "Det.use_dml": use_dml,
-                    "Det.intra_op_num_threads": intra_op_num_threads,
-                    # Classification model settings
-                    "Cls.model_path": self.options.cls_model_path,
-                    "Cls.use_cuda": use_cuda,
-                    "Cls.use_dml": use_dml,
-                    "Cls.intra_op_num_threads": intra_op_num_threads,
-                    # Recognition model settings
-                    "Rec.model_path": self.options.rec_model_path,
-                    "Rec.font_path": self.options.rec_font_path,
-                    "Rec.keys_path": self.options.rec_keys_path,
-                    "Rec.use_cuda": use_cuda,
-                    "Rec.use_dml": use_dml,
-                    "Rec.intra_op_num_threads": intra_op_num_threads,
-                    "Det.engine_type": backend_enum,
-                    "Cls.engine_type": backend_enum,
-                    "Rec.engine_type": backend_enum,
-                }
+                params=params,
             )
 
     def __call__(
