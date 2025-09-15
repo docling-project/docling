@@ -80,7 +80,7 @@ def test_e2e_conversions():
                     force_full_page_ocr=True,
                     rec_font_path="test",
                     rapidocr_params={
-                        "rec_font_path": None
+                        "Rec.font_path": None
                     },  # should overwrite rec_font_path
                 ),
                 False,
