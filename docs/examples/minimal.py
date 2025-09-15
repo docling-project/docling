@@ -1,19 +1,22 @@
-"""
-Simple conversion: one document to Markdown
-==========================================
-
-What this example does
-- Converts a single source (URL or local file path) to a unified Docling
-  document and exports to Markdown.
-
-Requirements
-- Python 3.9+
-- Install Docling: `pip install docling`
-
-Notes
-- The converter auto-detects supported formats (PDF, DOCX, HTML, PPTX, images, etc.).
-- For batch processing or saving outputs to files, see `docs/examples/batch_convert.py`.
-"""
+# %% [markdown]
+# Simple conversion: one document to Markdown
+# ==========================================
+#
+# What this example does
+# - Converts a single source (URL or local file path) to a unified Docling
+#   document and prints Markdown to stdout.
+#
+# Requirements
+# - Python 3.9+
+# - Install Docling: `pip install docling`
+#
+# How to run
+# - Use the default sample URL: `python docs/examples/minimal.py`
+# - To use your own file or URL, edit the `source` variable below.
+#
+# Notes
+# - The converter auto-detects supported formats (PDF, DOCX, HTML, PPTX, images, etc.).
+# - For batch processing or saving outputs to files, see `docs/examples/batch_convert.py`.
 
 from docling.document_converter import DocumentConverter
 
