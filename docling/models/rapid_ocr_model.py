@@ -89,6 +89,10 @@ class RapidOcrModel(BaseOcrModel):
                 "Rec.engine_type": backend_enum,
             }
 
+            if self.options.rec_font_path is not None:
+                _log.warning(
+                    "The 'rec_font_path' option for RapidOCR is deprecated. Please use 'font_path' instead."
+                )
             user_params = self.options.rapidocr_params
             if user_params:
                 _log.debug("Overwriting RapidOCR params with user-provided values.")
