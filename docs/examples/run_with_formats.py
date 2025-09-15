@@ -1,3 +1,32 @@
+# %% [markdown]
+# Run conversion across multiple input formats and customize handling per type.
+#
+# What this example does
+# - Demonstrates converting a mixed list of files (PDF, DOCX, PPTX, HTML, images, etc.).
+# - Shows how to restrict `allowed_formats` and override `format_options` per format.
+# - Writes results (Markdown, JSON, YAML) to `scratch/`.
+#
+# Prerequisites
+# - Install Docling and any format-specific dependencies (e.g., for DOCX/PPTX parsing).
+# - Ensure you can import `docling` from your Python environment.
+# - YAML export requires `PyYAML` (`pip install pyyaml`).
+#
+# How to run
+# - From the repository root, run: `python docs/examples/run_with_formats.py`.
+# - Outputs are written under `scratch/` next to where you run the script.
+# - If `scratch/` does not exist, create it before running.
+#
+# Customizing inputs
+# - Update `input_paths` to include or remove files on your machine.
+# - Non-whitelisted formats are ignored (see `allowed_formats`).
+#
+# Notes
+# - `allowed_formats`: explicit whitelist of formats that will be processed.
+# - `format_options`: per-format pipeline/backend overrides. Everything is optional; defaults exist.
+# - Exports: per input, writes `<stem>.md`, `<stem>.json`, and `<stem>.yaml` in `scratch/`.
+
+# %%
+
 import json
 import logging
 from pathlib import Path
@@ -34,6 +63,8 @@ def main():
 
     ## to customize use:
 
+    # Below we explicitly whitelist formats and override behavior for some of them.
+    # You can omit this block and use the defaults (see above) for a quick start.
     doc_converter = (
         DocumentConverter(  # all of the below is optional, has internal defaults.
             allowed_formats=[
@@ -51,7 +82,9 @@ def main():
                     pipeline_cls=StandardPdfPipeline, backend=PyPdfiumDocumentBackend
                 ),
                 InputFormat.DOCX: WordFormatOption(
-                    pipeline_cls=SimplePipeline  # , backend=MsWordDocumentBackend
+                    pipeline_cls=SimplePipeline  # or set a backend, e.g., MsWordDocumentBackend
+                    # If you change the backend, remember to import it, e.g.:
+                    #   from docling.backend.msword_backend import MsWordDocumentBackend
                 ),
             },
         )
@@ -60,13 +93,13 @@ def main():
     conv_results = doc_converter.convert_all(input_paths)
 
     for res in conv_results:
-        out_path = Path("scratch")
+        out_path = Path("scratch")  # ensure this directory exists before running
         print(
             f"Document {res.input.file.name} converted."
             f"\nSaved markdown output to: {out_path!s}"
         )
         _log.debug(res.document._export_to_indented_text(max_text_len=16))
-        # Export Docling document format to markdowndoc:
+        # Export Docling document to Markdown:
         with (out_path / f"{res.input.file.stem}.md").open("w") as fp:
             fp.write(res.document.export_to_markdown())
 

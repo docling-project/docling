@@ -1,6 +1,21 @@
-# WARNING
-# This example demonstrates only how to develop a new enrichment model.
-# It does not run the actual formula understanding model.
+# %% [markdown]
+# Developing an enrichment model example (formula understanding: scaffold only).
+#
+# What this example does
+# - Shows how to define pipeline options, an enrichment model, and extend a pipeline.
+# - Displays cropped images of formula items and yields them back unchanged.
+#
+# Important
+# - This is a development scaffold; it does not run a real formula understanding model.
+#
+# How to run
+# - From the repo root: `python docs/examples/develop_formula_understanding.py`.
+#
+# Notes
+# - Set `do_formula_understanding=True` to enable the example enrichment stage.
+# - Extends `StandardPdfPipeline` and keeps the backend when enrichment is enabled.
+
+# %%
 
 import logging
 from collections.abc import Iterable
@@ -42,6 +57,8 @@ class ExampleFormulaUnderstandingEnrichmentModel(BaseItemAndImageEnrichmentModel
             return
 
         for enrich_element in element_batch:
+            # Opens a window for each cropped formula image; comment this out when
+            # running headless or processing many items to avoid blocking spam.
             enrich_element.image.show()
 
             yield enrich_element.item

@@ -1,8 +1,28 @@
-# Compare VLM models
-# ==================
+# %% [markdown]
+# Compare different VLM models by running the VLM pipeline and timing outputs.
 #
-# This example runs the VLM pipeline with different vision-language models.
-# Their runtime as well output quality is compared.
+# What this example does
+# - Iterates through a list of VLM model configurations and converts the same file.
+# - Prints per-page generation times and saves JSON/MD/HTML to `scratch/`.
+# - Summarizes total inference time and pages processed in a table.
+#
+# Requirements
+# - Install `tabulate` for pretty printing (`pip install tabulate`).
+#
+# Prerequisites
+# - Install Docling with VLM extras. Ensure models can be downloaded or are available.
+#
+# How to run
+# - From the repo root: `python docs/examples/compare_vlm_models.py`.
+# - Results are saved to `scratch/` with filenames including the model and framework.
+#
+# Notes
+# - MLX models are skipped automatically on non-macOS platforms.
+# - On CUDA systems, you can enable flash_attention_2 (see commented lines).
+# - Running multiple VLMs can be GPU/CPU intensive and time‑consuming; ensure
+#   enough VRAM/system RAM and close other memory‑heavy apps.
+
+# %%
 
 import json
 import sys
@@ -31,6 +51,8 @@ from docling.pipeline.vlm_pipeline import VlmPipeline
 
 
 def convert(sources: list[Path], converter: DocumentConverter):
+    # Note: this helper assumes a single-item `sources` list. It returns after
+    # processing the first source to keep runtime/output focused.
     model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
     framework = pipeline_options.vlm_options.inference_framework
     for source in sources:
@@ -61,6 +83,8 @@ def convert(sources: list[Path], converter: DocumentConverter):
 
         print("===== Final output of the converted document =======")
 
+        # Manual export for illustration. Below, `save_as_json()` writes the same
+        # JSON again; kept intentionally to show both approaches.
         with (out_path / f"{fname}.json").open("w") as fp:
             fp.write(json.dumps(res.document.export_to_dict()))
 

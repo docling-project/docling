@@ -1,6 +1,26 @@
-## Enrich DoclingDocument
-# This example allows to run Docling enrichment models on documents which have been already converted
-# and stored as serialized DoclingDocument JSON files.
+# %% [markdown]
+# Enrich an existing DoclingDocument JSON with a custom model (post-conversion).
+#
+# What this example does
+# - Loads a previously converted DoclingDocument from JSON (no reconversion).
+# - Uses a backend to crop images for items and runs an enrichment model in batches.
+# - Prints a few example annotations to stdout.
+#
+# Prerequisites
+# - A DoclingDocument JSON produced by another conversion (path configured below).
+# - Install Docling and dependencies for the chosen enrichment model.
+# - Ensure the JSON and the referenced PDF match (same document/version), so
+#   provenance bounding boxes line up for accurate cropping.
+#
+# How to run
+# - From the repo root: `python docs/examples/enrich_doclingdocument.py`.
+# - Adjust `input_doc_path` and `input_pdf_path` if your data is elsewhere.
+#
+# Notes
+# - `BATCH_SIZE` controls how many elements are passed to the model at once.
+# - `prepare_element()` crops context around elements based on the model’s expansion.
+
+# %%
 
 ### Load modules
 
@@ -24,6 +44,7 @@ from docling.utils.utils import chunkify
 ### Define batch size used for processing
 
 BATCH_SIZE = 4
+# Trade‑off: larger batches improve throughput but increase memory usage.
 
 ### From DocItem to the model inputs
 # The following function is responsible for taking an item and applying the required pre-processing for the model.

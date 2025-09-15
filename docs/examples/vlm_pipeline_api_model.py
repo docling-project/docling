@@ -1,3 +1,31 @@
+# %% [markdown]
+# Use the VLM pipeline with remote API models (LM Studio, Ollama, watsonx.ai).
+#
+# What this example does
+# - Shows how to configure `ApiVlmOptions` for different VLM providers.
+# - Converts a single PDF page using the VLM pipeline and prints Markdown.
+#
+# Prerequisites
+# - Install Docling with VLM extras and `python-dotenv` if using environment files.
+# - For local APIs: run LM Studio (HTTP server) or Ollama locally.
+# - For cloud APIs: set required environment variables (see below).
+# - Requires `requests` for HTTP calls and `python-dotenv` if loading env vars from `.env`.
+#
+# How to run
+# - From the repo root: `python docs/examples/vlm_pipeline_api_model.py`.
+# - The script prints the converted Markdown to stdout.
+#
+# Choosing a provider
+# - Uncomment exactly one `pipeline_options.vlm_options = ...` block below.
+# - Keep `enable_remote_services=True` to permit calling remote APIs.
+#
+# Notes
+# - LM Studio default endpoint: `http://localhost:1234/v1/chat/completions`.
+# - Ollama default endpoint: `http://localhost:11434/v1/chat/completions`.
+# - watsonx.ai requires `WX_API_KEY` and `WX_PROJECT_ID` in env/`.env`.
+
+# %%
+
 import json
 import logging
 import os
@@ -170,14 +198,16 @@ def main():
     data_folder = Path(__file__).parent / "../../tests/data"
     input_doc_path = data_folder / "pdf/2305.03393v1-pg9.pdf"
 
+    # Configure the VLM pipeline. Enabling remote services allows HTTP calls to
+    # locally hosted APIs (LM Studio, Ollama) or cloud services.
     pipeline_options = VlmPipelineOptions(
-        enable_remote_services=True  # <-- this is required!
+        enable_remote_services=True  # required when calling remote VLM endpoints
     )
 
     # The ApiVlmOptions() allows to interface with APIs supporting
     # the multi-modal chat interface. Here follow a few example on how to configure those.
 
-    # One possibility is self-hosting model, e.g. via LM Studio, Ollama or others.
+    # One possibility is self-hosting the model, e.g., via LM Studio or Ollama.
 
     # Example using the SmolDocling model with LM Studio:
     # (uncomment the following lines)
@@ -208,8 +238,9 @@ def main():
     #     prompt="OCR the full page to markdown.",
     # )
 
-    # Another possibility is using online services, e.g. watsonx.ai.
-    # Using requires setting the env variables WX_API_KEY and WX_PROJECT_ID.
+    # Another possibility is using online services, e.g., watsonx.ai.
+    # Using watsonx.ai requires setting env variables WX_API_KEY and WX_PROJECT_ID
+    # (see the top-level docstring for details). You can use a .env file as well.
     # (uncomment the following lines)
     # pipeline_options.vlm_options = watsonx_vlm_options(
     #     model="ibm/granite-vision-3-2-2b", prompt="OCR the full page to markdown."

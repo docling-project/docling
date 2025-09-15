@@ -1,3 +1,22 @@
+# %% [markdown]
+# Run conversion with an explicit accelerator configuration (CPU/MPS/CUDA).
+#
+# What this example does
+# - Shows how to select the accelerator device and thread count.
+# - Enables OCR and table structure to exercise compute paths, and prints timings.
+#
+# How to run
+# - From the repo root: `python docs/examples/run_with_accelerator.py`.
+# - Toggle the commented `AcceleratorOptions` examples to try AUTO/MPS/CUDA.
+#
+# Notes
+# - EasyOCR does not support `cuda:N` device selection (defaults to `cuda:0`).
+# - `settings.debug.profile_pipeline_timings = True` prints profiling details.
+# - `AcceleratorDevice.MPS` is macOS-only; `CUDA` requires a compatible GPU and
+#   CUDA‑enabled PyTorch build. CPU mode works everywhere.
+
+# %%
+
 from pathlib import Path
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
