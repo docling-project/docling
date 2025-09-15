@@ -120,6 +120,9 @@ class RapidOcrModel(BaseOcrModel):
                             use_cls=self.options.use_cls,
                             use_rec=self.options.use_rec,
                         )
+                        if result is None or result.boxes is None:
+                            _log.warning("RapidOCR returned empty result!")
+                            continue
                         result = list(
                             zip(result.boxes.tolist(), result.txts, result.scores)
                         )
