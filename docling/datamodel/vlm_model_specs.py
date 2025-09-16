@@ -24,6 +24,7 @@ GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
+    transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
     supported_devices=[
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
