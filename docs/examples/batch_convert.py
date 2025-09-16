@@ -200,7 +200,7 @@ def main():
         raises_on_error=False,  # to let conversion run through all and examine results at the end
     )
     # Write outputs to ./scratch and log a summary.
-    success_count, partial_success_count, failure_count = export_documents(
+    _success_count, _partial_success_count, failure_count = export_documents(
         conv_results, output_dir=Path("scratch")
     )
 

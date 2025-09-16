@@ -19,8 +19,8 @@
 # Notes
 # - MLX models are skipped automatically on non-macOS platforms.
 # - On CUDA systems, you can enable flash_attention_2 (see commented lines).
-# - Running multiple VLMs can be GPU/CPU intensive and time‑consuming; ensure
-#   enough VRAM/system RAM and close other memory‑heavy apps.
+# - Running multiple VLMs can be GPU/CPU intensive and time-consuming; ensure
+#   enough VRAM/system RAM and close other memory-heavy apps.
 
 # %%
 

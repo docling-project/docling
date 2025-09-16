@@ -3,7 +3,7 @@
 #
 # What this example does
 # - Configures `PictureDescriptionApiOptions` for local or cloud providers.
-# - Converts a PDF, then prints each picture’s caption and annotations.
+# - Converts a PDF, then prints each picture's caption and annotations.
 #
 # Prerequisites
 # - Install Docling and `python-dotenv` if loading env vars from a `.env` file.

@@ -18,7 +18,7 @@
 #
 # Notes
 # - `BATCH_SIZE` controls how many elements are passed to the model at once.
-# - `prepare_element()` crops context around elements based on the model’s expansion.
+# - `prepare_element()` crops context around elements based on the model's expansion.
 
 # %%
 
@@ -44,7 +44,7 @@ from docling.utils.utils import chunkify
 ### Define batch size used for processing
 
 BATCH_SIZE = 4
-# Trade‑off: larger batches improve throughput but increase memory usage.
+# Trade-off: larger batches improve throughput but increase memory usage.
 
 ### From DocItem to the model inputs
 # The following function is responsible for taking an item and applying the required pre-processing for the model.

@@ -6,7 +6,7 @@
 # - Demonstrates how to switch between OCR backends via `ocr_options`.
 #
 # Prerequisites
-# - Install Docling and the desired OCR backend’s dependencies (Tesseract, EasyOCR,
+# - Install Docling and the desired OCR backend's dependencies (Tesseract, EasyOCR,
 #   RapidOCR, or macOS OCR).
 #
 # How to run

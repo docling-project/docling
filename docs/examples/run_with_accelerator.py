@@ -13,7 +13,7 @@
 # - EasyOCR does not support `cuda:N` device selection (defaults to `cuda:0`).
 # - `settings.debug.profile_pipeline_timings = True` prints profiling details.
 # - `AcceleratorDevice.MPS` is macOS-only; `CUDA` requires a compatible GPU and
-#   CUDA‑enabled PyTorch build. CPU mode works everywhere.
+#   CUDA-enabled PyTorch build. CPU mode works everywhere.
 
 # %%
 

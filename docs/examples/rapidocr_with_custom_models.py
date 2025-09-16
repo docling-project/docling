@@ -26,10 +26,10 @@ import os
 
 from modelscope import snapshot_download
 
-from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
-from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.pipeline_options import PdfPipelineOptions, RapidOcrOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():

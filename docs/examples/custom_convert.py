@@ -25,7 +25,7 @@
 #
 # Input document
 # - Defaults to a single PDF from `tests/data/pdf/` in the repo.
-# - If you don’t have the test data, update `input_doc_path` to a local PDF.
+# - If you don't have the test data, update `input_doc_path` to a local PDF.
 #
 # Notes
 # - EasyOCR language: adjust `pipeline_options.ocr_options.lang` (e.g., ["en"], ["es"], ["en", "de"]).

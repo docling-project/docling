@@ -7,7 +7,7 @@
 #
 # Prerequisites
 # - Install Docling and image dependencies. Pillow is used for image saves
-#   (`pip install pillow`) if not already available via Docling’s deps.
+#   (`pip install pillow`) if not already available via Docling's deps.
 # - Ensure you can import `docling` from your Python environment.
 #
 # How to run
@@ -15,7 +15,7 @@
 # - Outputs (PNG, MD, HTML) are written to `scratch/`.
 #
 # Key options
-# - `IMAGE_RESOLUTION_SCALE`: increase to render higher‑resolution images (e.g., 2.0).
+# - `IMAGE_RESOLUTION_SCALE`: increase to render higher-resolution images (e.g., 2.0).
 # - `PdfPipelineOptions.generate_page_images`/`generate_picture_images`: preserve images for export.
 # - `ImageRefMode`: choose `EMBEDDED` or `REFERENCED` when saving Markdown/HTML.
 #

@@ -8,7 +8,7 @@
 # Prerequisites
 # - Install Docling with ASR extras and any audio dependencies (ffmpeg, etc.).
 # - Ensure your environment can download or access the configured ASR model.
-# - Some formats require ffmpeg codecs; install ffmpeg and ensure it’s on PATH.
+# - Some formats require ffmpeg codecs; install ffmpeg and ensure it's on PATH.
 #
 # How to run
 # - From the repository root, run: `python docs/examples/minimal_asr_pipeline.py`.
