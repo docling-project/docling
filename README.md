@@ -90,7 +90,7 @@ docling https://arxiv.org/pdf/2206.01062
 
 You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) and other VLMs via Docling CLI:
 ```bash
-docling --pipeline vlm --vlm-model granitedocling https://arxiv.org/pdf/2206.01062
+docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
 ```
 This will use MLX acceleration on supported Apple Silicon hardware.
 
