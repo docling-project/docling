@@ -1,7 +1,4 @@
 # %% [markdown]
-# Simple conversion: one document to Markdown
-# ==========================================
-#
 # What this example does
 # - Converts a single source (URL or local file path) to a unified Docling
 #   document and prints Markdown to stdout.
@@ -17,6 +14,7 @@
 # Notes
 # - The converter auto-detects supported formats (PDF, DOCX, HTML, PPTX, images, etc.).
 # - For batch processing or saving outputs to files, see `docs/examples/batch_convert.py`.
+# %%
 
 from docling.document_converter import DocumentConverter
 

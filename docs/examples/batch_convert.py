@@ -1,32 +1,32 @@
-"""
-Batch convert multiple PDF files and export results in several formats.
+# %% [markdown]
+# Batch convert multiple PDF files and export results in several formats.
 
-What this example does
-- Loads a small set of sample PDFs.
-- Runs the Docling PDF pipeline once per file.
-- Writes outputs to `scratch/` in multiple formats (JSON, HTML, Markdown, text, doctags, YAML).
+# What this example does
+# - Loads a small set of sample PDFs.
+# - Runs the Docling PDF pipeline once per file.
+# - Writes outputs to `scratch/` in multiple formats (JSON, HTML, Markdown, text, doctags, YAML).
 
-Prerequisites
-- Install Docling and dependencies as described in the repository README.
-- Ensure you can import `docling` from your Python environment.
-# - YAML export requires `PyYAML` (`pip install pyyaml`).
+# Prerequisites
+# - Install Docling and dependencies as described in the repository README.
+# - Ensure you can import `docling` from your Python environment.
+# <!-- YAML export requires `PyYAML` (`pip install pyyaml`). -->
 
-Input documents
-- By default, this example uses a few PDFs from `tests/data/pdf/` in the repo.
-- If you cloned without test data, or want to use your own files, edit
-  `input_doc_paths` below to point to PDFs on your machine.
+# Input documents
+# - By default, this example uses a few PDFs from `tests/data/pdf/` in the repo.
+# - If you cloned without test data, or want to use your own files, edit
+#   `input_doc_paths` below to point to PDFs on your machine.
 
-Output formats (controlled by flags)
-- `USE_V2 = True` enables the current Docling document exports (recommended).
-- `USE_LEGACY = False` keeps legacy Deep Search exports disabled.
-  You can set it to `True` if you need legacy formats for compatibility tests.
+# Output formats (controlled by flags)
+# - `USE_V2 = True` enables the current Docling document exports (recommended).
+# - `USE_LEGACY = False` keeps legacy Deep Search exports disabled.
+#   You can set it to `True` if you need legacy formats for compatibility tests.
 
-Notes
-- Set `pipeline_options.generate_page_images = True` to include page images in HTML.
-- The script logs conversion progress and raises if any documents fail.
-# - This example shows both helper methods like `save_as_*` and lower-level
-#   `export_to_*` + manual file writes; outputs may overlap intentionally.
-"""
+# Notes
+# - Set `pipeline_options.generate_page_images = True` to include page images in HTML.
+# - The script logs conversion progress and raises if any documents fail.
+# <!-- This example shows both helper methods like `save_as_*` and lower-level
+#   `export_to_*` + manual file writes; outputs may overlap intentionally. -->
+# %%
 
 import json
 import logging
