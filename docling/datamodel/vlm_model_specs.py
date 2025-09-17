@@ -18,6 +18,34 @@ from docling.datamodel.pipeline_options_vlm_model import (
 _log = logging.getLogger(__name__)
 
 
+# Granite-Docling
+GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
+    repo_id="ds4sd/granite-docling-258m-2-9-2025-v2",
+    prompt="Convert this page to docling.",
+    response_format=ResponseFormat.DOCTAGS,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+    ],
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+    stop_strings=["</doctag>", "<|end_of_text|>"],
+)
+
+GRANITEDOCLING_MLX = InlineVlmOptions(
+    repo_id="ds4sd/granite-docling-258m-2-9-2025-v2-mlx-bf16",
+    prompt="Convert this page to docling.",
+    response_format=ResponseFormat.DOCTAGS,
+    inference_framework=InferenceFramework.MLX,
+    supported_devices=[AcceleratorDevice.MPS],
+    scale=2.0,
+    temperature=0.0,
+    max_new_tokens=8192,
+    stop_strings=["</doctag>", "<|end_of_text|>"],
+)
+
 # SmolDocling
 SMOLDOCLING_MLX = InlineVlmOptions(
     repo_id="ds4sd/SmolDocling-256M-preview-mlx-bf16",
@@ -272,3 +300,4 @@ class VlmModelType(str, Enum):
     GRANITE_VISION_VLLM = "granite_vision_vllm"
     GRANITE_VISION_OLLAMA = "granite_vision_ollama"
     GOT_OCR_2 = "got_ocr_2"
+    GRANITEDOCLING = "granite_docling"
