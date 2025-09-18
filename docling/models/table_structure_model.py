@@ -121,7 +121,7 @@ class TableStructureModel(BasePageModel):
 
         for table_element in tbl_list:
             x0, y0, x1, y1 = table_element.cluster.bbox.as_tuple()
-            y0 *= scale_x
+            y0 *= scale_y
             y1 *= scale_y
             x0 *= scale_x
             x1 *= scale_x
@@ -132,7 +132,7 @@ class TableStructureModel(BasePageModel):
                 x0, y0, x1, y1 = cell.rect.to_bounding_box().as_tuple()
                 x0 *= scale_x
                 x1 *= scale_x
-                y0 *= scale_x
+                y0 *= scale_y
                 y1 *= scale_y
 
                 draw.rectangle([(x0, y0), (x1, y1)], outline="green")
@@ -142,7 +142,7 @@ class TableStructureModel(BasePageModel):
                     x0, y0, x1, y1 = tc.bbox.as_tuple()
                     x0 *= scale_x
                     x1 *= scale_x
-                    y0 *= scale_x
+                    y0 *= scale_y
                     y1 *= scale_y
 
                     if tc.column_header:
