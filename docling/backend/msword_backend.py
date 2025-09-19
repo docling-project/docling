@@ -265,7 +265,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     _log.debug("could not parse a table, broken docx table")
             # Check for Image
             elif drawing_blip:
-                self._handle_pictures(docx_obj, drawing_blip, doc)
+                pics = self._handle_pictures(docx_obj, drawing_blip, doc)
+                added_elements.extend(pics)
                 # Check for Text after the Image
                 if (
                     tag_name in ["p"]
@@ -853,7 +854,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 elements=paragraph_elements,
                 is_numbered=is_numbered,
             )
-            elem_ref.append(li)
+            elem_ref.extend(li)  # MUST BE REF!!!
             self._update_history(p_style_id, p_level, numid, ilevel)
             return elem_ref
         elif (
@@ -878,6 +879,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = doc.add_text(
                 parent=None, label=DocItemLabel.TITLE, text=text
             )
+            elem_ref.append(self.parents[0].get_ref())
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
             if style_element is not None:
@@ -917,23 +919,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
 
                     if len(pre_eq_text) > 0:
-                        doc.add_text(
+                        e1 = doc.add_text(
                             label=DocItemLabel.PARAGRAPH,
                             parent=inline_equation,
                             text=pre_eq_text,
                         )
-                    doc.add_text(
+                        elem_ref.append(e1.get_ref())
+                    e2 = doc.add_text(
                         label=DocItemLabel.FORMULA,
                         parent=inline_equation,
                         text=eq.replace("<eq>", "").replace("</eq>", ""),
                     )
+                    elem_ref.append(e2.get_ref())
 
                 if len(text_tmp) > 0:
-                    doc.add_text(
+                    e3 = doc.add_text(
                         label=DocItemLabel.PARAGRAPH,
                         parent=inline_equation,
                         text=text_tmp.strip(),
                     )
+                    elem_ref.append(e3.get_ref())
 
         elif p_style_id in [
             "Paragraph",
@@ -1075,7 +1080,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     formatting=format,
                     hyperlink=hyperlink,
                 )
-                elem_ref.append(li.get_ref())
+                # elem_ref.append(li.get_ref())
         else:
             new_item = doc.add_list_item(
                 marker=marker,
@@ -1083,7 +1088,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[level],
                 text="",
             )
-            elem_ref.append(new_item)
+            # elem_ref.append(new_item)
             new_parent = doc.add_inline_group(parent=new_item)
             for text, format, hyperlink in elements:
                 if text:
@@ -1122,7 +1127,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[level] = doc.add_list_group(
                 name="list", parent=self.parents[level - 1]
             )
-            elem_ref.append(self.parents[level])
+            elem_ref.append(self.parents[level].get_ref())
 
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
@@ -1146,7 +1151,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.parents[i] = doc.add_list_group(
                     name="list", parent=self.parents[i - 1]
                 )
-                elem_ref.append(self.parents[i])
+                elem_ref.append(self.parents[i].get_ref())
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
@@ -1186,7 +1191,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
         elif self._prev_numid() == numid or prev_indent == ilevel:
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
+            # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
                 counter = self._get_list_counter(numid, ilevel)
                 enum_marker = str(counter) + "."
@@ -1258,90 +1263,59 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
-                rich_cell = False
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+                # ===============================================================================
+
                 provs_in_cell = []
-                # Detect if cell is Rich or not
-                # cell.iter_inner_content()
-                elem_num = 0
-                for c in cell.iter_inner_content():
-                    if elem_num == 0:
-                        # Check if element is not a simple paragraph, then cell also rich
-                        paragraph = Paragraph(c, docx_obj)
-                    elem_num += 1
+                _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
+                ref_for_rich_cell = provs_in_cell[0]
+                group_name = "rich_cell_group_{}_{}_{}".format(
+                    len(doc.tables), col_idx, row.grid_cols_before + row_idx
+                )
+                group_element = doc.add_group(
+                    label=GroupLabel.UNSPECIFIED,
+                    name=group_name,
+                    parent=docling_table,
+                )
+                for prov in provs_in_cell:
+                    group_element.children.append(prov)
+                    pr_item = prov.resolve(doc)
+                    item_parent = pr_item.parent.resolve(doc)
+                    if pr_item.get_ref() in item_parent.children:
+                        item_parent.children.remove(pr_item.get_ref())
+                    pr_item.parent = group_element.get_ref()
+                ref_for_rich_cell = group_element.get_ref()
 
-                print("===================== NUMBER OF ELEMENTS IN CELL: {}".format(elem_num))
-                if elem_num > 1:
-                    rich_cell = True
+                table_cell = RichTableCell(
+                    text=text,
+                    row_span=spanned_idx - row_idx,
+                    col_span=cell.grid_span,
+                    start_row_offset_idx=row.grid_cols_before + row_idx,
+                    end_row_offset_idx=row.grid_cols_before + spanned_idx,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + cell.grid_span,
+                    column_header=row.grid_cols_before + row_idx == 0,
+                    row_header=False,
+                    ref=ref_for_rich_cell,  # points to an artificial group around children, or to child directly
+                )
+                doc.add_table_cell(table_item=docling_table, cell=table_cell)
+                col_idx += cell.grid_span
 
-                if rich_cell:
-                    print("RICH CELL AT {}/{}".format(col_idx, row.grid_cols_before + row_idx))
-                    _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
-                    print(provs_in_cell)
-
-                    ref_for_rich_cell = provs_in_cell[0]
-
-                    # if len(provs_in_cell) > 1:
-                    #     print("MULTIPLE ITEMS IN THE TABLE CELL!")
-                    #     print("before group added")
-                    group_name = "rich_cell_group_{}_{}_{}".format(
-                        len(doc.tables), col_idx, row.grid_cols_before + row_idx
-                    )
-                    print(group_name)
-                    group_element = doc.add_group(
-                        label=GroupLabel.UNSPECIFIED,
-                        name=group_name,
-                        parent=docling_table,
-                    )
-                    print("after group added")
-                    print(group_element)
-                    for prov in provs_in_cell:
-                        print("!!!")
-                        print(prov)
-                        group_element.children.append(prov)
-                        pr_item = prov.resolve(doc)
-                        item_parent = pr_item.parent.resolve(doc)
-                        if pr_item.get_ref() in item_parent.children:
-                            item_parent.children.remove(pr_item.get_ref())
-                        pr_item.parent = group_element.get_ref()
-                    ref_for_rich_cell = group_element.get_ref()
-
-                    table_cell = RichTableCell(
-                        text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
-                        row_header=False,
-                        ref=ref_for_rich_cell,  # points to an artificial group around children, or to child directly
-                    )
-                    doc.add_table_cell(table_item=docling_table, cell=table_cell)
-                    # data.table_cells.append(table_cell)
-                    col_idx += cell.grid_span
-                else:
-                    table_cell = TableCell(
-                        text=text,
-                        row_span=spanned_idx - row_idx,
-                        col_span=cell.grid_span,
-                        start_row_offset_idx=row.grid_cols_before + row_idx,
-                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                        start_col_offset_idx=col_idx,
-                        end_col_offset_idx=col_idx + cell.grid_span,
-                        column_header=row.grid_cols_before + row_idx == 0,
-                        row_header=False,
-                    )
-                    doc.add_table_cell(table_item=docling_table, cell=table_cell)
-                    # data.table_cells.append(table_cell)
-                    col_idx += cell.grid_span
-        # doc.add_table(data=data, parent=self.parents[level - 1])
         return elem_ref
 
     def _handle_pictures(
         self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
     ) -> List[RefItem]:
-        elem_ref = []
         def get_docx_image(drawing_blip: Any) -> Optional[bytes]:
             image_data: Optional[bytes] = None
             rId = drawing_blip[0].get(
@@ -1353,6 +1327,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
+        elem_ref = []
         level = self._get_level()
         # Open the BytesIO object with PIL to create an Image
         image_data: Optional[bytes] = get_docx_image(drawing_blip)
