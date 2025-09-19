@@ -11,10 +11,11 @@ Below you can find a listing of all supported input and output formats.
 | PDF | |
 | DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
 | Markdown | |
-| AsciiDoc | |
+| AsciiDoc | Human-readable, plain-text markup language for structured technical content |
 | HTML, XHTML | |
 | CSV | |
 | PNG, JPEG, TIFF, BMP, WEBP | Image formats |
+| WebVTT | Web Video Text Tracks format for displaying timed text |
 
 Schema-specific support:
 
@@ -32,4 +33,4 @@ Schema-specific support:
 | Markdown | |
 | JSON | Lossless serialization of Docling Document |
 | Text | Plain text, i.e. without Markdown markers |
-| Doctags | |
+| [Doctags](https://arxiv.org/pdf/2503.11576) | Markup format for efficiently representing the full content and layout characteristics of a document |
