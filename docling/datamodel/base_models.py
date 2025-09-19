@@ -1,7 +1,6 @@
-import math
 from collections import defaultdict
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Optional, Type, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -14,9 +13,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.base import PydanticSerCtxKey, round_pydantic_float
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_core.types.io import (
-    DocumentStream,
-)
+from docling_core.types.io import DocumentStream
 
 # DO NOT REMOVE; explicitly exposed from this location
 from PIL.Image import Image
@@ -71,6 +68,7 @@ class InputFormat(str, Enum):
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
+    VTT = "vtt"
 
 
 class OutputFormat(str, Enum):
@@ -82,7 +80,7 @@ class OutputFormat(str, Enum):
     DOCTAGS = "doctags"
 
 
-FormatToExtensions: Dict[InputFormat, List[str]] = {
+FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: ["docx", "dotx", "docm", "dotm"],
     InputFormat.PPTX: ["pptx", "potx", "ppsx", "pptm", "potm", "ppsm"],
     InputFormat.PDF: ["pdf"],
@@ -97,9 +95,10 @@ FormatToExtensions: Dict[InputFormat, List[str]] = {
     InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
     InputFormat.AUDIO: ["wav", "mp3"],
+    InputFormat.VTT: ["vtt"],
 }
 
-FormatToMimeType: Dict[InputFormat, List[str]] = {
+FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.DOCX: [
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
@@ -130,6 +129,7 @@ FormatToMimeType: Dict[InputFormat, List[str]] = {
     InputFormat.METS_GBS: ["application/mets+xml"],
     InputFormat.JSON_DOCLING: ["application/json"],
     InputFormat.AUDIO: ["audio/x-wav", "audio/mpeg", "audio/wav", "audio/mp3"],
+    InputFormat.VTT: ["text/vtt"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
@@ -162,8 +162,8 @@ class Cluster(BaseModel):
     label: DocItemLabel
     bbox: BoundingBox
     confidence: float = 1.0
-    cells: List[TextCell] = []
-    children: List["Cluster"] = []  # Add child cluster support
+    cells: list[TextCell] = []
+    children: list["Cluster"] = []  # Add child cluster support
 
     @field_serializer("confidence")
     def _serialize(self, value: float, info: FieldSerializationInfo) -> float:
@@ -179,7 +179,7 @@ class BasePageElement(BaseModel):
 
 
 class LayoutPrediction(BaseModel):
-    clusters: List[Cluster] = []
+    clusters: list[Cluster] = []
 
 
 class VlmPredictionToken(BaseModel):
@@ -201,14 +201,14 @@ class ContainerElement(
 
 
 class Table(BasePageElement):
-    otsl_seq: List[str]
+    otsl_seq: list[str]
     num_rows: int = 0
     num_cols: int = 0
-    table_cells: List[TableCell]
+    table_cells: list[TableCell]
 
 
 class TableStructurePrediction(BaseModel):
-    table_map: Dict[int, Table] = {}
+    table_map: dict[int, Table] = {}
 
 
 class TextElement(BasePageElement):
@@ -216,7 +216,7 @@ class TextElement(BasePageElement):
 
 
 class FigureElement(BasePageElement):
-    annotations: List[PictureDataType] = []
+    annotations: list[PictureDataType] = []
     provenance: Optional[str] = None
     predicted_class: Optional[str] = None
     confidence: Optional[float] = None
@@ -234,12 +234,12 @@ class FigureElement(BasePageElement):
 
 class FigureClassificationPrediction(BaseModel):
     figure_count: int = 0
-    figure_map: Dict[int, FigureElement] = {}
+    figure_map: dict[int, FigureElement] = {}
 
 
 class EquationPrediction(BaseModel):
     equation_count: int = 0
-    equation_map: Dict[int, TextElement] = {}
+    equation_map: dict[int, TextElement] = {}
 
 
 class PagePredictions(BaseModel):
@@ -254,9 +254,9 @@ PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
 
 
 class AssembledUnit(BaseModel):
-    elements: List[PageElement] = []
-    body: List[PageElement] = []
-    headers: List[PageElement] = []
+    elements: list[PageElement] = []
+    body: list[PageElement] = []
+    headers: list[PageElement] = []
 
 
 class ItemAndImageEnrichmentElement(BaseModel):
@@ -280,12 +280,12 @@ class Page(BaseModel):
         None  # Internal PDF backend. By default it is cleared during assembling.
     )
     _default_image_scale: float = 1.0  # Default image scale for external usage.
-    _image_cache: Dict[
+    _image_cache: dict[
         float, Image
     ] = {}  # Cache of images in different scales. By default it is cleared during assembling.
 
     @property
-    def cells(self) -> List[TextCell]:
+    def cells(self) -> list[TextCell]:
         """Return text cells as a read-only view of parsed_page.textline_cells."""
         if self.parsed_page is not None:
             return self.parsed_page.textline_cells
@@ -354,7 +354,7 @@ class OpenAiApiResponse(BaseModel):
 
     id: str
     model: Optional[str] = None  # returned by openai
-    choices: List[OpenAiResponseChoice]
+    choices: list[OpenAiResponseChoice]
     created: int
     usage: OpenAiResponseUsage
 
@@ -430,7 +430,7 @@ class PageConfidenceScores(BaseModel):
 
 
 class ConfidenceReport(PageConfidenceScores):
-    pages: Dict[int, PageConfidenceScores] = Field(
+    pages: dict[int, PageConfidenceScores] = Field(
         default_factory=lambda: defaultdict(PageConfidenceScores)
     )
 

@@ -25,6 +25,7 @@ from docling.backend.msexcel_backend import MsExcelDocumentBackend
 from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
+from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.base_models import (
@@ -170,6 +171,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
         InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=NoOpBackend),
+        InputFormat.VTT: FormatOption(
+            pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
+        ),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options

@@ -206,6 +206,11 @@ def test_guess_format(tmp_path):
     doc_path.write_text("xyz", encoding="utf-8")
     assert dci._guess_format(doc_path) is None
 
+    # Valid WebVTT
+    buf = BytesIO(Path("./tests/data/webvtt/webvtt_example_01.vtt").open("rb").read())
+    stream = DocumentStream(name="webvtt_example_01.vtt", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.VTT
+
     # Valid Docling JSON
     test_str = '{"name": ""}'
     stream = DocumentStream(name="test.json", stream=BytesIO(f"{test_str}".encode()))
