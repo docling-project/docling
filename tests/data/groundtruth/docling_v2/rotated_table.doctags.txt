@@ -1,0 +1,6 @@
+<doctag><section_header_level_1><loc_109><loc_79><loc_266><loc_87>1 Mixed table orientation</section_header_level_1>
+<text><loc_109><loc_95><loc_390><loc_168>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Etiam lobortis facilisis sem. Nullam nec mi et neque pharetra sollicitudin. Praesent imperdiet mi nec ante. Donec ullamcorper, felis non sodales commodo, lectus velit ultrices augue, a dignissim nibh lectus placerat pede. Vivamus nunc nunc, molestie ut, ultricies vel, semper in, velit. Ut porttitor. Praesent in sapien. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Duis fringilla tristique neque. Sed interdum libero ut metus. Pellentesque placerat. Nam rutrum augue a leo. Morbi sed elit sit amet ante lobortis sollicitudin. Praesent blandit blandit mauris. Praesent lectus tellus, aliquet aliquam, luctus a, egestas a, turpis. Mauris lacinia lorem sit amet ipsum. Nunc quis urna dictum turpis accumsan semper.</text>
+<picture><loc_121><loc_194><loc_183><loc_379><caption><loc_181><loc_236><loc_191><loc_338>Table 1: This is a table rotated 90 °</caption></picture>
+<otsl><loc_121><loc_194><loc_183><loc_379><ched>Column 1<ched>Column 2<ched>Column 3<nl><fcel>There should be something written here<fcel>But also here<fcel>And here<nl></otsl>
+<text><loc_121><loc_408><loc_177><loc_414>Interesting no ?</text>
+</doctag>

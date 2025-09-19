@@ -4,7 +4,7 @@
   "name": "ocr_test",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 14853448746796404529,
+    "binary_hash": 14846044078209721391,
     "filename": "ocr_test.pdf"
   },
   "furniture": {
@@ -18,7 +18,7 @@
     "self_ref": "#/body",
     "children": [
       {
-        "$ref": "#/texts/0"
+        "$ref": "#/tables/0"
       }
     ],
     "content_layer": "body",
@@ -26,44 +26,402 @@
     "label": "unspecified"
   },
   "groups": [],
-  "texts": [
+  "texts": [],
+  "pictures": [],
+  "tables": [
     {
-      "self_ref": "#/texts/0",
+      "self_ref": "#/tables/0",
       "parent": {
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "table",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 69.68,
-            "t": 764.92,
-            "r": 504.87,
-            "b": 689.01,
+            "l": 68.71,
+            "t": 524.46,
+            "r": 551.86,
+            "b": 277.14,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            94
+            0
           ]
         }
       ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "bbox": {
+              "l": 95.43,
+              "t": 103.07,
+              "r": 192.36,
+              "b": 159.9,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Vertically merged",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 119.72,
+              "t": 202.47,
+              "r": 171.52,
+              "b": 224.32,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 119.52,
+              "t": 282.45,
+              "r": 171.73,
+              "b": 303.1,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 230.23,
+              "t": 104.67,
+              "r": 366.07,
+              "b": 158.01,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Other merged column",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 240.49,
+              "t": 182.59,
+              "r": 356.81,
+              "b": 240.64,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Some other value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 244.02,
+              "t": 266.76,
+              "r": 351.13,
+              "b": 320.21,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Some other value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 405.16,
+              "t": 104.45,
+              "r": 519.22,
+              "b": 157.92,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Yet another column",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 406.32,
+              "t": 187.29,
+              "r": 515.76,
+              "b": 240.43,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Yet another value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          },
+          {
+            "bbox": {
+              "l": 405.16,
+              "t": 266.6,
+              "r": 515.77,
+              "b": 319.8,
+              "coord_origin": "TOPLEFT"
+            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Yet another value",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false
+          }
+        ],
+        "num_rows": 3,
+        "num_cols": 3,
+        "grid": [
+          [
+            {
+              "bbox": {
+                "l": 95.43,
+                "t": 103.07,
+                "r": 192.36,
+                "b": 159.9,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Vertically merged",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 230.23,
+                "t": 104.67,
+                "r": 366.07,
+                "b": 158.01,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Other merged column",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 405.16,
+                "t": 104.45,
+                "r": 519.22,
+                "b": 157.92,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Yet another column",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false
+            }
+          ],
+          [
+            {
+              "bbox": {
+                "l": 119.72,
+                "t": 202.47,
+                "r": 171.52,
+                "b": 224.32,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 240.49,
+                "t": 182.59,
+                "r": 356.81,
+                "b": 240.64,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Some other value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 406.32,
+                "t": 187.29,
+                "r": 515.76,
+                "b": 240.43,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Yet another value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            }
+          ],
+          [
+            {
+              "bbox": {
+                "l": 119.52,
+                "t": 282.45,
+                "r": 171.73,
+                "b": 303.1,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 244.02,
+                "t": 266.76,
+                "r": 351.13,
+                "b": 320.21,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Some other value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            },
+            {
+              "bbox": {
+                "l": 405.16,
+                "t": 266.6,
+                "r": 515.77,
+                "b": 319.8,
+                "coord_origin": "TOPLEFT"
+              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Yet another value",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
     }
   ],
-  "pictures": [],
-  "tables": [],
   "key_value_items": [],
   "form_items": [],
   "pages": {
     "1": {
       "size": {
-        "width": 595.2,
-        "height": 841.92
+        "width": 792.0,
+        "height": 612.0
       },
       "page_no": 1
     }

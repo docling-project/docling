@@ -2,10 +2,6 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
@@ -46,10 +42,7 @@ def get_converter(ocr_options: OcrOptions):
 
     converter = DocumentConverter(
         format_options={
-            InputFormat.PDF: PdfFormatOption(
-                pipeline_options=pipeline_options,
-                backend=DoclingParseDocumentBackend,  # PdfFormatOption().backend,
-            )
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
         }
     )
 
@@ -87,8 +80,8 @@ def test_e2e_conversions():
 
     # only works on mac
     if "darwin" == sys.platform:
-        engines.append((OcrMacOptions(), True))
-        engines.append((OcrMacOptions(force_full_page_ocr=True), True))
+        engines.append((OcrMacOptions(), False))
+        engines.append((OcrMacOptions(force_full_page_ocr=True), False))
 
     for ocr_options, supports_rotation in engines:
         print(

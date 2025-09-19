@@ -27,13 +27,13 @@
   "file-info": {
     "filename": "ocr_test_rotated_180.pdf",
     "filename-prov": null,
-    "document-hash": "a9cbfe0f2a71171face9ee31d2347ca4195649670ad75680520d67d4a863f982",
+    "document-hash": "361fa0fc8db9c3a973d316d08509ac78cc0e7f81dea94358319092640d439ca0",
     "#-pages": 1,
     "collection-name": null,
     "description": null,
     "page-hashes": [
       {
-        "hash": "baca27070f05dd84cf0903ded39bcf0fc1fa6ef0ac390e79cf8ba90c8c33ba49",
+        "hash": "ab89ee70d4aee0b8dc5ed72ad42e16e98a8ec9c2eea1e03d99b50c25bbc5a806",
         "model": "default",
         "page": 1
       }
@@ -41,62 +41,307 @@
   },
   "main-text": [
     {
-      "prov": [
-        {
-          "bbox": [
-            441.2561096985719,
-            131.89488404865142,
-            522.0347860494834,
-            151.87873262042876
-          ],
-          "page": 1,
-          "span": [
-            0,
-            7
-          ],
-          "__ref_s3_data": null
-        }
-      ],
-      "text": "package",
-      "type": "paragraph",
-      "payload": null,
-      "name": "Text",
-      "font": null
-    },
+      "name": "Table",
+      "type": "table",
+      "$ref": "#/tables/0"
+    }
+  ],
+  "figures": [],
+  "tables": [
     {
       "prov": [
         {
           "bbox": [
-            89.23887497045128,
-            77.02339852098021,
-            523.208764293368,
-            124.75312428291147
+            240.90093994140625,
+            87.64955139160156,
+            722.950309753418,
+            334.58026123046875
           ],
           "page": 1,
           "span": [
             0,
-            86
+            0
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "type": "paragraph",
+      "text": "",
+      "type": "table",
       "payload": null,
-      "name": "Text",
-      "font": null
+      "#-cols": 3,
+      "#-rows": 3,
+      "data": [
+        [
+          {
+            "bbox": [
+              97.33333333333337,
+              105.66666666666669,
+              190.0,
+              126.33333333333337
+            ],
+            "spans": [
+              [
+                0,
+                0
+              ]
+            ],
+            "text": "Vertically merged",
+            "type": "col_header",
+            "col": 0,
+            "col-header": true,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              232.33333333333326,
+              105.66666666666669,
+              363.6666666666667,
+              126.33333333333337
+            ],
+            "spans": [
+              [
+                0,
+                1
+              ]
+            ],
+            "text": "Other merged column",
+            "type": "col_header",
+            "col": 1,
+            "col-header": true,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              406.3333333333333,
+              105.66666666666669,
+              518.0,
+              121.66666666666663
+            ],
+            "spans": [
+              [
+                0,
+                2
+              ]
+            ],
+            "text": "Yet another column",
+            "type": "col_header",
+            "col": 2,
+            "col-header": true,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          }
+        ],
+        [
+          {
+            "bbox": [
+              121.66666666666663,
+              204.0,
+              168.66666666666663,
+              220.0
+            ],
+            "spans": [
+              [
+                1,
+                0
+              ]
+            ],
+            "text": "value",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          },
+          {
+            "bbox": [
+              247.0,
+              188.0,
+              349.6666666666667,
+              204.0
+            ],
+            "spans": [
+              [
+                1,
+                1
+              ]
+            ],
+            "text": "Some other value",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          },
+          {
+            "bbox": [
+              408.3333333333333,
+              188.0,
+              514.0,
+              204.0
+            ],
+            "spans": [
+              [
+                1,
+                2
+              ]
+            ],
+            "text": "Yet another value",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 1,
+            "row-header": false,
+            "row-span": [
+              1,
+              2
+            ]
+          }
+        ],
+        [
+          {
+            "bbox": [
+              121.66666666666663,
+              284.0,
+              168.66666666666663,
+              300.0
+            ],
+            "spans": [
+              [
+                2,
+                0
+              ]
+            ],
+            "text": "value",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          },
+          {
+            "bbox": [
+              247.0,
+              268.0,
+              349.6666666666667,
+              284.0
+            ],
+            "spans": [
+              [
+                2,
+                1
+              ]
+            ],
+            "text": "Some other value",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          },
+          {
+            "bbox": [
+              408.3333333333333,
+              268.0,
+              514.0,
+              284.0
+            ],
+            "spans": [
+              [
+                2,
+                2
+              ]
+            ],
+            "text": "Yet another value",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 2,
+            "row-header": false,
+            "row-span": [
+              2,
+              3
+            ]
+          }
+        ]
+      ],
+      "model": null,
+      "bounding-box": null
     }
   ],
-  "figures": [],
-  "tables": [],
   "bitmaps": null,
   "equations": [],
   "footnotes": [],
   "page-dimensions": [
     {
-      "height": 841.9216918945312,
+      "height": 612.0,
       "page": 1,
-      "width": 595.201171875
+      "width": 792.0
     }
   ],
   "page-footers": [],
