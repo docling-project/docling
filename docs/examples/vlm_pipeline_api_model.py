@@ -46,18 +46,35 @@ from docling.pipeline.vlm_pipeline import VlmPipeline
 
 ### Example of ApiVlmOptions definitions
 
-#### Using LM Studio
+#### Using LM Studio or VLLM (OpenAI-compatible APIs)
 
 
-def lms_vlm_options(model: str, prompt: str, format: ResponseFormat):
+def openai_compatible_vlm_options(
+    model: str,
+    prompt: str,
+    format: ResponseFormat,
+    hostname_and_port,
+    temperature: float = 0.7,
+    max_tokens: int = 4096,
+    api_key: str = "",
+    skip_special_tokens=False,
+):
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     options = ApiVlmOptions(
-        url="http://localhost:1234/v1/chat/completions",  # the default LM Studio
+        url=f"http://{hostname_and_port}/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
         params=dict(
             model=model,
+            max_tokens=max_tokens,
+            skip_special_tokens=skip_special_tokens,  # needed for VLLM
         ),
+        headers=headers,
         prompt=prompt,
         timeout=90,
-        scale=1.0,
+        scale=2.0,
+        temperature=temperature,
         response_format=format,
     )
     return options
@@ -207,23 +224,23 @@ def main():
     # The ApiVlmOptions() allows to interface with APIs supporting
     # the multi-modal chat interface. Here follow a few example on how to configure those.
 
-    # One possibility is self-hosting the model, e.g., via LM Studio or Ollama.
+    # One possibility is self-hosting the model, e.g., via LM Studio, Ollama or VLLM.
+    #
+    # e.g. with VLLM, serve granite-docling with these commands:
+    # > vllm serve ibm-granite/granite-docling-258M --revision untied
+    #
+    # with LM Studio, serve granite-docling with these commands:
+    # > lms server start
+    # > lms load ibm-granite/granite-docling-258M-mlx
 
-    # Example using the SmolDocling model with LM Studio:
-    # (uncomment the following lines)
-    pipeline_options.vlm_options = lms_vlm_options(
-        model="smoldocling-256m-preview-mlx-docling-snap",
+    # Example using the Granite-Docling model with LM Studio or VLLM:
+    pipeline_options.vlm_options = openai_compatible_vlm_options(
+        model="granite-docling-258m-mlx",  # For VLLM use "ibm-granite/granite-docling-258M"
+        hostname_and_port="localhost:1234",  # LM studio defaults to port 1234, VLLM to 8000
         prompt="Convert this page to docling.",
         format=ResponseFormat.DOCTAGS,
+        api_key="",
     )
-
-    # Example using the Granite Vision model with LM Studio:
-    # (uncomment the following lines)
-    # pipeline_options.vlm_options = lms_vlm_options(
-    #     model="granite-vision-3.2-2b",
-    #     prompt="OCR the full page to markdown.",
-    #     format=ResponseFormat.MARKDOWN,
-    # )
 
     # Example using the OlmOcr (dynamic prompt) model with LM Studio:
     # (uncomment the following lines)
@@ -261,3 +278,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# %%
