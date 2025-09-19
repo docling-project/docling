@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Any, List, Optional, Union, Tuple
+from typing import Any, List, Optional, Tuple, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -12,10 +12,10 @@ from docling_core.types.doc import (
     ImageRef,
     ListGroup,
     NodeItem,
-    TableCell,
+    RefItem,
     RichTableCell,
+    TableCell,
     TableData,
-    RefItem
 )
 from docling_core.types.doc.document import Formatting
 from docx import Document
@@ -175,7 +175,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         body: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-        # parent: 
+        # parent:
     ) -> Tuple[DoclingDocument, List[RefItem]]:
         added_elements = []
         for element in body:
@@ -236,12 +236,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                     name="shape-text",
                                 )
                                 added_elements.append(shape_group.get_ref())
-                                text_paragraph = doc.add_text(
+                                doc.add_text(
                                     label=DocItemLabel.PARAGRAPH,
                                     parent=shape_group,
                                     text=text_content,
                                 )
-                                # added_elements.append(text_paragraph.get_ref())
 
                 if textbox_elements:
                     # Mark the parent element as processed
@@ -688,7 +687,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> List[RefItem]:
-        elem_ref = []
+        elem_ref: List[RefItem] = []
         """Process textbox content and add it to the document structure."""
         level = self._get_level()
         # Create a textbox group to contain all text from the textbox
@@ -743,7 +742,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Mark this paragraph as processed
             processed_paragraphs.add(paragraph_id)
 
-            elem_ref.append(self._handle_text_elements(p, docx_obj, doc))
+            elem_ref.extend(self._handle_text_elements(p, docx_obj, doc))
 
         # Restore original parent
         self.parents[level] = original_parent
@@ -818,7 +817,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> List[RefItem]:
-        elem_ref = []
+        elem_ref: List[RefItem] = []
         paragraph = Paragraph(element, docx_obj)
         paragraph_elements = self._get_paragraph_elements(paragraph)
         text, equations = self._handle_equations_in_text(
@@ -876,10 +875,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
-            self.parents[0] = doc.add_text(
-                parent=None, label=DocItemLabel.TITLE, text=text
-            )
-            elem_ref.append(self.parents[0].get_ref())
+            te = doc.add_text(parent=None, label=DocItemLabel.TITLE, text=text)
+            self.parents[0] = te
+            elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
             if style_element is not None:
@@ -889,7 +887,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else:
                 is_numbered_style = False
             h1 = self._add_header(doc, p_level, text, is_numbered_style)
-            elem_ref.append(h1)
+            elem_ref.extend(h1)
 
         elif len(equations) > 0:
             if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
@@ -995,18 +993,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         text: str,
         is_numbered_style: bool = False,
     ) -> List[RefItem]:
-        elem_ref = []
+        elem_ref: List[RefItem] = []
         level = self._get_level()
         if isinstance(curr_level, int):
             if curr_level > level:
                 # add invisible group
                 for i in range(level, curr_level):
-                    self.parents[i] = doc.add_group(
+                    gr1 = doc.add_group(
                         parent=self.parents[i - 1],
                         label=GroupLabel.SECTION,
                         name=f"header-{i}",
                     )
-                    elem_ref.append[self.parents[i].get_ref()]
+                    elem_ref.append(gr1.get_ref())
+                    self.parents[i] = gr1
+
             elif curr_level < level:
                 # remove the tail
                 for key in range(len(self.parents)):
@@ -1046,12 +1046,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 text = f"{self.numbered_headers[previous_level]}.{text}"
                 previous_level -= 1
 
-        self.parents[current_level] = doc.add_heading(
+        hd = doc.add_heading(
             parent=self.parents[parent_level],
             text=text,
             level=add_level,
         )
-        elem_ref.append(self.parents[current_level].get_ref())
+        self.parents[current_level] = hd
+        elem_ref.append(hd.get_ref())
         return elem_ref
 
     def _add_formatted_list_item(
@@ -1062,7 +1063,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         enumerated: bool,
         level: int,
     ) -> List[RefItem]:
-        elem_ref = []
+        elem_ref: List[RefItem] = []
         # This should not happen by construction
         if not isinstance(self.parents[level], ListGroup):
             return elem_ref
@@ -1072,7 +1073,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if len(elements) == 1:
             text, format, hyperlink = elements[0]
             if text:
-                li = doc.add_list_item(
+                doc.add_list_item(
                     marker=marker,
                     enumerated=enumerated,
                     parent=self.parents[level],
@@ -1080,7 +1081,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     formatting=format,
                     hyperlink=hyperlink,
                 )
-                # elem_ref.append(li.get_ref())
         else:
             new_item = doc.add_list_item(
                 marker=marker,
@@ -1088,7 +1088,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[level],
                 text="",
             )
-            # elem_ref.append(new_item)
             new_parent = doc.add_inline_group(parent=new_item)
             for text, format, hyperlink in elements:
                 if text:
@@ -1110,7 +1109,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elements: list,
         is_numbered: bool = False,
     ) -> List[RefItem]:
-        elem_ref = []
+        elem_ref: List[RefItem] = []
         # this method is always called with is_numbered. Numbered lists should be properly addressed.
         if not elements:
             return elem_ref
@@ -1124,10 +1123,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Reset counters for the new numbering sequence
             self._reset_list_counters_for_new_sequence(numid)
 
-            self.parents[level] = doc.add_list_group(
-                name="list", parent=self.parents[level - 1]
-            )
-            elem_ref.append(self.parents[level].get_ref())
+            list_gr = doc.add_list_group(name="list", parent=self.parents[level - 1])
+            self.parents[level] = list_gr
+            elem_ref.append(list_gr.get_ref())
 
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
@@ -1148,10 +1146,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + prev_indent + 1,
                 self.level_at_new_list + ilevel + 1,
             ):
-                self.parents[i] = doc.add_list_group(
-                    name="list", parent=self.parents[i - 1]
-                )
-                elem_ref.append(self.parents[i].get_ref())
+                list_gr1 = doc.add_list_group(name="list", parent=self.parents[i - 1])
+                self.parents[i] = list_gr1
+                elem_ref.append(list_gr1.get_ref())
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
@@ -1208,7 +1205,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> List[RefItem]:
-        elem_ref = []
+        elem_ref: List[RefItem] = []
         table: Table = Table(element, docx_obj)
         num_rows = len(table.rows)
         num_cols = len(table.columns)
@@ -1219,12 +1216,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
             self._walk_linear(cell_element._element, docx_obj, doc)
-            return
+            return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
         level = self._get_level()
         docling_table = doc.add_table(data=data, parent=self.parents[level - 1])
-        table_item = docling_table.get_ref()
         elem_ref.append(docling_table.get_ref())
 
         cell_set: set[CT_Tc] = set()
@@ -1263,25 +1259,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-                # ===============================================================================
-
-                provs_in_cell = []
+                provs_in_cell: List[RefItem] = []
                 _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
                 ref_for_rich_cell = provs_in_cell[0]
-                group_name = "rich_cell_group_{}_{}_{}".format(
-                    len(doc.tables), col_idx, row.grid_cols_before + row_idx
-                )
+                group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
                 group_element = doc.add_group(
                     label=GroupLabel.UNSPECIFIED,
                     name=group_name,
@@ -1327,7 +1308,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
-        elem_ref = []
+        elem_ref: List[RefItem] = []
         level = self._get_level()
         # Open the BytesIO object with PIL to create an Image
         image_data: Optional[bytes] = get_docx_image(drawing_blip)

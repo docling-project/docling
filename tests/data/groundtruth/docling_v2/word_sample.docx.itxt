@@ -21,9 +21,33 @@ item-0 at level 0: unspecified: group _root_
         item-20 at level 4: paragraph: I like to eat leaves
         item-21 at level 4: paragraph: Here are some interesting things a respectful duck could eat:
         item-22 at level 4: table with [4x3]
-        item-23 at level 4: paragraph: 
-        item-24 at level 4: paragraph: And let’s add another list in the end:
-        item-25 at level 4: list: group list
-          item-26 at level 5: list_item: Leaves
-          item-27 at level 5: list_item: Berries
-          item-28 at level 5: list_item: Grain
+          item-23 at level 5: unspecified: group rich_cell_group_1_0_0
+            item-24 at level 6: paragraph: 
+          item-25 at level 5: unspecified: group rich_cell_group_1_1_0
+            item-26 at level 6: paragraph: Food
+          item-27 at level 5: unspecified: group rich_cell_group_1_2_0
+            item-28 at level 6: paragraph: Calories per portion
+          item-29 at level 5: unspecified: group rich_cell_group_1_0_1
+            item-30 at level 6: paragraph: Leaves
+          item-31 at level 5: unspecified: group rich_cell_group_1_1_1
+            item-32 at level 6: paragraph: Ash, Elm, Maple
+          item-33 at level 5: unspecified: group rich_cell_group_1_2_1
+            item-34 at level 6: paragraph: 50
+          item-35 at level 5: unspecified: group rich_cell_group_1_0_2
+            item-36 at level 6: paragraph: Berries
+          item-37 at level 5: unspecified: group rich_cell_group_1_1_2
+            item-38 at level 6: paragraph: Blueberry, Strawberry, Cranberry
+          item-39 at level 5: unspecified: group rich_cell_group_1_2_2
+            item-40 at level 6: paragraph: 150
+          item-41 at level 5: unspecified: group rich_cell_group_1_0_3
+            item-42 at level 6: paragraph: Grain
+          item-43 at level 5: unspecified: group rich_cell_group_1_1_3
+            item-44 at level 6: paragraph: Corn, Buckwheat, Barley
+          item-45 at level 5: unspecified: group rich_cell_group_1_2_3
+            item-46 at level 6: paragraph: 200
+        item-47 at level 4: paragraph: 
+        item-48 at level 4: paragraph: And let’s add another list in the end:
+        item-49 at level 4: list: group list
+          item-50 at level 5: list_item: Leaves
+          item-51 at level 5: list_item: Berries
+          item-52 at level 5: list_item: Grain

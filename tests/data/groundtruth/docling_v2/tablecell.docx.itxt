@@ -5,6 +5,24 @@ item-0 at level 0: unspecified: group _root_
   item-4 at level 1: paragraph: 
   item-5 at level 1: paragraph: Some text before
   item-6 at level 1: table with [3x3]
-  item-7 at level 1: paragraph: 
-  item-8 at level 1: paragraph: 
-  item-9 at level 1: paragraph: Some text after
+    item-7 at level 2: unspecified: group rich_cell_group_1_0_0
+      item-8 at level 3: paragraph: Tab1
+    item-9 at level 2: unspecified: group rich_cell_group_1_1_0
+      item-10 at level 3: paragraph: Tab2
+    item-11 at level 2: unspecified: group rich_cell_group_1_2_0
+      item-12 at level 3: paragraph: Tab3
+    item-13 at level 2: unspecified: group rich_cell_group_1_0_1
+      item-14 at level 3: paragraph: A
+    item-15 at level 2: unspecified: group rich_cell_group_1_1_1
+      item-16 at level 3: paragraph: B
+    item-17 at level 2: unspecified: group rich_cell_group_1_2_1
+      item-18 at level 3: paragraph: C
+    item-19 at level 2: unspecified: group rich_cell_group_1_0_2
+      item-20 at level 3: paragraph: D
+    item-21 at level 2: unspecified: group rich_cell_group_1_1_2
+      item-22 at level 3: paragraph: E
+    item-23 at level 2: unspecified: group rich_cell_group_1_2_2
+      item-24 at level 3: paragraph: F
+  item-25 at level 1: paragraph: 
+  item-26 at level 1: paragraph: 
+  item-27 at level 1: paragraph: Some text after
