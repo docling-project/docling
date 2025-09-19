@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "table_with_equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -21,17 +21,136 @@
         "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/texts/0"
+        "$ref": "#/texts/4"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_0",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_1_0",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/2"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/3"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_1_1",
+      "label": "unspecified"
+    }
+  ],
   "texts": [
     {
       "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "The next cell has an equation",
+      "text": "The next cell has an equation",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "A= \\pi r^{2}",
+      "text": "A= \\pi r^{2}"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "The next cell has another equation",
+      "text": "The next cell has another equation",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "x=\\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}",
+      "text": "x=\\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}"
+    },
+    {
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/body"
       },
@@ -50,7 +169,20 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/groups/0"
+        },
+        {
+          "$ref": "#/groups/1"
+        },
+        {
+          "$ref": "#/groups/2"
+        },
+        {
+          "$ref": "#/groups/3"
+        }
+      ],
       "content_layer": "body",
       "label": "table",
       "prov": [],
@@ -69,7 +201,11 @@
             "text": "The next cell has an equation",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/0"
+            }
           },
           {
             "row_span": 1,
@@ -81,7 +217,11 @@
             "text": "$A= \\pi r^{2}$",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/1"
+            }
           },
           {
             "row_span": 1,
@@ -93,7 +233,11 @@
             "text": "The next cell has another equation",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/2"
+            }
           },
           {
             "row_span": 1,
@@ -105,7 +249,11 @@
             "text": "$x=\\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}$",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/3"
+            }
           }
         ],
         "num_rows": 2,
@@ -122,7 +270,8 @@
               "text": "The next cell has an equation",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -134,7 +283,8 @@
               "text": "$A= \\pi r^{2}$",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -148,7 +298,8 @@
               "text": "The next cell has another equation",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -160,7 +311,8 @@
               "text": "$x=\\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}$",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]
