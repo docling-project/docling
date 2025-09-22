@@ -178,7 +178,11 @@ def test_webvtt_file():
         content = f.read()
         vtt = _WebVTTFile.parse(content)
     assert len(vtt) == 4
-    reverse = "WEBVTT\n\n" + "\n\n".join([str(block) for block in vtt.cue_blocks])
+    reverse = (
+        "WEBVTT\n\nNOTE Copyright © 2019 World Wide Web Consortium. "
+        "https://www.w3.org/TR/webvtt1/\n\n"
+    )
+    reverse += "\n\n".join([str(block) for block in vtt.cue_blocks])
     assert content == reverse
 
     with open("./tests/data/webvtt/webvtt_example_03.vtt", encoding="utf-8") as f:
