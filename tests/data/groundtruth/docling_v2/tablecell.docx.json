@@ -30,13 +30,13 @@
         "$ref": "#/tables/0"
       },
       {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/4"
       },
       {
-        "$ref": "#/texts/14"
+        "$ref": "#/texts/5"
       },
       {
-        "$ref": "#/texts/15"
+        "$ref": "#/texts/6"
       }
     ],
     "content_layer": "body",
@@ -60,132 +60,6 @@
       "content_layer": "body",
       "name": "list",
       "label": "list"
-    },
-    {
-      "self_ref": "#/groups/1",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/4"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_0_0",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/5"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_1_0",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/3",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/6"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_2_0",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/4",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/7"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_0_1",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/5",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/8"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_1_1",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/9"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_2_1",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/7",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/10"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_0_2",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/8",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/11"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_1_2",
-      "label": "unspecified"
-    },
-    {
-      "self_ref": "#/groups/9",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/12"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_2_2",
-      "label": "unspecified"
     }
   ],
   "texts": [
@@ -238,7 +112,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -250,7 +124,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "Some text before",
       "text": "Some text before",
@@ -265,206 +139,35 @@
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
-      "orig": "Tab1",
-      "text": "Tab1",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
-      "orig": "Tab2",
-      "text": "Tab2",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/6",
       "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "Tab3",
-      "text": "Tab3",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "A",
-      "text": "A",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/8",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "B",
-      "text": "B",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/9",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "C",
-      "text": "C",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/10",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "D",
-      "text": "D",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/11",
-      "parent": {
-        "$ref": "#/groups/8"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "E",
-      "text": "E",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "F",
-      "text": "F",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/14",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/15",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "Some text after",
       "text": "Some text after",
@@ -484,35 +187,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/groups/1"
-        },
-        {
-          "$ref": "#/groups/2"
-        },
-        {
-          "$ref": "#/groups/3"
-        },
-        {
-          "$ref": "#/groups/4"
-        },
-        {
-          "$ref": "#/groups/5"
-        },
-        {
-          "$ref": "#/groups/6"
-        },
-        {
-          "$ref": "#/groups/7"
-        },
-        {
-          "$ref": "#/groups/8"
-        },
-        {
-          "$ref": "#/groups/9"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "table",
       "prov": [],
@@ -532,10 +207,7 @@
             "column_header": true,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/1"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -548,10 +220,7 @@
             "column_header": true,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/2"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -564,10 +233,7 @@
             "column_header": true,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/3"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -580,10 +246,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/4"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -596,10 +259,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/5"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -612,10 +272,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/6"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -628,10 +285,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/7"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -644,10 +298,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/8"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -660,10 +311,7 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/9"
-            }
+            "fillable": false
           }
         ],
         "num_rows": 3,

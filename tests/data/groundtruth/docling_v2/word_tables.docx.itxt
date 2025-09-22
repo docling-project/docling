@@ -1,169 +1,19 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: section: group header-0
     item-2 at level 2: section_header: Test with tables
-      item-3 at level 3: paragraph: A uniform table
+      item-3 at level 3: text: A uniform table
       item-4 at level 3: table with [3x3]
-        item-5 at level 4: unspecified: group rich_cell_group_1_0_0
-          item-6 at level 5: paragraph: Header 0.0
-        item-7 at level 4: unspecified: group rich_cell_group_1_1_0
-          item-8 at level 5: paragraph: Header 0.1
-        item-9 at level 4: unspecified: group rich_cell_group_1_2_0
-          item-10 at level 5: paragraph: Header 0.2
-        item-11 at level 4: unspecified: group rich_cell_group_1_0_1
-          item-12 at level 5: paragraph: Cell 1.0
-        item-13 at level 4: unspecified: group rich_cell_group_1_1_1
-          item-14 at level 5: paragraph: Cell 1.1
-        item-15 at level 4: unspecified: group rich_cell_group_1_2_1
-          item-16 at level 5: paragraph: Cell 1.2
-        item-17 at level 4: unspecified: group rich_cell_group_1_0_2
-          item-18 at level 5: paragraph: Cell 2.0
-        item-19 at level 4: unspecified: group rich_cell_group_1_1_2
-          item-20 at level 5: paragraph: Cell 2.1
-        item-21 at level 4: unspecified: group rich_cell_group_1_2_2
-          item-22 at level 5: paragraph: Cell 2.2
-      item-23 at level 3: paragraph: 
-      item-24 at level 3: paragraph: A non-uniform table with horizontal spans
-      item-25 at level 3: table with [3x3]
-        item-26 at level 4: unspecified: group rich_cell_group_2_0_0
-          item-27 at level 5: paragraph: Header 0.0
-        item-28 at level 4: unspecified: group rich_cell_group_2_1_0
-          item-29 at level 5: paragraph: Header 0.1
-        item-30 at level 4: unspecified: group rich_cell_group_2_2_0
-          item-31 at level 5: paragraph: Header 0.2
-        item-32 at level 4: unspecified: group rich_cell_group_2_0_1
-          item-33 at level 5: paragraph: Cell 1.0
-        item-34 at level 4: unspecified: group rich_cell_group_2_1_1
-          item-35 at level 5: paragraph: Merged Cell 1.1 1.2
-        item-36 at level 4: unspecified: group rich_cell_group_2_0_2
-          item-37 at level 5: paragraph: Cell 2.0
-        item-38 at level 4: unspecified: group rich_cell_group_2_1_2
-          item-39 at level 5: paragraph: Merged Cell 2.1 2.2
-      item-40 at level 3: paragraph: 
-      item-41 at level 3: paragraph: A non-uniform table with horizontal spans in inner columns
-      item-42 at level 3: table with [3x4]
-        item-43 at level 4: unspecified: group rich_cell_group_3_0_0
-          item-44 at level 5: paragraph: Header 0.0
-        item-45 at level 4: unspecified: group rich_cell_group_3_1_0
-          item-46 at level 5: paragraph: Header 0.1
-        item-47 at level 4: unspecified: group rich_cell_group_3_2_0
-          item-48 at level 5: paragraph: Header 0.2
-        item-49 at level 4: unspecified: group rich_cell_group_3_3_0
-          item-50 at level 5: paragraph: Header 0.3
-        item-51 at level 4: unspecified: group rich_cell_group_3_0_1
-          item-52 at level 5: paragraph: Cell 1.0
-        item-53 at level 4: unspecified: group rich_cell_group_3_1_1
-          item-54 at level 5: paragraph: Merged Cell 1.1 1.2
-        item-55 at level 4: unspecified: group rich_cell_group_3_3_1
-          item-56 at level 5: paragraph: Cell 1.3
-        item-57 at level 4: unspecified: group rich_cell_group_3_0_2
-          item-58 at level 5: paragraph: Cell 2.0
-        item-59 at level 4: unspecified: group rich_cell_group_3_1_2
-          item-60 at level 5: paragraph: Merged Cell 2.1 2.2
-        item-61 at level 4: unspecified: group rich_cell_group_3_3_2
-          item-62 at level 5: paragraph: Cell 2.3
-      item-63 at level 3: paragraph: 
-      item-64 at level 3: paragraph: A non-uniform table with vertical spans
-      item-65 at level 3: table with [5x3]
-        item-66 at level 4: unspecified: group rich_cell_group_4_0_0
-          item-67 at level 5: paragraph: Header 0.0
-        item-68 at level 4: unspecified: group rich_cell_group_4_1_0
-          item-69 at level 5: paragraph: Header 0.1
-        item-70 at level 4: unspecified: group rich_cell_group_4_2_0
-          item-71 at level 5: paragraph: Header 0.2
-        item-72 at level 4: unspecified: group rich_cell_group_4_0_1
-          item-73 at level 5: paragraph: Cell 1.0
-        item-74 at level 4: unspecified: group rich_cell_group_4_1_1
-          item-75 at level 5: paragraph: Merged Cell 1.1 2.1
-        item-76 at level 4: unspecified: group rich_cell_group_4_2_1
-          item-77 at level 5: paragraph: Cell 1.2
-        item-78 at level 4: unspecified: group rich_cell_group_4_0_2
-          item-79 at level 5: paragraph: Cell 2.0
-        item-80 at level 4: unspecified: group rich_cell_group_4_2_2
-          item-81 at level 5: paragraph: Cell 2.2
-        item-82 at level 4: unspecified: group rich_cell_group_4_0_3
-          item-83 at level 5: paragraph: Cell 3.0
-        item-84 at level 4: unspecified: group rich_cell_group_4_1_3
-          item-85 at level 5: paragraph: Merged Cell 3.1 4.1
-        item-86 at level 4: unspecified: group rich_cell_group_4_2_3
-          item-87 at level 5: paragraph: Cell 3.2
-        item-88 at level 4: unspecified: group rich_cell_group_4_0_4
-          item-89 at level 5: paragraph: Cell 4.0
-        item-90 at level 4: unspecified: group rich_cell_group_4_2_4
-          item-91 at level 5: paragraph: Cell 4.2
-      item-92 at level 3: paragraph: 
-      item-93 at level 3: paragraph: A non-uniform table with all kinds of spans and empty cells
-      item-94 at level 3: table with [9x5]
-        item-95 at level 4: unspecified: group rich_cell_group_5_0_0
-          item-96 at level 5: paragraph: Header 0.0
-        item-97 at level 4: unspecified: group rich_cell_group_5_1_0
-          item-98 at level 5: paragraph: Header 0.1
-        item-99 at level 4: unspecified: group rich_cell_group_5_2_0
-          item-100 at level 5: paragraph: Header 0.2
-        item-101 at level 4: unspecified: group rich_cell_group_5_3_0
-          item-102 at level 5: paragraph: 
-        item-103 at level 4: unspecified: group rich_cell_group_5_4_0
-          item-104 at level 5: paragraph: 
-        item-105 at level 4: unspecified: group rich_cell_group_5_0_1
-          item-106 at level 5: paragraph: Cell 1.0
-        item-107 at level 4: unspecified: group rich_cell_group_5_1_1
-          item-108 at level 5: paragraph: Merged Cell 1.1 2.1
-        item-109 at level 4: unspecified: group rich_cell_group_5_2_1
-          item-110 at level 5: paragraph: Cell 1.2
-        item-111 at level 4: unspecified: group rich_cell_group_5_3_1
-          item-112 at level 5: paragraph: 
-        item-113 at level 4: unspecified: group rich_cell_group_5_4_1
-          item-114 at level 5: paragraph: 
-        item-115 at level 4: unspecified: group rich_cell_group_5_0_2
-          item-116 at level 5: paragraph: Cell 2.0
-        item-117 at level 4: unspecified: group rich_cell_group_5_2_2
-          item-118 at level 5: paragraph: Cell 2.2
-        item-119 at level 4: unspecified: group rich_cell_group_5_3_2
-          item-120 at level 5: paragraph: 
-        item-121 at level 4: unspecified: group rich_cell_group_5_4_2
-          item-122 at level 5: paragraph: 
-        item-123 at level 4: unspecified: group rich_cell_group_5_0_3
-          item-124 at level 5: paragraph: Cell 3.0
-        item-125 at level 4: unspecified: group rich_cell_group_5_1_3
-          item-126 at level 5: paragraph: Merged Cell 3.1 4.1
-        item-127 at level 4: unspecified: group rich_cell_group_5_2_3
-          item-128 at level 5: paragraph: Cell 3.2
-        item-129 at level 4: unspecified: group rich_cell_group_5_3_3
-          item-130 at level 5: paragraph: 
-        item-131 at level 4: unspecified: group rich_cell_group_5_4_3
-          item-132 at level 5: paragraph: 
-        item-133 at level 4: unspecified: group rich_cell_group_5_0_4
-          item-134 at level 5: paragraph: Cell 4.0
-        item-135 at level 4: unspecified: group rich_cell_group_5_2_4
-          item-136 at level 5: paragraph: Cell 4.2
-        item-137 at level 4: unspecified: group rich_cell_group_5_4_4
-          item-138 at level 5: paragraph: Merged Cell 4.4 5.4
-        item-139 at level 4: unspecified: group rich_cell_group_5_0_5
-          item-140 at level 5: paragraph: 
-        item-141 at level 4: unspecified: group rich_cell_group_5_1_5
-          item-142 at level 5: paragraph: 
-        item-143 at level 4: unspecified: group rich_cell_group_5_2_5
-          item-144 at level 5: paragraph: 
-        item-145 at level 4: unspecified: group rich_cell_group_5_0_6
-          item-146 at level 5: paragraph: 
-        item-147 at level 4: unspecified: group rich_cell_group_5_1_6
-          item-148 at level 5: paragraph: 
-        item-149 at level 4: unspecified: group rich_cell_group_5_2_6
-          item-150 at level 5: paragraph: 
-        item-151 at level 4: unspecified: group rich_cell_group_5_3_6
-          item-152 at level 5: paragraph: 
-        item-153 at level 4: unspecified: group rich_cell_group_5_4_6
-          item-154 at level 5: paragraph: 
-        item-155 at level 4: unspecified: group rich_cell_group_5_0_7
-          item-156 at level 5: paragraph: 
-        item-157 at level 4: unspecified: group rich_cell_group_5_0_8
-          item-158 at level 5: paragraph: 
-        item-159 at level 4: unspecified: group rich_cell_group_5_1_8
-          item-160 at level 5: paragraph: 
-        item-161 at level 4: unspecified: group rich_cell_group_5_2_8
-          item-162 at level 5: paragraph: 
-        item-163 at level 4: unspecified: group rich_cell_group_5_3_8
-          item-164 at level 5: paragraph: 
-        item-165 at level 4: unspecified: group rich_cell_group_5_4_8
-          item-166 at level 5: paragraph: Cell 8.4
-      item-167 at level 3: paragraph: 
-      item-168 at level 3: paragraph: 
+      item-5 at level 3: text: 
+      item-6 at level 3: text: A non-uniform table with horizontal spans
+      item-7 at level 3: table with [3x3]
+      item-8 at level 3: text: 
+      item-9 at level 3: text: A non-uniform table with horizontal spans in inner columns
+      item-10 at level 3: table with [3x4]
+      item-11 at level 3: text: 
+      item-12 at level 3: text: A non-uniform table with vertical spans
+      item-13 at level 3: table with [5x3]
+      item-14 at level 3: text: 
+      item-15 at level 3: text: A non-uniform table with all kinds of spans and empty cells
+      item-16 at level 3: table with [9x5]
+      item-17 at level 3: text: 
+      item-18 at level 3: text: 

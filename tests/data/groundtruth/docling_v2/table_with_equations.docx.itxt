@@ -1,11 +1,3 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: table with [2x2]
-    item-2 at level 2: unspecified: group rich_cell_group_1_0_0
-      item-3 at level 3: paragraph: The next cell has an equation
-    item-4 at level 2: unspecified: group rich_cell_group_1_1_0
-      item-5 at level 3: formula: A= \pi r^{2}
-    item-6 at level 2: unspecified: group rich_cell_group_1_0_1
-      item-7 at level 3: paragraph: The next cell has another equation
-    item-8 at level 2: unspecified: group rich_cell_group_1_1_1
-      item-9 at level 3: formula: x=\frac{-b \pm \sqrt{b^{2}-4ac}}{2a}
-  item-10 at level 1: paragraph: 
+  item-2 at level 1: text: 

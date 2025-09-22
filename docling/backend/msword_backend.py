@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -16,6 +16,7 @@ from docling_core.types.doc import (
     RichTableCell,
     TableCell,
     TableData,
+    TextItem,
 )
 from docling_core.types.doc.document import Formatting
 from docx import Document
@@ -176,7 +177,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         docx_obj: DocxDocument,
         doc: DoclingDocument,
         # parent:
-    ) -> Tuple[DoclingDocument, List[RefItem]]:
+    ) -> tuple[DoclingDocument, list[RefItem]]:
         added_elements = []
         for element in body:
             tag_name = etree.QName(element).localname
@@ -237,7 +238,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                 )
                                 added_elements.append(shape_group.get_ref())
                                 doc.add_text(
-                                    label=DocItemLabel.PARAGRAPH,
+                                    label=DocItemLabel.TEXT,
                                     parent=shape_group,
                                     text=text_content,
                                 )
@@ -918,7 +919,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                     if len(pre_eq_text) > 0:
                         e1 = doc.add_text(
-                            label=DocItemLabel.PARAGRAPH,
+                            label=DocItemLabel.TEXT,
                             parent=inline_equation,
                             text=pre_eq_text,
                         )
@@ -932,7 +933,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if len(text_tmp) > 0:
                     e3 = doc.add_text(
-                        label=DocItemLabel.PARAGRAPH,
+                        label=DocItemLabel.TEXT,
                         parent=inline_equation,
                         text=text_tmp.strip(),
                     )
@@ -956,7 +957,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             for text, format, hyperlink in paragraph_elements:
                 t2 = doc.add_text(
-                    label=DocItemLabel.PARAGRAPH,
+                    label=DocItemLabel.TEXT,
                     parent=parent,
                     text=text,
                     formatting=format,
@@ -975,7 +976,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             for text, format, hyperlink in paragraph_elements:
                 t3 = doc.add_text(
-                    label=DocItemLabel.PARAGRAPH,
+                    label=DocItemLabel.TEXT,
                     parent=parent,
                     text=text,
                     formatting=format,
@@ -1262,36 +1263,80 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 provs_in_cell: List[RefItem] = []
                 _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
                 ref_for_rich_cell = provs_in_cell[0]
-                group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
-                group_element = doc.add_group(
-                    label=GroupLabel.UNSPECIFIED,
-                    name=group_name,
-                    parent=docling_table,
-                )
-                for prov in provs_in_cell:
-                    group_element.children.append(prov)
-                    pr_item = prov.resolve(doc)
-                    item_parent = pr_item.parent.resolve(doc)
-                    if pr_item.get_ref() in item_parent.children:
-                        item_parent.children.remove(pr_item.get_ref())
-                    pr_item.parent = group_element.get_ref()
-                ref_for_rich_cell = group_element.get_ref()
+                rich_table_cell = False
 
-                table_cell = RichTableCell(
-                    text=text,
-                    row_span=spanned_idx - row_idx,
-                    col_span=cell.grid_span,
-                    start_row_offset_idx=row.grid_cols_before + row_idx,
-                    end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + cell.grid_span,
-                    column_header=row.grid_cols_before + row_idx == 0,
-                    row_header=False,
-                    ref=ref_for_rich_cell,  # points to an artificial group around children, or to child directly
-                )
-                doc.add_table_cell(table_item=docling_table, cell=table_cell)
-                col_idx += cell.grid_span
+                def group_cell_elements(
+                    group_name: str, doc: DoclingDocument, provs_in_cell: List[RefItem]
+                ) -> RefItem:
+                    group_element = doc.add_group(
+                        label=GroupLabel.UNSPECIFIED,
+                        name=group_name,
+                        parent=docling_table,
+                    )
+                    for prov in provs_in_cell:
+                        group_element.children.append(prov)
+                        pr_item = prov.resolve(doc)
+                        item_parent = pr_item.parent.resolve(doc)
+                        if pr_item.get_ref() in item_parent.children:
+                            item_parent.children.remove(pr_item.get_ref())
+                        pr_item.parent = group_element.get_ref()
+                    ref_for_rich_cell = group_element.get_ref()
+                    return ref_for_rich_cell
 
+                if len(provs_in_cell) > 1:
+                    # Cell has multiple elements, we need to group them
+                    rich_table_cell = True
+                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                    ref_for_rich_cell = group_cell_elements(
+                        group_name, doc, provs_in_cell
+                    )
+
+                elif len(provs_in_cell) == 1:
+                    item_ref = provs_in_cell[0]
+                    pr_item = item_ref.resolve(doc)
+                    if isinstance(pr_item, TextItem):
+                        # Cell has only one element and it's just a text
+                        rich_table_cell = False
+                        doc.delete_items(node_items=[pr_item])
+                    else:
+                        rich_table_cell = True
+                        group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                        ref_for_rich_cell = group_cell_elements(
+                            group_name, doc, provs_in_cell
+                        )
+                else:
+                    rich_table_cell = False
+
+                if rich_table_cell:
+                    print(f"RICH TABLE CELL WITH CONTENT: {ref_for_rich_cell}")
+                    rich_cell = RichTableCell(
+                        text=text,
+                        row_span=spanned_idx - row_idx,
+                        col_span=cell.grid_span,
+                        start_row_offset_idx=row.grid_cols_before + row_idx,
+                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + cell.grid_span,
+                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_header=False,
+                        ref=ref_for_rich_cell,  # points to an artificial group around children, or to child directly
+                    )
+                    doc.add_table_cell(table_item=docling_table, cell=rich_cell)
+                    col_idx += cell.grid_span
+                else:
+                    simple_cell = TableCell(
+                        text=text,
+                        row_span=spanned_idx - row_idx,
+                        col_span=cell.grid_span,
+                        start_row_offset_idx=row.grid_cols_before + row_idx,
+                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + cell.grid_span,
+                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_header=False,
+                    )
+                    doc.add_table_cell(table_item=docling_table, cell=simple_cell)
+                    col_idx += cell.grid_span
         return elem_ref
 
     def _handle_pictures(

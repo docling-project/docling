@@ -1,8 +1,8 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: paragraph: Test with three images in unusual formats
-  item-2 at level 1: paragraph: Raster in emf:
+  item-1 at level 1: text: Test with three images in unusual formats
+  item-2 at level 1: text: Raster in emf:
   item-3 at level 1: picture
-  item-4 at level 1: paragraph: Vector in emf:
+  item-4 at level 1: text: Vector in emf:
   item-5 at level 1: picture
-  item-6 at level 1: paragraph: Raster in webp:
+  item-6 at level 1: text: Raster in webp:
   item-7 at level 1: picture
