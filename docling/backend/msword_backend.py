@@ -1308,7 +1308,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     rich_table_cell = False
 
                 if rich_table_cell:
-                    print(f"RICH TABLE CELL WITH CONTENT: {ref_for_rich_cell}")
                     rich_cell = RichTableCell(
                         text=text,
                         row_span=spanned_idx - row_idx,
@@ -1319,7 +1318,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         end_col_offset_idx=col_idx + cell.grid_span,
                         column_header=row.grid_cols_before + row_idx == 0,
                         row_header=False,
-                        ref=ref_for_rich_cell,  # points to an artificial group around children, or to child directly
+                        ref=ref_for_rich_cell,  # points to an artificial group around children
                     )
                     doc.add_table_cell(table_item=docling_table, cell=rich_cell)
                     col_idx += cell.grid_span
