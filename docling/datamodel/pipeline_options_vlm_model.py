@@ -2,7 +2,8 @@ from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
 from docling_core.types.doc.page import SegmentedPage
-from pydantic import AnyUrl, BaseModel
+from pydantic import AnyUrl, BaseModel, ConfigDict
+from transformers import StoppingCriteria
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -50,6 +51,8 @@ class TransformersPromptStyle(str, Enum):
 
 
 class InlineVlmOptions(BaseVlmOptions):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     kind: Literal["inline_model_options"] = "inline_model_options"
 
     repo_id: str
@@ -71,6 +74,7 @@ class InlineVlmOptions(BaseVlmOptions):
     ]
 
     stop_strings: List[str] = []
+    custom_stopping_criteria: List[StoppingCriteria] = []
     extra_generation_config: Dict[str, Any] = {}
     extra_processor_kwargs: Dict[str, Any] = {}
 

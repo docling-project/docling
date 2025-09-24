@@ -247,16 +247,33 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         # -- Optional stopping criteria
-        stopping_criteria = None
+        stopping_criteria_list: StoppingCriteriaList = StoppingCriteriaList()
+
+        # Add string-based stopping criteria
         if self.vlm_options.stop_strings:
-            stopping_criteria = StoppingCriteriaList(
-                [
-                    StopStringCriteria(
-                        stop_strings=self.vlm_options.stop_strings,
-                        tokenizer=self.processor.tokenizer,
-                    )
-                ]
+            stopping_criteria_list.append(
+                StopStringCriteria(
+                    stop_strings=self.vlm_options.stop_strings,
+                    tokenizer=self.processor.tokenizer,
+                )
             )
+
+        # Add custom stopping criteria
+        if self.vlm_options.custom_stopping_criteria:
+            for criteria in self.vlm_options.custom_stopping_criteria:
+                # If it's a class (not an instance), instantiate it with the tokenizer
+                if isinstance(criteria, type):
+                    criteria_instance = criteria(self.processor.tokenizer)
+                    stopping_criteria_list.append(criteria_instance)
+                else:
+                    # If it's already an instance, use it directly
+                    stopping_criteria_list.append(criteria)
+
+        stopping_criteria = (
+            StoppingCriteriaList(stopping_criteria_list)
+            if stopping_criteria_list
+            else None
+        )
 
         # -- Generate (Image-Text-to-Text class expects these inputs from processor)
         gen_kwargs = {

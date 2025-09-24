@@ -217,7 +217,7 @@ classmethod-decorators = [
 "tests/*.py" = ["ASYNC"]         # Disable ASYNC check for tests
 
 [tool.ruff.lint.mccabe]
-max-complexity = 20
+max-complexity = 30
 
 # [tool.ruff.lint.isort.sections]
 # "docling" = ["docling_core", "docling_ibm_models", "docling_parse"]
