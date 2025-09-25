@@ -202,7 +202,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         import torch
         from PIL import Image as PILImage
 
-        # -- Normalize images to RGB PIL (SmolDocling & friends accept PIL/np via processor)
+        # -- Normalize images to RGB PIL
         pil_images: list[Image] = []
         for img in image_batch:
             if isinstance(img, np.ndarray):

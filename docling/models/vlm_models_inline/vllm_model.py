@@ -215,12 +215,10 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
                     images.append(hi_res_image)
 
-                    # Build the prompt string (callable or static)
-                    if callable(self.vlm_options.prompt):
-                        up = self.vlm_options.prompt(page.parsed_page)
-                    else:
-                        up = self.vlm_options.prompt
-                    user_prompts.append(up)
+                    # Define prompt structure
+                    user_prompt = self.vlm_options.build_prompt(page.parsed_page)
+
+                    user_prompts.append(user_prompt)
                     pages_with_images.append(page)
 
                 if images:
@@ -238,9 +236,10 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         prompt: Union[str, list[str]],
     ) -> Iterable[VlmPrediction]:
         """Process images in a single batched vLLM inference call."""
+        import numpy as np
         from PIL import Image as PILImage
 
-        # Normalize to PIL RGB
+        # -- Normalize images to RGB PIL
         pil_images: list[Image] = []
         for img in image_batch:
             if isinstance(img, np.ndarray):
@@ -252,10 +251,8 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     raise ValueError(f"Unsupported numpy array shape: {img.shape}")
             else:
                 pil_img = img
-
             if pil_img.mode != "RGB":
                 pil_img = pil_img.convert("RGB")
-
             pil_images.append(pil_img)
 
         if not pil_images:
