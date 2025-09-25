@@ -26,8 +26,8 @@ def test_pptx_smoke(intelligent_processor):
     reason="sample.pptx not found",
 )
 @pytest.mark.asyncio
-async def test_vector_schema_pptx(basic_processor):
-    dp = basic_processor()
+async def test_vector_schema_pptx(intelligent_processor):
+    dp = intelligent_processor()
     sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx"
 
     vectors = await dp(None, str(sample))
