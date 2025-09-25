@@ -75,7 +75,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(self.vlm_options.repo_id)
+                artifacts_path = self.download_models(
+                    self.vlm_options.repo_id, revision=self.vlm_options.revision
+                )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
@@ -106,6 +108,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
                 trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
             )
             self.processor.tokenizer.padding_side = "left"
 
@@ -120,11 +123,14 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     else "sdpa"
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
             )
             self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
 
             # Load generation config
-            self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
+            self.generation_config = GenerationConfig.from_pretrained(
+                artifacts_path, revision=vlm_options.revision
+            )
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -196,7 +202,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         import torch
         from PIL import Image as PILImage
 
-        # -- Normalize images to RGB PIL (SmolDocling & friends accept PIL/np via processor)
+        # -- Normalize images to RGB PIL
         pil_images: list[Image] = []
         for img in image_batch:
             if isinstance(img, np.ndarray):
@@ -275,13 +281,30 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             else None
         )
 
+        # -- Filter out decoder-specific keys from extra_generation_config
+        decoder_keys = {
+            "skip_special_tokens",
+            "clean_up_tokenization_spaces",
+            "spaces_between_special_tokens",
+        }
+        generation_config = {
+            k: v
+            for k, v in self.vlm_options.extra_generation_config.items()
+            if k not in decoder_keys
+        }
+        decoder_config = {
+            k: v
+            for k, v in self.vlm_options.extra_generation_config.items()
+            if k in decoder_keys
+        }
+
         # -- Generate (Image-Text-to-Text class expects these inputs from processor)
         gen_kwargs = {
             **inputs,
             "max_new_tokens": self.max_new_tokens,
             "use_cache": self.use_cache,
             "generation_config": self.generation_config,
-            **self.vlm_options.extra_generation_config,
+            **generation_config,
         }
         if self.temperature > 0:
             gen_kwargs["do_sample"] = True
@@ -310,7 +333,8 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             )
 
         decoded_texts: list[str] = decode_fn(
-            trimmed_sequences, skip_special_tokens=False
+            trimmed_sequences,
+            **decoder_config,
         )
 
         # -- Clip off pad tokens from decoded texts
