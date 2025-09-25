@@ -7,8 +7,8 @@ import pytest
     not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx").exists(),
     reason="sample.pptx not found",
 )
-def test_pptx_smoke(basic_processor):
-    dp = basic_processor()
+def test_pptx_smoke(intelligent_processor):
+    dp = intelligent_processor()
     sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx"
 
     doc = dp.load_documents(str(sample))
