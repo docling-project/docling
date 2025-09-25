@@ -121,6 +121,7 @@ dev = [
     "types-tqdm~=4.67",
     "coverage~=7.6",
     "pytest~=8.3",
+    "pytest-durations~=1.6.1",
     "pytest-cov>=6.1.1",
     "pytest-dependency~=0.6",
     "pytest-xdist~=3.3",
