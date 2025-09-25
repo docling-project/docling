@@ -3,20 +3,22 @@ from io import BytesIO
 from pathlib import Path
 from typing import Set, Union
 
-from docling_core.types.doc import (
-    BoundingBox,
-    CoordOrigin,
-    DocItemLabel,
+from docling_core.types.doc.base import BoundingBox, CoordOrigin, Size
+from docling_core.types.doc.labels import DocItemLabel, GroupLabel
+# from docling_core.types.doc.tokens import DocumentToken, TableToken, _LOC_PREFIX
+from docling_core.types.doc.document import (
+    ContentLayer,
     DoclingDocument,
     DocumentOrigin,
-    GroupLabel,
+    # DocTagsDocument,
     ImageRef,
+    # PictureClassificationClass,
+    # PictureClassificationData,
+    # PictureTabularChartData,
     ProvenanceItem,
-    Size,
     TableCell,
     TableData,
 )
-from docling_core.types.doc.document import ContentLayer
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
@@ -87,10 +89,23 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Parses the PPTX into a structured document model.
         # origin = DocumentOrigin(filename=self.path_or_stream.name, mimetype=next(iter(FormatToMimeType.get(InputFormat.PPTX))), binary_hash=self.document_hash)
 
+        # binary_hash 오류 시 사용 예정
+        # # binary_hash는 Uint64 범위여야 하므로 64비트 마스킹 적용
+        # if isinstance(self.document_hash, str):
+        #     try:
+        #         bh = int(self.document_hash, 16) & 0xFFFFFFFFFFFFFFFF
+        #     except Exception:
+        #         bh = 0
+        # elif isinstance(self.document_hash, int):
+        #     bh = self.document_hash & 0xFFFFFFFFFFFFFFFF
+        # else:
+        #     bh = 0
+
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="application/vnd.ms-powerpoint",
             binary_hash=self.document_hash,
+            # binary_hash=bh,
         )
 
         doc = DoclingDocument(
@@ -188,7 +203,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             else:  # is paragraph not a list item
                 # Assign proper label to the text, depending if it's a Title or Section Header
                 # For other types of text, assign - PARAGRAPH
-                doc_label = DocItemLabel.PARAGRAPH
+                
+                # text 로 변경(toc enrichment 적용 위함)
+                # doc_label = DocItemLabel.PARAGRAPH
+                doc_label = DocItemLabel.TEXT 
                 if shape.is_placeholder:
                     placeholder_type = shape.placeholder_format.type
                     if placeholder_type in [
@@ -199,6 +217,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         doc_label = DocItemLabel.TITLE
                     elif placeholder_type == PP_PLACEHOLDER.SUBTITLE:
                         DocItemLabel.SECTION_HEADER
+
+                # Caption detection 추가 : starts with "자료:" or "참고:" or "출처:"
+                # Footnote detection 추가 : starts with "*" 
+                stripped = p_text.lstrip()
+                if stripped.startswith("자료:") or stripped.startswith("참고:") or stripped.startswith("출처:"):
+                    doc_label = DocItemLabel.CAPTION
+                # if stripped.startswith("*"):
+                #     doc_label = DocItemLabel.FOOTNOTE
 
                 # output accumulated inline text:
                 doc.add_text(
@@ -252,7 +278,33 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         except (UnidentifiedImageError, OSError) as e:
             _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
         return
+    
+    # 차트 처리 함수 추가 
+    def handle_charts(self, shape, parent_slide, slide_ind, doc, slide_size):
+        if not hasattr(shape, "has_chart") or not shape.has_chart:
+            return
 
+        prov = self.generate_prov(shape, slide_ind, "", slide_size)
+
+        # 투명 플레이스홀더 이미지(2x2) 생성하여 이미지 참조로 전달
+        placeholder_ref = None
+        try:
+            ph_img = Image.new("RGBA", (2, 2), (0, 0, 0, 0))
+            placeholder_ref = ImageRef.from_pil(image=ph_img, dpi=72)
+        except Exception:
+            placeholder_ref = None
+
+        pic = doc.add_picture(
+            parent=parent_slide,
+            prov=prov,
+            image=placeholder_ref,
+        )
+        try:
+            pic.label = DocItemLabel.CHART
+        except Exception:
+            pass
+        return
+    
     def handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Handling tables, images, charts
         if shape.has_table:
@@ -342,6 +394,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if shape.has_table:
                     # Handle Tables
                     self.handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
+                # 차트 표시 함수 추가(doc에는 add_picture 함수 사용해서 추가됨, 전달되는 Image는 None)
+                if hasattr(shape, "has_chart") and shape.has_chart:
+                    self.handle_charts(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     if hasattr(shape, "image"):
@@ -364,12 +419,24 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
                 return
 
+            # 그룹화 된 아이템 처리 함수 수정
             def handle_groups(shape, parent_slide, slide_ind, doc, slide_size):
+                """그룹화된 아이템(shape_type=GROUP)을 만나면 그룹 컨테이너를 만들고 자식들을 정렬해 순서대로 처리한다."""
                 if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
-                    for groupedshape in shape.shapes:
-                        handle_shapes(
-                            groupedshape, parent_slide, slide_ind, doc, slide_size
-                        )
+                    group_parent = doc.add_group(
+                        label=GroupLabel.INLINE,
+                        name=getattr(shape, "name", None) or f"group-{slide_ind}-{getattr(shape, 'shape_id', 'id')}",
+                        parent=parent_slide,
+                    )
+
+                    # 로컬 좌표 기준 시각적 순서: 위→아래, 좌→우
+                    def child_position_sort_key(child_shape):
+                        s_left = getattr(child_shape, "left", 0) or 0
+                        s_top = getattr(child_shape, "top", 0) or 0
+                        return (s_top, s_left)
+
+                    for groupedshape in sorted(shape.shapes, key=child_position_sort_key):
+                        handle_shapes(groupedshape, group_parent, slide_ind, doc, slide_size)
 
             # Loop through each shape in the slide
             for shape in slide.shapes:
