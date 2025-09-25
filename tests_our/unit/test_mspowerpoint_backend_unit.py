@@ -11,7 +11,7 @@ def test_mspowerpoint_backend_convert_on_sample(sample_dir: Path):
     from docling.datamodel.base_models import InputFormat
     from docling.backend.mspowerpoint_backend import MsPowerpointDocumentBackend
 
-    sample_path = Path("/workspaces/pptx_branch/doc_parser/sample_files/sample.pptx")
+    sample_path = Path("doc_parser/sample_files/sample.pptx")
     if not sample_path.exists():
         pytest.skip(f"sample not found: {sample_path}")
 
