@@ -264,13 +264,30 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 ]
             )
 
+        # -- Filter out decoder-specific keys from extra_generation_config
+        decoder_keys = {
+            "skip_special_tokens",
+            "clean_up_tokenization_spaces",
+            "spaces_between_special_tokens",
+        }
+        generation_config = {
+            k: v
+            for k, v in self.vlm_options.extra_generation_config.items()
+            if k not in decoder_keys
+        }
+        decoder_config = {
+            k: v
+            for k, v in self.vlm_options.extra_generation_config.items()
+            if k in decoder_keys
+        }
+
         # -- Generate (Image-Text-to-Text class expects these inputs from processor)
         gen_kwargs = {
             **inputs,
             "max_new_tokens": self.max_new_tokens,
             "use_cache": self.use_cache,
             "generation_config": self.generation_config,
-            **self.vlm_options.extra_generation_config,
+            **generation_config,
         }
         if self.temperature > 0:
             gen_kwargs["do_sample"] = True
@@ -300,9 +317,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
         decoded_texts: list[str] = decode_fn(
             trimmed_sequences,
-            skip_special_tokens=self.vlm_options.extra_generation_config.get(
-                "skip_special_tokens", True
-            ),
+            **decoder_config,
         )
 
         # -- Clip off pad tokens from decoded texts
