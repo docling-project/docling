@@ -77,8 +77,6 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         "limit_mm_per_prompt",
         # Execution toggles
         "enforce_eager",
-        # Device hint (CPU)
-        "device",
     }
 
     def __init__(
@@ -146,7 +144,6 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         }
 
         if self.device == "cpu":
-            llm_kwargs.setdefault("device", "cpu")
             llm_kwargs.setdefault("enforce_eager", True)
         else:
             llm_kwargs.setdefault(
