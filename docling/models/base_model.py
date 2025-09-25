@@ -86,7 +86,7 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
         """Formulate a prompt for the VLM."""
         _log = logging.getLogger(__name__)
 
-        if self.vlm_options.transformers_prompt_style in TransformersPromptStyle.RAW:
+        if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.RAW:
             return user_prompt
         elif self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
             return ""
