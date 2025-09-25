@@ -27,6 +27,10 @@ def sample_dir(repo_root: Path) -> Path:
 def basic_processor():
     mod = pytest.importorskip("doc_preprocessors.basic_processor")
     return mod.DocumentProcessor
+
+
+# intelligent_processor 픽스처 추가
+@pytest.fixture(scope="session")
 def intelligent_processor():
     mod = pytest.importorskip("doc_preprocessors.intelligent_processor")
     return mod.DocumentProcessor

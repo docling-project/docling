@@ -7,8 +7,8 @@ import pytest
     not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx").exists(),
     reason="sample.pptx not found",
 )
-def test_pptx_smoke(intelligent_processor):
-    dp = intelligent_processor()
+def test_pptx_smoke(basic_processor):
+    dp = basic_processor()
     sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx"
 
     doc = dp.load_documents(str(sample))
@@ -26,8 +26,8 @@ def test_pptx_smoke(intelligent_processor):
     reason="sample.pptx not found",
 )
 @pytest.mark.asyncio
-async def test_vector_schema_pptx(intelligent_processor):
-    dp = intelligent_processor()
+async def test_vector_schema_pptx(basic_processor):
+    dp = basic_processor()
     sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx"
 
     vectors = await dp(None, str(sample))
