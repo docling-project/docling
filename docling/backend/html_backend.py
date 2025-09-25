@@ -446,7 +446,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if not is_row_header:
                 num_rows += 1
 
-        _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
+        # _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
 
         grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
 
