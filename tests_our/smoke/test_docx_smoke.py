@@ -8,13 +8,10 @@ DOCX_SAMPLES = sorted(SAMPLE_DIR.glob("*.docx"))
 
 
 @pytest.mark.smoke
-@pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.docx").exists(),
-    reason="sample.docx not found",
-)
-def test_docx_smoke(basic_processor, sample_dir: Path):
+@pytest.mark.skipif(len(DOCX_SAMPLES) == 0, reason="no .docx samples found")
+@pytest.mark.parametrize("sample", DOCX_SAMPLES, ids=lambda p: p.name)
+def test_docx_smoke(basic_processor, sample: Path):
     dp = basic_processor()
-    sample = sample_dir / "sample.docx"
 
     doc = dp.load_documents(str(sample))
     assert doc is not None
@@ -26,14 +23,11 @@ def test_docx_smoke(basic_processor, sample_dir: Path):
 
 
 @pytest.mark.smoke
-@pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.docx").exists(),
-    reason="sample.docx not found",
-)
+@pytest.mark.skipif(len(DOCX_SAMPLES) == 0, reason="no .docx samples found")
+@pytest.mark.parametrize("sample", DOCX_SAMPLES, ids=lambda p: p.name)
 @pytest.mark.asyncio
-async def test_vector_schema_docx(basic_processor, sample_dir: Path):
+async def test_vector_schema_docx(basic_processor, sample: Path):
     dp = basic_processor()
-    sample = sample_dir / "sample.docx"
 
     vectors = await dp(None, str(sample))
     assert isinstance(vectors, list) and len(vectors) >= 1

@@ -13,6 +13,7 @@ from fastapi import Request
 # docling imports
 
 from docling.backend.xml.hwpx_backend import HwpxDocumentBackend
+from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -34,7 +35,8 @@ from docling.document_converter import (
     DocumentConverter,
     PdfFormatOption,
     HwpxFormatOption,
-    FormatOption
+    FormatOption,
+    WordFormatOption
 )
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 from docling.utils.document_enrichment import enrich_document
@@ -872,6 +874,9 @@ class DocumentProcessor:
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=self.pipe_line_options,
                         backend=DoclingParseV4DocumentBackend
+                    ),
+                    InputFormat.DOCX: WordFormatOption(
+                        pipeline_cls=SimplePipeline, backend=GenosMsWordDocumentBackend
                     ),
                 }
             )

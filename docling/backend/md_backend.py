@@ -112,13 +112,20 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 # otherwise they represent emphasis (bold or italic)
                 self.markdown = self._shorten_underscore_sequences(text_stream)
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
-                    md_content = f.read()
-                    # remove invalid sequences
-                    # very long sequences of underscores will lead to unnecessary long processing times.
-                    # In any proper Markdown files, underscores have to be escaped,
-                    # otherwise they represent emphasis (bold or italic)
-                    self.markdown = self._shorten_underscore_sequences(md_content)
+                try:
+                    with open(self.path_or_stream, encoding="utf-8") as f:
+                        md_content = f.read()
+                except UnicodeDecodeError:
+                    # Fallback: tolerate broken UTF-8 sequences by ignoring errors
+                    with open(self.path_or_stream, "rb") as f:
+                        raw_bytes = f.read()
+                    md_content = raw_bytes.decode("utf-8", errors="ignore")
+
+                # remove invalid sequences
+                # very long sequences of underscores will lead to unnecessary long processing times.
+                # In any proper Markdown files, underscores have to be escaped,
+                # otherwise they represent emphasis (bold or italic)
+                self.markdown = self._shorten_underscore_sequences(md_content)
             self.valid = True
 
             _log.debug(self.markdown)
