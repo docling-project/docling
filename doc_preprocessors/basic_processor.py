@@ -875,9 +875,6 @@ class DocumentProcessor:
                         pipeline_options=self.pipe_line_options,
                         backend=DoclingParseV4DocumentBackend
                     ),
-                    InputFormat.DOCX: WordFormatOption(
-                        pipeline_cls=SimplePipeline, backend=GenosMsWordDocumentBackend
-                    ),
                 }
             )
         self.second_converter = DocumentConverter(
