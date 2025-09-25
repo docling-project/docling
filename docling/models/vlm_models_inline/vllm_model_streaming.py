@@ -42,7 +42,8 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
         if self.enabled:
             from transformers import AutoProcessor
-            from vllm.async_llm import AsyncLLM
+            from vllm.engine.arg_utils import AsyncEngineArgs
+            from vllm.engine.async_llm_engine import AsyncLLMEngine
             from vllm.sampling_params import SamplingParams
 
             self.device = decide_device(
@@ -61,17 +62,18 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
-            llm_kwargs: Dict[str, Any] = {
-                "model": str(artifacts_path),
-                "limit_mm_per_prompt": {"image": 1},
-                "trust_remote_code": vlm_options.trust_remote_code,
-                "model_impl": "transformers",
-                "gpu_memory_utilization": 0.3,
-            }
-            if self.device == "cpu":
-                llm_kwargs["device"] = "cpu"
-            if vlm_options.quantized and vlm_options.load_in_8bit:
-                llm_kwargs["quantization"] = "bitsandbytes"
+            # Create AsyncEngineArgs for AsyncLLMEngine
+            engine_args = AsyncEngineArgs(
+                model=str(artifacts_path),
+                limit_mm_per_prompt={"image": 1},
+                trust_remote_code=vlm_options.trust_remote_code,
+                model_impl="transformers",
+                gpu_memory_utilization=0.3,
+                device=self.device if self.device == "cpu" else "auto",
+                quantization="bitsandbytes"
+                if (vlm_options.quantized and vlm_options.load_in_8bit)
+                else None,
+            )
 
             # Async engine + background loop
             self._loop = asyncio.new_event_loop()
@@ -81,7 +83,7 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             self._loop_thread.start()
 
             async def _init():
-                return AsyncLLM(**llm_kwargs)
+                return AsyncLLMEngine.from_engine_args(engine_args)
 
             self._engine = asyncio.run_coroutine_threadsafe(
                 _init(), self._loop
@@ -231,12 +233,18 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         Returns:
           {"text": str, "token_count": Optional[int]}
         """
+        # Create a request ID for tracking
+        import uuid
+
         from vllm.sampling_params import SamplingParams
 
-        req_id = await self._engine.add_request(
+        request_id = str(uuid.uuid4())
+
+        # Add request to the engine
+        await self._engine.add_request(
+            request_id=request_id,
             prompt=inp["prompt"],
             multi_modal_data=inp.get("multi_modal_data"),
-            use_streaming=True,
             sampling_params=self.sampling_params
             if isinstance(self.sampling_params, SamplingParams)
             else SamplingParams(**dict(self.sampling_params)),
@@ -270,15 +278,18 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             # Last-ditch: approximate by characters (very rough)
             return len(cumulative_text)
 
-        async for out in self._engine.generate(req_id):
+        # Stream outputs from the engine
+        async for request_output in self._engine.generate(
+            request_id, self.sampling_params
+        ):
             # Get cumulative/current text
             try:
-                current_text = out.outputs[0].text or ""
+                current_text = request_output.outputs[0].text or ""
             except Exception:
                 current_text = ""
 
             # Derive delta
-            delta = getattr(out.outputs[0], "text_delta", None)
+            delta = getattr(request_output.outputs[0], "text_delta", None)
             if delta is None:
                 prev = "".join(full_text_parts)
                 if len(current_text) > len(prev) and current_text.startswith(prev):
@@ -293,7 +304,7 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             # Update counts
             try:
                 token_count = current_token_count_estimate(
-                    "".join(full_text_parts), getattr(out, "metrics", None)
+                    "".join(full_text_parts), getattr(request_output, "metrics", None)
                 )
             except Exception:
                 token_count = None
@@ -320,7 +331,7 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         # Try to get precise final token count if still unknown
         if token_count is None:
             try:
-                final_outputs = await self._engine.get_request_output(req_id)
+                final_outputs = await self._engine.get_request_output(request_id)
                 if final_outputs and final_outputs[0].outputs:
                     token_ids = getattr(final_outputs[0].outputs[0], "token_ids", None)
                     if token_ids is not None:
@@ -329,3 +340,21 @@ class VllmVlmModelStreaming(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 pass
 
         return {"text": "".join(full_text_parts), "token_count": token_count}
+
+    def __del__(self):
+        """Cleanup async engine and event loop on destruction."""
+        if hasattr(self, "_engine") and self._engine is not None:
+            try:
+                # Schedule engine shutdown in the event loop
+                if hasattr(self, "_loop") and self._loop is not None:
+                    asyncio.run_coroutine_threadsafe(
+                        self._engine.shutdown(), self._loop
+                    ).result(timeout=5.0)
+            except Exception:
+                pass  # Best effort cleanup
+
+        if hasattr(self, "_loop") and self._loop is not None:
+            try:
+                self._loop.call_soon_threadsafe(self._loop.stop)
+            except Exception:
+                pass  # Best effort cleanup
