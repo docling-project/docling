@@ -75,7 +75,9 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(self.vlm_options.repo_id)
+                artifacts_path = self.download_models(
+                    self.vlm_options.repo_id, revision=self.vlm_options.revision
+                )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
@@ -106,6 +108,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
                 trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
             )
             self.processor.tokenizer.padding_side = "left"
 
@@ -120,11 +123,14 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     else "sdpa"
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
             )
             self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
 
             # Load generation config
-            self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
+            self.generation_config = GenerationConfig.from_pretrained(
+                artifacts_path, revision=vlm_options.revision
+            )
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -293,7 +299,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             )
 
         decoded_texts: list[str] = decode_fn(
-            trimmed_sequences, skip_special_tokens=False
+            trimmed_sequences,
+            skip_special_tokens=self.vlm_options.extra_generation_config.get(
+                "skip_special_tokens", True
+            ),
         )
 
         # -- Clip off pad tokens from decoded texts
