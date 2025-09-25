@@ -60,6 +60,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             if artifacts_path is None:
                 artifacts_path = self.download_models(
                     self.vlm_options.repo_id,
+                    revision=self.vlm_options.revision,
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder

@@ -88,7 +88,8 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
 
         if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.RAW:
             return user_prompt
-
+        elif self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
+            return ""
         elif self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
             _log.debug("Using specialized prompt for Phi-4")
             # Note: This might need adjustment for VLLM vs transformers

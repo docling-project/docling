@@ -29,11 +29,19 @@ GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
     ],
+    extra_generation_config=dict(skip_special_tokens=False),
     scale=2.0,
     temperature=0.0,
     max_new_tokens=8192,
     stop_strings=["</doctag>", "<|end_of_text|>"],
 )
+
+GRANITEDOCLING_VLLM = GRANITEDOCLING_TRANSFORMERS.model_copy()
+GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
+GRANITEDOCLING_VLLM.revision = (
+    "untied"  # change back to "main" with next vllm relase after 0.10.2
+)
+
 
 GRANITEDOCLING_MLX = InlineVlmOptions(
     repo_id="ibm-granite/granite-docling-258M-mlx",
@@ -302,3 +310,4 @@ class VlmModelType(str, Enum):
     GRANITE_VISION_OLLAMA = "granite_vision_ollama"
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
+    GRANITEDOCLING_VLLM = "granite_docling_vllm"

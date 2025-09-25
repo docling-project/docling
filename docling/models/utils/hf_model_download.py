@@ -34,7 +34,12 @@ class HuggingFaceModelDownloadMixin:
         local_dir: Optional[Path] = None,
         force: bool = False,
         progress: bool = False,
+        revision: Optional[str] = None,
     ) -> Path:
         return download_hf_model(
-            repo_id=repo_id, local_dir=local_dir, force=force, progress=progress
+            repo_id=repo_id,
+            local_dir=local_dir,
+            force=force,
+            progress=progress,
+            revision=revision,
         )

@@ -53,6 +53,7 @@ class InlineVlmOptions(BaseVlmOptions):
     kind: Literal["inline_model_options"] = "inline_model_options"
 
     repo_id: str
+    revision: str = "main"
     trust_remote_code: bool = False
     load_in_8bit: bool = True
     llm_int8_threshold: float = 6.0
