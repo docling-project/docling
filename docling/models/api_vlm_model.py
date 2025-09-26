@@ -1,12 +1,18 @@
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 
+from transformers import StoppingCriteria
+
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BasePageModel
-from docling.utils.api_image_request import api_image_request
+from docling.models.utils.generation_utils import GenerationStopper
+from docling.utils.api_image_request import (
+    api_image_request,
+    api_image_request_streaming,
+)
 from docling.utils.profiling import TimeRecorder
 
 
@@ -41,19 +47,43 @@ class ApiVlmModel(BasePageModel):
             assert page._backend is not None
             if not page._backend.is_valid():
                 return page
-            else:
-                with TimeRecorder(conv_res, "vlm"):
-                    assert page.size is not None
 
-                    hi_res_image = page.get_image(
-                        scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
+            with TimeRecorder(conv_res, "vlm"):
+                assert page.size is not None
+
+                hi_res_image = page.get_image(
+                    scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
+                )
+                assert hi_res_image is not None
+                if hi_res_image and hi_res_image.mode != "RGB":
+                    hi_res_image = hi_res_image.convert("RGB")
+
+                prompt = self.vlm_options.build_prompt(page.parsed_page)
+
+                if self.vlm_options.custom_stopping_criteria:
+                    # Instantiate any GenerationStopper classes before passing to streaming
+                    instantiated_stoppers = []
+                    for criteria in self.vlm_options.custom_stopping_criteria:
+                        if isinstance(criteria, GenerationStopper):
+                            instantiated_stoppers.append(criteria)
+                        elif isinstance(criteria, type) and issubclass(
+                            criteria, GenerationStopper
+                        ):
+                            instantiated_stoppers.append(criteria())
+                        # Skip non-GenerationStopper criteria (should have been caught in validation)
+
+                    # Streaming path with early abort support
+                    page_tags = api_image_request_streaming(
+                        image=hi_res_image,
+                        prompt=prompt,
+                        url=self.vlm_options.url,
+                        timeout=self.timeout,
+                        headers=self.vlm_options.headers,
+                        generation_stoppers=instantiated_stoppers,
+                        **self.params,
                     )
-                    assert hi_res_image is not None
-                    if hi_res_image:
-                        if hi_res_image.mode != "RGB":
-                            hi_res_image = hi_res_image.convert("RGB")
-
-                    prompt = self.vlm_options.build_prompt(page.parsed_page)
+                else:
+                    # Non-streaming fallback (existing behavior)
                     page_tags = api_image_request(
                         image=hi_res_image,
                         prompt=prompt,
@@ -63,10 +93,10 @@ class ApiVlmModel(BasePageModel):
                         **self.params,
                     )
 
-                    page_tags = self.vlm_options.decode_response(page_tags)
-                    page.predictions.vlm_response = VlmPrediction(text=page_tags)
+                page_tags = self.vlm_options.decode_response(page_tags)
+                page.predictions.vlm_response = VlmPrediction(text=page_tags)
 
-                return page
+            return page
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
             yield from executor.map(_vlm_request, page_batch)
