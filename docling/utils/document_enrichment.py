@@ -3,8 +3,9 @@ import json
 import logging
 import re
 import difflib
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from copy import deepcopy
+from difflib import SequenceMatcher
 
 from docling_core.types.doc import (
     DocItemLabel, SectionHeaderItem, TextItem, DoclingDocument
@@ -185,6 +186,103 @@ class DocumentEnrichmentUtils:
             _log.error(f"TOC 추출 중 오류 발생: {str(e)}")
             return 0
 
+    # ===== 유사도 기반 중복 제거 (경계 중복 완화) =====
+    def _similar(self, a: str, b: str, thr: float = 0.92) -> bool:
+        return SequenceMatcher(a=a.lower(), b=b.lower()).ratio() >= thr
+
+    def _dedupe_items(self, items):
+        """
+        인접 또는 가까운 항목이 거의 같은 텍스트일 때 앞의 항목을 유지하고 뒤를 제거.
+        같은 레벨이거나 레벨 차이가 1 이내일 때만 중복으로 간주.
+        """
+        # 'number': '',
+        # 'title': cleaned_line,
+        # 'level': 1,
+        # 'full_text': cleaned_line
+
+        deduped = []
+        for item in items:
+            number = item['number']
+            title = item['title']
+            level = item['level']
+            full_text = item['full_text']
+            if deduped:
+                pnumber, ptitle, plevel, pfull_text = deduped[-1]
+                if abs(plevel - level) <= 1 and self._similar(ptitle, title):
+                    # 뒤 항목을 버리고 이전 것을 유지
+                    continue
+            deduped.append((number, title, level, full_text))
+        return deduped
+
+    # ===== 레벨 구조를 기반으로 번호 재생성 =====
+    def _renumber(self, items) -> List[str]:
+        """
+        (level, heading) → "n.n.n. heading" 문자열 목록으로 재번호 부여.
+        레벨은 1 이상. 역행 방지 및 비정상 레벨은 보정해 1로 시작하도록 맞춤.
+        """
+        out: List[str] = []
+        counters: Dict[int, int] = {}
+
+        # 가장 작은 레벨이 1이 아니면 전체를 내려서 시작을 1로 맞춤
+        min_lvl = min((level for number, title, level, full_text in items), default=1)
+        shift = (min_lvl - 1) if min_lvl > 1 else 0
+
+        for number, title, level, full_text in items:
+            L = max(1, level - shift)  # 보정
+            # 상위 카운터 초기화/유지
+            counters[L] = counters.get(L, 0) + 1
+            # 하위 레벨 카운터는 제거
+            for k in list(counters.keys()):
+                if k > L:
+                    del counters[k]
+            # 번호 문자열 조립
+            parts = [str(counters[i]) for i in range(1, L + 1)]
+            out.append(f"{'.'.join(parts)}. {title}")
+        return out
+
+    def combine_windowed_toc(self, window_texts: List[str], *, joiner: str = "\n") -> str:
+        """
+        창별 응답 문자열들을 하나의 최종 TOC 문자열로 결합:
+          1) TITLE 1회 채택
+          2) 모든 항목 수집 → 경계 중복 제거 → 번호 재생성
+        반환 포맷:
+            TITLE:<제목> (있는 경우)
+            1. ...
+            1.1. ...
+            2. ...
+        """
+        final_title: Optional[str] = None
+        collected = []
+
+        for txt in window_texts:
+            parsed_data = self._parse_toc_content(txt)
+            title = parsed_data['title']
+            items = parsed_data['toc_items']
+            if title and not final_title:
+                final_title = title
+            collected.extend(items)
+
+        # print("--- Combined TOC Items ---")
+        # print(collected)
+
+        if not collected and not final_title:
+            return ""
+
+        # 중복 제거(경계 부근의 같은 항목 제거)
+        deduped = self._dedupe_items(collected)
+        # print("--- Deduped TOC Items ---")
+        # print(deduped)
+        # 번호 재생성
+        renum = self._renumber(deduped)
+        # print("--- Renumbered TOC Items ---")
+        # print(renum)
+
+        lines = []
+        if final_title:
+            lines.append(f"TITLE:{final_title}")
+        lines.extend(renum)
+        return joiner.join(lines)
+
     def apply_law_toc_enrichment(self, document: DoclingDocument) -> int:
         """
         문서에 TOC enrichment 적용
@@ -216,6 +314,22 @@ class DocumentEnrichmentUtils:
                 custom_user=custom_user,
                 raw_text=raw_text
             )
+
+            # 20250918, shkim, sliding window 방식으로 여러 조각을 받아서 결합하는 경우. 테스트 중.
+            # pieces = self.prompt_manager.call_ai_model_windowed(
+            #     category="toc_extraction",
+            #     prompt_type="law_document",
+            #     custom_system=custom_system,
+            #     custom_user=custom_user,
+            #     raw_text=raw_text
+            # )
+
+            # for i, p in enumerate(pieces):
+            #     print(f"--- TOC piece {i} ---\n{p}\n")
+
+            # toc_content = self.combine_windowed_toc(pieces)
+
+            # print(f"--- Combined TOC ---\n{toc_content}\n")
 
             if toc_content:
                 # 모든 SectionHeaderItem을 TextItem으로 변환
