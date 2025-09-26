@@ -281,6 +281,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._walk(content, doc)
         return doc
 
+    # @staticmethod
     def parse_table_data(  # noqa: C901
         self,
         element: Tag,
@@ -932,7 +933,30 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.level -= 1
         return list_group.get_ref()
 
-    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
+    @staticmethod
+    def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
+        # Find the number of rows and columns (taking into account spans)
+        num_rows: int = 0
+        num_cols: int = 0
+        for row in tag("tr", recursive=False):
+            col_count = 0
+            is_row_header = True
+            if not isinstance(row, Tag):
+                continue
+            for cell in row(["td", "th"], recursive=False):
+                if not isinstance(row, Tag):
+                    continue
+                cell_tag = cast(Tag, cell)
+                col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
+                col_count += col_span
+                if cell_tag.name == "td" or row_span == 1:
+                    is_row_header = False
+            num_cols = max(num_cols, col_count)
+            if not is_row_header:
+                num_rows += 1
+        return num_rows, num_cols
+
+    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_refs = []
         tag_name = tag.name.lower()
 
@@ -985,13 +1009,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     self._emit_image(img_tag, doc)
 
         elif tag_name == "table":
+            """
             # Find the number of rows and columns (taking into account spans)
             num_rows = 0
             num_cols = 0
-            print(
-                "==================================================>>>>>>>>>>>>>>>>>>>>>>>"
-            )
-            print(tag)
             for row in tag("tr", recursive=False):
                 col_count = 0
                 is_row_header = True
@@ -1011,7 +1032,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             print(">>>>>>>>>>>>>>>>>>>>>>>")
             print(f"rows: {num_rows}, cols: {num_cols}")
             print(">>>>>>>>>>>>>>>>>>>>>>>")
-
+            """
+            num_rows, num_cols = self.get_html_table_row_col(tag)
             data_e = TableData(num_rows=num_rows, num_cols=num_cols)
             docling_table = doc.add_table(
                 data=data_e,
@@ -1019,8 +1041,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
             )
             added_refs.append(docling_table.get_ref())
-
+            # HTMLDocumentBackend.parse_table_data(
+            #     tag, doc, docling_table, num_rows, num_cols
+            # )
             self.parse_table_data(tag, doc, docling_table, num_rows, num_cols)
+
             for img_tag in tag("img"):
                 if isinstance(img_tag, Tag):
                     im_ref2 = self._emit_image(tag, doc)
