@@ -998,7 +998,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return int_spans
 
     @staticmethod
-    def parse_table_data(element: Tag) -> Optional[TableData]:  # noqa: C901
+    def parse_table_data(element: Tag) -> Optional[TableData]:
         nested_tables = element.find("table")
         if nested_tables is not None:
             _log.debug("Skipping nested table.")

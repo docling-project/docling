@@ -1,11 +1,13 @@
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
-from pydantic import AnyUrl, BaseModel
+from pydantic import AnyUrl, BaseModel, ConfigDict
+from transformers import StoppingCriteria
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.models.utils.generation_utils import GenerationStopper
 
 
 class BaseVlmOptions(BaseModel):
@@ -50,6 +52,8 @@ class TransformersPromptStyle(str, Enum):
 
 
 class InlineVlmOptions(BaseVlmOptions):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     kind: Literal["inline_model_options"] = "inline_model_options"
 
     repo_id: str
@@ -72,6 +76,7 @@ class InlineVlmOptions(BaseVlmOptions):
     ]
 
     stop_strings: List[str] = []
+    custom_stopping_criteria: List[Union[StoppingCriteria, GenerationStopper]] = []
     extra_generation_config: Dict[str, Any] = {}
     extra_processor_kwargs: Dict[str, Any] = {}
 
@@ -89,6 +94,8 @@ class HuggingFaceVlmOptions(InlineVlmOptions):
 
 
 class ApiVlmOptions(BaseVlmOptions):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     kind: Literal["api_model_options"] = "api_model_options"
 
     url: AnyUrl = AnyUrl(
@@ -99,3 +106,6 @@ class ApiVlmOptions(BaseVlmOptions):
     timeout: float = 60
     concurrency: int = 1
     response_format: ResponseFormat
+
+    stop_strings: List[str] = []
+    custom_stopping_criteria: List[Union[GenerationStopper]] = []

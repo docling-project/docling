@@ -7,7 +7,7 @@ from typing import Any, Optional, Union
 
 import numpy as np
 from PIL.Image import Image
-from transformers import StoppingCriteriaList, StopStringCriteria
+from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCriteria
 
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
@@ -20,6 +20,10 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.models.base_model import BaseVlmPageModel
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    HFStoppingCriteriaWrapper,
+)
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
@@ -253,16 +257,49 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         # -- Optional stopping criteria
-        stopping_criteria = None
+        stopping_criteria_list: StoppingCriteriaList = StoppingCriteriaList()
+
+        # Add string-based stopping criteria
         if self.vlm_options.stop_strings:
-            stopping_criteria = StoppingCriteriaList(
-                [
-                    StopStringCriteria(
-                        stop_strings=self.vlm_options.stop_strings,
-                        tokenizer=self.processor.tokenizer,
-                    )
-                ]
+            stopping_criteria_list.append(
+                StopStringCriteria(
+                    stop_strings=self.vlm_options.stop_strings,
+                    tokenizer=self.processor.tokenizer,
+                )
             )
+
+        # Add custom stopping criteria
+        if self.vlm_options.custom_stopping_criteria:
+            for criteria in self.vlm_options.custom_stopping_criteria:
+                # If it's a class (not an instance), determine the type and handle accordingly
+                if isinstance(criteria, type):
+                    # Check if it's a GenerationStopper class
+                    if issubclass(criteria, GenerationStopper):
+                        # Instantiate GenerationStopper and wrap it
+                        stopper_instance = criteria()
+                        wrapped_criteria = HFStoppingCriteriaWrapper(
+                            self.processor.tokenizer, stopper_instance
+                        )
+                        stopping_criteria_list.append(wrapped_criteria)
+                    elif issubclass(criteria, StoppingCriteria):
+                        # It's a StoppingCriteria class, instantiate with tokenizer
+                        criteria_instance = criteria(self.processor.tokenizer)
+                        stopping_criteria_list.append(criteria_instance)
+                elif isinstance(criteria, GenerationStopper):
+                    # Wrap GenerationStopper instances in HFStoppingCriteriaWrapper
+                    wrapped_criteria = HFStoppingCriteriaWrapper(
+                        self.processor.tokenizer, criteria
+                    )
+                    stopping_criteria_list.append(wrapped_criteria)
+                else:
+                    # If it's already an instance of StoppingCriteria, use it directly
+                    stopping_criteria_list.append(criteria)
+
+        stopping_criteria = (
+            StoppingCriteriaList(stopping_criteria_list)
+            if stopping_criteria_list
+            else None
+        )
 
         # -- Filter out decoder-specific keys from extra_generation_config
         decoder_keys = {

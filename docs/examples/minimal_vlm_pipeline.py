@@ -3,7 +3,7 @@
 #
 # What this example does
 # - Runs the VLM-powered pipeline on a PDF (by URL) and prints Markdown output.
-# - Shows two setups: default (Transformers/SmolDocling) and macOS MPS/MLX.
+# - Shows two setups: default (Transformers/GraniteDocling) and macOS MPS/MLX.
 #
 # Prerequisites
 # - Install Docling with VLM extras and the appropriate backend (Transformers or MLX).
@@ -15,7 +15,7 @@
 #
 # Notes
 # - `source` may be a local path or a URL to a PDF.
-# - The second section demonstrates macOS MPS acceleration via MLX (`vlm_model_specs.SMOLDOCLING_MLX`).
+# - The second section demonstrates macOS MPS acceleration via MLX (`vlm_model_specs.GRANITEDOCLING_MLX`).
 # - For more configurations and model comparisons, see `docs/examples/compare_vlm_models.py`.
 
 # %%

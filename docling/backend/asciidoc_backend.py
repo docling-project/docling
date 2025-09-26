@@ -78,7 +78,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
         return doc
 
-    def _parse(self, doc: DoclingDocument):  # noqa: C901
+    def _parse(self, doc: DoclingDocument):
         """
         Main function that orchestrates the parsing by yielding components:
         title, section headers, text, lists, and tables.
