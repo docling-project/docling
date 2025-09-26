@@ -18,7 +18,10 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
     TextItem,
+    ProvenanceItem,
+    BoundingBox,
 )
+from docling_core.types.doc.base import Size
 from docling_core.types.doc.document import Formatting
 from marko import Markdown
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
@@ -89,7 +92,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
         super().__init__(in_doc, path_or_stream)
 
-        _log.debug("MD INIT!!!")
 
         # Markdown file:
         self.path_or_stream = path_or_stream
@@ -109,16 +111,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 # otherwise they represent emphasis (bold or italic)
                 self.markdown = self._shorten_underscore_sequences(text_stream)
             if isinstance(self.path_or_stream, Path):
-                with open(self.path_or_stream, encoding="utf-8") as f:
-                    md_content = f.read()
-                    # remove invalid sequences
-                    # very long sequences of underscores will lead to unnecessary long processing times.
-                    # In any proper Markdown files, underscores have to be escaped,
-                    # otherwise they represent emphasis (bold or italic)
-                    self.markdown = self._shorten_underscore_sequences(md_content)
+                try:
+                    with open(self.path_or_stream, encoding="utf-8") as f:
+                        md_content = f.read()
+                except UnicodeDecodeError:
+                    # Fallback: tolerate broken UTF-8 sequences by ignoring errors
+                    with open(self.path_or_stream, "rb") as f:
+                        raw_bytes = f.read()
+                    md_content = raw_bytes.decode("utf-8", errors="ignore")
+
+                # remove invalid sequences
+                # very long sequences of underscores will lead to unnecessary long processing times.
+                # In any proper Markdown files, underscores have to be escaped,
+                # otherwise they represent emphasis (bold or italic)
+                self.markdown = self._shorten_underscore_sequences(md_content)
             self.valid = True
 
-            _log.debug(self.markdown)
         except Exception as e:
             raise RuntimeError(
                 f"Could not initialize MD backend for file with hash {self.document_hash}."
@@ -127,10 +135,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
     def _close_table(self, doc: DoclingDocument):
         if self.in_table:
-            _log.debug("=== TABLE START ===")
-            for md_table_row in self.md_table_buffer:
-                _log.debug(md_table_row)
-            _log.debug("=== TABLE END ===")
+            # _log.debug("=== TABLE START ===")
+            # for md_table_row in self.md_table_buffer:
+            #     _log.debug(md_table_row)
+            # _log.debug("=== TABLE END ===")
             tcells: List[TableCell] = []
             result_table = []
             for n, md_table_row in enumerate(self.md_table_buffer):
@@ -179,7 +187,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             for tcell in tcells:
                 table_data.table_cells.append(tcell)
             if len(tcells) > 0:
-                doc.add_table(data=table_data)
+                doc.add_table(data=table_data,
+                              prov=ProvenanceItem(
+                                 page_no=1,
+                                 bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                                 charspan=(0, 0)
+                                )
+                            )
         return
 
     def _create_list_item(
@@ -197,6 +211,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             parent=parent_item,
             formatting=formatting,
             hyperlink=hyperlink,
+            prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
         )
         return item
 
@@ -215,6 +234,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 parent=parent_item,
                 formatting=formatting,
                 hyperlink=hyperlink,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
         else:
             item = doc.add_heading(
@@ -223,6 +247,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 parent=parent_item,
                 formatting=formatting,
                 hyperlink=hyperlink,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
         return item
 
@@ -248,9 +277,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # Check for different element types and process relevant details
         if isinstance(element, marko.block.Heading) and len(element.children) > 0:
             self._close_table(doc)
-            _log.debug(
-                f" - Heading level {element.level}, content: {element.children[0].children}"  # type: ignore
-            )
+            # _log.debug(
+            #     f" - Heading level {element.level}, content: {element.children[0].children}"  # type: ignore
+            # )
 
             if len(element.children) > 1:  # inline group will be created further down
                 parent_item = self._create_heading_item(
@@ -272,7 +301,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     break
 
             self._close_table(doc)
-            _log.debug(f" - List {'ordered' if element.ordered else 'unordered'}")
+            # _log.debug(f" - List {'ordered' if element.ordered else 'unordered'}")
             if has_non_empty_list_items:
                 parent_item = doc.add_list_group(name="list", parent=parent_item)
                 list_ordered_flag_by_ref[parent_item.self_ref] = element.ordered
@@ -284,7 +313,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             and len(child.children) > 0
         ):
             self._close_table(doc)
-            _log.debug(" - List item")
+            # _log.debug(" - List item")
 
             enumerated = (
                 list_ordered_flag_by_ref.get(parent_item.self_ref, False)
@@ -305,7 +334,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.inline.Image):
             self._close_table(doc)
-            _log.debug(f" - Image with alt: {element.title}, url: {element.dest}")
+            # _log.debug(f" - Image with alt: {element.title}, url: {element.dest}")
 
             fig_caption: Optional[TextItem] = None
             if element.title is not None and element.title != "":
@@ -314,28 +343,38 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     text=element.title,
                     formatting=formatting,
                     hyperlink=hyperlink,
+                    prov=ProvenanceItem(
+                        page_no=1,
+                        bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                        charspan=(0, 0)
+                    )
                 )
 
-            doc.add_picture(parent=parent_item, caption=fig_caption)
+            doc.add_picture(parent=parent_item, caption=fig_caption,
+                            prov=ProvenanceItem(
+                                 page_no=1,
+                                 bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                                 charspan=(0, 0)
+                             ))
 
         elif isinstance(element, marko.inline.Emphasis):
-            _log.debug(f" - Emphasis: {element.children}")
+            # _log.debug(f" - Emphasis: {element.children}")
             formatting = deepcopy(formatting) if formatting else Formatting()
             formatting.italic = True
 
         elif isinstance(element, marko.inline.StrongEmphasis):
-            _log.debug(f" - StrongEmphasis: {element.children}")
+            # _log.debug(f" - StrongEmphasis: {element.children}")
             formatting = deepcopy(formatting) if formatting else Formatting()
             formatting.bold = True
 
         elif isinstance(element, marko.inline.Link):
-            _log.debug(f" - Link: {element.children}")
+            # _log.debug(f" - Link: {element.children}")
             hyperlink = TypeAdapter(Optional[Union[AnyUrl, Path]]).validate_python(
                 element.dest
             )
 
         elif isinstance(element, marko.inline.RawText):
-            _log.debug(f" - Paragraph (raw text): {element.children}")
+            # _log.debug(f" - Paragraph (raw text): {element.children}")
             snippet_text = element.children.strip()
             # Detect start of the table:
             if "|" in snippet_text or self.in_table:
@@ -386,17 +425,27 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                         text=snippet_text,
                         formatting=formatting,
                         hyperlink=hyperlink,
+                        prov=ProvenanceItem(
+                            page_no=1,
+                            bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                            charspan=(0, 0)
+                        )
                     )
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
-            _log.debug(f" - Code Span: {element.children}")
+            # _log.debug(f" - Code Span: {element.children}")
             snippet_text = str(element.children).strip()
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
                 formatting=formatting,
                 hyperlink=hyperlink,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
 
         elif (
@@ -406,23 +455,28 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             and len(snippet_text := (child.children.strip())) > 0
         ):
             self._close_table(doc)
-            _log.debug(f" - Code Block: {element.children}")
+            # _log.debug(f" - Code Block: {element.children}")
             doc.add_code(
                 parent=parent_item,
                 text=snippet_text,
                 formatting=formatting,
                 hyperlink=hyperlink,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
 
         elif isinstance(element, marko.inline.LineBreak):
             if self.in_table:
-                _log.debug("Line break in a table")
+                # _log.debug("Line break in a table")
                 self.md_table_buffer.append("")
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
             self._close_table(doc)
-            _log.debug(f"HTML Block: {element}")
+            # _log.debug(f"HTML Block: {element}")
             if (
                 len(element.body) > 0
             ):  # If Marko doesn't return any content for HTML block, skip it
@@ -434,12 +488,17 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     parent=parent_item,
                     text=text_to_add,
                     formatting=formatting,
-                    hyperlink=hyperlink,
+                    hyperlink=hyperlink,   
+                    prov=ProvenanceItem(
+                        page_no=1,
+                        bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                        charspan=(0, 0)
+                    )
                 )
         else:
             if not isinstance(element, str):
                 self._close_table(doc)
-                _log.debug(f"Some other element: {element}")
+                # _log.debug(f"Some other element: {element}")
 
         if (
             isinstance(element, (marko.block.Paragraph, marko.block.Heading))
@@ -487,7 +546,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return {InputFormat.MD}
 
     def convert(self) -> DoclingDocument:
-        _log.debug("converting Markdown...")
 
         origin = DocumentOrigin(
             filename=self.file.name or "file",
@@ -496,6 +554,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         )
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+
+        # Ensure at least one page exists for downstream bbox/page-size logic
+        doc.pages[1]=doc.add_page(page_no=1, size=Size(width=1, height=1))
 
         if self.is_valid():
             # Parse the markdown into an abstract syntax tree (AST)

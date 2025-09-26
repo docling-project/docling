@@ -7,7 +7,6 @@ from collections import defaultdict
 
 # PIL 로깅 비활성화 (FpxImagePlugin 오류 메시지 방지)
 logging.getLogger('PIL').setLevel(logging.WARNING)
-
 try:
     from wand.image import Image as WandImage
     from wand.exceptions import WandException
@@ -394,8 +393,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             if element.tag.endswith("tbl"):
                 try:
                     self._handle_tables_enhanced(element, docx_obj, doc)
-                except Exception:
-                   _log.debug("could not parse a table, broken docx table")
+                except Exception as e:
+                    _log.debug(f"[MSWORD] _handle_tables_enhanced failed: {e}")
 
             elif drawing_blip:
                 self._handle_pictures(docx_obj, drawing_blip, doc)
@@ -416,8 +415,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             elif tag_name in ["p"]:
                 # "tcPr", "sectPr"
                 self._handle_text_elements(element, docx_obj, doc)
-            # else:
-            #     _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
         return doc 
 
     def _extract_image_from_drawing(
@@ -488,7 +485,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 self._processed_table_contents.add(table_content_hash)
                 
             except Exception as e:
-                pass
+                _log.debug(f"[MSWORD] table content hash failed: {e}")
 
         eid = id(element)
         #--- 테이블 내부의 텍스트 전체 확인
@@ -515,7 +512,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         table_has_nested = bool(nested_tbls_global)
         table_has_pics   = bool(pics_global)
-        
         if num_rows == 1 and num_cols == 1:
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
@@ -1331,9 +1327,9 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     parent=self.parents[level - 1],
                     text=text.replace("<eq>", "").replace("</eq>", ""),
                     prov=ProvenanceItem(
-                page_no=1,
-                bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                charspan=(0, 0)
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
                     )
                 )
             else:
@@ -1502,10 +1498,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 text = f"{self.numbered_headers[previous_level]}.{text}"
                 previous_level -= 1
 
+        heading_prov = ProvenanceItem(
+            page_no=1,
+            bbox=BoundingBox(l=0, t=0, r=1, b=1),
+            charspan=(0, 0)
+        )
         self.parents[current_level] = doc.add_heading(
             parent=self.parents[parent_level],
             text=text,
             level=add_level,
+            prov=heading_prov
         )
         return
 
@@ -1547,6 +1549,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                    )
                 )
 
         elif (
@@ -1592,6 +1599,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                    )
                 )
         elif (
             self._prev_numid() == numid
@@ -1621,6 +1633,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                    )
                 )
             self.listIter = 0
 
@@ -1644,6 +1661,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                    )
                 )
         return
 

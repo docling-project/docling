@@ -1,7 +1,9 @@
 model_artifacts/
 scratch/
 ds_convert_models/
-
+result.json
+doc_preprocessors/visualization_type.py
+doc_preprocessors/test.py
 # Created by https://www.toptal.com/developers/gitignore/api/python,macos,virtualenv,pycharm,visualstudiocode,emacs,vim,jupyternotebooks
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,macos,virtualenv,pycharm,visualstudiocode,emacs,vim,jupyternotebooks
 
@@ -440,5 +442,4 @@ pip-selfcheck.json
 # docs/**/*.png
 # docs/**/*.svg
 
-sample_files/
 doc_preprocessors/result.json

@@ -15,6 +15,9 @@ from docling_core.types.doc import (
     GroupLabel,
     TableCell,
     TableData,
+    ProvenanceItem,
+    BoundingBox,
+    Size,
 )
 from docling_core.types.doc.document import ContentLayer
 from pydantic import BaseModel
@@ -114,6 +117,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+        doc.pages[1]=doc.add_page(page_no=1, size=Size(width=1, height=1))
         _log.debug("Trying to convert HTML...")
 
         if self.is_valid():
@@ -167,6 +171,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             label=DocItemLabel.TEXT,
                             text=text,
                             content_layer=self.content_layer,
+                            prov=ProvenanceItem(
+                                 page_no=1,
+                                 bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                                 charspan=(0, 0)
+                             )
                         )
                     text = ""
 
@@ -247,6 +256,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 label=DocItemLabel.TITLE,
                 text=text,
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
         else:
             if hlevel > self.level:
@@ -272,6 +286,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 text=text,
                 level=hlevel - 1,
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
 
     def handle_code(self, element: Tag, doc: DoclingDocument) -> None:
@@ -284,6 +303,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 text=text,
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
 
     def handle_paragraph(self, element: Tag, doc: DoclingDocument) -> None:
@@ -297,6 +321,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 label=DocItemLabel.TEXT,
                 text=text,
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
 
     def handle_list(self, element: Tag, doc: DoclingDocument) -> None:
@@ -314,7 +343,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         list_group = doc.add_list_group(
             name=name,
             parent=self.parents[self.level],
-            content_layer=self.content_layer,
+            content_layer=self.content_layer
         )
         self.parents[self.level + 1] = list_group
         self.ctx.list_ordered_flag_by_ref[list_group.self_ref] = is_ordered
@@ -358,6 +387,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     marker=marker,
                     parent=parent,
                     content_layer=self.content_layer,
+                    prov=ProvenanceItem(
+                        page_no=1,
+                        bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                        charspan=(0, 0)
+                    )
                 )
                 self.level += 1
                 self.walk(element, doc)
@@ -375,6 +409,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 marker=marker,
                 parent=parent,
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
         else:
             _log.debug(f"list-item has no text: {element}")
@@ -407,7 +446,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if not is_row_header:
                 num_rows += 1
 
-        _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
+        # _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
 
         grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
 
@@ -505,6 +544,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 data=table_data,
                 parent=self.parents[self.level],
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
 
     def get_list_text(self, list_element: Tag, level: int = 0) -> list[str]:
@@ -549,6 +593,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 caption=None,
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
         else:
             texts = []
@@ -559,11 +608,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 label=DocItemLabel.CAPTION,
                 text=("".join(texts)).strip(),
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
             doc.add_picture(
                 parent=self.parents[self.level],
                 caption=fig_caption,
                 content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, 0)
+                )
             )
 
     def handle_image(self, element: Tag, doc: DoclingDocument) -> None:
@@ -574,4 +633,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             parent=self.parents[self.level],
             caption=None,
             content_layer=self.content_layer,
+            prov=ProvenanceItem(
+                page_no=1,
+                bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                charspan=(0, 0),
+            )
         )

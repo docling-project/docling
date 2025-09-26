@@ -24,8 +24,11 @@ def main():
         # Path("/workspaces/삼증리서치_리포트반출_일부/hd한국조선해양/original/2025042414165512K_01.docx"),
         # Path("/workspaces/삼증리서치_리포트반출_일부/비상장기업/original/2025042510145245K_01.docx"),
         # BOK HWPX
+        # Path("/workspaces/test_data/25.09 주요 상품 라인업(상품지원담당)(사내한).pptx"),
+        Path("/workspaces/doc_parser/sample_files/sample.html"),
+        # Path("/workspaces/test_data/259_그룹.pptx"),
         # Path("/workspaces/hwpx/★(통화정책국)의결문(안) 및 참고자료(1810)_의결문제외.hwp"),
-        Path("/workspaces/hwpx/외환국제금융동향(2018.10.18)_최종(송부본).hwpx"),
+        # Path("/workspaces/test_data/25.09 주요 상품 라인업(상품지원담당)(사내한).pdf"),
         # Path("/workspaces/hwpx/외환국제금융동향(2018.4.12)_최종(송부본).hwpx"),
         # Path("/workspaces/hwpx/★(통화정책국)의결문(안) 및 참고자료(1810)_의결문제외.hwpx"),
         # Path("/workspaces/hwpx/(통화정책국)통화정책 여건점검(1810)_송부.hwpx"),
