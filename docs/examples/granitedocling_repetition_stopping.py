@@ -25,13 +25,14 @@ from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.models.utils.generation_utils import GenerationStopper
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 _log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message)s")
 
 
-class RepetitionStoppingCriteria(StoppingCriteria):
+class RepetitionStopper(GenerationStopper):
     """
     Detects repetitive <tag>...<loc_x><loc_y><loc_w><loc_h>text</tag> blocks,
     but only when repeats are **consecutive** and both tag & inner text are identical.
@@ -41,21 +42,10 @@ class RepetitionStoppingCriteria(StoppingCriteria):
     - Only decodes the last LOOKBACK_TOKENS tokens per sequence (default 200).
     """
 
-    N: int = 32
-    LOOKBACK_TOKENS: int = 200
-
-    def __init__(
-        self,
-        tokenizer,
-        *,
-        N: Optional[int] = None,
-        lookback_tokens: Optional[int] = None,
-    ):
-        self.tokenizer = tokenizer
-        if N is not None:
-            self.N = int(N)
-        if lookback_tokens is not None:
-            self.LOOKBACK_TOKENS = max(1, int(lookback_tokens))
+    def __init__(self, *, N: int = 32, lookback_tokens: int = 200):
+        self.N = max(1, int(N))
+        self._lookback_tokens = max(1, int(lookback_tokens))
+        self._call_count = 0
 
         # <tag> ... <loc_x><loc_y><loc_w><loc_h> text ... </tag>
         self._PATTERN = re.compile(
@@ -68,30 +58,6 @@ class RepetitionStoppingCriteria(StoppingCriteria):
             """,
             re.DOTALL | re.VERBOSE,
         )
-
-        self._call_count = 0
-
-    def __call__(
-        self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
-    ) -> bool:
-        self._call_count += 1
-        if self._call_count % self.N != 0:
-            return False
-
-        for seq in input_ids:
-            try:
-                text = self.tokenizer.decode(
-                    seq[-self.LOOKBACK_TOKENS :], skip_special_tokens=False
-                )
-                if self.should_stop(text):
-                    _log.info(
-                        "Stopping generation early due to consecutive repetitive element blocks"
-                    )
-                    return True
-            except Exception as e:
-                _log.warning(f"Error decoding sequence for repetition check: {e}")
-                continue
-        return False
 
     # --- small helper ---
     def _regular(self, vals: List[int]) -> bool:
@@ -164,17 +130,18 @@ logging.basicConfig(level=logging.INFO)
 # Replace with a local path if preferred.
 # source = "https://ibm.biz/docling-page-with-table" # Example that shows no repetitions.
 source = "tests/data_scanned/old_newspaper.png"  # Example that creates repetitions.
-
 print(f"📄 Processing document: {source}")
 
 ###### USING GRANITEDOCLING WITH CUSTOM REPETITION STOPPING
+custom_vlm_options = vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.model_copy()
+# custom_vlm_options = vlm_model_specs.GRANITEDOCLING_MLX.model_copy() # use this for Apple Silicon
+
 
 # Create custom VLM options with repetition stopping criteria
-custom_vlm_options = vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.model_copy()
 
 # Inject the repetition stopping criteria factory
 # The factory will be called with the tokenizer when the model is initialized
-custom_vlm_options.custom_stopping_criteria = [RepetitionStoppingCriteria]
+custom_vlm_options.custom_stopping_criteria = [RepetitionStopper]
 
 pipeline_options = VlmPipelineOptions(
     vlm_options=custom_vlm_options,
