@@ -236,21 +236,6 @@ This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duc
 
 <!-- image -->
 
-| Duck                           | Duck                           |
-|--------------------------------|--------------------------------|
-|                                |                                |
-| Bufflehead (Bucephala albeola) | Bufflehead (Bucephala albeola) |
-| Scientific classification      | Scientific classification      |
-| Domain:                        | Eukaryota                      |
-| Kingdom:                       | Animalia                       |
-| Phylum:                        | Chordata                       |
-| Class:                         | Aves                           |
-| Order:                         | Anseriformes                   |
-| Superfamily:                   | Anatoidea                      |
-| Family:                        | Anatidae                       |
-| Subfamilies                    | Subfamilies                    |
-| See text                       | See text                       |
-
 **Duck** is the common name for numerous species of [waterfowl](/wiki/Waterfowl) in the [family](/wiki/Family_(biology)) [Anatidae](/wiki/Anatidae) . Ducks are generally smaller and shorter-necked than [swans](/wiki/Swan) and [geese](/wiki/Goose) , which are members of the same family. Divided among several subfamilies, they are a [form taxon](/wiki/Form_taxon) ; they do not represent a [monophyletic group](/wiki/Monophyletic_group) (the group of all descendants of a single common ancestral species), since swans and geese are not considered ducks. Ducks are mostly [aquatic birds](/wiki/Aquatic_bird) , and may be found in both fresh water and sea water.
 
 Ducks are sometimes confused with several types of unrelated water birds with similar forms, such as [loons](/wiki/Loon) or divers, [grebes](/wiki/Grebe) , [gallinules](/wiki/Gallinule) and [coots](/wiki/Coot) .
@@ -510,11 +495,6 @@ The 1992 Disney film [*The Mighty Ducks*](/wiki/The_Mighty_Ducks_(film)) , starr
 - [*Ducks at a Distance, by Rob Hines*](https://gutenberg.org/ebooks/18884) at [Project Gutenberg](/wiki/Project_Gutenberg) - A modern illustrated guide to identification of US waterfowl
 
 <!-- image -->
-
-| Authority control databases   | Authority control databases                       |
-|-------------------------------|---------------------------------------------------|
-| National                      | United States France BnF data Japan Latvia Israel |
-| Other                         | IdRef                                             |
 
 Retrieved from " [https://en.wikipedia.org/w/index.php?title=Duck&amp;oldid=1246843351](https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351) "
 

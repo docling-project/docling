@@ -250,9 +250,9 @@ item-0 at level 0: unspecified: group _root_
       item-249 at level 3: text: "Duckling" redirects here. For other uses, see
       item-250 at level 3: text: Duckling (disambiguation)
       item-251 at level 3: text: .
-    item-252 at level 2: picture
+    item-252 at level 2: table with [0x0]
     item-253 at level 2: picture
-    item-254 at level 2: table with [13x2]
+    item-254 at level 2: picture
     item-255 at level 2: inline: group group
       item-256 at level 3: text: Duck
       item-257 at level 3: text: is the common name for numerous species of
@@ -1442,8 +1442,8 @@ item-0 at level 0: unspecified: group _root_
             item-1429 at level 6: text: at
             item-1430 at level 6: text: Project Gutenberg
             item-1431 at level 6: text: - A modern illustrated guide to identification of US waterfowl
-      item-1432 at level 3: picture
-      item-1433 at level 3: table with [3x2]
+      item-1432 at level 3: table with [0x0]
+      item-1433 at level 3: picture
       item-1434 at level 3: inline: group group
         item-1435 at level 4: text: Retrieved from "
         item-1436 at level 4: text: https://en.wikipedia.org/w/index.php?title=Duck&oldid=1246843351
