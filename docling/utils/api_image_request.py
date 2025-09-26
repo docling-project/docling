@@ -150,7 +150,7 @@ def api_image_request_streaming(
                     window = "".join(full_text)[-lookback:]
                     if stopper.should_stop(window):
                         # Closing the socket signals cancel to vLLM/OpenAI-compatible servers.
-                        # vLLM aborts the request when the client disconnects. :contentReference[oaicite:2]{index=2}
+                        # vLLM aborts the request when the client disconnects.
                         try:
                             r.close()
                         finally:
