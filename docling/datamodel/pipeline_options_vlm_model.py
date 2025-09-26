@@ -94,6 +94,8 @@ class HuggingFaceVlmOptions(InlineVlmOptions):
 
 
 class ApiVlmOptions(BaseVlmOptions):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     kind: Literal["api_model_options"] = "api_model_options"
 
     url: AnyUrl = AnyUrl(
