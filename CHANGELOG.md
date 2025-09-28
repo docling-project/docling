@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Feature
+
+* Add --stats CLI flag for detailed performance statistics ([`21504a3`](https://github.com/docling-project/docling/commit/21504a3))
+
 ## [v2.54.0](https://github.com/docling-project/docling/releases/tag/v2.54.0) - 2025-09-22
 
 ### Feature
