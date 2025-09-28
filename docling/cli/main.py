@@ -185,6 +185,103 @@ def show_external_plugins_callback(value: bool):
         raise typer.Exit()
 
 
+def display_performance_stats(
+    conv_results: Iterable[ConversionResult], total_time: float
+):
+    """Display detailed performance statistics for the conversion process."""
+    results = list(conv_results)
+    if not results:
+        console.print("[yellow]No results to display statistics for.[/yellow]")
+        return
+
+    # Overall statistics
+    total_docs = len(results)
+    success_count = sum(1 for r in results if r.status == ConversionStatus.SUCCESS)
+    failure_count = total_docs - success_count
+
+    # Document statistics
+    total_pages = sum(len(r.pages) for r in results)
+    avg_pages_per_doc = total_pages / total_docs if total_docs > 0 else 0
+
+    # Performance metrics
+    throughput_docs = total_docs / total_time if total_time > 0 else 0
+    throughput_pages = total_pages / total_time if total_time > 0 else 0
+
+    # Create main statistics table
+    stats_table = rich.table.Table(
+        title="📊 Performance Statistics", show_header=True, header_style="bold magenta"
+    )
+    stats_table.add_column("Metric", style="cyan", justify="left")
+    stats_table.add_column("Value", justify="right")
+
+    stats_table.add_row("📄 Total Documents", f"{total_docs:,}")
+    stats_table.add_row("✅ Successful", f"{success_count:,}")
+    stats_table.add_row("❌ Failed", f"{failure_count:,}")
+    stats_table.add_row("📃 Total Pages", f"{total_pages:,}")
+    stats_table.add_row("📊 Avg Pages/Doc", f"{avg_pages_per_doc:.1f}")
+    stats_table.add_row("⏱️  Total Time", f"{total_time:.2f}s")
+    stats_table.add_row("🚀 Throughput (docs/s)", f"{throughput_docs:.2f}")
+    stats_table.add_row("📄 Throughput (pages/s)", f"{throughput_pages:.2f}")
+
+    console.print()  # Add empty line
+    console.print(stats_table)
+
+    # Pipeline timings (only if profiling was enabled)
+    timing_data = []
+    for result in results:
+        if result.timings:
+            for timing_key, timing_item in result.timings.items():
+                if timing_item.times:  # Only include timings with actual data
+                    timing_data.append(
+                        {
+                            "operation": timing_key,
+                            "total_time": sum(timing_item.times),
+                            "avg_time": timing_item.avg(),
+                            "count": timing_item.count,
+                            "min_time": min(timing_item.times),
+                            "max_time": max(timing_item.times),
+                        }
+                    )
+
+    if timing_data:
+        # Create pipeline timings table
+        timing_table = rich.table.Table(
+            title="⚙️  Pipeline Timings", show_header=True, header_style="bold blue"
+        )
+        timing_table.add_column("Operation", style="yellow", justify="left")
+        timing_table.add_column("Total (s)", justify="right")
+        timing_table.add_column("Avg (s)", justify="right")
+        timing_table.add_column("Min (s)", justify="right")
+        timing_table.add_column("Max (s)", justify="right")
+        timing_table.add_column("Count", justify="right")
+
+        # Sort by total time (descending)
+        timing_data.sort(key=lambda x: x["total_time"], reverse=True)
+
+        for timing in timing_data:
+            timing_table.add_row(
+                str(timing["operation"]),
+                f"{timing['total_time']:.3f}",
+                f"{timing['avg_time']:.3f}",
+                f"{timing['min_time']:.3f}",
+                f"{timing['max_time']:.3f}",
+                f"{timing['count']:,}",
+            )
+
+        console.print()  # Add empty line
+        console.print(timing_table)
+    else:
+        console.print()  # Add empty line
+        console.print(
+            "[yellow]💡 Tip: Enable pipeline profiling with DOCLING_DEBUG_PROFILE_PIPELINE_TIMINGS=true for detailed timing information.[/yellow]"
+        )
+        console.print(
+            "    Or it may already be enabled but no detailed timings were captured for this run."
+        )
+
+    console.print()  # Add empty line for spacing
+
+
 def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
@@ -494,6 +591,13 @@ def convert(  # noqa: C901
             help=f"Number of pages processed in one batch. Default: {settings.perf.page_batch_size}",
         ),
     ] = settings.perf.page_batch_size,
+    show_stats: Annotated[
+        bool,
+        typer.Option(
+            "--stats",
+            help="Display detailed performance statistics after conversion.",
+        ),
+    ] = False,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -509,6 +613,10 @@ def convert(  # noqa: C901
     settings.debug.visualize_tables = debug_visualize_tables
     settings.debug.visualize_ocr = debug_visualize_ocr
     settings.perf.page_batch_size = page_batch_size
+
+    # Enable profiling when stats are requested
+    if show_stats:
+        settings.debug.profile_pipeline_timings = True
 
     if from_formats is None:
         from_formats = list(InputFormat)
@@ -755,8 +863,10 @@ def convert(  # noqa: C901
         start_time = time.time()
 
         _log.info(f"paths: {input_doc_paths}")
-        conv_results = doc_converter.convert_all(
-            input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
+        conv_results = list(
+            doc_converter.convert_all(
+                input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
+            )
         )
 
         output.mkdir(parents=True, exist_ok=True)
@@ -774,6 +884,10 @@ def convert(  # noqa: C901
         )
 
         end_time = time.time() - start_time
+
+        # Display performance statistics if requested
+        if show_stats:
+            display_performance_stats(conv_results, end_time)
 
     _log.info(f"All documents were converted in {end_time:.2f} seconds.")
 
