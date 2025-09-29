@@ -1049,7 +1049,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.53.0"
+version = "2.54.0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1154,7 +1154,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
-    { name = "docling-core", extras = ["chunking"], specifier = ">=2.48.0,<3.0.0" },
+    { name = "docling-core", extras = ["chunking"], specifier = ">=2.48.2,<3.0.0" },
     { name = "docling-ibm-models", specifier = ">=3.9.1,<4" },
     { name = "docling-parse", specifier = ">=4.4.0,<5.0.0" },
     { name = "easyocr", specifier = ">=1.7,<2.0" },
@@ -1233,7 +1233,7 @@ examples = [
 
 [[package]]
 name = "docling-core"
-version = "2.48.1"
+version = "2.48.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonref" },
@@ -1247,9 +1247,9 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/0c/dce7f80e99e56570d143885fc40536107e8a39ef4de2888959e055b39607/docling_core-2.48.1.tar.gz", hash = "sha256:48cb77575dfd020a51413957e96b165e45f6d1027c641710fddb389dcb9b189c", size = 161311, upload-time = "2025-09-11T12:33:22.46Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/e6/922de61f2a7b7d337ffc781f8e85f5581b12801fe193827066ccd6c5ba04/docling_core-2.48.2.tar.gz", hash = "sha256:01c12a1d3c9877c6658d0d6adf5cdcefd56cb814d8083860ba2d77ab882ac2d0", size = 161344, upload-time = "2025-09-22T08:39:41.431Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/fe/1b96120c9d94c97016716ccf46ad2708a2e76157e52dfcca4101db70fc21/docling_core-2.48.1-py3-none-any.whl", hash = "sha256:a3985999ac2067e15e589ef0f11ccde264deacaea403c0f94049242f10a6189a", size = 164330, upload-time = "2025-09-11T12:33:20.935Z" },
+    { url = "https://files.pythonhosted.org/packages/97/bc/a77739cc31d7de2be9d6682f880761083a2038355e513e813a73a041c644/docling_core-2.48.2-py3-none-any.whl", hash = "sha256:d1f2fe9be9a9f7e7a2fb6ddcc9d9fcbf437bfb02e0c6005cdec1ece1cf4aed44", size = 164376, upload-time = "2025-09-22T08:39:39.704Z" },
 ]
 
 [package.optional-dependencies]

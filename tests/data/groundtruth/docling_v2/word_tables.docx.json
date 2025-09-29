@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "word_tables",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -111,7 +111,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "A uniform table",
       "text": "A uniform table",
@@ -130,7 +130,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -142,7 +142,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "A non-uniform table with horizontal spans",
       "text": "A non-uniform table with horizontal spans",
@@ -161,7 +161,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -173,7 +173,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "A non-uniform table with horizontal spans in inner columns",
       "text": "A non-uniform table with horizontal spans in inner columns",
@@ -192,7 +192,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -204,7 +204,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "A non-uniform table with vertical spans",
       "text": "A non-uniform table with vertical spans",
@@ -223,7 +223,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -235,7 +235,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "A non-uniform table with all kinds of spans and empty cells",
       "text": "A non-uniform table with all kinds of spans and empty cells",
@@ -254,7 +254,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -266,7 +266,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -298,7 +298,8 @@
             "text": "Header 0.0",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -310,7 +311,8 @@
             "text": "Header 0.1",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -322,7 +324,8 @@
             "text": "Header 0.2",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -334,7 +337,8 @@
             "text": "Cell 1.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -346,7 +350,8 @@
             "text": "Cell 1.1",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -358,7 +363,8 @@
             "text": "Cell 1.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -370,7 +376,8 @@
             "text": "Cell 2.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -382,7 +389,8 @@
             "text": "Cell 2.1",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -394,7 +402,8 @@
             "text": "Cell 2.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 3,
@@ -411,7 +420,8 @@
               "text": "Header 0.0",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -423,7 +433,8 @@
               "text": "Header 0.1",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -435,7 +446,8 @@
               "text": "Header 0.2",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -449,7 +461,8 @@
               "text": "Cell 1.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -461,7 +474,8 @@
               "text": "Cell 1.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -473,7 +487,8 @@
               "text": "Cell 1.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -487,7 +502,8 @@
               "text": "Cell 2.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -499,7 +515,8 @@
               "text": "Cell 2.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -511,7 +528,8 @@
               "text": "Cell 2.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]
@@ -542,7 +560,8 @@
             "text": "Header 0.0",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -554,7 +573,8 @@
             "text": "Header 0.1",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -566,7 +586,8 @@
             "text": "Header 0.2",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -578,7 +599,8 @@
             "text": "Cell 1.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -590,7 +612,8 @@
             "text": "Merged Cell 1.1 1.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -602,7 +625,8 @@
             "text": "Cell 2.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -614,7 +638,8 @@
             "text": "Merged Cell 2.1 2.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 3,
@@ -631,7 +656,8 @@
               "text": "Header 0.0",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -643,7 +669,8 @@
               "text": "Header 0.1",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -655,7 +682,8 @@
               "text": "Header 0.2",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -669,7 +697,8 @@
               "text": "Cell 1.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -681,7 +710,8 @@
               "text": "Merged Cell 1.1 1.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -693,7 +723,8 @@
               "text": "Merged Cell 1.1 1.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -707,7 +738,8 @@
               "text": "Cell 2.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -719,7 +751,8 @@
               "text": "Merged Cell 2.1 2.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -731,7 +764,8 @@
               "text": "Merged Cell 2.1 2.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]
@@ -762,7 +796,8 @@
             "text": "Header 0.0",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -774,7 +809,8 @@
             "text": "Header 0.1",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -786,7 +822,8 @@
             "text": "Header 0.2",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -798,7 +835,8 @@
             "text": "Header 0.3",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -810,7 +848,8 @@
             "text": "Cell 1.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -822,7 +861,8 @@
             "text": "Merged Cell 1.1 1.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -834,7 +874,8 @@
             "text": "Cell 1.3",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -846,7 +887,8 @@
             "text": "Cell 2.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -858,7 +900,8 @@
             "text": "Merged Cell 2.1 2.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -870,7 +913,8 @@
             "text": "Cell 2.3",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 3,
@@ -887,7 +931,8 @@
               "text": "Header 0.0",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -899,7 +944,8 @@
               "text": "Header 0.1",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -911,7 +957,8 @@
               "text": "Header 0.2",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -923,7 +970,8 @@
               "text": "Header 0.3",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -937,7 +985,8 @@
               "text": "Cell 1.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -949,7 +998,8 @@
               "text": "Merged Cell 1.1 1.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -961,7 +1011,8 @@
               "text": "Merged Cell 1.1 1.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -973,7 +1024,8 @@
               "text": "Cell 1.3",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -987,7 +1039,8 @@
               "text": "Cell 2.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -999,7 +1052,8 @@
               "text": "Merged Cell 2.1 2.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1011,7 +1065,8 @@
               "text": "Merged Cell 2.1 2.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1023,7 +1078,8 @@
               "text": "Cell 2.3",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]
@@ -1054,7 +1110,8 @@
             "text": "Header 0.0",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1066,7 +1123,8 @@
             "text": "Header 0.1",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1078,7 +1136,8 @@
             "text": "Header 0.2",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1090,7 +1149,8 @@
             "text": "Cell 1.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 2,
@@ -1102,7 +1162,8 @@
             "text": "Merged Cell 1.1 2.1",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1114,7 +1175,8 @@
             "text": "Cell 1.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1126,7 +1188,8 @@
             "text": "Cell 2.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1138,7 +1201,8 @@
             "text": "Cell 2.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1150,7 +1214,8 @@
             "text": "Cell 3.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 2,
@@ -1162,7 +1227,8 @@
             "text": "Merged Cell 3.1 4.1",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1174,7 +1240,8 @@
             "text": "Cell 3.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1186,7 +1253,8 @@
             "text": "Cell 4.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1198,7 +1266,8 @@
             "text": "Cell 4.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 5,
@@ -1215,7 +1284,8 @@
               "text": "Header 0.0",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1227,7 +1297,8 @@
               "text": "Header 0.1",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1239,7 +1310,8 @@
               "text": "Header 0.2",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -1253,7 +1325,8 @@
               "text": "Cell 1.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -1265,7 +1338,8 @@
               "text": "Merged Cell 1.1 2.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1277,7 +1351,8 @@
               "text": "Cell 1.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -1291,7 +1366,8 @@
               "text": "Cell 2.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -1303,7 +1379,8 @@
               "text": "Merged Cell 1.1 2.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1315,7 +1392,8 @@
               "text": "Cell 2.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -1329,7 +1407,8 @@
               "text": "Cell 3.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -1341,7 +1420,8 @@
               "text": "Merged Cell 3.1 4.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1353,7 +1433,8 @@
               "text": "Cell 3.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -1367,7 +1448,8 @@
               "text": "Cell 4.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -1379,7 +1461,8 @@
               "text": "Merged Cell 3.1 4.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1391,7 +1474,8 @@
               "text": "Cell 4.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]
@@ -1422,7 +1506,8 @@
             "text": "Header 0.0",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1434,7 +1519,8 @@
             "text": "Header 0.1",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1446,7 +1532,8 @@
             "text": "Header 0.2",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1458,7 +1545,8 @@
             "text": "",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1470,7 +1558,8 @@
             "text": "",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1482,7 +1571,8 @@
             "text": "Cell 1.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 2,
@@ -1494,7 +1584,8 @@
             "text": "Merged Cell 1.1 2.1",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1506,7 +1597,8 @@
             "text": "Cell 1.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1518,7 +1610,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1530,7 +1623,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1542,7 +1636,8 @@
             "text": "Cell 2.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1554,7 +1649,8 @@
             "text": "Cell 2.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1566,7 +1662,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1578,7 +1675,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1590,7 +1688,8 @@
             "text": "Cell 3.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 2,
@@ -1602,7 +1701,8 @@
             "text": "Merged Cell 3.1 4.1",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1614,7 +1714,8 @@
             "text": "Cell 3.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 3,
@@ -1626,7 +1727,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1638,7 +1740,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1650,7 +1753,8 @@
             "text": "Cell 4.0",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1662,7 +1766,8 @@
             "text": "Cell 4.2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 2,
@@ -1674,7 +1779,8 @@
             "text": "Merged Cell 4.4 5.4",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1686,7 +1792,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1698,7 +1805,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1710,7 +1818,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1722,7 +1831,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1734,7 +1844,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1746,7 +1857,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1758,7 +1870,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1770,7 +1883,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1782,7 +1896,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1794,7 +1909,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1806,7 +1922,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1818,7 +1935,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1830,7 +1948,8 @@
             "text": "",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -1842,7 +1961,8 @@
             "text": "Cell 8.4",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 9,
@@ -1859,7 +1979,8 @@
               "text": "Header 0.0",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1871,7 +1992,8 @@
               "text": "Header 0.1",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1883,7 +2005,8 @@
               "text": "Header 0.2",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1895,7 +2018,8 @@
               "text": "",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1907,7 +2031,8 @@
               "text": "",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -1921,7 +2046,8 @@
               "text": "Cell 1.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -1933,7 +2059,8 @@
               "text": "Merged Cell 1.1 2.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1945,7 +2072,8 @@
               "text": "Cell 1.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1957,7 +2085,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -1969,7 +2098,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -1983,7 +2113,8 @@
               "text": "Cell 2.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -1995,7 +2126,8 @@
               "text": "Merged Cell 1.1 2.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2007,7 +2139,8 @@
               "text": "Cell 2.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2019,7 +2152,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2031,7 +2165,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -2045,7 +2180,8 @@
               "text": "Cell 3.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -2057,7 +2193,8 @@
               "text": "Merged Cell 3.1 4.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2069,7 +2206,8 @@
               "text": "Cell 3.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 3,
@@ -2081,7 +2219,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2093,7 +2232,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -2107,7 +2247,8 @@
               "text": "Cell 4.0",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -2119,7 +2260,8 @@
               "text": "Merged Cell 3.1 4.1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2131,7 +2273,8 @@
               "text": "Cell 4.2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 3,
@@ -2143,7 +2286,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -2155,7 +2299,8 @@
               "text": "Merged Cell 4.4 5.4",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -2169,7 +2314,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2181,7 +2327,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2193,7 +2340,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 3,
@@ -2205,7 +2353,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 2,
@@ -2217,7 +2366,8 @@
               "text": "Merged Cell 4.4 5.4",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -2231,7 +2381,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2243,7 +2394,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2255,7 +2407,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2267,7 +2420,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2279,7 +2433,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -2293,7 +2448,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2305,7 +2461,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2317,7 +2474,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2329,7 +2487,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2341,7 +2500,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -2355,7 +2515,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2367,7 +2528,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2379,7 +2541,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2391,7 +2554,8 @@
               "text": "",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -2403,7 +2567,8 @@
               "text": "Cell 8.4",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]

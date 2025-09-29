@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "table_with_equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -37,7 +37,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -69,7 +69,8 @@
             "text": "The next cell has an equation",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -81,7 +82,8 @@
             "text": "$A= \\pi r^{2}$",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -93,7 +95,8 @@
             "text": "The next cell has another equation",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -105,7 +108,8 @@
             "text": "$x=\\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}$",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 2,
@@ -122,7 +126,8 @@
               "text": "The next cell has an equation",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -134,7 +139,8 @@
               "text": "$A= \\pi r^{2}$",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -148,7 +154,8 @@
               "text": "The next cell has another equation",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -160,7 +167,8 @@
               "text": "$x=\\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}$",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]

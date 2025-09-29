@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -182,7 +182,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is a word document and this is an inline equation: ",
       "text": "This is a word document and this is an inline equation: "
@@ -206,7 +206,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": ". If instead, I want an equation by line, I can do this:",
       "text": ". If instead, I want an equation by line, I can do this:"
@@ -218,7 +218,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -242,7 +242,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "And that is an equation by itself. Cheers!",
       "text": "And that is an equation by itself. Cheers!",
@@ -261,7 +261,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -273,7 +273,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is another equation:",
       "text": "This is another equation:",
@@ -304,7 +304,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -316,7 +316,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
       "text": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
@@ -335,7 +335,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -347,7 +347,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -359,7 +359,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is a word document and this is an inline equation: ",
       "text": "This is a word document and this is an inline equation: "
@@ -383,7 +383,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": ". If instead, I want an equation by line, I can do this:",
       "text": ". If instead, I want an equation by line, I can do this:"
@@ -395,7 +395,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -419,7 +419,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -431,7 +431,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "And that is an equation by itself. Cheers!",
       "text": "And that is an equation by itself. Cheers!",
@@ -450,7 +450,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -462,7 +462,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is another equation:",
       "text": "This is another equation:",
@@ -481,7 +481,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -505,7 +505,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -517,7 +517,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
       "text": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
@@ -536,7 +536,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -548,7 +548,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -560,7 +560,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is a word document and this is an inline equation: ",
       "text": "This is a word document and this is an inline equation: "
@@ -584,7 +584,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": ". If instead, I want an equation by line, I can do this:",
       "text": ". If instead, I want an equation by line, I can do this:"
@@ -596,7 +596,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -620,7 +620,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -632,7 +632,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "And that is an equation by itself. Cheers!",
       "text": "And that is an equation by itself. Cheers!",
@@ -651,7 +651,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""

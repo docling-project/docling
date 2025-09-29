@@ -3,6 +3,7 @@ import re
 import warnings
 from copy import deepcopy
 from enum import Enum
+from html import unescape
 from io import BytesIO
 from pathlib import Path
 from typing import Literal, Optional, Union, cast
@@ -321,9 +322,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
             fig_caption: Optional[TextItem] = None
             if element.title is not None and element.title != "":
+                title = unescape(element.title)
                 fig_caption = doc.add_text(
                     label=DocItemLabel.CAPTION,
-                    text=element.title,
+                    text=title,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
@@ -351,6 +353,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             snippet_text = (
                 element.children.strip() if isinstance(element.children, str) else ""
             )
+            snippet_text = unescape(snippet_text)
             # Detect start of the table:
             if "|" in snippet_text or self.in_table:
                 # most likely part of the markdown table

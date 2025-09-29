@@ -1,3 +1,19 @@
+## [v2.54.0](https://github.com/docling-project/docling/releases/tag/v2.54.0) - 2025-09-22
+
+### Feature
+
+* Rich tables for MSWord backend ([#2291](https://github.com/docling-project/docling/issues/2291)) ([`e2482a2`](https://github.com/docling-project/docling/commit/e2482a2ada52b2b8a41c4402b27e125adbe4385f))
+* Add a backend parser for WebVTT files ([#2288](https://github.com/docling-project/docling/issues/2288)) ([`46efaae`](https://github.com/docling-project/docling/commit/46efaaefee17a6b83e02a050f9f3c8a51afbbd53))
+
+### Fix
+
+* Correct y-axis scaling in draw_table_cells ([#2287](https://github.com/docling-project/docling/issues/2287)) ([`b5628f1`](https://github.com/docling-project/docling/commit/b5628f12273297d9db1393f4b734cfa337caa8c9))
+
+### Documentation
+
+* Update API VLM example with granite-docling ([#2294](https://github.com/docling-project/docling/issues/2294)) ([`8b7e83a`](https://github.com/docling-project/docling/commit/8b7e83a8c7b9e333c31d5ae0b96213e3c70c6bf3))
+* Fix examples rendering ([#2281](https://github.com/docling-project/docling/issues/2281)) ([`8322c2e`](https://github.com/docling-project/docling/commit/8322c2ea9b4fbb1625bcbf1ec1b3dea6c1cd3ed0))
+
 ## [v2.53.0](https://github.com/docling-project/docling/releases/tag/v2.53.0) - 2025-09-17
 
 ### Feature

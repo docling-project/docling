@@ -186,6 +186,7 @@ tables:
         column_header: true
         end_col_offset_idx: 1
         end_row_offset_idx: 1
+        fillable: false
         row_header: false
         row_section: false
         row_span: 1
@@ -196,6 +197,7 @@ tables:
         column_header: true
         end_col_offset_idx: 2
         end_row_offset_idx: 1
+        fillable: false
         row_header: false
         row_section: false
         row_span: 1
@@ -206,6 +208,7 @@ tables:
         column_header: false
         end_col_offset_idx: 1
         end_row_offset_idx: 2
+        fillable: false
         row_header: false
         row_section: false
         row_span: 1
@@ -216,6 +219,7 @@ tables:
         column_header: false
         end_col_offset_idx: 2
         end_row_offset_idx: 2
+        fillable: false
         row_header: false
         row_section: false
         row_span: 1
@@ -229,6 +233,7 @@ tables:
       column_header: true
       end_col_offset_idx: 1
       end_row_offset_idx: 1
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -239,6 +244,7 @@ tables:
       column_header: true
       end_col_offset_idx: 2
       end_row_offset_idx: 1
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -249,6 +255,7 @@ tables:
       column_header: false
       end_col_offset_idx: 1
       end_row_offset_idx: 2
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -259,6 +266,7 @@ tables:
       column_header: false
       end_col_offset_idx: 2
       end_row_offset_idx: 2
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -269,6 +277,7 @@ tables:
       column_header: true
       end_col_offset_idx: 1
       end_row_offset_idx: 1
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -279,6 +288,7 @@ tables:
       column_header: true
       end_col_offset_idx: 2
       end_row_offset_idx: 1
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -289,6 +299,7 @@ tables:
       column_header: false
       end_col_offset_idx: 1
       end_row_offset_idx: 2
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -299,6 +310,7 @@ tables:
       column_header: false
       end_col_offset_idx: 2
       end_row_offset_idx: 2
+      fillable: false
       row_header: false
       row_section: false
       row_span: 1
@@ -878,4 +890,4 @@ texts:
   prov: []
   self_ref: '#/texts/48'
   text: Table Heading
-version: 1.6.0
+version: 1.7.0

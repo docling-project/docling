@@ -1,48 +1,48 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: title: Test Document
-    item-2 at level 2: paragraph: 
+    item-2 at level 2: text: 
     item-3 at level 2: section_header: Section 1
-      item-4 at level 3: paragraph: 
-      item-5 at level 3: paragraph: Paragraph 1.1
-      item-6 at level 3: paragraph: 
-      item-7 at level 3: paragraph: Paragraph 1.2
-      item-8 at level 3: paragraph: 
+      item-4 at level 3: text: 
+      item-5 at level 3: text: Paragraph 1.1
+      item-6 at level 3: text: 
+      item-7 at level 3: text: Paragraph 1.2
+      item-8 at level 3: text: 
       item-9 at level 3: section_header: Section 1.1
-        item-10 at level 4: paragraph: 
-        item-11 at level 4: paragraph: Paragraph 1.1.1
-        item-12 at level 4: paragraph: 
-        item-13 at level 4: paragraph: Paragraph 1.1.2
-        item-14 at level 4: paragraph: 
+        item-10 at level 4: text: 
+        item-11 at level 4: text: Paragraph 1.1.1
+        item-12 at level 4: text: 
+        item-13 at level 4: text: Paragraph 1.1.2
+        item-14 at level 4: text: 
       item-15 at level 3: section_header: Section 1.2
-        item-16 at level 4: paragraph: 
-        item-17 at level 4: paragraph: Paragraph 1.1.1
-        item-18 at level 4: paragraph: 
-        item-19 at level 4: paragraph: Paragraph 1.1.2
-        item-20 at level 4: paragraph: 
+        item-16 at level 4: text: 
+        item-17 at level 4: text: Paragraph 1.1.1
+        item-18 at level 4: text: 
+        item-19 at level 4: text: Paragraph 1.1.2
+        item-20 at level 4: text: 
         item-21 at level 4: section_header: Section 1.2.3
-          item-22 at level 5: paragraph: 
-          item-23 at level 5: paragraph: Paragraph 1.2.3.1
-          item-24 at level 5: paragraph: 
-          item-25 at level 5: paragraph: Paragraph 1.2.3.1
-          item-26 at level 5: paragraph: 
-          item-27 at level 5: paragraph: 
+          item-22 at level 5: text: 
+          item-23 at level 5: text: Paragraph 1.2.3.1
+          item-24 at level 5: text: 
+          item-25 at level 5: text: Paragraph 1.2.3.1
+          item-26 at level 5: text: 
+          item-27 at level 5: text: 
     item-28 at level 2: section_header: Section 2
-      item-29 at level 3: paragraph: 
-      item-30 at level 3: paragraph: Paragraph 2.1
-      item-31 at level 3: paragraph: 
-      item-32 at level 3: paragraph: Paragraph 2.2
-      item-33 at level 3: paragraph: 
+      item-29 at level 3: text: 
+      item-30 at level 3: text: Paragraph 2.1
+      item-31 at level 3: text: 
+      item-32 at level 3: text: Paragraph 2.2
+      item-33 at level 3: text: 
       item-34 at level 3: section: group header-2
         item-35 at level 4: section_header: Section 2.1.1
-          item-36 at level 5: paragraph: 
-          item-37 at level 5: paragraph: Paragraph 2.1.1.1
-          item-38 at level 5: paragraph: 
-          item-39 at level 5: paragraph: Paragraph 2.1.1.1
-          item-40 at level 5: paragraph: 
+          item-36 at level 5: text: 
+          item-37 at level 5: text: Paragraph 2.1.1.1
+          item-38 at level 5: text: 
+          item-39 at level 5: text: Paragraph 2.1.1.1
+          item-40 at level 5: text: 
       item-41 at level 3: section_header: Section 2.1
-        item-42 at level 4: paragraph: 
-        item-43 at level 4: paragraph: Paragraph 2.1.1
-        item-44 at level 4: paragraph: 
-        item-45 at level 4: paragraph: Paragraph 2.1.2
-        item-46 at level 4: paragraph: 
-        item-47 at level 4: paragraph: 
+        item-42 at level 4: text: 
+        item-43 at level 4: text: Paragraph 2.1.1
+        item-44 at level 4: text: 
+        item-45 at level 4: text: Paragraph 2.1.2
+        item-46 at level 4: text: 
+        item-47 at level 4: text: 

@@ -26,10 +26,12 @@ def test_convert_valid():
     assert len(relevant_paths) > 0
 
     yaml_filter = ["inline_and_formatting", "mixed_without_h1"]
+    json_filter = ["escaped_characters"]
 
     for in_path in relevant_paths:
         md_gt_path = root_path / "groundtruth" / "docling_v2" / f"{in_path.name}.md"
         yaml_gt_path = root_path / "groundtruth" / "docling_v2" / f"{in_path.name}.yaml"
+        json_gt_path = root_path / "groundtruth" / "docling_v2" / f"{in_path.name}.json"
 
         in_doc = InputDocument(
             path_or_stream=in_path,
@@ -44,6 +46,9 @@ def test_convert_valid():
 
         act_doc = backend.convert()
         act_data = act_doc.export_to_markdown()
+
+        if in_path.stem in json_filter:
+            assert verify_document(act_doc, json_gt_path, GENERATE), "export to json"
 
         if GEN_TEST_DATA:
             with open(md_gt_path, mode="w", encoding="utf-8") as f:

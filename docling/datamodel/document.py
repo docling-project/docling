@@ -394,6 +394,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
+        elif ext in FormatToExtensions[InputFormat.VTT]:
+            mime = FormatToMimeType[InputFormat.VTT][0]
 
         return mime
 

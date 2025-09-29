@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "tablecell",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -112,7 +112,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -124,7 +124,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "Some text before",
       "text": "Some text before",
@@ -143,7 +143,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -155,7 +155,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "",
       "text": ""
@@ -167,7 +167,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "Some text after",
       "text": "Some text after",
@@ -206,7 +206,8 @@
             "text": "Tab1",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -218,7 +219,8 @@
             "text": "Tab2",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -230,7 +232,8 @@
             "text": "Tab3",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -242,7 +245,8 @@
             "text": "A",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -254,7 +258,8 @@
             "text": "B",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -266,7 +271,8 @@
             "text": "C",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -278,7 +284,8 @@
             "text": "D",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -290,7 +297,8 @@
             "text": "E",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -302,7 +310,8 @@
             "text": "F",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 3,
@@ -319,7 +328,8 @@
               "text": "Tab1",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -331,7 +341,8 @@
               "text": "Tab2",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -343,7 +354,8 @@
               "text": "Tab3",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -357,7 +369,8 @@
               "text": "A",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -369,7 +382,8 @@
               "text": "B",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -381,7 +395,8 @@
               "text": "C",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -395,7 +410,8 @@
               "text": "D",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -407,7 +423,8 @@
               "text": "E",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -419,7 +436,8 @@
               "text": "F",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]

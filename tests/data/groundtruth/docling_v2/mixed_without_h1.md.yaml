@@ -136,4 +136,4 @@ texts:
   prov: []
   self_ref: '#/texts/7'
   text: The end!
-version: 1.6.0
+version: 1.7.0
