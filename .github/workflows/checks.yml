@@ -19,8 +19,7 @@ env:
     tests/test_backend_webp.py
     tests/test_asr_pipeline.py
     tests/test_threaded_pipeline.py
-  PYTEST_TO_SKIP: |-
-    tests/test_e2e_conversion.py::test_e2e_pdfs_conversions
+  PYTEST_TO_SKIP: ""
   EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model)\.py$'
 
 jobs:
