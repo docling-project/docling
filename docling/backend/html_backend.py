@@ -282,7 +282,62 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     # @staticmethod
-    def parse_table_data(  # noqa: C901
+    def group_cell_elements(
+        self,
+        group_name: str,
+        doc: DoclingDocument,
+        provs_in_cell: list[RefItem],
+        docling_table: TableItem,
+    ) -> RefItem:
+        group_element = doc.add_group(
+            label=GroupLabel.UNSPECIFIED,
+            name=group_name,
+            parent=docling_table,
+        )
+        for prov in provs_in_cell:
+            group_element.children.append(prov)
+            pr_item = prov.resolve(doc)
+            item_parent = pr_item.parent.resolve(doc)
+            if pr_item.get_ref() in item_parent.children:
+                item_parent.children.remove(pr_item.get_ref())
+            pr_item.parent = group_element.get_ref()
+        ref_for_rich_cell = group_element.get_ref()
+        return ref_for_rich_cell
+
+    # @staticmethod
+    def process_rich_table_cells(
+        self,
+        provs_in_cell: list[RefItem],
+        group_name: str,
+        doc: DoclingDocument,
+        docling_table: TableItem,
+    ) -> tuple[bool, RefItem]:
+        rich_table_cell = False
+        ref_for_rich_cell = provs_in_cell[0]
+        if len(provs_in_cell) > 1:
+            # Cell has multiple elements, we need to group them
+            rich_table_cell = True
+            ref_for_rich_cell = self.group_cell_elements(
+                group_name, doc, provs_in_cell, docling_table
+            )
+        elif len(provs_in_cell) == 1:
+            item_ref = provs_in_cell[0]
+            pr_item = item_ref.resolve(doc)
+            if isinstance(pr_item, TextItem):
+                # Cell has only one element and it's just a text
+                rich_table_cell = False
+                doc.delete_items(node_items=[pr_item])
+            else:
+                rich_table_cell = True
+                ref_for_rich_cell = self.group_cell_elements(
+                    group_name, doc, provs_in_cell, docling_table
+                )
+        else:
+            rich_table_cell = False
+        return rich_table_cell, ref_for_rich_cell
+
+    # @staticmethod
+    def parse_table_data(
         self,
         element: Tag,
         doc: DoclingDocument,
@@ -302,11 +357,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for row in element("tr", recursive=False):
             if not isinstance(row, Tag):
                 continue
-
             # For each row, find all the column cells (both <td> and <th>)
             # We don't want this recursive to support nested tables
             cells = row(["td", "th"], recursive=False)
-
             # Check if cell is in a column header or row header
             col_header = True
             row_header = True
@@ -337,55 +390,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         math_formula = f"$${math_parts[1]}$$"
                         formula.replace_with(NavigableString(math_formula))
 
-                # ============================================================================
-                rich_table_cell = False
                 provs_in_cell: list[RefItem] = []
-
                 # Parse table cell sub-tree for Rich Cells content:
                 provs_in_cell = self._walk(html_cell, doc)
-                ref_for_rich_cell = provs_in_cell[0]
 
-                def group_cell_elements(
-                    group_name: str, doc: DoclingDocument, provs_in_cell: list[RefItem]
-                ) -> RefItem:
-                    group_element = doc.add_group(
-                        label=GroupLabel.UNSPECIFIED,
-                        name=group_name,
-                        parent=docling_table,
-                    )
-                    for prov in provs_in_cell:
-                        group_element.children.append(prov)
-                        pr_item = prov.resolve(doc)
-                        item_parent = pr_item.parent.resolve(doc)
-                        if pr_item.get_ref() in item_parent.children:
-                            item_parent.children.remove(pr_item.get_ref())
-                        pr_item.parent = group_element.get_ref()
-                    ref_for_rich_cell = group_element.get_ref()
-                    return ref_for_rich_cell
-
-                if len(provs_in_cell) > 1:
-                    # Cell has multiple elements, we need to group them
-                    rich_table_cell = True
-                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
-                    ref_for_rich_cell = group_cell_elements(
-                        group_name, doc, provs_in_cell
-                    )
-                elif len(provs_in_cell) == 1:
-                    item_ref = provs_in_cell[0]
-                    pr_item = item_ref.resolve(doc)
-                    if isinstance(pr_item, TextItem):
-                        # Cell has only one element and it's just a text
-                        rich_table_cell = False
-                        doc.delete_items(node_items=[pr_item])
-                    else:
-                        rich_table_cell = True
-                        group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
-                        ref_for_rich_cell = group_cell_elements(
-                            group_name, doc, provs_in_cell
-                        )
-                else:
-                    rich_table_cell = False
-                # ============================================================================
+                group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
+                rich_table_cell, ref_for_rich_cell = self.process_rich_table_cells(
+                    provs_in_cell, group_name, doc, docling_table
+                )
 
                 # Extracting text
                 text = self.get_text(html_cell).strip()
@@ -1009,30 +1021,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     self._emit_image(img_tag, doc)
 
         elif tag_name == "table":
-            """
-            # Find the number of rows and columns (taking into account spans)
-            num_rows = 0
-            num_cols = 0
-            for row in tag("tr", recursive=False):
-                col_count = 0
-                is_row_header = True
-                if not isinstance(row, Tag):
-                    continue
-                for cell in row(["td", "th"], recursive=False):
-                    if not isinstance(row, Tag):
-                        continue
-                    cell_tag = cast(Tag, cell)
-                    col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
-                    col_count += col_span
-                    if cell_tag.name == "td" or row_span == 1:
-                        is_row_header = False
-                num_cols = max(num_cols, col_count)
-                if not is_row_header:
-                    num_rows += 1
-            print(">>>>>>>>>>>>>>>>>>>>>>>")
-            print(f"rows: {num_rows}, cols: {num_cols}")
-            print(">>>>>>>>>>>>>>>>>>>>>>>")
-            """
             num_rows, num_cols = self.get_html_table_row_col(tag)
             data_e = TableData(num_rows=num_rows, num_cols=num_cols)
             docling_table = doc.add_table(
@@ -1041,9 +1029,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
             )
             added_refs.append(docling_table.get_ref())
-            # HTMLDocumentBackend.parse_table_data(
-            #     tag, doc, docling_table, num_rows, num_cols
-            # )
             self.parse_table_data(tag, doc, docling_table, num_rows, num_cols)
 
             for img_tag in tag("img"):

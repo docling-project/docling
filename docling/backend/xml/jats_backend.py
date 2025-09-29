@@ -649,28 +649,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if not isinstance(table_tag, Tag):
             return
 
-        """
-        num_rows, num_cols = HTMLDocumentBackend.get_html_table_row_col(table_tag)
-        label = table_xml_component["label"]
-        caption = table_xml_component["caption"]
-        table_text: str = f"{label}{' ' if label and caption else ''}{caption}"
-        table_caption: Optional[TextItem] = (
-            doc.add_text(label=DocItemLabel.CAPTION, text=table_text)
-            if table_text
-            else None
-        )
-        data_e = TableData(num_rows=num_rows, num_cols=num_cols)
-        docling_table = doc.add_table(
-            data=data_e,
-            parent=parent,
-            caption=table_caption,
-        )
-        # added_refs.append(docling_table.get_ref())
-
-        htmlb = HTMLDocumentBackend()
-        htmlb.parse_table_data(table_tag, doc, docling_table, num_rows, num_cols)
-        """
-
         data = JatsDocumentBackend.parse_table_data(table_tag)
         # TODO: format label vs caption once styling is supported
         label = table_xml_component["label"]
