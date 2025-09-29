@@ -180,7 +180,7 @@ jobs:
         - name: Run tests for GROUP2
           run: |
             echo "--- Running tests ---"
-            GROUP2=$PYTEST_ML
+            GROUP2=$(echo "$PYTEST_ML" | tr '\n' ' ')
             echo "Running tests for GROUP2"
             uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test "$GROUP2" --deselect "$PYTEST_TO_SKIP"
 
