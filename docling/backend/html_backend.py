@@ -281,9 +281,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._walk(content, doc)
         return doc
 
-    # @staticmethod
+    @staticmethod
     def group_cell_elements(
-        self,
         group_name: str,
         doc: DoclingDocument,
         provs_in_cell: list[RefItem],
@@ -304,9 +303,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         ref_for_rich_cell = group_element.get_ref()
         return ref_for_rich_cell
 
-    # @staticmethod
+    @staticmethod
     def process_rich_table_cells(
-        self,
         provs_in_cell: list[RefItem],
         group_name: str,
         doc: DoclingDocument,
@@ -317,7 +315,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if len(provs_in_cell) > 1:
             # Cell has multiple elements, we need to group them
             rich_table_cell = True
-            ref_for_rich_cell = self.group_cell_elements(
+            ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
                 group_name, doc, provs_in_cell, docling_table
             )
         elif len(provs_in_cell) == 1:
@@ -329,14 +327,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 doc.delete_items(node_items=[pr_item])
             else:
                 rich_table_cell = True
-                ref_for_rich_cell = self.group_cell_elements(
+                ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
                     group_name, doc, provs_in_cell, docling_table
                 )
-        else:
-            rich_table_cell = False
+
         return rich_table_cell, ref_for_rich_cell
 
-    # @staticmethod
     def parse_table_data(
         self,
         element: Tag,
@@ -395,8 +391,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 provs_in_cell = self._walk(html_cell, doc)
 
                 group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
-                rich_table_cell, ref_for_rich_cell = self.process_rich_table_cells(
-                    provs_in_cell, group_name, doc, docling_table
+                rich_table_cell, ref_for_rich_cell = (
+                    HTMLDocumentBackend.process_rich_table_cells(
+                        provs_in_cell, group_name, doc, docling_table
+                    )
                 )
 
                 # Extracting text
