@@ -341,6 +341,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         num_rows: int,
         num_cols: int,
     ) -> Optional[TableData]:
+        for t in cast(list[Tag], element.find_all(["thead", "tbody"], recursive=False)):
+            t.unwrap()
+
         _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
         grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
         data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
@@ -390,12 +393,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 # Parse table cell sub-tree for Rich Cells content:
                 provs_in_cell = self._walk(html_cell, doc)
 
-                group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
-                rich_table_cell, ref_for_rich_cell = (
-                    HTMLDocumentBackend.process_rich_table_cells(
-                        provs_in_cell, group_name, doc, docling_table
+                rich_table_cell = False
+                ref_for_rich_cell = None
+                if len(provs_in_cell) > 0:
+                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
+                    rich_table_cell, ref_for_rich_cell = (
+                        HTMLDocumentBackend.process_rich_table_cells(
+                            provs_in_cell, group_name, doc, docling_table
+                        )
                     )
-                )
 
                 # Extracting text
                 text = self.get_text(html_cell).strip()
@@ -945,6 +951,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     @staticmethod
     def get_html_table_row_col(tag: Tag) -> tuple[int, int]:
+        for t in cast(list[Tag], tag.find_all(["thead", "tbody"], recursive=False)):
+            t.unwrap()
         # Find the number of rows and columns (taking into account spans)
         num_rows: int = 0
         num_cols: int = 0

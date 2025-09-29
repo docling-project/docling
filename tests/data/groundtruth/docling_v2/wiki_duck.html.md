@@ -232,6 +232,21 @@ This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duc
 
 "Duckling" redirects here. For other uses, see [Duckling (disambiguation)](/wiki/Duckling_(disambiguation)) .
 
+| Duck                                                     | Duck                      |
+|----------------------------------------------------------|---------------------------|
+|                                                          |                           |
+| [Bufflehead](/wiki/Bufflehead)  *Bucephala albeola*  ( ) |                           |
+| Scientific classification                                | Scientific classification |
+| Domain:                                                  | Eukaryota                 |
+| Kingdom:                                                 | Animalia                  |
+| Phylum:                                                  | Chordata                  |
+| Class:                                                   | Aves                      |
+| Order:                                                   | Anseriformes              |
+| Superfamily:                                             | Anatoidea                 |
+| Family:                                                  | Anatidae                  |
+| Subfamilies                                              | Subfamilies               |
+| See text                                                 | See text                  |
+
 <!-- image -->
 
 <!-- image -->
@@ -493,6 +508,11 @@ The 1992 Disney film [*The Mighty Ducks*](/wiki/The_Mighty_Ducks_(film)) , starr
 - [list of books](https://web.archive.org/web/20060613210555/http://seaducks.org/subjects/MIGRATION%20AND%20FLIGHT.htm) (useful looking abstracts)
 - [Ducks on postage stamps](http://www.stampsbook.org/subject/Duck.html) [Archived](https://web.archive.org/web/20130513022903/http://www.stampsbook.org/subject/Duck.html) 2013-05-13 at the [Wayback Machine](/wiki/Wayback_Machine)
 - [*Ducks at a Distance, by Rob Hines*](https://gutenberg.org/ebooks/18884) at [Project Gutenberg](/wiki/Project_Gutenberg) - A modern illustrated guide to identification of US waterfowl
+
+| Authority control databases   | Authority control databases                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| National                      | - [United States](https://id.loc.gov/authorities/sh85039879) - [France](https://catalogue.bnf.fr/ark:/12148/cb119761481) - [BnF data](https://data.bnf.fr/ark:/12148/cb119761481) - [Japan](https://id.ndl.go.jp/auth/ndlna/00564819) - [Latvia](https://kopkatalogs.lv/F?func=direct&local_base=lnc10&doc_number=000090751&P_CON_LNG=ENG) - [Israel](http://olduli.nli.org.il/F/?func=find-b&local_base=NLX10&find_code=UID&request=987007565486205171) |
+| Other                         | - [IdRef](https://www.idref.fr/027796124)                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 <!-- image -->
 
