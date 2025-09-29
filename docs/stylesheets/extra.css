@@ -1,3 +1,106 @@
-[data-md-color-scheme="default"] .md-banner a {
-    color: #5e8bde;
+
+.md-header {
+    background-color: #02030C !important;
+}
+.md-search__input {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+.md-search__input::placeholder {
+    color: rgba(233, 219, 189, 0.60) !important; 
+    opacity: 1;
+}
+.md-tabs {
+    background-color: #02030C !important;
+}
+.md-ellipsis{
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+.md-footer {
+    background-color: #02030C !important;
+}
+.md-footer-meta{
+    background-color: #02030C !important;
+}
+/* General Markdown background and text colors */
+body {
+    background-color: #02030C;
+    color: rgba(233, 219, 189, 0.90) !important;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+/* Links */
+a {
+    color: rgba(233, 219, 189, 0.90) !important;
+
+}
+a:hover {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+/* Code blocks */
+pre, code {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid rgba(233, 219, 189, 0.90);
+    background-color: #02030C !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+
+/* Tables */
+table {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+th, td {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+    border: 1px solid rgba(210, 198, 172, 0.08) !important; 
+}
+/* Horizontal rules */
+hr {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+}
+.md-search__icon.md-icon {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+.md-search__icon.md-icon:hover {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+.card {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    border: 1px solid rgba(210, 198, 172, 0.08) !important; 
+}
+
+details {
+    border: 1.65px solid rgba(210, 198, 172, 0.08) !important; 
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+summary {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+.md-header__button {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
+    background: none !important;
+    box-shadow: none !important;
+}
+.md-nav--secondary .md-nav__title {
+    background: none !important; 
+    box-shadow: none !important;
+    color: rgba(233, 219, 189, 0.90) !important;
 }
