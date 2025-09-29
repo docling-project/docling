@@ -149,11 +149,10 @@ def api_image_request_streaming(
                     lookback = max(1, stopper.lookback_tokens())
                     window = "".join(full_text)[-lookback:]
                     if stopper.should_stop(window):
-                        # Closing the socket signals cancel to vLLM/OpenAI-compatible servers.
-                        # vLLM aborts the request when the client disconnects.
-                        try:
-                            r.close()
-                        finally:
-                            break
+                        # Break out of the loop cleanly. The context manager will handle
+                        # closing the connection when we exit the 'with' block.
+                        # vLLM/OpenAI-compatible servers will detect the client disconnect
+                        # and abort the request server-side.
+                        return "".join(full_text)
 
         return "".join(full_text)
