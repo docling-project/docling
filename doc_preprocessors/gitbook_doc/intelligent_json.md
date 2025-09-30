@@ -460,22 +460,6 @@ Python
 
 ```python
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
-        # enrichment 옵션 설정
-        enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=True,
-            extract_metadata=True,
-            toc_api_provider="custom",
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
-            toc_api_key="9e32423947fd4a5da07a28962fe88487",
-            metadata_api_key="9e32423947fd4a5da07a28962fe88487",
-            toc_model="/model/",
-            metadata_model="/model/",
-            toc_temperature=0.0,
-            toc_top_p=0,
-            toc_seed=33,
-            toc_max_tokens=1000
-        )
 
         # 새로운 enriched result 받기
         document = enrich_document(document, self.enrichment_options)
@@ -485,22 +469,105 @@ Python
 **설명:**
 
 * 문서에 대한 추가 정보를 생성하거나 기존 정보를 보강하는 과정을 수행합니다.
-* **`enrichment_options`**: 문서의 메타데이터를 보강하기 위한 설정입니다. 이 옵션을 통해 문서의 목차, 메타데이터 추출 등을 수행할 수 있습니다.
-  * `do_toc_enrichment = True`: 목차 보강 기능 사용 여부입니다.
-  * `extract_metadata = True`: 문서의 메타데이터를 추출할지 여부입니다. 작성일을 추출할 수 있습니다.
-  * `toc_api_provider = "custom"`: 목차 API 제공자 설정입니다.
-  * `toc_api_base_url = "http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions"`: 목차 API 기본 URL입니다.
-  * `metadata_api_base_url = "http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions"`: 메타데이터 API 기본 URL입니다.
-  * `toc_api_key = "9e32423947fd4a5da07a28962fe88487"`: 목차 API 키입니다.
-  * `metadata_api_key = "9e32423947fd4a5da07a28962fe88487"`: 메타데이터 API 키입니다.
-  * `toc_model = "/model/"`: 목차 모델 경로입니다.
-  * `metadata_model = "/model/"`: 메타데이터 모델 경로입니다.
-  * `toc_temperature = 0.0`: 목차 생성 시 온도 설정입니다.
-  * `toc_top_p = 0`: 목차 생성 시 top-p 설정입니다.
-  * `toc_seed = 33`: 목차 생성 시 시드 설정입니다.
-  * `toc_max_tokens = 1000`: 목차 생성 시 최대 토큰 수 설정입니다.
 * `enrich_document` 함수를 호출하여 문서를 보강하고, 보강된 문서를 반환합니다.
 * 문서 보강에 필요한 추가 옵션은 `self.enrichment_options`에서 가져옵니다.
+
+**작성일 메타데이터 추출 프로세스 상세:**
+
+### 1. 프롬프트 구성 방식
+
+메타데이터 추출은 두 가지 프롬프트로 구성됩니다:
+
+* **`metadata_system_prompt`**:
+  * 기본값:
+    ```
+    You are a highly skilled document extraction assistant specializing in Korean financial documents.
+    Your task is to carefully analyze the given document and extract the creation date with high accuracy.
+    ```
+  * 사용자 정의 가능: `enrichment_options.metadata_system_prompt`로 설정
+
+* **`metadata_user_prompt`**:
+  * 기본값:
+    ```
+    Follow these instructions precisely:
+
+    Here is the financial document to analyze:
+
+    <financial_document>
+    {document_content}
+    </financial_document>
+
+    Process:
+    1. Extract and list all date expressions (2024.05.10, 24.05.10, 2024년 5월 10일, 5.10(금), etc.)
+    2. Analyze the context, paying attention to:
+       - Dates with "작성일", "작성일자", "작성", "게재 확정일"
+       - Dates near "보고자료", "회의자료"
+       - Dates at the top or beginning of document
+    3. Apply selection criteria:
+       - Prioritize explicitly labeled creation dates
+       - Exclude "기준일", "통계일", "데이터 기준일"
+       - Consider "최종수정일" only if no creation date found
+    4. Normalize to YYYY-MM-DD format
+    5. Output within <date> tags (or <date>없음</date> if not found)
+    ```
+  * 문서 내용이 `{document_content}` 플레이스홀더에 삽입됨
+  * 사용자 정의 가능: `enrichment_options.metadata_user_prompt`로 설정
+
+### 2. created_date로 변환 과정
+
+enrichment를 통해 추출된 날짜는 다음 과정을 거쳐 최종 메타데이터가 됩니다:
+
+**Step 1: KeyValueItem으로 저장**
+```python
+# 추출된 메타데이터를 GraphCell 구조로 변환
+graph_cells = [
+    GraphCell(label=GraphCellLabel.KEY, text="작성일"),
+    GraphCell(label=GraphCellLabel.VALUE, text="2024-05-10")
+]
+document.add_key_values(graph=GraphData(cells=graph_cells))
+```
+
+**Step 2: compose_vectors에서 추출**
+```python
+# document.key_value_items[0].graph.cells[1]에서 날짜 텍스트 추출
+if document.key_value_items:
+    date_text = document.key_value_items[0].graph.cells[1].text
+    created_date = self.parse_created_date(date_text)
+```
+
+**Step 3: 날짜 형식 정규화**
+```python
+def parse_created_date(self, date_text: str) -> Optional[int]:
+    # "2024-05-10" → 20240510 (YYYYMMDD 정수)
+    # "2024-05" → 20240501 (일자를 01로 설정)
+    # "2024" → 20240101 (월일을 0101로 설정)
+
+    match_full = re.match(r'^(\d{4})-(\d{1,2})-(\d{1,2})$', date_text)
+    if match_full:
+        year, month, day = match_full.groups()
+        return int(f"{year}{month.zfill(2)}{day.zfill(2)}")
+```
+
+**Step 4: 최종 메타데이터 구성**
+```python
+global_metadata = dict(
+    created_date=created_date,  # 20240510 형식의 정수
+    title=title,
+    authors_team=authors_team,
+    authors_department=authors_department
+)
+
+# 각 청크의 메타데이터에 포함
+vector = GenOSVectorMetaBuilder()
+    .set_global_metadata(**global_metadata)
+    .build()
+```
+
+**사용자 정의 포인트:**
+
+* **커스텀 프롬프트**: 고객사별 문서 형식에 맞춰 `metadata_system_prompt`와 `metadata_user_prompt`를 정의하여 추출 정확도 향상
+* **추가 메타데이터**: 작성일 외에도 작성자, 부서, 문서 카테고리 등 다양한 메타데이터를 추출하도록 프롬프트 확장 가능
+* **날짜 형식 처리**: `parse_created_date` 함수를 수정하여 다양한 날짜 형식 지원 가능
 
 ***
 
