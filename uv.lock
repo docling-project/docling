@@ -1321,7 +1321,7 @@ wheels = [
 
 [[package]]
 name = "docling-parse"
-version = "4.5.0"
+version = "4.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docling-core" },
@@ -1330,36 +1330,36 @@ dependencies = [
     { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "tabulate" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a3/66/71ee4d1c9d85257aebe3efbf975a94265f1abcc3cd297549f5429b20e067/docling_parse-4.5.0.tar.gz", hash = "sha256:e78f648c3a8af5ddb7dcc30c6c4270e9d3257366396a020ad60657de98bf88f5", size = 66448140, upload-time = "2025-09-17T09:36:09.148Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/bb/2ee6bbdf3495adb09ae2ea207c7645a83adcd0473c3edebd353e15e26f75/docling_parse-4.4.0.tar.gz", hash = "sha256:058991b47b7c4112b56b3b0a3809e484cb958adccea576fa1798c183c7ad804d", size = 39792862, upload-time = "2025-09-04T12:10:31.548Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/c2/010fbbaa8a44cdeed7ca77b0de4f96cc7e60991c0ae32efe49893372858d/docling_parse-4.5.0-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:52df1c5bbafe5199c090bf47eb802c2fe40173fb438200f9a7cbe401aa1eed74", size = 14735149, upload-time = "2025-09-17T09:35:08.703Z" },
-    { url = "https://files.pythonhosted.org/packages/74/63/5ef545ac486600fabc0f2ba37a980a7556ca54f61defc64423674e7facb9/docling_parse-4.5.0-cp310-cp310-macosx_14_0_arm64.whl", hash = "sha256:99e353ab01ac5c81318b67f42c4fc83ac4a0b5b4783bc566f19656204acf45f0", size = 14609909, upload-time = "2025-09-17T09:35:11.538Z" },
-    { url = "https://files.pythonhosted.org/packages/8b/02/59e40ba1b28585cd69cfdbcf1b5d7e9eb5f25ed059cd85cef68305caefc1/docling_parse-4.5.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e9223485df491432f5549dd4566c6649ff32f54370701a004673e27e6fa94a9e", size = 15059559, upload-time = "2025-09-17T09:35:13.632Z" },
-    { url = "https://files.pythonhosted.org/packages/03/16/d2bfa390c3c38e63ad7d3b871498bc216683d7613f4a5be614ca381f9189/docling_parse-4.5.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:41ae6a7f0139d48b9ce8e0a7c43be003e6fa9382919a7efa76153bd1cdbb5e21", size = 15132300, upload-time = "2025-09-17T09:35:15.623Z" },
-    { url = "https://files.pythonhosted.org/packages/f2/cf/6d7a05ea1bc999e2fde7965077a4f4b87ba5527be5a09e4d29d98c16ded6/docling_parse-4.5.0-cp310-cp310-win_amd64.whl", hash = "sha256:8beb4f2c79c676b93ab3a14f86586adb51c3d5a2e3c1a902186e4cd6ed0a2e45", size = 16060570, upload-time = "2025-09-17T09:35:17.998Z" },
-    { url = "https://files.pythonhosted.org/packages/a0/d7/adad863f5530e354e15092f3905258bd75c56dcbe9ae6923ab1ce56c738e/docling_parse-4.5.0-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:f830409eb96b063ae9f3f4e676f760b0d9738bcb0708ba6b840b7e0c84c490bd", size = 14735975, upload-time = "2025-09-17T09:35:19.997Z" },
-    { url = "https://files.pythonhosted.org/packages/4b/1d/f9764abe804e92c81cdd2b491200d4fed7c0ad785b4e7e288a3017aeda7c/docling_parse-4.5.0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:0a1a5f3e2f11ea74ab28d9c04b9391fa4b929c4af045c16bfb0da1e377646e54", size = 14610722, upload-time = "2025-09-17T09:35:21.939Z" },
-    { url = "https://files.pythonhosted.org/packages/8e/5b/a2c8b06730607639feb04c64ae4ac1a4dbc5aa5886730d8fb57c5421de2c/docling_parse-4.5.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ee02646e7a158c9f67d8df0052b544f1240d3c28eefa4658603931c13eac4435", size = 15060778, upload-time = "2025-09-17T09:35:23.851Z" },
-    { url = "https://files.pythonhosted.org/packages/f4/04/05d389bb8aff34e61b7136f1191faeb6b51c642a4f1e3d1ad3c25c540eb1/docling_parse-4.5.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c49193988b56133149584fed70b176de85c95fe698849b2acf68fde9df3a93e5", size = 15133655, upload-time = "2025-09-17T09:35:25.734Z" },
-    { url = "https://files.pythonhosted.org/packages/25/e3/7bb95eb02c212b77adae9acff4ec164ab29449186e110404611d8c436e57/docling_parse-4.5.0-cp311-cp311-win_amd64.whl", hash = "sha256:256019969f1edc08b051a90fe739430593aaf7cd59fb18a2e00745f18533ce43", size = 16061853, upload-time = "2025-09-17T09:35:27.69Z" },
-    { url = "https://files.pythonhosted.org/packages/6e/05/295bb2d68726e3cc78df0bed8ad710cd766e17c9ae5a497f0eb25bc49c5a/docling_parse-4.5.0-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:d0ea05741721a76cfca6559d7cac283f2b2953915745b439be0ca8557864bb33", size = 14737820, upload-time = "2025-09-17T09:35:30.239Z" },
-    { url = "https://files.pythonhosted.org/packages/e6/9c/364d03433c8fc4d90b93cf9413531278d11cb9ba0e64b49971bc41101c2c/docling_parse-4.5.0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:a5f0bcdd6c84acc3f3a4c1f0fb96be7e9cff7a0bdff85f2f13caa80d2a9fac8f", size = 14611300, upload-time = "2025-09-17T09:35:32.147Z" },
-    { url = "https://files.pythonhosted.org/packages/67/17/e6dcdb384ce91679be0135cfd55d243b64f7dbff4ad55aaf1402a2d6b8d3/docling_parse-4.5.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4c8906d076219a18f4f86b1fec4e4cc3699460e78c88a5731ead48dfbb71835a", size = 15060616, upload-time = "2025-09-17T09:35:34.203Z" },
-    { url = "https://files.pythonhosted.org/packages/96/51/6636f121e190fcd7fae81c5060e96fe55e1a34370b37f4cf4274acd99cf1/docling_parse-4.5.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d84186662e4780375de28b1bcb18112b04bd8e6aedb787d96544cc0d687f9629", size = 15133367, upload-time = "2025-09-17T09:35:36.377Z" },
-    { url = "https://files.pythonhosted.org/packages/df/c6/bdfd07be28e4f24aa46a67aca193c441d8ce322332fe8f0df929c5b17326/docling_parse-4.5.0-cp312-cp312-win_amd64.whl", hash = "sha256:5688fe4281dac16e807496c0b19587e25c53a9542d12f36b3a8fb2e66de78eb2", size = 16063654, upload-time = "2025-09-17T09:35:38.362Z" },
-    { url = "https://files.pythonhosted.org/packages/0a/10/5e6b37cbba638f8ddf53eea9a943c40f39073ca74e0a4e4793517cfe8cc0/docling_parse-4.5.0-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:d8b2a25262a09e956516c4439ae143a66a55212f0ef9945928159caf1346408f", size = 14737814, upload-time = "2025-09-17T09:35:40.353Z" },
-    { url = "https://files.pythonhosted.org/packages/16/46/8e35c50b8cb18d175ec62621c5bbf36b410359431bc9ae2fef6a47bb79ff/docling_parse-4.5.0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:368ebdb22ec03aa29b25d2684e51c74f6e167ab6809cd7bb5bb5b97cfe21bf8c", size = 14611484, upload-time = "2025-09-17T09:35:42.456Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/29/e4a9d44987039b0e02106b0c073832b00a6592e4a7bdde3b17b439443a75/docling_parse-4.5.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b7c9e8954118331438eb8da6058da0e3caf12735b47a86af9521e44465bbb2d4", size = 15060853, upload-time = "2025-09-17T09:35:44.491Z" },
-    { url = "https://files.pythonhosted.org/packages/af/c0/eb9fd89d518bea24566e9effc048c09c2583722a463d00aafdbe48c8e729/docling_parse-4.5.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:24360a0985a8f76ff99c39e533d208bb57427caf96b9ceb585090cd10558f87a", size = 15133655, upload-time = "2025-09-17T09:35:46.901Z" },
-    { url = "https://files.pythonhosted.org/packages/47/02/b7e2fd3cb58db9064ff69ba52ba40b1716f527f023c8b63b26e5eb4c04dc/docling_parse-4.5.0-cp313-cp313-win_amd64.whl", hash = "sha256:c3dba06a3cb8797587c90f5aa10cc2c51803d8f5cd67342ea948288a30503868", size = 16063610, upload-time = "2025-09-17T09:35:49.173Z" },
-    { url = "https://files.pythonhosted.org/packages/0b/d3/249586b3ab091f16ff7f757f0a4f1de60c70b21dc5d7e5f4cf1b3721ce55/docling_parse-4.5.0-cp39-cp39-macosx_13_0_x86_64.whl", hash = "sha256:217fe2466ca2723bdecbdb162ca73891c1746ec15b8d99ec203f8df3305091a5", size = 14735159, upload-time = "2025-09-17T09:35:51.168Z" },
-    { url = "https://files.pythonhosted.org/packages/9d/8c/a45a7dd3e2cc1e4b6979f3e98c3f4468534f973510e0183d1625917e27ed/docling_parse-4.5.0-cp39-cp39-macosx_14_0_arm64.whl", hash = "sha256:e8b283a93860cdf43a93296e1721e25daeb8eede14417b9f188f0f52c010d6b5", size = 14610041, upload-time = "2025-09-17T09:35:53.358Z" },
-    { url = "https://files.pythonhosted.org/packages/33/b6/ebe5c0b61e64a889f6ddf0d9ac497e14ea75f1c1451ae6c744dd8015fe07/docling_parse-4.5.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:affdecc41ed18f1a82c56edac2b815535e3cc07e2b0f8ffaee7e4adfb1333f0e", size = 15060090, upload-time = "2025-09-17T09:35:55.578Z" },
-    { url = "https://files.pythonhosted.org/packages/43/7b/2377ccd6297bf0b8925fec0143f04522eeeb5dee4dc237bdac71a04314d9/docling_parse-4.5.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:da6e535463bcb19a64f3099bb73b299e1f6f49a1ef3b0b3ea4fa62e2790ad875", size = 15132228, upload-time = "2025-09-17T09:35:57.499Z" },
-    { url = "https://files.pythonhosted.org/packages/d7/04/3f25840217a9f6d9661adc01d76d9bafb48fbe2884f9d58633b017bfb3a7/docling_parse-4.5.0-cp39-cp39-win_amd64.whl", hash = "sha256:dac5e9907cd6fd020bc1620082dacb9b99bfc9ee4001c55c4e4ce156edf3b617", size = 16060471, upload-time = "2025-09-17T09:35:59.446Z" },
-    { url = "https://files.pythonhosted.org/packages/25/8d/03ca17507b5a1441a63ef0ac4d67f24430efddf0e923d365c837ebac37e6/docling_parse-4.5.0-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:f983d65703a165b76775c3e4b2a5cade4757216eb88faf5c0c86a9b33f38549a", size = 17904085, upload-time = "2025-09-17T09:36:01.817Z" },
-    { url = "https://files.pythonhosted.org/packages/a6/64/49b8f6c2599d1113cbd55a698629131aeca6ec6c98bff497115fc7e08af7/docling_parse-4.5.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:9d02c43d3185f5f4a6d5aaad38e69e07bbd1f965fd62f331bd9dfc006a637604", size = 17906843, upload-time = "2025-09-17T09:36:03.857Z" },
-    { url = "https://files.pythonhosted.org/packages/72/f2/8b83cb1e7272a822cd34acc0741ea8246c3490d7ebac5f0b5c22e9eeee69/docling_parse-4.5.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:9bf94bc213bedd6d880d94eface2285e9e344da5452a23b3a8d0fedecb5d3ec1", size = 17903803, upload-time = "2025-09-17T09:36:06.293Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/10/92868edb147a4a8efdb0b72981290bb3fa73ae8580aca78531fce4e12607/docling_parse-4.4.0-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:a67a120d181ddbf48044d96271cf31678c8f29466ff28c21db0220899abf5f73", size = 14735884, upload-time = "2025-09-04T12:09:31.125Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/ce/64dd687a348efd876010a8a30ba6c053a0853351ce9a66c07705ad076d91/docling_parse-4.4.0-cp310-cp310-macosx_14_0_arm64.whl", hash = "sha256:cf0c2edbc82ca61a1ac1d0a4c181309f04be30f17eaa73d454a32a0bfe253ab1", size = 14610759, upload-time = "2025-09-04T12:09:34.363Z" },
+    { url = "https://files.pythonhosted.org/packages/42/c9/92b3242101fbb17f48c1a57597b267bb4ca1740ea10e055b1dfcec83243f/docling_parse-4.4.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c0d6737b79847a0077eba27d0cffd7cb677220481d842b8046a478af43bf0232", size = 15061354, upload-time = "2025-09-04T12:09:36.613Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/c2/98783a8d9752736272b6dcbfa58429d2d59b69c53f18cad664d5a1b00969/docling_parse-4.4.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:65c168a2df26cc3a3280971c1fa93fd9f68ab8cab3e5c612f89c1ed03734468d", size = 15133621, upload-time = "2025-09-04T12:09:38.906Z" },
+    { url = "https://files.pythonhosted.org/packages/1c/fc/160823d8a215943bd5d45bb43e33b67112ba448d320ace735aa39967c08c/docling_parse-4.4.0-cp310-cp310-win_amd64.whl", hash = "sha256:d4f20fd07e4b3b8bb1b269edab51cd72b9d0ac26a6660c8cad63508cfa427bcc", size = 16059319, upload-time = "2025-09-04T12:09:42.023Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/56/c186bcadc47aa5aeca02e206a225e62fe113c53b17493f1922ec932f3415/docling_parse-4.4.0-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:95b798e6bdbf168ecf394317329d6c39222c06c317c34a255bb40264708ec6ec", size = 14736803, upload-time = "2025-09-04T12:09:44.208Z" },
+    { url = "https://files.pythonhosted.org/packages/25/f5/ca464166344284f072f7633b2f8e42871b478e4e2b7b462ace8e26c5e707/docling_parse-4.4.0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:d7545474c8840479b1a8078dc880fad293ff4865bb7f1dd23ed48920722acc61", size = 14611812, upload-time = "2025-09-04T12:09:46.064Z" },
+    { url = "https://files.pythonhosted.org/packages/42/49/5473b9765e17cb1279743ac1422d9d06751faa8491aee090526b743af0c5/docling_parse-4.4.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:75990b0b790b8cb5592ec372506ae96b11466a02dece6baf8bc4cda2e83def8a", size = 15062700, upload-time = "2025-09-04T12:09:47.95Z" },
+    { url = "https://files.pythonhosted.org/packages/80/85/c8bfe76cc87c7d64c57b6fa21583c5c73de5b99ca3ddd674382e4bdd7ad8/docling_parse-4.4.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:824f75d1b3a6d87c558d40a6040ad5cff7b7e55a7107f456463d458a19c39bdf", size = 15134547, upload-time = "2025-09-04T12:09:50.147Z" },
+    { url = "https://files.pythonhosted.org/packages/77/dc/730b89b9c3a6f2fc3208510880fbd9c08e4db55c5fbed3839dc2f5b45bc2/docling_parse-4.4.0-cp311-cp311-win_amd64.whl", hash = "sha256:ed7e5ee807cc6a6775743cf497b64121b13743517ea8ad040b845858f34e953c", size = 16060187, upload-time = "2025-09-04T12:09:51.997Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/b6/b7bfd2e60587970785f65ce6f5a5b824c2e0bd05f07d2dde54b851fa2155/docling_parse-4.4.0-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:6dea88b0ff3c872a14684eb4b109b9fc178a64be0179926934b65279616cf750", size = 14738509, upload-time = "2025-09-04T12:09:53.851Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/84/e501aba7313f5729851e60c48e5f510752319855d500b2951e102869f28f/docling_parse-4.4.0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:d0c3e205871138743cfc69133f3ef485b7956479726b8deefda6501b028a1c94", size = 14612627, upload-time = "2025-09-04T12:09:55.749Z" },
+    { url = "https://files.pythonhosted.org/packages/62/3c/fc0e8da0917c66fb67d6c678836ecd79819399c96944c8197c2de55d480b/docling_parse-4.4.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ae7f16cdb4415ff9b4222d624e954125ae8970c166faddebd856f751b5002dfc", size = 15061875, upload-time = "2025-09-04T12:09:58.265Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/1e/9dd5c175ad9d319db2a87b746d71d7ee439661d33cc6776e885ef57254e3/docling_parse-4.4.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9232a7f6bdec11676186406109b53c841dc5cab779652955ec0c3789c1a61536", size = 15134834, upload-time = "2025-09-04T12:10:00.125Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/00/46fcd3b710c06653eb6c0d9cd4e03eb1ce0851a90b25de61b1ed42e5b48a/docling_parse-4.4.0-cp312-cp312-win_amd64.whl", hash = "sha256:549e3adfc75b2ad2a11038ea509c74e0d5122353406d62929e236cf95e504600", size = 16062112, upload-time = "2025-09-04T12:10:02.089Z" },
+    { url = "https://files.pythonhosted.org/packages/23/11/b56742bf0680d462b50faadc40d909910ff09a8b089313e2ac4b18560474/docling_parse-4.4.0-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:04f6956059199c3fd23759229e1ec0bb99c57758ecbfe424178b25d4d96a8188", size = 14738540, upload-time = "2025-09-04T12:10:04.153Z" },
+    { url = "https://files.pythonhosted.org/packages/80/70/6d991f3b57e4146f35ed4f2b1b3e697a569909b7bac7d03ddbcf42bd7535/docling_parse-4.4.0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:09f0fe6c23dc8c0515b2418368600f6846e9acf806a3f09ce8ec1fc74a514d55", size = 14612809, upload-time = "2025-09-04T12:10:06.372Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/7f/ee2405aa52c5dd1608859c5b9e230550a79cfa58a6fad15f3317b5ed874d/docling_parse-4.4.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:14823d9f04e1bb1cab15deab80dd6e493948635d7c9867f5969500beaba7c529", size = 15062364, upload-time = "2025-09-04T12:10:08.674Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/69/88c38a999906ced0145861194bb4fc1b4059ad5064d2c6d87788bc6a7d12/docling_parse-4.4.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:54f4e3a639745c3a91ad3ea30e1ae5029690cf7425ef6192afc2969501c293db", size = 15135238, upload-time = "2025-09-04T12:10:10.602Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/c0/3ab93004bfe5a6f2866567d6df6aaa16c0c02ab6d6edb3121900756a5371/docling_parse-4.4.0-cp313-cp313-win_amd64.whl", hash = "sha256:292cef2d0752070fab2620858361ee7e6caff2ead1d9e6708d35880ec36e29af", size = 16061983, upload-time = "2025-09-04T12:10:12.453Z" },
+    { url = "https://files.pythonhosted.org/packages/85/0a/ab217880a373ea0b6b8015fe9f20dc1897e23f07b45b0e824e73b93cf8d1/docling_parse-4.4.0-cp39-cp39-macosx_13_0_x86_64.whl", hash = "sha256:11dc543df49b51fbdf48addec58c738ba2aca3ed16845d8eb13e991d3d4cf809", size = 14735838, upload-time = "2025-09-04T12:10:14.325Z" },
+    { url = "https://files.pythonhosted.org/packages/76/6c/77eb280f20c56428b5f08b0fecbdda4ef0f49821710e3a0cc6365d766c27/docling_parse-4.4.0-cp39-cp39-macosx_14_0_arm64.whl", hash = "sha256:c2524dba295deff0f0406bca233ee92eb7ef48c3db15ad5ca5e246d2da02f52d", size = 14611018, upload-time = "2025-09-04T12:10:16.274Z" },
+    { url = "https://files.pythonhosted.org/packages/af/4b/cf8e5ec8b8a0853f8c7f93acdd034c462af97381521fe4a148f44f528539/docling_parse-4.4.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9d8165c08860a4ab9b40927a20581cf940fec1aa3eb6666e09bdfaba85324771", size = 15061736, upload-time = "2025-09-04T12:10:18.08Z" },
+    { url = "https://files.pythonhosted.org/packages/64/c7/3ca8fabdd10c7ea93aa87e50251e83f8f56eacdd417534ab1ebb5967890c/docling_parse-4.4.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b672929faba0111f7e28aa7ef793aa033814bb31294394c596febc1a69dedab2", size = 15134026, upload-time = "2025-09-04T12:10:20.445Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/0b/c94c28ce1fd63c4b9a20859dcacd4edef5492f0037e55f83fa264badcdb1/docling_parse-4.4.0-cp39-cp39-win_amd64.whl", hash = "sha256:0ae6d4aa44b5a4527358d09d9fb15599134b0d326cbd7b85f4ef870a2d3a640d", size = 16059187, upload-time = "2025-09-04T12:10:22.616Z" },
+    { url = "https://files.pythonhosted.org/packages/d5/d4/1ab9094034ed8ed0dc77bd7d3d3ce3066cf74ee6e3071e5f9d5f9c441955/docling_parse-4.4.0-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:7345e624306aa844878af888f9a86e5d9b49576059612a5cd3bf98144c6843bb", size = 17902013, upload-time = "2025-09-04T12:10:24.477Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/9f/58072964b22448f6b921d5c24960dbad9b91852cf703da8ab3c98a551c2b/docling_parse-4.4.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:15d4fe58c21a641393c9f03dff03241882e1f54d9f460d58bd15eab27dfdaa6f", size = 17903752, upload-time = "2025-09-04T12:10:26.875Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/62/1839c63ec9a751c1c5808722d08f5a6a765e62e64a3477da61452dfe44d9/docling_parse-4.4.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:a3192e84ab97b41499c9f878d7d3a4bbae921ec43ab1dd833b1c1c3fadd08dba", size = 17901774, upload-time = "2025-09-04T12:10:29.166Z" },
 ]
 
 [[package]]
@@ -4110,9 +4110,9 @@ version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
-    { name = "click", version = "8.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "pillow" },
-    { name = "pyobjc-framework-vision" },
+    { name = "click", version = "8.2.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.10' and platform_machine != 'x86_64') or (python_full_version >= '3.10' and sys_platform != 'linux')" },
+    { name = "pillow", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-vision", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/dd/dc/de3e9635774b97d9766f6815bbb3f5ec9bce347115f10d9abbf2733a9316/ocrmac-1.0.0.tar.gz", hash = "sha256:5b299e9030c973d1f60f82db000d6c2e5ff271601878c7db0885e850597d1d2e", size = 1463997, upload-time = "2024-11-07T12:00:00.197Z" }
 wheels = [
@@ -5394,7 +5394,7 @@ name = "pyobjc-framework-cocoa"
 version = "11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
+    { name = "pyobjc-core", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4b/c5/7a866d24bc026f79239b74d05e2cf3088b03263da66d53d1b4cf5207f5ae/pyobjc_framework_cocoa-11.1.tar.gz", hash = "sha256:87df76b9b73e7ca699a828ff112564b59251bb9bbe72e610e670a4dc9940d038", size = 5565335, upload-time = "2025-06-14T20:56:59.683Z" }
 wheels = [
@@ -5413,8 +5413,8 @@ name = "pyobjc-framework-coreml"
 version = "11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
+    { name = "pyobjc-core", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-cocoa", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0d/5d/4309f220981d769b1a2f0dcb2c5c104490d31389a8ebea67e5595ce1cb74/pyobjc_framework_coreml-11.1.tar.gz", hash = "sha256:775923eefb9eac2e389c0821b10564372de8057cea89f1ea1cdaf04996c970a7", size = 82005, upload-time = "2025-06-14T20:57:12.004Z" }
 wheels = [
@@ -5433,8 +5433,8 @@ name = "pyobjc-framework-quartz"
 version = "11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
+    { name = "pyobjc-core", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-cocoa", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c7/ac/6308fec6c9ffeda9942fef72724f4094c6df4933560f512e63eac37ebd30/pyobjc_framework_quartz-11.1.tar.gz", hash = "sha256:a57f35ccfc22ad48c87c5932818e583777ff7276605fef6afad0ac0741169f75", size = 3953275, upload-time = "2025-06-14T20:58:17.924Z" }
 wheels = [
@@ -5453,10 +5453,10 @@ name = "pyobjc-framework-vision"
 version = "11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
-    { name = "pyobjc-framework-coreml" },
-    { name = "pyobjc-framework-quartz" },
+    { name = "pyobjc-core", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-cocoa", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-coreml", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
+    { name = "pyobjc-framework-quartz", marker = "python_full_version < '3.10' or platform_machine != 'x86_64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/40/a8/7128da4d0a0103cabe58910a7233e2f98d18c590b1d36d4b3efaaedba6b9/pyobjc_framework_vision-11.1.tar.gz", hash = "sha256:26590512ee7758da3056499062a344b8a351b178be66d4b719327884dde4216b", size = 133721, upload-time = "2025-06-14T20:58:46.095Z" }
 wheels = [
