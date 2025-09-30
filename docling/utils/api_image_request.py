@@ -76,7 +76,7 @@ def api_image_request_streaming(
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
-    Accumulates text and calls stopper.should_stop(window) as partials arrive.
+    Accumulates text and calls stopper.should_stop(window) as chunks arrive.
     If stopper triggers, the HTTP connection is closed to abort server-side generation.
     """
     img_io = BytesIO()
@@ -102,16 +102,25 @@ def api_image_request_streaming(
         **params,
     }
 
+    # Debug: Log the payload to verify temperature is included
+    _log.debug(f"API streaming request payload: {json.dumps(payload, indent=2)}")
+
     # Some servers require Accept: text/event-stream for SSE.
     # It's safe to set it; OpenAI-compatible servers tolerate it.
     hdrs = {"Accept": "text/event-stream", **(headers or {})}
+
+    # Try to force temperature via header if server ignores payload parameter
+    if "temperature" in params:
+        hdrs["X-Temperature"] = str(params["temperature"])
 
     # Stream the HTTP response
     with requests.post(
         str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
     ) as r:
         if not r.ok:
-            _log.error(f"Error calling the API (streaming). Response was {r.text}")
+            _log.error(
+                f"Error calling the API {url} in streaming mode. Response was {r.text}"
+            )
         r.raise_for_status()
 
         full_text = []
@@ -129,7 +138,7 @@ def api_image_request_streaming(
             try:
                 obj = json.loads(data)
             except json.JSONDecodeError:
-                _log.info("Skipping non-JSON SSE chunk: %r", data[:200])
+                _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
                 continue
 
             # OpenAI-compatible delta format
@@ -145,7 +154,7 @@ def api_image_request_streaming(
                 full_text.append(piece)
                 for stopper in generation_stoppers:
                     # Respect stopper's lookback window. We use a simple string window which
-                    # works with your regex-based stopper; no tokenizer needed.
+                    # works with the GenerationStopper interface.
                     lookback = max(1, stopper.lookback_tokens())
                     window = "".join(full_text)[-lookback:]
                     if stopper.should_stop(window):
