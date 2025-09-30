@@ -144,19 +144,19 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
 
-        # --- 1) 각 섹션의 헤더(header.xml) 순회 ---
-        for section in self.docx_obj.sections:
-            header_el = section.header._element
-            doc = self._walk_linear(header_el, self.docx_obj, doc)
+        # # --- 1) 각 섹션의 헤더(header.xml) 순회 ---
+        # for section in self.docx_obj.sections:
+        #     header_el = section.header._element
+        #     doc = self._walk_linear(header_el, self.docx_obj, doc)
 
         # --- 2) 본문(document.xml) 전체 처리 ---
         body_el = self.docx_obj.element.body
         doc = self._walk_linear(body_el, self.docx_obj, doc)
 
-        # --- 3) 각 섹션의 푸터(footer.xml) 순회 ---
-        for section in self.docx_obj.sections:
-            footer_el = section.footer._element
-            doc = self._walk_linear(footer_el, self.docx_obj, doc)
+        # # --- 3) 각 섹션의 푸터(footer.xml) 순회 ---
+        # for section in self.docx_obj.sections:
+        #     footer_el = section.footer._element
+        #     doc = self._walk_linear(footer_el, self.docx_obj, doc)
         doc.pages[1] =  doc.add_page(page_no=1, size=Size(width=595, height=842))
         return doc
 
@@ -611,7 +611,9 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     charspan=(0, len(payload) if typ == "text" else 0)
                 )
                 if typ == "text":
-                    doc.add_text(label=DocItemLabel.PARAGRAPH, text=payload, parent=parent, prov=prov)
+                    # 중복 텍스트 방지
+                    if payload and not self._is_duplicate_content(payload):
+                        doc.add_text(label=DocItemLabel.PARAGRAPH, text=payload, parent=parent, prov=prov)
                     continue
                 elif typ == "picture":
                     if payload is None:
@@ -799,7 +801,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         """
         Check if text content is duplicate based on hash.
         """
-        if not text or len(text.strip()) < 10:  # Skip very short texts
+        if not text or len(text.strip()) < 5:  # Skip very short texts
             return False
             
         text_hash = self._get_text_content_hash(text)
@@ -818,7 +820,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         Extract text from cell including content inside SDT (Structured Document Tags).
         This is needed for cells that have form fields or content controls.
         """
-        from lxml import etree
         
         namespaces = {
             "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -1279,7 +1280,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 is_numbered=is_numbered,
             )
             self._update_history(p_style_id, p_level, numid, ilevel)
-            
+            return
         
         elif (
             numid is None

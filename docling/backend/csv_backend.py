@@ -5,7 +5,7 @@ from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Set, Union
 
-from docling_core.types.doc import DoclingDocument, DocumentOrigin, TableCell, TableData
+from docling_core.types.doc.document import DoclingDocument, DocumentOrigin, TableCell, TableData, ProvenanceItem, BoundingBox, Size
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -78,7 +78,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
                 f"Expected {expected_length} columns, but found rows with varying lengths. "
                 f"Ensure all rows have the same number of columns."
             )
-
+        
         # Parse the CSV into a structured document model
         origin = DocumentOrigin(
             filename=self.file.name or "file.csv",
@@ -88,6 +88,7 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
 
         doc = DoclingDocument(name=self.file.stem or "file.csv", origin=origin)
 
+        doc.pages[1] = doc.add_page(page_no=1, size=Size(width=1, height=1))
         if self.is_valid():
             # Convert CSV data to table
             if self.csv_data:
@@ -116,7 +117,12 @@ class CsvDocumentBackend(DeclarativeDocumentBackend):
                         )
                         table_data.table_cells.append(cell)
 
-                doc.add_table(data=table_data)
+                doc.add_table(data=table_data,
+                              prov=ProvenanceItem(
+                                 page_no=1,
+                                 bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                                 charspan=(0, 0)
+                             ))
         else:
             raise RuntimeError(
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
