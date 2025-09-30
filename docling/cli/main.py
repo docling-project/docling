@@ -355,6 +355,13 @@ def convert(  # noqa: C901
             help="Replace any existing text with OCR generated text over the full content.",
         ),
     ] = False,
+    tables: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, the table structure model will be used to extract table information.",
+        ),
+    ] = True,
     ocr_engine: Annotated[
         str,
         typer.Option(
@@ -591,7 +598,7 @@ def convert(  # noqa: C901
                 accelerator_options=accelerator_options,
                 do_ocr=ocr,
                 ocr_options=ocr_options,
-                do_table_structure=True,
+                do_table_structure=tables,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
