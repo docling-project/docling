@@ -1,10 +1,11 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Union, cast
+from typing import Any, Optional, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
+    ContentLayer,
     CoordOrigin,
     DocItem,
     DoclingDocument,
@@ -197,6 +198,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     parent=None,
                     label=GroupLabel.SECTION,
                     name=f"sheet: {sheet_name}",
+                    content_layer=self._get_sheet_content_layer(sheet),
                 )
                 doc = self._convert_sheet(doc, sheet)
                 width, height = self._find_page_size(doc, page_no)
@@ -237,6 +239,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
 
         if self.workbook is not None:
+            content_layer = self._get_sheet_content_layer(sheet)
             tables = self._find_data_tables(sheet)
 
             for excel_table in tables:
@@ -282,6 +285,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             origin=CoordOrigin.TOPLEFT,
                         ),
                     ),
+                    content_layer=content_layer,
                 )
 
         return doc
@@ -337,10 +341,17 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         # Collect the data within the bounds
         data = []
         visited_cells: set[tuple[int, int]] = set()
-        for ri in range(start_row, max_row + 1):
-            for rj in range(start_col, max_col + 1):
-                cell = sheet.cell(row=ri + 1, column=rj + 1)  # 1-based indexing
-
+        for ri, row in enumerate(
+            sheet.iter_rows(
+                min_row=start_row + 1,  # start_row is 0-based but iter_rows is 1-based
+                max_row=max_row + 1,
+                min_col=start_col + 1,
+                max_col=max_col + 1,
+                values_only=False,
+            ),
+            start_row,
+        ):
+            for rj, cell in enumerate(row, start_col):
                 # Check if the cell belongs to a merged range
                 row_span = 1
                 col_span = 1
@@ -397,10 +408,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         max_row: int = start_row
 
-        while max_row < sheet.max_row - 1:
-            # Get the cell value or check if it is part of a merged cell
-            cell = sheet.cell(row=max_row + 2, column=start_col + 1)
-
+        for ri, (cell,) in enumerate(
+            sheet.iter_rows(
+                min_row=start_row + 2,
+                max_row=sheet.max_row,
+                min_col=start_col + 1,
+                max_col=start_col + 1,
+                values_only=False,
+            ),
+            start_row + 1,
+        ):
             # Check if the cell is part of a merged range
             merged_range = next(
                 (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
@@ -414,7 +431,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if merged_range:
                 max_row = max(max_row, merged_range.max_row - 1)
             else:
-                max_row += 1
+                max_row = ri
 
         return max_row
 
@@ -433,10 +450,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         max_col: int = start_col
 
-        while max_col < sheet.max_column - 1:
-            # Get the cell value or check if it is part of a merged cell
-            cell = sheet.cell(row=start_row + 1, column=max_col + 2)
-
+        for rj, (cell,) in enumerate(
+            sheet.iter_cols(
+                min_row=start_row + 1,
+                max_row=start_row + 1,
+                min_col=start_col + 2,
+                max_col=sheet.max_column,
+                values_only=False,
+            ),
+            start_col + 1,
+        ):
             # Check if the cell is part of a merged range
             merged_range = next(
                 (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
@@ -450,7 +473,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if merged_range:
                 max_col = max(max_col, merged_range.max_col - 1)
             else:
-                max_col += 1
+                max_col = rj
 
         return max_col
 
@@ -467,6 +490,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             The updated DoclingDocument.
         """
         if self.workbook is not None:
+            content_layer = self._get_sheet_content_layer(sheet)
             # Iterate over byte images in the sheet
             for item in sheet._images:  # type: ignore[attr-defined]
                 try:
@@ -492,6 +516,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                                 anchor, origin=CoordOrigin.TOPLEFT
                             ),
                         ),
+                        content_layer=content_layer,
                     )
                 except Exception:
                     _log.error("could not extract the image from excel sheets")
@@ -517,3 +542,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 bottom = max(bottom, bbox.b) if bottom != -1 else bbox.b
 
         return (right - left, bottom - top)
+
+    @staticmethod
+    def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:
+        return (
+            None
+            if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE
+            else ContentLayer.INVISIBLE
+        )

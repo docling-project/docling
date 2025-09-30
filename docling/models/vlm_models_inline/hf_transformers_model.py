@@ -3,7 +3,11 @@ import logging
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
+
+import numpy as np
+from PIL.Image import Image
+from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCriteria
 
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
@@ -13,8 +17,13 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     TransformersModelType,
+    TransformersPromptStyle,
 )
-from docling.models.base_model import BasePageModel
+from docling.models.base_model import BaseVlmPageModel
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    HFStoppingCriteriaWrapper,
+)
 from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
@@ -24,7 +33,7 @@ from docling.utils.profiling import TimeRecorder
 _log = logging.getLogger(__name__)
 
 
-class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMixin):
+class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         enabled: bool,
@@ -41,6 +50,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             from transformers import (
                 AutoModel,
                 AutoModelForCausalLM,
+                AutoModelForImageTextToText,
                 AutoModelForVision2Seq,
                 AutoProcessor,
                 BitsAndBytesConfig,
@@ -69,7 +79,9 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(self.vlm_options.repo_id)
+                artifacts_path = self.download_models(
+                    self.vlm_options.repo_id, revision=self.vlm_options.revision
+                )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
@@ -91,105 +103,273 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 == TransformersModelType.AUTOMODEL_VISION2SEQ
             ):
                 model_cls = AutoModelForVision2Seq
+            elif (
+                self.vlm_options.transformers_model_type
+                == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT
+            ):
+                model_cls = AutoModelForImageTextToText
 
             self.processor = AutoProcessor.from_pretrained(
                 artifacts_path,
                 trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
             )
+            self.processor.tokenizer.padding_side = "left"
+
             self.vlm_model = model_cls.from_pretrained(
                 artifacts_path,
                 device_map=self.device,
-                torch_dtype=self.vlm_options.torch_dtype,
+                dtype=self.vlm_options.torch_dtype,
                 _attn_implementation=(
                     "flash_attention_2"
                     if self.device.startswith("cuda")
                     and accelerator_options.cuda_use_flash_attention2
-                    else "eager"
+                    else "sdpa"
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
+                revision=vlm_options.revision,
             )
+            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
 
             # Load generation config
-            self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
+            self.generation_config = GenerationConfig.from_pretrained(
+                artifacts_path, revision=vlm_options.revision
+            )
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-        for page in page_batch:
+        page_list = list(page_batch)
+        if not page_list:
+            return
+
+        valid_pages = []
+        invalid_pages = []
+
+        for page in page_list:
             assert page._backend is not None
             if not page._backend.is_valid():
-                yield page
+                invalid_pages.append(page)
             else:
-                with TimeRecorder(conv_res, "vlm"):
+                valid_pages.append(page)
+
+        # Process valid pages in batch
+        if valid_pages:
+            with TimeRecorder(conv_res, "vlm"):
+                # Prepare images and prompts for batch processing
+                images = []
+                user_prompts = []
+                pages_with_images = []
+
+                for page in valid_pages:
                     assert page.size is not None
-
-                    hi_res_image = page.get_image(scale=self.vlm_options.scale)
-
-                    # Define prompt structure
-                    prompt = self.formulate_prompt()
-
-                    inputs = self.processor(
-                        text=prompt, images=[hi_res_image], return_tensors="pt"
-                    ).to(self.device)
-
-                    start_time = time.time()
-                    # Call model to generate:
-                    generated_ids = self.vlm_model.generate(
-                        **inputs,
-                        max_new_tokens=self.max_new_tokens,
-                        use_cache=self.use_cache,
-                        temperature=self.temperature,
-                        generation_config=self.generation_config,
-                        **self.vlm_options.extra_generation_config,
+                    hi_res_image = page.get_image(
+                        scale=self.vlm_options.scale, max_size=self.vlm_options.max_size
                     )
 
-                    generation_time = time.time() - start_time
-                    generated_texts = self.processor.batch_decode(
-                        generated_ids[:, inputs["input_ids"].shape[1] :],
-                        skip_special_tokens=False,
-                    )[0]
+                    # Only process pages with valid images
+                    if hi_res_image is not None:
+                        images.append(hi_res_image)
 
-                    num_tokens = len(generated_ids[0])
-                    _log.debug(
-                        f"Generated {num_tokens} tokens in time {generation_time:.2f} seconds."
+                        # Define prompt structure
+                        user_prompt = self.vlm_options.build_prompt(page.parsed_page)
+
+                        user_prompts.append(user_prompt)
+                        pages_with_images.append(page)
+
+                # Use process_images for the actual inference
+                if images:  # Only if we have valid images
+                    predictions = list(self.process_images(images, user_prompts))
+
+                    # Attach results to pages
+                    for page, prediction in zip(pages_with_images, predictions):
+                        page.predictions.vlm_response = prediction
+
+        # Yield all pages (valid and invalid)
+        for page in invalid_pages:
+            yield page
+        for page in valid_pages:
+            yield page
+
+    def process_images(
+        self,
+        image_batch: Iterable[Union[Image, np.ndarray]],
+        prompt: Union[str, list[str]],
+    ) -> Iterable[VlmPrediction]:
+        """
+        Batched inference for Hugging Face Image-Text-to-Text VLMs (e.g., SmolDocling / SmolVLM).
+        - Lets the processor handle all padding & batching for text+images.
+        - Trims generated sequences per row using attention_mask (no pad-id fallbacks).
+        - Keeps your formulate_prompt() exactly as-is.
+        """
+        import numpy as np
+        import torch
+        from PIL import Image as PILImage
+
+        # -- Normalize images to RGB PIL
+        pil_images: list[Image] = []
+        for img in image_batch:
+            if isinstance(img, np.ndarray):
+                if img.ndim == 3 and img.shape[2] in (3, 4):
+                    pil_img = PILImage.fromarray(img.astype(np.uint8))
+                elif img.ndim == 2:
+                    pil_img = PILImage.fromarray(img.astype(np.uint8), mode="L")
+                else:
+                    raise ValueError(f"Unsupported numpy array shape: {img.shape}")
+            else:
+                pil_img = img
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+            pil_images.append(pil_img)
+
+        if not pil_images:
+            return
+
+        # -- Normalize prompts (1 per image)
+        if isinstance(prompt, str):
+            user_prompts = [prompt] * len(pil_images)
+        else:
+            if len(prompt) != len(pil_images):
+                raise ValueError(
+                    f"Number of prompts ({len(prompt)}) must match number of images ({len(pil_images)})"
+                )
+            user_prompts = prompt
+
+        # Use your prompt formatter verbatim
+        if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
+            inputs = self.processor(
+                pil_images,
+                return_tensors="pt",
+                padding=True,  # pad across batch for both text and vision
+                **self.vlm_options.extra_processor_kwargs,
+            )
+        else:
+            prompts: list[str] = [self.formulate_prompt(p) for p in user_prompts]
+
+            # -- Processor performs BOTH text+image preprocessing + batch padding (recommended)
+            inputs = self.processor(
+                text=prompts,
+                images=pil_images,
+                return_tensors="pt",
+                padding=True,  # pad across batch for both text and vision
+                **self.vlm_options.extra_processor_kwargs,
+            )
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        # -- Optional stopping criteria
+        stopping_criteria_list: StoppingCriteriaList = StoppingCriteriaList()
+
+        # Add string-based stopping criteria
+        if self.vlm_options.stop_strings:
+            stopping_criteria_list.append(
+                StopStringCriteria(
+                    stop_strings=self.vlm_options.stop_strings,
+                    tokenizer=self.processor.tokenizer,
+                )
+            )
+
+        # Add custom stopping criteria
+        if self.vlm_options.custom_stopping_criteria:
+            for criteria in self.vlm_options.custom_stopping_criteria:
+                # If it's a class (not an instance), determine the type and handle accordingly
+                if isinstance(criteria, type):
+                    # Check if it's a GenerationStopper class
+                    if issubclass(criteria, GenerationStopper):
+                        # Instantiate GenerationStopper and wrap it
+                        stopper_instance = criteria()
+                        wrapped_criteria = HFStoppingCriteriaWrapper(
+                            self.processor.tokenizer, stopper_instance
+                        )
+                        stopping_criteria_list.append(wrapped_criteria)
+                    elif issubclass(criteria, StoppingCriteria):
+                        # It's a StoppingCriteria class, instantiate with tokenizer
+                        criteria_instance = criteria(self.processor.tokenizer)
+                        stopping_criteria_list.append(criteria_instance)
+                elif isinstance(criteria, GenerationStopper):
+                    # Wrap GenerationStopper instances in HFStoppingCriteriaWrapper
+                    wrapped_criteria = HFStoppingCriteriaWrapper(
+                        self.processor.tokenizer, criteria
                     )
-                    page.predictions.vlm_response = VlmPrediction(
-                        text=generated_texts,
-                        generation_time=generation_time,
-                    )
+                    stopping_criteria_list.append(wrapped_criteria)
+                else:
+                    # If it's already an instance of StoppingCriteria, use it directly
+                    stopping_criteria_list.append(criteria)
 
-                yield page
-
-    def formulate_prompt(self) -> str:
-        """Formulate a prompt for the VLM."""
-
-        if self.vlm_options.repo_id == "microsoft/Phi-4-multimodal-instruct":
-            _log.debug("Using specialized prompt for Phi-4")
-            # more info here: https://huggingface.co/microsoft/Phi-4-multimodal-instruct#loading-the-model-locally
-
-            user_prompt = "<|user|>"
-            assistant_prompt = "<|assistant|>"
-            prompt_suffix = "<|end|>"
-
-            prompt = f"{user_prompt}<|image_1|>{self.vlm_options.prompt}{prompt_suffix}{assistant_prompt}"
-            _log.debug(f"prompt for {self.vlm_options.repo_id}: {prompt}")
-
-            return prompt
-
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "This is a page from a document.",
-                    },
-                    {"type": "image"},
-                    {"type": "text", "text": self.vlm_options.prompt},
-                ],
-            }
-        ]
-        prompt = self.processor.apply_chat_template(
-            messages, add_generation_prompt=False
+        stopping_criteria = (
+            StoppingCriteriaList(stopping_criteria_list)
+            if stopping_criteria_list
+            else None
         )
-        return prompt
+
+        # -- Filter out decoder-specific keys from extra_generation_config
+        decoder_keys = {
+            "skip_special_tokens",
+            "clean_up_tokenization_spaces",
+            "spaces_between_special_tokens",
+        }
+        generation_config = {
+            k: v
+            for k, v in self.vlm_options.extra_generation_config.items()
+            if k not in decoder_keys
+        }
+        decoder_config = {
+            k: v
+            for k, v in self.vlm_options.extra_generation_config.items()
+            if k in decoder_keys
+        }
+
+        # -- Generate (Image-Text-to-Text class expects these inputs from processor)
+        gen_kwargs = {
+            **inputs,
+            "max_new_tokens": self.max_new_tokens,
+            "use_cache": self.use_cache,
+            "generation_config": self.generation_config,
+            **generation_config,
+        }
+        if self.temperature > 0:
+            gen_kwargs["do_sample"] = True
+            gen_kwargs["temperature"] = self.temperature
+        else:
+            gen_kwargs["do_sample"] = False
+
+        if stopping_criteria is not None:
+            gen_kwargs["stopping_criteria"] = stopping_criteria
+
+        start_time = time.time()
+        with torch.inference_mode():
+            generated_ids = self.vlm_model.generate(**gen_kwargs)
+        generation_time = time.time() - start_time
+
+        input_len = inputs["input_ids"].shape[1]  # common right-aligned prompt length
+        trimmed_sequences = generated_ids[:, input_len:]  # only newly generated tokens
+
+        # -- Decode with the processor/tokenizer (skip specials, keep DocTags as text)
+        decode_fn = getattr(self.processor, "batch_decode", None)
+        if decode_fn is None and getattr(self.processor, "tokenizer", None) is not None:
+            decode_fn = self.processor.tokenizer.batch_decode
+        if decode_fn is None:
+            raise RuntimeError(
+                "Neither processor.batch_decode nor tokenizer.batch_decode is available."
+            )
+
+        decoded_texts: list[str] = decode_fn(
+            trimmed_sequences,
+            **decoder_config,
+        )
+
+        # -- Clip off pad tokens from decoded texts
+        pad_token = self.processor.tokenizer.pad_token
+        if pad_token:
+            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        # -- Optional logging
+        if generated_ids.shape[0] > 0:
+            _log.debug(
+                f"Generated {int(generated_ids[0].shape[0])} tokens in {generation_time:.2f}s "
+                f"for batch size {generated_ids.shape[0]}."
+            )
+
+        for text in decoded_texts:
+            # Apply decode_response to the output text
+            decoded_text = self.vlm_options.decode_response(text)
+            yield VlmPrediction(text=decoded_text, generation_time=generation_time)

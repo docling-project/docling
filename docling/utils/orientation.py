@@ -14,43 +14,36 @@ def rotate_bounding_box(
     # coordinate system. Then other corners are found rotating counterclockwise
     bbox = bbox.to_top_left_origin(im_size[1])
     left, top, width, height = bbox.l, bbox.t, bbox.width, bbox.height
-    im_h, im_w = im_size
+    im_w, im_h = im_size
     angle = angle % 360
     if angle == 0:
-        r_x0 = left
-        r_y0 = top + height
-        r_x1 = r_x0 + width
-        r_y1 = r_y0
-        r_x2 = r_x0 + width
-        r_y2 = r_y0 - height
-        r_x3 = r_x0
-        r_y3 = r_y0 - height
+        return BoundingRectangle.from_bounding_box(bbox)
     elif angle == 90:
-        r_x0 = im_w - (top + height)
+        r_x0 = top + height
+        r_y0 = im_w - left
+        r_x1 = r_x0
+        r_y1 = r_y0 - width
+        r_x2 = r_x1 - height
+        r_y2 = r_y1
+        r_x3 = r_x2
+        r_y3 = r_y0
+    elif angle == 180:
+        r_x0 = im_w - left
+        r_y0 = im_h - (top + height)
+        r_x1 = r_x0 - width
+        r_y1 = r_y0
+        r_x2 = r_x1
+        r_y2 = r_y1 + height
+        r_x3 = r_x0
+        r_y3 = r_y2
+    elif angle == 270:
+        r_x0 = im_h - (top + height)
         r_y0 = left
         r_x1 = r_x0
         r_y1 = r_y0 + width
-        r_x2 = r_x0 + height
-        r_y2 = r_y0 + width
-        r_x3 = r_x0
-        r_y3 = r_y0 + width
-    elif angle == 180:
-        r_x0 = im_h - left
-        r_y0 = im_w - (top + height)
-        r_x1 = r_x0 - width
-        r_y1 = r_y0
-        r_x2 = r_x0 - width
-        r_y2 = r_y0 + height
-        r_x3 = r_x0
-        r_y3 = r_y0 + height
-    elif angle == 270:
-        r_x0 = top + height
-        r_y0 = im_h - left
-        r_x1 = r_x0
-        r_y1 = r_y0 - width
-        r_x2 = r_x0 - height
-        r_y2 = r_y0 - width
-        r_x3 = r_x0 - height
+        r_x2 = r_x1 + height
+        r_y2 = r_y1
+        r_x3 = r_x2
         r_y3 = r_y0
     else:
         msg = (
@@ -58,7 +51,7 @@ def rotate_bounding_box(
             f" {sorted(CLIPPED_ORIENTATIONS)}"
         )
         raise ValueError(msg)
-    return BoundingRectangle(
+    rectangle = BoundingRectangle(
         r_x0=r_x0,
         r_y0=r_y0,
         r_x1=r_x1,
@@ -69,3 +62,4 @@ def rotate_bounding_box(
         r_y3=r_y3,
         coord_origin=CoordOrigin.TOPLEFT,
     )
+    return rectangle

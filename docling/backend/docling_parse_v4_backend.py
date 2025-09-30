@@ -22,15 +22,64 @@ _log = logging.getLogger(__name__)
 
 
 class DoclingParseV4PageBackend(PdfPageBackend):
-    def __init__(self, parsed_page: SegmentedPdfPage, page_obj: PdfPage):
+    def __init__(
+        self,
+        *,
+        dp_doc: PdfDocument,
+        page_obj: PdfPage,
+        page_no: int,
+        create_words: bool = True,
+        create_textlines: bool = True,
+        keep_chars: bool = False,
+        keep_lines: bool = False,
+        keep_images: bool = True,
+    ):
         self._ppage = page_obj
-        self._dpage = parsed_page
-        self.valid = parsed_page is not None
+        self._dp_doc = dp_doc
+        self._page_no = page_no
+
+        self._create_words = create_words
+        self._create_textlines = create_textlines
+
+        self._keep_chars = keep_chars
+        self._keep_lines = keep_lines
+        self._keep_images = keep_images
+
+        self._dpage: Optional[SegmentedPdfPage] = None
+        self._unloaded = False
+        self.valid = (self._ppage is not None) and (self._dp_doc is not None)
+
+    def _ensure_parsed(self) -> None:
+        if self._dpage is not None:
+            return
+
+        seg_page = self._dp_doc.get_page(
+            self._page_no + 1,
+            keep_chars=self._keep_chars,
+            keep_lines=self._keep_lines,
+            keep_bitmaps=self._keep_images,
+            create_words=self._create_words,
+            create_textlines=self._create_textlines,
+            enforce_same_font=True,
+        )
+
+        # In Docling, all TextCell instances are expected with top-left origin.
+        [
+            tc.to_top_left_origin(seg_page.dimension.height)
+            for tc in seg_page.textline_cells
+        ]
+        [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.char_cells]
+        [tc.to_top_left_origin(seg_page.dimension.height) for tc in seg_page.word_cells]
+
+        self._dpage = seg_page
 
     def is_valid(self) -> bool:
         return self.valid
 
     def get_text_in_rect(self, bbox: BoundingBox) -> str:
+        self._ensure_parsed()
+        assert self._dpage is not None
+
         # Find intersecting cells on the page
         text_piece = ""
         page_size = self.get_size()
@@ -56,12 +105,19 @@ class DoclingParseV4PageBackend(PdfPageBackend):
         return text_piece
 
     def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+        self._ensure_parsed()
         return self._dpage
 
     def get_text_cells(self) -> Iterable[TextCell]:
+        self._ensure_parsed()
+        assert self._dpage is not None
+
         return self._dpage.textline_cells
 
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        self._ensure_parsed()
+        assert self._dpage is not None
+
         AREA_THRESHOLD = 0  # 32 * 32
 
         images = self._dpage.bitmap_resources
@@ -123,8 +179,13 @@ class DoclingParseV4PageBackend(PdfPageBackend):
         # )
 
     def unload(self):
+        if not self._unloaded and self._dp_doc is not None:
+            self._dp_doc.unload_pages((self._page_no + 1, self._page_no + 2))
+            self._unloaded = True
+
         self._ppage = None
         self._dpage = None
+        self._dp_doc = None
 
 
 class DoclingParseV4DocumentBackend(PdfDocumentBackend):
@@ -157,37 +218,32 @@ class DoclingParseV4DocumentBackend(PdfDocumentBackend):
         self, page_no: int, create_words: bool = True, create_textlines: bool = True
     ) -> DoclingParseV4PageBackend:
         with pypdfium2_lock:
-            seg_page = self.dp_doc.get_page(
-                page_no + 1,
-                create_words=create_words,
-                create_textlines=create_textlines,
-            )
+            ppage = self._pdoc[page_no]
 
-            # In Docling, all TextCell instances are expected with top-left origin.
-            [
-                tc.to_top_left_origin(seg_page.dimension.height)
-                for tc in seg_page.textline_cells
-            ]
-            [
-                tc.to_top_left_origin(seg_page.dimension.height)
-                for tc in seg_page.char_cells
-            ]
-            [
-                tc.to_top_left_origin(seg_page.dimension.height)
-                for tc in seg_page.word_cells
-            ]
-
-            return DoclingParseV4PageBackend(
-                seg_page,
-                self._pdoc[page_no],
-            )
+        return DoclingParseV4PageBackend(
+            dp_doc=self.dp_doc,
+            page_obj=ppage,
+            page_no=page_no,
+            create_words=create_words,
+            create_textlines=create_textlines,
+        )
 
     def is_valid(self) -> bool:
         return self.page_count() > 0
 
     def unload(self):
         super().unload()
-        self.dp_doc.unload()
-        with pypdfium2_lock:
-            self._pdoc.close()
-        self._pdoc = None
+        # Unload docling-parse document first
+        if self.dp_doc is not None:
+            self.dp_doc.unload()
+            self.dp_doc = None
+
+        # Then close pypdfium2 document with proper locking
+        if self._pdoc is not None:
+            with pypdfium2_lock:
+                try:
+                    self._pdoc.close()
+                except Exception:
+                    # Ignore cleanup errors
+                    pass
+            self._pdoc = None

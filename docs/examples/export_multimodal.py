@@ -1,3 +1,34 @@
+# %% [markdown]
+# Export multimodal page data (image bytes, text, segments) to a Parquet file.
+#
+# What this example does
+# - Converts a PDF and assembles per-page multimodal records: image, cells, text, segments.
+# - Normalizes records to a pandas DataFrame and writes a timestamped `.parquet` in `scratch/`.
+#
+# Prerequisites
+# - Install Docling and `pandas`. Optional: `datasets` and `Pillow` for the commented demo.
+#
+# How to run
+# - From the repo root: `python docs/examples/export_multimodal.py`.
+# - Output parquet is written to `scratch/`.
+#
+# Key options
+# - `IMAGE_RESOLUTION_SCALE`: page rendering scale (1 ~ 72 DPI).
+# - `PdfPipelineOptions.generate_page_images`: keep page images for export.
+#
+# Requirements
+# - Writing Parquet requires an engine such as `pyarrow` or `fastparquet`
+#   (`pip install pyarrow` is the most common choice).
+#
+# Input document
+# - Defaults to `tests/data/pdf/2206.01062.pdf`. Change `input_doc_path` as needed.
+#
+# Notes
+# - The commented block at the bottom shows how to load the Parquet with HF Datasets
+#   and reconstruct images from raw bytes.
+
+# %%
+
 import datetime
 import logging
 import time
@@ -19,13 +50,12 @@ IMAGE_RESOLUTION_SCALE = 2.0
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
     output_dir = Path("scratch")
 
-    # Important: For operating with page images, we must keep them, otherwise the DocumentConverter
-    # will destroy them for cleaning up memory.
-    # This is done by setting AssembleOptions.images_scale, which also defines the scale of images.
-    # scale=1 correspond of a standard 72 DPI image
+    # Keep page images so they can be exported to the multimodal rows.
+    # Use PdfPipelineOptions.images_scale to control the render scale (1 ~ 72 DPI).
     pipeline_options = PdfPipelineOptions()
     pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
     pipeline_options.generate_page_images = True

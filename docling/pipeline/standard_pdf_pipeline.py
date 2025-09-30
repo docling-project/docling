@@ -10,22 +10,18 @@ from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import AssembledUnit, Page
 from docling.datamodel.document import ConversionResult
+from docling.datamodel.layout_model_specs import LayoutModelConfig
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
-from docling.models.document_picture_classifier import (
-    DocumentPictureClassifier,
-    DocumentPictureClassifierOptions,
-)
-from docling.models.factories import get_ocr_factory, get_picture_description_factory
+from docling.models.factories import get_ocr_factory
 from docling.models.layout_model import LayoutModel
 from docling.models.page_assemble_model import PageAssembleModel, PageAssembleOptions
 from docling.models.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
 )
-from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
 from docling.models.table_structure_model import TableStructureModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
@@ -36,24 +32,9 @@ _log = logging.getLogger(__name__)
 
 
 class StandardPdfPipeline(PaginatedPipeline):
-    _layout_model_path = LayoutModel._model_path
-    _table_model_path = TableStructureModel._model_path
-
     def __init__(self, pipeline_options: PdfPipelineOptions):
         super().__init__(pipeline_options)
         self.pipeline_options: PdfPipelineOptions
-
-        artifacts_path: Optional[Path] = None
-        if pipeline_options.artifacts_path is not None:
-            artifacts_path = Path(pipeline_options.artifacts_path).expanduser()
-        elif settings.artifacts_path is not None:
-            artifacts_path = Path(settings.artifacts_path).expanduser()
-
-        if artifacts_path is not None and not artifacts_path.is_dir():
-            raise RuntimeError(
-                f"The value of {artifacts_path=} is not valid. "
-                "When defined, it must point to a folder containing all models required by the pipeline."
-            )
 
         with warnings.catch_warnings():  # deprecated generate_table_images
             warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -65,7 +46,7 @@ class StandardPdfPipeline(PaginatedPipeline):
 
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
-        ocr_model = self.get_ocr_model(artifacts_path=artifacts_path)
+        ocr_model = self.get_ocr_model(artifacts_path=self.artifacts_path)
 
         self.build_pipe = [
             # Pre-processing
@@ -78,13 +59,14 @@ class StandardPdfPipeline(PaginatedPipeline):
             ocr_model,
             # Layout model
             LayoutModel(
-                artifacts_path=artifacts_path,
+                artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
+                options=pipeline_options.layout_options,
             ),
             # Table structure model
             TableStructureModel(
                 enabled=pipeline_options.do_table_structure,
-                artifacts_path=artifacts_path,
+                artifacts_path=self.artifacts_path,
                 options=pipeline_options.table_structure_options,
                 accelerator_options=pipeline_options.accelerator_options,
             ),
@@ -92,42 +74,25 @@ class StandardPdfPipeline(PaginatedPipeline):
             PageAssembleModel(options=PageAssembleOptions()),
         ]
 
-        # Picture description model
-        if (
-            picture_description_model := self.get_picture_description_model(
-                artifacts_path=artifacts_path
-            )
-        ) is None:
-            raise RuntimeError(
-                f"The specified picture description kind is not supported: {pipeline_options.picture_description_options.kind}."
-            )
-
         self.enrichment_pipe = [
             # Code Formula Enrichment Model
             CodeFormulaModel(
                 enabled=pipeline_options.do_code_enrichment
                 or pipeline_options.do_formula_enrichment,
-                artifacts_path=artifacts_path,
+                artifacts_path=self.artifacts_path,
                 options=CodeFormulaModelOptions(
                     do_code_enrichment=pipeline_options.do_code_enrichment,
                     do_formula_enrichment=pipeline_options.do_formula_enrichment,
                 ),
                 accelerator_options=pipeline_options.accelerator_options,
             ),
-            # Document Picture Classifier
-            DocumentPictureClassifier(
-                enabled=pipeline_options.do_picture_classification,
-                artifacts_path=artifacts_path,
-                options=DocumentPictureClassifierOptions(),
-                accelerator_options=pipeline_options.accelerator_options,
-            ),
-            # Document Picture description
-            picture_description_model,
+            *self.enrichment_pipe,
         ]
 
         if (
             self.pipeline_options.do_formula_enrichment
             or self.pipeline_options.do_code_enrichment
+            or self.pipeline_options.do_picture_classification
             or self.pipeline_options.do_picture_description
         ):
             self.keep_backend = True
@@ -154,20 +119,6 @@ class StandardPdfPipeline(PaginatedPipeline):
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
             enabled=self.pipeline_options.do_ocr,
-            artifacts_path=artifacts_path,
-            accelerator_options=self.pipeline_options.accelerator_options,
-        )
-
-    def get_picture_description_model(
-        self, artifacts_path: Optional[Path] = None
-    ) -> Optional[PictureDescriptionBaseModel]:
-        factory = get_picture_description_factory(
-            allow_external_plugins=self.pipeline_options.allow_external_plugins
-        )
-        return factory.create_instance(
-            options=self.pipeline_options.picture_description_options,
-            enabled=self.pipeline_options.do_picture_description,
-            enable_remote_services=self.pipeline_options.enable_remote_services,
             artifacts_path=artifacts_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )

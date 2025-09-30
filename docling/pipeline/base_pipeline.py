@@ -4,11 +4,15 @@ import time
 import traceback
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Any, Callable, List
+from pathlib import Path
+from typing import Any, Callable, List, Optional
 
 from docling_core.types.doc import NodeItem
 
-from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.abstract_backend import (
+    AbstractDocumentBackend,
+    PaginatedDocumentBackend,
+)
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
@@ -17,9 +21,19 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult, InputDocument
-from docling.datamodel.pipeline_options import PipelineOptions
+from docling.datamodel.pipeline_options import (
+    ConvertPipelineOptions,
+    PdfPipelineOptions,
+    PipelineOptions,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
+from docling.models.document_picture_classifier import (
+    DocumentPictureClassifier,
+    DocumentPictureClassifierOptions,
+)
+from docling.models.factories import get_picture_description_factory
+from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -32,6 +46,18 @@ class BasePipeline(ABC):
         self.keep_images = False
         self.build_pipe: List[Callable] = []
         self.enrichment_pipe: List[GenericEnrichmentModel[Any]] = []
+
+        self.artifacts_path: Optional[Path] = None
+        if pipeline_options.artifacts_path is not None:
+            self.artifacts_path = Path(pipeline_options.artifacts_path).expanduser()
+        elif settings.artifacts_path is not None:
+            self.artifacts_path = Path(settings.artifacts_path).expanduser()
+
+        if self.artifacts_path is not None and not self.artifacts_path.is_dir():
+            raise RuntimeError(
+                f"The value of {self.artifacts_path=} is not valid. "
+                "When defined, it must point to a folder containing all models required by the pipeline."
+            )
 
     def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
         conv_res = ConversionResult(input=in_doc)
@@ -105,15 +131,58 @@ class BasePipeline(ABC):
     def is_backend_supported(cls, backend: AbstractDocumentBackend):
         pass
 
-    # def _apply_on_elements(self, element_batch: Iterable[NodeItem]) -> Iterable[Any]:
-    #    for model in self.build_pipe:
-    #        element_batch = model(element_batch)
-    #
-    #    yield from element_batch
+
+class ConvertPipeline(BasePipeline):
+    def __init__(self, pipeline_options: ConvertPipelineOptions):
+        super().__init__(pipeline_options)
+        self.pipeline_options: ConvertPipelineOptions
+
+        # ------ Common enrichment models working on all backends
+
+        # Picture description model
+        if (
+            picture_description_model := self._get_picture_description_model(
+                artifacts_path=self.artifacts_path
+            )
+        ) is None:
+            raise RuntimeError(
+                f"The specified picture description kind is not supported: {pipeline_options.picture_description_options.kind}."
+            )
+
+        self.enrichment_pipe = [
+            # Document Picture Classifier
+            DocumentPictureClassifier(
+                enabled=pipeline_options.do_picture_classification,
+                artifacts_path=self.artifacts_path,
+                options=DocumentPictureClassifierOptions(),
+                accelerator_options=pipeline_options.accelerator_options,
+            ),
+            # Document Picture description
+            picture_description_model,
+        ]
+
+    def _get_picture_description_model(
+        self, artifacts_path: Optional[Path] = None
+    ) -> Optional[PictureDescriptionBaseModel]:
+        factory = get_picture_description_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        return factory.create_instance(
+            options=self.pipeline_options.picture_description_options,
+            enabled=self.pipeline_options.do_picture_description,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
+            artifacts_path=artifacts_path,
+            accelerator_options=self.pipeline_options.accelerator_options,
+        )
+
+    @classmethod
+    @abstractmethod
+    def get_default_options(cls) -> ConvertPipelineOptions:
+        pass
 
 
-class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
-    def __init__(self, pipeline_options: PipelineOptions):
+class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
+    def __init__(self, pipeline_options: ConvertPipelineOptions):
         super().__init__(pipeline_options)
         self.keep_backend = False
 
@@ -126,10 +195,10 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
         yield from page_batch
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
-        if not isinstance(conv_res.input._backend, PdfDocumentBackend):
+        if not isinstance(conv_res.input._backend, PaginatedDocumentBackend):
             raise RuntimeError(
-                f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a PDF backend. "
-                f"Can not convert this with a PDF pipeline. "
+                f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a paginated backend. "
+                f"Can not convert this with a paginated PDF pipeline. "
                 f"Please check your format configuration on DocumentConverter."
             )
             # conv_res.status = ConversionStatus.FAILURE
@@ -143,6 +212,7 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                     conv_res.pages.append(Page(page_no=i))
 
             try:
+                total_pages_processed = 0
                 # Iterate batches of pages (page_batch_size) in the doc
                 for page_batch in chunkify(
                     conv_res.pages, settings.perf.page_batch_size
@@ -165,6 +235,12 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                         # Cleanup page backends
                         if not self.keep_backend and p._backend is not None:
                             p._backend.unload()
+                        if (
+                            isinstance(self.pipeline_options, PdfPipelineOptions)
+                            and not self.pipeline_options.generate_parsed_pages
+                        ):
+                            del p.parsed_page
+                            p.parsed_page = None
 
                     end_batch_time = time.monotonic()
                     total_elapsed_time += end_batch_time - start_batch_time
@@ -177,9 +253,9 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                         )
                         conv_res.status = ConversionStatus.PARTIAL_SUCCESS
                         break
-
+                    total_pages_processed += len(page_batch)
                     _log.debug(
-                        f"Finished converting page batch time={end_batch_time:.3f}"
+                        f"Finished converting pages {total_pages_processed}/{len(conv_res.pages)} time={end_batch_time:.3f}"
                     )
 
             except Exception as e:
@@ -192,6 +268,17 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
                     f"{trace}"
                 )
                 raise e
+
+            # Filter out uninitialized pages (those with size=None) that may remain
+            # after timeout or processing failures to prevent assertion errors downstream
+            initial_page_count = len(conv_res.pages)
+            conv_res.pages = [page for page in conv_res.pages if page.size is not None]
+
+            if len(conv_res.pages) < initial_page_count:
+                _log.info(
+                    f"Filtered out {initial_page_count - len(conv_res.pages)} uninitialized pages "
+                    f"due to timeout or processing failures"
+                )
 
         return conv_res
 
@@ -206,7 +293,13 @@ class PaginatedPipeline(BasePipeline):  # TODO this is a bad name.
         return conv_res
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
-        status = ConversionStatus.SUCCESS
+        status = conv_res.status
+        if status in [
+            ConversionStatus.PENDING,
+            ConversionStatus.STARTED,
+        ]:  # preserves ConversionStatus.PARTIAL_SUCCESS
+            status = ConversionStatus.SUCCESS
+
         for page in conv_res.pages:
             if page._backend is None or not page._backend.is_valid():
                 conv_res.errors.append(

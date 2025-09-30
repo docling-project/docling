@@ -1,7 +1,7 @@
 from io import BytesIO
 from pathlib import Path
 
-import pytest
+from docling_core.types.doc.document import ContentLayer
 
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -37,17 +37,15 @@ def test_heading_levels():
         if isinstance(item, SectionHeaderItem):
             if item.text == "Etymology":
                 found_lvl_1 = True
+                # h2 becomes level 1 because of h1 as title
                 assert item.level == 1
             elif item.text == "Feeding":
                 found_lvl_2 = True
+                # h3 becomes level 2 because of h1 as title
                 assert item.level == 2
     assert found_lvl_1 and found_lvl_2
 
 
-@pytest.mark.skip(
-    "Temporarily disabled since docling-core>=2.21.0 does not support ordered lists "
-    "with custom start value"
-)
 def test_ordered_lists():
     test_set: list[tuple[bytes, str]] = []
 
@@ -104,6 +102,42 @@ def test_ordered_lists():
         assert doc.export_to_markdown() == pair[1], f"Error in case {idx}"
 
 
+def test_unicode_characters():
+    raw_html = "<html><body><h1>Hello World!</h1></body></html>".encode()  # noqa: RUF001
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_html),
+    )
+    doc: DoclingDocument = backend.convert()
+    assert doc.texts[0].text == "Hello World!"
+
+
+def test_extract_parent_hyperlinks():
+    html_path = Path("./tests/data/html/hyperlink_04.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=html_path,
+    )
+    div_tag = backend.soup.find("div")
+    a_tag = backend.soup.find("a")
+    annotated_text_list = backend._extract_text_and_hyperlink_recursively(
+        div_tag, find_parent_annotation=True
+    )
+    assert str(annotated_text_list[0].hyperlink) == a_tag.get("href")
+
+
 def get_html_paths():
     # Define the directory you want to search
     directory = Path("./tests/data/html/")
@@ -147,3 +181,33 @@ def test_e2e_html_conversions():
         )
 
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
+
+
+def test_html_furniture():
+    raw_html = (
+        b"<html><body><p>Initial content with some <strong>bold text</strong></p>"
+        b"<h1>Main Heading</h1>"
+        b"<p>Some Content</p>"
+        b"<footer><p>Some Footer Content</p></footer></body></html"
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_html),
+    )
+    doc: DoclingDocument = backend.convert()
+    md_body = doc.export_to_markdown()
+    assert md_body == "# Main Heading\n\nSome Content"
+    md_all = doc.export_to_markdown(
+        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    )
+    assert md_all == (
+        "Initial content with some **bold text**\n\n# Main Heading\n\nSome Content\n\n"
+        "Some Footer Content"
+    )

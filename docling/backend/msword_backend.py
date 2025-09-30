@@ -10,9 +10,13 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupLabel,
     ImageRef,
+    ListGroup,
     NodeItem,
+    RefItem,
+    RichTableCell,
     TableCell,
     TableData,
+    TextItem,
 )
 from docling_core.types.doc.document import Formatting
 from docx import Document
@@ -66,6 +70,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         self.level = 0
         self.listIter = 0
+        # Track list counters per numId and ilvl
+        self.list_counters: dict[tuple[int, int], int] = {}
 
         self.history: dict[str, Any] = {
             "names": [None],
@@ -84,7 +90,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.valid = True
         except Exception as e:
             raise RuntimeError(
-                f"MsPowerpointDocumentBackend could not load document with hash {self.document_hash}"
+                f"MsWordDocumentBackend could not load document with hash {self.document_hash}"
             ) from e
 
     @override
@@ -125,7 +131,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
-            doc = self._walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
+            doc, _ = self._walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
+            # doc, _ = doc_info
             return doc
         else:
             raise RuntimeError(
@@ -169,7 +176,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         body: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-    ) -> DoclingDocument:
+        # parent:
+    ) -> tuple[DoclingDocument, list[RefItem]]:
+        added_elements = []
         for element in body:
             tag_name = etree.QName(element).localname
             # Check for Inline Images (blip elements)
@@ -227,8 +236,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                     parent=self.parents[level - 1],
                                     name="shape-text",
                                 )
+                                added_elements.append(shape_group.get_ref())
                                 doc.add_text(
-                                    label=DocItemLabel.PARAGRAPH,
+                                    label=DocItemLabel.TEXT,
                                     parent=shape_group,
                                     text=text_content,
                                 )
@@ -243,17 +253,27 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     _log.debug(
                         f"Found textbox content with {len(textbox_elements)} elements"
                     )
-                    self._handle_textbox_content(textbox_elements, docx_obj, doc)
+                    tbc = self._handle_textbox_content(textbox_elements, docx_obj, doc)
+                    added_elements.extend(tbc)
 
             # Check for Tables
             if element.tag.endswith("tbl"):
                 try:
-                    self._handle_tables(element, docx_obj, doc)
+                    t = self._handle_tables(element, docx_obj, doc)
+                    added_elements.extend(t)
                 except Exception:
                     _log.debug("could not parse a table, broken docx table")
-
+            # Check for Image
             elif drawing_blip:
-                self._handle_pictures(docx_obj, drawing_blip, doc)
+                pics = self._handle_pictures(docx_obj, drawing_blip, doc)
+                added_elements.extend(pics)
+                # Check for Text after the Image
+                if (
+                    tag_name in ["p"]
+                    and element.find(".//w:t", namespaces=namespaces) is not None
+                ):
+                    te1 = self._handle_text_elements(element, docx_obj, doc)
+                    added_elements.extend(te1)
             # Check for the sdt containers, like table of contents
             elif tag_name in ["sdt"]:
                 sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
@@ -261,14 +281,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Iterate paragraphs, runs, or text inside <w:sdtContent>.
                     paragraphs = sdt_content.findall(".//w:p", namespaces=namespaces)
                     for p in paragraphs:
-                        self._handle_text_elements(p, docx_obj, doc)
+                        te = self._handle_text_elements(p, docx_obj, doc)
+                        added_elements.extend(te)
             # Check for Text
             elif tag_name in ["p"]:
                 # "tcPr", "sectPr"
-                self._handle_text_elements(element, docx_obj, doc)
+                te = self._handle_text_elements(element, docx_obj, doc)
+                added_elements.extend(te)
             else:
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
-        return doc
+
+        return doc, added_elements
 
     def _str_to_int(
         self, s: Optional[str], default: Optional[int] = 0
@@ -306,6 +329,108 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
 
         return None, None  # If the paragraph is not part of a list
+
+    def _get_list_counter(self, numid: int, ilvl: int) -> int:
+        """Get and increment the counter for a specific numId and ilvl combination."""
+        key = (numid, ilvl)
+        if key not in self.list_counters:
+            self.list_counters[key] = 0
+        self.list_counters[key] += 1
+        return self.list_counters[key]
+
+    def _reset_list_counters_for_new_sequence(self, numid: int):
+        """Reset counters when starting a new numbering sequence."""
+        # Reset all counters for this numid
+        keys_to_reset = [key for key in self.list_counters.keys() if key[0] == numid]
+        for key in keys_to_reset:
+            self.list_counters[key] = 0
+
+    def _is_numbered_list(self, docx_obj: DocxDocument, numId: int, ilvl: int) -> bool:
+        """Check if a list is numbered based on its numFmt value."""
+        try:
+            # Access the numbering part of the document
+            if not hasattr(docx_obj, "part") or not hasattr(docx_obj.part, "package"):
+                return False
+
+            numbering_part = None
+            # Find the numbering part
+            for part in docx_obj.part.package.parts:
+                if "numbering" in part.partname:
+                    numbering_part = part
+                    break
+
+            if numbering_part is None:
+                return False
+
+            # Parse the numbering XML
+            numbering_root = numbering_part.element
+            namespaces = {
+                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            }
+
+            # Find the numbering definition with the given numId
+            num_xpath = f".//w:num[@w:numId='{numId}']"
+            num_element = numbering_root.find(num_xpath, namespaces=namespaces)
+
+            if num_element is None:
+                return False
+
+            # Get the abstractNumId from the num element
+            abstract_num_id_elem = num_element.find(
+                ".//w:abstractNumId", namespaces=namespaces
+            )
+            if abstract_num_id_elem is None:
+                return False
+
+            abstract_num_id = abstract_num_id_elem.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+            )
+            if abstract_num_id is None:
+                return False
+
+            # Find the abstract numbering definition
+            abstract_num_xpath = (
+                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
+            )
+            abstract_num_element = numbering_root.find(
+                abstract_num_xpath, namespaces=namespaces
+            )
+
+            if abstract_num_element is None:
+                return False
+
+            # Find the level definition for the given ilvl
+            lvl_xpath = f".//w:lvl[@w:ilvl='{ilvl}']"
+            lvl_element = abstract_num_element.find(lvl_xpath, namespaces=namespaces)
+
+            if lvl_element is None:
+                return False
+
+            # Get the numFmt element
+            num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
+            if num_fmt_element is None:
+                return False
+
+            num_fmt = num_fmt_element.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+            )
+
+            # Numbered formats include: decimal, lowerRoman, upperRoman, lowerLetter, upperLetter
+            # Bullet formats include: bullet
+            numbered_formats = {
+                "decimal",
+                "lowerRoman",
+                "upperRoman",
+                "lowerLetter",
+                "upperLetter",
+                "decimalZero",
+            }
+
+            return num_fmt in numbered_formats
+
+        except Exception as e:
+            _log.debug(f"Error determining if list is numbered: {e}")
+            return False
 
     def _get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
         parts = self._split_text_and_number(style_label)
@@ -390,7 +515,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(c, Hyperlink):
                 text = c.text
                 hyperlink = Path(c.address)
-                format = self._get_format_from_run(c.runs[0])
+                format = (
+                    self._get_format_from_run(c.runs[0])
+                    if c.runs and len(c.runs) > 0
+                    else None
+                )
             elif isinstance(c, Run):
                 text = c.text
                 hyperlink = None
@@ -558,14 +687,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         textbox_elements: list,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-    ) -> None:
+    ) -> List[RefItem]:
+        elem_ref: List[RefItem] = []
         """Process textbox content and add it to the document structure."""
         level = self._get_level()
         # Create a textbox group to contain all text from the textbox
         textbox_group = doc.add_group(
             label=GroupLabel.SECTION, parent=self.parents[level - 1], name="textbox"
         )
-
+        elem_ref.append(textbox_group.get_ref())
         # Set this as the current parent to ensure textbox content
         # is properly nested in document structure
         original_parent = self.parents[level]
@@ -578,7 +708,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         all_paragraphs = []
 
         # Sort paragraphs within each container, then process containers
-        for container_id, paragraphs in container_paragraphs.items():
+        for paragraphs in container_paragraphs.values():
             # Sort by vertical position within each container
             sorted_container_paragraphs = sorted(
                 paragraphs,
@@ -613,11 +743,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Mark this paragraph as processed
             processed_paragraphs.add(paragraph_id)
 
-            self._handle_text_elements(p, docx_obj, doc)
+            elem_ref.extend(self._handle_text_elements(p, docx_obj, doc))
 
         # Restore original parent
         self.parents[level] = original_parent
-        return
+        return elem_ref
 
     def _handle_equations_in_text(self, element, text):
         only_texts = []
@@ -677,33 +807,31 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         paragraph_elements: list,
     ) -> Optional[NodeItem]:
         return (
-            doc.add_group(label=GroupLabel.INLINE, parent=prev_parent)
+            doc.add_inline_group(parent=prev_parent)
             if len(paragraph_elements) > 1
             else prev_parent
         )
 
-    def _handle_text_elements(  # noqa: C901
+    def _handle_text_elements(
         self,
         element: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-    ) -> None:
+    ) -> List[RefItem]:
+        elem_ref: List[RefItem] = []
         paragraph = Paragraph(element, docx_obj)
-
+        paragraph_elements = self._get_paragraph_elements(paragraph)
         text, equations = self._handle_equations_in_text(
             element=element, text=paragraph.text
         )
 
         if text is None:
-            return
-        paragraph_elements = self._get_paragraph_elements(paragraph)
+            return elem_ref
         text = text.strip()
 
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
         # Identify whether list is a numbered list or not
-        # is_numbered = "List Bullet" not in paragraph.style.name
-        is_numbered = False
         p_style_id, p_level = self._get_label_and_level(paragraph)
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
@@ -716,15 +844,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and ilevel is not None
             and p_style_id not in ["Title", "Heading"]
         ):
-            self._add_list_item(
+            # Check if this is actually a numbered list by examining the numFmt
+            is_numbered = self._is_numbered_list(docx_obj, numid, ilevel)
+
+            li = self._add_list_item(
                 doc=doc,
                 numid=numid,
                 ilevel=ilevel,
                 elements=paragraph_elements,
                 is_numbered=is_numbered,
             )
+            elem_ref.extend(li)  # MUST BE REF!!!
             self._update_history(p_style_id, p_level, numid, ilevel)
-            return
+            return elem_ref
         elif (
             numid is None
             and self._prev_numid() is not None
@@ -744,9 +876,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
-            self.parents[0] = doc.add_text(
-                parent=None, label=DocItemLabel.TITLE, text=text
-            )
+            te = doc.add_text(parent=None, label=DocItemLabel.TITLE, text=text)
+            self.parents[0] = te
+            elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
             if style_element is not None:
@@ -755,7 +887,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             else:
                 is_numbered_style = False
-            self._add_header(doc, p_level, text, is_numbered_style)
+            h1 = self._add_header(doc, p_level, text, is_numbered_style)
+            elem_ref.extend(h1)
 
         elif len(equations) > 0:
             if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
@@ -763,17 +896,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             ) > 0:
                 # Standalone equation
                 level = self._get_level()
-                doc.add_text(
+                t1 = doc.add_text(
                     label=DocItemLabel.FORMULA,
                     parent=self.parents[level - 1],
                     text=text.replace("<eq>", "").replace("</eq>", ""),
                 )
+                elem_ref.append(t1.get_ref())
             else:
                 # Inline equation
                 level = self._get_level()
-                inline_equation = doc.add_group(
-                    label=GroupLabel.INLINE, parent=self.parents[level - 1]
-                )
+                inline_equation = doc.add_inline_group(parent=self.parents[level - 1])
+                elem_ref.append(inline_equation.get_ref())
                 text_tmp = text
                 for eq in equations:
                     if len(text_tmp) == 0:
@@ -785,23 +918,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text_tmp = "" if len(split_text_tmp) == 1 else split_text_tmp[1]
 
                     if len(pre_eq_text) > 0:
-                        doc.add_text(
-                            label=DocItemLabel.PARAGRAPH,
+                        e1 = doc.add_text(
+                            label=DocItemLabel.TEXT,
                             parent=inline_equation,
                             text=pre_eq_text,
                         )
-                    doc.add_text(
+                        elem_ref.append(e1.get_ref())
+                    e2 = doc.add_text(
                         label=DocItemLabel.FORMULA,
                         parent=inline_equation,
                         text=eq.replace("<eq>", "").replace("</eq>", ""),
                     )
+                    elem_ref.append(e2.get_ref())
 
                 if len(text_tmp) > 0:
-                    doc.add_text(
-                        label=DocItemLabel.PARAGRAPH,
+                    e3 = doc.add_text(
+                        label=DocItemLabel.TEXT,
                         parent=inline_equation,
                         text=text_tmp.strip(),
                     )
+                    elem_ref.append(e3.get_ref())
 
         elif p_style_id in [
             "Paragraph",
@@ -820,13 +956,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 paragraph_elements=paragraph_elements,
             )
             for text, format, hyperlink in paragraph_elements:
-                doc.add_text(
-                    label=DocItemLabel.PARAGRAPH,
+                t2 = doc.add_text(
+                    label=DocItemLabel.TEXT,
                     parent=parent,
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
                 )
+                elem_ref.append(t2.get_ref())
 
         else:
             # Text style names can, and will have, not only default values but user values too
@@ -838,16 +975,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 paragraph_elements=paragraph_elements,
             )
             for text, format, hyperlink in paragraph_elements:
-                doc.add_text(
-                    label=DocItemLabel.PARAGRAPH,
+                t3 = doc.add_text(
+                    label=DocItemLabel.TEXT,
                     parent=parent,
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
                 )
+                elem_ref.append(t3.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
-        return
+        return elem_ref
 
     def _add_header(
         self,
@@ -855,17 +993,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         curr_level: Optional[int],
         text: str,
         is_numbered_style: bool = False,
-    ) -> None:
+    ) -> List[RefItem]:
+        elem_ref: List[RefItem] = []
         level = self._get_level()
         if isinstance(curr_level, int):
             if curr_level > level:
                 # add invisible group
                 for i in range(level, curr_level):
-                    self.parents[i] = doc.add_group(
+                    gr1 = doc.add_group(
                         parent=self.parents[i - 1],
                         label=GroupLabel.SECTION,
                         name=f"header-{i}",
                     )
+                    elem_ref.append(gr1.get_ref())
+                    self.parents[i] = gr1
+
             elif curr_level < level:
                 # remove the tail
                 for key in range(len(self.parents)):
@@ -905,12 +1047,59 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 text = f"{self.numbered_headers[previous_level]}.{text}"
                 previous_level -= 1
 
-        self.parents[current_level] = doc.add_heading(
+        hd = doc.add_heading(
             parent=self.parents[parent_level],
             text=text,
             level=add_level,
         )
-        return
+        self.parents[current_level] = hd
+        elem_ref.append(hd.get_ref())
+        return elem_ref
+
+    def _add_formatted_list_item(
+        self,
+        doc: DoclingDocument,
+        elements: list,
+        marker: str,
+        enumerated: bool,
+        level: int,
+    ) -> List[RefItem]:
+        elem_ref: List[RefItem] = []
+        # This should not happen by construction
+        if not isinstance(self.parents[level], ListGroup):
+            return elem_ref
+        if not elements:
+            return elem_ref
+
+        if len(elements) == 1:
+            text, format, hyperlink = elements[0]
+            if text:
+                doc.add_list_item(
+                    marker=marker,
+                    enumerated=enumerated,
+                    parent=self.parents[level],
+                    text=text,
+                    formatting=format,
+                    hyperlink=hyperlink,
+                )
+        else:
+            new_item = doc.add_list_item(
+                marker=marker,
+                enumerated=enumerated,
+                parent=self.parents[level],
+                text="",
+            )
+            new_parent = doc.add_inline_group(parent=new_item)
+            for text, format, hyperlink in elements:
+                if text:
+                    doc.add_text(
+                        label=DocItemLabel.TEXT,
+                        parent=new_parent,
+                        text=text,
+                        formatting=format,
+                        hyperlink=hyperlink,
+                    )
+        return elem_ref
 
     def _add_list_item(
         self,
@@ -920,7 +1109,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ilevel: int,
         elements: list,
         is_numbered: bool = False,
-    ) -> None:
+    ) -> List[RefItem]:
+        elem_ref: List[RefItem] = []
+        # this method is always called with is_numbered. Numbered lists should be properly addressed.
+        if not elements:
+            return elem_ref
         enum_marker = ""
 
         level = self._get_level()
@@ -928,30 +1121,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self._prev_numid() is None:  # Open new list
             self.level_at_new_list = level
 
-            self.parents[level] = doc.add_group(
-                label=GroupLabel.LIST, name="list", parent=self.parents[level - 1]
-            )
+            # Reset counters for the new numbering sequence
+            self._reset_list_counters_for_new_sequence(numid)
+
+            list_gr = doc.add_list_group(name="list", parent=self.parents[level - 1])
+            self.parents[level] = list_gr
+            elem_ref.append(list_gr.get_ref())
 
             # Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
-            new_parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents[level],
-                paragraph_elements=elements,
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
+            self._add_formatted_list_item(
+                doc, elements, enum_marker, is_numbered, level
             )
-            for text, format, hyperlink in elements:
-                doc.add_list_item(
-                    marker=enum_marker,
-                    enumerated=is_numbered,
-                    parent=new_parent,
-                    text=text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                )
-
         elif (
             self._prev_numid() == numid
             and self.level_at_new_list is not None
@@ -962,100 +1147,66 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + prev_indent + 1,
                 self.level_at_new_list + ilevel + 1,
             ):
-                # Determine if this is an unordered list or an ordered list.
-                # Set GroupLabel.ORDERED_LIST when it fits.
-                self.listIter = 0
-                if is_numbered:
-                    self.parents[i] = doc.add_group(
-                        label=GroupLabel.ORDERED_LIST,
-                        name="list",
-                        parent=self.parents[i - 1],
-                    )
-                else:
-                    self.parents[i] = doc.add_group(
-                        label=GroupLabel.LIST, name="list", parent=self.parents[i - 1]
-                    )
+                list_gr1 = doc.add_list_group(name="list", parent=self.parents[i - 1])
+                self.parents[i] = list_gr1
+                elem_ref.append(list_gr1.get_ref())
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
-
-            new_parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents[self.level_at_new_list + ilevel],
-                paragraph_elements=elements,
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
+            self._add_formatted_list_item(
+                doc,
+                elements,
+                enum_marker,
+                is_numbered,
+                self.level_at_new_list + ilevel,
             )
-            for text, format, hyperlink in elements:
-                doc.add_list_item(
-                    marker=enum_marker,
-                    enumerated=is_numbered,
-                    parent=new_parent,
-                    text=text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                )
         elif (
             self._prev_numid() == numid
             and self.level_at_new_list is not None
             and prev_indent is not None
             and ilevel < prev_indent
         ):  # Close list
-            for k, v in self.parents.items():
+            for k in self.parents:
                 if k > self.level_at_new_list + ilevel:
                     self.parents[k] = None
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
-            new_parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents[self.level_at_new_list + ilevel],
-                paragraph_elements=elements,
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
+            self._add_formatted_list_item(
+                doc,
+                elements,
+                enum_marker,
+                is_numbered,
+                self.level_at_new_list + ilevel,
             )
-            for text, format, hyperlink in elements:
-                doc.add_list_item(
-                    marker=enum_marker,
-                    enumerated=is_numbered,
-                    parent=new_parent,
-                    text=text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                )
-            self.listIter = 0
 
         elif self._prev_numid() == numid or prev_indent == ilevel:
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
+            # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
-            new_parent = self._create_or_reuse_parent(
-                doc=doc,
-                prev_parent=self.parents[level - 1],
-                paragraph_elements=elements,
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
+            self._add_formatted_list_item(
+                doc, elements, enum_marker, is_numbered, level - 1
             )
-            for text, format, hyperlink in elements:
-                # Add the list item to the parent group
-                doc.add_list_item(
-                    marker=enum_marker,
-                    enumerated=is_numbered,
-                    parent=new_parent,
-                    text=text,
-                    formatting=format,
-                    hyperlink=hyperlink,
-                )
-        return
+        return elem_ref
 
     def _handle_tables(
         self,
         element: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-    ) -> None:
+    ) -> List[RefItem]:
+        elem_ref: List[RefItem] = []
         table: Table = Table(element, docx_obj)
         num_rows = len(table.rows)
         num_cols = len(table.columns)
@@ -1066,9 +1217,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
             self._walk_linear(cell_element._element, docx_obj, doc)
-            return
+            return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
+        level = self._get_level()
+        docling_table = doc.add_table(data=data, parent=self.parents[level - 1])
+        elem_ref.append(docling_table.get_ref())
+
         cell_set: set[CT_Tc] = set()
         for row_idx, row in enumerate(table.rows):
             _log.debug(f"Row index {row_idx} with {len(row.cells)} populated cells")
@@ -1096,27 +1251,96 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
                 _log.debug(f"  spanned before row {spanned_idx}")
 
-                table_cell = TableCell(
-                    text=cell.text,
-                    row_span=spanned_idx - row_idx,
-                    col_span=cell.grid_span,
-                    start_row_offset_idx=row.grid_cols_before + row_idx,
-                    end_row_offset_idx=row.grid_cols_before + spanned_idx,
-                    start_col_offset_idx=col_idx,
-                    end_col_offset_idx=col_idx + cell.grid_span,
-                    column_header=row.grid_cols_before + row_idx == 0,
-                    row_header=False,
+                # Detect equations in cell text
+                text, equations = self._handle_equations_in_text(
+                    element=cell._element, text=cell.text
                 )
-                data.table_cells.append(table_cell)
-                col_idx += cell.grid_span
+                if len(equations) == 0:
+                    text = cell.text
+                else:
+                    text = text.replace("<eq>", "$").replace("</eq>", "$")
 
-        level = self._get_level()
-        doc.add_table(data=data, parent=self.parents[level - 1])
-        return
+                provs_in_cell: List[RefItem] = []
+                _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
+                ref_for_rich_cell = provs_in_cell[0]
+                rich_table_cell = False
+
+                def group_cell_elements(
+                    group_name: str, doc: DoclingDocument, provs_in_cell: List[RefItem]
+                ) -> RefItem:
+                    group_element = doc.add_group(
+                        label=GroupLabel.UNSPECIFIED,
+                        name=group_name,
+                        parent=docling_table,
+                    )
+                    for prov in provs_in_cell:
+                        group_element.children.append(prov)
+                        pr_item = prov.resolve(doc)
+                        item_parent = pr_item.parent.resolve(doc)
+                        if pr_item.get_ref() in item_parent.children:
+                            item_parent.children.remove(pr_item.get_ref())
+                        pr_item.parent = group_element.get_ref()
+                    ref_for_rich_cell = group_element.get_ref()
+                    return ref_for_rich_cell
+
+                if len(provs_in_cell) > 1:
+                    # Cell has multiple elements, we need to group them
+                    rich_table_cell = True
+                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                    ref_for_rich_cell = group_cell_elements(
+                        group_name, doc, provs_in_cell
+                    )
+
+                elif len(provs_in_cell) == 1:
+                    item_ref = provs_in_cell[0]
+                    pr_item = item_ref.resolve(doc)
+                    if isinstance(pr_item, TextItem):
+                        # Cell has only one element and it's just a text
+                        rich_table_cell = False
+                        doc.delete_items(node_items=[pr_item])
+                    else:
+                        rich_table_cell = True
+                        group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
+                        ref_for_rich_cell = group_cell_elements(
+                            group_name, doc, provs_in_cell
+                        )
+                else:
+                    rich_table_cell = False
+
+                if rich_table_cell:
+                    rich_cell = RichTableCell(
+                        text=text,
+                        row_span=spanned_idx - row_idx,
+                        col_span=cell.grid_span,
+                        start_row_offset_idx=row.grid_cols_before + row_idx,
+                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + cell.grid_span,
+                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_header=False,
+                        ref=ref_for_rich_cell,  # points to an artificial group around children
+                    )
+                    doc.add_table_cell(table_item=docling_table, cell=rich_cell)
+                    col_idx += cell.grid_span
+                else:
+                    simple_cell = TableCell(
+                        text=text,
+                        row_span=spanned_idx - row_idx,
+                        col_span=cell.grid_span,
+                        start_row_offset_idx=row.grid_cols_before + row_idx,
+                        end_row_offset_idx=row.grid_cols_before + spanned_idx,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + cell.grid_span,
+                        column_header=row.grid_cols_before + row_idx == 0,
+                        row_header=False,
+                    )
+                    doc.add_table_cell(table_item=docling_table, cell=simple_cell)
+                    col_idx += cell.grid_span
+        return elem_ref
 
     def _handle_pictures(
         self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
-    ) -> None:
+    ) -> List[RefItem]:
         def get_docx_image(drawing_blip: Any) -> Optional[bytes]:
             image_data: Optional[bytes] = None
             rId = drawing_blip[0].get(
@@ -1128,28 +1352,32 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
+        elem_ref: List[RefItem] = []
         level = self._get_level()
         # Open the BytesIO object with PIL to create an Image
         image_data: Optional[bytes] = get_docx_image(drawing_blip)
         if image_data is None:
             _log.warning("Warning: image cannot be found")
-            doc.add_picture(
+            p1 = doc.add_picture(
                 parent=self.parents[level - 1],
                 caption=None,
             )
+            elem_ref.append(p1.get_ref())
         else:
             try:
                 image_bytes = BytesIO(image_data)
                 pil_image = Image.open(image_bytes)
-                doc.add_picture(
+                p2 = doc.add_picture(
                     parent=self.parents[level - 1],
                     image=ImageRef.from_pil(image=pil_image, dpi=72),
                     caption=None,
                 )
+                elem_ref.append(p2.get_ref())
             except (UnidentifiedImageError, OSError):
                 _log.warning("Warning: image cannot be loaded by Pillow")
-                doc.add_picture(
+                p3 = doc.add_picture(
                     parent=self.parents[level - 1],
                     caption=None,
                 )
-        return
+                elem_ref.append(p3.get_ref())
+        return elem_ref

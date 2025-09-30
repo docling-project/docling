@@ -18,9 +18,9 @@ To get started with swimming, first lay down in a water and try not to drown:
 
 Also, don’t forget:
 
-- Wear sunglasses
-- Don’t forget to drink water
-- Use sun cream
+1. Wear sunglasses
+2. Don’t forget to drink water
+3. Use sun cream
 
 Hmm, what else…
 
@@ -40,6 +40,6 @@ Here are some interesting things a respectful duck could eat:
 
 And let’s add another list in the end:
 
-- Leaves
-- Berries
-- Grain
+1. Leaves
+2. Berries
+3. Grain

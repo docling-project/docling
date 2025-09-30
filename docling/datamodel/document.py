@@ -1,12 +1,14 @@
 import csv
 import logging
 import re
-from collections.abc import Iterable
+import tarfile
+from collections.abc import Iterable, Mapping
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
+    Any,
     Dict,
     List,
     Literal,
@@ -71,7 +73,7 @@ from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash
 
 if TYPE_CHECKING:
-    from docling.document_converter import FormatOption
+    from docling.datamodel.base_models import BaseFormatOption
 
 _log = logging.getLogger(__name__)
 
@@ -237,7 +239,8 @@ class _DocumentConversionInput(BaseModel):
     limits: Optional[DocumentLimits] = DocumentLimits()
 
     def docs(
-        self, format_options: Dict[InputFormat, "FormatOption"]
+        self,
+        format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
             obj = (
@@ -249,7 +252,7 @@ class _DocumentConversionInput(BaseModel):
             backend: Type[AbstractDocumentBackend]
             if format not in format_options.keys():
                 _log.error(
-                    f"Input document {obj.name} does not match any allowed format."
+                    f"Input document {obj.name} with format {format} does not match any allowed format: ({format_options.keys()})"
                 )
                 backend = _DummyBackend
             else:
@@ -314,10 +317,16 @@ class _DocumentConversionInput(BaseModel):
                 elif objname.endswith(".pptx"):
                     mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
+        if mime is not None and mime.lower() == "application/gzip":
+            if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
+                mime = detected_mime
+
         mime = mime or _DocumentConversionInput._detect_html_xhtml(content)
         mime = mime or _DocumentConversionInput._detect_csv(content)
         mime = mime or "text/plain"
         formats = MimeTypeToFormat.get(mime, [])
+        _log.info(f"detected formats: {formats}")
+
         if formats:
             if len(formats) == 1 and mime not in ("text/plain"):
                 return formats[0]
@@ -385,6 +394,8 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.PPTX][0]
         elif ext in FormatToExtensions[InputFormat.XLSX]:
             mime = FormatToMimeType[InputFormat.XLSX][0]
+        elif ext in FormatToExtensions[InputFormat.VTT]:
+            mime = FormatToMimeType[InputFormat.VTT][0]
 
         return mime
 
@@ -454,4 +465,25 @@ class _DocumentConversionInput(BaseModel):
         except csv.Error:
             return None
 
+        return None
+
+    @staticmethod
+    def _detect_mets_gbs(
+        obj: Union[Path, DocumentStream],
+    ) -> Optional[Literal["application/mets+xml"]]:
+        content = obj if isinstance(obj, Path) else obj.stream
+        tar: tarfile.TarFile
+        member: tarfile.TarInfo
+        with tarfile.open(
+            name=content if isinstance(content, Path) else None,
+            fileobj=content if isinstance(content, BytesIO) else None,
+            mode="r:gz",
+        ) as tar:
+            for member in tar.getmembers():
+                if member.name.endswith(".xml"):
+                    file = tar.extractfile(member)
+                    if file is not None:
+                        content_str = file.read().decode(errors="ignore")
+                        if "http://www.loc.gov/METS/" in content_str:
+                            return "application/mets+xml"
         return None

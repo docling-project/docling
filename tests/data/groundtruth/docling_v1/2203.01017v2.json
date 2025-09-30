@@ -321,12 +321,12 @@
           "page": 1,
           "span": [
             0,
-            68
+            65
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- b. Red-annotation of bounding boxes, Blue-predictions by TableFormer",
+      "text": "b. Red-annotation of bounding boxes, Blue-predictions by TableFormer",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -344,12 +344,12 @@
           "page": 1,
           "span": [
             0,
-            38
+            35
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- c. Structure predicted by TableFormer:",
+      "text": "c. Structure predicted by TableFormer:",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -543,12 +543,12 @@
           "page": 2,
           "span": [
             0,
-            166
+            164
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 We propose TableFormer , a transformer based model that predicts tables structure and bounding boxes for the table content simultaneously in an end-to-end approach.",
+      "text": "\u00b7 We propose TableFormer , a transformer based model that predicts tables structure and bounding boxes for the table content simultaneously in an end-to-end approach.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -566,12 +566,12 @@
           "page": 2,
           "span": [
             0,
-            181
+            179
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 Across all benchmark datasets TableFormer significantly outperforms existing state-of-the-art metrics, while being much more efficient in training and inference to existing works.",
+      "text": "\u00b7 Across all benchmark datasets TableFormer significantly outperforms existing state-of-the-art metrics, while being much more efficient in training and inference to existing works.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -589,12 +589,12 @@
           "page": 2,
           "span": [
             0,
-            106
+            104
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 We present SynthTabNet a synthetically generated dataset, with various appearance styles and complexity.",
+      "text": "\u00b7 We present SynthTabNet a synthetically generated dataset, with various appearance styles and complexity.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -612,12 +612,12 @@
           "page": 2,
           "span": [
             0,
-            131
+            129
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 An augmented dataset based on PubTabNet [37], FinTabNet [36], and TableBank [17] with generated ground-truth for reproducibility.",
+      "text": "\u00b7 An augmented dataset based on PubTabNet [37], FinTabNet [36], and TableBank [17] with generated ground-truth for reproducibility.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2221,7 +2221,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- a.",
+      "text": "a.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2244,7 +2244,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells",
+      "text": "Red - PDF cells, Green - predicted bounding boxes, Blue - post-processed predictions matched to PDF cells",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2550,12 +2550,12 @@
           "page": 8,
           "span": [
             0,
-            121
+            117
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [1] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-",
+      "text": "[1] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2578,7 +2578,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5",
+      "text": "end object detection with transformers. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision - ECCV 2020 , pages 213-229, Cham, 2020. Springer International Publishing. 5",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2596,12 +2596,12 @@
           "page": 9,
           "span": [
             0,
-            165
+            161
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [2] Zewen Chi, Heyan Huang, Heng-Da Xu, Houjin Yu, Wanxuan Yin, and Xian-Ling Mao. Complicated table structure recognition. arXiv preprint arXiv:1908.04729 , 2019. 3",
+      "text": "[2] Zewen Chi, Heyan Huang, Heng-Da Xu, Houjin Yu, Wanxuan Yin, and Xian-Ling Mao. Complicated table structure recognition. arXiv preprint arXiv:1908.04729 , 2019. 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2619,12 +2619,12 @@
           "page": 9,
           "span": [
             0,
-            125
+            121
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [3] Bertrand Couasnon and Aurelie Lemaitre. Recognition of Tables and Forms , pages 647-677. Springer London, London, 2014. 2",
+      "text": "[3] Bertrand Couasnon and Aurelie Lemaitre. Recognition of Tables and Forms , pages 647-677. Springer London, London, 2014. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2642,12 +2642,12 @@
           "page": 9,
           "span": [
             0,
-            216
+            212
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [4] Herv\u00b4e D\u00b4ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
+      "text": "[4] Herv\u00b4e D\u00b4ejean, Jean-Luc Meunier, Liangcai Gao, Yilun Huang, Yu Fang, Florian Kleber, and Eva-Maria Lang. ICDAR 2019 Competition on Table Detection and Recognition (cTDaR), Apr. 2019. http://sac.founderit.com/. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2665,12 +2665,12 @@
           "page": 9,
           "span": [
             0,
-            236
+            232
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [5] Basilios Gatos, Dimitrios Danatsas, Ioannis Pratikakis, and Stavros J Perantonis. Automatic table detection in document images. In International Conference on Pattern Recognition and Image Analysis , pages 609-618. Springer, 2005. 2",
+      "text": "[5] Basilios Gatos, Dimitrios Danatsas, Ioannis Pratikakis, and Stavros J Perantonis. Automatic table detection in document images. In International Conference on Pattern Recognition and Image Analysis , pages 609-618. Springer, 2005. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2688,12 +2688,12 @@
           "page": 9,
           "span": [
             0,
-            194
+            190
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [6] Max G\u00a8obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition , pages 1449-1453, 2013. 2",
+      "text": "[6] Max G\u00a8obel, Tamir Hassan, Ermelinda Oro, and Giorgio Orsi. Icdar 2013 table competition. In 2013 12th International Conference on Document Analysis and Recognition , pages 1449-1453, 2013. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2711,12 +2711,12 @@
           "page": 9,
           "span": [
             0,
-            165
+            161
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [7] EA Green and M Krishnamoorthy. Recognition of tables using table grammars. procs. In Symposium on Document Analysis and Recognition (SDAIR'95) , pages 261-277. 2",
+      "text": "[7] EA Green and M Krishnamoorthy. Recognition of tables using table grammars. procs. In Symposium on Document Analysis and Recognition (SDAIR'95) , pages 261-277. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2734,12 +2734,12 @@
           "page": 9,
           "span": [
             0,
-            273
+            269
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [8] Khurram Azeem Hashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging , 7(10), 2021. 1",
+      "text": "[8] Khurram Azeem Hashmi, Alain Pagani, Marcus Liwicki, Didier Stricker, and Muhammad Zeshan Afzal. Castabdetectors: Cascade network for table detection in document images with recursive feature pyramid and switchable atrous convolution. Journal of Imaging , 7(10), 2021. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2757,12 +2757,12 @@
           "page": 9,
           "span": [
             0,
-            170
+            166
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [9] Kaiming He, Georgia Gkioxari, Piotr Dollar, and Ross Girshick. Mask r-cnn. In Proceedings of the IEEE International Conference on Computer Vision (ICCV) , Oct 2017. 1",
+      "text": "[9] Kaiming He, Georgia Gkioxari, Piotr Dollar, and Ross Girshick. Mask r-cnn. In Proceedings of the IEEE International Conference on Computer Vision (ICCV) , Oct 2017. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2780,12 +2780,12 @@
           "page": 9,
           "span": [
             0,
-            226
+            221
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [10] Yelin He, X. Qi, Jiaquan Ye, Peng Gao, Yihao Chen, Bingcong Li, Xin Tang, and Rong Xiao. Pingan-vcgroup's solution for icdar 2021 competition on scientific table image recognition to latex. ArXiv , abs/2105.01846, 2021. 2",
+      "text": "[10] Yelin He, X. Qi, Jiaquan Ye, Peng Gao, Yihao Chen, Bingcong Li, Xin Tang, and Rong Xiao. Pingan-vcgroup's solution for icdar 2021 competition on scientific table image recognition to latex. ArXiv , abs/2105.01846, 2021. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2803,12 +2803,12 @@
           "page": 9,
           "span": [
             0,
-            239
+            234
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [11] Jianying Hu, Ramanujan S Kashi, Daniel P Lopresti, and Gordon Wilfong. Medium-independent table detection. In Document Recognition and Retrieval VII , volume 3967, pages 291-302. International Society for Optics and Photonics, 1999. 2",
+      "text": "[11] Jianying Hu, Ramanujan S Kashi, Daniel P Lopresti, and Gordon Wilfong. Medium-independent table detection. In Document Recognition and Retrieval VII , volume 3967, pages 291-302. International Society for Optics and Photonics, 1999. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2826,12 +2826,12 @@
           "page": 9,
           "span": [
             0,
-            240
+            235
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [12] Matthew Hurst. A constraint-based approach to table structure derivation. In Proceedings of the Seventh International Conference on Document Analysis and Recognition - Volume 2 , ICDAR '03, page 911, USA, 2003. IEEE Computer Society. 2",
+      "text": "[12] Matthew Hurst. A constraint-based approach to table structure derivation. In Proceedings of the Seventh International Conference on Document Analysis and Recognition - Volume 2 , ICDAR '03, page 911, USA, 2003. IEEE Computer Society. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2849,12 +2849,12 @@
           "page": 9,
           "span": [
             0,
-            283
+            278
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [13] Thotreingam Kasar, Philippine Barlas, Sebastien Adam, Cl\u00b4ement Chatelain, and Thierry Paquet. Learning to detect tables in scanned document images using line information. In 2013 12th International Conference on Document Analysis and Recognition , pages 1185-1189. IEEE, 2013. 2",
+      "text": "[13] Thotreingam Kasar, Philippine Barlas, Sebastien Adam, Cl\u00b4ement Chatelain, and Thierry Paquet. Learning to detect tables in scanned document images using line information. In 2013 12th International Conference on Document Analysis and Recognition , pages 1185-1189. IEEE, 2013. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2872,12 +2872,12 @@
           "page": 9,
           "span": [
             0,
-            142
+            137
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [14] Pratik Kayal, Mrinal Anand, Harsh Desai, and Mayank Singh. Icdar 2021 competition on scientific table image recognition to latex, 2021. 2",
+      "text": "[14] Pratik Kayal, Mrinal Anand, Harsh Desai, and Mayank Singh. Icdar 2021 competition on scientific table image recognition to latex, 2021. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2895,12 +2895,12 @@
           "page": 9,
           "span": [
             0,
-            127
+            122
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [15] Harold W Kuhn. The hungarian method for the assignment problem. Naval research logistics quarterly , 2(1-2):83-97, 1955. 6",
+      "text": "[15] Harold W Kuhn. The hungarian method for the assignment problem. Naval research logistics quarterly , 2(1-2):83-97, 1955. 6",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2918,12 +2918,12 @@
           "page": 9,
           "span": [
             0,
-            287
+            282
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [16] Girish Kulkarni, Visruth Premraj, Vicente Ordonez, Sagnik Dhar, Siming Li, Yejin Choi, Alexander C. Berg, and Tamara L. Berg. Babytalk: Understanding and generating simple image descriptions. IEEE Transactions on Pattern Analysis and Machine Intelligence , 35(12):2891-2903, 2013. 4",
+      "text": "[16] Girish Kulkarni, Visruth Premraj, Vicente Ordonez, Sagnik Dhar, Siming Li, Yejin Choi, Alexander C. Berg, and Tamara L. Berg. Babytalk: Understanding and generating simple image descriptions. IEEE Transactions on Pattern Analysis and Machine Intelligence , 35(12):2891-2903, 2013. 4",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2941,12 +2941,12 @@
           "page": 9,
           "span": [
             0,
-            156
+            151
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [17] Minghao Li, Lei Cui, Shaohan Huang, Furu Wei, Ming Zhou, and Zhoujun Li. Tablebank: A benchmark dataset for table detection and recognition, 2019. 2, 3",
+      "text": "[17] Minghao Li, Lei Cui, Shaohan Huang, Furu Wei, Ming Zhou, and Zhoujun Li. Tablebank: A benchmark dataset for table detection and recognition, 2019. 2, 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2964,12 +2964,12 @@
           "page": 9,
           "span": [
             0,
-            407
+            402
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [18] Yiren Li, Zheng Huang, Junchi Yan, Yi Zhou, Fan Ye, and Xianhui Liu. Gfte: Graph-based financial table extraction. In Alberto Del Bimbo, Rita Cucchiara, Stan Sclaroff, Giovanni Maria Farinella, Tao Mei, Marco Bertini, Hugo Jair Escalante, and Roberto Vezzani, editors, Pattern Recognition. ICPR International Workshops and Challenges , pages 644-658, Cham, 2021. Springer International Publishing. 2, 3",
+      "text": "[18] Yiren Li, Zheng Huang, Junchi Yan, Yi Zhou, Fan Ye, and Xianhui Liu. Gfte: Graph-based financial table extraction. In Alberto Del Bimbo, Rita Cucchiara, Stan Sclaroff, Giovanni Maria Farinella, Tao Mei, Marco Bertini, Hugo Jair Escalante, and Roberto Vezzani, editors, Pattern Recognition. ICPR International Workshops and Challenges , pages 644-658, Cham, 2021. Springer International Publishing. 2, 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -2987,12 +2987,12 @@
           "page": 9,
           "span": [
             0,
-            328
+            323
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [19] Nikolaos Livathinos, Cesar Berrospi, Maksym Lysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter Staar. Robust pdf document conversion using recurrent neural networks. Proceedings of the AAAI Conference on Artificial Intelligence , 35(17):15137-15145, May 2021. 1",
+      "text": "[19] Nikolaos Livathinos, Cesar Berrospi, Maksym Lysak, Viktor Kuropiatnyk, Ahmed Nassar, Andre Carvalho, Michele Dolfi, Christoph Auer, Kasper Dinkla, and Peter Staar. Robust pdf document conversion using recurrent neural networks. Proceedings of the AAAI Conference on Artificial Intelligence , 35(17):15137-15145, May 2021. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3010,12 +3010,12 @@
           "page": 9,
           "span": [
             0,
-            229
+            224
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [20] Rujiao Long, Wen Wang, Nan Xue, Feiyu Gao, Zhibo Yang, Yongpan Wang, and Gui-Song Xia. Parsing table structures in the wild. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pages 944-952, 2021. 2",
+      "text": "[20] Rujiao Long, Wen Wang, Nan Xue, Feiyu Gao, Zhibo Yang, Yongpan Wang, and Gui-Song Xia. Parsing table structures in the wild. In Proceedings of the IEEE/CVF International Conference on Computer Vision , pages 944-952, 2021. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3033,12 +3033,12 @@
           "page": 9,
           "span": [
             0,
-            315
+            310
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [21] Shubham Singh Paliwal, D Vishwanath, Rohit Rahul, Monika Sharma, and Lovekesh Vig. Tablenet: Deep learning model for end-to-end table detection and tabular data extraction from scanned document images. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 128-133. IEEE, 2019. 1",
+      "text": "[21] Shubham Singh Paliwal, D Vishwanath, Rohit Rahul, Monika Sharma, and Lovekesh Vig. Tablenet: Deep learning model for end-to-end table detection and tabular data extraction from scanned document images. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 128-133. IEEE, 2019. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3056,12 +3056,12 @@
           "page": 9,
           "span": [
             0,
-            592
+            587
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [22] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In H. Wallach, H. Larochelle, A. Beygelzimer, F. d'Alch\u00b4e-Buc, E. Fox, and R. Garnett, editors, Advances in Neural Information Processing Systems 32 , pages 8024-8035. Curran Associates, Inc., 2019. 6",
+      "text": "[22] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, Alban Desmaison, Andreas Kopf, Edward Yang, Zachary DeVito, Martin Raison, Alykhan Tejani, Sasank Chilamkurthy, Benoit Steiner, Lu Fang, Junjie Bai, and Soumith Chintala. Pytorch: An imperative style, high-performance deep learning library. In H. Wallach, H. Larochelle, A. Beygelzimer, F. d'Alch\u00b4e-Buc, E. Fox, and R. Garnett, editors, Advances in Neural Information Processing Systems 32 , pages 8024-8035. Curran Associates, Inc., 2019. 6",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3079,12 +3079,12 @@
           "page": 9,
           "span": [
             0,
-            322
+            317
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [23] Devashish Prasad, Ayan Gadpal, Kshitij Kapadni, Manish Visave, and Kavita Sultanpure. Cascadetabnet: An approach for end to end table detection and structure recognition from image-based documents. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops , pages 572-573, 2020. 1",
+      "text": "[23] Devashish Prasad, Ayan Gadpal, Kshitij Kapadni, Manish Visave, and Kavita Sultanpure. Cascadetabnet: An approach for end to end table detection and structure recognition from image-based documents. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops , pages 572-573, 2020. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3102,12 +3102,12 @@
           "page": 9,
           "span": [
             0,
-            224
+            219
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [24] Shah Rukh Qasim, Hassan Mahmood, and Faisal Shafait. Rethinking table recognition using graph neural networks. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 142-147. IEEE, 2019. 3",
+      "text": "[24] Shah Rukh Qasim, Hassan Mahmood, and Faisal Shafait. Rethinking table recognition using graph neural networks. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 142-147. IEEE, 2019. 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3125,12 +3125,12 @@
           "page": 9,
           "span": [
             0,
-            229
+            224
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [25] Hamid Rezatofighi, Nathan Tsoi, JunYoung Gwak, Amir Sadeghian, Ian Reid, and Silvio Savarese. Generalized intersection over union: A metric and a loss for bounding box regression. In Proceedings of the IEEE/CVF Conference on",
+      "text": "[25] Hamid Rezatofighi, Nathan Tsoi, JunYoung Gwak, Amir Sadeghian, Ian Reid, and Silvio Savarese. Generalized intersection over union: A metric and a loss for bounding box regression. In Proceedings of the IEEE/CVF Conference on",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3171,12 +3171,12 @@
           "page": 10,
           "span": [
             0,
-            302
+            297
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [26] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 11621167, 2017. 1",
+      "text": "[26] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR International Conference on Document Analysis and Recognition (ICDAR) , volume 01, pages 11621167, 2017. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3194,12 +3194,12 @@
           "page": 10,
           "span": [
             0,
-            308
+            303
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [27] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR international conference on document analysis and recognition (ICDAR) , volume 1, pages 1162-1167. IEEE, 2017. 3",
+      "text": "[27] Sebastian Schreiber, Stefan Agne, Ivo Wolf, Andreas Dengel, and Sheraz Ahmed. Deepdesrt: Deep learning for detection and structure recognition of tables in document images. In 2017 14th IAPR international conference on document analysis and recognition (ICDAR) , volume 1, pages 1162-1167. IEEE, 2017. 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3217,12 +3217,12 @@
           "page": 10,
           "span": [
             0,
-            183
+            178
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [28] Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 6572, 2010. 2",
+      "text": "[28] Faisal Shafait and Ray Smith. Table detection in heterogeneous documents. In Proceedings of the 9th IAPR International Workshop on Document Analysis Systems , pages 6572, 2010. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3240,12 +3240,12 @@
           "page": 10,
           "span": [
             0,
-            275
+            270
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [29] Shoaib Ahmed Siddiqui, Imran Ali Fateh, Syed Tahseen Raza Rizvi, Andreas Dengel, and Sheraz Ahmed. Deeptabstr: Deep learning based table structure recognition. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 1403-1409. IEEE, 2019. 3",
+      "text": "[29] Shoaib Ahmed Siddiqui, Imran Ali Fateh, Syed Tahseen Raza Rizvi, Andreas Dengel, and Sheraz Ahmed. Deeptabstr: Deep learning based table structure recognition. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 1403-1409. IEEE, 2019. 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3263,12 +3263,12 @@
           "page": 10,
           "span": [
             0,
-            251
+            246
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [30] Peter W J Staar, Michele Dolfi, Christoph Auer, and Costas Bekas. Corpus conversion service: A machine learning platform to ingest documents at scale. In Proceedings of the 24th ACM SIGKDD , KDD '18, pages 774-782, New York, NY, USA, 2018. ACM. 1",
+      "text": "[30] Peter W J Staar, Michele Dolfi, Christoph Auer, and Costas Bekas. Corpus conversion service: A machine learning platform to ingest documents at scale. In Proceedings of the 24th ACM SIGKDD , KDD '18, pages 774-782, New York, NY, USA, 2018. ACM. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3286,12 +3286,12 @@
           "page": 10,
           "span": [
             0,
-            366
+            361
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [31] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, \u0141 ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30 , pages 5998-6008. Curran Associates, Inc., 2017. 5",
+      "text": "[31] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, \u0141 ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg, S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural Information Processing Systems 30 , pages 5998-6008. Curran Associates, Inc., 2017. 5",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3309,12 +3309,12 @@
           "page": 10,
           "span": [
             0,
-            221
+            216
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [32] Oriol Vinyals, Alexander Toshev, Samy Bengio, and Dumitru Erhan. Show and tell: A neural image caption generator. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , June 2015. 2",
+      "text": "[32] Oriol Vinyals, Alexander Toshev, Samy Bengio, and Dumitru Erhan. Show and tell: A neural image caption generator. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR) , June 2015. 2",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3332,12 +3332,12 @@
           "page": 10,
           "span": [
             0,
-            217
+            212
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [33] Wenyuan Xue, Qingyong Li, and Dacheng Tao. Res2tim: reconstruct syntactic structures from table images. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 749-755. IEEE, 2019. 3",
+      "text": "[33] Wenyuan Xue, Qingyong Li, and Dacheng Tao. Res2tim: reconstruct syntactic structures from table images. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 749-755. IEEE, 2019. 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3355,12 +3355,12 @@
           "page": 10,
           "span": [
             0,
-            190
+            185
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [34] Wenyuan Xue, Baosheng Yu, Wen Wang, Dacheng Tao, and Qingyong Li. Tgrnet: A table graph reconstruction network for table structure recognition. arXiv preprint arXiv:2106.10598 , 2021. 3",
+      "text": "[34] Wenyuan Xue, Baosheng Yu, Wen Wang, Dacheng Tao, and Qingyong Li. Tgrnet: A table graph reconstruction network for table structure recognition. arXiv preprint arXiv:2106.10598 , 2021. 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3378,12 +3378,12 @@
           "page": 10,
           "span": [
             0,
-            220
+            215
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [35] Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and Jiebo Luo. Image captioning with semantic attention. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 4651-4659, 2016. 4",
+      "text": "[35] Quanzeng You, Hailin Jin, Zhaowen Wang, Chen Fang, and Jiebo Luo. Image captioning with semantic attention. In Proceedings of the IEEE conference on computer vision and pattern recognition , pages 4651-4659, 2016. 4",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3401,12 +3401,12 @@
           "page": 10,
           "span": [
             0,
-            280
+            275
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [36] Xinyi Zheng, Doug Burdick, Lucian Popa, Peter Zhong, and Nancy Xin Ru Wang. Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. Winter Conference for Applications in Computer Vision (WACV) , 2021. 2, 3",
+      "text": "[36] Xinyi Zheng, Doug Burdick, Lucian Popa, Peter Zhong, and Nancy Xin Ru Wang. Global table extractor (gte): A framework for joint table identification and cell structure recognition using visual context. Winter Conference for Applications in Computer Vision (WACV) , 2021. 2, 3",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3424,12 +3424,12 @@
           "page": 10,
           "span": [
             0,
-            106
+            101
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [37] Xu Zhong, Elaheh ShafieiBavani, and Antonio Jimeno Yepes. Image-based table recognition: Data, model,",
+      "text": "[37] Xu Zhong, Elaheh ShafieiBavani, and Antonio Jimeno Yepes. Image-based table recognition: Data, model,",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3452,7 +3452,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
+      "text": "and evaluation. In Andrea Vedaldi, Horst Bischof, Thomas Brox, and Jan-Michael Frahm, editors, Computer Vision ECCV 2020 , pages 564-580, Cham, 2020. Springer International Publishing. 2, 3, 7",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3470,12 +3470,12 @@
           "page": 10,
           "span": [
             0,
-            221
+            216
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- [38] Xu Zhong, Jianbin Tang, and Antonio Jimeno Yepes. Publaynet: Largest dataset ever for document layout analysis. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 1015-1022, 2019. 1",
+      "text": "[38] Xu Zhong, Jianbin Tang, and Antonio Jimeno Yepes. Publaynet: Largest dataset ever for document layout analysis. In 2019 International Conference on Document Analysis and Recognition (ICDAR) , pages 1015-1022, 2019. 1",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3714,12 +3714,12 @@
           "page": 11,
           "span": [
             0,
-            373
+            370
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 1. Prepare styling and content templates: The styling templates have been manually designed and organized into groups of scope specific appearances (e.g. financial data, marketing data, etc.) Additionally, we have prepared curated collections of content templates by extracting the most frequently used terms out of non-synthetic datasets (e.g. PubTabNet, FinTabNet, etc.).",
+      "text": "1. Prepare styling and content templates: The styling templates have been manually designed and organized into groups of scope specific appearances (e.g. financial data, marketing data, etc.) Additionally, we have prepared curated collections of content templates by extracting the most frequently used terms out of non-synthetic datasets (e.g. PubTabNet, FinTabNet, etc.).",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3737,12 +3737,12 @@
           "page": 11,
           "span": [
             0,
-            573
+            570
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 2. Generate table structures: The structure of each synthetic dataset assumes a horizontal table header which potentially spans over multiple rows and a table body that may contain a combination of row spans and column spans. However, spans are not allowed to cross the header - body boundary. The table structure is described by the parameters: Total number of table rows and columns, number of header rows, type of spans (header only spans, row only spans, column only spans, both row and column spans), maximum span size and the ratio of the table area covered by spans.",
+      "text": "2. Generate table structures: The structure of each synthetic dataset assumes a horizontal table header which potentially spans over multiple rows and a table body that may contain a combination of row spans and column spans. However, spans are not allowed to cross the header - body boundary. The table structure is described by the parameters: Total number of table rows and columns, number of header rows, type of spans (header only spans, row only spans, column only spans, both row and column spans), maximum span size and the ratio of the table area covered by spans.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3760,12 +3760,12 @@
           "page": 11,
           "span": [
             0,
-            195
+            192
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3. Generate content: Based on the dataset theme , a set of suitable content templates is chosen first. Then, this content can be combined with purely random text to produce the synthetic content.",
+      "text": "3. Generate content: Based on the dataset theme , a set of suitable content templates is chosen first. Then, this content can be combined with purely random text to produce the synthetic content.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3783,12 +3783,12 @@
           "page": 11,
           "span": [
             0,
-            218
+            215
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 4. Apply styling templates: Depending on the domain of the synthetic dataset, a set of styling templates is first manually selected. Then, a style is randomly selected to format the appearance of the synthesized table.",
+      "text": "4. Apply styling templates: Depending on the domain of the synthetic dataset, a set of styling templates is first manually selected. Then, a style is randomly selected to format the appearance of the synthesized table.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3806,12 +3806,12 @@
           "page": 11,
           "span": [
             0,
-            238
+            235
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 5. Render the complete tables: The synthetic table is finally rendered by a web browser engine to generate the bounding boxes for each table cell. A batching technique is utilized to optimize the runtime overhead of the rendering process.",
+      "text": "5. Render the complete tables: The synthetic table is finally rendered by a web browser engine to generate the bounding boxes for each table cell. A batching technique is utilized to optimize the runtime overhead of the rendering process.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3903,12 +3903,12 @@
           "page": 12,
           "span": [
             0,
-            61
+            59
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 TableFormer output does not include the table cell content.",
+      "text": "\u00b7 TableFormer output does not include the table cell content.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -3926,12 +3926,12 @@
           "page": 12,
           "span": [
             0,
-            77
+            75
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- \u00b7 There are occasional inaccuracies in the predictions of the bounding boxes.",
+      "text": "\u00b7 There are occasional inaccuracies in the predictions of the bounding boxes.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4018,12 +4018,12 @@
           "page": 12,
           "span": [
             0,
-            173
+            170
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 1. Get the minimal grid dimensions - number of rows and columns for the predicted table structure. This represents the most granular grid for the underlying table structure.",
+      "text": "1. Get the minimal grid dimensions - number of rows and columns for the predicted table structure. This represents the most granular grid for the underlying table structure.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4041,12 +4041,12 @@
           "page": 12,
           "span": [
             0,
-            187
+            184
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 2. Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of the matches.",
+      "text": "2. Generate pair-wise matches between the bounding boxes of the PDF cells and the predicted cells. The Intersection Over Union (IOU) metric is used to evaluate the quality of the matches.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4064,12 +4064,12 @@
           "page": 12,
           "span": [
             0,
-            97
+            94
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3. Use a carefully selected IOU threshold to designate the matches as \"good\" ones and \"bad\" ones.",
+      "text": "3. Use a carefully selected IOU threshold to designate the matches as \"good\" ones and \"bad\" ones.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4092,7 +4092,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
+      "text": "3.a. If all IOU scores in a column are below the threshold, discard all predictions (structure and bounding boxes) for that column.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4110,12 +4110,12 @@
           "page": 12,
           "span": [
             0,
-            169
+            166
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 4. Find the best-fitting content alignment for the predicted cells with good IOU per each column. The alignment of the column can be identified by the following formula:",
+      "text": "4. Find the best-fitting content alignment for the predicted cells with good IOU per each column. The alignment of the column can be identified by the following formula:",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4179,12 +4179,12 @@
           "page": 12,
           "span": [
             0,
-            110
+            107
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 5. Use the alignment computed in step 4, to compute the median x -coordinate for all table columns and the me-",
+      "text": "5. Use the alignment computed in step 4, to compute the median x -coordinate for all table columns and the me-",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4202,12 +4202,12 @@
           "page": 12,
           "span": [
             0,
-            91
+            88
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 6. Snap all cells with bad IOU to their corresponding median x -coordinates and cell sizes.",
+      "text": "6. Snap all cells with bad IOU to their corresponding median x -coordinates and cell sizes.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4225,12 +4225,12 @@
           "page": 12,
           "span": [
             0,
-            471
+            468
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 7. Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided by the PDF cell area. In case there are multiple matches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.",
+      "text": "7. Generate a new set of pair-wise matches between the corrected bounding boxes and PDF cells. This time use a modified version of the IOU metric, where the area of the intersection between the predicted and PDF cells is divided by the PDF cell area. In case there are multiple matches for the same PDF cell, the prediction with the higher score is preferred. This covers the cases where the PDF cells are smaller than the area of predicted or corrected prediction cells.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4248,12 +4248,12 @@
           "page": 12,
           "span": [
             0,
-            311
+            308
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 8. In some rare occasions, we have noticed that TableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columns pointing to the same PDF column. In such case we must de-duplicate the columns according to highest total column intersection score.",
+      "text": "8. In some rare occasions, we have noticed that TableFormer can confuse a single column as two. When the postprocessing steps are applied, this results with two predicted columns pointing to the same PDF column. In such case we must de-duplicate the columns according to highest total column intersection score.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4271,12 +4271,12 @@
           "page": 12,
           "span": [
             0,
-            503
+            500
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9. Pick up the remaining orphan cells. There could be cases, when after applying all the previous post-processing steps, some PDF cells could still remain without any match to predicted cells. However, it is still possible to deduce the correct matching for an orphan PDF cell by mapping its bounding box on the geometry of the grid. This mapping decides if the content of the orphan cell will be appended to an already matched table cell, or a new table cell should be created to match with the orphan.",
+      "text": "9. Pick up the remaining orphan cells. There could be cases, when after applying all the previous post-processing steps, some PDF cells could still remain without any match to predicted cells. However, it is still possible to deduce the correct matching for an orphan PDF cell by mapping its bounding box on the geometry of the grid. This mapping decides if the content of the orphan cell will be appended to an already matched table cell, or a new table cell should be created to match with the orphan.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4322,7 +4322,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
+      "text": "9b. Intersect the orphan's bounding box with the row bands, and map the cell to the closest grid row.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4345,7 +4345,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
+      "text": "9c. Compute the left and right boundary of the vertical band for each grid column (min/max x coordinates per column).",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4368,7 +4368,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
+      "text": "9d. Intersect the orphan's bounding box with the column bands, and map the cell to the closest grid column.",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",
@@ -4391,7 +4391,7 @@
           "__ref_s3_data": null
         }
       ],
-      "text": "- 9e. If the table cell under the identified row and column is not empty, extend its content with the content of the or-",
+      "text": "9e. If the table cell under the identified row and column is not empty, extend its content with the content of the or-",
       "type": "paragraph",
       "payload": null,
       "name": "List-item",

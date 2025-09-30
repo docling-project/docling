@@ -1,3 +1,22 @@
+# %% [markdown]
+# Run conversion with an explicit accelerator configuration (CPU/MPS/CUDA).
+#
+# What this example does
+# - Shows how to select the accelerator device and thread count.
+# - Enables OCR and table structure to exercise compute paths, and prints timings.
+#
+# How to run
+# - From the repo root: `python docs/examples/run_with_accelerator.py`.
+# - Toggle the commented `AcceleratorOptions` examples to try AUTO/MPS/CUDA.
+#
+# Notes
+# - EasyOCR does not support `cuda:N` device selection (defaults to `cuda:0`).
+# - `settings.debug.profile_pipeline_timings = True` prints profiling details.
+# - `AcceleratorDevice.MPS` is macOS-only; `CUDA` requires a compatible GPU and
+#   CUDA-enabled PyTorch build. CPU mode works everywhere.
+
+# %%
+
 from pathlib import Path
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -10,7 +29,8 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 
 def main():
-    input_doc = Path("./tests/data/pdf/2206.01062.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
 
     # Explicitly set the accelerator
     # accelerator_options = AcceleratorOptions(
@@ -47,7 +67,7 @@ def main():
     settings.debug.profile_pipeline_timings = True
 
     # Convert the document
-    conversion_result = converter.convert(input_doc)
+    conversion_result = converter.convert(input_doc_path)
     doc = conversion_result.document
 
     # List with total time per document

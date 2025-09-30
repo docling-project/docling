@@ -1,16 +1,14 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.3.0",
+  "version": "1.6.0",
   "name": "ocr_test_rotated_180",
   "origin": {
     "mimetype": "application/pdf",
     "binary_hash": 2530576989861832966,
-    "filename": "ocr_test_rotated_180.pdf",
-    "uri": null
+    "filename": "ocr_test_rotated_180.pdf"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
     "name": "_root_",
@@ -18,13 +16,9 @@
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/texts/0"
-      },
-      {
-        "cref": "#/texts/1"
+        "$ref": "#/texts/0"
       }
     ],
     "content_layer": "body",
@@ -36,7 +30,7 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -45,51 +39,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 441.2561096985719,
-            "t": 151.87873262042876,
-            "r": 522.0347860494834,
-            "b": 131.89488404865142,
+            "l": 89.24,
+            "t": 151.88,
+            "r": 523.21,
+            "b": 77.02,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            7
+            94
           ]
         }
       ],
-      "orig": "package",
-      "text": "package",
-      "formatting": null,
-      "hyperlink": null
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "cref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 89.23887497045128,
-            "t": 124.75312428291147,
-            "r": 523.208764293368,
-            "b": 77.02339852098021,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            86
-          ]
-        }
-      ],
-      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained",
-      "formatting": null,
-      "hyperlink": null
+      "orig": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package",
+      "text": "Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package"
     }
   ],
   "pictures": [],
@@ -99,10 +62,9 @@
   "pages": {
     "1": {
       "size": {
-        "width": 595.201171875,
-        "height": 841.9216918945312
+        "width": 595.2,
+        "height": 841.92
       },
-      "image": null,
       "page_no": 1
     }
   }

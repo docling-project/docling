@@ -3,13 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_conversion_result_v1, verify_conversion_result_v2
+from .verify_utils import verify_conversion_result_v2
 
 GENERATE = GEN_TEST_DATA
 
@@ -25,12 +25,14 @@ def converter():
     pipeline_options.do_ocr = False
     pipeline_options.do_table_structure = True
     pipeline_options.table_structure_options.do_cell_matching = True
+    pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
+    pipeline_options.generate_parsed_pages = True
 
     converter = DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(
                 pipeline_options=pipeline_options,
-                backend=DoclingParseDocumentBackend,
+                backend=PdfFormatOption().backend,
             )
         }
     )
@@ -43,9 +45,6 @@ def test_convert_path(converter: DocumentConverter):
     print(f"converting {pdf_path}")
 
     doc_result = converter.convert(pdf_path)
-    verify_conversion_result_v1(
-        input_path=pdf_path, doc_result=doc_result, generate=GENERATE
-    )
     verify_conversion_result_v2(
         input_path=pdf_path, doc_result=doc_result, generate=GENERATE
     )
@@ -59,9 +58,6 @@ def test_convert_stream(converter: DocumentConverter):
     stream = DocumentStream(name=pdf_path.name, stream=buf)
 
     doc_result = converter.convert(stream)
-    verify_conversion_result_v1(
-        input_path=pdf_path, doc_result=doc_result, generate=GENERATE
-    )
     verify_conversion_result_v2(
         input_path=pdf_path, doc_result=doc_result, generate=GENERATE
     )

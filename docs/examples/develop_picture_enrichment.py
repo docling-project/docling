@@ -1,6 +1,21 @@
-# WARNING
-# This example demonstrates only how to develop a new enrichment model.
-# It does not run the actual picture classifier model.
+# %% [markdown]
+# Developing a picture enrichment model (classifier scaffold only).
+#
+# What this example does
+# - Demonstrates how to implement an enrichment model that annotates pictures.
+# - Adds a dummy PictureClassificationData entry to each PictureItem.
+#
+# Important
+# - This is a scaffold for development; it does not run a real classifier.
+#
+# How to run
+# - From the repo root: `python docs/examples/develop_picture_enrichment.py`.
+#
+# Notes
+# - Enables picture image generation and sets `images_scale` to improve crops.
+# - Extends `StandardPdfPipeline` with a custom enrichment stage.
+
+# %%
 
 import logging
 from collections.abc import Iterable
@@ -43,7 +58,7 @@ class ExamplePictureClassifierEnrichmentModel(BaseEnrichmentModel):
             assert isinstance(element, PictureItem)
 
             # uncomment this to interactively visualize the image
-            # element.get_image(doc).show()
+            # element.get_image(doc).show()  # may block; avoid in headless runs
 
             element.annotations.append(
                 PictureClassificationData(
@@ -76,7 +91,8 @@ class ExamplePictureClassifierPipeline(StandardPdfPipeline):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
 
     pipeline_options = ExamplePictureClassifierPipelineOptions()
     pipeline_options.images_scale = 2.0

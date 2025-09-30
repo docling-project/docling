@@ -1,3 +1,23 @@
+# %% [markdown]
+# Translate extracted text content and regenerate Markdown with embedded images.
+#
+# What this example does
+# - Converts a PDF and saves original Markdown with embedded images.
+# - Translates text elements and table cell contents, then saves a translated Markdown.
+#
+# Prerequisites
+# - Install Docling. Add a translation library of your choice inside `translate()`.
+#
+# How to run
+# - From the repo root: `python docs/examples/translate.py`.
+# - The script writes original and translated Markdown to `scratch/`.
+#
+# Notes
+# - `translate()` is a placeholder; integrate your preferred translation API/client.
+# - Image generation is enabled to preserve embedded images in the output.
+
+# %%
+
 import logging
 from pathlib import Path
 
@@ -30,8 +50,9 @@ def translate(text: str, src: str = "en", dest: str = "de"):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
-    output_dir = Path("scratch")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+    output_dir = Path("scratch")  # ensure this directory exists before saving
 
     # Important: For operating with page images, we must keep them, otherwise the DocumentConverter
     # will destroy them for cleaning up memory.
@@ -52,9 +73,10 @@ def main():
 
     conv_res = doc_converter.convert(input_doc_path)
     conv_doc = conv_res.document
-    doc_filename = conv_res.input.file
+    doc_filename = conv_res.input.file.name
 
     # Save markdown with embedded pictures in original text
+    # Tip: create the `scratch/` folder first or adjust `output_dir`.
     md_filename = output_dir / f"{doc_filename}-with-images-orig.md"
     conv_doc.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
 
@@ -65,8 +87,12 @@ def main():
 
         elif isinstance(element, TableItem):
             for cell in element.data.table_cells:
-                cell.text = translate(text=element.text)
+                cell.text = translate(text=cell.text)
 
     # Save markdown with embedded pictures in translated text
     md_filename = output_dir / f"{doc_filename}-with-images-translated.md"
     conv_doc.save_as_markdown(md_filename, image_mode=ImageRefMode.EMBEDDED)
+
+
+if __name__ == "__main__":
+    main()

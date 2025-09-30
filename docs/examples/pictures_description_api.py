@@ -1,3 +1,27 @@
+# %% [markdown]
+# Describe pictures using a remote VLM API (vLLM, LM Studio, or watsonx.ai).
+#
+# What this example does
+# - Configures `PictureDescriptionApiOptions` for local or cloud providers.
+# - Converts a PDF, then prints each picture's caption and annotations.
+#
+# Prerequisites
+# - Install Docling and `python-dotenv` if loading env vars from a `.env` file.
+# - For local providers: ensure vLLM or LM Studio is running.
+# - For watsonx.ai: set `WX_API_KEY` and `WX_PROJECT_ID` in the environment.
+#
+# How to run
+# - From the repo root: `python docs/examples/pictures_description_api.py`.
+# - Uncomment exactly one provider config and set `enable_remote_services=True` (already set).
+#
+# Notes
+# - vLLM default endpoint: `http://localhost:8000/v1/chat/completions`.
+# - LM Studio default endpoint: `http://localhost:1234/v1/chat/completions`.
+# - Calling remote APIs sends page images/text to the provider; review privacy and
+#   costs. For local testing, LM Studio runs everything on your machine.
+
+# %%
+
 import logging
 import os
 from pathlib import Path
@@ -96,7 +120,8 @@ def watsonx_vlm_options():
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
 
     pipeline_options = PdfPipelineOptions(
         enable_remote_services=True  # <-- this is required!
@@ -113,7 +138,7 @@ def main():
     # Example for the Granite Vision model:
     # (uncomment the following lines)
     # pipeline_options.picture_description_options = vllm_local_options(
-    #     model="ibm-granite/granite-vision-3.1-2b-preview"
+    #     model="ibm-granite/granite-vision-3.3-2b"
     # )
 
     # Example for the SmolVLM model:

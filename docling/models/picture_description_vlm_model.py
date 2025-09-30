@@ -1,8 +1,10 @@
+import threading
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional, Type, Union
 
 from PIL import Image
+from transformers import AutoModelForImageTextToText
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
@@ -14,6 +16,9 @@ from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
 from docling.utils.accelerator_utils import decide_device
+
+# Global lock for model initialization to prevent threading issues
+_model_init_lock = threading.Lock()
 
 
 class PictureDescriptionVlmModel(
@@ -57,17 +62,20 @@ class PictureDescriptionVlmModel(
                 )
 
             # Initialize processor and model
-            self.processor = AutoProcessor.from_pretrained(artifacts_path)
-            self.model = AutoModelForVision2Seq.from_pretrained(
-                artifacts_path,
-                torch_dtype=torch.bfloat16,
-                _attn_implementation=(
-                    "flash_attention_2"
-                    if self.device.startswith("cuda")
-                    and accelerator_options.cuda_use_flash_attention2
-                    else "eager"
-                ),
-            ).to(self.device)
+            with _model_init_lock:
+                self.processor = AutoProcessor.from_pretrained(artifacts_path)
+                self.model = AutoModelForImageTextToText.from_pretrained(
+                    artifacts_path,
+                    device_map=self.device,
+                    dtype=torch.bfloat16,
+                    _attn_implementation=(
+                        "flash_attention_2"
+                        if self.device.startswith("cuda")
+                        and accelerator_options.cuda_use_flash_attention2
+                        else "sdpa"
+                    ),
+                )
+                self.model = torch.compile(self.model)  # type: ignore
 
             self.provenance = f"{self.options.repo_id}"
 

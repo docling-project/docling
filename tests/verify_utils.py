@@ -12,6 +12,10 @@ from docling_core.types.doc import (
     TableItem,
     TextItem,
 )
+from docling_core.types.doc.base import (
+    BoundingBox,
+    PydanticSerCtxKey,
+)
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
 from pydantic import TypeAdapter
@@ -19,6 +23,9 @@ from pydantic.json import pydantic_encoder
 
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
+
+COORD_PREC = 2  # decimal places for coordinates
+CONFID_PREC = 3  # decimal places for confidence
 
 
 def levenshtein(str1: str, str2: str) -> int:
@@ -76,9 +83,13 @@ def verify_cells(doc_pred_pages: List[Page], doc_true_pages: List[Page]):
             assert true_text == pred_text, f"{true_text}!={pred_text}"
 
             true_bbox = cell_true_item.rect.to_bounding_box().as_tuple()
-            pred_bbox = cell_pred_item.rect.to_bounding_box().as_tuple()
-            assert true_bbox == pred_bbox, (
-                f"bbox is not the same: {true_bbox} != {pred_bbox}"
+            norm_pred_bbox = BoundingBox.model_validate_json(
+                cell_pred_item.rect.to_bounding_box().model_dump_json(
+                    context={PydanticSerCtxKey.COORD_PREC.value: COORD_PREC}
+                )
+            ).as_tuple()
+            assert true_bbox == norm_pred_bbox, (
+                f"bbox is not the same: {true_bbox} != {norm_pred_bbox}"
             )
 
     return True
@@ -380,6 +391,7 @@ def verify_conversion_result_v2(
     generate: bool = False,
     ocr_engine: Optional[str] = None,
     fuzzy: bool = False,
+    verify_doctags: bool = True,
     indent: int = 2,
 ):
     PageList = TypeAdapter(List[Page])
@@ -408,14 +420,24 @@ def verify_conversion_result_v2(
 
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(pages_path, mode="w", encoding="utf-8") as fw:
-            fw.write(
-                json.dumps(doc_pred_pages, default=pydantic_encoder, indent=indent)
+
+        pages_data = [
+            page.model_dump(
+                mode="json",
+                context={
+                    PydanticSerCtxKey.COORD_PREC.value: COORD_PREC,
+                    PydanticSerCtxKey.CONFID_PREC.value: CONFID_PREC,
+                },
             )
+            for page in doc_pred_pages
+        ]
+        with open(pages_path, mode="w", encoding="utf-8") as fw:
+            fw.write(json.dumps(pages_data, indent=indent))
 
         json_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(json_path, mode="w", encoding="utf-8") as fw:
-            fw.write(json.dumps(doc_pred, default=pydantic_encoder, indent=indent))
+        doc_pred.save_as_json(
+            json_path, coord_precision=COORD_PREC, confid_precision=CONFID_PREC
+        )
 
         md_path.parent.mkdir(parents=True, exist_ok=True)
         with open(md_path, mode="w", encoding="utf-8") as fw:
@@ -442,10 +464,6 @@ def verify_conversion_result_v2(
                 f"Mismatch in PDF cell prediction for {input_path}"
             )
 
-        # assert verify_output(
-        #    doc_pred, doc_true
-        # ), f"Mismatch in JSON prediction for {input_path}"
-
         assert verify_docitems(doc_pred, doc_true, fuzzy=fuzzy), (
             f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
         )
@@ -454,15 +472,20 @@ def verify_conversion_result_v2(
             f"Mismatch in Markdown prediction for {input_path}"
         )
 
-        assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
-            f"Mismatch in DocTags prediction for {input_path}"
-        )
+        if verify_doctags:
+            assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
+                f"Mismatch in DocTags prediction for {input_path}"
+            )
 
 
 def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = False):
     if not os.path.exists(gtfile) or generate:
         with open(gtfile, mode="w", encoding="utf-8") as fw:
-            json.dump(pred_doc.export_to_dict(), fw, ensure_ascii=False, indent=2)
+            pred_dict = pred_doc.export_to_dict(
+                coord_precision=COORD_PREC,
+                confid_precision=CONFID_PREC,
+            )
+            json.dump(pred_dict, fw, ensure_ascii=False, indent=2)
 
         return True
     else:

@@ -1,27 +1,30 @@
 import logging
 import re
 import warnings
+from copy import deepcopy
+from enum import Enum
+from html import unescape
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Set, Union
+from typing import Literal, Optional, Union, cast
 
 import marko
 import marko.element
-import marko.ext
-import marko.ext.gfm
 import marko.inline
 from docling_core.types.doc import (
-    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
-    GroupLabel,
+    ListItem,
     NodeItem,
     TableCell,
     TableData,
     TextItem,
 )
+from docling_core.types.doc.document import Formatting
 from marko import Markdown
+from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
+from typing_extensions import Annotated
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -33,6 +36,32 @@ _log = logging.getLogger(__name__)
 _MARKER_BODY = "DOCLING_DOC_MD_HTML_EXPORT"
 _START_MARKER = f"#_#_{_MARKER_BODY}_START_#_#"
 _STOP_MARKER = f"#_#_{_MARKER_BODY}_STOP_#_#"
+
+
+class _PendingCreationType(str, Enum):
+    """CoordOrigin."""
+
+    HEADING = "heading"
+    LIST_ITEM = "list_item"
+
+
+class _HeadingCreationPayload(BaseModel):
+    kind: Literal["heading"] = "heading"
+    level: int
+
+
+class _ListItemCreationPayload(BaseModel):
+    kind: Literal["list_item"] = "list_item"
+    enumerated: bool
+
+
+_CreationPayload = Annotated[
+    Union[
+        _HeadingCreationPayload,
+        _ListItemCreationPayload,
+    ],
+    Field(discriminator="kind"),
+]
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
@@ -62,7 +91,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
         super().__init__(in_doc, path_or_stream)
 
-        _log.debug("MD INIT!!!")
+        _log.debug("Starting MarkdownDocumentBackend...")
 
         # Markdown file:
         self.path_or_stream = path_or_stream
@@ -71,7 +100,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         self.in_table = False
         self.md_table_buffer: list[str] = []
-        self.inline_texts: list[str] = []
         self._html_blocks: int = 0
 
         try:
@@ -105,7 +133,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             for md_table_row in self.md_table_buffer:
                 _log.debug(md_table_row)
             _log.debug("=== TABLE END ===")
-            tcells: List[TableCell] = []
+            tcells: list[TableCell] = []
             result_table = []
             for n, md_table_row in enumerate(self.md_table_buffer):
                 data = []
@@ -156,25 +184,65 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 doc.add_table(data=table_data)
         return
 
-    def _process_inline_text(
-        self, parent_item: Optional[NodeItem], doc: DoclingDocument
+    def _create_list_item(
+        self,
+        doc: DoclingDocument,
+        parent_item: Optional[NodeItem],
+        text: str,
+        enumerated: bool,
+        formatting: Optional[Formatting] = None,
+        hyperlink: Optional[Union[AnyUrl, Path]] = None,
     ):
-        txt = " ".join(self.inline_texts)
-        if len(txt) > 0:
-            doc.add_text(
-                label=DocItemLabel.PARAGRAPH,
+        item = doc.add_list_item(
+            text=text,
+            enumerated=enumerated,
+            parent=parent_item,
+            formatting=formatting,
+            hyperlink=hyperlink,
+        )
+        return item
+
+    def _create_heading_item(
+        self,
+        doc: DoclingDocument,
+        parent_item: Optional[NodeItem],
+        text: str,
+        level: int,
+        formatting: Optional[Formatting] = None,
+        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+    ):
+        if level == 1:
+            item = doc.add_title(
+                text=text,
                 parent=parent_item,
-                text=txt,
+                formatting=formatting,
+                hyperlink=hyperlink,
             )
-        self.inline_texts = []
+        else:
+            item = doc.add_heading(
+                text=text,
+                level=level - 1,
+                parent=parent_item,
+                formatting=formatting,
+                hyperlink=hyperlink,
+            )
+        return item
 
     def _iterate_elements(  # noqa: C901
         self,
+        *,
         element: marko.element.Element,
         depth: int,
         doc: DoclingDocument,
-        visited: Set[marko.element.Element],
+        visited: set[marko.element.Element],
+        creation_stack: list[
+            _CreationPayload
+        ],  # stack for lazy item creation triggered deep in marko's AST (on RawText)
+        list_ordered_flag_by_ref: dict[str, bool],
+        list_last_item_by_ref: dict[str, ListItem],
         parent_item: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        hyperlink: Optional[Union[AnyUrl, Path]] = None,
     ):
         if element in visited:
             return
@@ -183,44 +251,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # Check for different element types and process relevant details
         if isinstance(element, marko.block.Heading) and len(element.children) > 0:
             self._close_table(doc)
-            self._process_inline_text(parent_item, doc)
             _log.debug(
                 f" - Heading level {element.level}, content: {element.children[0].children}"  # type: ignore
             )
-            if element.level == 1:
-                doc_label = DocItemLabel.TITLE
+
+            if len(element.children) > 1:  # inline group will be created further down
+                parent_item = self._create_heading_item(
+                    doc=doc,
+                    parent_item=parent_item,
+                    text="",
+                    level=element.level,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
             else:
-                doc_label = DocItemLabel.SECTION_HEADER
-
-            # Header could have arbitrary inclusion of bold, italic or emphasis,
-            # hence we need to traverse the tree to get full text of a header
-            strings: List[str] = []
-
-            # Define a recursive function to traverse the tree
-            def traverse(node: marko.block.BlockElement):
-                # Check if the node has a "children" attribute
-                if hasattr(node, "children"):
-                    # If "children" is a list, continue traversal
-                    if isinstance(node.children, list):
-                        for child in node.children:
-                            traverse(child)
-                    # If "children" is text, add it to header text
-                    elif isinstance(node.children, str):
-                        strings.append(node.children)
-
-            traverse(element)
-            snippet_text = "".join(strings)
-            if len(snippet_text) > 0:
-                if doc_label == DocItemLabel.SECTION_HEADER:
-                    parent_item = doc.add_heading(
-                        text=snippet_text,
-                        level=element.level - 1,
-                        parent=parent_item,
-                    )
-                else:
-                    parent_item = doc.add_text(
-                        label=doc_label, parent=parent_item, text=snippet_text
-                    )
+                creation_stack.append(_HeadingCreationPayload(level=element.level))
 
         elif isinstance(element, marko.block.List):
             has_non_empty_list_items = False
@@ -230,85 +275,167 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     break
 
             self._close_table(doc)
-            self._process_inline_text(parent_item, doc)
             _log.debug(f" - List {'ordered' if element.ordered else 'unordered'}")
             if has_non_empty_list_items:
-                label = GroupLabel.ORDERED_LIST if element.ordered else GroupLabel.LIST
-                parent_item = doc.add_group(
-                    label=label, name="list", parent=parent_item
-                )
+                parent_item = doc.add_list_group(name="list", parent=parent_item)
+                list_ordered_flag_by_ref[parent_item.self_ref] = element.ordered
 
         elif (
             isinstance(element, marko.block.ListItem)
             and len(element.children) > 0
-            and isinstance((first_child := element.children[0]), marko.block.Paragraph)
+            and isinstance((child := element.children[0]), marko.block.Paragraph)
+            and len(child.children) > 0
         ):
             self._close_table(doc)
-            self._process_inline_text(parent_item, doc)
             _log.debug(" - List item")
 
-            snippet_text = str(first_child.children[0].children)  # type: ignore
-            is_numbered = False
-            if (
-                parent_item is not None
-                and isinstance(parent_item, DocItem)
-                and parent_item.label == GroupLabel.ORDERED_LIST
-            ):
-                is_numbered = True
-            doc.add_list_item(
-                enumerated=is_numbered, parent=parent_item, text=snippet_text
+            enumerated = (
+                list_ordered_flag_by_ref.get(parent_item.self_ref, False)
+                if parent_item
+                else False
             )
-            visited.add(first_child)
+            non_list_children: list[marko.element.Element] = [
+                item
+                for item in child.children
+                if not isinstance(item, marko.block.ListItem)
+            ]
+            if len(non_list_children) > 1:  # inline group will be created further down
+                parent_ref: Optional[str] = (
+                    parent_item.self_ref if parent_item else None
+                )
+                parent_item = self._create_list_item(
+                    doc=doc,
+                    parent_item=parent_item,
+                    text="",
+                    enumerated=enumerated,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
+                if parent_ref:
+                    list_last_item_by_ref[parent_ref] = cast(ListItem, parent_item)
+            else:
+                creation_stack.append(_ListItemCreationPayload(enumerated=enumerated))
 
         elif isinstance(element, marko.inline.Image):
             self._close_table(doc)
-            self._process_inline_text(parent_item, doc)
             _log.debug(f" - Image with alt: {element.title}, url: {element.dest}")
 
             fig_caption: Optional[TextItem] = None
             if element.title is not None and element.title != "":
+                title = unescape(element.title)
                 fig_caption = doc.add_text(
-                    label=DocItemLabel.CAPTION, text=element.title
+                    label=DocItemLabel.CAPTION,
+                    text=title,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
                 )
 
             doc.add_picture(parent=parent_item, caption=fig_caption)
 
-        elif isinstance(element, marko.block.Paragraph) and len(element.children) > 0:
-            self._process_inline_text(parent_item, doc)
+        elif isinstance(element, marko.inline.Emphasis):
+            _log.debug(f" - Emphasis: {element.children}")
+            formatting = deepcopy(formatting) if formatting else Formatting()
+            formatting.italic = True
 
-        elif isinstance(element, marko.inline.RawText):
-            _log.debug(f" - Paragraph (raw text): {element.children}")
-            snippet_text = element.children.strip()
+        elif isinstance(element, marko.inline.StrongEmphasis):
+            _log.debug(f" - StrongEmphasis: {element.children}")
+            formatting = deepcopy(formatting) if formatting else Formatting()
+            formatting.bold = True
+
+        elif isinstance(element, marko.inline.Link):
+            _log.debug(f" - Link: {element.children}")
+            hyperlink = TypeAdapter(Optional[Union[AnyUrl, Path]]).validate_python(
+                element.dest
+            )
+
+        elif isinstance(element, (marko.inline.RawText, marko.inline.Literal)):
+            _log.debug(f" - RawText/Literal: {element.children}")
+            snippet_text = (
+                element.children.strip() if isinstance(element.children, str) else ""
+            )
+            snippet_text = unescape(snippet_text)
             # Detect start of the table:
-            if "|" in snippet_text:
+            if "|" in snippet_text or self.in_table:
                 # most likely part of the markdown table
                 self.in_table = True
                 if len(self.md_table_buffer) > 0:
                     self.md_table_buffer[len(self.md_table_buffer) - 1] += snippet_text
                 else:
                     self.md_table_buffer.append(snippet_text)
-            else:
+            elif snippet_text:
                 self._close_table(doc)
-                # most likely just inline text
-                self.inline_texts.append(str(element.children))
+
+                if creation_stack:
+                    while len(creation_stack) > 0:
+                        to_create = creation_stack.pop()
+                        if isinstance(to_create, _ListItemCreationPayload):
+                            enumerated = (
+                                list_ordered_flag_by_ref.get(
+                                    parent_item.self_ref, False
+                                )
+                                if parent_item
+                                else False
+                            )
+                            parent_ref = parent_item.self_ref if parent_item else None
+                            parent_item = self._create_list_item(
+                                doc=doc,
+                                parent_item=parent_item,
+                                text=snippet_text,
+                                enumerated=enumerated,
+                                formatting=formatting,
+                                hyperlink=hyperlink,
+                            )
+                            if parent_ref:
+                                list_last_item_by_ref[parent_ref] = cast(
+                                    ListItem, parent_item
+                                )
+
+                        elif isinstance(to_create, _HeadingCreationPayload):
+                            # not keeping as parent_item as logic for correctly tracking
+                            # that not implemented yet (section components not captured
+                            # as heading children in marko)
+                            self._create_heading_item(
+                                doc=doc,
+                                parent_item=parent_item,
+                                text=snippet_text,
+                                level=to_create.level,
+                                formatting=formatting,
+                                hyperlink=hyperlink,
+                            )
+                else:
+                    doc.add_text(
+                        label=DocItemLabel.TEXT,
+                        parent=parent_item,
+                        text=snippet_text,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
 
         elif isinstance(element, marko.inline.CodeSpan):
             self._close_table(doc)
-            self._process_inline_text(parent_item, doc)
             _log.debug(f" - Code Span: {element.children}")
             snippet_text = str(element.children).strip()
-            doc.add_code(parent=parent_item, text=snippet_text)
+            doc.add_code(
+                parent=parent_item,
+                text=snippet_text,
+                formatting=formatting,
+                hyperlink=hyperlink,
+            )
 
         elif (
             isinstance(element, (marko.block.CodeBlock, marko.block.FencedCode))
             and len(element.children) > 0
-            and isinstance((first_child := element.children[0]), marko.inline.RawText)
-            and len(snippet_text := (first_child.children.strip())) > 0
+            and isinstance((child := element.children[0]), marko.inline.RawText)
+            and len(snippet_text := (child.children.strip())) > 0
         ):
             self._close_table(doc)
-            self._process_inline_text(parent_item, doc)
             _log.debug(f" - Code Block: {element.children}")
-            doc.add_code(parent=parent_item, text=snippet_text)
+            doc.add_code(
+                parent=parent_item,
+                text=snippet_text,
+                formatting=formatting,
+                hyperlink=hyperlink,
+            )
 
         elif isinstance(element, marko.inline.LineBreak):
             if self.in_table:
@@ -317,7 +444,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         elif isinstance(element, marko.block.HTMLBlock):
             self._html_blocks += 1
-            self._process_inline_text(parent_item, doc)
             self._close_table(doc)
             _log.debug(f"HTML Block: {element}")
             if (
@@ -327,14 +453,24 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
                 # wrap in markers to enable post-processing in convert()
                 text_to_add = f"{_START_MARKER}{html_block}{_STOP_MARKER}"
-                doc.add_code(parent=parent_item, text=text_to_add)
+                doc.add_code(
+                    parent=parent_item,
+                    text=text_to_add,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
+                )
         else:
             if not isinstance(element, str):
                 self._close_table(doc)
                 _log.debug(f"Some other element: {element}")
 
+        if (
+            isinstance(element, (marko.block.Paragraph, marko.block.Heading))
+            and len(element.children) > 1
+        ):
+            parent_item = doc.add_inline_group(parent=parent_item)
+
         processed_block_types = (
-            marko.block.Heading,
             marko.block.CodeBlock,
             marko.block.FencedCode,
             marko.inline.RawText,
@@ -345,12 +481,28 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             element, processed_block_types
         ):
             for child in element.children:
+                if (
+                    isinstance(element, marko.block.ListItem)
+                    and isinstance(child, marko.block.List)
+                    and parent_item
+                    and list_last_item_by_ref.get(parent_item.self_ref, None)
+                ):
+                    _log.debug(
+                        f"walking into new List hanging from item of parent list {parent_item.self_ref}"
+                    )
+                    parent_item = list_last_item_by_ref[parent_item.self_ref]
+
                 self._iterate_elements(
                     element=child,
                     depth=depth + 1,
                     doc=doc,
                     visited=visited,
+                    creation_stack=creation_stack,
+                    list_ordered_flag_by_ref=list_ordered_flag_by_ref,
+                    list_last_item_by_ref=list_last_item_by_ref,
                     parent_item=parent_item,
+                    formatting=formatting,
+                    hyperlink=hyperlink,
                 )
 
     def is_valid(self) -> bool:
@@ -366,7 +518,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         return False
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.MD}
 
     def convert(self) -> DoclingDocument:
@@ -391,8 +543,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 doc=doc,
                 parent_item=None,
                 visited=set(),
+                creation_stack=[],
+                list_ordered_flag_by_ref={},
+                list_last_item_by_ref={},
             )
-            self._process_inline_text(None, doc)  # handle last hanging inline text
             self._close_table(doc=doc)  # handle any last hanging table
 
             # if HTML blocks were detected, export to HTML and delegate to HTML backend
@@ -416,7 +570,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 ]:
                     html_str = _restore_original_html(txt=html_str, regex=regex)
                 self._html_blocks = 0
-
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))
                 in_doc = InputDocument(

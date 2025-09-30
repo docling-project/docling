@@ -1,3 +1,33 @@
+# %% [markdown]
+# Batch convert multiple PDF files and export results in several formats.
+
+# What this example does
+# - Loads a small set of sample PDFs.
+# - Runs the Docling PDF pipeline once per file.
+# - Writes outputs to `scratch/` in multiple formats (JSON, HTML, Markdown, text, doctags, YAML).
+
+# Prerequisites
+# - Install Docling and dependencies as described in the repository README.
+# - Ensure you can import `docling` from your Python environment.
+# <!-- YAML export requires `PyYAML` (`pip install pyyaml`). -->
+
+# Input documents
+# - By default, this example uses a few PDFs from `tests/data/pdf/` in the repo.
+# - If you cloned without test data, or want to use your own files, edit
+#   `input_doc_paths` below to point to PDFs on your machine.
+
+# Output formats (controlled by flags)
+# - `USE_V2 = True` enables the current Docling document exports (recommended).
+# - `USE_LEGACY = False` keeps legacy Deep Search exports disabled.
+#   You can set it to `True` if you need legacy formats for compatibility tests.
+
+# Notes
+# - Set `pipeline_options.generate_page_images = True` to include page images in HTML.
+# - The script logs conversion progress and raises if any documents fail.
+# <!-- This example shows both helper methods like `save_as_*` and lower-level
+#   `export_to_*` + manual file writes; outputs may overlap intentionally. -->
+# %%
+
 import json
 import logging
 import time
@@ -15,6 +45,9 @@ from docling.document_converter import DocumentConverter, PdfFormatOption
 
 _log = logging.getLogger(__name__)
 
+# Export toggles:
+# - USE_V2 controls modern Docling document exports.
+# - USE_LEGACY enables legacy Deep Search exports for comparison or migration.
 USE_V2 = True
 USE_LEGACY = False
 
@@ -35,6 +68,9 @@ def export_documents(
             doc_filename = conv_res.input.file.stem
 
             if USE_V2:
+                # Recommended modern Docling exports. These helpers mirror the
+                # lower-level "export_to_*" methods used below, but handle
+                # common details like image handling.
                 conv_res.document.save_as_json(
                     output_dir / f"{doc_filename}.json",
                     image_mode=ImageRefMode.PLACEHOLDER,
@@ -121,14 +157,18 @@ def export_documents(
 def main():
     logging.basicConfig(level=logging.INFO)
 
+    # Location of sample PDFs used by this example. If your checkout does not
+    # include test data, change `data_folder` or point `input_doc_paths` to
+    # your own files.
+    data_folder = Path(__file__).parent / "../../tests/data"
     input_doc_paths = [
-        Path("./tests/data/pdf/2206.01062.pdf"),
-        Path("./tests/data/pdf/2203.01017v2.pdf"),
-        Path("./tests/data/pdf/2305.03393v1.pdf"),
-        Path("./tests/data/pdf/redp5110_sampled.pdf"),
+        data_folder / "pdf/2206.01062.pdf",
+        data_folder / "pdf/2203.01017v2.pdf",
+        data_folder / "pdf/2305.03393v1.pdf",
+        data_folder / "pdf/redp5110_sampled.pdf",
     ]
 
-    # buf = BytesIO(Path("./test/data/2206.01062.pdf").open("rb").read())
+    # buf = BytesIO((data_folder / "pdf/2206.01062.pdf").open("rb").read())
     # docs = [DocumentStream(name="my_doc.pdf", stream=buf)]
     # input = DocumentConversionInput.from_streams(docs)
 
@@ -138,6 +178,8 @@ def main():
     # settings.debug.visualize_tables = True
     # settings.debug.visualize_cells = True
 
+    # Configure the PDF pipeline. Enabling page image generation improves HTML
+    # previews (embedded images) but adds processing time.
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
 
@@ -151,11 +193,14 @@ def main():
 
     start_time = time.time()
 
+    # Convert all inputs. Set `raises_on_error=False` to keep processing other
+    # files even if one fails; errors are summarized after the run.
     conv_results = doc_converter.convert_all(
         input_doc_paths,
         raises_on_error=False,  # to let conversion run through all and examine results at the end
     )
-    success_count, partial_success_count, failure_count = export_documents(
+    # Write outputs to ./scratch and log a summary.
+    _success_count, _partial_success_count, failure_count = export_documents(
         conv_results, output_dir=Path("scratch")
     )
 

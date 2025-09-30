@@ -2,12 +2,16 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2
 from docling.datamodel.pipeline_options import (
+    LayoutOptions,
     granite_picture_description,
     smolvlm_picture_description,
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
+    GRANITEDOCLING_MLX,
+    GRANITEDOCLING_TRANSFORMERS,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
 )
@@ -32,6 +36,8 @@ def download_models(
     with_code_formula: bool = True,
     with_picture_classifier: bool = True,
     with_smolvlm: bool = False,
+    with_granitedocling: bool = False,
+    with_granitedocling_mlx: bool = False,
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
@@ -46,7 +52,7 @@ def download_models(
     if with_layout:
         _log.info("Downloading layout model...")
         LayoutModel.download_models(
-            local_dir=output_dir / LayoutModel._model_repo_folder,
+            local_dir=output_dir / LayoutOptions().model_spec.model_repo_folder,
             force=force,
             progress=progress,
         )
@@ -80,6 +86,24 @@ def download_models(
         download_hf_model(
             repo_id=smolvlm_picture_description.repo_id,
             local_dir=output_dir / smolvlm_picture_description.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_granitedocling:
+        _log.info("Downloading GraniteDocling model...")
+        download_hf_model(
+            repo_id=GRANITEDOCLING_TRANSFORMERS.repo_id,
+            local_dir=output_dir / GRANITEDOCLING_TRANSFORMERS.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_granitedocling_mlx:
+        _log.info("Downloading GraniteDocling MLX model...")
+        download_hf_model(
+            repo_id=GRANITEDOCLING_MLX.repo_id,
+            local_dir=output_dir / GRANITEDOCLING_MLX.repo_cache_folder,
             force=force,
             progress=progress,
         )

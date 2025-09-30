@@ -26,9 +26,19 @@ from rich.console import Console
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.asr_model_specs import (
+    WHISPER_BASE,
+    WHISPER_LARGE,
+    WHISPER_MEDIUM,
+    WHISPER_SMALL,
+    WHISPER_TINY,
+    WHISPER_TURBO,
+    AsrModelType,
+)
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -37,25 +47,44 @@ from docling.datamodel.base_models import (
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    AsrPipelineOptions,
+    ConvertPipelineOptions,
     EasyOcrOptions,
     OcrOptions,
     PaginatedPipelineOptions,
     PdfBackend,
-    PdfPipeline,
     PdfPipelineOptions,
+    PipelineOptions,
+    ProcessingPipeline,
     TableFormerMode,
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
+    GOT2_TRANSFORMERS,
     GRANITE_VISION_OLLAMA,
     GRANITE_VISION_TRANSFORMERS,
+    GRANITEDOCLING_MLX,
+    GRANITEDOCLING_TRANSFORMERS,
+    GRANITEDOCLING_VLLM,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
+    SMOLDOCLING_VLLM,
     VlmModelType,
 )
-from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
+from docling.document_converter import (
+    AudioFormatOption,
+    DocumentConverter,
+    ExcelFormatOption,
+    FormatOption,
+    HTMLFormatOption,
+    MarkdownFormatOption,
+    PdfFormatOption,
+    PowerpointFormatOption,
+    WordFormatOption,
+)
 from docling.models.factories import get_ocr_factory
+from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
@@ -245,6 +274,12 @@ def export_documents(
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
+            if _log.isEnabledFor(logging.INFO):
+                for err in conv_res.errors:
+                    _log.info(
+                        f"  [Failure Detail] Component: {err.component_type}, "
+                        f"Module: {err.module_name}, Message: {err.error_message}"
+                    )
             failure_count += 1
 
     _log.info(
@@ -296,13 +331,17 @@ def convert(  # noqa: C901
         ),
     ] = ImageRefMode.EMBEDDED,
     pipeline: Annotated[
-        PdfPipeline,
+        ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
-    ] = PdfPipeline.STANDARD,
+    ] = ProcessingPipeline.STANDARD,
     vlm_model: Annotated[
         VlmModelType,
         typer.Option(..., help="Choose the VLM model to use with PDF or image files."),
-    ] = VlmModelType.SMOLDOCLING,
+    ] = VlmModelType.GRANITEDOCLING,
+    asr_model: Annotated[
+        AsrModelType,
+        typer.Option(..., help="Choose the ASR model to use with audio/video files."),
+    ] = AsrModelType.WHISPER_TINY,
     ocr: Annotated[
         bool,
         typer.Option(
@@ -449,18 +488,28 @@ def convert(  # noqa: C901
             "--logo", callback=logo_callback, is_eager=True, help="Docling logo"
         ),
     ] = None,
+    page_batch_size: Annotated[
+        int,
+        typer.Option(
+            "--page-batch-size",
+            help=f"Number of pages processed in one batch. Default: {settings.perf.page_batch_size}",
+        ),
+    ] = settings.perf.page_batch_size,
 ):
+    log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
+
     if verbose == 0:
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.WARNING, format=log_format)
     elif verbose == 1:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.INFO, format=log_format)
     else:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG, format=log_format)
 
     settings.debug.visualize_cells = debug_visualize_cells
     settings.debug.visualize_layout = debug_visualize_layout
     settings.debug.visualize_tables = debug_visualize_tables
     settings.debug.visualize_ocr = debug_visualize_ocr
+    settings.perf.page_batch_size = page_batch_size
 
     if from_formats is None:
         from_formats = list(InputFormat)
@@ -530,9 +579,12 @@ def convert(  # noqa: C901
             ocr_options.lang = ocr_lang_list
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-        pipeline_options: PaginatedPipelineOptions
+        # pipeline_options: PaginatedPipelineOptions
+        pipeline_options: PipelineOptions
 
-        if pipeline == PdfPipeline.STANDARD:
+        format_options: Dict[InputFormat, FormatOption] = {}
+
+        if pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
@@ -574,7 +626,45 @@ def convert(  # noqa: C901
                 pipeline_options=pipeline_options,
                 backend=backend,  # pdf_backend
             )
-        elif pipeline == PdfPipeline.VLM:
+
+            # METS GBS options
+            mets_gbs_options = pipeline_options.model_copy()
+            mets_gbs_options.do_ocr = False
+            mets_gbs_format_option = PdfFormatOption(
+                pipeline_options=mets_gbs_options,
+                backend=MetsGbsDocumentBackend,
+            )
+
+            # SimplePipeline options
+            simple_format_option = ConvertPipelineOptions(
+                do_picture_description=enrich_picture_description,
+                do_picture_classification=enrich_picture_classes,
+            )
+            if artifacts_path is not None:
+                simple_format_option.artifacts_path = artifacts_path
+
+            format_options = {
+                InputFormat.PDF: pdf_format_option,
+                InputFormat.IMAGE: pdf_format_option,
+                InputFormat.METS_GBS: mets_gbs_format_option,
+                InputFormat.DOCX: WordFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.PPTX: PowerpointFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.XLSX: ExcelFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.HTML: HTMLFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.MD: MarkdownFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+            }
+
+        elif pipeline == ProcessingPipeline.VLM:
             pipeline_options = VlmPipelineOptions(
                 enable_remote_services=enable_remote_services,
             )
@@ -583,6 +673,8 @@ def convert(  # noqa: C901
                 pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
                 pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
+            elif vlm_model == VlmModelType.GOT_OCR_2:
+                pipeline_options.vlm_options = GOT2_TRANSFORMERS
             elif vlm_model == VlmModelType.SMOLDOCLING:
                 pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":
@@ -596,17 +688,70 @@ def convert(  # noqa: C901
                             "pip install mlx-vlm"
                         )
 
+            elif vlm_model == VlmModelType.GRANITEDOCLING:
+                pipeline_options.vlm_options = GRANITEDOCLING_TRANSFORMERS
+                if sys.platform == "darwin":
+                    try:
+                        import mlx_vlm
+
+                        pipeline_options.vlm_options = GRANITEDOCLING_MLX
+                    except ImportError:
+                        _log.warning(
+                            "To run GraniteDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
+            elif vlm_model == VlmModelType.SMOLDOCLING_VLLM:
+                pipeline_options.vlm_options = SMOLDOCLING_VLLM
+
+            elif vlm_model == VlmModelType.GRANITEDOCLING_VLLM:
+                pipeline_options.vlm_options = GRANITEDOCLING_VLLM
+
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
             )
 
+            format_options = {
+                InputFormat.PDF: pdf_format_option,
+                InputFormat.IMAGE: pdf_format_option,
+            }
+
+        elif pipeline == ProcessingPipeline.ASR:
+            pipeline_options = AsrPipelineOptions(
+                # enable_remote_services=enable_remote_services,
+                # artifacts_path = artifacts_path
+            )
+
+            if asr_model == AsrModelType.WHISPER_TINY:
+                pipeline_options.asr_options = WHISPER_TINY
+            elif asr_model == AsrModelType.WHISPER_SMALL:
+                pipeline_options.asr_options = WHISPER_SMALL
+            elif asr_model == AsrModelType.WHISPER_MEDIUM:
+                pipeline_options.asr_options = WHISPER_MEDIUM
+            elif asr_model == AsrModelType.WHISPER_BASE:
+                pipeline_options.asr_options = WHISPER_BASE
+            elif asr_model == AsrModelType.WHISPER_LARGE:
+                pipeline_options.asr_options = WHISPER_LARGE
+            elif asr_model == AsrModelType.WHISPER_TURBO:
+                pipeline_options.asr_options = WHISPER_TURBO
+            else:
+                _log.error(f"{asr_model} is not known")
+                raise ValueError(f"{asr_model} is not known")
+
+            _log.info(f"pipeline_options: {pipeline_options}")
+
+            audio_format_option = AudioFormatOption(
+                pipeline_cls=AsrPipeline,
+                pipeline_options=pipeline_options,
+            )
+
+            format_options = {
+                InputFormat.AUDIO: audio_format_option,
+            }
+
         if artifacts_path is not None:
             pipeline_options.artifacts_path = artifacts_path
+            # audio_pipeline_options.artifacts_path = artifacts_path
 
-        format_options: Dict[InputFormat, FormatOption] = {
-            InputFormat.PDF: pdf_format_option,
-            InputFormat.IMAGE: pdf_format_option,
-        }
         doc_converter = DocumentConverter(
             allowed_formats=from_formats,
             format_options=format_options,
@@ -614,6 +759,7 @@ def convert(  # noqa: C901
 
         start_time = time.time()
 
+        _log.info(f"paths: {input_doc_paths}")
         conv_results = doc_converter.convert_all(
             input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
         )

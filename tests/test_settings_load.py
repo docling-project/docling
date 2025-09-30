@@ -25,5 +25,5 @@ def test_settings():
     assert m.settings.debug.visualize_raw_layout is True
 
     # Check nested defaults
-    assert m.settings.perf.doc_batch_size == 2
+    assert m.settings.perf.doc_batch_size == 1
     assert m.settings.debug.visualize_ocr is False
