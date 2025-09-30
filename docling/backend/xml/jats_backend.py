@@ -2,9 +2,9 @@ import logging
 import traceback
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Optional, Union
+from typing import Final, Optional, Union, cast
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, NavigableString, Tag
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -12,6 +12,8 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     NodeItem,
+    TableCell,
+    TableData,
     TextItem,
 )
 from lxml import etree
@@ -535,6 +537,110 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return
 
+    @staticmethod
+    def parse_table_data(element: Tag) -> Optional[TableData]:
+        # TODO, see how to implement proper support for rich tables from HTML backend
+        nested_tables = element.find("table")
+        if nested_tables is not None:
+            _log.debug("Skipping nested table.")
+            return None
+
+        # Find the number of rows and columns (taking into account spans)
+        num_rows = 0
+        num_cols = 0
+        for row in element("tr"):
+            col_count = 0
+            is_row_header = True
+            if not isinstance(row, Tag):
+                continue
+            for cell in row(["td", "th"]):
+                if not isinstance(row, Tag):
+                    continue
+                cell_tag = cast(Tag, cell)
+                col_span, row_span = HTMLDocumentBackend._get_cell_spans(cell_tag)
+                col_count += col_span
+                if cell_tag.name == "td" or row_span == 1:
+                    is_row_header = False
+            num_cols = max(num_cols, col_count)
+            if not is_row_header:
+                num_rows += 1
+
+        _log.debug(f"The table has {num_rows} rows and {num_cols} cols.")
+
+        grid: list = [[None for _ in range(num_cols)] for _ in range(num_rows)]
+
+        data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
+
+        # Iterate over the rows in the table
+        start_row_span = 0
+        row_idx = -1
+        for row in element("tr"):
+            if not isinstance(row, Tag):
+                continue
+
+            # For each row, find all the column cells (both <td> and <th>)
+            cells = row(["td", "th"])
+
+            # Check if cell is in a column header or row header
+            col_header = True
+            row_header = True
+            for html_cell in cells:
+                if isinstance(html_cell, Tag):
+                    _, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
+                    if html_cell.name == "td":
+                        col_header = False
+                        row_header = False
+                    elif row_span == 1:
+                        row_header = False
+            if not row_header:
+                row_idx += 1
+                start_row_span = 0
+            else:
+                start_row_span += 1
+
+            # Extract the text content of each cell
+            col_idx = 0
+            for html_cell in cells:
+                if not isinstance(html_cell, Tag):
+                    continue
+
+                # extract inline formulas
+                for formula in html_cell("inline-formula"):
+                    math_parts = formula.text.split("$$")
+                    if len(math_parts) == 3:
+                        math_formula = f"$${math_parts[1]}$$"
+                        formula.replace_with(NavigableString(math_formula))
+
+                # TODO: extract content correctly from table-cells with lists
+                text = HTMLDocumentBackend.get_text(html_cell).strip()
+                col_span, row_span = HTMLDocumentBackend._get_cell_spans(html_cell)
+                if row_header:
+                    row_span -= 1
+                while (
+                    col_idx < num_cols
+                    and grid[row_idx + start_row_span][col_idx] is not None
+                ):
+                    col_idx += 1
+                for r in range(start_row_span, start_row_span + row_span):
+                    for c in range(col_span):
+                        if row_idx + r < num_rows and col_idx + c < num_cols:
+                            grid[row_idx + r][col_idx + c] = text
+
+                table_cell = TableCell(
+                    text=text,
+                    row_span=row_span,
+                    col_span=col_span,
+                    start_row_offset_idx=start_row_span + row_idx,
+                    end_row_offset_idx=start_row_span + row_idx + row_span,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + col_span,
+                    column_header=col_header,
+                    row_header=((not col_header) and html_cell.name == "th"),
+                )
+                data.table_cells.append(table_cell)
+
+        return data
+
     def _add_table(
         self, doc: DoclingDocument, parent: NodeItem, table_xml_component: Table
     ) -> None:
@@ -543,8 +649,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         if not isinstance(table_tag, Tag):
             return
 
-        data = HTMLDocumentBackend.parse_table_data(table_tag)
-
+        data = JatsDocumentBackend.parse_table_data(table_tag)
         # TODO: format label vs caption once styling is supported
         label = table_xml_component["label"]
         caption = table_xml_component["caption"]
@@ -554,7 +659,6 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             if table_text
             else None
         )
-
         if data is not None:
             doc.add_table(data=data, parent=parent, caption=table_caption)
 

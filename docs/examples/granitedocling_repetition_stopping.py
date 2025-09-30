@@ -18,7 +18,6 @@ import logging
 from docling.datamodel import vlm_model_specs
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import VlmPipelineOptions
-from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.models.utils.generation_utils import (
     DocTagsRepetitionStopper,

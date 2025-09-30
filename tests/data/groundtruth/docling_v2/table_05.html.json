@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.7.0",
-  "name": "example_04",
+  "name": "table_05",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 2846345769602286603,
-    "filename": "example_04.html"
+    "binary_hash": 12827430000043968589,
+    "filename": "table_05.html"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -25,7 +25,22 @@
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [],
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/tables/1"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_2_0_1",
+      "label": "unspecified"
+    }
+  ],
   "texts": [
     {
       "self_ref": "#/texts/0",
@@ -34,14 +49,44 @@
       },
       "children": [
         {
+          "$ref": "#/texts/1"
+        },
+        {
           "$ref": "#/tables/0"
+        },
+        {
+          "$ref": "#/texts/2"
         }
       ],
       "content_layer": "body",
       "label": "title",
       "prov": [],
-      "orig": "Data Table with Rowspan and Colspan",
-      "text": "Data Table with Rowspan and Colspan"
+      "orig": "Header",
+      "text": "Header"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is the first paragraph.",
+      "text": "This is the first paragraph."
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "After table",
+      "text": "After table"
     }
   ],
   "pictures": [],
@@ -50,6 +95,143 @@
       "self_ref": "#/tables/0",
       "parent": {
         "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/0"
+        }
+      ],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "A",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "B",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "A1B1C1\n\n\nD1E1F1",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/0"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "2...",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          }
+        ],
+        "num_rows": 2,
+        "num_cols": 2,
+        "grid": [
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "A",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "B",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "A1B1C1\n\n\nD1E1F1",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "2...",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
+    },
+    {
+      "self_ref": "#/tables/1",
+      "parent": {
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -67,33 +249,46 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Header 1",
-            "column_header": true,
+            "text": "A1",
+            "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
             "row_span": 1,
-            "col_span": 2,
+            "col_span": 1,
             "start_row_offset_idx": 0,
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 1,
-            "end_col_offset_idx": 3,
-            "text": "Header 2 & 3 (colspan)",
-            "column_header": true,
+            "end_col_offset_idx": 2,
+            "text": "B1",
+            "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "row_span": 2,
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "C1",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
-            "end_row_offset_idx": 3,
+            "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "Row 1 & 2, Col 1 (rowspan)",
+            "text": "D1",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -106,7 +301,7 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Row 1, Col 2",
+            "text": "E1",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -119,66 +314,14 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Row 1, Col 3",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 2,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 3,
-            "text": "Row 2, Col 2 & 3 (colspan)",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "Row 3, Col 1",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "Row 3, Col 2",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "Row 3, Col 3",
+            "text": "F1",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           }
         ],
-        "num_rows": 4,
+        "num_rows": 2,
         "num_cols": 3,
         "grid": [
           [
@@ -189,34 +332,34 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Header 1",
-              "column_header": true,
+              "text": "A1",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
               "row_span": 1,
-              "col_span": 2,
+              "col_span": 1,
               "start_row_offset_idx": 0,
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 1,
-              "end_col_offset_idx": 3,
-              "text": "Header 2 & 3 (colspan)",
-              "column_header": true,
+              "end_col_offset_idx": 2,
+              "text": "B1",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
               "row_span": 1,
-              "col_span": 2,
+              "col_span": 1,
               "start_row_offset_idx": 0,
               "end_row_offset_idx": 1,
-              "start_col_offset_idx": 1,
+              "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Header 2 & 3 (colspan)",
-              "column_header": true,
+              "text": "C1",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -224,13 +367,13 @@
           ],
           [
             {
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
-              "end_row_offset_idx": 3,
+              "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "Row 1 & 2, Col 1 (rowspan)",
+              "text": "D1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -243,7 +386,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Row 1, Col 2",
+              "text": "E1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -256,89 +399,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Row 1, Col 3",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "Row 1 & 2, Col 1 (rowspan)",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 2,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 3,
-              "text": "Row 2, Col 2 & 3 (colspan)",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 2,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 3,
-              "text": "Row 2, Col 2 & 3 (colspan)",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ],
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "Row 3, Col 1",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "Row 3, Col 2",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "Row 3, Col 3",
+              "text": "F1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
