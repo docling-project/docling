@@ -86,7 +86,7 @@
           "bbox": {
             "l": 71.99,
             "t": 727.97,
-            "r": 311.55,
+            "r": 311.41,
             "b": 682.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -113,7 +113,7 @@
           "bbox": {
             "l": 71.99,
             "t": 665.47,
-            "r": 311.52,
+            "r": 311.44,
             "b": 594.5,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -168,18 +168,18 @@
           "bbox": {
             "l": 71.99,
             "t": 563.47,
-            "r": 311.91,
+            "r": 311.52,
             "b": 492.5,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [
             0,
-            327
+            324
           ]
         }
       ],
-      "orig": "The  Boots  self-locking  nut  is  of  one  piece,  all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.",
-      "text": "The  Boots  self-locking  nut  is  of  one  piece,  all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut."
+      "orig": "The  Boots  self-locking nut is  of  one  piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.",
+      "text": "The  Boots  self-locking nut is  of  one  piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut."
     },
     {
       "self_ref": "#/texts/4",
@@ -195,7 +195,7 @@
           "bbox": {
             "l": 71.99,
             "t": 475.97,
-            "r": 311.54,
+            "r": 311.52,
             "b": 405.0,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -575,7 +575,7 @@
           "bbox": {
             "l": 321.0,
             "t": 386.47,
-            "r": 560.91,
+            "r": 558.1,
             "b": 365.5,
             "coord_origin": "BOTTOMLEFT"
           },
