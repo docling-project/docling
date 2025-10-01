@@ -216,8 +216,13 @@ class ReadingOrderModel:
             elif isinstance(element, Table):
                 # Check if table has no structure prediction
                 if element.num_rows == 0 and element.num_cols == 0:
-                    # Create minimal 1x1 table with rich cell containing all children
-                    tbl_data = TableData(num_rows=1, num_cols=1, table_cells=[])
+                    # Only create 1x1 table if there are children to put in it
+                    if element.cluster.children:
+                        # Create minimal 1x1 table with rich cell containing all children
+                        tbl_data = TableData(num_rows=1, num_cols=1, table_cells=[])
+                    else:
+                        # Create empty table with no structure
+                        tbl_data = TableData(num_rows=0, num_cols=0, table_cells=[])
                 else:
                     tbl_data = TableData(
                         num_rows=element.num_rows,
@@ -253,8 +258,12 @@ class ReadingOrderModel:
 
                         tbl.footnotes.append(new_footnote_item.get_ref())
 
-                # Handle case where table has no structure prediction
-                if element.num_rows == 0 and element.num_cols == 0:
+                # Handle case where table has no structure prediction but has children
+                if (
+                    element.num_rows == 0
+                    and element.num_cols == 0
+                    and element.cluster.children
+                ):
                     # Create rich cell containing all child elements
                     rich_cell_ref = self._create_rich_cell_group(element, out_doc, tbl)
 
