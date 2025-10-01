@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "webvtt_example_02",
   "origin": {
     "mimetype": "text/vtt",
-    "binary_hash": 12867774546881601731,
+    "binary_hash": 5029965721282070624,
     "filename": "webvtt_example_02.vtt"
   },
   "furniture": {

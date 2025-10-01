@@ -218,7 +218,7 @@
 <picture><loc_67><loc_92><loc_205><loc_308></picture>
 <caption><loc_52><loc_317><loc_223><loc_323>Figure 8: Example of a table with multi-line header.</caption>
 <picture><loc_252><loc_59><loc_455><loc_185><caption><loc_252><loc_194><loc_445><loc_207>Figure 9: Example of a table with big empty distance between cells.</caption></picture>
-<otsl><loc_274><loc_286><loc_400><loc_317></otsl>
+<otsl><loc_274><loc_286><loc_400><loc_317><ecel><nl></otsl>
 <picture><loc_273><loc_239><loc_424><loc_420><caption><loc_255><loc_430><loc_443><loc_435>Figure 10: Example of a complex table with empty cells.</caption></picture>
 <page_footer><loc_239><loc_464><loc_247><loc_469>13</page_footer>
 <page_break>
