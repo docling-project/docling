@@ -249,7 +249,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         # Iterates over all elements in the AST
         # Check for different element types and process relevant details
-        if isinstance(element, marko.block.Heading) and len(element.children) > 0:
+        if (
+            isinstance(element, marko.block.Heading)
+            or isinstance(element, marko.block.SetextHeading)
+        ) and len(element.children) > 0:
             self._close_table(doc)
             _log.debug(
                 f" - Heading level {element.level}, content: {element.children[0].children}"  # type: ignore
