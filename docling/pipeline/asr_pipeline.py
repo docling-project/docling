@@ -3,7 +3,7 @@ import os
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Optional, Union, cast
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin
 
@@ -31,8 +31,8 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
 )
 from docling.datamodel.pipeline_options_asr_model import (
-    InlineAsrNativeWhisperOptions,
     InlineAsrMlxWhisperOptions,
+    InlineAsrNativeWhisperOptions,
     # AsrResponseFormat,
     InlineAsrOptions,
 )
@@ -236,7 +236,7 @@ class _MlxWhisperModel:
 
             self.model_name = asr_options.repo_id
             _log.info(f"loading _MlxWhisperModel({self.model_name})")
-            
+
             # MLX Whisper models are loaded differently - they use HuggingFace repos
             self.model_path = self.model_name
 
@@ -281,10 +281,10 @@ class _MlxWhisperModel:
     def transcribe(self, fpath: Path) -> list[_ConversationItem]:
         """
         Transcribe audio using MLX Whisper.
-        
+
         Args:
             fpath: Path to audio file
-            
+
         Returns:
             List of conversation items with timestamps
         """
@@ -300,16 +300,16 @@ class _MlxWhisperModel:
         )
 
         convo: list[_ConversationItem] = []
-        
+
         # MLX Whisper returns segments similar to native Whisper
         for segment in result.get("segments", []):
             item = _ConversationItem(
                 start_time=segment.get("start"),
                 end_time=segment.get("end"),
                 text=segment.get("text", "").strip(),
-                words=[]
+                words=[],
             )
-            
+
             # Add word-level timestamps if available
             if self.word_timestamps and "words" in segment:
                 item.words = []
@@ -332,26 +332,27 @@ class AsrPipeline(BasePipeline):
         self.keep_backend = True
 
         self.pipeline_options: AsrPipelineOptions = pipeline_options
+        self._model: Union[_NativeWhisperModel, _MlxWhisperModel]
 
         if isinstance(self.pipeline_options.asr_options, InlineAsrNativeWhisperOptions):
-            asr_options: InlineAsrNativeWhisperOptions = (
+            native_asr_options: InlineAsrNativeWhisperOptions = (
                 self.pipeline_options.asr_options
             )
             self._model = _NativeWhisperModel(
                 enabled=True,  # must be always enabled for this pipeline to make sense.
                 artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
-                asr_options=asr_options,
+                asr_options=native_asr_options,
             )
         elif isinstance(self.pipeline_options.asr_options, InlineAsrMlxWhisperOptions):
-            asr_options: InlineAsrMlxWhisperOptions = (
+            mlx_asr_options: InlineAsrMlxWhisperOptions = (
                 self.pipeline_options.asr_options
             )
             self._model = _MlxWhisperModel(
                 enabled=True,  # must be always enabled for this pipeline to make sense.
                 artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
-                asr_options=asr_options,
+                asr_options=mlx_asr_options,
             )
         else:
             _log.error(f"No model support for {self.pipeline_options.asr_options}")
