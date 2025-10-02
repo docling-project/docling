@@ -60,9 +60,10 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
 class InlineAsrMlxWhisperOptions(InlineAsrOptions):
     """
     MLX Whisper options for Apple Silicon optimization.
-    
+
     Uses mlx-whisper library for efficient inference on Apple Silicon devices.
     """
+
     inference_framework: InferenceAsrFramework = InferenceAsrFramework.MLX
 
     language: str = "en"

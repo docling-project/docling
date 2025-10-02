@@ -611,17 +611,27 @@ def convert(  # noqa: C901
             ocr_options.psm = psm
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-        
+
         # Auto-detect pipeline based on input file formats
         if pipeline == ProcessingPipeline.STANDARD:
             # Check if any input files are audio files by extension
-            audio_extensions = {'.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac', '.mp4', '.avi', '.mov'}
+            audio_extensions = {
+                ".mp3",
+                ".wav",
+                ".m4a",
+                ".aac",
+                ".ogg",
+                ".flac",
+                ".mp4",
+                ".avi",
+                ".mov",
+            }
             for path in input_doc_paths:
                 if path.suffix.lower() in audio_extensions:
                     pipeline = ProcessingPipeline.ASR
                     _log.info(f"Auto-detected ASR pipeline for audio file: {path}")
                     break
-        
+
         # pipeline_options: PaginatedPipelineOptions
         pipeline_options: PipelineOptions
 

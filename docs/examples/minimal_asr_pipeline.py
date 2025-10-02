@@ -43,7 +43,7 @@ def get_asr_converter():
     implementation for your hardware:
     - MLX Whisper Turbo for Apple Silicon (M1/M2/M3) with mlx-whisper installed
     - Native Whisper Turbo as fallback
-    
+
     You can swap in another model spec from `docling.datamodel.asr_model_specs`
     to experiment with different model sizes.
     """
