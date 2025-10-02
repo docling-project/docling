@@ -4,12 +4,12 @@ import pytest
 
 @pytest.mark.smoke
 @pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx").exists(),
-    reason="sample.pptx not found",
+    not (Path(__file__).resolve().parents[2] / "sample_files" / "pptx_sample.pptx").exists(),
+    reason="pptx_sample.pptx not found",
 )
 def test_pptx_smoke(basic_processor):
     dp = basic_processor()
-    sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx"
+    sample = Path(__file__).resolve().parents[2] / "sample_files" / "pptx_sample.pptx"
 
     doc = dp.load_documents(str(sample))
     assert doc is not None
@@ -22,13 +22,13 @@ def test_pptx_smoke(basic_processor):
 
 @pytest.mark.smoke
 @pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx").exists(),
-    reason="sample.pptx not found",
+    not (Path(__file__).resolve().parents[2] / "sample_files" / "pptx_sample.pptx").exists(),
+    reason="pptx_sample.pptx not found",
 )
 @pytest.mark.asyncio
 async def test_vector_schema_pptx(basic_processor):
     dp = basic_processor()
-    sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pptx"
+    sample = Path(__file__).resolve().parents[2] / "sample_files" / "pptx_sample.pptx"
 
     vectors = await dp(None, str(sample))
     assert isinstance(vectors, list) and len(vectors) >= 1

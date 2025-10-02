@@ -19,7 +19,22 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v6
       - run: uv python pin ${{ matrix.python-version }}
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice poppler-utils tesseract-ocr tesseract-ocr-kor
       - run: uv sync --dev
+      - name: Install additional Python packages
+        run: |
+          uv add unstructured>=0.8.0,<0.10.0
+          uv add pdf2image>=1.16.0
+          uv add pdfminer.six>=20220524
+          uv add pytesseract>=0.3.10
+          uv add weasyprint>=60.0
+          uv add opencv-python>=4.8.0
+      - name: Download NLTK data
+        run: |
+          uv run python -c "import nltk; nltk.download('punkt_tab')"
       - name: Download custom layout model from HuggingFace
         run: |
           uv run python -c "

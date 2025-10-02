@@ -1224,7 +1224,7 @@ class DocumentProcessor:
         else:
             pdf_path = _get_pdf_path(file_path)
 
-        doc = fitz.open(pdf_path) if (pdf_path and os.path.exists(pdf_path)) else None
+        # doc = fitz.open(pdf_path) if (pdf_path and os.path.exists(pdf_path)) else None
 
         if file_path.endswith(('.ppt', '.pptx')):
             if os.path.exists(pdf_path):
@@ -1316,6 +1316,7 @@ class DocumentProcessor:
         elif ext in ('.csv', '.xlsx'):
             loader = TabularLoader(file_path, ext)
             vectors = loader.return_vectormeta_format()
+            # pdf_path = _get_pdf_path(file_path)
             # await assert_cancelled(request)
             return vectors
 
