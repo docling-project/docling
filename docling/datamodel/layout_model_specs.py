@@ -71,6 +71,14 @@ DOCLING_LAYOUT_EGRET_XLARGE = LayoutModelConfig(
     model_path="",
 )
 
+# Custom finetuned layout model
+MNCAI_CUSTOM_LAYOUT = LayoutModelConfig(
+    name="mncai_custom_layout",
+    repo_id="mncai/doc_parser_models",
+    revision="main",
+    model_path="docling-layout-old",
+)
+
 # Example for a hypothetical alternative model
 # ALTERNATIVE_LAYOUT = LayoutModelConfig(
 #     name="alternative_layout",
@@ -87,4 +95,5 @@ class LayoutModelType(str, Enum):
     DOCLING_LAYOUT_EGRET_MEDIUM = "docling_layout_egret_medium"
     DOCLING_LAYOUT_EGRET_LARGE = "docling_layout_egret_large"
     DOCLING_LAYOUT_EGRET_XLARGE = "docling_layout_egret_xlarge"
+    MNCAI_CUSTOM_LAYOUT = "mncai_custom_layout"
     # ALTERNATIVE_LAYOUT = "alternative_layout"

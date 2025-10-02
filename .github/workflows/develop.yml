@@ -22,7 +22,13 @@ jobs:
       - run: uv sync --dev
       - name: Download custom layout model from HuggingFace
         run: |
-          uv run huggingface-cli download mncai/doc_parser_models --local-dir-use-symlinks False
+          uv run python -c "
+          from docling.models.layout_model import LayoutModel
+          from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
+          print('Downloading custom layout model...')
+          model_path = LayoutModel.download_models(layout_model_config=MNCAI_CUSTOM_LAYOUT, progress=True)
+          print(f'Model downloaded to: {model_path}')
+          "
       - run: uv run python -m compileall -q .
       - name: Import smoke
         run: uv run python -c "import importlib; importlib.import_module('doc_preprocessors.basic_processor')"
