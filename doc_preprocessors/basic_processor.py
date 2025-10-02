@@ -849,7 +849,17 @@ class DocumentProcessor:
         # ocr_options.lang = ['kor', 'kor_vert', 'eng', 'jpn', 'jpn_vert']
         # ocr_options.path = './.tesseract/tessdata'
         # self.pipe_line_options.ocr_options = ocr_options
+
+        # 커스텀 layout detection 모델 경로 설정
+        # CI/CD 환경에서는 huggingface-cli로 다운로드된 경로 사용
+        custom_model_path = Path.home() / ".cache/huggingface/hub/models--mncai--doc_parser_models/snapshots"
+        if custom_model_path.exists():
+            # 가장 최신 스냅샷 찾기
+            snapshots = sorted(custom_model_path.glob("*"), key=lambda p: p.stat().st_mtime, reverse=True)
+            if snapshots:
+                self.pipe_line_options.artifacts_path = snapshots[0]
         # self.pipe_line_options.artifacts_path = Path("/nfs-root/models/223/760")  # Path("/nfs-root/aiModel/.cache/huggingface/hub/models--ds4sd--docling-models/snapshots/4659a7d29247f9f7a94102e1f313dad8e8c8f2f6/")
+
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.images_scale = 2
         self.pipe_line_options.table_structure_options.do_cell_matching = True
