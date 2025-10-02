@@ -165,7 +165,7 @@
           "$ref": "#/texts/12"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -191,7 +191,7 @@
           "$ref": "#/texts/18"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -201,7 +201,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -215,7 +215,7 @@
           "$ref": "#/texts/22"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -225,7 +225,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -242,7 +242,7 @@
           "$ref": "#/texts/25"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -259,7 +259,7 @@
           "$ref": "#/texts/28"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -276,7 +276,7 @@
           "$ref": "#/texts/30"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "group",
       "label": "inline"
     },
@@ -293,7 +293,7 @@
           "$ref": "#/texts/32"
         }
       ],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "name": "list",
       "label": "list"
     },
@@ -6063,7 +6063,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Jump to content",
@@ -6076,7 +6076,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Main menu",
@@ -6088,7 +6088,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Main menu",
@@ -6100,7 +6100,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "move to sidebar",
@@ -6112,7 +6112,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "hide",
@@ -6124,7 +6124,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Navigation",
@@ -6136,7 +6136,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Main page",
@@ -6151,7 +6151,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Contents",
@@ -6166,7 +6166,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Current events",
@@ -6181,7 +6181,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Random article",
@@ -6196,7 +6196,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "About Wikipedia",
@@ -6211,7 +6211,7 @@
         "$ref": "#/groups/0"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Contact us",
@@ -6226,7 +6226,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Contribute",
@@ -6238,7 +6238,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Help",
@@ -6253,7 +6253,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Learn to edit",
@@ -6268,7 +6268,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Community portal",
@@ -6283,7 +6283,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Recent changes",
@@ -6298,7 +6298,7 @@
         "$ref": "#/groups/1"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Upload file",
@@ -6313,7 +6313,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "caption",
       "prov": [],
       "orig": "Image Hyperlink.",
@@ -6326,7 +6326,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Search",
@@ -6339,7 +6339,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Search",
@@ -6351,7 +6351,7 @@
         "$ref": "#/groups/3"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Donate",
@@ -6366,7 +6366,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Appearance",
@@ -6378,7 +6378,7 @@
         "$ref": "#/groups/5"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Create account",
@@ -6393,7 +6393,7 @@
         "$ref": "#/groups/5"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Log in",
@@ -6408,7 +6408,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Personal tools",
@@ -6420,7 +6420,7 @@
         "$ref": "#/groups/6"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Create account",
@@ -6435,7 +6435,7 @@
         "$ref": "#/groups/6"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Log in",
@@ -6450,7 +6450,7 @@
         "$ref": "#/groups/7"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "Pages for logged out editors",
@@ -6462,7 +6462,7 @@
         "$ref": "#/groups/7"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "text",
       "prov": [],
       "orig": "learn more",
@@ -6475,7 +6475,7 @@
         "$ref": "#/groups/8"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Contributions",
@@ -6490,7 +6490,7 @@
         "$ref": "#/groups/8"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "list_item",
       "prov": [],
       "orig": "Talk",
@@ -26190,7 +26190,7 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
+      "content_layer": "body",
       "label": "picture",
       "prov": [],
       "captions": [

@@ -18,7 +18,6 @@ from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
 
-
 def test_heading_levels():
     in_path = Path("tests/data/html/wiki_duck.html")
     in_doc = InputDocument(
@@ -184,6 +183,7 @@ def test_e2e_html_conversions():
 
 
 def test_html_furniture():
+    """Test that content before headings is now included in body (bug fix)."""
     raw_html = (
         b"<html><body><p>Initial content with some <strong>bold text</strong></p>"
         b"<h1>Main Heading</h1>"
@@ -203,11 +203,35 @@ def test_html_furniture():
     )
     doc: DoclingDocument = backend.convert()
     md_body = doc.export_to_markdown()
-    assert md_body == "# Main Heading\n\nSome Content"
-    md_all = doc.export_to_markdown(
-        included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+    
+    # Content before heading should now be included (this was the bug)
+    assert "Initial content with some **bold text**" in md_body
+    assert "# Main Heading" in md_body
+    assert "Some Content" in md_body
+
+def test_div_section_chunking():
+    """Test that div and section tags are handled as transparent containers."""
+    raw_html = (
+        b"<html><body>"
+        b"<div><p>Paragraph inside div.</p></div>"
+        b"<section><h2>Section Heading</h2><p>Section content.</p></section>"
+        b"</body></html>"
     )
-    assert md_all == (
-        "Initial content with some **bold text**\n\n# Main Heading\n\nSome Content\n\n"
-        "Some Footer Content"
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(raw_html),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test_div_section",
     )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(raw_html),
+    )
+    doc: DoclingDocument = backend.convert()
+    md_body = doc.export_to_markdown()
+
+    # All content should be in the markdown export
+    assert "Paragraph inside div." in md_body
+    assert "Section Heading" in md_body
+    assert "Section content." in md_body

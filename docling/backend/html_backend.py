@@ -272,10 +272,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString("\n"))
         # set default content layer
-        headers = content.find(["h1", "h2", "h3", "h4", "h5", "h6"])
-        self.content_layer = (
-            ContentLayer.BODY if headers is None else ContentLayer.FURNITURE
-        )
+
+        self.content_layer = ContentLayer.BODY
+        
         # reset context
         self.ctx = _Context()
         self._walk(content, doc)
