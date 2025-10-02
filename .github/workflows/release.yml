@@ -16,6 +16,11 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv python pin 3.12
       - run: uv sync --dev
+      - name: Download custom layout model from HuggingFace
+        run: |
+          uv run huggingface-cli download mncai/doc_parser_models \
+            --include "docling-layout-old/*" \
+            --local-dir-use-symlinks False
       - name: Import smoke
         run: uv run python -c "import importlib; importlib.import_module('doc_preprocessors.basic_processor')"
       - name: Pytest (smoke only)
