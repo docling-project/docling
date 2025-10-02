@@ -29,6 +29,7 @@ from docling.datamodel.pipeline_options import (
     TesseractOcrOptions,
     PipelineOptions
 )
+from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
 
 from docling.document_converter import (
     DocumentConverter,
@@ -850,6 +851,10 @@ class DocumentProcessor:
         # ocr_options.path = './.tesseract/tessdata'
         # self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.artifacts_path = Path("/nfs-root/models/223/760")  # Path("/nfs-root/aiModel/.cache/huggingface/hub/models--ds4sd--docling-models/snapshots/4659a7d29247f9f7a94102e1f313dad8e8c8f2f6/")
+
+        # 커스텀 layout detection 모델 사용 (artifacts_path 설정하지 않음 - tableformer는 기본 경로 사용)
+        self.pipe_line_options.layout_options.model_spec = MNCAI_CUSTOM_LAYOUT
+
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.images_scale = 2
         self.pipe_line_options.table_structure_options.do_cell_matching = True

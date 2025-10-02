@@ -987,6 +987,9 @@ class DocumentProcessor:
                 date_text = document.key_value_items[0].graph.cells[1].text
                 created_date = self.parse_created_date(date_text)
 
+                if created_date == 0 and "last_modified_date" in kwargs:
+                    created_date = self.parse_created_date(json.dumps(kwargs["last_modified_date"]))
+
         except (AttributeError, IndexError) as e:
             pass
 

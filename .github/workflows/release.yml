@@ -16,6 +16,15 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv python pin 3.12
       - run: uv sync --dev
+      - name: Download custom layout model from HuggingFace
+        run: |
+          uv run python -c "
+          from docling.models.layout_model import LayoutModel
+          from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
+          print('Downloading custom layout model...')
+          model_path = LayoutModel.download_models(layout_model_config=MNCAI_CUSTOM_LAYOUT, progress=True)
+          print(f'Model downloaded to: {model_path}')
+          "
       - name: Import smoke
         run: uv run python -c "import importlib; importlib.import_module('doc_preprocessors.basic_processor')"
       - name: Pytest (smoke only)

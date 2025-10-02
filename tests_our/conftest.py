@@ -21,6 +21,13 @@ def sample_dir(repo_root: Path) -> Path:
     return repo_root / "sample_files"
 
 
+# Regression test용 샘플 파일 디렉터리
+@pytest.fixture(scope="session")
+def regression_test_dir(repo_root: Path) -> Path:
+    """Regression test 전용 샘플 파일 디렉터리"""
+    return repo_root / "sample_files" / "regression_test"
+
+
 # DocumentProcessor 클래스를 안전하게 로드
 # 모듈이 없으면 해당 테스트를 skip 처리
 @pytest.fixture(scope="session")
