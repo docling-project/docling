@@ -80,7 +80,7 @@ dependencies = [
     "langchain-community>=0.3.29",
     "markdown2>=2.5.4",
     "chardet>=5.2.0",
-    "unstructured>=0.10.0",
+    "unstructured>=0.8.0,<0.10.0",
     "audioop-lts; python_version >= '3.13'",
 ]
 
