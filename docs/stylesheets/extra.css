@@ -124,7 +124,7 @@
     box-shadow: none !important;
 }
 [data-md-color-scheme="slate"] .md-nav--secondary .md-nav__title {
-    background: none !important; 
+    background: #02030C !important; 
     box-shadow: none !important;
     color: rgba(233, 219, 189, 0.90) !important;
 }
