@@ -17,7 +17,7 @@ class BaseAsrOptions(BaseModel):
 
 
 class InferenceAsrFramework(str, Enum):
-    # MLX = "mlx" # disabled for now
+    MLX = "mlx"
     # TRANSFORMERS = "transformers" # disabled for now
     WHISPER = "whisper"
 
@@ -55,3 +55,22 @@ class InlineAsrNativeWhisperOptions(InlineAsrOptions):
         AcceleratorDevice.CUDA,
     ]
     word_timestamps: bool = True
+
+
+class InlineAsrMlxWhisperOptions(InlineAsrOptions):
+    """
+    MLX Whisper options for Apple Silicon optimization.
+    
+    Uses mlx-whisper library for efficient inference on Apple Silicon devices.
+    """
+    inference_framework: InferenceAsrFramework = InferenceAsrFramework.MLX
+
+    language: str = "en"
+    task: str = "transcribe"  # "transcribe" or "translate"
+    supported_devices: List[AcceleratorDevice] = [
+        AcceleratorDevice.MPS,  # MLX is optimized for Apple Silicon
+    ]
+    word_timestamps: bool = True
+    no_speech_threshold: float = 0.6  # Threshold for detecting speech
+    logprob_threshold: float = -1.0  # Log probability threshold
+    compression_ratio_threshold: float = 2.4  # Compression ratio threshold
