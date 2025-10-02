@@ -15,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, model_validator, validate_call
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.asciidoc_backend import AsciiDocBackend
+from docling.backend.code_backend import CodeFileBackend
+from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
@@ -72,6 +74,11 @@ class FormatOption(BaseFormatOption):
 class CsvFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = CsvDocumentBackend
+
+
+class CodeFormatOption(FormatOption):
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = CodeFileBackend
 
 
 class ExcelFormatOption(FormatOption):
@@ -173,6 +180,15 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=NoOpBackend),
         InputFormat.VTT: FormatOption(
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
+        ),
+        InputFormat.CODE_JAVA: FormatOption(
+            pipeline_cls=SimplePipeline, backend=CodeFileBackend
+        ),
+        InputFormat.CODE_PYTHON: FormatOption(
+            pipeline_cls=SimplePipeline, backend=CodeFileBackend
+        ),
+        InputFormat.CODE_JAVASCRIPT: FormatOption(
+            pipeline_cls=SimplePipeline, backend=CodeFileBackend
         ),
     }
     if (options := format_to_default_options.get(format)) is not None:

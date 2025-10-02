@@ -69,6 +69,10 @@ class InputFormat(str, Enum):
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
     VTT = "vtt"
+    CODE_PYTHON = "py"
+    CODE_JAVASCRIPT = "js"
+    CODE_JAVA = "java"
+
 
 
 class OutputFormat(str, Enum):
@@ -96,6 +100,9 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.JSON_DOCLING: ["json"],
     InputFormat.AUDIO: ["wav", "mp3"],
     InputFormat.VTT: ["vtt"],
+    InputFormat.CODE_PYTHON: ["py"],
+    InputFormat.CODE_JAVASCRIPT: ["js"],
+    InputFormat.CODE_JAVA: ["java"],
 }
 
 FormatToMimeType: dict[InputFormat, list[str]] = {
@@ -130,6 +137,9 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.JSON_DOCLING: ["application/json"],
     InputFormat.AUDIO: ["audio/x-wav", "audio/mpeg", "audio/wav", "audio/mp3"],
     InputFormat.VTT: ["text/vtt"],
+    InputFormat.CODE_PYTHON: ["text/x-python"],
+    InputFormat.CODE_JAVASCRIPT: ["text/x-javascript"],
+    InputFormat.CODE_JAVA: ["text/x-java-source"],
 }
 
 MimeTypeToFormat: dict[str, list[InputFormat]] = {
