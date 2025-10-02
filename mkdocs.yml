@@ -66,6 +66,7 @@ nav:
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
       - MCP server: usage/mcp.md
+      - Jobkit: usage/jobkit.md
     - FAQ:
       - FAQ: faq/index.md
   - Concepts:
