@@ -829,16 +829,6 @@
       "content_layer": "body",
       "name": "list",
       "label": "list"
-    },
-    {
-      "self_ref": "#/groups/12",
-      "parent": {
-        "$ref": "#/tables/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "name": "rich_cell_group_7_0_0",
-      "label": "unspecified"
     }
   ],
   "texts": [
@@ -25418,11 +25408,7 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/groups/12"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "table",
       "prov": [
@@ -25445,43 +25431,10 @@
       "references": [],
       "footnotes": [],
       "data": {
-        "table_cells": [
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/12"
-            }
-          }
-        ],
-        "num_rows": 1,
-        "num_cols": 1,
-        "grid": [
-          [
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 1,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            }
-          ]
-        ]
+        "table_cells": [],
+        "num_rows": 0,
+        "num_cols": 0,
+        "grid": []
       },
       "annotations": []
     }
