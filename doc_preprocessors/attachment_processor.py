@@ -70,7 +70,6 @@ from docling_core.types.doc.document import LevelNumber, ListItem, CodeItem
 # from utils import assert_cancelled
 # from genos_utils import upload_files, merge_overlapping_bboxes
 
-
 # import platform
 from pathlib import Path
 import os
@@ -79,8 +78,15 @@ import tempfile
 import shutil
 import unicodedata
 
+import logging
+
+for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
+    lg = logging.getLogger(n)
+    lg.setLevel(logging.CRITICAL)
+    lg.propagate = False
+    logging.getLogger().setLevel(logging.WARNING)        
 # pdf 변환 대상 확장자
-CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md']
+CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
 
 
 def convert_to_pdf(file_path: str) -> str | None:
@@ -104,6 +110,8 @@ def convert_to_pdf(file_path: str) -> str | None:
             convert_arg = "pdf:impress_pdf_Export"
         elif ext in ('.doc', '.docx'):
             convert_arg = "pdf:writer_pdf_Export"
+        elif ext in ('.xls', '.xlsx', '.csv'):
+            convert_arg = "pdf:calc_pdf_Export"
         else:
             convert_arg = "pdf"
 
@@ -114,7 +122,7 @@ def convert_to_pdf(file_path: str) -> str | None:
             tmp_dir = None
         except UnicodeEncodeError:
             tmp_dir = Path(tempfile.mkdtemp())
-            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii','ignore').decode('ascii') or "file"
+            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii', 'ignore').decode('ascii') or "file"
             ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
             shutil.copy2(in_path, ascii_copy)
             candidates = [ascii_copy, in_path]
@@ -134,7 +142,6 @@ def convert_to_pdf(file_path: str) -> str | None:
                 return str(pdf_path)
             # 실패해도 계속 시도 (로그만 찍고 무시)
             print(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
-            print(f"[convert_to_pdf] stdout: {proc.stdout.strip()}")
 
         if tmp_dir:
             shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -143,6 +150,7 @@ def convert_to_pdf(file_path: str) -> str | None:
         # 어떤 에러든 삼키고 None 반환
         print(f"[convert_to_pdf] error: {e}")
         return None
+
 
 def _get_pdf_path(file_path: str) -> str:
     """
@@ -305,7 +313,6 @@ class HwpLoader:
         try:
             subprocess.run(['hwp5html', self.file_path, '--output', self.output_dir], check=True, timeout=600)
             converted_file_path = os.path.join(self.output_dir, 'index.xhtml')
-            # pdf_save_path = self.file_path.replace('.hwp', '.pdf')
             pdf_save_path = _get_pdf_path(self.file_path)
             HTML(converted_file_path).write_pdf(pdf_save_path)
             loader = PyMuPDFLoader(pdf_save_path)
@@ -326,15 +333,11 @@ class TextLoader:
 
     def load(self):
         try:
-            # 1) 샘플로 인코딩 추정(150바이트)
-            with open(self.file_path, 'rb') as f:
-                sample = f.read(150)
-            enc = chardet.detect(sample).get('encoding') or ''
-            encodings = [enc] if enc and enc.lower() not in ('ascii','unknown') else []
-            encodings += ['utf-8', 'cp949', 'euc-kr', 'iso-8859-1', 'latin-1']
-            # 2) 전체 파일 바이트/텍스트 확보
             with open(self.file_path, 'rb') as f:
                 raw = f.read()
+            enc = chardet.detect(raw).get('encoding') or ''
+            encodings = [enc] if enc and enc.lower() not in ('ascii', 'unknown') else []
+            encodings += ['utf-8', 'cp949', 'euc-kr', 'iso-8859-1', 'latin-1']
 
             content = None
             for e in encodings:
@@ -386,8 +389,10 @@ class TabularLoader:
 
         self.file_path = file_path
         if ext == ".csv":
+            # convert_to_pdf(file_path) csv는 Pdf 변환 안 함
             self.data_dict = self.load_csv_documents(file_path)
         elif ext == ".xlsx":
+            # convert_to_pdf(file_path) xlsx는 Pdf 변환 안 함
             self.data_dict = self.load_xlsx_documents(file_path)
         else:
             print(f"[!] Inadequate extension for TabularLoader: {ext}")
@@ -461,7 +466,7 @@ class TabularLoader:
             raw_file = f.read(10000)
         enc_type = chardet.detect(raw_file)['encoding']
         df = pd.read_csv(file_path, encoding=enc_type, index_col=False)
-        df = df.fillna('null') # csv 파일에서도 xlsx 파일과 동일하게 null로 채움
+        df = df.fillna('null')  # csv 파일에서도 xlsx 파일과 동일하게 null로 채움
         df, dtypes_str = self.check_sql_dtypes(df)
 
         for i in range(len(df.columns)):
@@ -532,9 +537,9 @@ class TabularLoader:
         text = "[DA] " + str(self.data_dict)  # Add a token to indicate this string is for data analysis
         vectors = [GenOSVectorMeta.model_validate({
             'text': text,
-            'n_chars': 1,
-            'n_words': 1,
-            'n_lines': 1,
+            'n_char': 1,
+            'n_word': 1,
+            'n_line': 1,
             'i_page': 1,
             'e_page': 1,
             'n_page': 1,
@@ -607,9 +612,9 @@ class AudioLoader:
         transcribed_text = self.transcribe_audio(audio_chunks)
         res = [GenOSVectorMeta.model_validate({
             'text': transcribed_text,
-            'n_chars': 1,
-            'n_words': 1,
-            'n_lines': 1,
+            'n_char': 1,
+            'n_word': 1,
+            'n_line': 1,
             'i_page': 1,
             'e_page': 1,
             'n_page': 1,
@@ -1099,7 +1104,7 @@ class DocumentProcessor:
     def get_loader(self, file_path: str):
         ext = os.path.splitext(file_path)[-1].lower()
         real_type = self.get_real_file_type(file_path)
-        
+
         # 확장자와 실제 파일 타입이 다를 때만 real_type 사용
         if ext != real_type and real_type == 'pdf':
             return PyMuPDFLoader(file_path)
@@ -1115,7 +1120,12 @@ class DocumentProcessor:
             convert_to_pdf(file_path)
             return UnstructuredPowerPointLoader(file_path)
         elif ext in ['.jpg', '.jpeg', '.png']:
-            return UnstructuredImageLoader(file_path)
+            convert_to_pdf(file_path)
+            # 한국어 OCR 지원을 위한 언어 설정
+            return UnstructuredImageLoader(
+                file_path, 
+                languages=["kor", "eng"],  # 한국어 + 영어 OCR
+            )
         elif ext in ['.txt', '.json', '.md']:
             return TextLoader(file_path)
         elif ext == '.hwp':
@@ -1128,15 +1138,14 @@ class DocumentProcessor:
     def get_real_file_type(self, file_path: str) -> str:
         """파일 확장자가 아닌 실제 내용으로 파일 타입 판단"""
         with open(file_path, 'rb') as f:
-            header = f.read(8)
-        
+            header = f.read(8) 
         if header.startswith(b'%PDF-'):
             return 'pdf'
         elif header.startswith(b'\x89PNG'):
             return 'png'
         elif header.startswith(b'\xff\xd8\xff'):
             return 'jpg'
-        
+
         # 매직 헤더로 판단할 수 없으면 확장자 사용
         return os.path.splitext(file_path)[-1].lower()
 
@@ -1147,18 +1156,43 @@ class DocumentProcessor:
 
         pdf_path = md_path.replace('.md', '.pdf')
         with open(md_path, 'rb') as f:
-            raw_file = f.read(100)
-        enc_type = chardet.detect(raw_file)['encoding']
-        with open(md_path, 'r', encoding=enc_type) as f:
-            md_content = f.read()
+            raw_file = f.read()
+        candidates = ['utf-8', 'utf-8-sig']
+        try:
+            det = (chardet.detect(raw_file) or {}).get('encoding') or ''
+            # chardet가 ascii/unknown이면 무시. 그 외면 후보에 추가
+            if det and det.lower() not in ('ascii', 'unknown'):
+                if det.lower() not in [c.lower() for c in candidates]:
+                    candidates.append(det)
+        except Exception:
+            pass
+        candidates += ['cp949', 'euc-kr', 'iso-8859-1', 'latin-1']
+        md_content = None
+        for enc in candidates:
+            try:
+                md_content = raw_file.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        if md_content is None:
+            md_content = raw_file.decode('utf-8', errors='replace')
 
         html_content = markdown(md_content)
-        HTML(string=html_content).write_pdf(pdf_path)
+        if HTML:
+            HTML(string=html_content).write_pdf(pdf_path)
         return pdf_path
 
     def load_documents(self, file_path: str, **kwargs: dict) -> list[Document]:
         loader = self.get_loader(file_path)
         documents = loader.load()
+        
+        # 이미지 파일의 경우 텍스트 추출 안되었을 시 기본 텍스트 제공
+        ext = os.path.splitext(file_path)[-1].lower()
+        if ext in ['.jpg', '.jpeg', '.png']:
+            # documents가 없거나, 있어도 모든 page_content가 비어있는 경우
+            if not documents or not any(doc.page_content.strip() for doc in documents):
+                documents = [Document(page_content=".", metadata={'source': file_path, 'page': 0})]
+        
         return documents
 
     def split_documents(self, documents, **kwargs: dict) -> list[Document]:
@@ -1176,26 +1210,23 @@ class DocumentProcessor:
     def compose_vectors(self, file_path: str, chunks: list[Document], **kwargs: dict) -> list[dict]:
         ext = os.path.splitext(file_path)[-1].lower()
         real_type = self.get_real_file_type(file_path)
-        
+
         # 확장자와 실제 파일 타입이 다를 때만 real_type 사용
         if ext != real_type and real_type == 'pdf':
             pdf_path = file_path
         elif ext != real_type and real_type in ['txt', 'json', 'md']:
-            # pdf_path = None  # PDF 변환 없이 직접 처리
-            pdf_path = file_path.replace('.hwp', '.pdf').replace('.txt', '.pdf').replace('.json', '.pdf')
+            pdf_path = _get_pdf_path(file_path)
         # 원래 확장자 기반 로직
         elif file_path.endswith('.md'):
             pdf_path = self.convert_md_to_pdf(file_path)
-        elif file_path.endswith('.ppt'):
-            pdf_path = convert_to_pdf(file_path)
-            if not pdf_path:
-                return False
+        elif file_path.endswith(('.ppt', '.pptx')):
+            pdf_path = _get_pdf_path(file_path)
         else:
-            pdf_path = file_path.replace('.hwp', '.pdf').replace('.txt', '.pdf').replace('.json', '.pdf')
+            pdf_path = _get_pdf_path(file_path)
 
         doc = fitz.open(pdf_path) if (pdf_path and os.path.exists(pdf_path)) else None
 
-        if file_path.endswith('.ppt'):
+        if file_path.endswith(('.ppt', '.pptx')):
             if os.path.exists(pdf_path):
                 subprocess.run(["rm", pdf_path], check=True)
 
@@ -1216,19 +1247,20 @@ class DocumentProcessor:
                 current_page = page
                 chunk_index_on_page = 0
 
-            if doc:
-                fitz_page = doc.load_page(page)
-                # global_metadata['chunk_bboxes'] = json.dumps(merge_overlapping_bboxes([{
-                #     'page': page + 1,
-                #     'type': 'text',
-                #     'bbox': {
-                #         'l': rect[0] / fitz_page.rect.width,
-                #         't': rect[1] / fitz_page.rect.height,
-                #         'r': rect[2] / fitz_page.rect.width,
-                #         'b': rect[3] / fitz_page.rect.height,
-                #     }
-                # } for rect in fitz_page.search_for(text)], x_tolerance=1 / fitz_page.rect.width,
-                #     y_tolerance=1 / fitz_page.rect.height))
+            # 첨부용에서는 bbox 정보 추출 X
+            # if doc:
+            #     fitz_page = doc.load_page(page)
+            #     global_metadata['chunk_bboxes'] = json.dumps(merge_overlapping_bboxes([{
+            #         'page': page + 1,
+            #         'type': 'text',
+            #         'bbox': {
+            #             'l': rect[0] / fitz_page.rect.width,
+            #             't': rect[1] / fitz_page.rect.height,
+            #             'r': rect[2] / fitz_page.rect.width,
+            #             'b': rect[3] / fitz_page.rect.height,
+            #         }
+            #     } for rect in fitz_page.search_for(text)], x_tolerance=1 / fitz_page.rect.width,
+            #         y_tolerance=1 / fitz_page.rect.height))
 
             vectors.append(GenOSVectorMeta.model_validate({
                 'text': text,
@@ -1295,7 +1327,7 @@ class DocumentProcessor:
             vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
             return vectors
 
-        elif ext in ('.hwpx'):
+        elif ext == '.hwpx':
             return await self.hwpx_processor(request, file_path, **kwargs)
 
         else:
@@ -1305,8 +1337,5 @@ class DocumentProcessor:
             chunks: list[Document] = self.split_documents(documents, **kwargs)
             # await assert_cancelled(request)
 
-            pdf_path = _get_pdf_path(file_path)
-            # await assert_cancelled(request)
-            
             vectors: list[dict] = self.compose_vectors(file_path, chunks, **kwargs)
             return vectors
