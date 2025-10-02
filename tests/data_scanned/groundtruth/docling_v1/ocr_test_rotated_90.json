@@ -27,13 +27,13 @@
   "file-info": {
     "filename": "ocr_test_rotated_90.pdf",
     "filename-prov": null,
-    "document-hash": "4a282813d93824eaa9bc2a0b2a0d6d626ecc8f5f380bd1320e2dd3e8e53c2ba6",
+    "document-hash": "418ae4425f514f002bd4223ea3003c17f319cbeafd67801732d58f2bedb3bd91",
     "#-pages": 1,
     "collection-name": null,
     "description": null,
     "page-hashes": [
       {
-        "hash": "f8a4dc72d8b159f69d0bc968b97f3fb9e0ac59dcb3113492432755835935d9b3",
+        "hash": "36315c08dc861ecde4be6179d2f155da0519b93e0311c290f8db164f593d36d8",
         "model": "default",
         "page": 1
       }
@@ -41,39 +41,48 @@
   },
   "main-text": [
     {
+      "name": "Table",
+      "type": "table",
+      "$ref": "#/tables/0"
+    }
+  ],
+  "figures": [],
+  "tables": [
+    {
       "prov": [
         {
           "bbox": [
-            131.21306574279092,
-            74.12495603322407,
-            152.19606490864376,
-            154.19400205373182
+            87.64582824707031,
+            69.0385971069336,
+            334.5821228027344,
+            551.0978393554688
           ],
           "page": 1,
           "span": [
             0,
-            7
+            0
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "package",
-      "type": "paragraph",
+      "text": "",
+      "type": "table",
       "payload": null,
-      "name": "Text",
-      "font": null
+      "#-cols": 0,
+      "#-rows": 0,
+      "data": [],
+      "model": null,
+      "bounding-box": null
     }
   ],
-  "figures": [],
-  "tables": [],
   "bitmaps": null,
   "equations": [],
   "footnotes": [],
   "page-dimensions": [
     {
-      "height": 595.201171875,
+      "height": 792.0,
       "page": 1,
-      "width": 841.9216918945312
+      "width": 612.0
     }
   ],
   "page-footers": [],

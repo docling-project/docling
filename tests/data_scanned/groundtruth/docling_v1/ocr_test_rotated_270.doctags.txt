@@ -1,3 +1,6 @@
 <document>
-<paragraph><location><page_1><loc_82><loc_74><loc_84><loc_88></location>package</paragraph>
+<table>
+<location><page_1><loc_45><loc_30><loc_86><loc_91></location>
+<row_0><col_0><body>Yet another value</col_0><col_1><body>Some other value</col_1><col_2><body>value</col_2></row_0>
+</table>
 </document>

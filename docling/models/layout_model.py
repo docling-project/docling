@@ -2,8 +2,9 @@ import copy
 import logging
 import warnings
 from collections.abc import Iterable
+from copy import deepcopy
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
 import numpy as np
 from docling_core.types.doc import DocItemLabel
@@ -19,6 +20,7 @@ from docling.models.base_model import BasePageModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.layout_postprocessor import LayoutPostprocessor
+from docling.utils.orientation import detect_orientation, rotate_bounding_box
 from docling.utils.profiling import TimeRecorder
 from docling.utils.visualization import draw_clusters
 
@@ -102,7 +104,12 @@ class LayoutModel(BasePageModel):
         )
 
     def draw_clusters_and_cells_side_by_side(
-        self, conv_res, page, clusters, mode_prefix: str, show: bool = False
+        self,
+        conv_res,
+        page,
+        clusters,
+        mode_prefix: str,
+        show: bool = False,
     ):
         """
         Draws a page image side by side with clusters filtered into two categories:
@@ -110,9 +117,9 @@ class LayoutModel(BasePageModel):
         - Right: Clusters including FORM, KEY_VALUE_REGION, and PICTURE.
         Includes label names and confidence scores for each cluster.
         """
-        scale_x = page.image.width / page.size.width
-        scale_y = page.image.height / page.size.height
-
+        page_image = deepcopy(page.image)
+        scale_x = page_image.width / page.size.width
+        scale_y = page_image.height / page.size.height
         # Filter clusters for left and right images
         exclude_labels = {
             DocItemLabel.FORM,
@@ -152,8 +159,8 @@ class LayoutModel(BasePageModel):
         pages = list(page_batch)
 
         # Separate valid and invalid pages
-        valid_pages = []
         valid_page_images: List[Union[Image.Image, np.ndarray]] = []
+        valid_page_orientations: List[int] = []
 
         for page in pages:
             assert page._backend is not None
@@ -164,8 +171,12 @@ class LayoutModel(BasePageModel):
             page_image = page.get_image(scale=1.0)
             assert page_image is not None
 
-            valid_pages.append(page)
+            page_orientation = detect_orientation(page.cells)
+            if page_orientation:
+                page_image = page_image.rotate(-page_orientation, expand=True)
+
             valid_page_images.append(page_image)
+            valid_page_orientations.append(page_orientation)
 
         # Process all valid pages with batch prediction
         batch_predictions = []
@@ -184,6 +195,8 @@ class LayoutModel(BasePageModel):
                 continue
 
             page_predictions = batch_predictions[valid_page_idx]
+            page_image = valid_page_images[valid_page_idx]  # type: ignore[assignment]
+            page_orientation = valid_page_orientations[valid_page_idx]
             valid_page_idx += 1
 
             clusters = []
@@ -191,18 +204,28 @@ class LayoutModel(BasePageModel):
                 label = DocItemLabel(
                     pred_item["label"].lower().replace(" ", "_").replace("-", "_")
                 )  # Temporary, until docling-ibm-model uses docling-core types
+                bbox = BoundingBox.model_validate(pred_item)
+                if page_orientation:
+                    bbox = rotate_bounding_box(
+                        bbox,
+                        page_orientation,
+                        page_image.size,  # type: ignore[union-attr]
+                    ).to_bounding_box()
                 cluster = Cluster(
                     id=ix,
                     label=label,
                     confidence=pred_item["confidence"],
-                    bbox=BoundingBox.model_validate(pred_item),
+                    bbox=bbox,
                     cells=[],
                 )
                 clusters.append(cluster)
 
             if settings.debug.visualize_raw_layout:
                 self.draw_clusters_and_cells_side_by_side(
-                    conv_res, page, clusters, mode_prefix="raw"
+                    conv_res,
+                    page,
+                    clusters,
+                    mode_prefix="raw",
                 )
 
             # Apply postprocessing
@@ -231,7 +254,10 @@ class LayoutModel(BasePageModel):
 
             if settings.debug.visualize_layout:
                 self.draw_clusters_and_cells_side_by_side(
-                    conv_res, page, processed_clusters, mode_prefix="postprocessed"
+                    conv_res,
+                    page,
+                    processed_clusters,
+                    mode_prefix="postprocessed",
                 )
 
             yield page

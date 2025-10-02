@@ -27,13 +27,13 @@
   "file-info": {
     "filename": "ocr_test_rotated_270.pdf",
     "filename-prov": null,
-    "document-hash": "52f54e7183bdb73aa3713c7b169baca93e276963a138418c26e7d6a1ea128f14",
+    "document-hash": "753140dc9b8c39b67c6f6712e2a1de4c364c808ca09d13dd05b79c23192429dc",
     "#-pages": 1,
     "collection-name": null,
     "description": null,
     "page-hashes": [
       {
-        "hash": "59bc9ddba89e7b008185dd16d384493beb034686e5670546786390c5d237a304",
+        "hash": "c8fa256d58940f76c5e0ec6b65548a2e939f867c2c75d0ee27f5f70ff32a44be",
         "model": "default",
         "page": 1
       }
@@ -41,39 +41,135 @@
   },
   "main-text": [
     {
+      "name": "Table",
+      "type": "table",
+      "$ref": "#/tables/0"
+    }
+  ],
+  "figures": [],
+  "tables": [
+    {
       "prov": [
         {
           "bbox": [
-            690.2441821046808,
-            442.39487414368364,
-            709.8255852011977,
-            523.076601235155
+            277.4178771972656,
+            240.90216064453125,
+            524.3541717529297,
+            722.9614028930664
           ],
           "page": 1,
           "span": [
             0,
-            7
+            0
           ],
           "__ref_s3_data": null
         }
       ],
-      "text": "package",
-      "type": "paragraph",
+      "text": "",
+      "type": "table",
       "payload": null,
-      "name": "Text",
-      "font": null
+      "#-cols": 3,
+      "#-rows": 1,
+      "data": [
+        [
+          {
+            "bbox": [
+              98.0,
+              296.6666666666667,
+              203.66666666666669,
+              344.0
+            ],
+            "spans": [
+              [
+                0,
+                0
+              ]
+            ],
+            "text": "Yet another value",
+            "type": "body",
+            "col": 0,
+            "col-header": false,
+            "col-span": [
+              0,
+              1
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              262.3333333333333,
+              296.6666666666667,
+              365.0,
+              344.0
+            ],
+            "spans": [
+              [
+                0,
+                1
+              ]
+            ],
+            "text": "Some other value",
+            "type": "body",
+            "col": 1,
+            "col-header": false,
+            "col-span": [
+              1,
+              2
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          },
+          {
+            "bbox": [
+              443.33333333333337,
+              312.0,
+              490.33333333333337,
+              328.0
+            ],
+            "spans": [
+              [
+                0,
+                2
+              ]
+            ],
+            "text": "value",
+            "type": "body",
+            "col": 2,
+            "col-header": false,
+            "col-span": [
+              2,
+              3
+            ],
+            "row": 0,
+            "row-header": false,
+            "row-span": [
+              0,
+              1
+            ]
+          }
+        ]
+      ],
+      "model": null,
+      "bounding-box": null
     }
   ],
-  "figures": [],
-  "tables": [],
   "bitmaps": null,
   "equations": [],
   "footnotes": [],
   "page-dimensions": [
     {
-      "height": 595.201171875,
+      "height": 792.0,
       "page": 1,
-      "width": 841.9216918945312
+      "width": 612.0
     }
   ],
   "page-footers": [],

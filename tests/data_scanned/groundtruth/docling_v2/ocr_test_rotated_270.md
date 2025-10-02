@@ -1,1 +1,4 @@
-Docling bundles PDF document conversion to JSON and Markdown in an easy self contained package
+| Vertically merged   | Other merged column   | Yet another column   |
+|---------------------|-----------------------|----------------------|
+| value               | Some other value      | Yet another value    |
+| value               | Some other value      | Yet another value    |
