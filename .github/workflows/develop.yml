@@ -23,7 +23,7 @@ jobs:
       - run: uv run python -m compileall -q .
       - name: Import smoke
         run: uv run python -c "import importlib; importlib.import_module('doc_preprocessors.basic_processor')"
-      - name: Pytest (unit+smoke)
-        run: uv run pytest -m "unit or smoke" -v -ra --durations=5
+      - name: Pytest (unit+smoke+regression)
+        run: uv run pytest -m "unit or smoke or regression" -v -ra --durations=10
       - name: Build package
         run: uv build
