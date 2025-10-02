@@ -8,12 +8,12 @@ from basic_processor import DocumentProcessor
 
 # 파일 경로 및 요청 설정
 import os
-file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_files", "/workspaces/md_attach_preprocess/doc_parser/sample_files/sample.csv")
+file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_files", "./../sample_files/sample.hwpx")
 
 # 파일 존재 여부 확인
 if not os.path.exists(file_path):
     print(f"Sample file not found: {file_path}")
-    print("Please add a PDF file to the sample_files folder.")
+    print("Please add a file to the sample_files folder.")
     exit(1)
 
 # DocumentProcessor 인스턴스 생성
