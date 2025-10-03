@@ -1,3 +1,21 @@
+## [v2.55.0](https://github.com/docling-project/docling/releases/tag/v2.55.0) - 2025-09-30
+
+### Feature
+
+* Repetition-based StoppingCriteria for GraniteDocling ([#2323](https://github.com/docling-project/docling/issues/2323)) ([`1e9dc43`](https://github.com/docling-project/docling/commit/1e9dc43b722aeffa4574ae2a87bae1eb180c1201))
+* Rich tables support for HTML backend ([#2324](https://github.com/docling-project/docling/issues/2324)) ([`c803abe`](https://github.com/docling-project/docling/commit/c803abed9ae98489184791a70bf49cac0c83ab89))
+
+### Fix
+
+* Pin wider range of typer ([#2309](https://github.com/docling-project/docling/issues/2309)) ([`68ae7cc`](https://github.com/docling-project/docling/commit/68ae7ccf3cf945fc18093d27a5344d55f77a510b))
+* Update Transformers & VLLM inference code, CLI and VLM specs ([#2322](https://github.com/docling-project/docling/issues/2322)) ([`654c70f`](https://github.com/docling-project/docling/commit/654c70f99096636006e67fefe4a0809ef58fd236))
+* Support escaped characters in markdown backend ([#2304](https://github.com/docling-project/docling/issues/2304)) ([`9d67bb9`](https://github.com/docling-project/docling/commit/9d67bb9ed61e8c3072816b13823b908817b45518))
+
+### Documentation
+
+* **styling:** Update color scheme ([#2154](https://github.com/docling-project/docling/issues/2154)) ([`325877a`](https://github.com/docling-project/docling/commit/325877aee977efae0a87998aeb82088b5ca4e13d))
+* **vlm:** Update SmolDocling to GraniteDocling references ([#2315](https://github.com/docling-project/docling/issues/2315)) ([`a873200`](https://github.com/docling-project/docling/commit/a873200c9d6656de86833baa314f1e0faa8af50c))
+
 ## [v2.54.0](https://github.com/docling-project/docling/releases/tag/v2.54.0) - 2025-09-22
 
 ### Feature
