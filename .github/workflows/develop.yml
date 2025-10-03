@@ -26,7 +26,7 @@ jobs:
       - run: uv sync --dev
       - name: Install additional Python packages
         run: |
-          uv run python -m pip install --upgrade "unstructured>=0.8.0,<0.10.0" \
+          uv pip install --upgrade "unstructured>=0.8.0,<0.10.0" \
             pdf2image>=1.16.0 \
             pdfminer.six>=20220524 \
             pytesseract>=0.3.10 \
