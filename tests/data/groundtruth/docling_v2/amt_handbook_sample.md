@@ -4,7 +4,7 @@ The two general types of self-locking nuts currently in use are the all-metal ty
 
 ## Boots Self-Locking Nut
 
-The  Boots  self-locking nut is  of  one  piece, all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.
+The  Boots  self-locking  nut  is  of  one  piece,  all-metal construction designed to hold tight despite severe vibration. Note in Figure 7-26 that it has two sections and is essentially two nuts in one: a locking nut and a load-carrying nut. The two sections are connected with a spring, which is an integral part of the nut.
 
 The spring keeps the locking and load-carrying sections such a distance apart that the two sets of threads are out of phase or spaced so that a bolt, which has been screwed through the load-carrying section, must push the locking section outward against the force of the spring to engage the threads of the locking section properly.
 

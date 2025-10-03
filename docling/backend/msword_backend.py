@@ -812,7 +812,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             else prev_parent
         )
 
-    def _handle_text_elements(  # noqa: C901
+    def _handle_text_elements(
         self,
         element: BaseOxmlElement,
         docx_obj: DocxDocument,

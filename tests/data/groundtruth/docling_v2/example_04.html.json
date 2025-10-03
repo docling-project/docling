@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "name": "example_04",
   "origin": {
     "mimetype": "text/html",
@@ -70,7 +70,8 @@
             "text": "Header 1",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -82,7 +83,8 @@
             "text": "Header 2 & 3 (colspan)",
             "column_header": true,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 2,
@@ -94,7 +96,8 @@
             "text": "Row 1 & 2, Col 1 (rowspan)",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -106,7 +109,8 @@
             "text": "Row 1, Col 2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -118,7 +122,8 @@
             "text": "Row 1, Col 3",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -130,7 +135,8 @@
             "text": "Row 2, Col 2 & 3 (colspan)",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -142,7 +148,8 @@
             "text": "Row 3, Col 1",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -154,7 +161,8 @@
             "text": "Row 3, Col 2",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -166,7 +174,8 @@
             "text": "Row 3, Col 3",
             "column_header": false,
             "row_header": false,
-            "row_section": false
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 4,
@@ -183,7 +192,8 @@
               "text": "Header 1",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -195,7 +205,8 @@
               "text": "Header 2 & 3 (colspan)",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -207,7 +218,8 @@
               "text": "Header 2 & 3 (colspan)",
               "column_header": true,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -221,7 +233,8 @@
               "text": "Row 1 & 2, Col 1 (rowspan)",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -233,7 +246,8 @@
               "text": "Row 1, Col 2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -245,7 +259,8 @@
               "text": "Row 1, Col 3",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -259,7 +274,8 @@
               "text": "Row 1 & 2, Col 1 (rowspan)",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -271,7 +287,8 @@
               "text": "Row 2, Col 2 & 3 (colspan)",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -283,7 +300,8 @@
               "text": "Row 2, Col 2 & 3 (colspan)",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -297,7 +315,8 @@
               "text": "Row 3, Col 1",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -309,7 +328,8 @@
               "text": "Row 3, Col 2",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             },
             {
               "row_span": 1,
@@ -321,7 +341,8 @@
               "text": "Row 3, Col 3",
               "column_header": false,
               "row_header": false,
-              "row_section": false
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]

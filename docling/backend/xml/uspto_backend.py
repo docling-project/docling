@@ -1523,7 +1523,7 @@ class XmlTable:
 
         return ncols_max
 
-    def _parse_table(self, table: Tag) -> TableData:  # noqa: C901
+    def _parse_table(self, table: Tag) -> TableData:
         """Parse the content of a table tag.
 
         Args:
