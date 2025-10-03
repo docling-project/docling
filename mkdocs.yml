@@ -124,6 +124,7 @@ nav:
       - examples/rag_opensearch.ipynb
       - examples/rag_weaviate.ipynb
       - examples/retrieval_qdrant.ipynb
+      - RAG with Vault PII transform [↗]: https://github.com/workloads/pathfinder-prism
   - Integrations:
     - Integrations: integrations/index.md
     - 🤖 Agentic / AI dev frameworks:
