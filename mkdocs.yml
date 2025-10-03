@@ -7,28 +7,27 @@ theme:
   name: material
   custom_dir: docs/overrides
   palette:
-    # Palette toggle for automatic mode
-    - media: "(prefers-color-scheme)"
-      scheme: default
+    # Default dark mode
+    - scheme: slate
       primary: black
       toggle:
-        icon: material/brightness-auto
+        icon: material/brightness-7
         name: Switch to light mode
 
-    # Palette toggle for light mode
+    # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: black
       toggle:
-        icon: material/brightness-7
+        icon: material/brightness-4
         name: Switch to dark mode
 
-    # Palette toggle for dark mode
+    # System preference (dark)
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: black
       toggle:
-        icon: material/brightness-4
+        icon: material/brightness-auto
         name: Switch to system preference
 
   logo: assets/logo.png
@@ -66,6 +65,7 @@ nav:
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
       - MCP server: usage/mcp.md
+      - Jobkit: usage/jobkit.md
     - FAQ:
       - FAQ: faq/index.md
   - Concepts:
@@ -124,6 +124,7 @@ nav:
       - examples/rag_weaviate.ipynb
       - examples/retrieval_qdrant.ipynb
       - examples/rag_mongodb.ipynb
+      - RAG with Vault PII transform [↗]: https://github.com/workloads/pathfinder-prism
   - Integrations:
     - Integrations: integrations/index.md
     - 🤖 Agentic / AI dev frameworks:

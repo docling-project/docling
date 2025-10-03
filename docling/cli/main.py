@@ -66,6 +66,7 @@ from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_TRANSFORMERS,
     GRANITEDOCLING_MLX,
     GRANITEDOCLING_TRANSFORMERS,
+    GRANITEDOCLING_VLLM,
     SMOLDOCLING_MLX,
     SMOLDOCLING_TRANSFORMERS,
     SMOLDOCLING_VLLM,
@@ -354,6 +355,13 @@ def convert(  # noqa: C901
             help="Replace any existing text with OCR generated text over the full content.",
         ),
     ] = False,
+    tables: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, the table structure model will be used to extract table information.",
+        ),
+    ] = True,
     ocr_engine: Annotated[
         str,
         typer.Option(
@@ -590,7 +598,7 @@ def convert(  # noqa: C901
                 accelerator_options=accelerator_options,
                 do_ocr=ocr,
                 ocr_options=ocr_options,
-                do_table_structure=True,
+                do_table_structure=tables,
                 do_code_enrichment=enrich_code,
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
@@ -686,6 +694,7 @@ def convert(  # noqa: C901
                             "To run SmolDocling faster, please install mlx-vlm:\n"
                             "pip install mlx-vlm"
                         )
+
             elif vlm_model == VlmModelType.GRANITEDOCLING:
                 pipeline_options.vlm_options = GRANITEDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":
@@ -700,6 +709,9 @@ def convert(  # noqa: C901
                         )
             elif vlm_model == VlmModelType.SMOLDOCLING_VLLM:
                 pipeline_options.vlm_options = SMOLDOCLING_VLLM
+
+            elif vlm_model == VlmModelType.GRANITEDOCLING_VLLM:
+                pipeline_options.vlm_options = GRANITEDOCLING_VLLM
 
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options
