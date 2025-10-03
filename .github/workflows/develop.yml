@@ -26,12 +26,12 @@ jobs:
       - run: uv sync --dev
       - name: Install additional Python packages
         run: |
-          uv add unstructured>=0.8.0,<0.10.0
-          uv add pdf2image>=1.16.0
-          uv add pdfminer.six>=20220524
-          uv add pytesseract>=0.3.10
-          uv add weasyprint>=60.0
-          uv add opencv-python>=4.8.0
+          uv run python -m pip install --upgrade "unstructured>=0.8.0,<0.10.0" \
+            pdf2image>=1.16.0 \
+            pdfminer.six>=20220524 \
+            pytesseract>=0.3.10 \
+            weasyprint>=60.0 \
+            opencv-python>=4.8.0
       - name: Download NLTK data
         run: |
           uv run python -c "import nltk; nltk.download('punkt_tab')"
