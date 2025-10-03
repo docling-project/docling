@@ -913,11 +913,6 @@ class DocumentProcessor:
         '''
         initialize Document Converter
         '''
-        # Enrichment 단계(외부 NLP/NLTK 의존 가능) 사용 여부
-        try:
-            self.enable_enrichment = str(os.getenv("ENABLE_ENRICHMENT", "false")).strip().lower() in {"1", "true", "yes", "on"}
-        except Exception:
-            self.enable_enrichment = False
         self.page_chunk_counts = defaultdict(int)
         device = AcceleratorDevice.AUTO
         num_threads = 8
@@ -934,7 +929,7 @@ class DocumentProcessor:
         # ocr_options.lang = ['kor', 'kor_vert', 'eng', 'jpn', 'jpn_vert']
         # ocr_options.path = './.tesseract/tessdata'
         # self.pipe_line_options.ocr_options = ocr_options
-        self.pipe_line_options.artifacts_path = Path("/nfs-root/models/223/760")  # Path("/nfs-root/aiModel/.cache/huggingface/hub/models--ds4sd--docling-models/snapshots/4659a7d29247f9f7a94102e1f313dad8e8c8f2f6/")
+        # self.pipe_line_options.artifacts_path = Path("/nfs-root/models/223/760")  # Path("/nfs-root/aiModel/.cache/huggingface/hub/models--ds4sd--docling-models/snapshots/4659a7d29247f9f7a94102e1f313dad8e8c8f2f6/")
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.images_scale = 2
         self.pipe_line_options.table_structure_options.do_cell_matching = True
@@ -1170,13 +1165,7 @@ class DocumentProcessor:
 
         document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
 
-        # enrichment은 기본 비활성화. ENABLE_ENRICHMENT=true 로 활성화 가능
-        if self.enable_enrichment:
-            try:
-                document = self.enrichment(document, **kwargs)
-            except Exception:
-                # enrichment 실패 시 무시하고 계속 진행 (테스트 안정성 보장)
-                pass
+        document = self.enrichment(document, **kwargs)
 
         has_text_items = False
         for item, _ in document.iterate_items():

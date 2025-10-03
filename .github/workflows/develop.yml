@@ -12,6 +12,7 @@ jobs:
         python-version: ['3.12', '3.13']
     env:
       PYTHONPATH: ${{ github.workspace }}
+      # DOCLING_ARTIFACTS_PATH를 설정하지 않아 자동 다운로드 사용
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -34,7 +35,7 @@ jobs:
             opencv-python>=4.8.0
       - name: Download NLTK data
         run: |
-          uv run python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')"
+          uv run python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng'); nltk.download('punkt_tab')"
       - name: Download custom layout model from HuggingFace
         run: |
           uv run python -c "
