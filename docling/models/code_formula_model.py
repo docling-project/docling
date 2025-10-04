@@ -205,6 +205,67 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         except ValueError:
             return CodeLanguageLabel.UNKNOWN
 
+    def _clean_formula_spaces(self, latex_str: str) -> str:
+        """
+        Remove unnecessary spaces from LaTeX formulas.
+
+        The ML model outputs formulas with spaces between tokens like:
+            "a ^ { 2 } + 8 = 1 2"
+
+        This method cleans it to standard LaTeX format:
+            "a^{2}+8=12"
+
+        Parameters
+        ----------
+        latex_str : str
+            Raw LaTeX string from model output with extra spaces.
+
+        Returns
+        -------
+        str
+            Cleaned LaTeX string without unnecessary spaces.
+
+        Examples
+        --------
+        >>> model._clean_formula_spaces("a ^ { 2 } + 8 = 1 2")
+        'a^{2}+8=12'
+        >>> model._clean_formula_spaces("x _ { 1 } + x _ { 2 }")
+        'x_{1}+x_{2}'
+        """
+        if not latex_str:
+            return latex_str
+
+        result = latex_str
+
+        # Remove spaces around superscripts and subscripts with braces
+        result = re.sub(r"\s*\^\s*{\s*", "^{", result)  # a ^ { 2 } -> a^{2}
+        result = re.sub(r"\s*_\s*{\s*", "_{", result)  # a _ { 2 } -> a_{2}
+
+        # Remove spaces inside braces
+        result = re.sub(r"{\s+", "{", result)  # { 2 -> {2
+        result = re.sub(r"\s+}", "}", result)  # 2 } -> 2}
+
+        # Remove spaces after backslash (LaTeX commands)
+        result = re.sub(r"\\\s+", r"\\", result)  # \ frac -> \frac
+
+        # Remove spaces around operators
+        result = re.sub(r"\s*([+\-*/=])\s*", r"\1", result)  # a + b -> a+b
+
+        # Remove spaces after commas in functions/arguments
+        result = re.sub(r"\s*,\s*", ",", result)
+
+        # Fix number spacing (main issue in test)
+        result = re.sub(r"(\d)\s+(\d)", r"\1\2", result)  # 1 2 -> 12
+
+        # Remove spaces between closing brace and following symbol/number
+        result = re.sub(r"}\s+([^\s])", r"}\1", result)
+
+        # Clean up any remaining multiple spaces
+        result = re.sub(r"\s{2,}", " ", result)
+        result = re.sub(r"\\([a-zA-Z]+)\s*{", r"\\\1{", result)
+
+        return result.strip()
+
     def _get_prompt(self, label: str) -> str:
         """
         Constructs the prompt for the model based on the input label.
@@ -332,6 +393,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             if isinstance(item, CodeItem):
                 output, code_language = self._extract_code_language(output)
                 item.code_language = self._get_code_language_enum(code_language)
+            elif isinstance(item, TextItem) and item.label == DocItemLabel.FORMULA:
+                # Clean formula spacing if formula enrichment is enabled
+                if self.options.do_formula_enrichment:
+                    output = self._clean_formula_spaces(output)
+
             item.text = output
 
             yield item

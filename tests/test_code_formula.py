@@ -57,7 +57,7 @@ def test_code_and_formula_conversion():
     ]
     assert len(formula_blocks) == 1
 
-    gt = "a ^ { 2 } + 8 = 1 2"
+    gt = "a^{2}+8=12"
     predicted = formula_blocks[0].text
     assert predicted == gt, f"mismatch in text {predicted=}, {gt=}"
 
@@ -79,6 +79,6 @@ def test_formula_conversion_with_page_range():
     ]
     assert len(formula_blocks) == 1
 
-    gt = "a ^ { 2 } + 8 = 1 2"
+    gt = "a^{2}+8=12"
     predicted = formula_blocks[0].text
     assert predicted == gt, f"mismatch in text {predicted=}, {gt=}"
