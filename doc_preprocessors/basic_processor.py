@@ -33,6 +33,8 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions
 )
 
+from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
+
 from docling.document_converter import (
     DocumentConverter,
     PdfFormatOption,
@@ -930,6 +932,7 @@ class DocumentProcessor:
         # ocr_options.path = './.tesseract/tessdata'
         # self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.artifacts_path = Path("/nfs-root/models/223/760")  # Path("/nfs-root/aiModel/.cache/huggingface/hub/models--ds4sd--docling-models/snapshots/4659a7d29247f9f7a94102e1f313dad8e8c8f2f6/")
+        self.pipe_line_options.layout_options.model_spec = MNCAI_CUSTOM_LAYOUT
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.images_scale = 2
         self.pipe_line_options.table_structure_options.do_cell_matching = True
