@@ -10,77 +10,328 @@ from docling.datamodel.pipeline_options_asr_model import (
     # AsrResponseFormat,
     # ApiAsrOptions,
     InferenceAsrFramework,
+    InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
     TransformersModelType,
 )
 
 _log = logging.getLogger(__name__)
 
-WHISPER_TINY = InlineAsrNativeWhisperOptions(
-    repo_id="tiny",
-    inference_framework=InferenceAsrFramework.WHISPER,
-    verbose=True,
-    timestamps=True,
-    word_timestamps=True,
-    temperature=0.0,
-    max_new_tokens=256,
-    max_time_chunk=30.0,
-)
 
-WHISPER_SMALL = InlineAsrNativeWhisperOptions(
-    repo_id="small",
-    inference_framework=InferenceAsrFramework.WHISPER,
-    verbose=True,
-    timestamps=True,
-    word_timestamps=True,
-    temperature=0.0,
-    max_new_tokens=256,
-    max_time_chunk=30.0,
-)
+def _get_whisper_tiny_model():
+    """
+    Get the best Whisper Tiny model for the current hardware.
 
-WHISPER_MEDIUM = InlineAsrNativeWhisperOptions(
-    repo_id="medium",
-    inference_framework=InferenceAsrFramework.WHISPER,
-    verbose=True,
-    timestamps=True,
-    word_timestamps=True,
-    temperature=0.0,
-    max_new_tokens=256,
-    max_time_chunk=30.0,
-)
+    Automatically selects MLX Whisper Tiny for Apple Silicon (MPS) if available,
+    otherwise falls back to native Whisper Tiny.
+    """
+    # Check if MPS is available (Apple Silicon)
+    try:
+        import torch
 
-WHISPER_BASE = InlineAsrNativeWhisperOptions(
-    repo_id="base",
-    inference_framework=InferenceAsrFramework.WHISPER,
-    verbose=True,
-    timestamps=True,
-    word_timestamps=True,
-    temperature=0.0,
-    max_new_tokens=256,
-    max_time_chunk=30.0,
-)
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    except ImportError:
+        has_mps = False
 
-WHISPER_LARGE = InlineAsrNativeWhisperOptions(
-    repo_id="large",
-    inference_framework=InferenceAsrFramework.WHISPER,
-    verbose=True,
-    timestamps=True,
-    word_timestamps=True,
-    temperature=0.0,
-    max_new_tokens=256,
-    max_time_chunk=30.0,
-)
+    # Check if mlx-whisper is available
+    try:
+        import mlx_whisper  # type: ignore
 
-WHISPER_TURBO = InlineAsrNativeWhisperOptions(
-    repo_id="turbo",
-    inference_framework=InferenceAsrFramework.WHISPER,
-    verbose=True,
-    timestamps=True,
-    word_timestamps=True,
-    temperature=0.0,
-    max_new_tokens=256,
-    max_time_chunk=30.0,
-)
+        has_mlx_whisper = True
+    except ImportError:
+        has_mlx_whisper = False
+
+    # Use MLX Whisper if both MPS and mlx-whisper are available
+    if has_mps and has_mlx_whisper:
+        return InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-tiny-mlx",
+            inference_framework=InferenceAsrFramework.MLX,
+            language="en",
+            task="transcribe",
+            word_timestamps=True,
+            no_speech_threshold=0.6,
+            logprob_threshold=-1.0,
+            compression_ratio_threshold=2.4,
+        )
+    else:
+        return InlineAsrNativeWhisperOptions(
+            repo_id="tiny",
+            inference_framework=InferenceAsrFramework.WHISPER,
+            verbose=True,
+            timestamps=True,
+            word_timestamps=True,
+            temperature=0.0,
+            max_new_tokens=256,
+            max_time_chunk=30.0,
+        )
+
+
+# Create the model instance
+WHISPER_TINY = _get_whisper_tiny_model()
+
+
+def _get_whisper_small_model():
+    """
+    Get the best Whisper Small model for the current hardware.
+
+    Automatically selects MLX Whisper Small for Apple Silicon (MPS) if available,
+    otherwise falls back to native Whisper Small.
+    """
+    # Check if MPS is available (Apple Silicon)
+    try:
+        import torch
+
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    except ImportError:
+        has_mps = False
+
+    # Check if mlx-whisper is available
+    try:
+        import mlx_whisper  # type: ignore
+
+        has_mlx_whisper = True
+    except ImportError:
+        has_mlx_whisper = False
+
+    # Use MLX Whisper if both MPS and mlx-whisper are available
+    if has_mps and has_mlx_whisper:
+        return InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-small-mlx",
+            inference_framework=InferenceAsrFramework.MLX,
+            language="en",
+            task="transcribe",
+            word_timestamps=True,
+            no_speech_threshold=0.6,
+            logprob_threshold=-1.0,
+            compression_ratio_threshold=2.4,
+        )
+    else:
+        return InlineAsrNativeWhisperOptions(
+            repo_id="small",
+            inference_framework=InferenceAsrFramework.WHISPER,
+            verbose=True,
+            timestamps=True,
+            word_timestamps=True,
+            temperature=0.0,
+            max_new_tokens=256,
+            max_time_chunk=30.0,
+        )
+
+
+# Create the model instance
+WHISPER_SMALL = _get_whisper_small_model()
+
+
+def _get_whisper_medium_model():
+    """
+    Get the best Whisper Medium model for the current hardware.
+
+    Automatically selects MLX Whisper Medium for Apple Silicon (MPS) if available,
+    otherwise falls back to native Whisper Medium.
+    """
+    # Check if MPS is available (Apple Silicon)
+    try:
+        import torch
+
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    except ImportError:
+        has_mps = False
+
+    # Check if mlx-whisper is available
+    try:
+        import mlx_whisper  # type: ignore
+
+        has_mlx_whisper = True
+    except ImportError:
+        has_mlx_whisper = False
+
+    # Use MLX Whisper if both MPS and mlx-whisper are available
+    if has_mps and has_mlx_whisper:
+        return InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-medium-mlx-8bit",
+            inference_framework=InferenceAsrFramework.MLX,
+            language="en",
+            task="transcribe",
+            word_timestamps=True,
+            no_speech_threshold=0.6,
+            logprob_threshold=-1.0,
+            compression_ratio_threshold=2.4,
+        )
+    else:
+        return InlineAsrNativeWhisperOptions(
+            repo_id="medium",
+            inference_framework=InferenceAsrFramework.WHISPER,
+            verbose=True,
+            timestamps=True,
+            word_timestamps=True,
+            temperature=0.0,
+            max_new_tokens=256,
+            max_time_chunk=30.0,
+        )
+
+
+# Create the model instance
+WHISPER_MEDIUM = _get_whisper_medium_model()
+
+
+def _get_whisper_base_model():
+    """
+    Get the best Whisper Base model for the current hardware.
+
+    Automatically selects MLX Whisper Base for Apple Silicon (MPS) if available,
+    otherwise falls back to native Whisper Base.
+    """
+    # Check if MPS is available (Apple Silicon)
+    try:
+        import torch
+
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    except ImportError:
+        has_mps = False
+
+    # Check if mlx-whisper is available
+    try:
+        import mlx_whisper  # type: ignore
+
+        has_mlx_whisper = True
+    except ImportError:
+        has_mlx_whisper = False
+
+    # Use MLX Whisper if both MPS and mlx-whisper are available
+    if has_mps and has_mlx_whisper:
+        return InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-base-mlx",
+            inference_framework=InferenceAsrFramework.MLX,
+            language="en",
+            task="transcribe",
+            word_timestamps=True,
+            no_speech_threshold=0.6,
+            logprob_threshold=-1.0,
+            compression_ratio_threshold=2.4,
+        )
+    else:
+        return InlineAsrNativeWhisperOptions(
+            repo_id="base",
+            inference_framework=InferenceAsrFramework.WHISPER,
+            verbose=True,
+            timestamps=True,
+            word_timestamps=True,
+            temperature=0.0,
+            max_new_tokens=256,
+            max_time_chunk=30.0,
+        )
+
+
+# Create the model instance
+WHISPER_BASE = _get_whisper_base_model()
+
+
+def _get_whisper_large_model():
+    """
+    Get the best Whisper Large model for the current hardware.
+
+    Automatically selects MLX Whisper Large for Apple Silicon (MPS) if available,
+    otherwise falls back to native Whisper Large.
+    """
+    # Check if MPS is available (Apple Silicon)
+    try:
+        import torch
+
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    except ImportError:
+        has_mps = False
+
+    # Check if mlx-whisper is available
+    try:
+        import mlx_whisper  # type: ignore
+
+        has_mlx_whisper = True
+    except ImportError:
+        has_mlx_whisper = False
+
+    # Use MLX Whisper if both MPS and mlx-whisper are available
+    if has_mps and has_mlx_whisper:
+        return InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-large-mlx-8bit",
+            inference_framework=InferenceAsrFramework.MLX,
+            language="en",
+            task="transcribe",
+            word_timestamps=True,
+            no_speech_threshold=0.6,
+            logprob_threshold=-1.0,
+            compression_ratio_threshold=2.4,
+        )
+    else:
+        return InlineAsrNativeWhisperOptions(
+            repo_id="large",
+            inference_framework=InferenceAsrFramework.WHISPER,
+            verbose=True,
+            timestamps=True,
+            word_timestamps=True,
+            temperature=0.0,
+            max_new_tokens=256,
+            max_time_chunk=30.0,
+        )
+
+
+# Create the model instance
+WHISPER_LARGE = _get_whisper_large_model()
+
+
+def _get_whisper_turbo_model():
+    """
+    Get the best Whisper Turbo model for the current hardware.
+
+    Automatically selects MLX Whisper Turbo for Apple Silicon (MPS) if available,
+    otherwise falls back to native Whisper Turbo.
+    """
+    # Check if MPS is available (Apple Silicon)
+    try:
+        import torch
+
+        has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    except ImportError:
+        has_mps = False
+
+    # Check if mlx-whisper is available
+    try:
+        import mlx_whisper  # type: ignore
+
+        has_mlx_whisper = True
+    except ImportError:
+        has_mlx_whisper = False
+
+    # Use MLX Whisper if both MPS and mlx-whisper are available
+    if has_mps and has_mlx_whisper:
+        return InlineAsrMlxWhisperOptions(
+            repo_id="mlx-community/whisper-turbo",
+            inference_framework=InferenceAsrFramework.MLX,
+            language="en",
+            task="transcribe",
+            word_timestamps=True,
+            no_speech_threshold=0.6,
+            logprob_threshold=-1.0,
+            compression_ratio_threshold=2.4,
+        )
+    else:
+        return InlineAsrNativeWhisperOptions(
+            repo_id="turbo",
+            inference_framework=InferenceAsrFramework.WHISPER,
+            verbose=True,
+            timestamps=True,
+            word_timestamps=True,
+            temperature=0.0,
+            max_new_tokens=256,
+            max_time_chunk=30.0,
+        )
+
+
+# Create the model instance
+WHISPER_TURBO = _get_whisper_turbo_model()
+
+# Note: MLX Whisper models are now automatically selected when using
+# WHISPER_TURBO, WHISPER_BASE, WHISPER_SMALL, etc. on Apple Silicon systems
+# with mlx-whisper installed. No need for separate MLX-specific model specs.
 
 
 class AsrModelType(str, Enum):
