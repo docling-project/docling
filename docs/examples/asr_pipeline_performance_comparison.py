@@ -174,15 +174,15 @@ def main():
     print(f"MLX Whisper available: {has_mlx_whisper}")
 
     if not has_mps:
-        print("❌ This test requires Apple Silicon (MPS) to be meaningful.")
+        print("⚠️  Apple Silicon (MPS) not available - running CPU-only comparison")
+        print("   For MLX Whisper performance benefits, run on Apple Silicon devices")
         print("   MLX Whisper is optimized for Apple Silicon devices.")
-        sys.exit(1)
 
     if not has_mlx_whisper:
-        print("❌ MLX Whisper is not installed.")
+        print("⚠️  MLX Whisper not installed - running CPU-only comparison")
         print("   Install with: pip install mlx-whisper")
         print("   Or: uv sync --extra asr")
-        sys.exit(1)
+        print("   For MLX Whisper performance benefits, install the dependency")
 
     # Determine audio file path
     if args.audio:
@@ -229,15 +229,21 @@ def main():
         )
         model_results["cpu"] = {"duration": cpu_duration, "success": cpu_success}
 
-        # Test 2: MLX Whisper (Apple Silicon optimized)
-        mlx_options = create_mlx_whisper_options(model_size)
-        mlx_duration, mlx_success = run_transcription_test(
-            audio_file,
-            mlx_options,
-            AcceleratorDevice.MPS,
-            f"MLX Whisper {model_size} (MPS)",
-        )
-        model_results["mlx"] = {"duration": mlx_duration, "success": mlx_success}
+        # Test 2: MLX Whisper (Apple Silicon optimized) - only if available
+        if has_mps and has_mlx_whisper:
+            mlx_options = create_mlx_whisper_options(model_size)
+            mlx_duration, mlx_success = run_transcription_test(
+                audio_file,
+                mlx_options,
+                AcceleratorDevice.MPS,
+                f"MLX Whisper {model_size} (MPS)",
+            )
+            model_results["mlx"] = {"duration": mlx_duration, "success": mlx_success}
+        else:
+            print(f"\n{'=' * 60}")
+            print(f"Skipping MLX Whisper {model_size} (MPS) - not available")
+            print(f"{'=' * 60}")
+            model_results["mlx"] = {"duration": 0.0, "success": False}
 
         results[model_size] = model_results
 
@@ -292,7 +298,13 @@ def main():
 
         print(f"\n🎯 MLX Whisper provides {avg_speedup:.1f}x average speedup over CPU!")
     else:
-        print("\n❌ No successful comparisons available.")
+        if has_mps and has_mlx_whisper:
+            print("\n❌ No successful comparisons available.")
+        else:
+            print("\n⚠️  MLX Whisper not available - only CPU results shown.")
+            print(
+                "   Install MLX Whisper and run on Apple Silicon for performance comparison."
+            )
 
 
 if __name__ == "__main__":
