@@ -8,7 +8,7 @@ from basic_processor import DocumentProcessor
 
 # 파일 경로 및 요청 설정
 import os
-file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_files", "./../sample_files/sample.hwpx")
+file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_files", "/workspaces/md_attach_preprocess/doc_parser/sample_files/xlsx_sample.xlsx")
 
 # 파일 존재 여부 확인
 if not os.path.exists(file_path):

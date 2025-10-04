@@ -3,12 +3,12 @@ import pytest
 
 @pytest.mark.smoke
 @pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.hwpx").exists(),
-    reason="sample.hwpx not found",
+    not (Path(__file__).resolve().parents[2] / "sample_files" / "hwpx_sample.hwpx").exists(),
+    reason="hwpx_sample.hwpx not found",
 )
 def test_hwpx_smoke(basic_processor):
     dp = basic_processor()
-    sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.hwpx"
+    sample = Path(__file__).resolve().parents[2] / "sample_files" / "hwpx_sample.hwpx"
 
     doc = dp.load_documents(str(sample))
     assert doc is not None
@@ -20,13 +20,13 @@ def test_hwpx_smoke(basic_processor):
 
 @pytest.mark.smoke
 @pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.hwpx").exists(),
-    reason="sample.hwpx not found",
+    not (Path(__file__).resolve().parents[2] / "sample_files" / "hwpx_sample.hwpx").exists(),
+    reason="hwpx_sample.hwpx not found",
 )
 @pytest.mark.asyncio
 async def test_vector_schema_hwpx(basic_processor):
     dp = basic_processor()
-    sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.hwpx"
+    sample = Path(__file__).resolve().parents[2] / "sample_files" / "hwpx_sample.hwpx"
 
     vectors = await dp(None, str(sample))
     assert isinstance(vectors, list) and len(vectors) >= 1

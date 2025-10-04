@@ -3,12 +3,12 @@ import pytest
 
 @pytest.mark.smoke
 @pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.pdf").exists(),
-    reason="sample.pdf not found",
+    not (Path(__file__).resolve().parents[2] / "sample_files" / "pdf_sample.pdf").exists(),
+    reason="pdf_sample.pdf not found",
 )
 def test_pdf_smoke(basic_processor):
     dp = basic_processor()
-    sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pdf"
+    sample = Path(__file__).resolve().parents[2] / "sample_files" / "pdf_sample.pdf"
 
     doc = dp.load_documents(str(sample))
     assert doc is not None
@@ -20,13 +20,13 @@ def test_pdf_smoke(basic_processor):
 
 @pytest.mark.smoke
 @pytest.mark.skipif(
-    not (Path(__file__).resolve().parents[2] / "sample_files" / "sample.pdf").exists(),
-    reason="sample.pdf not found",
+    not (Path(__file__).resolve().parents[2] / "sample_files" / "pdf_sample.pdf").exists(),
+    reason="pdf_sample.pdf not found",
 )
 @pytest.mark.asyncio
 async def test_vector_schema_pdf(basic_processor):
     dp = basic_processor()
-    sample = Path(__file__).resolve().parents[2] / "sample_files" / "sample.pdf"
+    sample = Path(__file__).resolve().parents[2] / "sample_files" / "pdf_sample.pdf"
 
     vectors = await dp(None, str(sample))
     assert isinstance(vectors, list) and len(vectors) >= 1

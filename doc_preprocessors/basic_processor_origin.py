@@ -9,7 +9,10 @@ from datetime import datetime
 from typing import Optional, Iterable, Any, List, Dict, Tuple
 
 from fastapi import Request
-
+import shutil
+import subprocess
+import tempfile
+import unicodedata
 # docling imports
 
 from docling.backend.xml.hwpx_backend import HwpxDocumentBackend
@@ -98,7 +101,84 @@ from genos_utils import upload_files
 #
 
 """Chunker implementation leveraging the document structure."""
+CONVERTIBLE_EXTENSIONS = ['.xlsx', '.md', '.docx', '.pptx']
+def convert_to_pdf(file_path: str) -> str | None:
+    """
+    LibreOffice로 PDF 변환을 시도한다.
+    실패해도 예외를 던지지 않고 None을 반환한다.
+    """
+    try:
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
 
+        # headless에서 UTF-8 locale 보장
+        env = os.environ.copy()
+        env.setdefault("LANG", "C.UTF-8")
+        env.setdefault("LC_ALL", "C.UTF-8")
+
+        # 확장자에 따라 필터(특히 .ppt는 impress 필터)
+        ext = in_path.suffix.lower()
+        if ext in ('.ppt', '.pptx'):
+            convert_arg = "pdf:impress_pdf_Export"
+        elif ext in ('.doc', '.docx'):
+            convert_arg = "pdf:writer_pdf_Export"
+        elif ext in ('.xls', '.xlsx', '.csv'):
+            convert_arg = "pdf:calc_pdf_Export"
+        else:
+            convert_arg = "pdf"
+
+        # 비ASCII 파일명 이슈 대비 임시 ASCII 파일명 복사본 시도
+        try:
+            in_path.name.encode('ascii')
+            candidates = [in_path]
+            tmp_dir = None
+        except UnicodeEncodeError:
+            tmp_dir = Path(tempfile.mkdtemp())
+            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii','ignore').decode('ascii') or "file"
+            ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
+            shutil.copy2(in_path, ascii_copy)
+            candidates = [ascii_copy, in_path]
+
+        for cand in candidates:
+            cmd = [
+                "soffice", "--headless",
+                "--convert-to", convert_arg,
+                "--outdir", str(out_dir),
+                str(cand)
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                # 성공
+                if tmp_dir:
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                return str(pdf_path)
+            # 실패해도 계속 시도 (로그만 찍고 무시)
+            print(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
+            print(f"[convert_to_pdf] stdout: {proc.stdout.strip()}")
+
+        if tmp_dir:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        return None
+    except Exception as e:
+        # 어떤 에러든 삼키고 None 반환
+        print(f"[convert_to_pdf] error: {e}")
+        return None
+    
+def _get_pdf_path(file_path: str) -> str:
+    """
+    다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수
+
+    Args:
+        file_path (str): 원본 파일 경로
+
+    Returns:
+        str: PDF 확장자로 변경된 파일 경로
+    """
+    pdf_path = file_path
+    for ext in CONVERTIBLE_EXTENSIONS:
+        pdf_path = pdf_path.replace(ext, '.pdf')
+    return pdf_path
 
 class HierarchicalChunker(BaseChunker):
     """문서 구조와 헤더 계층을 유지하면서 아이템을 순차적으로 처리하는 청커"""
@@ -1070,7 +1150,11 @@ class DocumentProcessor:
         # kwargs['save_images'] = True    # 이미지 처리
         # kwargs['include_wmf'] = True   # wmf 처리
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
-
+        ext = Path(file_path).suffix.lower()
+        if ext in ['.pptx', '.docx', '.md']: # pdf 저장 원하는 확장자 추가(pptx, docx, md, xlsx, csv 제공가능)
+            convert_to_pdf(file_path)
+            pdf_path = _get_pdf_path(file_path)
+            
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
         artifacts_dir = Path(f"{output_path}/{filename}")

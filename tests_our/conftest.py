@@ -41,3 +41,8 @@ def basic_processor():
 def intelligent_processor():
     mod = pytest.importorskip("doc_preprocessors.intelligent_processor")
     return mod.DocumentProcessor
+
+@pytest.fixture(scope="session")
+def attachment_processor():
+    mod = pytest.importorskip("doc_preprocessors.attachment_processor")
+    return mod.DocumentProcessor
