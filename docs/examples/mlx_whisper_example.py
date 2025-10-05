@@ -6,6 +6,7 @@ This script shows how to use the MLX Whisper models for speech recognition
 on Apple Silicon devices with optimized performance.
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -90,30 +91,87 @@ def transcribe_audio_with_mlx_whisper(audio_file_path: str, model_size: str = "b
         raise RuntimeError(f"Transcription failed: {result.status}")
 
 
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="MLX Whisper example for Apple Silicon speech recognition",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+
+# Use default test audio file
+python mlx_whisper_example.py
+
+# Use your own audio file
+python mlx_whisper_example.py --audio /path/to/your/audio.mp3
+
+# Use specific model size
+python mlx_whisper_example.py --audio audio.wav --model tiny
+
+# Use default test file with specific model
+python mlx_whisper_example.py --model turbo
+        """,
+    )
+
+    parser.add_argument(
+        "--audio",
+        type=str,
+        help="Path to audio file for transcription (default: tests/data/audio/sample_10s.mp3)",
+    )
+
+    parser.add_argument(
+        "--model",
+        type=str,
+        choices=["tiny", "base", "small", "medium", "large", "turbo"],
+        default="base",
+        help="Whisper model size to use (default: base)",
+    )
+
+    return parser.parse_args()
+
+
 def main():
     """Main function to demonstrate MLX Whisper usage."""
-    if len(sys.argv) < 2:
-        print("Usage: python mlx_whisper_example.py <audio_file_path> [model_size]")
-        print("Model sizes: tiny, base, small, medium, large, turbo")
-        print("Example: python mlx_whisper_example.py audio.wav base")
-        sys.exit(1)
+    args = parse_args()
 
-    audio_file_path = sys.argv[1]
-    model_size = sys.argv[2] if len(sys.argv) > 2 else "base"
+    # Determine audio file path
+    if args.audio:
+        audio_file_path = args.audio
+    else:
+        # Use default test audio file if no audio file specified
+        default_audio = (
+            Path(__file__).parent.parent.parent
+            / "tests"
+            / "data"
+            / "audio"
+            / "sample_10s.mp3"
+        )
+        if default_audio.exists():
+            audio_file_path = str(default_audio)
+            print("No audio file specified, using default test file:")
+            print(f"  Audio file: {audio_file_path}")
+            print(f"  Model size: {args.model}")
+            print()
+        else:
+            print("Error: No audio file specified and default test file not found.")
+            print(
+                "Please specify an audio file with --audio or ensure tests/data/audio/sample_10s.mp3 exists."
+            )
+            sys.exit(1)
 
     if not Path(audio_file_path).exists():
         print(f"Error: Audio file '{audio_file_path}' not found.")
         sys.exit(1)
 
     try:
-        print(f"Transcribing '{audio_file_path}' using Whisper {model_size} model...")
+        print(f"Transcribing '{audio_file_path}' using Whisper {args.model} model...")
         print(
             "Note: MLX optimization is automatically used on Apple Silicon when available."
         )
         print()
 
         transcribed_text = transcribe_audio_with_mlx_whisper(
-            audio_file_path, model_size
+            audio_file_path, args.model
         )
 
         print("Transcription Result:")
