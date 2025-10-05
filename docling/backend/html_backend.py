@@ -324,7 +324,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(pr_item, TextItem):
                 # Cell has only one element and it's just a text
                 rich_table_cell = False
-                doc.delete_items(node_items=[pr_item])
+                try:
+                    doc.delete_items(node_items=[pr_item])
+                except ValueError:
+                    _log.debug(
+                        "Skipping removal of table text item %s because it was already removed",
+                        pr_item.get_ref().cref,
+                    )
             else:
                 rich_table_cell = True
                 ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
@@ -1027,6 +1033,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     self._emit_image(img_tag, doc)
 
         elif tag_name == "table":
+            if self.content_layer == ContentLayer.FURNITURE and tag.find(
+                ["h1", "h2", "h3", "h4", "h5", "h6"]
+            ):
+                self.content_layer = ContentLayer.BODY
             num_rows, num_cols = self.get_html_table_row_col(tag)
             data_e = TableData(num_rows=num_rows, num_cols=num_cols)
             docling_table = doc.add_table(
