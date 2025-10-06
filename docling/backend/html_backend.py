@@ -403,7 +403,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
                 rich_table_cell = False
                 ref_for_rich_cell = None
-                # if len(provs_in_cell) > 0:
                 group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
                 rich_table_cell, ref_for_rich_cell = (
                     HTMLDocumentBackend.process_rich_table_cells(
@@ -525,7 +524,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     blk = self._handle_block(node, doc)
                     added_refs.extend(blk)
                 elif node.find(_BLOCK_TAGS):
-                    # elif node.find(_BLOCK_TAGS, recursive=False):
                     flush_buffer()
                     wk3 = self._walk(node, doc)
                     added_refs.extend(wk3)
