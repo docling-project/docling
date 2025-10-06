@@ -309,7 +309,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         group_name: str,
         doc: DoclingDocument,
         docling_table: TableItem,
-    ) -> tuple[bool, RefItem | None]:
+    ) -> tuple[bool, Union[RefItem, None]]:
         rich_table_cell = False
         ref_for_rich_cell = None
         if len(provs_in_cell) > 0:
