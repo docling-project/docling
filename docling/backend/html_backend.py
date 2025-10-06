@@ -272,7 +272,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString("\n"))
         # set default content layer
-        headers = content.find(["h1", "h2", "h3", "h4", "h5", "h6"])
+        headers = content.find(["h1", "h2", "h3", "h4", "h5", "h6"], recursive=False)
         self.content_layer = (
             ContentLayer.BODY if headers is None else ContentLayer.FURNITURE
         )
@@ -309,9 +309,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         group_name: str,
         doc: DoclingDocument,
         docling_table: TableItem,
-    ) -> tuple[bool, RefItem]:
+    ) -> tuple[bool, RefItem | None]:
         rich_table_cell = False
-        ref_for_rich_cell = provs_in_cell[0]
+        ref_for_rich_cell = None
+        if len(provs_in_cell) > 0:
+            ref_for_rich_cell = provs_in_cell[0]
         if len(provs_in_cell) > 1:
             # Cell has multiple elements, we need to group them
             rich_table_cell = True
@@ -324,7 +326,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(pr_item, TextItem):
                 # Cell has only one element and it's just a text
                 rich_table_cell = False
-                doc.delete_items(node_items=[pr_item])
+                try:
+                    doc.delete_items(node_items=[pr_item])
+                except Exception as e:
+                    _log.error(f"Error while making rich table: {e}.")
             else:
                 rich_table_cell = True
                 ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
@@ -391,17 +396,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
                 provs_in_cell: list[RefItem] = []
                 # Parse table cell sub-tree for Rich Cells content:
+                table_level = self.level
                 provs_in_cell = self._walk(html_cell, doc)
+                # After walking sub-tree in cell, restore previously set level
+                self.level = table_level
 
                 rich_table_cell = False
                 ref_for_rich_cell = None
-                if len(provs_in_cell) > 0:
-                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
-                    rich_table_cell, ref_for_rich_cell = (
-                        HTMLDocumentBackend.process_rich_table_cells(
-                            provs_in_cell, group_name, doc, docling_table
-                        )
+                # if len(provs_in_cell) > 0:
+                group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
+                rich_table_cell, ref_for_rich_cell = (
+                    HTMLDocumentBackend.process_rich_table_cells(
+                        provs_in_cell, group_name, doc, docling_table
                     )
+                )
 
                 # Extracting text
                 text = self.get_text(html_cell).strip()
@@ -517,6 +525,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     blk = self._handle_block(node, doc)
                     added_refs.extend(blk)
                 elif node.find(_BLOCK_TAGS):
+                    # elif node.find(_BLOCK_TAGS, recursive=False):
                     flush_buffer()
                     wk3 = self._walk(node, doc)
                     added_refs.extend(wk3)
@@ -774,13 +783,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for key in self.parents.keys():
                 self.parents[key] = None
             self.level = 0
-            docling_title = self.parents[self.level + 1] = doc.add_title(
+            self.parents[self.level + 1] = doc.add_title(
                 text_clean,
                 content_layer=self.content_layer,
                 formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
             )
-            added_ref = [docling_title.get_ref()]
+            p1 = self.parents[self.level + 1]
+            if p1 is not None:
+                added_ref = [p1.get_ref()]
         # the other levels need to be lowered by 1 if a title was set
         else:
             level -= 1
@@ -802,7 +813,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         _log.debug(f"Remove the tail of level {key}")
                         self.parents[key] = None
                 self.level = level
-            docling_heading = self.parents[self.level + 1] = doc.add_heading(
+            self.parents[self.level + 1] = doc.add_heading(
                 parent=self.parents[self.level],
                 text=text_clean,
                 orig=annotated_text.text,
@@ -811,7 +822,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
             )
-            added_ref = [docling_heading.get_ref()]
+            p2 = self.parents[self.level + 1]
+            if p2 is not None:
+                added_ref = [p2.get_ref()]
         self.level += 1
         for img_tag in tag("img"):
             if isinstance(img_tag, Tag):

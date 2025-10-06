@@ -1,3 +1,55 @@
+[Jump to content](#bodyContent)
+
+Main menu
+
+Main menu
+
+move to sidebar
+
+hide
+
+Navigation
+
+- [Main page](/wiki/Main_Page)
+- [Contents](/wiki/Wikipedia:Contents)
+- [Current events](/wiki/Portal:Current_events)
+- [Random article](/wiki/Special:Random)
+- [About Wikipedia](/wiki/Wikipedia:About)
+- [Contact us](//en.wikipedia.org/wiki/Wikipedia:Contact_us)
+
+Contribute
+
+- [Help](/wiki/Help:Contents)
+- [Learn to edit](/wiki/Help:Introduction)
+- [Community portal](/wiki/Wikipedia:Community_portal)
+- [Recent changes](/wiki/Special:RecentChanges)
+- [Upload file](/wiki/Wikipedia:File_upload_wizard)
+
+Image Hyperlink.
+
+<!-- image -->
+
+[Search](/wiki/Special:Search)
+
+Search
+
+- [Donate](https://donate.wikimedia.org/wiki/Special:FundraiserRedirector?utm_source=donate&utm_medium=sidebar&utm_campaign=C13_en.wikipedia.org&uselang=en)
+
+Appearance
+
+- [Create account](/w/index.php?title=Special:CreateAccount&returnto=Duck)
+- [Log in](/w/index.php?title=Special:UserLogin&returnto=Duck)
+
+Personal tools
+
+- [Create account](/w/index.php?title=Special:CreateAccount&returnto=Duck)
+- [Log in](/w/index.php?title=Special:UserLogin&returnto=Duck)
+
+Pages for logged out editors [learn more](/wiki/Help:Introduction)
+
+- [Contributions](/wiki/Special:MyContributions)
+- [Talk](/wiki/Special:MyTalk)
+
 ## Contents
 
 move to sidebar
