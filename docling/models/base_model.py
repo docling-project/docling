@@ -173,11 +173,11 @@ class BaseItemAndImageEnrichmentModel(
         assert isinstance(element, DocItem)
 
         # Allow the case of documents without page images but embedded images (e.g. Word and HTML docs)
-        if len(element.prov) == 0 and isinstance(element, PictureItem):
+        if isinstance(element, PictureItem):
             embedded_im = element.get_image(conv_res.document)
             if embedded_im is not None:
                 return ItemAndImageEnrichmentElement(item=element, image=embedded_im)
-            else:
+            elif len(element.prov) == 0:
                 return None
 
         # Crop the image form the page
