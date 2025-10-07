@@ -272,9 +272,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for br in content("br"):
             br.replace_with(NavigableString("\n"))
         # set default content layer
-        headers = content.find(["h1", "h2", "h3", "h4", "h5", "h6"], recursive=False)
+
+        # Furniture before the first heading rule, except for headers in tables
+        header = None
+        # Find all headers first
+        all_headers = content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+        # Keep only those that do NOT have a <table> in a parent chain
+        clean_headers = [h for h in all_headers if not h.find_parent("table")]
+        # Pick the first header from the remaining
+        if len(clean_headers):
+            header = clean_headers[0]
+        # Set starting content layer
         self.content_layer = (
-            ContentLayer.BODY if headers is None else ContentLayer.FURNITURE
+            ContentLayer.BODY if header is None else ContentLayer.FURNITURE
         )
         # reset context
         self.ctx = _Context()
