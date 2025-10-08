@@ -47,7 +47,10 @@ class OcrAutoModel(BaseOcrModel):
                     self._engine = OcrMacModel(
                         enabled=self.enabled,
                         artifacts_path=artifacts_path,
-                        options=OcrMacOptions(),
+                        options=OcrMacOptions(
+                            bitmap_area_threshold=self.options.bitmap_area_threshold,
+                            force_full_page_ocr=self.options.force_full_page_ocr,
+                        ),
                         accelerator_options=accelerator_options,
                     )
                     _log.info("Auto OCR model selected ocrmac.")
@@ -62,7 +65,11 @@ class OcrAutoModel(BaseOcrModel):
                     self._engine = RapidOcrModel(
                         enabled=self.enabled,
                         artifacts_path=artifacts_path,
-                        options=RapidOcrOptions(backend="onnxruntime"),
+                        options=RapidOcrOptions(
+                            backend="onnxruntime",
+                            bitmap_area_threshold=self.options.bitmap_area_threshold,
+                            force_full_page_ocr=self.options.force_full_page_ocr,
+                        ),
                         accelerator_options=accelerator_options,
                     )
                     _log.info("Auto OCR model selected rapidocr with onnxruntime.")
@@ -78,7 +85,10 @@ class OcrAutoModel(BaseOcrModel):
                     self._engine = EasyOcrModel(
                         enabled=self.enabled,
                         artifacts_path=artifacts_path,
-                        options=EasyOcrOptions(),
+                        options=EasyOcrOptions(
+                            bitmap_area_threshold=self.options.bitmap_area_threshold,
+                            force_full_page_ocr=self.options.force_full_page_ocr,
+                        ),
                         accelerator_options=accelerator_options,
                     )
                     _log.info("Auto OCR model selected easyocr.")
@@ -93,7 +103,11 @@ class OcrAutoModel(BaseOcrModel):
                     self._engine = RapidOcrModel(
                         enabled=self.enabled,
                         artifacts_path=artifacts_path,
-                        options=RapidOcrOptions(backend="torch"),
+                        options=RapidOcrOptions(
+                            backend="torch",
+                            bitmap_area_threshold=self.options.bitmap_area_threshold,
+                            force_full_page_ocr=self.options.force_full_page_ocr,
+                        ),
                         accelerator_options=accelerator_options,
                     )
                     _log.info("Auto OCR model selected rapidocr with torch.")
