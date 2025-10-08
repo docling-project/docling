@@ -294,7 +294,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return doc
         
-    def find_true_data_bounds(sheet: Worksheet) -> tuple[int, int, int, int]:
+    def _find_true_data_bounds(self, sheet: Worksheet) -> tuple[int, int, int, int]:
         """Find the true data boundaries (min/max rows and columns) in an Excel worksheet.
     
         This function scans all cells to find the smallest rectangular region that contains
@@ -346,7 +346,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             A list of ExcelTable objects representing the data tables.
         """
-        min_row, max_row, min_col, max_col = find_true_data_bounds(sheet) # The true data boundaries
+        min_row, max_row, min_col, max_col = self._find_true_data_bounds(sheet) # The true data boundaries
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
     
