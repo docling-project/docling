@@ -293,17 +293,17 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 )
 
         return doc
-        
+
     def _find_true_data_bounds(self, sheet: Worksheet) -> tuple[int, int, int, int]:
         """Find the true data boundaries (min/max rows and columns) in an Excel worksheet.
-    
+
         This function scans all cells to find the smallest rectangular region that contains
         all non-empty cells or merged cell ranges. It returns the minimal and maximal
         row/column indices that bound the actual data region.
-    
+
         Args:
             sheet: The Excel worksheet to analyze.
-    
+
         Returns:
             A tuple of four integers:
                 (min_row, max_row, min_col, max_col)
@@ -312,7 +312,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         """
         min_row, min_col = None, None
         max_row, max_col = 0, 0
-    
+
         # Check all cells for non-empty values
         for row in sheet.iter_rows(values_only=False):
             for cell in row:
@@ -322,22 +322,26 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     min_col = c if min_col is None else min(min_col, c)
                     max_row = max(max_row, r)
                     max_col = max(max_col, c)
-    
+
         # Expand bounds to include merged cells
         for merged in sheet.merged_cells.ranges:
-            min_row = merged.min_row if min_row is None else min(min_row, merged.min_row)
-            min_col = merged.min_col if min_col is None else min(min_col, merged.min_col)
+            min_row = (
+                merged.min_row if min_row is None else min(min_row, merged.min_row)
+            )
+            min_col = (
+                merged.min_col if min_col is None else min(min_col, merged.min_col)
+            )
             max_row = max(max_row, merged.max_row)
             max_col = max(max_col, merged.max_col)
-    
+
         # If no data found, default to (1, 1, 1, 1)
         if min_row is None or min_col is None:
             min_row = min_col = max_row = max_col = 1
-    
+
         return min_row, max_row, min_col, max_col
 
     # Example integration in MsExcelDocumentBackend._find_data_tables
-    def _find_data_tables(self, sheet: Worksheet) -> list["ExcelTable"]:
+    def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
         """Find all compact rectangular data tables in an Excel worksheet.
 
         Args:
@@ -346,14 +350,20 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             A list of ExcelTable objects representing the data tables.
         """
-        min_row, max_row, min_col, max_col = self._find_true_data_bounds(sheet) # The true data boundaries
+        min_row, max_row, min_col, max_col = self._find_true_data_bounds(
+            sheet
+        )  # The true data boundaries
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
-    
+
         # Limit scan to actual data bounds
         for ri, row in enumerate(
             sheet.iter_rows(
-                min_row=min_row, max_row=max_row, min_col=min_col, max_col=max_col, values_only=False
+                min_row=min_row,
+                max_row=max_row,
+                min_col=min_col,
+                max_col=max_col,
+                values_only=False,
             ),
             start=min_row - 1,
         ):
