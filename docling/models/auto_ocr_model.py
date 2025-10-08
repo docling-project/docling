@@ -83,9 +83,7 @@ class OcrAutoModel(BaseOcrModel):
                     )
                     _log.info("Auto OCR model selected easyocr.")
                 except ImportError:
-                    _log.info(
-                        "easyocr cannot be used because it is not installed."
-                    )
+                    _log.info("easyocr cannot be used because it is not installed.")
 
             if self._engine is None:
                 try:
@@ -103,6 +101,9 @@ class OcrAutoModel(BaseOcrModel):
                     _log.info(
                         "rapidocr cannot be used because rapidocr or torch is not installed."
                     )
+
+            if self._engine is None:
+                _log.warning("No OCR engine found. Please review the install details.")
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
