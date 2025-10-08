@@ -86,7 +86,6 @@ class TesseractOcrModel(BaseOcrModel):
                 self.script_prefix = ""
 
             tesserocr_kwargs = {
-                "psm": tesserocr.PSM.AUTO,
                 "init": True,
                 "oem": tesserocr.OEM.DEFAULT,
             }
@@ -96,14 +95,17 @@ class TesseractOcrModel(BaseOcrModel):
             if self.options.path is not None:
                 tesserocr_kwargs["path"] = self.options.path
 
+            # Set main OCR reader with configurable PSM
+            main_psm = tesserocr.PSM(self.options.psm) if self.options.psm is not None else tesserocr.PSM.AUTO
             if lang == "auto":
-                self.reader = tesserocr.PyTessBaseAPI(**tesserocr_kwargs)
+                self.reader = tesserocr.PyTessBaseAPI(psm=main_psm, **tesserocr_kwargs)
             else:
                 self.reader = tesserocr.PyTessBaseAPI(
-                    **{"lang": lang} | tesserocr_kwargs,
+                    lang=lang, psm=main_psm, **tesserocr_kwargs,
                 )
+            # OSD reader must use PSM.OSD_ONLY for orientation detection
             self.osd_reader = tesserocr.PyTessBaseAPI(
-                **{"lang": "osd", "psm": tesserocr.PSM.OSD_ONLY} | tesserocr_kwargs
+                lang="osd", psm=tesserocr.PSM.OSD_ONLY, **tesserocr_kwargs
             )
             self.reader_RIL = tesserocr.RIL
 
@@ -187,7 +189,7 @@ class TesseractOcrModel(BaseOcrModel):
                                         tesserocr.PyTessBaseAPI(
                                             path=self.reader.GetDatapath(),
                                             lang=lang,
-                                            psm=tesserocr.PSM.AUTO,
+                                            psm=tesserocr.PSM(self.options.psm) if self.options.psm is not None else tesserocr.PSM.AUTO,
                                             init=True,
                                             oem=tesserocr.OEM.DEFAULT,
                                         )

@@ -380,6 +380,13 @@ def convert(  # noqa: C901
             help="Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.",
         ),
     ] = None,
+    psm: Annotated[
+        Optional[int],
+        typer.Option(
+            ...,
+            help="Page Segmentation Mode for the OCR engine (0-13).",
+        ),
+    ] = None,
     pdf_backend: Annotated[
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
     ] = PdfBackend.DLPARSE_V2,
@@ -584,6 +591,8 @@ def convert(  # noqa: C901
         ocr_lang_list = _split_list(ocr_lang)
         if ocr_lang_list is not None:
             ocr_options.lang = ocr_lang_list
+        if psm is not None:
+            ocr_options.psm = psm
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
         # pipeline_options: PaginatedPipelineOptions
