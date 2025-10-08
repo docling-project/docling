@@ -68,7 +68,7 @@ class OcrAutoModel(BaseOcrModel):
                     _log.info("Auto OCR model selected rapidocr with onnxruntime.")
                 except ImportError:
                     _log.info(
-                        "rapidocr cannot be used because rapidocr or onnxruntime is not installed."
+                        "rapidocr cannot be used because onnxruntime is not installed."
                     )
 
             if self._engine is None:
@@ -84,7 +84,7 @@ class OcrAutoModel(BaseOcrModel):
                     _log.info("Auto OCR model selected easyocr.")
                 except ImportError:
                     _log.info(
-                        "rapidocr cannot be used because rapidocr or onnxruntime is not installed."
+                        "easyocr cannot be used because it is not installed."
                     )
 
             if self._engine is None:
