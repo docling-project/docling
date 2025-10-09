@@ -104,6 +104,13 @@ rapidocr = [
   # 'onnxruntime (>=1.7.0,<2.0.0) ; python_version >= "3.10"',
   # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
 ]
+# Add the lightweight option here
+lite = [
+  "python-docx (>=1.1.2,<2.0.0)",     
+  "pdfplumber (>=0.9.0,<1.0.0)",      
+  "beautifulsoup4 (>=4.12.3,<5.0.0)", 
+  "lxml (>=4.0.0,<6.0.0)"             
+]
 asr = [
     "openai-whisper>=20250625",
 ]
