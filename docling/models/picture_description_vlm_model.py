@@ -78,39 +78,86 @@ class PictureDescriptionVlmModel(
                 self.model = torch.compile(self.model)  # type: ignore
 
             self.provenance = f"{self.options.repo_id}"
+            
+# Constants for VLM Quality Check 
+MAX_ATTEMPTS = 3
+MIN_WORD_COUNT = 5
+INSUFFICIENT_WORDS = {"in", "this", "the", "a", "an", "the image", "this image"}            
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+
+   def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         from transformers import GenerationConfig
 
-        # Create input messages
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": self.options.prompt},
-                ],
-            },
-        ]
+        # Use the base prompt defined in the model options
+        base_prompt = self.options.prompt
 
-        # TODO: do batch generation
-
+        # TODO: Implement actual batch generation instead of single image iteration
         for image in images:
-            # Prepare inputs
-            prompt = self.processor.apply_chat_template(
-                messages, add_generation_prompt=True
-            )
-            inputs = self.processor(text=prompt, images=[image], return_tensors="pt")
-            inputs = inputs.to(self.device)
+            
+            # --- START HACKATHON FIX: VLM RETRY LOOP ---
+            current_prompt = base_prompt
+            
+            for attempt in range(MAX_ATTEMPTS):
+                # 1. --- PREPARE INPUTS (Original Logic) ---
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image"},
+                            {"type": "text", "text": current_prompt},
+                        ],
+                    },
+                ]
+                
+                # Apply chat template and tokenize
+                prompt = self.processor.apply_chat_template(
+                    messages, add_generation_prompt=True
+                )
+                inputs = self.processor(text=prompt, images=[image], return_tensors="pt")
+                inputs = inputs.to(self.device)
 
-            # Generate outputs
-            generated_ids = self.model.generate(
-                **inputs,
-                generation_config=GenerationConfig(**self.options.generation_config),
-            )
-            generated_texts = self.processor.batch_decode(
-                generated_ids[:, inputs["input_ids"].shape[1] :],
-                skip_special_tokens=True,
-            )
+                # 2. --- GENERATE OUTPUTS (Original Logic) ---
+                generated_ids = self.model.generate(
+                    **inputs,
+                    generation_config=GenerationConfig(**self.options.generation_config),
+                )
+                generated_texts = self.processor.batch_decode(
+                    generated_ids[:, inputs["input_ids"].shape[1] :],
+                    skip_special_tokens=True,
+                )
+                response = generated_texts[0].strip()
 
-            yield generated_texts[0].strip()
+                # 3. --- CHECK QUALITY AND DECIDE RETRY ---
+                response_words = response.lower().split()
+                word_count = len(response_words)
+                
+                # Predicates defined using external constants
+                is_generic_fail = response_words and response_words[0] in INSUFFICIENT_WORDS
+                is_length_fail = word_count < MIN_WORD_COUNT
+                
+                if not is_generic_fail and not is_length_fail:
+                    # Success! Yield the good description and exit the inner loop
+                    yield response
+                    break 
+                
+                # If quality check fails and we have attempts remaining:
+                if attempt < MAX_ATTEMPTS - 1:
+                    print(f"DEBUG: VLM failed on attempt {attempt+1} ('{response[:20]}...'). Retrying.")
+                    
+                    # Construct a stronger re-prompt based on failure reason
+                    failure_reason = ""
+                    if is_generic_fail:
+                        failure_reason += "Your previous answer was too generic (like 'This' or 'In'). "
+                    if is_length_fail:
+                        failure_reason += f"The description was too short (under {MIN_WORD_COUNT} words). "
+                        
+                    # Update the prompt for the next attempt
+                    current_prompt = (
+                        f"{base_prompt} {failure_reason} Provide a DETAILED, SPECIFIC, multi-sentence caption."
+                    )
+                else:
+                    # Last attempt failed (attempt == MAX_ATTEMPTS - 1), 
+                    # yield the best (last) response found and exit the inner loop
+                    yield response
+                    break 
+            # --- END HACKATHON FIX: VLM RETRY LOOP ---
