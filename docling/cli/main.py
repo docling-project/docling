@@ -547,13 +547,25 @@ def convert(  # noqa: C901
                     if local_path.exists() and local_path.is_dir():
                         for fmt in from_formats:
                             for ext in FormatToExtensions[fmt]:
-                                input_doc_paths.extend(
-                                    list(local_path.glob(f"**/*.{ext}"))
-                                )
-                                input_doc_paths.extend(
-                                    list(local_path.glob(f"**/*.{ext.upper()}"))
-                                )
+                                for path in local_path.glob(f"**/*.{ext}"):
+                                    if path.name.startswith("~$") and ext == "docx":
+                                        _log.info(
+                                            f"Ignoring temporary Word file: {path}"
+                                        )
+                                        continue
+                                    input_doc_paths.append(path)
+
+                                for path in local_path.glob(f"**/*.{ext.upper()}"):
+                                    if path.name.startswith("~$") and ext == "docx":
+                                        _log.info(
+                                            f"Ignoring temporary Word file: {path}"
+                                        )
+                                        continue
+                                    input_doc_paths.append(path)
                     elif local_path.exists():
+                        if not local_path.name.startswith("~$") and ext == "docx":
+                            _log.info(f"Ignoring temporary Word file: {path}")
+                            continue
                         input_doc_paths.append(local_path)
                     else:
                         err_console.print(
