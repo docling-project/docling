@@ -85,7 +85,7 @@ MIN_WORD_COUNT = 5
 INSUFFICIENT_WORDS = {"in", "this", "the", "a", "an", "the image", "this image"}            
 
 
-   def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         from transformers import GenerationConfig
 
         # Use the base prompt defined in the model options
