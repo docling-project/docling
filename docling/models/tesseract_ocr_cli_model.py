@@ -120,7 +120,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         # Add PSM option if specified in the configuration
         if self.options.psm is not None:
             cmd.extend(["--psm", str(self.options.psm)])
-        
+
         cmd += [ifilename, "stdout", "tsv"]
         _log.info("command: {}".format(" ".join(cmd)))
 

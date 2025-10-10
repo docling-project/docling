@@ -154,7 +154,9 @@ class TesseractCliOcrOptions(OcrOptions):
     lang: List[str] = ["fra", "deu", "spa", "eng"]
     tesseract_cmd: str = "tesseract"
     path: Optional[str] = None
-    psm: Optional[int] = None  # Page Segmentation Mode (0-13), defaults to tesseract's default
+    psm: Optional[int] = (
+        None  # Page Segmentation Mode (0-13), defaults to tesseract's default
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -167,7 +169,9 @@ class TesseractOcrOptions(OcrOptions):
     kind: ClassVar[Literal["tesserocr"]] = "tesserocr"
     lang: List[str] = ["fra", "deu", "spa", "eng"]
     path: Optional[str] = None
-    psm: Optional[int] = None  # Page Segmentation Mode (0-13), defaults to tesseract's default
+    psm: Optional[int] = (
+        None  # Page Segmentation Mode (0-13), defaults to tesseract's default
+    )
 
     model_config = ConfigDict(
         extra="forbid",

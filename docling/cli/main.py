@@ -57,6 +57,7 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
     ProcessingPipeline,
     TableFormerMode,
+    TesseractOcrOptions,
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
@@ -591,7 +592,7 @@ def convert(  # noqa: C901
         ocr_lang_list = _split_list(ocr_lang)
         if ocr_lang_list is not None:
             ocr_options.lang = ocr_lang_list
-        if psm is not None:
+        if psm is not None and isinstance(ocr_options, TesseractOcrOptions):
             ocr_options.psm = psm
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
