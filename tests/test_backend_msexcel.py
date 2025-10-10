@@ -79,7 +79,7 @@ def test_pages(documents) -> None:
         documents: The paths and converted documents.
     """
     # number of pages from the backend method
-    path = next(item for item in get_excel_paths() if item.stem == "test-01")
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
     in_doc = InputDocument(
         path_or_stream=path,
         format=InputFormat.XLSX,
@@ -90,7 +90,7 @@ def test_pages(documents) -> None:
     assert backend.page_count() == 4
 
     # number of pages from the converted document
-    doc = next(item for path, item in documents if path.stem == "test-01")
+    doc = next(item for path, item in documents if path.stem == "xlsx_01")
     assert len(doc.pages) == 4
 
     # page sizes as number of cells
