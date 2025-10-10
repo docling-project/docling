@@ -1200,7 +1200,12 @@ class DocumentProcessor:
         chunks = text_splitter.split_documents(documents)
         chunks = [chunk for chunk in chunks if chunk.page_content]
         if not chunks:
-            raise Exception('Empty document')
+            chunks = [
+                Document(
+                    page_content=".", 
+                    metadata={"page": 0}
+                )
+            ]
 
         for chunk in chunks:
             page = chunk.metadata.get('page', 0)
