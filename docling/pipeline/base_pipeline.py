@@ -59,7 +59,7 @@ class BasePipeline(ABC):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-    def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
+    def execute(self, in_doc: InputDocument, raises_on_error: bool,exclude_pages: Optional[list[int]] = None) -> ConversionResult:
         conv_res = ConversionResult(input=in_doc)
 
         _log.info(f"Processing document {in_doc.file.name}")
@@ -69,7 +69,7 @@ class BasePipeline(ABC):
             ):
                 # These steps are building and assembling the structure of the
                 # output DoclingDocument.
-                conv_res = self._build_document(conv_res)
+                conv_res = self._build_document(conv_res,exclude_pages=exclude_pages)
                 conv_res = self._assemble_document(conv_res)
                 # From this stage, all operations should rely only on conv_res.output
                 conv_res = self._enrich_document(conv_res)
@@ -84,7 +84,7 @@ class BasePipeline(ABC):
         return conv_res
 
     @abstractmethod
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(self, conv_res: ConversionResult,exclude_pages: Optional[list[int]] = None) -> ConversionResult:
         pass
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
@@ -194,7 +194,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
 
         yield from page_batch
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(self, conv_res: ConversionResult,exclude_pages: Optional[list[int]] = None) -> ConversionResult:
         if not isinstance(conv_res.input._backend, PaginatedDocumentBackend):
             raise RuntimeError(
                 f"The selected backend {type(conv_res.input._backend).__name__} for {conv_res.input.file} is not a paginated backend. "
@@ -210,6 +210,10 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
                 start_page, end_page = conv_res.input.limits.page_range
                 if (start_page - 1) <= i <= (end_page - 1):
                     conv_res.pages.append(Page(page_no=i))
+            conv_res.pages = [
+                page for page in conv_res.pages
+                if not exclude_pages or (page.page_no + 1) not in exclude_pages
+]
 
             try:
                 total_pages_processed = 0
