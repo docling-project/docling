@@ -126,6 +126,7 @@ dev = [
     "pytest-dependency~=0.6",
     "pytest-durations~=1.6.1",
     "pytest-xdist~=3.3",
+    "requests-mock~=1.12",
     "ipykernel~=6.29",
     "ipywidgets~=8.1",
     "nbqa~=1.9",
