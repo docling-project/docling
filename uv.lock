@@ -1120,6 +1120,7 @@ dependencies = [
 
 [package.optional-dependencies]
 asr = [
+    { name = "mlx-whisper", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "openai-whisper" },
 ]
 ocrmac = [
@@ -1199,6 +1200,7 @@ requires-dist = [
     { name = "lxml", specifier = ">=4.0.0,<6.0.0" },
     { name = "marko", specifier = ">=2.1.2,<3.0.0" },
     { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'vlm'", specifier = ">=0.3.0,<1.0.0" },
+    { name = "mlx-whisper", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'asr'", specifier = ">=0.4.3" },
     { name = "modelscope", marker = "extra == 'rapidocr'", specifier = ">=1.29.0" },
     { name = "ocrmac", marker = "sys_platform == 'darwin' and extra == 'ocrmac'", specifier = ">=1.0.0,<2.0.0" },
     { name = "onnxruntime", marker = "extra == 'rapidocr'", specifier = ">=1.7.0,<2.0.0" },
@@ -3271,6 +3273,26 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ff/9f/de419334820da334203de28eaf861b57ae0d06b0882770e5e5d0671dc5dd/mlx_vlm-0.3.3.tar.gz", hash = "sha256:5a08c802d1bf32cc47bd6aebe348d3554ce21bfce417a585bba83f9d213a6e66", size = 231935, upload-time = "2025-08-20T14:52:51.323Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/46/cd/64118be528970c30755db4d430b039b1df2aec0fe33ef5b405d7fe303e7e/mlx_vlm-0.3.3-py3-none-any.whl", hash = "sha256:50f977e989613c846c08cac847e8c43bc7eaf074892bb00e439d07d14ee79823", size = 306935, upload-time = "2025-08-20T14:52:50.11Z" },
+]
+
+[[package]]
+name = "mlx-whisper"
+version = "0.4.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "mlx", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "more-itertools", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "numba", version = "0.62.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.10.*' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "scipy", version = "1.16.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "tiktoken", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "torch", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "tqdm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/22/b7/a35232812a2ccfffcb7614ba96a91338551a660a0e9815cee668bf5743f0/mlx_whisper-0.4.3-py3-none-any.whl", hash = "sha256:6b82b6597a994643a3e5496c7bc229a672e5ca308458455bfe276e76ae024489", size = 890544, upload-time = "2025-08-29T14:56:13.815Z" },
 ]
 
 [[package]]

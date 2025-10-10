@@ -15,7 +15,8 @@
 # - The script prints the transcription to stdout.
 #
 # Customizing the model
-# - Edit `get_asr_converter()` to switch `asr_model_specs` (e.g., language or model size).
+# - The script automatically selects the best model for your hardware (MLX Whisper for Apple Silicon, native Whisper otherwise).
+# - Edit `get_asr_converter()` to manually override `pipeline_options.asr_options` with any model from `asr_model_specs`.
 # - Keep `InputFormat.AUDIO` and `AsrPipeline` unchanged for a minimal setup.
 #
 # Input audio
@@ -36,10 +37,15 @@ from docling.pipeline.asr_pipeline import AsrPipeline
 
 
 def get_asr_converter():
-    """Create a DocumentConverter configured for ASR with a default model.
+    """Create a DocumentConverter configured for ASR with automatic model selection.
 
-    Uses `asr_model_specs.WHISPER_TURBO` by default. You can swap in another
-    model spec from `docling.datamodel.asr_model_specs` to experiment.
+    Uses `asr_model_specs.WHISPER_TURBO` which automatically selects the best
+    implementation for your hardware:
+    - MLX Whisper Turbo for Apple Silicon (M1/M2/M3) with mlx-whisper installed
+    - Native Whisper Turbo as fallback
+
+    You can swap in another model spec from `docling.datamodel.asr_model_specs`
+    to experiment with different model sizes.
     """
     pipeline_options = AsrPipelineOptions()
     pipeline_options.asr_options = asr_model_specs.WHISPER_TURBO
