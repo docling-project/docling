@@ -20,6 +20,7 @@ from docling.models.document_picture_classifier import DocumentPictureClassifier
 from docling.models.easyocr_model import EasyOcrModel
 from docling.models.layout_model import LayoutModel
 from docling.models.picture_description_vlm_model import PictureDescriptionVlmModel
+from docling.models.rapid_ocr_model import RapidOcrModel
 from docling.models.table_structure_model import TableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 
@@ -41,6 +42,7 @@ def download_models(
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
+    with_rapidocr: bool = True,
     with_easyocr: bool = True,
 ):
     if output_dir is None:
@@ -134,6 +136,16 @@ def download_models(
             force=force,
             progress=progress,
         )
+
+    if with_rapidocr:
+        for backend in ("torch", "onnxruntime"):
+            _log.info(f"Downloading rapidocr {backend} models...")
+            RapidOcrModel.download_models(
+                backend=backend,
+                local_dir=output_dir / RapidOcrModel._model_repo_folder,
+                force=force,
+                progress=progress,
+            )
 
     if with_easyocr:
         _log.info("Downloading easyocr models...")
