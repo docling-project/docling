@@ -1166,6 +1166,7 @@ dev = [
     { name = "pytest-durations" },
     { name = "pytest-xdist" },
     { name = "python-semantic-release" },
+    { name = "requests-mock" },
     { name = "types-openpyxl" },
     { name = "types-requests" },
     { name = "types-setuptools" },
@@ -1252,6 +1253,7 @@ dev = [
     { name = "pytest-durations", specifier = "~=1.6.1" },
     { name = "pytest-xdist", specifier = "~=3.3" },
     { name = "python-semantic-release", specifier = "~=7.32" },
+    { name = "requests-mock", specifier = "~=1.12" },
     { name = "types-openpyxl", specifier = "~=3.1" },
     { name = "types-requests", specifier = "~=2.31" },
     { name = "types-setuptools", specifier = "~=70.3" },
@@ -6225,6 +6227,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+]
+
+[[package]]
+name = "requests-mock"
+version = "1.12.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/92/32/587625f91f9a0a3d84688bf9cfc4b2480a7e8ec327cefd0ff2ac891fd2cf/requests-mock-1.12.1.tar.gz", hash = "sha256:e9e12e333b525156e82a3c852f22016b9158220d2f47454de9cae8a77d371401", size = 60901, upload-time = "2024-03-29T03:54:29.446Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/ec/889fbc557727da0c34a33850950310240f2040f3b1955175fdb2b36a8910/requests_mock-1.12.1-py2.py3-none-any.whl", hash = "sha256:b1e37054004cdd5e56c84454cc7df12b25f90f382159087f4b6915aaeef39563", size = 27695, upload-time = "2024-03-29T03:54:27.64Z" },
 ]
 
 [[package]]

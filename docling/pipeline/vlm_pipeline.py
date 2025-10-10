@@ -9,6 +9,7 @@ from docling_core.types.doc import (
     DocItem,
     DoclingDocument,
     ImageRef,
+    NodeItem,
     PictureItem,
     ProvenanceItem,
     TextItem,
@@ -185,6 +186,89 @@ class VlmPipeline(PaginatedPipeline):
 
         return conv_res
 
+    def _append_items_to_document(
+        self,
+        conv_res: ConversionResult,
+        page_doc: DoclingDocument,
+        pg_idx: int,
+        page_width: float = 1.0,
+        page_height: float = 1.0,
+    ) -> None:
+        """
+        Append items from a parsed document to the conversion result document.
+
+        Preserves hierarchical structure by using with_groups=True to include
+        ListGroup containers and tracking parent relationships based on level.
+        Fix for issue #2301.
+
+        Args:
+            conv_res: The conversion result to append items to
+            page_doc: The parsed document containing items to append
+            pg_idx: The page index (0-based)
+            page_width: Width of the page for bbox provenance (default 1.0)
+            page_height: Height of the page for bbox provenance (default 1.0)
+
+        How it works:
+            - iterate_items(with_groups=True) reveals ListGroup containers that
+              act as parents for nested ListItems
+            - Parent is found at level-1 (immediate parent in tree hierarchy)
+            - Level stack tracks items for future parent lookups
+            - Items with children are copied and cleared before appending to
+              satisfy Docling's constraint that items cannot have children when
+              appended (children are added separately by iterate_items)
+        """
+        level_stack: dict[
+            int, NodeItem
+        ] = {}  # Maps level -> NodeItem for parent tracking
+
+        # Important: Use with_groups=True to see ListGroup containers.
+        # Without this, nested list structure cannot be preserved correctly.
+        for item, level in page_doc.iterate_items(with_groups=True):
+            # Fix for issue #2301: Handle items with children
+            # The Docling constraint requires that appended items have no children.
+            # We create a copy and clear children; they will be appended separately
+            # by iterate_items() which returns items in tree order.
+            if hasattr(item, "children") and len(item.children) > 0:
+                item = item.model_copy()
+                item.children = []
+
+            # Set provenance for items that support it (DocItem subclasses)
+            # GroupItem and other container types don't have prov field
+            if hasattr(item, "prov"):
+                # Set bbox to full page since VLM-generated items from Markdown/HTML
+                # don't have precise spatial locations. This is more accurate than
+                # zero bbox and allows downstream code to work correctly.
+                item.prov = [
+                    ProvenanceItem(
+                        page_no=pg_idx + 1,
+                        bbox=BoundingBox(l=0.0, t=0.0, r=page_width, b=page_height),
+                        charspan=[0, 0],
+                    )
+                ]
+
+            # Determine parent based on level
+            # With groups visible:
+            # - Level 0: Body (GroupItem) - parent=None
+            # - Level 1: Root ListGroup - parent=None (defaults to body)
+            # - Level 2: ListItem - parent=ListGroup at level 1
+            # - Level 3: Nested ListGroup - parent=ListItem at level 2
+            # - Level 4: Nested ListItem - parent=ListGroup at level 3
+            # Rule: parent is at level-1
+            # Note: When parent=None, append_child_item() defaults to body
+            parent = None
+            if level > 1:
+                parent = level_stack.get(level - 1)
+
+            # Append with proper parent to preserve hierarchy
+            conv_res.document.append_child_item(child=item, parent=parent)
+
+            # Clean up stack: remove items at deeper levels (we've returned from that nesting depth)
+            # Then track current item for future children at level+1
+            level_stack = {
+                lvl: node for lvl, node in level_stack.items() if lvl < level
+            }
+            level_stack[level] = item
+
     def _turn_dt_into_doc(self, conv_res) -> DoclingDocument:
         doctags_list = []
         image_list = []
@@ -288,17 +372,9 @@ class VlmPipeline(PaginatedPipeline):
                 else None,
             )
 
-            for item, level in page_doc.iterate_items():
-                item.prov = [
-                    ProvenanceItem(
-                        page_no=pg_idx + 1,
-                        bbox=BoundingBox(
-                            t=0.0, b=0.0, l=0.0, r=0.0
-                        ),  # FIXME: would be nice not to have to "fake" it
-                        charspan=[0, 0],
-                    )
-                ]
-                conv_res.document.append_child_item(child=item)
+            self._append_items_to_document(
+                conv_res, page_doc, pg_idx, pg_width, pg_height
+            )
 
         return conv_res.document
 
@@ -365,17 +441,9 @@ class VlmPipeline(PaginatedPipeline):
                 else None,
             )
 
-            for item, level in page_doc.iterate_items():
-                item.prov = [
-                    ProvenanceItem(
-                        page_no=pg_idx + 1,
-                        bbox=BoundingBox(
-                            t=0.0, b=0.0, l=0.0, r=0.0
-                        ),  # FIXME: would be nice not to have to "fake" it
-                        charspan=[0, 0],
-                    )
-                ]
-                conv_res.document.append_child_item(child=item)
+            self._append_items_to_document(
+                conv_res, page_doc, pg_idx, pg_width, pg_height
+            )
 
         return conv_res.document
 
