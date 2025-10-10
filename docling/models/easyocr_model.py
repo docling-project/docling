@@ -1,3 +1,4 @@
+import cv2 
 import logging
 import warnings
 import zipfile
@@ -5,7 +6,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import List, Optional, Type
 
-import numpy
+import numpy as np
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import BoundingRectangle, TextCell
 
@@ -23,6 +24,30 @@ from docling.utils.profiling import TimeRecorder
 from docling.utils.utils import download_url_with_progress
 
 _log = logging.getLogger(__name__)
+
+def preprocess_handwriting(image_array: np.ndarray) -> np.ndarray:
+    """Applies cleaning filters to an image array to enhance handwriting recognition."""
+    
+    # 1. Convert to Grayscale
+    if len(image_array.shape) == 3:
+        gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image_array
+        
+    # 2. Denoising/Blur
+    denoised = cv2.medianBlur(gray, 3) 
+    
+    # 3. Adaptive Thresholding (Crucial for high contrast)
+    thresholded = cv2.adaptiveThreshold(
+        denoised, 
+        255, 
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        cv2.THRESH_BINARY, 
+        11, # Block size
+        2   # Constant
+    )
+    
+    return thresholded
 
 
 class EasyOcrModel(BaseOcrModel):
@@ -149,7 +174,8 @@ class EasyOcrModel(BaseOcrModel):
                         high_res_image = page._backend.get_page_image(
                             scale=self.scale, cropbox=ocr_rect
                         )
-                        im = numpy.array(high_res_image)
+                        im_array = np.array(high_res_image)
+                        im = preprocess_handwriting(im_array)
 
                         with warnings.catch_warnings():
                             if self.options.suppress_mps_warnings:
