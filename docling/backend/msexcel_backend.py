@@ -18,6 +18,7 @@ from docling_core.types.doc import (
     TableData,
 )
 from openpyxl import load_workbook
+from openpyxl.chartsheet.chartsheet import Chartsheet
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor
 from openpyxl.worksheet.worksheet import Worksheet
@@ -186,18 +187,18 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         if self.workbook is not None:
             # Iterate over all sheets
-            for sheet_name in self.workbook.sheetnames:
-                _log.info(f"Processing sheet: {sheet_name}")
+            for idx, name in enumerate(self.workbook.sheetnames):
+                _log.info(f"Processing sheet {idx}: {name}")
 
-                sheet = self.workbook[sheet_name]
-                page_no = self.workbook.index(sheet) + 1
+                sheet = self.workbook[name]
+                page_no = idx + 1
                 # do not rely on sheet.max_column, sheet.max_row if there are images
                 page = doc.add_page(page_no=page_no, size=Size(width=0, height=0))
 
                 self.parents[0] = doc.add_group(
                     parent=None,
                     label=GroupLabel.SECTION,
-                    name=f"sheet: {sheet_name}",
+                    name=f"sheet: {name}",
                     content_layer=self._get_sheet_content_layer(sheet),
                 )
                 doc = self._convert_sheet(doc, sheet)
@@ -208,7 +209,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return doc
 
-    def _convert_sheet(self, doc: DoclingDocument, sheet: Worksheet) -> DoclingDocument:
+    def _convert_sheet(
+        self, doc: DoclingDocument, sheet: Union[Worksheet, Chartsheet]
+    ) -> DoclingDocument:
         """Parse an Excel worksheet and attach its structure to a DoclingDocument
 
         Args:
@@ -218,10 +221,11 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             The updated DoclingDocument.
         """
+        if isinstance(sheet, Worksheet):
+            doc = self._find_tables_in_sheet(doc, sheet)
+            doc = self._find_images_in_sheet(doc, sheet)
 
-        doc = self._find_tables_in_sheet(doc, sheet)
-
-        doc = self._find_images_in_sheet(doc, sheet)
+        # TODO: parse charts in sheet
 
         return doc
 

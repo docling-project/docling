@@ -98,3 +98,18 @@ def test_pages(documents) -> None:
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+
+
+def test_chartsheet(documents) -> None:
+    """Test the conversion of Chartsheets.
+
+    Args:
+        documents: The paths and converted documents.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+    assert len(doc.pages) == 2
+
+    # Chartseet content is for now ignored
+    assert doc.groups[1].name == "sheet: Duck Chart"
+    assert doc.pages[2].size.height == 0
+    assert doc.pages[2].size.width == 0
