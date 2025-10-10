@@ -202,7 +202,7 @@ class DocumentExtractor:
         start_time = time.monotonic()
 
         for input_batch in chunkify(
-            conv_input.docs(self.extraction_format_to_options),
+            conv_input.docs(self.extraction_format_to_options),  # type: ignore[arg-type]
             settings.perf.doc_batch_size,
         ):
             _log.info("Going to extract document batch...")

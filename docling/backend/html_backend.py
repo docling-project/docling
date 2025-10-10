@@ -1,13 +1,16 @@
+import base64
 import logging
 import re
 import traceback
 from contextlib import contextmanager
 from copy import deepcopy
+from email.mime import image
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
 from urllib.parse import urljoin
 
+import requests
 from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
 from bs4.element import PreformattedString
 from docling_core.types.doc import (
@@ -19,16 +22,24 @@ from docling_core.types.doc import (
     GroupLabel,
     RefItem,
     RichTableCell,
+    Size,
     TableCell,
     TableData,
     TableItem,
     TextItem,
 )
-from docling_core.types.doc.document import ContentLayer, Formatting, Script
+from docling_core.types.doc.document import ContentLayer, Formatting, ImageRef, Script
+from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import override
 
+from docling import backend
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    HTMLBackendOptions,
+    ImageOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -43,6 +54,7 @@ _BLOCK_TAGS: Final = {
     "details",
     "figure",
     "footer",
+    "img",
     "h1",
     "h2",
     "h3",
@@ -180,17 +192,20 @@ class AnnotatedTextList(list):
         return super_list
 
 
-class HTMLDocumentBackend(DeclarativeDocumentBackend):
+class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
     @override
     def __init__(
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
+        backend_options: HTMLBackendOptions,
         original_url: Optional[AnyUrl] = None,
     ):
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
         self.soup: Optional[Tag] = None
         self.path_or_stream = path_or_stream
+        self.base_url = in_doc.source_url or None
+        self.base_path = in_doc.file or None
 
         # Initialize the parents for the hierarchy
         self.max_levels = 10
@@ -235,6 +250,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.HTML}
+
+    @classmethod
+    @override
+    def get_default_options(cls) -> HTMLBackendOptions:
+        return HTMLBackendOptions()
 
     @override
     def convert(self) -> DoclingDocument:
@@ -520,7 +540,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if name == "img":
                     flush_buffer()
                     im_ref3 = self._emit_image(node, doc)
-                    added_refs.append(im_ref3)
+                    if im_ref3:
+                        added_refs.append(im_ref3)
                 elif name in _FORMAT_TAG_MAP:
                     with self._use_format([name]):
                         wk = self._walk(node, doc)
@@ -995,7 +1016,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 num_rows += 1
         return num_rows, num_cols
 
-    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
+    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
         added_refs = []
         tag_name = tag.name.lower()
 
@@ -1003,7 +1024,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             img_tag = tag.find("img")
             if isinstance(img_tag, Tag):
                 im_ref = self._emit_image(img_tag, doc)
-                added_refs.append(im_ref)
+                if im_ref is not None:
+                    added_refs.append(im_ref)
 
         elif tag_name in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             heading_refs = self._handle_heading(tag, doc)
@@ -1061,7 +1083,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for img_tag in tag("img"):
                 if isinstance(img_tag, Tag):
                     im_ref2 = self._emit_image(tag, doc)
-                    added_refs.append(im_ref2)
+                    if im_ref2 is not None:
+                        added_refs.append(im_ref2)
 
         elif tag_name in {"pre"}:
             # handle monospace code snippets (pre).
@@ -1092,9 +1115,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._walk(tag, doc)
         return added_refs
 
-    def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> RefItem:
+    def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
+        image_options = self.backend_options.image_options
+        if image_options == ImageOptions.NONE:
+            return None
         figure = img_tag.find_parent("figure")
         caption: AnnotatedTextList = AnnotatedTextList()
+
+        parent = self.parents[self.level]
 
         # check if the figure has a link - this is HACK:
         def get_img_hyperlink(img_tag):
@@ -1134,13 +1162,108 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
             )
+        image_options = self.backend_options.image_options
+        if image_options == ImageOptions.NONE:
+            placeholder = doc.add_picture(
+                caption=caption_item,
+                parent=parent,
+                content_layer=self.content_layer,
+            )
+            return placeholder.get_ref()
+
+        src_url = self._get_attr_as_string(img_tag, "src")
+        if not src_url:
+            # No source URL, just add placeholder
+            docling_pic = doc.add_picture(
+                caption=caption_item,
+                parent=parent,
+                content_layer=self.content_layer,
+            )
+            return docling_pic.get_ref()
+
+        # Resolve relative URLs
+        if not src_url.startswith(("http://", "https://", "data:", "file://", "/")):
+            if self.base_url:
+                src_url = urljoin(self.base_url, src_url)
+            elif self.base_path:
+                # For local files, resolve relative to the HTML file location
+                src_url = str(Path(self.base_path).parent / src_url)
+        elif src_url.startswith("//"):
+            # Protocol-relative URL - default to https
+            src_url = "https:" + src_url
+
+        _log.debug(f"Resolved URL to: {src_url}")
+
+        img_ref = self._create_image_ref(img_tag, src_url, image_options)
 
         docling_pic = doc.add_picture(
+            image=img_ref,
             caption=caption_item,
-            parent=self.parents[self.level],
+            parent=parent,
             content_layer=self.content_layer,
         )
         return docling_pic.get_ref()
+
+    def _create_image_ref(
+        self, img_tag: Tag, src_url: str, image_options: ImageOptions
+    ) -> Optional[ImageRef]:
+        width = self._get_attr_as_string(img_tag, "width", str(DEFAULT_IMAGE_WIDTH))
+        height = self._get_attr_as_string(img_tag, "height", str(DEFAULT_IMAGE_HEIGHT))
+
+        try:
+            img_data = self._load_image_data(src_url)
+
+            if image_options == ImageOptions.EMBEDDED and img_data:
+                img = Image.open(BytesIO(img_data))
+                return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
+
+            elif image_options == ImageOptions.REFERENCED:
+                uri: Union[AnyUrl, Path]
+                if src_url.startswith(("http://", "https://", "data:", "file://")):
+                    uri = AnyUrl(src_url)
+                else:
+                    uri = Path(src_url)
+
+                if img_data:
+                    img = Image.open(BytesIO(img_data))
+                    img_ref = ImageRef.from_pil(img, dpi=72)
+                    img_ref.uri = uri
+                    return img_ref
+                else:
+                    return ImageRef(
+                        uri=uri,
+                        dpi=72,
+                        mimetype="image/png",
+                        size=Size(width=float(width), height=float(height)),
+                    )
+
+        except (ValidationError, UnidentifiedImageError, Exception) as e:
+            _log.warning(f"Could not process image (src={src_url}): {e}")
+
+        return None
+
+    def _load_image_data(self, src_url: str) -> Optional[bytes]:
+        if src_url.lower().endswith(".svg"):
+            _log.debug(f"Skipping SVG file: {src_url}")
+            return None
+
+        try:
+            if src_url.startswith(("http://", "https://")):
+                response = requests.get(src_url, stream=True)
+                response.raise_for_status()
+                return response.content
+            elif src_url.startswith("data:"):
+                data = re.sub(r"^data:image/.+;base64,", "", src_url)
+                return base64.b64decode(data)
+
+            if src_url.startswith("file://"):
+                src_url = src_url[7:]
+
+            with open(src_url, "rb") as f:
+                return f.read()
+        except Exception as e:
+            _log.debug(f"Could not load image data: {e}")
+            return None
 
     @staticmethod
     def get_text(item: PageElement) -> str:
@@ -1238,3 +1361,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
 
         return int_spans
+
+    @staticmethod
+    def _get_attr_as_string(tag: Tag, attr: str, default: str = "") -> str:
+        """Get attribute value as string, handling list values."""
+        value = tag.get(attr)
+        if not value:
+            return default
+
+        return value[0] if isinstance(value, list) else value

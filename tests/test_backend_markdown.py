@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from docling.backend.md_backend import MarkdownDocumentBackend
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -37,6 +38,7 @@ def test_convert_valid():
             path_or_stream=in_path,
             format=fmt,
             backend=cls,
+            backend_options=BackendOptions(),
         )
         backend = cls(
             in_doc=in_doc,

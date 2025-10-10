@@ -28,6 +28,7 @@ from typing_extensions import Annotated
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.datamodel.backend_options import BackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -88,8 +89,13 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         return shortened_text
 
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        backend_options: BackendOptions,
+    ):
+        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
 
         _log.debug("Starting MarkdownDocumentBackend...")
 
@@ -575,14 +581,18 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._html_blocks = 0
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))
+                backend_options = HTMLBackendOptions()
                 in_doc = InputDocument(
                     path_or_stream=stream,
                     format=InputFormat.HTML,
                     backend=html_backend_cls,
                     filename=self.file.name,
+                    backend_options=backend_options,
                 )
                 html_backend_obj = html_backend_cls(
-                    in_doc=in_doc, path_or_stream=stream
+                    in_doc=in_doc,
+                    path_or_stream=stream,
+                    backend_options=backend_options,
                 )
                 doc = html_backend_obj.convert()
         else:
