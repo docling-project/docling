@@ -1097,7 +1097,6 @@ dependencies = [
     { name = "huggingface-hub" },
     { name = "lxml" },
     { name = "marko" },
-    { name = "modelscope" },
     { name = "ocrmac", marker = "sys_platform == 'darwin'" },
     { name = "openpyxl" },
     { name = "pandas" },
@@ -1131,7 +1130,6 @@ ocrmac = [
     { name = "ocrmac", marker = "sys_platform == 'darwin'" },
 ]
 rapidocr = [
-    { name = "modelscope" },
     { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "onnxruntime", version = "1.23.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "rapidocr", marker = "python_full_version < '3.14'" },
@@ -1186,6 +1184,7 @@ examples = [
     { name = "langchain-huggingface" },
     { name = "langchain-milvus" },
     { name = "langchain-text-splitters" },
+    { name = "modelscope" },
     { name = "python-dotenv" },
 ]
 
@@ -1204,8 +1203,6 @@ requires-dist = [
     { name = "lxml", specifier = ">=4.0.0,<6.0.0" },
     { name = "marko", specifier = ">=2.1.2,<3.0.0" },
     { name = "mlx-vlm", marker = "python_full_version >= '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'vlm'", specifier = ">=0.3.0,<1.0.0" },
-    { name = "modelscope", specifier = ">=1.29.0" },
-    { name = "modelscope", marker = "extra == 'rapidocr'", specifier = ">=1.29.0" },
     { name = "ocrmac", marker = "sys_platform == 'darwin'", specifier = ">=1.0.0,<2.0.0" },
     { name = "ocrmac", marker = "sys_platform == 'darwin' and extra == 'ocrmac'", specifier = ">=1.0.0,<2.0.0" },
     { name = "onnxruntime", marker = "extra == 'rapidocr'", specifier = ">=1.7.0,<2.0.0" },
@@ -1273,6 +1270,7 @@ examples = [
     { name = "langchain-huggingface", specifier = ">=0.0.3" },
     { name = "langchain-milvus", specifier = "~=0.1" },
     { name = "langchain-text-splitters", specifier = "~=0.2" },
+    { name = "modelscope", specifier = ">=1.29.0" },
     { name = "python-dotenv", specifier = "~=1.0" },
 ]
 
