@@ -111,6 +111,8 @@ nav:
     - 🖼️ Picture annotation:
       - "Annotate picture with local VLM": examples/pictures_description.ipynb
       - "Annotate picture with remote VLM": examples/pictures_description_api.py
+    - 🧩 Plugins:
+      - "Third‑party plugin tutorial": examples/plugin_tutorial.md
     - ✨ Enrichment development:
       - "Figure enrichment": examples/develop_picture_enrichment.py
       - "Formula enrichment": examples/develop_formula_understanding.py

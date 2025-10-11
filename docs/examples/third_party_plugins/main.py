@@ -17,14 +17,17 @@ Run:
 import os
 from typing import Dict
 
-# Import the options class from the installed example plugin package
-from api_usage.datamodel.pipeline_options.picture_description_api_model_with_usage import (
-    PictureDescriptionApiOptionsWithUsage,
-)
+from dotenv import load_dotenv
 
+# Import the options class from the installed example plugin package
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docs.examples.third_party_plugins.api_usage.datamodel.pipeline_options.picture_description_api_options_with_usage import (
+    PictureDescriptionApiOptionsWithUsage,
+)
+
+load_dotenv()
 
 
 def main():
@@ -53,13 +56,10 @@ def main():
         PictureDescriptionApiOptionsWithUsage(
             url=url,
             headers=headers,
-            params={"model": "gpt-4o-mini", "temperature": 0},
+            params={"model": "gpt-5-mini", "temperature": 1},
             prompt="Describe the image clearly and concisely in a few sentences.",
             timeout=45.0,
             concurrency=2,
-            # If your server returns token usage in a dict under 'usage', you can
-            # extract a specific field and make it the generated text:
-            token_extract_key="usage",
         )
     )
 
@@ -88,11 +88,9 @@ def main():
             continue
 
         for ann_idx, ann in enumerate(pic.annotations):
-            token_usage = getattr(ann, "token_usage", None)
+            usage = getattr(ann, "usage", None)
             ann_text = getattr(ann, "text", None)
-            print(
-                f"  Annotation {ann_idx}: text={ann_text!r} token_usage={token_usage!r}"
-            )
+            print(f"  Annotation {ann_idx}: text={ann_text!r} usage={usage!r}")
 
 
 if __name__ == "__main__":

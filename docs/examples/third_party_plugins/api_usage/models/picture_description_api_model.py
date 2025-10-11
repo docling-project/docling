@@ -1,35 +1,35 @@
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List, Literal, Optional, Type, Union
+from typing import List, Optional, Type, Union
 
-from api_usage.datamodel.pipeline_options.picture_description_api_model_with_usage import (
-    PictureDescriptionApiOptionsWithUsage,
+from api_usage.datamodel.utils.api_image_request_with_usage import (
+    api_image_request_with_usage,
 )
-from api_usage.datamodel.utils.api_image_request_with_usage import api_image_request
 from docling_core.types.doc import DoclingDocument, NodeItem, PictureItem
 from docling_core.types.doc.document import (
-    BaseAnnotation,
+    DescriptionAnnotation,
 )  # TODO: move import to docling_core.types.doc
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import OpenAiResponseUsage
 from docling.datamodel.pipeline_options import PictureDescriptionBaseOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import ItemAndImageEnrichmentElement
-from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.models.picture_description_api_model import PictureDescriptionApiModel
+from docs.examples.third_party_plugins.api_usage.datamodel.pipeline_options.picture_description_api_options_with_usage import (
+    PictureDescriptionApiOptionsWithUsage,
+)
 
 
-class DescriptionAnnotationWithUsage(BaseAnnotation):
+class DescriptionAnnotationWithUsage(DescriptionAnnotation):
     """DescriptionAnnotation."""
 
-    kind: Literal["description"] = "description"
-    text: str
-    provenance: str
-    token_usage: Optional[dict] = None
+    usage: Optional[OpenAiResponseUsage] = None
 
 
-class PictureDescriptionApiModelWithUsage(PictureDescriptionBaseModel):
+class PictureDescriptionApiModelWithUsage(PictureDescriptionApiModel):
     # elements_batch_size = 4
 
     @classmethod
@@ -65,14 +65,12 @@ class PictureDescriptionApiModelWithUsage(PictureDescriptionBaseModel):
         # Note: technically we could make a batch request here,
         # but not all APIs will allow for it. For example, vllm won't allow more than 1.
         def _api_request(image):
-            # Pass token_extract_key so api_image_request can return token usage
-            return api_image_request(
+            return api_image_request_with_usage(
                 image=image,
                 prompt=self.options.prompt,
                 url=self.options.url,
                 timeout=self.options.timeout,
                 headers=self.options.headers,
-                token_extract_key=getattr(self.options, "token_extract_key", None),
                 **self.options.params,
             )
 
@@ -120,7 +118,7 @@ class PictureDescriptionApiModelWithUsage(PictureDescriptionBaseModel):
 
             item.annotations.append(
                 DescriptionAnnotationWithUsage(
-                    text=text, provenance=self.provenance, token_usage=usage
+                    text=text, provenance=self.provenance, usage=usage
                 )
             )
             yield item
