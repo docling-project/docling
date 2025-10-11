@@ -49,7 +49,7 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     ConvertPipelineOptions,
-    EasyOcrOptions,
+    OcrAutoOptions,
     OcrOptions,
     PaginatedPipelineOptions,
     PdfBackend,
@@ -57,6 +57,8 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
     ProcessingPipeline,
     TableFormerMode,
+    TesseractCliOcrOptions,
+    TesseractOcrOptions,
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
@@ -372,12 +374,19 @@ def convert(  # noqa: C901
                 f"Use the option --show-external-plugins to see the options allowed with external plugins."
             ),
         ),
-    ] = EasyOcrOptions.kind,
+    ] = OcrAutoOptions.kind,
     ocr_lang: Annotated[
         Optional[str],
         typer.Option(
             ...,
             help="Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.",
+        ),
+    ] = None,
+    psm: Annotated[
+        Optional[int],
+        typer.Option(
+            ...,
+            help="Page Segmentation Mode for the OCR engine (0-13).",
         ),
     ] = None,
     pdf_backend: Annotated[
@@ -547,13 +556,25 @@ def convert(  # noqa: C901
                     if local_path.exists() and local_path.is_dir():
                         for fmt in from_formats:
                             for ext in FormatToExtensions[fmt]:
-                                input_doc_paths.extend(
-                                    list(local_path.glob(f"**/*.{ext}"))
-                                )
-                                input_doc_paths.extend(
-                                    list(local_path.glob(f"**/*.{ext.upper()}"))
-                                )
+                                for path in local_path.glob(f"**/*.{ext}"):
+                                    if path.name.startswith("~$") and ext == "docx":
+                                        _log.info(
+                                            f"Ignoring temporary Word file: {path}"
+                                        )
+                                        continue
+                                    input_doc_paths.append(path)
+
+                                for path in local_path.glob(f"**/*.{ext.upper()}"):
+                                    if path.name.startswith("~$") and ext == "docx":
+                                        _log.info(
+                                            f"Ignoring temporary Word file: {path}"
+                                        )
+                                        continue
+                                    input_doc_paths.append(path)
                     elif local_path.exists():
+                        if not local_path.name.startswith("~$") and ext == "docx":
+                            _log.info(f"Ignoring temporary Word file: {path}")
+                            continue
                         input_doc_paths.append(local_path)
                     else:
                         err_console.print(
@@ -584,6 +605,10 @@ def convert(  # noqa: C901
         ocr_lang_list = _split_list(ocr_lang)
         if ocr_lang_list is not None:
             ocr_options.lang = ocr_lang_list
+        if psm is not None and isinstance(
+            ocr_options, (TesseractOcrOptions, TesseractCliOcrOptions)
+        ):
+            ocr_options.psm = psm
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
         # pipeline_options: PaginatedPipelineOptions

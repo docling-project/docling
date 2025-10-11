@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type
+from typing import Literal, Optional, Type, TypedDict
 
 import numpy
 from docling_core.types.doc import BoundingBox, CoordOrigin
@@ -18,11 +18,67 @@ from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
+from docling.utils.utils import download_url_with_progress
 
 _log = logging.getLogger(__name__)
 
+_ModelPathEngines = Literal["onnxruntime", "torch"]
+_ModelPathTypes = Literal[
+    "det_model_path", "cls_model_path", "rec_model_path", "rec_keys_path"
+]
+
+
+class _ModelPathDetail(TypedDict):
+    url: str
+    path: str
+
 
 class RapidOcrModel(BaseOcrModel):
+    _model_repo_folder = "RapidOcr"
+    # from https://github.com/RapidAI/RapidOCR/blob/main/python/rapidocr/default_models.yaml
+    # matching the default config in https://github.com/RapidAI/RapidOCR/blob/main/python/rapidocr/config.yaml
+    # and naming f"{file_info.engine_type.value}.{file_info.ocr_version.value}.{file_info.task_type.value}"
+    _default_models: dict[
+        _ModelPathEngines, dict[_ModelPathTypes, _ModelPathDetail]
+    ] = {
+        "onnxruntime": {
+            "det_model_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv4/det/ch_PP-OCRv4_det_infer.onnx",
+                "path": "onnx/PP-OCRv4/det/ch_PP-OCRv4_det_infer.onnx",
+            },
+            "cls_model_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_infer.onnx",
+                "path": "onnx/PP-OCRv4/cls/ch_ppocr_mobile_v2.0_cls_infer.onnx",
+            },
+            "rec_model_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.onnx",
+                "path": "onnx/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.onnx",
+            },
+            "rec_keys_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v2.0.7/paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
+                "path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
+            },
+        },
+        "torch": {
+            "det_model_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/torch/PP-OCRv4/det/ch_PP-OCRv4_det_infer.pth",
+                "path": "torch/PP-OCRv4/det/ch_PP-OCRv4_det_infer.pth",
+            },
+            "cls_model_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_infer.pth",
+                "path": "torch/PP-OCRv4/cls/ch_ptocr_mobile_v2.0_cls_infer.pth",
+            },
+            "rec_model_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.pth",
+                "path": "torch/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer.pth",
+            },
+            "rec_keys_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
+                "path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
+            },
+        },
+    }
+
     def __init__(
         self,
         enabled: bool,
@@ -62,25 +118,66 @@ class RapidOcrModel(BaseOcrModel):
             }
             backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
 
+            det_model_path = self.options.det_model_path
+            cls_model_path = self.options.cls_model_path
+            rec_model_path = self.options.rec_model_path
+            rec_keys_path = self.options.rec_keys_path
+            if artifacts_path is not None:
+                det_model_path = (
+                    det_model_path
+                    or artifacts_path
+                    / self._model_repo_folder
+                    / self._default_models[backend_enum.value]["det_model_path"]["path"]
+                )
+                cls_model_path = (
+                    cls_model_path
+                    or artifacts_path
+                    / self._model_repo_folder
+                    / self._default_models[backend_enum.value]["cls_model_path"]["path"]
+                )
+                rec_model_path = (
+                    rec_model_path
+                    or artifacts_path
+                    / self._model_repo_folder
+                    / self._default_models[backend_enum.value]["rec_model_path"]["path"]
+                )
+                rec_keys_path = (
+                    rec_keys_path
+                    or artifacts_path
+                    / self._model_repo_folder
+                    / self._default_models[backend_enum.value]["rec_keys_path"]["path"]
+                )
+
+            for model_path in (
+                rec_keys_path,
+                cls_model_path,
+                rec_model_path,
+                rec_keys_path,
+            ):
+                if model_path is None:
+                    continue
+                if not Path(model_path).exists():
+                    _log.warning(f"The provided model path {model_path} is not found.")
+
             params = {
                 # Global settings (these are still correct)
                 "Global.text_score": self.options.text_score,
                 "Global.font_path": self.options.font_path,
                 # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
-                "Det.model_path": self.options.det_model_path,
+                "Det.model_path": det_model_path,
                 "Det.use_cuda": use_cuda,
                 "Det.use_dml": use_dml,
                 "Det.intra_op_num_threads": intra_op_num_threads,
                 # Classification model settings
-                "Cls.model_path": self.options.cls_model_path,
+                "Cls.model_path": cls_model_path,
                 "Cls.use_cuda": use_cuda,
                 "Cls.use_dml": use_dml,
                 "Cls.intra_op_num_threads": intra_op_num_threads,
                 # Recognition model settings
-                "Rec.model_path": self.options.rec_model_path,
+                "Rec.model_path": rec_model_path,
                 "Rec.font_path": self.options.rec_font_path,
-                "Rec.keys_path": self.options.rec_keys_path,
+                "Rec.keys_path": rec_keys_path,
                 "Rec.use_cuda": use_cuda,
                 "Rec.use_dml": use_dml,
                 "Rec.intra_op_num_threads": intra_op_num_threads,
@@ -101,6 +198,30 @@ class RapidOcrModel(BaseOcrModel):
             self.reader = RapidOCR(
                 params=params,
             )
+
+    @staticmethod
+    def download_models(
+        backend: _ModelPathEngines,
+        local_dir: Optional[Path] = None,
+        force: bool = False,
+        progress: bool = False,
+    ) -> Path:
+        if local_dir is None:
+            local_dir = settings.cache_dir / "models" / RapidOcrModel._model_repo_folder
+
+        local_dir.mkdir(parents=True, exist_ok=True)
+
+        # Download models
+        for model_type, model_details in RapidOcrModel._default_models[backend].items():
+            output_path = local_dir / model_details["path"]
+            if output_path.exists() and not force:
+                continue
+            output_path.parent.mkdir(exist_ok=True, parents=True)
+            buf = download_url_with_progress(model_details["url"], progress=progress)
+            with output_path.open("wb") as fw:
+                fw.write(buf.read())
+
+        return local_dir
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
