@@ -1,4 +1,5 @@
 def ocr_engines():
+    from docling.models.auto_ocr_model import OcrAutoModel
     from docling.models.easyocr_model import EasyOcrModel
     from docling.models.ocr_mac_model import OcrMacModel
     from docling.models.rapid_ocr_model import RapidOcrModel
@@ -7,6 +8,7 @@ def ocr_engines():
 
     return {
         "ocr_engines": [
+            OcrAutoModel,
             EasyOcrModel,
             OcrMacModel,
             RapidOcrModel,
