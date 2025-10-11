@@ -57,3 +57,29 @@ def test_asr_pipeline_conversion(test_audio_path):
     print(f"Transcribed text from {test_audio_path.name}:")
     for i, text_item in enumerate(texts):
         print(f"  {i + 1}: {text_item.text}")
+
+
+@pytest.fixture
+def silent_audio_path():
+    """Fixture to provide the path to a silent audio file."""
+    path = Path("./tests/data/audio/silent_1s.wav")
+    if not path.exists():
+        pytest.skip("Silent audio file for testing not found at " + str(path))
+    return path
+
+
+def test_asr_pipeline_with_silent_audio(silent_audio_path):
+    """
+    Test that the ASR pipeline correctly handles silent audio files
+    by returning a PARTIAL_SUCCESS status.
+    """
+    converter = get_asr_converter()
+    doc_result: ConversionResult = converter.convert(silent_audio_path)
+
+    # This test will FAIL initially, which is what we want.
+    assert doc_result.status == ConversionStatus.PARTIAL_SUCCESS, (
+        f"Status should be PARTIAL_SUCCESS for silent audio, but got {doc_result.status}"
+    )
+    assert len(doc_result.document.texts) == 0, (
+        "Document should contain zero text items"
+    )
