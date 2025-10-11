@@ -186,7 +186,6 @@ class _NativeWhisperModel:
                     label=DocItemLabel.TEXT, text=citem.to_string()
                 )
 
-            conv_res.status = ConversionStatus.SUCCESS
             return conv_res
 
         except Exception as exc:
@@ -249,9 +248,29 @@ class AsrPipeline(BasePipeline):
         else:
             _log.error(f"No model support for {self.pipeline_options.asr_options}")
 
+    def _has_text(self, document: "DoclingDocument") -> bool:
+        """
+        Helper method to check if the document contains any transcribed text.
+        A transcription is considered non-empty if the .texts list contains items with actual, non whitespace content.
+        """
+        if not document or not document.texts:
+            return False
+        for item in document.texts:
+            if item.text and item.text.strip():
+                return True
+        return False
+
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
-        status = ConversionStatus.SUCCESS
-        return status
+        """Determines the final status of ASR Conversion based on its result."""
+        if conv_res.status == ConversionStatus.FAILURE or conv_res.errors:
+            return ConversionStatus.FAILURE
+        if not self._has_text(conv_res.document):
+            _log.warning(
+                "ASR conversion resulted in an empty document."
+                f"File: {conv_res.input.file.name}"
+            )
+            return ConversionStatus.PARTIAL_SUCCESS
+        return ConversionStatus.SUCCESS
 
     @classmethod
     def get_default_options(cls) -> AsrPipelineOptions:
