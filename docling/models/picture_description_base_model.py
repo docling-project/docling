@@ -14,6 +14,7 @@ from docling_core.types.doc.document import (  # TODO: move import to docling_co
 from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.base_models import OpenAiResponseUsage
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
 )
@@ -22,6 +23,13 @@ from docling.models.base_model import (
     BaseModelWithOptions,
     ItemAndImageEnrichmentElement,
 )
+from docling.utils.api_image_request import ApiImageResponse
+
+
+class DescriptionAnnotationWithUsage(PictureDescriptionData):
+    """DescriptionAnnotation with usage information."""
+
+    usage: Optional[OpenAiResponseUsage] = None
 
 
 class PictureDescriptionBaseModel(
@@ -45,7 +53,9 @@ class PictureDescriptionBaseModel(
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         return self.enabled and isinstance(element, PictureItem)
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageResponse]:
         raise NotImplementedError
 
     def __call__(
@@ -77,11 +87,13 @@ class PictureDescriptionBaseModel(
                 elements.append(el.item)
                 images.append(el.image)
 
-        outputs = self._annotate_images(images)
+        outputs: List[ApiImageResponse] = list(self._annotate_images(images))
 
         for item, output in zip(elements, outputs):
             item.annotations.append(
-                PictureDescriptionData(text=output, provenance=self.provenance)
+                DescriptionAnnotationWithUsage(
+                    text=output.text, provenance=self.provenance, usage=output.usage
+                )
             )
             yield item
 
