@@ -205,7 +205,7 @@ def main():
 
     # Export Document Tags format:
     with (output_dir / f"{doc_filename}.doctags").open("w", encoding="utf-8") as fp:
-        fp.write(conv_result.document.export_to_document_tokens())
+        fp.write(conv_result.document.export_to_doctags())
 
 
 if __name__ == "__main__":
