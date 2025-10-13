@@ -43,7 +43,7 @@ def download_models(
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
     with_rapidocr: bool = True,
-    with_easyocr: bool = True,
+    with_easyocr: bool = False,
 ):
     if output_dir is None:
         output_dir = settings.cache_dir / "models"
