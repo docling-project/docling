@@ -18,7 +18,17 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
     """
 
     # Try LibreOffice
-    libreoffice_cmd = shutil.which("libreoffice") or shutil.which("soffice")
+    libreoffice_cmd = (
+        os.getenv("DOCLING_LIBREOFFICE_CMD", None)
+        or shutil.which("libreoffice")
+        or shutil.which("soffice")
+        or (
+            "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+            if os.path.isfile("/Applications/LibreOffice.app/Contents/MacOS/soffice")
+            else None
+        )
+    )
+
     if libreoffice_cmd:
 
         def convert_with_libreoffice(input_path, output_path):

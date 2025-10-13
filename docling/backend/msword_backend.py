@@ -297,7 +297,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     _log.warning(
                         "Found DrawingML elements in document, but no DOCX to PDF converters. "
                         "If you want these exported, make sure you have "
-                        "LibreOffice binary in PATH. "
+                        "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD. "
                     )
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)

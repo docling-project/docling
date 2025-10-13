@@ -83,7 +83,7 @@ jobs:
             if [[ "${{ steps.apt-cache.outputs.cache-hit }}" != "true" ]]; then
               sudo apt-get -qq update
             fi
-            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
+            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
 
         - name: Set TESSDATA_PREFIX
           run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
@@ -152,7 +152,7 @@ jobs:
             if [[ "${{ steps.apt-cache.outputs.cache-hit }}" != "true" ]]; then
               sudo apt-get -qq update
             fi
-            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
+            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
 
         - name: Set TESSDATA_PREFIX
           run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
@@ -226,7 +226,7 @@ jobs:
             if [[ "${{ steps.apt-cache.outputs.cache-hit }}" != "true" ]]; then
               sudo apt-get -qq update
             fi
-            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev pkg-config
+            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
 
         - name: Set TESSDATA_PREFIX
           run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
