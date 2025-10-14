@@ -71,6 +71,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.processed_textbox_elements: List[int] = []
         # Get docx 2 pdf converter if available
         self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+        self.display_drawingml_warning = True
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -294,11 +295,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Check for DrawingML elements
             elif drawingml_els:
                 if self.docx_to_pdf_converter is None:
-                    _log.warning(
-                        "Found DrawingML elements in document, but no DOCX to PDF converters. "
-                        "If you want these exported, make sure you have "
-                        "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD. "
-                    )
+                    if self.display_drawingml_warning:
+                        _log.warning(
+                            "Found DrawingML elements in document, but no DOCX to PDF converters. "
+                            "If you want these exported, make sure you have "
+                            "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD. "
+                        )
+                        self.display_drawingml_warning = False
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
             # Check for the sdt containers, like table of contents
