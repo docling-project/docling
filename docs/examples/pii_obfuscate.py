@@ -9,9 +9,9 @@
 # Prerequisites
 # - Install Docling. Install Transformers: `pip install transformers`.
 # - Optional (advanced): Install GLiNER for richer PII labels:
-#     pip install gliner
-#     # If needed for CPU-only envs:
-#     pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
+#     `pip install gliner`
+#     If needed for CPU-only envs:
+#     `pip install torch --extra-index-url https://download.pytorch.org/whl/cpu`
 # - Optionally, set `HF_MODEL` to a different NER/PII model.
 #
 # How to run
@@ -26,16 +26,15 @@
 #   specialized models/pipelines and thorough evaluation.
 # %%
 
-import logging
-import re
-import os
 import argparse
+import logging
+import os
+import re
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from tabulate import tabulate
-
 from docling_core.types.doc import ImageRefMode, TableItem, TextItem
+from tabulate import tabulate
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -134,7 +133,9 @@ class SimplePiiObfuscator:
         # where multiple adjacent pieces belong to the same named entity.
         have_spans = any(i["start"] is not None and i["end"] is not None for i in items)
         if have_spans:
-            spans = [i for i in items if i["start"] is not None and i["end"] is not None]
+            spans = [
+                i for i in items if i["start"] is not None and i["end"] is not None
+            ]
             # Ensure processing order by start (then end)
             spans.sort(key=lambda x: (x["start"], x["end"]))
 
@@ -218,15 +219,15 @@ def _build_gliner_model():
     model = GLiNER.from_pretrained(GLINER_MODEL)
     # Curated set of labels for PII detection. Adjust as needed.
     labels = [
-        "work",
+        # "work",
         "booking number",
         "personally identifiable information",
         "driver licence",
         "person",
         "full address",
         "company",
-        "actor",
-        "character",
+        # "actor",
+        # "character",
         "email",
         "passport number",
         "Social Security Number",
@@ -252,7 +253,12 @@ class AdvancedPIIObfuscator:
         return re.sub(r"\s+", " ", s).strip()
 
     def _norm_label(self, label: str) -> str:
-        return re.sub(r"[^a-z0-9_]+", "_", label.lower().replace(" ", "_").replace("-", "_")).strip("_") or "pii"
+        return (
+            re.sub(
+                r"[^a-z0-9_]+", "_", label.lower().replace(" ", "_").replace("-", "_")
+            ).strip("_")
+            or "pii"
+        )
 
     def _next_id(self, typ: str) -> str:
         self.cc(typ)
@@ -266,7 +272,9 @@ class AdvancedPIIObfuscator:
     def _extract_entities(self, text: str) -> List[Tuple[str, str]]:
         if not text:
             return []
-        results = self.model.predict_entities(text, self.labels)  # expects dicts with text/label
+        results = self.model.predict_entities(
+            text, self.labels
+        )  # expects dicts with text/label
         found: List[Tuple[str, str]] = []
         for r in results:
             label = self._norm_label(str(r.get("label", "pii")))
@@ -289,7 +297,9 @@ class AdvancedPIIObfuscator:
                 self.entity_map[word] = replacement
             unique_words[word] = self.entity_map[word]
 
-        sorted_pairs = sorted(unique_words.items(), key=lambda x: len(x[0]), reverse=True)
+        sorted_pairs = sorted(
+            unique_words.items(), key=lambda x: len(x[0]), reverse=True
+        )
 
         def replace_once(s: str, old: str, new: str) -> str:
             pattern = re.escape(old)
@@ -370,9 +380,9 @@ def main():
         data = []
         for key, val in obfuscator.entity_map.items():
             data.append([key, val])
-        
+
         _log.info(
-            f"Obfuscated entities:\n\n{tabulate(data)}", 
+            f"Obfuscated entities:\n\n{tabulate(data)}",
         )
 
 
