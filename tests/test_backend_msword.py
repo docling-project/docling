@@ -87,17 +87,15 @@ def get_converter():
 def _test_e2e_docx_conversions_impl(docx_paths: list[Path]):
     converter = get_converter()
 
+    has_libreoffice = False
+    try:
+        cmd = get_libreoffice_cmd(raise_if_unavailable=True)
+        if cmd is not None:
+            has_libreoffice = True
+    except Exception:
+        pass
+
     for docx_path in docx_paths:
-        # print(f"converting {docx_path}")
-
-        has_libreoffice = False
-        try:
-            cmd = get_libreoffice_cmd()
-            if cmd is not None:
-                has_libreoffice = True
-        except Exception:
-            pass
-
         if (
             not IS_CI
             and not has_libreoffice
