@@ -1,3 +1,4 @@
+# %% [markdown]
 # Detect and obfuscate PII using a Hugging Face NER model.
 #
 # What this example does
@@ -23,7 +24,6 @@
 # Notes
 # - This is a simple demonstration. For production PII detection, consider
 #   specialized models/pipelines and thorough evaluation.
-
 # %%
 
 import logging
