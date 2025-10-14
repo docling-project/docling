@@ -10,6 +10,37 @@ from docx.document import Document
 from PIL import Image, ImageChops
 
 
+def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
+    """Return the libreoffice cmd and optionally test it."""
+
+    libreoffice_cmd = (
+        shutil.which("libreoffice")
+        or shutil.which("soffice")
+        or (
+            "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+            if os.path.isfile("/Applications/LibreOffice.app/Contents/MacOS/soffice")
+            else None
+        )
+    )
+
+    if raise_if_unavailable:
+        if libreoffice_cmd is None:
+            raise RuntimeError("Libreoffice not found")
+
+        # The following test will raise if the libreoffice_cmd cannot be used
+        subprocess.run(
+            [
+                libreoffice_cmd,
+                "-h",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
+
+    return libreoffice_cmd
+
+
 def get_docx_to_pdf_converter() -> Optional[Callable]:
     """
     Detects the best available DOCX to PDF tool and returns a conversion function.
@@ -18,16 +49,7 @@ def get_docx_to_pdf_converter() -> Optional[Callable]:
     """
 
     # Try LibreOffice
-    libreoffice_cmd = (
-        os.getenv("DOCLING_LIBREOFFICE_CMD", None)
-        or shutil.which("libreoffice")
-        or shutil.which("soffice")
-        or (
-            "/Applications/LibreOffice.app/Contents/MacOS/soffice"
-            if os.path.isfile("/Applications/LibreOffice.app/Contents/MacOS/soffice")
-            else None
-        )
-    )
+    libreoffice_cmd = get_libreoffice_cmd()
 
     if libreoffice_cmd:
 
