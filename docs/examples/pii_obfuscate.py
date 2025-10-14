@@ -42,11 +42,13 @@ def _build_ner_pipeline():
     Returns a callable like: ner(text) -> List[dict]
     """
     try:
-        from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
-    except Exception:
-        _log.error(
-            "Transformers not installed. Please run: pip install transformers"
+        from transformers import (
+            AutoModelForTokenClassification,
+            AutoTokenizer,
+            pipeline,
         )
+    except Exception:
+        _log.error("Transformers not installed. Please run: pip install transformers")
         raise
 
     tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
@@ -133,7 +135,9 @@ class PiiObfuscator:
             unique_words[word] = self.entity_map[word]
 
         # Replace longer matches first to avoid partial overlaps
-        sorted_pairs = sorted(unique_words.items(), key=lambda x: len(x[0]), reverse=True)
+        sorted_pairs = sorted(
+            unique_words.items(), key=lambda x: len(x[0]), reverse=True
+        )
 
         def replace_once(s: str, old: str, new: str) -> str:
             # Use simple substring replacement; for stricter matching, use word boundaries
@@ -184,7 +188,7 @@ def main():
             element.text = obfuscator.obfuscate_text(element.text)
 
             print(element.orig, " => ", element.text)
-            
+
         elif isinstance(element, TableItem):
             for cell in element.data.table_cells:
                 cell.text = obfuscator.obfuscate_text(cell.text)
@@ -195,9 +199,10 @@ def main():
 
     # Optional: log mapping summary
     if obfuscator.entity_map:
-        _log.info("Obfuscated entities (sample): %s", list(obfuscator.entity_map.items())[:10])
+        _log.info(
+            "Obfuscated entities (sample): %s", list(obfuscator.entity_map.items())[:10]
+        )
 
 
 if __name__ == "__main__":
     main()
-
