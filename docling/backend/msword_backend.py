@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -36,6 +36,7 @@ from typing_extensions import override
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
+    get_libreoffice_cmd,
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
@@ -69,8 +70,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
         self.processed_textbox_elements: List[int] = []
-        # Get docx 2 pdf converter if available
-        self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+        self.docx_to_pdf_converter: Optional[Callable] = None
+        self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
 
         for i in range(-1, self.max_levels):
@@ -294,14 +295,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     added_elements.extend(te1)
             # Check for DrawingML elements
             elif drawingml_els:
+                if (
+                    self.docx_to_pdf_converter is None
+                    and self.docx_to_pdf_converter_init is False
+                ):
+                    self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+                    self.docx_to_pdf_converter_init = True
+
                 if self.docx_to_pdf_converter is None:
                     if self.display_drawingml_warning:
-                        _log.warning(
-                            "Found DrawingML elements in document, but no DOCX to PDF converters. "
-                            "If you want these exported, make sure you have "
-                            "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD. "
-                        )
-                        self.display_drawingml_warning = False
+                        if self.docx_to_pdf_converter is None:
+                            _log.warning(
+                                "Found DrawingML elements in document, but no DOCX to PDF converters. "
+                                "If you want these exported, make sure you have "
+                                "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
+                            )
+                            self.display_drawingml_warning = False
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
             # Check for the sdt containers, like table of contents
