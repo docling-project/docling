@@ -145,6 +145,7 @@ examples = [
   "langchain-milvus~=0.1",
   "langchain-text-splitters~=0.2",
   "modelscope>=1.29.0",
+  "gliner>=0.2.21",
 ]
 constraints = [
   'onnxruntime (>=1.7.0,<2.0.0) ; python_version >= "3.10"',
