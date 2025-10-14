@@ -251,6 +251,8 @@ class VlmPipeline(PaginatedPipeline):
                 # No code blocks found, return original text
                 return text
 
+        page_docs = []
+
         for pg_idx, page in enumerate(conv_res.pages):
             page_no = pg_idx + 1  # FIXME: might be incorrect
 
@@ -273,21 +275,7 @@ class VlmPipeline(PaginatedPipeline):
             )
             page_doc = backend.convert()
 
-            if page.image is not None:
-                pg_width = page.image.width
-                pg_height = page.image.height
-            else:
-                pg_width = 1
-                pg_height = 1
-
-            conv_res.document.add_page(
-                page_no=page_no,
-                size=Size(width=pg_width, height=pg_height),
-                image=ImageRef.from_pil(image=page.image, dpi=72)
-                if page.image
-                else None,
-            )
-
+            # Modify provenance in place for all items in the page document
             for item, level in page_doc.iterate_items():
                 item.prov = [
                     ProvenanceItem(
@@ -298,9 +286,30 @@ class VlmPipeline(PaginatedPipeline):
                         charspan=[0, 0],
                     )
                 ]
-                conv_res.document.append_child_item(child=item)
 
-        return conv_res.document
+            page_docs.append(page_doc)
+
+        final_doc = DoclingDocument.concatenate(docs=page_docs)
+
+        # Add page metadata to the final document
+        for pg_idx, page in enumerate(conv_res.pages):
+            page_no = pg_idx + 1
+            if page.image is not None:
+                pg_width = page.image.width
+                pg_height = page.image.height
+            else:
+                pg_width = 1
+                pg_height = 1
+
+            final_doc.add_page(
+                page_no=page_no,
+                size=Size(width=pg_width, height=pg_height),
+                image=ImageRef.from_pil(image=page.image, dpi=72)
+                if page.image
+                else None,
+            )
+
+        return final_doc
 
     def _turn_html_into_doc(self, conv_res):
         def _extract_html_code(text):
@@ -328,6 +337,8 @@ class VlmPipeline(PaginatedPipeline):
                 # No code blocks found, return original text
                 return text
 
+        page_docs = []
+
         for pg_idx, page in enumerate(conv_res.pages):
             page_no = pg_idx + 1  # FIXME: might be incorrect
 
@@ -350,21 +361,7 @@ class VlmPipeline(PaginatedPipeline):
             )
             page_doc = backend.convert()
 
-            if page.image is not None:
-                pg_width = page.image.width
-                pg_height = page.image.height
-            else:
-                pg_width = 1
-                pg_height = 1
-
-            conv_res.document.add_page(
-                page_no=page_no,
-                size=Size(width=pg_width, height=pg_height),
-                image=ImageRef.from_pil(image=page.image, dpi=72)
-                if page.image
-                else None,
-            )
-
+            # Modify provenance in place for all items in the page document
             for item, level in page_doc.iterate_items():
                 item.prov = [
                     ProvenanceItem(
@@ -375,9 +372,31 @@ class VlmPipeline(PaginatedPipeline):
                         charspan=[0, 0],
                     )
                 ]
-                conv_res.document.append_child_item(child=item)
 
-        return conv_res.document
+            page_docs.append(page_doc)
+
+        # Concatenate all page documents to preserve hierarchy
+        final_doc = DoclingDocument.concatenate(docs=page_docs)
+
+        # Add page metadata to the final document
+        for pg_idx, page in enumerate(conv_res.pages):
+            page_no = pg_idx + 1
+            if page.image is not None:
+                pg_width = page.image.width
+                pg_height = page.image.height
+            else:
+                pg_width = 1
+                pg_height = 1
+
+            final_doc.add_page(
+                page_no=page_no,
+                size=Size(width=pg_width, height=pg_height),
+                image=ImageRef.from_pil(image=page.image, dpi=72)
+                if page.image
+                else None,
+            )
+
+        return final_doc
 
     @classmethod
     def get_default_options(cls) -> VlmPipelineOptions:
