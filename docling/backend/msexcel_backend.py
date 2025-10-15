@@ -340,7 +340,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return min_row, max_row, min_col, max_col
 
-    # Example integration in MsExcelDocumentBackend._find_data_tables
     def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
         """Find all compact rectangular data tables in an Excel worksheet.
 
@@ -372,7 +371,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     continue
 
                 # If the cell starts a new table, find its bounds
-                table_bounds, visited_cells = self._find_table_bounds(sheet, ri, rj)
+                table_bounds, visited_cells = self._find_table_bounds(
+                    sheet, ri, rj, max_row, max_col
+                )
 
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
@@ -383,6 +384,8 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         sheet: Worksheet,
         start_row: int,
         start_col: int,
+        max_row: int,
+        max_col: int,
     ) -> tuple[ExcelTable, set[tuple[int, int]]]:
         """Determine the bounds of a compact rectangular table.
 
@@ -390,14 +393,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             sheet: The Excel worksheet to be parsed.
             start_row: The row number of the starting cell.
             start_col: The column number of the starting cell.
+            max_row: Maximum row boundary from true data bounds.
+            max_col: Maximum column boundary from true data bounds.
 
         Returns:
             A tuple with an Excel table and a set of cell coordinates.
         """
         _log.debug("find_table_bounds")
 
-        max_row = self._find_table_bottom(sheet, start_row, start_col)
-        max_col = self._find_table_right(sheet, start_row, start_col)
+        table_max_row = self._find_table_bottom(sheet, start_row, start_col, max_row)
+        table_max_col = self._find_table_right(sheet, start_row, start_col, max_col)
 
         # Collect the data within the bounds
         data = []
@@ -405,9 +410,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         for ri, row in enumerate(
             sheet.iter_rows(
                 min_row=start_row + 1,  # start_row is 0-based but iter_rows is 1-based
-                max_row=max_row + 1,
+                max_row=table_max_row + 1,
                 min_col=start_col + 1,
-                max_col=max_col + 1,
+                max_col=table_max_col + 1,
                 values_only=False,
             ),
             start_row,
@@ -447,15 +452,15 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return (
             ExcelTable(
                 anchor=(start_col, start_row),
-                num_rows=max_row + 1 - start_row,
-                num_cols=max_col + 1 - start_col,
+                num_rows=table_max_row + 1 - start_row,
+                num_cols=table_max_col + 1 - start_col,
                 data=data,
             ),
             visited_cells,
         )
 
     def _find_table_bottom(
-        self, sheet: Worksheet, start_row: int, start_col: int
+        self, sheet: Worksheet, start_row: int, start_col: int, max_row: int
     ) -> int:
         """Find the bottom boundary of a table.
 
@@ -463,16 +468,17 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             sheet: The Excel worksheet to be parsed.
             start_row: The starting row of the table.
             start_col: The starting column of the table.
+            max_row: Maximum row boundary from true data bounds.
 
         Returns:
             The row index representing the bottom boundary of the table.
         """
-        max_row: int = start_row
+        table_max_row: int = start_row
 
         for ri, (cell,) in enumerate(
             sheet.iter_rows(
                 min_row=start_row + 2,
-                max_row=sheet.max_row,
+                max_row=max_row,  # Use the actual max row
                 min_col=start_col + 1,
                 max_col=start_col + 1,
                 values_only=False,
@@ -488,16 +494,16 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if cell.value is None and not merged_range:
                 break  # Stop if the cell is empty and not merged
 
-            # Expand max_row to include the merged range if applicable
+            # Expand table_max_row to include the merged range if applicable
             if merged_range:
-                max_row = max(max_row, merged_range.max_row - 1)
+                table_max_row = max(table_max_row, merged_range.max_row - 1)
             else:
-                max_row = ri
+                table_max_row = ri
 
-        return max_row
+        return table_max_row
 
     def _find_table_right(
-        self, sheet: Worksheet, start_row: int, start_col: int
+        self, sheet: Worksheet, start_row: int, start_col: int, max_col: int
     ) -> int:
         """Find the right boundary of a table.
 
@@ -505,18 +511,19 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             sheet: The Excel worksheet to be parsed.
             start_row: The starting row of the table.
             start_col: The starting column of the table.
+            max_col: The actual max column of the table.
 
         Returns:
             The column index representing the right boundary of the table."
         """
-        max_col: int = start_col
+        table_max_col: int = start_col
 
         for rj, (cell,) in enumerate(
             sheet.iter_cols(
                 min_row=start_row + 1,
                 max_row=start_row + 1,
                 min_col=start_col + 2,
-                max_col=sheet.max_column,
+                max_col=max_col,  # Use the actual max col
                 values_only=False,
             ),
             start_col + 1,
@@ -530,13 +537,13 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if cell.value is None and not merged_range:
                 break  # Stop if the cell is empty and not merged
 
-            # Expand max_col to include the merged range if applicable
+            # Expand table_max_col to include the merged range if applicable
             if merged_range:
-                max_col = max(max_col, merged_range.max_col - 1)
+                table_max_col = max(table_max_col, merged_range.max_col - 1)
             else:
-                max_col = rj
+                table_max_col = rj
 
-        return max_col
+        return table_max_col
 
     def _find_images_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet
