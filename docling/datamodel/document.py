@@ -396,6 +396,12 @@ class _DocumentConversionInput(BaseModel):
             mime = FormatToMimeType[InputFormat.XLSX][0]
         elif ext in FormatToExtensions[InputFormat.VTT]:
             mime = FormatToMimeType[InputFormat.VTT][0]
+        elif ext in FormatToExtensions[InputFormat.CODE_JAVA]:
+            mime = FormatToMimeType[InputFormat.CODE_JAVA][0]
+        elif ext in FormatToExtensions[InputFormat.CODE_PYTHON]:
+            mime = FormatToMimeType[InputFormat.CODE_PYTHON][0]
+        elif ext in FormatToExtensions[InputFormat.CODE_JAVASCRIPT]:
+            mime = FormatToMimeType[InputFormat.CODE_JAVASCRIPT][0]
 
         return mime
 
