@@ -72,7 +72,6 @@ dependencies = [
   # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
   # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
   "accelerate>=1.0.0,<2",
-  "polyfactory>=2.22.2",
 ]
 
 [project.urls]
@@ -90,6 +89,7 @@ docling-tools = "docling.cli.tools:app"
 
 [project.optional-dependencies]
 easyocr = ['easyocr (>=1.7,<2.0)']
+polyfactory = ["polyfactory>=2.22.2"]
 tesserocr = ['tesserocr (>=2.7.1,<3.0.0)']
 ocrmac = ['ocrmac (>=1.0.0,<2.0.0) ; sys_platform == "darwin"']
 vlm = [
@@ -111,6 +111,7 @@ asr = [
 
 [dependency-groups]
 dev = [
+    "docling[polyfactory]",
     "pre-commit~=3.7",
     "mypy~=1.10",
     "types-setuptools~=70.3",
