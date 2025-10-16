@@ -85,7 +85,9 @@ from docling.document_converter import (
     PowerpointFormatOption,
     WordFormatOption,
 )
+from docling.pipeline.factory import get_pipeline_factory
 from docling.models.factories import get_ocr_factory
+from docling.postprocess.factory import get_postprocessor_factory
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
@@ -336,6 +338,12 @@ def convert(  # noqa: C901
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
     ] = ProcessingPipeline.STANDARD,
+    pipeline_plugin: Annotated[
+        Optional[str],
+        typer.Option(
+            ..., help="Optional external pipeline kind to use (from plugins)",
+        ),
+    ] = None,
     vlm_model: Annotated[
         VlmModelType,
         typer.Option(..., help="Choose the VLM model to use with PDF or image files."),
@@ -451,6 +459,18 @@ def convert(  # noqa: C901
     output: Annotated[
         Path, typer.Option(..., help="Output directory where results are saved.")
     ] = Path("."),
+    postprocess: Annotated[
+        Optional[str],
+        typer.Option(
+            ..., help="Optional postprocessor kind to run after conversion (from plugins)",
+        ),
+    ] = None,
+    postprocess_params: Annotated[
+        Optional[str],
+        typer.Option(
+            ..., help="JSON string of parameters passed to the selected postprocessor.",
+        ),
+    ] = None,
     verbose: Annotated[
         int,
         typer.Option(
@@ -616,7 +636,14 @@ def convert(  # noqa: C901
 
         format_options: Dict[InputFormat, FormatOption] = {}
 
-        if pipeline == ProcessingPipeline.STANDARD:
+        if pipeline_plugin is not None:
+            # Use external pipeline for PDF/IMAGE via plugin factory
+            pp_factory = get_pipeline_factory(allow_external_plugins=allow_external_plugins)
+            plugin_options = pp_factory.create_options(kind=pipeline_plugin)
+            plugin_cls = pp_factory.classes[type(plugin_options)]
+            pdf_format_option = PdfFormatOption(pipeline_cls=plugin_cls, pipeline_options=plugin_options)
+            format_options = {InputFormat.PDF: pdf_format_option, InputFormat.IMAGE: pdf_format_option}
+        elif pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
                 allow_external_plugins=allow_external_plugins,
                 enable_remote_services=enable_remote_services,
@@ -796,19 +823,39 @@ def convert(  # noqa: C901
             input_doc_paths, headers=parsed_headers, raises_on_error=abort_on_error
         )
 
-        output.mkdir(parents=True, exist_ok=True)
-        export_documents(
-            conv_results,
-            output_dir=output,
-            export_json=export_json,
-            export_html=export_html,
-            export_html_split_page=export_html_split_page,
-            show_layout=show_layout,
-            export_md=export_md,
-            export_txt=export_txt,
-            export_doctags=export_doctags,
-            image_export_mode=image_export_mode,
-        )
+        # If a postprocessor is requested, invoke it; otherwise, perform exports
+        if postprocess is not None:
+            import json as _json
+            pp_factory = get_postprocessor_factory(
+                allow_external_plugins=allow_external_plugins
+            )
+            params = {}
+            if postprocess_params:
+                try:
+                    params = _json.loads(postprocess_params)
+                except Exception as err:
+                    err_console.print(
+                        f"[red]Error: Invalid JSON in --postprocess-params: {err}[/red]"
+                    )
+                    raise typer.Abort()
+            postprocess_options = pp_factory.create_options(kind=postprocess)
+            postprocessor = pp_factory.create_instance(options=postprocess_options)
+            # Consume the generator in the postprocessor
+            postprocessor.process(conv_results, **params)
+        else:
+            output.mkdir(parents=True, exist_ok=True)
+            export_documents(
+                conv_results,
+                output_dir=output,
+                export_json=export_json,
+                export_html=export_html,
+                export_html_split_page=export_html_split_page,
+                show_layout=show_layout,
+                export_md=export_md,
+                export_txt=export_txt,
+                export_doctags=export_doctags,
+                image_export_mode=image_export_mode,
+            )
 
         end_time = time.time() - start_time
 
