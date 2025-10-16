@@ -8,14 +8,12 @@ from io import BytesIO
 from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
+    Annotated,
     Literal,
     Optional,
-    Set,
     Type,
     Union,
+    cast,
 )
 
 import filetype
@@ -49,16 +47,15 @@ from docling_core.types.legacy_doc.document import (
 )
 from docling_core.utils.file import resolve_source_to_stream
 from docling_core.utils.legacy import docling_document_to_legacy
-from numpy import isin
 from pydantic import BaseModel, Field
 from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
+    BackendOptions,
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConfidenceReport,
@@ -76,6 +73,7 @@ from docling.utils.profiling import ProfilingItem
 from docling.utils.utils import create_file_hash
 
 if TYPE_CHECKING:
+    from docling.datamodel.base_models import BaseFormatOption
     from docling.document_converter import FormatOption
 
 _log = logging.getLogger(__name__)
@@ -105,19 +103,30 @@ _EMPTY_DOCLING_DOC = DoclingDocument(name="dummy")
 
 
 class InputDocument(BaseModel):
-    file: PurePath
-    source_url: Optional[str] = None
-    document_hash: str  # = None
-    valid: bool = True
-    backend_options: BackendOptions
-    limits: DocumentLimits = DocumentLimits()
-    format: InputFormat  # = None
+    """A document as an input of a Docling conversion."""
 
-    filesize: Optional[int] = None
-    page_count: int = 0
+    file: Annotated[
+        PurePath, Field(description="A path representation the input document.")
+    ]
+    document_hash: Annotated[
+        str,
+        Field(description="A stable hash of the path or stream of the input document."),
+    ]
+    valid: bool = Field(True, description="Whether this is is a valid input document.")
+    backend_options: Optional[BackendOptions] = Field(
+        None, description="Custom options for declarative backends."
+    )
+    limits: DocumentLimits = Field(
+        DocumentLimits(), description="Limits in the input document for the conversion."
+    )
+    format: Annotated[InputFormat, Field(description="The document format.")]
 
-    _backend: AbstractDocumentBackend  # Internal PDF backend used
-    _backend_options: BackendOptions = BackendOptions()
+    filesize: Optional[int] = Field(
+        None, description="Size of the input file, in bytes."
+    )
+    page_count: int = Field(0, description="Number of pages in the input document.")
+
+    _backend: AbstractDocumentBackend
 
     def __init__(
         self,
@@ -137,32 +146,34 @@ class InputDocument(BaseModel):
 
         self.limits = limits or DocumentLimits()
         self.format = format
-        if backend_options is not None:
-            self.backend_options = backend_options
-
-        if filename is not None and filename.startswith(("http://", "https://")):
-            self.source_url = filename
 
         try:
             if isinstance(path_or_stream, Path):
                 self.file = path_or_stream
                 self.filesize = path_or_stream.stat().st_size
+                if self.filesize > self.limits.max_file_size:
+                    self.valid = False
+                else:
+                    self.document_hash = create_file_hash(path_or_stream)
+                    self._init_doc(backend, path_or_stream)
+
             elif isinstance(path_or_stream, BytesIO):
                 assert filename is not None, (
-                    "Can't construct InputDocument from stream without providing filename arg."
+                    "Can't construct InputDocument from stream without providing "
+                    "filename arg."
                 )
                 self.file = PurePath(filename)
                 self.filesize = path_or_stream.getbuffer().nbytes
+
+                if self.filesize > self.limits.max_file_size:
+                    self.valid = False
+                else:
+                    self.document_hash = create_file_hash(path_or_stream)
+                    self._init_doc(backend, path_or_stream)
             else:
                 raise RuntimeError(
                     f"Unexpected type path_or_stream: {type(path_or_stream)}"
                 )
-
-            if self.filesize > self.limits.max_file_size:
-                self.valid = False
-            else:
-                self.document_hash = create_file_hash(path_or_stream)
-                self._init_doc(backend, path_or_stream)
 
             # For paginated backends, check if the maximum page count is exceeded.
             if self.valid and self._backend.is_valid():
@@ -184,7 +195,8 @@ class InputDocument(BaseModel):
         except RuntimeError as e:
             self.valid = False
             _log.exception(
-                f"An unexpected error occurred while opening the document {self.file.name}",
+                "An unexpected error occurred while opening the document "
+                "f{self.file.name}",
                 exc_info=e,
             )
             # raise
@@ -194,11 +206,11 @@ class InputDocument(BaseModel):
         backend: Type[AbstractDocumentBackend],
         path_or_stream: Union[BytesIO, Path],
     ) -> None:
-        if issubclass(backend, DeclarativeDocumentBackend):
+        if issubclass(backend, DeclarativeDocumentBackend) and self.backend_options:
             self._backend = backend(
                 self,
                 path_or_stream=path_or_stream,
-                backend_options=self.backend_options,
+                options=self.backend_options,
             )
         else:
             self._backend = backend(self, path_or_stream=path_or_stream)
@@ -216,11 +228,11 @@ class ConversionResult(BaseModel):
     input: InputDocument
 
     status: ConversionStatus = ConversionStatus.PENDING  # failure, success
-    errors: List[ErrorItem] = []  # structure to keep errors
+    errors: list[ErrorItem] = []  # structure to keep errors
 
-    pages: List[Page] = []
+    pages: list[Page] = []
     assembled: AssembledUnit = AssembledUnit()
-    timings: Dict[str, ProfilingItem] = {}
+    timings: dict[str, ProfilingItem] = {}
     confidence: ConfidenceReport = Field(default_factory=ConfidenceReport)
 
     document: DoclingDocument = _EMPTY_DOCLING_DOC
@@ -239,7 +251,7 @@ class _DummyBackend(AbstractDocumentBackend):
         return False
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return set()
 
     @classmethod
@@ -252,12 +264,12 @@ class _DummyBackend(AbstractDocumentBackend):
 
 class _DocumentConversionInput(BaseModel):
     path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream]]
-    headers: Optional[Dict[str, str]] = None
+    headers: Optional[dict[str, str]] = None
     limits: Optional[DocumentLimits] = DocumentLimits()
 
     def docs(
         self,
-        format_options: Mapping[InputFormat, "FormatOption"],
+        format_options: Mapping[InputFormat, "BaseFormatOption"],
     ) -> Iterable[InputDocument]:
         for item in self.path_or_stream_iterator:
             obj = (
@@ -267,15 +279,19 @@ class _DocumentConversionInput(BaseModel):
             )
             format = self._guess_format(obj)
             backend: Type[AbstractDocumentBackend]
-            if format not in format_options.keys():
+            backend_options: Optional[BackendOptions] = None
+            if not format or format not in format_options:
                 _log.error(
-                    f"Input document {obj.name} with format {format} does not match any allowed format: ({format_options.keys()})"
+                    f"Input document {obj.name} with format {format} does not match "
+                    f"any allowed format: ({format_options.keys()})"
                 )
                 backend = _DummyBackend
-                backend_options = BackendOptions()
             else:
-                backend = format_options[format].backend
-                backend_options = format_options[format].backend_options
+                options = format_options[format]
+                backend = options.backend
+                # patch against circular import
+                if "backend_options" in options.__class__.__dict__:
+                    backend_options = cast("FormatOption", options).backend_options
 
             path_or_stream: Union[BytesIO, Path]
             if isinstance(obj, Path):
@@ -307,12 +323,13 @@ class _DocumentConversionInput(BaseModel):
                 with obj.open("rb") as f:
                     content = f.read(1024)  # Read first 1KB
             if mime is not None and mime.lower() == "application/zip":
+                mime_root = "application/vnd.openxmlformats-officedocument"
                 if obj.suffixes[-1].lower() == ".xlsx":
-                    mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    mime = mime_root + ".spreadsheetml.sheet"
                 elif obj.suffixes[-1].lower() == ".docx":
-                    mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    mime = mime_root + ".wordprocessingml.document"
                 elif obj.suffixes[-1].lower() == ".pptx":
-                    mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    mime = mime_root + ".presentationml.presentation"
 
         elif isinstance(obj, DocumentStream):
             content = obj.stream.read(8192)
@@ -327,12 +344,13 @@ class _DocumentConversionInput(BaseModel):
                 mime = _DocumentConversionInput._mime_from_extension(ext.lower())
             if mime is not None and mime.lower() == "application/zip":
                 objname = obj.name.lower()
+                mime_root = "application/vnd.openxmlformats-officedocument"
                 if objname.endswith(".xlsx"):
-                    mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    mime = mime_root + ".spreadsheetml.sheet"
                 elif objname.endswith(".docx"):
-                    mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    mime = mime_root + ".wordprocessingml.document"
                 elif objname.endswith(".pptx"):
-                    mime = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    mime = mime_root + ".presentationml.presentation"
 
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):

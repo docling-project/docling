@@ -8,9 +8,10 @@ from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Optional, Type, Union
 
 from pydantic import ConfigDict, model_validator, validate_call
+from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -56,7 +57,7 @@ class ExtractionFormatOption(BaseFormatOption):
     pipeline_cls: Type[BaseExtractionPipeline]
 
     @model_validator(mode="after")
-    def set_optional_field_default(self) -> "ExtractionFormatOption":
+    def set_optional_field_default(self) -> Self:
         if self.pipeline_options is None:
             # `get_default_options` comes from BaseExtractionPipeline
             self.pipeline_options = self.pipeline_cls.get_default_options()  # type: ignore[assignment]
@@ -70,7 +71,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
     the VLM extractor. This duplication will be removed when we deduplicate
     the format registry between convert/extract.
     """
-    format_to_default_backend: Dict[InputFormat, Type[AbstractDocumentBackend]] = {
+    format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
         InputFormat.IMAGE: PyPdfiumDocumentBackend,
         InputFormat.PDF: PyPdfiumDocumentBackend,
     }
@@ -98,24 +99,24 @@ class DocumentExtractor:
 
     def __init__(
         self,
-        allowed_formats: Optional[List[InputFormat]] = None,
+        allowed_formats: Optional[list[InputFormat]] = None,
         extraction_format_options: Optional[
-            Dict[InputFormat, ExtractionFormatOption]
+            dict[InputFormat, ExtractionFormatOption]
         ] = None,
     ) -> None:
-        self.allowed_formats: List[InputFormat] = (
+        self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
         # Build per-format options with defaults, then apply any user overrides
         overrides = extraction_format_options or {}
-        self.extraction_format_to_options: Dict[InputFormat, ExtractionFormatOption] = {
+        self.extraction_format_to_options: dict[InputFormat, ExtractionFormatOption] = {
             fmt: overrides.get(fmt, _get_default_extraction_option(fmt))
             for fmt in self.allowed_formats
         }
 
         # Cache pipelines by (class, options-hash)
-        self._initialized_pipelines: Dict[
-            Tuple[Type[BaseExtractionPipeline], str], BaseExtractionPipeline
+        self._initialized_pipelines: dict[
+            tuple[Type[BaseExtractionPipeline], str], BaseExtractionPipeline
         ] = {}
 
     # ---------------------------- Public API ---------------------------------
@@ -125,7 +126,7 @@ class DocumentExtractor:
         self,
         source: Union[Path, str, DocumentStream],
         template: ExtractionTemplateType,
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -147,7 +148,7 @@ class DocumentExtractor:
         self,
         source: Iterable[Union[Path, str, DocumentStream]],
         template: ExtractionTemplateType,
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -202,7 +203,7 @@ class DocumentExtractor:
         start_time = time.monotonic()
 
         for input_batch in chunkify(
-            conv_input.docs(self.extraction_format_to_options),  # type: ignore[arg-type]
+            conv_input.docs(self.extraction_format_to_options),
             settings.perf.doc_batch_size,
         ):
             _log.info("Going to extract document batch...")

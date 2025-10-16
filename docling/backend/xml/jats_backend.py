@@ -21,7 +21,6 @@ from typing_extensions import TypedDict, override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -89,12 +88,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
     @override
     def __init__(
-        self,
-        in_doc: "InputDocument",
-        path_or_stream: Union[BytesIO, Path],
-        backend_options: BackendOptions,
+        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
     ) -> None:
-        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
+        super().__init__(in_doc, path_or_stream)
         self.path_or_stream = path_or_stream
 
         # Initialize the root of the document hierarchy

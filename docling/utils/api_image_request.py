@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 from io import BytesIO
-from typing import Dict, List, Optional
+from typing import Optional
 
 import requests
 from PIL import Image
@@ -19,7 +19,7 @@ def api_image_request(
     prompt: str,
     url: AnyUrl,
     timeout: float = 20,
-    headers: Optional[Dict[str, str]] = None,
+    headers: Optional[dict[str, str]] = None,
     **params,
 ) -> str:
     img_io = BytesIO()
@@ -69,8 +69,8 @@ def api_image_request_streaming(
     url: AnyUrl,
     *,
     timeout: float = 20,
-    headers: Optional[Dict[str, str]] = None,
-    generation_stoppers: List[GenerationStopper] = [],
+    headers: Optional[dict[str, str]] = None,
+    generation_stoppers: list[GenerationStopper] = [],
     **params,
 ) -> str:
     """

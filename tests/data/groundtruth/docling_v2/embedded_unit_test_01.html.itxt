@@ -1,9 +1,0 @@
-item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: title: Title
-    item-2 at level 2: section_header: section-1
-      item-3 at level 3: section_header: section-1.1
-    item-4 at level 2: section_header: section-2
-      item-5 at level 3: section: group header-3
-        item-6 at level 4: section_header: section-2.0.1
-      item-7 at level 3: section_header: section-2.2
-      item-8 at level 3: section_header: section-2.3
