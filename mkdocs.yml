@@ -196,6 +196,8 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/docling-project/docling
+    - icon: fontawesome/brands/discord
+      link: https://docling.ai/discord
     - icon: fontawesome/brands/linkedin
       link: https://linkedin.com/company/docling/
   analytics:
