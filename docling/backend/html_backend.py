@@ -1,14 +1,12 @@
 import base64
 import logging
 import re
-import traceback
 from contextlib import contextmanager
 from copy import deepcopy
-from email.mime import image
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Optional, Union, cast
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
@@ -20,9 +18,9 @@ from docling_core.types.doc import (
     DocumentOrigin,
     GroupItem,
     GroupLabel,
+    PictureItem,
     RefItem,
     RichTableCell,
-    Size,
     TableCell,
     TableData,
     TableItem,
@@ -33,15 +31,13 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl, BaseModel, ValidationError
 from typing_extensions import override
 
-from docling import backend
-from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.datamodel.backend_options import (
-    BackendOptions,
+from docling.backend.abstract_backend import (
+    DeclarativeDocumentBackend,
     HTMLBackendOptions,
-    ImageOptions,
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
+from docling.exceptions import OperationNotAllowed
 
 _log = logging.getLogger(__name__)
 
@@ -192,20 +188,18 @@ class AnnotatedTextList(list):
         return super_list
 
 
-class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
+class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @override
     def __init__(
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        backend_options: HTMLBackendOptions,
-        original_url: Optional[AnyUrl] = None,
+        options: HTMLBackendOptions = HTMLBackendOptions(),
     ):
-        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
+        super().__init__(in_doc, path_or_stream, options)
         self.soup: Optional[Tag] = None
-        self.path_or_stream = path_or_stream
-        self.base_url = in_doc.source_url or None
-        self.base_path = in_doc.file or None
+        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.base_path: Optional[str] = str(options.source_location)
 
         # Initialize the parents for the hierarchy
         self.max_levels = 10
@@ -215,7 +209,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         for i in range(self.max_levels):
             self.parents[i] = None
         self.hyperlink: Union[AnyUrl, Path, None] = None
-        self.original_url = original_url
         self.format_tags: list[str] = []
 
         try:
@@ -281,7 +274,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 content_layer=ContentLayer.FURNITURE,
             )
         # remove script and style tags
-        for tag in self.soup(["script", "style"]):
+        for tag in self.soup(["script", "noscript", "style"]):
             tag.decompose()
         # remove any hidden tag
         for tag in self.soup(hidden=True):
@@ -310,6 +303,28 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         self.ctx = _Context()
         self._walk(content, doc)
         return doc
+
+    @staticmethod
+    def _is_remote_url(value: str) -> bool:
+        parsed = urlparse(value)
+        return parsed.scheme in {"http", "https", "ftp", "s3", "gs"}
+
+    def _resolve_relative_path(self, loc: str) -> str:
+        abs_loc = loc
+
+        if self.base_path:
+            if not loc.startswith(("http://", "https://", "data:", "file://", "/")):
+                if HTMLDocumentBackend._is_remote_url(self.base_path):  # remote fetch
+                    abs_loc = urljoin(self.base_path, loc)
+                elif self.base_path:  # local fetch
+                    # For local files, resolve relative to the HTML file location
+                    abs_loc = str(Path(self.base_path).parent / loc)
+            elif loc.startswith("//"):
+                # Protocol-relative URL - default to https
+                abs_loc = "https:" + loc
+
+        _log.debug(f"Resolved location {loc} to {abs_loc}")
+        return abs_loc
 
     @staticmethod
     def group_cell_elements(
@@ -690,8 +705,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         else:
             if isinstance(this_href, str) and this_href:
                 old_hyperlink = self.hyperlink
-                if self.original_url is not None:
-                    this_href = urljoin(str(self.original_url), str(this_href))
+                this_href = self._resolve_relative_path(this_href)
                 # ugly fix for relative links since pydantic does not support them.
                 try:
                     new_hyperlink = AnyUrl(this_href)
@@ -858,7 +872,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         for img_tag in tag("img"):
             if isinstance(img_tag, Tag):
                 im_ref = self._emit_image(img_tag, doc)
-                added_ref.append(im_ref)
+                if im_ref:
+                    added_ref.append(im_ref)
         return added_ref
 
     def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
@@ -1016,7 +1031,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 num_rows += 1
         return num_rows, num_cols
 
-    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:  # noqa: C901
+    def _handle_block(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_refs = []
         tag_name = tag.name.lower()
 
@@ -1116,9 +1131,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         return added_refs
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
-        image_options = self.backend_options.image_options
-        if image_options == ImageOptions.NONE:
-            return None
         figure = img_tag.find_parent("figure")
         caption: AnnotatedTextList = AnnotatedTextList()
 
@@ -1134,9 +1146,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
             return None
 
         if img_hyperlink := get_img_hyperlink(img_tag):
-            caption.append(
-                AnnotatedText(text="Image Hyperlink.", hyperlink=img_hyperlink)
-            )
+            img_text = img_tag.get("alt") or ""
+            caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
 
         if isinstance(figure, Tag):
             caption_tag = figure.find("figcaption", recursive=False)
@@ -1162,39 +1173,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
                 formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
             )
-        image_options = self.backend_options.image_options
-        if image_options == ImageOptions.NONE:
-            placeholder = doc.add_picture(
+
+        src_loc: str = self._get_attr_as_string(img_tag, "src")
+        if not cast(HTMLBackendOptions, self.options).image_fetch or not src_loc:
+            # Do not fetch the image, just add a placeholder
+            placeholder: PictureItem = doc.add_picture(
                 caption=caption_item,
                 parent=parent,
                 content_layer=self.content_layer,
             )
             return placeholder.get_ref()
 
-        src_url = self._get_attr_as_string(img_tag, "src")
-        if not src_url:
-            # No source URL, just add placeholder
-            docling_pic = doc.add_picture(
-                caption=caption_item,
-                parent=parent,
-                content_layer=self.content_layer,
-            )
-            return docling_pic.get_ref()
-
-        # Resolve relative URLs
-        if not src_url.startswith(("http://", "https://", "data:", "file://", "/")):
-            if self.base_url:
-                src_url = urljoin(self.base_url, src_url)
-            elif self.base_path:
-                # For local files, resolve relative to the HTML file location
-                src_url = str(Path(self.base_path).parent / src_url)
-        elif src_url.startswith("//"):
-            # Protocol-relative URL - default to https
-            src_url = "https:" + src_url
-
-        _log.debug(f"Resolved URL to: {src_url}")
-
-        img_ref = self._create_image_ref(img_tag, src_url, image_options)
+        src_loc = self._resolve_relative_path(src_loc)
+        img_ref = self._create_image_ref(src_loc)
 
         docling_pic = doc.add_picture(
             image=img_ref,
@@ -1204,65 +1195,50 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend[HTMLBackendOptions]):
         )
         return docling_pic.get_ref()
 
-    def _create_image_ref(
-        self, img_tag: Tag, src_url: str, image_options: ImageOptions
-    ) -> Optional[ImageRef]:
-        width = self._get_attr_as_string(img_tag, "width", str(DEFAULT_IMAGE_WIDTH))
-        height = self._get_attr_as_string(img_tag, "height", str(DEFAULT_IMAGE_HEIGHT))
-
+    def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
         try:
             img_data = self._load_image_data(src_url)
 
-            if image_options == ImageOptions.EMBEDDED and img_data:
+            if img_data:
                 img = Image.open(BytesIO(img_data))
                 return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
-
-            elif image_options == ImageOptions.REFERENCED:
-                uri: Union[AnyUrl, Path]
-                if src_url.startswith(("http://", "https://", "data:", "file://")):
-                    uri = AnyUrl(src_url)
-                else:
-                    uri = Path(src_url)
-
-                if img_data:
-                    img = Image.open(BytesIO(img_data))
-                    img_ref = ImageRef.from_pil(img, dpi=72)
-                    img_ref.uri = uri
-                    return img_ref
-                else:
-                    return ImageRef(
-                        uri=uri,
-                        dpi=72,
-                        mimetype="image/png",
-                        size=Size(width=float(width), height=float(height)),
-                    )
 
         except (ValidationError, UnidentifiedImageError, Exception) as e:
             _log.warning(f"Could not process image (src={src_url}): {e}")
 
         return None
 
-    def _load_image_data(self, src_url: str) -> Optional[bytes]:
-        if src_url.lower().endswith(".svg"):
-            _log.debug(f"Skipping SVG file: {src_url}")
+    def _load_image_data(self, src_loc: str) -> Optional[bytes]:
+        if src_loc.lower().endswith(".svg"):
+            _log.debug(f"Skipping SVG file: {src_loc}")
             return None
 
         try:
-            if src_url.startswith(("http://", "https://")):
-                response = requests.get(src_url, stream=True)
+            if HTMLDocumentBackend._is_remote_url(src_loc):
+                if not self.enable_remote_fetch:
+                    raise OperationNotAllowed(
+                        "Fetching remote resources is only allowed when set explicitly. "
+                        "options.enable_remote_fetch=True."
+                    )
+                response = requests.get(src_loc, stream=True)
                 response.raise_for_status()
                 return response.content
-            elif src_url.startswith("data:"):
-                data = re.sub(r"^data:image/.+;base64,", "", src_url)
+            elif src_loc.startswith("data:"):
+                data = re.sub(r"^data:image/.+;base64,", "", src_loc)
                 return base64.b64decode(data)
 
-            if src_url.startswith("file://"):
-                src_url = src_url[7:]
+            if src_loc.startswith("file://"):
+                src_loc = src_loc[7:]
 
-            with open(src_url, "rb") as f:
+            if not self.enable_local_fetch:
+                raise OperationNotAllowed(
+                    "Fetching local resources is only allowed when set explicitly. "
+                    "options.enable_local_fetch=True."
+                )
+            with open(src_loc, "rb") as f:
                 return f.read()
         except Exception as e:
-            _log.debug(f"Could not load image data: {e}")
+            _log.warning(f"Could not load image data: {e}")
             return None
 
     @staticmethod

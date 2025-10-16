@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Set, Union
+from typing import Final, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -17,7 +17,6 @@ from docling_core.types.doc import (
 )
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
-from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -28,13 +27,8 @@ DEFAULT_IMAGE_HEIGHT: Final = 128
 
 
 class AsciiDocBackend(DeclarativeDocumentBackend):
-    def __init__(
-        self,
-        in_doc: "InputDocument",
-        path_or_stream: Union[BytesIO, Path],
-        backend_options: BackendOptions,
-    ):
-        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
+    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
+        super().__init__(in_doc, path_or_stream)
 
         self.path_or_stream = path_or_stream
 
@@ -64,7 +58,7 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
         return
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.ASCIIDOC}
 
     def convert(self) -> DoclingDocument:

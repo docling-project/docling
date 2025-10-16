@@ -7,7 +7,6 @@ import pytest
 from pydantic import ValidationError
 
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
-from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import DoclingDocument, InputDocument
 
@@ -19,10 +18,13 @@ def test_convert_valid_docling_json():
     cls = DoclingJSONBackend
     path_or_stream = GT_PATH
     in_doc = InputDocument(
-        path_or_stream=path_or_stream, format=InputFormat.JSON_DOCLING, backend=cls
+        path_or_stream=path_or_stream,
+        format=InputFormat.JSON_DOCLING,
+        backend=cls,
     )
     backend = cls(
-        in_doc=in_doc, path_or_stream=path_or_stream, backend_options=BackendOptions()
+        in_doc=in_doc,
+        path_or_stream=path_or_stream,
     )
     assert backend.is_valid()
 
@@ -46,7 +48,8 @@ def test_invalid_docling_json():
         filename="foo",
     )
     backend = cls(
-        in_doc=in_doc, path_or_stream=path_or_stream, backend_options=BackendOptions()
+        in_doc=in_doc,
+        path_or_stream=path_or_stream,
     )
 
     assert not backend.is_valid()

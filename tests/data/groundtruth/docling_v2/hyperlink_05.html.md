@@ -1,4 +1,4 @@
-Image Hyperlink.
+Clickable Example
 
 <!-- image -->
 

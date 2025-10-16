@@ -7,14 +7,15 @@ from docling.backend.asciidoc_backend import (
     DEFAULT_IMAGE_WIDTH,
     AsciiDocBackend,
 )
-from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 
 def _get_backend(fname):
     in_doc = InputDocument(
-        path_or_stream=fname, format=InputFormat.ASCIIDOC, backend=AsciiDocBackend
+        path_or_stream=fname,
+        format=InputFormat.ASCIIDOC,
+        backend=AsciiDocBackend,
     )
 
     doc_backend = in_doc._backend

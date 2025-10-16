@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -40,7 +40,6 @@ from docling.backend.docx.drawingml.utils import (
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
-from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -50,12 +49,9 @@ _log = logging.getLogger(__name__)
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
     @override
     def __init__(
-        self,
-        in_doc: "InputDocument",
-        path_or_stream: Union[BytesIO, Path],
-        backend_options: BackendOptions,
+        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
     ) -> None:
-        super().__init__(in_doc, path_or_stream, backend_options=backend_options)
+        super().__init__(in_doc, path_or_stream)
         self.XML_KEY = (
             "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
         )
@@ -73,7 +69,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
-        self.processed_textbox_elements: List[int] = []
+        self.processed_textbox_elements: list[int] = []
         self.docx_to_pdf_converter: Optional[Callable] = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
@@ -730,8 +726,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         textbox_elements: list,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-    ) -> List[RefItem]:
-        elem_ref: List[RefItem] = []
+    ) -> list[RefItem]:
+        elem_ref: list[RefItem] = []
         """Process textbox content and add it to the document structure."""
         level = self._get_level()
         # Create a textbox group to contain all text from the textbox
@@ -860,8 +856,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         element: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-    ) -> List[RefItem]:
-        elem_ref: List[RefItem] = []
+    ) -> list[RefItem]:
+        elem_ref: list[RefItem] = []
         paragraph = Paragraph(element, docx_obj)
         paragraph_elements = self._get_paragraph_elements(paragraph)
         text, equations = self._handle_equations_in_text(
@@ -1036,8 +1032,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         curr_level: Optional[int],
         text: str,
         is_numbered_style: bool = False,
-    ) -> List[RefItem]:
-        elem_ref: List[RefItem] = []
+    ) -> list[RefItem]:
+        elem_ref: list[RefItem] = []
         level = self._get_level()
         if isinstance(curr_level, int):
             if curr_level > level:
@@ -1106,8 +1102,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         marker: str,
         enumerated: bool,
         level: int,
-    ) -> List[RefItem]:
-        elem_ref: List[RefItem] = []
+    ) -> list[RefItem]:
+        elem_ref: list[RefItem] = []
         # This should not happen by construction
         if not isinstance(self.parents[level], ListGroup):
             return elem_ref
@@ -1152,8 +1148,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         ilevel: int,
         elements: list,
         is_numbered: bool = False,
-    ) -> List[RefItem]:
-        elem_ref: List[RefItem] = []
+    ) -> list[RefItem]:
+        elem_ref: list[RefItem] = []
         # this method is always called with is_numbered. Numbered lists should be properly addressed.
         if not elements:
             return elem_ref
@@ -1248,8 +1244,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         element: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
-    ) -> List[RefItem]:
-        elem_ref: List[RefItem] = []
+    ) -> list[RefItem]:
+        elem_ref: list[RefItem] = []
         table: Table = Table(element, docx_obj)
         num_rows = len(table.rows)
         num_cols = len(table.columns)
@@ -1303,13 +1299,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
-                provs_in_cell: List[RefItem] = []
+                provs_in_cell: list[RefItem] = []
                 _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
                 ref_for_rich_cell = provs_in_cell[0]
                 rich_table_cell = False
 
                 def group_cell_elements(
-                    group_name: str, doc: DoclingDocument, provs_in_cell: List[RefItem]
+                    group_name: str, doc: DoclingDocument, provs_in_cell: list[RefItem]
                 ) -> RefItem:
                     group_element = doc.add_group(
                         label=GroupLabel.UNSPECIFIED,
@@ -1383,7 +1379,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _handle_pictures(
         self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
-    ) -> List[RefItem]:
+    ) -> list[RefItem]:
         def get_docx_image(drawing_blip: Any) -> Optional[bytes]:
             image_data: Optional[bytes] = None
             rId = drawing_blip[0].get(
@@ -1395,7 +1391,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
-        elem_ref: List[RefItem] = []
+        elem_ref: list[RefItem] = []
         level = self._get_level()
         # Open the BytesIO object with PIL to create an Image
         image_data: Optional[bytes] = get_docx_image(drawing_blip)
