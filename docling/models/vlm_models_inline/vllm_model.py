@@ -291,10 +291,11 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 num_tokens = len(outputs[0].outputs[0].token_ids)
                 _log.debug(f"Generated {num_tokens} tokens in {generation_time:.2f}s.")
             except Exception:
+                num_tokens = 0
                 pass
 
         # Emit predictions
         for output in outputs:
             text = output.outputs[0].text if output.outputs else ""
             decoded_text = self.vlm_options.decode_response(text)
-            yield VlmPrediction(text=decoded_text, generation_time=generation_time)
+            yield VlmPrediction(text=decoded_text, generation_time=generation_time, num_tokens=num_tokens)
