@@ -9,11 +9,16 @@ from datetime import datetime
 from functools import partial
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Optional, Type, Union
 
-from pydantic import BaseModel, ConfigDict, model_validator, validate_call
+from pydantic import ConfigDict, model_validator, validate_call
+from typing_extensions import Self
 
-from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.abstract_backend import (
+    AbstractDocumentBackend,
+    BackendOptions,
+    HTMLBackendOptions,
+)
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -61,11 +66,13 @@ _PIPELINE_CACHE_LOCK = threading.Lock()
 
 class FormatOption(BaseFormatOption):
     pipeline_cls: Type[BasePipeline]
+    backend_options: Optional[BackendOptions] = None
 
     @model_validator(mode="after")
-    def set_optional_field_default(self) -> "FormatOption":
+    def set_optional_field_default(self) -> Self:
         if self.pipeline_options is None:
             self.pipeline_options = self.pipeline_cls.get_default_options()
+
         return self
 
 
@@ -92,6 +99,7 @@ class PowerpointFormatOption(FormatOption):
 class MarkdownFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
+    backend_options: HTMLBackendOptions = HTMLBackendOptions()
 
 
 class AsciiDocFormatOption(FormatOption):
@@ -102,6 +110,7 @@ class AsciiDocFormatOption(FormatOption):
 class HTMLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
+    backend_options: HTMLBackendOptions = HTMLBackendOptions()
 
 
 class PatentUsptoFormatOption(FormatOption):
@@ -150,7 +159,9 @@ def _get_default_option(format: InputFormat) -> FormatOption:
             pipeline_cls=SimplePipeline, backend=AsciiDocBackend
         ),
         InputFormat.HTML: FormatOption(
-            pipeline_cls=SimplePipeline, backend=HTMLDocumentBackend
+            pipeline_cls=SimplePipeline,
+            backend=HTMLDocumentBackend,
+            backend_options=HTMLBackendOptions(),
         ),
         InputFormat.XML_USPTO: FormatOption(
             pipeline_cls=SimplePipeline, backend=PatentUsptoDocumentBackend
@@ -186,13 +197,13 @@ class DocumentConverter:
 
     def __init__(
         self,
-        allowed_formats: Optional[List[InputFormat]] = None,
-        format_options: Optional[Dict[InputFormat, FormatOption]] = None,
+        allowed_formats: Optional[list[InputFormat]] = None,
+        format_options: Optional[dict[InputFormat, FormatOption]] = None,
     ):
         self.allowed_formats = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
-        self.format_to_options: Dict[InputFormat, FormatOption] = {
+        self.format_to_options: dict[InputFormat, FormatOption] = {
             format: (
                 _get_default_option(format=format)
                 if (custom_option := (format_options or {}).get(format)) is None
@@ -200,8 +211,8 @@ class DocumentConverter:
             )
             for format in self.allowed_formats
         }
-        self.initialized_pipelines: Dict[
-            Tuple[Type[BasePipeline], str], BasePipeline
+        self.initialized_pipelines: dict[
+            tuple[Type[BasePipeline], str], BasePipeline
         ] = {}
 
     def _get_initialized_pipelines(
@@ -228,7 +239,7 @@ class DocumentConverter:
     def convert(
         self,
         source: Union[Path, str, DocumentStream],  # TODO review naming
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -248,7 +259,7 @@ class DocumentConverter:
     def convert_all(
         self,
         source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         raises_on_error: bool = True,  # True: raises on first conversion error; False: does not raise on conv error
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
