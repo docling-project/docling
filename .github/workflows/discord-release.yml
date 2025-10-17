@@ -4,7 +4,6 @@ name: Notify Discord on Release
 on:
   release:
     types: [published]
-  push:
 
 jobs:
   discord:
@@ -12,42 +11,26 @@ jobs:
     steps:
       - name: Send release info to Discord
         env:
-          DISCORD_WEBHOOK: ${{ secrets.TEST_DISCORD_WEBHOOK }}
-        #   DISCORD_WEBHOOK: ${{ secrets.RELEASES_DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.RELEASES_DISCORD_WEBHOOK }}
         run: |
-          #   REPO_NAME=${{ github.repository }}
-          #   RELEASE_TAG=${{ github.event.release.tag_name }}
-          #   RELEASE_NAME="${{ github.event.release.name }}"
-          #   RELEASE_URL=${{ github.event.release.html_url }}
-          #   RELEASE_BODY="${{ github.event.release.body }}"
-          REPO_NAME="docling-document/docling"
-          RELEASE_TAG="v2.57.0"
-          RELEASE_NAME="Test Release"
-          RELEASE_URL="https://github.com/docling-document/docling/releases/tag/v2.57.0"
-          RELEASE_BODY="### Feature
-
-            * **docx:** Process drawingml objects in docx ([#2453](https://github.com/docling-project/docling/issues/2453)) ([\`1682993\`](https://github.com/docling-project/docling/commit/16829939cf1f8d89974c51c1d7c5cdc2fe8045da))
-
-            ### Fix
-
-            * Use proper page concatentation in VLM pipeline MD/HTML conversion ([#2458](https://github.com/docling-project/docling/issues/2458)) ([\`cd7f7ba\`](https://github.com/docling-project/docling/commit/cd7f7ba145c401fb6567ef1c7337c840100cded1))
-
-            ### Documentation
-
-            * Example on PII obfuscation ([#2459](https://github.com/docling-project/docling/issues/2459)) ([\`3e6da2c\`](https://github.com/docling-project/docling/commit/3e6da2c62dee9a48b442245dbc1aa5e144c1446c))"
+          REPO_NAME=${{ github.repository }}
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+          RELEASE_NAME="${{ github.event.release.name }}"
+          RELEASE_URL=${{ github.event.release.html_url }}
+          RELEASE_BODY="${{ github.event.release.body }}"
 
           # Fallback if release name is empty
           if [ -z "$RELEASE_NAME" ]; then
             RELEASE_NAME=$RELEASE_TAG
           fi
 
-            PAYLOAD=$(jq -n \
-            --arg title "🚀 [$REPO_NAME] New Release: $RELEASE_NAME" \
-            --arg url "$RELEASE_URL" \
-            --arg desc "$RELEASE_BODY" \
-            --arg author_name "$REPO_NAME" \
-            --arg author_icon "https://github.com/docling-project.png" \
-            '{embeds: [{title: $title, url: $url, description: $desc, color: 5814783, author: {name: $author_name, icon_url: $author_icon}}]}')
+          PAYLOAD=$(jq -n \
+          --arg title "🚀 New Release: $RELEASE_NAME" \
+          --arg url "$RELEASE_URL" \
+          --arg desc "$RELEASE_BODY" \
+          --arg author_name "$REPO_NAME" \
+          --arg author_icon "https://github.com/docling-project.png" \
+          '{embeds: [{title: $title, url: $url, description: $desc, color: 5814783, author: {name: $author_name, icon_url: $author_icon}}]}')
 
           curl -H "Content-Type: application/json" \
                -d "$PAYLOAD" \
