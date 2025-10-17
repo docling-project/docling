@@ -12,7 +12,7 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.exceptions import OperationNotAllowed
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
-from docling.utils.api_image_request import api_image_request
+from docling.utils.api_image_request import ApiImageResponse, api_image_request
 
 
 class PictureDescriptionApiModel(PictureDescriptionBaseModel):
@@ -47,7 +47,9 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                     "pipeline_options.enable_remote_services=True."
                 )
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageResponse]:
         # Note: technically we could make a batch request here,
         # but not all APIs will allow for it. For example, vllm won't allow more than 1.
         def _api_request(image):

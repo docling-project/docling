@@ -1,9 +1,10 @@
 import threading
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional, Type, Union
+from typing import Optional, Type, Union, cast
 
 from PIL import Image
+from torch import LongTensor
 from transformers import AutoModelForImageTextToText
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -16,6 +17,7 @@ from docling.models.utils.hf_model_download import (
     HuggingFaceModelDownloadMixin,
 )
 from docling.utils.accelerator_utils import decide_device
+from docling.utils.api_image_request import ApiImageResponse, OpenAiResponseUsage
 
 # Global lock for model initialization to prevent threading issues
 _model_init_lock = threading.Lock()
@@ -79,7 +81,9 @@ class PictureDescriptionVlmModel(
 
             self.provenance = f"{self.options.repo_id}"
 
-    def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
+    def _annotate_images(
+        self, images: Iterable[Image.Image]
+    ) -> Iterable[ApiImageResponse]:
         from transformers import GenerationConfig
 
         # Create input messages
@@ -108,9 +112,23 @@ class PictureDescriptionVlmModel(
                 **inputs,
                 generation_config=GenerationConfig(**self.options.generation_config),
             )
+
             generated_texts = self.processor.batch_decode(
                 generated_ids[:, inputs["input_ids"].shape[1] :],
                 skip_special_tokens=True,
             )
 
-            yield generated_texts[0].strip()
+            input_token_count = inputs["input_ids"].shape[1]
+
+            # Normalize generate output to support both tensor and dataclass return types
+            sequences = cast(
+                LongTensor, getattr(generated_ids, "sequences", generated_ids)
+            )
+            output_token_count = sequences.shape[1] - input_token_count
+            usage = OpenAiResponseUsage(
+                prompt_tokens=input_token_count,
+                completion_tokens=output_token_count,
+                total_tokens=input_token_count + output_token_count,
+            )
+
+            yield ApiImageResponse(text=generated_texts[0].strip(), usage=usage)
