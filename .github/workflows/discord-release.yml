@@ -41,11 +41,13 @@ jobs:
             RELEASE_NAME=$RELEASE_TAG
           fi
 
-          PAYLOAD=$(jq -n \
-            --arg title "[$REPO_NAME] New Release: $RELEASE_NAME" \
+            PAYLOAD=$(jq -n \
+            --arg title "🚀 [$REPO_NAME] New Release: $RELEASE_NAME" \
             --arg url "$RELEASE_URL" \
             --arg desc "$RELEASE_BODY" \
-            '{embeds: [{title: $title, url: $url, description: $desc, color: 5814783}]}')
+            --arg author_name "$REPO_NAME" \
+            --arg author_icon "https://github.com/docling-project.png" \
+            '{embeds: [{title: $title, url: $url, description: $desc, color: 5814783, author: {name: $author_name, icon_url: $author_icon}}]}')
 
           curl -H "Content-Type: application/json" \
                -d "$PAYLOAD" \
