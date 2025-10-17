@@ -1,6 +1,8 @@
 import base64
 import logging
+import os
 import re
+import warnings
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -313,15 +315,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         abs_loc = loc
 
         if self.base_path:
-            if not loc.startswith(("http://", "https://", "data:", "file://", "/")):
+            if loc.startswith("//"):
+                # Protocol-relative URL - default to https
+                abs_loc = "https:" + loc
+            elif not loc.startswith(("http://", "https://", "data:", "file://")):
                 if HTMLDocumentBackend._is_remote_url(self.base_path):  # remote fetch
                     abs_loc = urljoin(self.base_path, loc)
                 elif self.base_path:  # local fetch
                     # For local files, resolve relative to the HTML file location
                     abs_loc = str(Path(self.base_path).parent / loc)
-            elif loc.startswith("//"):
-                # Protocol-relative URL - default to https
-                abs_loc = "https:" + loc
 
         _log.debug(f"Resolved location {loc} to {abs_loc}")
         return abs_loc
@@ -1198,13 +1200,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
         try:
             img_data = self._load_image_data(src_url)
-
             if img_data:
                 img = Image.open(BytesIO(img_data))
                 return ImageRef.from_pil(img, dpi=int(img.info.get("dpi", (72,))[0]))
-
-        except (ValidationError, UnidentifiedImageError, Exception) as e:
-            _log.warning(f"Could not process image (src={src_url}): {e}")
+        except (
+            requests.HTTPError,
+            ValidationError,
+            UnidentifiedImageError,
+            OperationNotAllowed,
+            TypeError,
+            ValueError,
+        ) as e:
+            warnings.warn(f"Could not process an image from {src_url}: {e}")
 
         return None
 
@@ -1213,33 +1220,33 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Skipping SVG file: {src_loc}")
             return None
 
-        try:
-            if HTMLDocumentBackend._is_remote_url(src_loc):
-                if not self.enable_remote_fetch:
-                    raise OperationNotAllowed(
-                        "Fetching remote resources is only allowed when set explicitly. "
-                        "options.enable_remote_fetch=True."
-                    )
-                response = requests.get(src_loc, stream=True)
-                response.raise_for_status()
-                return response.content
-            elif src_loc.startswith("data:"):
-                data = re.sub(r"^data:image/.+;base64,", "", src_loc)
-                return base64.b64decode(data)
-
-            if src_loc.startswith("file://"):
-                src_loc = src_loc[7:]
-
-            if not self.enable_local_fetch:
+        if HTMLDocumentBackend._is_remote_url(src_loc):
+            if not self.options.enable_remote_fetch:
                 raise OperationNotAllowed(
-                    "Fetching local resources is only allowed when set explicitly. "
-                    "options.enable_local_fetch=True."
+                    "Fetching remote resources is only allowed when set explicitly. "
+                    "Set options.enable_remote_fetch=True."
                 )
+            response = requests.get(src_loc, stream=True)
+            response.raise_for_status()
+            return response.content
+        elif src_loc.startswith("data:"):
+            data = re.sub(r"^data:image/.+;base64,", "", src_loc)
+            return base64.b64decode(data)
+
+        if src_loc.startswith("file://"):
+            src_loc = src_loc[7:]
+
+        if not self.options.enable_local_fetch:
+            raise OperationNotAllowed(
+                "Fetching local resources is only allowed when set explicitly. "
+                "Set options.enable_local_fetch=True."
+            )
+        # add check that file exists and can read
+        if os.path.isfile(src_loc) and os.access(src_loc, os.R_OK):
             with open(src_loc, "rb") as f:
                 return f.read()
-        except Exception as e:
-            _log.warning(f"Could not load image data: {e}")
-            return None
+        else:
+            raise ValueError("File does not exist or it is not readable.")
 
     @staticmethod
     def get_text(item: PageElement) -> str:

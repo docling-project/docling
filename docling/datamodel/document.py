@@ -143,9 +143,17 @@ class InputDocument(BaseModel):
             format=InputFormat.PDF,
             backend_options=backend_options,
         )  # initialize with dummy values
-
         self.limits = limits or DocumentLimits()
         self.format = format
+
+        # check for backend incompatibilities
+        if issubclass(backend, DeclarativeDocumentBackend) and backend_options:
+            if not issubclass(
+                type(backend_options), type(backend.get_default_options())
+            ):
+                raise ValueError(
+                    "Incompatible types between backend and backend_options arguments."
+                )
 
         try:
             if isinstance(path_or_stream, Path):
@@ -289,8 +297,7 @@ class _DocumentConversionInput(BaseModel):
             else:
                 options = format_options[format]
                 backend = options.backend
-                # patch against circular import
-                if "backend_options" in options.__class__.__dict__:
+                if "backend_options" in options.model_fields_set:
                     backend_options = cast("FormatOption", options).backend_options
 
             path_or_stream: Union[BytesIO, Path]

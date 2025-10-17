@@ -12,16 +12,20 @@ if TYPE_CHECKING:
 
 
 class BaseBackendOptions(BaseModel):
-    """Common options for all declarative document backends.
+    """Common options for all declarative document backends."""
 
-    This is placeholder to define all common options among declarative backends.
-    """
+    enable_remote_fetch: bool = Field(
+        False, description="Enable remote resource fetching."
+    )
+    enable_local_fetch: bool = Field(
+        False, description="Enable local resource fetching."
+    )
 
 
 class DeclarativeBackendOptions(BaseBackendOptions):
     """Default backend options for a declarative document backend."""
 
-    kind: Literal["declarative"] = "declarative"
+    kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
 
 
 class HTMLBackendOptions(BaseBackendOptions):
@@ -30,7 +34,7 @@ class HTMLBackendOptions(BaseBackendOptions):
     This class can be extended to include options specific to HTML processing.
     """
 
-    kind: Literal["html"] = "html"
+    kind: Literal["html"] = Field("html", exclude=True, repr=False)
     image_fetch: bool = Field(
         False,
         description=(
@@ -53,9 +57,6 @@ BackendOptions = Annotated[
 
 
 class AbstractDocumentBackend(ABC):
-    enable_remote_fetch: bool = False
-    enable_local_fetch: bool = False
-
     @abstractmethod
     def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
         self.file = in_doc.file
