@@ -179,7 +179,13 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
         elif isinstance(template, BaseModel):
             return template.model_dump_json(indent=2)
         elif inspect.isclass(template) and issubclass(template, BaseModel):
-            from polyfactory.factories.pydantic_factory import ModelFactory
+            try:
+                from polyfactory.factories.pydantic_factory import ModelFactory
+            except ImportError as exc:
+                raise ImportError(
+                    "To use extraction templating, please install the 'polyfactory'"
+                    " extra via `pip install docling[polyfactory]`."
+                ) from exc
 
             class ExtractionTemplateFactory(ModelFactory[template]):  # type: ignore
                 __use_examples__ = True  # prefer Field(examples=...) when present
