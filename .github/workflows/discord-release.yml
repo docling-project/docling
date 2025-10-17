@@ -4,7 +4,7 @@ name: Notify Discord on Release
 on:
   release:
     types: [published]
-  workflow_dispatch:
+  push:
 
 jobs:
   discord:
@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Send release info to Discord
         env:
-        #   DISCORD_WEBHOOK: ${{ secrets.TEST_DISCORD_WEBHOOK }}
-          DISCORD_WEBHOOK: ${{ secrets.RELEASES_DISCORD_WEBHOOK }}
+          DISCORD_WEBHOOK: ${{ secrets.TEST_DISCORD_WEBHOOK }}
+        #   DISCORD_WEBHOOK: ${{ secrets.RELEASES_DISCORD_WEBHOOK }}
         run: |
           #   REPO_NAME=${{ github.repository }}
           #   RELEASE_TAG=${{ github.event.release.tag_name }}
