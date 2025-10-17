@@ -7,6 +7,7 @@ from docling.backend.abstract_backend import (
 from docling.datamodel.base_models import ConversionStatus
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ConvertPipelineOptions
+from docling.models.ocr_enrichment import OcrEnrichmentModel
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -22,6 +23,17 @@ class SimplePipeline(ConvertPipeline):
 
     def __init__(self, pipeline_options: ConvertPipelineOptions):
         super().__init__(pipeline_options)
+
+        self.enrichment_pipe.insert(
+            0,
+            OcrEnrichmentModel(
+                enabled=self.pipeline_options.do_ocr,
+                options=self.pipeline_options.ocr_options,
+                allow_external_plugins=self.pipeline_options.allow_external_plugins,
+                artifacts_path=self.pipeline_options.artifacts_path,
+                accelerator_options=self.pipeline_options.accelerator_options,
+            ),
+        )
 
     def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
         if not isinstance(conv_res.input._backend, DeclarativeDocumentBackend):
