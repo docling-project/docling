@@ -32,11 +32,23 @@ from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
+    WHISPER_BASE_MLX,
+    WHISPER_BASE_NATIVE,
     WHISPER_LARGE,
+    WHISPER_LARGE_MLX,
+    WHISPER_LARGE_NATIVE,
     WHISPER_MEDIUM,
+    WHISPER_MEDIUM_MLX,
+    WHISPER_MEDIUM_NATIVE,
     WHISPER_SMALL,
+    WHISPER_SMALL_MLX,
+    WHISPER_SMALL_NATIVE,
     WHISPER_TINY,
+    WHISPER_TINY_MLX,
+    WHISPER_TINY_NATIVE,
     WHISPER_TURBO,
+    WHISPER_TURBO_MLX,
+    WHISPER_TURBO_NATIVE,
     AsrModelType,
 )
 from docling.datamodel.base_models import (
@@ -611,6 +623,34 @@ def convert(  # noqa: C901
             ocr_options.psm = psm
 
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
+
+        # Auto-detect pipeline based on input file formats
+        if pipeline == ProcessingPipeline.STANDARD:
+            # Check if ALL input files are audio files by extension
+            audio_files = []
+            non_audio_files = []
+
+            for path in input_doc_paths:
+                if (
+                    path.suffix.lower().lstrip(".")
+                    in FormatToExtensions[InputFormat.AUDIO]
+                ):
+                    audio_files.append(path)
+                else:
+                    non_audio_files.append(path)
+
+            # Only auto-detect ASR pipeline if ALL files are audio
+            if audio_files and not non_audio_files:
+                pipeline = ProcessingPipeline.ASR
+                _log.info(
+                    f"Auto-detected ASR pipeline for {len(audio_files)} audio file(s)"
+                )
+            elif audio_files and non_audio_files:
+                _log.warning(
+                    f"Mixed file types detected: {len(audio_files)} audio, {len(non_audio_files)} non-audio. "
+                    f"Using STANDARD pipeline. Use --pipeline asr to process audio files specifically."
+                )
+
         # pipeline_options: PaginatedPipelineOptions
         pipeline_options: PipelineOptions
 
@@ -749,10 +789,15 @@ def convert(  # noqa: C901
 
         elif pipeline == ProcessingPipeline.ASR:
             pipeline_options = AsrPipelineOptions(
+                accelerator_options=AcceleratorOptions(
+                    device=device,
+                    num_threads=num_threads,
+                ),
                 # enable_remote_services=enable_remote_services,
                 # artifacts_path = artifacts_path
             )
 
+            # Auto-selecting models (choose best implementation for hardware)
             if asr_model == AsrModelType.WHISPER_TINY:
                 pipeline_options.asr_options = WHISPER_TINY
             elif asr_model == AsrModelType.WHISPER_SMALL:
@@ -765,6 +810,35 @@ def convert(  # noqa: C901
                 pipeline_options.asr_options = WHISPER_LARGE
             elif asr_model == AsrModelType.WHISPER_TURBO:
                 pipeline_options.asr_options = WHISPER_TURBO
+
+            # Explicit MLX models (force MLX implementation)
+            elif asr_model == AsrModelType.WHISPER_TINY_MLX:
+                pipeline_options.asr_options = WHISPER_TINY_MLX
+            elif asr_model == AsrModelType.WHISPER_SMALL_MLX:
+                pipeline_options.asr_options = WHISPER_SMALL_MLX
+            elif asr_model == AsrModelType.WHISPER_MEDIUM_MLX:
+                pipeline_options.asr_options = WHISPER_MEDIUM_MLX
+            elif asr_model == AsrModelType.WHISPER_BASE_MLX:
+                pipeline_options.asr_options = WHISPER_BASE_MLX
+            elif asr_model == AsrModelType.WHISPER_LARGE_MLX:
+                pipeline_options.asr_options = WHISPER_LARGE_MLX
+            elif asr_model == AsrModelType.WHISPER_TURBO_MLX:
+                pipeline_options.asr_options = WHISPER_TURBO_MLX
+
+            # Explicit Native models (force native implementation)
+            elif asr_model == AsrModelType.WHISPER_TINY_NATIVE:
+                pipeline_options.asr_options = WHISPER_TINY_NATIVE
+            elif asr_model == AsrModelType.WHISPER_SMALL_NATIVE:
+                pipeline_options.asr_options = WHISPER_SMALL_NATIVE
+            elif asr_model == AsrModelType.WHISPER_MEDIUM_NATIVE:
+                pipeline_options.asr_options = WHISPER_MEDIUM_NATIVE
+            elif asr_model == AsrModelType.WHISPER_BASE_NATIVE:
+                pipeline_options.asr_options = WHISPER_BASE_NATIVE
+            elif asr_model == AsrModelType.WHISPER_LARGE_NATIVE:
+                pipeline_options.asr_options = WHISPER_LARGE_NATIVE
+            elif asr_model == AsrModelType.WHISPER_TURBO_NATIVE:
+                pipeline_options.asr_options = WHISPER_TURBO_NATIVE
+
             else:
                 _log.error(f"{asr_model} is not known")
                 raise ValueError(f"{asr_model} is not known")
