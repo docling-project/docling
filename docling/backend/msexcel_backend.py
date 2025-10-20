@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Annotated, Any, Optional, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -23,7 +23,8 @@ from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor
 from openpyxl.worksheet.worksheet import Worksheet
 from PIL import Image as PILImage
-from pydantic import BaseModel, NonNegativeInt, PositiveInt
+from pydantic import BaseModel, Field, NonNegativeInt, PositiveInt
+from pydantic.dataclasses import dataclass
 from typing_extensions import override
 
 from docling.backend.abstract_backend import (
@@ -34,6 +35,32 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+
+@dataclass
+class DataRegion:
+    """Represents the bounding rectangle of non-empty cells in a worksheet."""
+
+    min_row: Annotated[
+        PositiveInt, Field(description="Smallest row index (1-based index).")
+    ]
+    max_row: Annotated[
+        PositiveInt, Field(description="Largest row index (1-based index).")
+    ]
+    min_col: Annotated[
+        PositiveInt, Field(description="Smallest column index (1-based index).")
+    ]
+    max_col: Annotated[
+        PositiveInt, Field(description="Largest column index (1-based index).")
+    ]
+
+    def width(self) -> PositiveInt:
+        """Number of columns in the data region."""
+        return self.max_col - self.min_col + 1
+
+    def height(self) -> PositiveInt:
+        """Number of rows in the data region."""
+        return self.max_row - self.min_row + 1
 
 
 class ExcelCell(BaseModel):
@@ -294,7 +321,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return doc
 
-    def _find_true_data_bounds(self, sheet: Worksheet) -> tuple[int, int, int, int]:
+    def _find_true_data_bounds(self, sheet: Worksheet) -> DataRegion:
         """Find the true data boundaries (min/max rows and columns) in an Excel worksheet.
 
         This function scans all cells to find the smallest rectangular region that contains
@@ -305,9 +332,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             sheet: The Excel worksheet to analyze.
 
         Returns:
-            A tuple of four integers:
-                (min_row, max_row, min_col, max_col)
-            representing the smallest rectangle that covers all data and merged cells.
+            A data region representing the smallest rectangle that covers all data and merged cells.
             If the sheet is empty, returns (1, 1, 1, 1) by default.
         """
         min_row, min_col = None, None
@@ -338,7 +363,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         if min_row is None or min_col is None:
             min_row = min_col = max_row = max_col = 1
 
-        return min_row, max_row, min_col, max_col
+        return DataRegion(min_row, max_row, min_col, max_col)
 
     def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
         """Find all compact rectangular data tables in an Excel worksheet.
@@ -349,30 +374,28 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             A list of ExcelTable objects representing the data tables.
         """
-        min_row, max_row, min_col, max_col = self._find_true_data_bounds(
-            sheet
-        )  # The true data boundaries
+        bounds = self._find_true_data_bounds(sheet)  # The true data boundaries
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
 
         # Limit scan to actual data bounds
         for ri, row in enumerate(
             sheet.iter_rows(
-                min_row=min_row,
-                max_row=max_row,
-                min_col=min_col,
-                max_col=max_col,
+                min_row=bounds.min_row,
+                max_row=bounds.max_row,
+                min_col=bounds.min_col,
+                max_col=bounds.max_col,
                 values_only=False,
             ),
-            start=min_row - 1,
+            start=bounds.min_row - 1,
         ):
-            for rj, cell in enumerate(row, start=min_col - 1):
+            for rj, cell in enumerate(row, start=bounds.min_col - 1):
                 if cell.value is None or (ri, rj) in visited:
                     continue
 
                 # If the cell starts a new table, find its bounds
                 table_bounds, visited_cells = self._find_table_bounds(
-                    sheet, ri, rj, max_row, max_col
+                    sheet, ri, rj, bounds.max_row, bounds.max_col
                 )
 
                 visited.update(visited_cells)  # Mark these cells as visited
