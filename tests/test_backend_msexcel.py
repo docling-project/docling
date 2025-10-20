@@ -119,11 +119,11 @@ def test_chartsheet(documents) -> None:
 def test_inflated_rows_handling(documents) -> None:
     """Test that files with inflated max_row are handled correctly.
 
-    test-02.xlsx has inflated max_row (1,048,496) but only 7 rows of actual data.
+    xlsx_04_inflated.xlsx has inflated max_row (1,048,496) but only 7 rows of actual data.
     This test verifies that our backend correctly identifies true data bounds.
     """
     # First, verify the file has inflated max_row using openpyxl directly
-    path = next(item for item in get_excel_paths() if item.stem == "test-02")
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_04_inflated")
 
     wb = load_workbook(path)
     ws = wb.active
@@ -131,11 +131,13 @@ def test_inflated_rows_handling(documents) -> None:
 
     # Assert that openpyxl reports inflated max_row
     assert reported_max_row > 100000, (
-        f"test-02.xlsx should have inflated max_row (expected >100k, got {reported_max_row:,}). "
+        f"xlsx_04_inflated.xlsx should have inflated max_row (expected >100k, got {reported_max_row:,}). "
         f"This test file is designed to verify proper handling of Excel files with inflated row counts."
     )
 
-    _log.info(f"test-02.xlsx - Openpyxl reported max_row: {reported_max_row:,}")
+    _log.info(
+        f"xlsx_04_inflated.xlsx - Openpyxl reported max_row: {reported_max_row:,}"
+    )
 
     # Now test that our backend handles it correctly
     in_doc = InputDocument(
@@ -153,7 +155,7 @@ def test_inflated_rows_handling(documents) -> None:
     )
 
     # Verify converted document has correct pages
-    doc = next(item for path, item in documents if path.stem == "test-02")
+    doc = next(item for path, item in documents if path.stem == "xlsx_04_inflated")
     assert len(doc.pages) == 4, f"Document should have 4 pages, got {len(doc.pages)}"
 
     # Verify page sizes match expected dimensions (same as test-01)

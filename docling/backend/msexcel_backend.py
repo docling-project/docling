@@ -322,14 +322,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return doc
 
     def _find_true_data_bounds(self, sheet: Worksheet) -> DataRegion:
-        """Find the true data boundaries (min/max rows and columns) in an Excel worksheet.
+        """Find the true data boundaries (min/max rows and columns) in a worksheet.
 
         This function scans all cells to find the smallest rectangular region that contains
         all non-empty cells or merged cell ranges. It returns the minimal and maximal
         row/column indices that bound the actual data region.
 
         Args:
-            sheet: The Excel worksheet to analyze.
+            sheet: The worksheet to analyze.
 
         Returns:
             A data region representing the smallest rectangle that covers all data and merged cells.
@@ -338,15 +338,13 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         min_row, min_col = None, None
         max_row, max_col = 0, 0
 
-        # Check all cells for non-empty values
-        for row in sheet.iter_rows(values_only=False):
-            for cell in row:
-                if cell.value is not None:
-                    r, c = cell.row, cell.column
-                    min_row = r if min_row is None else min(min_row, r)
-                    min_col = c if min_col is None else min(min_col, c)
-                    max_row = max(max_row, r)
-                    max_col = max(max_col, c)
+        for cell in sheet._cells.values():
+            if cell.value is not None:
+                r, c = cell.row, cell.column
+                min_row = r if min_row is None else min(min_row, r)
+                min_col = c if min_col is None else min(min_col, c)
+                max_row = max(max_row, r)
+                max_col = max(max_col, c)
 
         # Expand bounds to include merged cells
         for merged in sheet.merged_cells.ranges:
@@ -374,7 +372,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         Returns:
             A list of ExcelTable objects representing the data tables.
         """
-        bounds = self._find_true_data_bounds(sheet)  # The true data boundaries
+        bounds: DataRegion = self._find_true_data_bounds(
+            sheet
+        )  # The true data boundaries
         tables: list[ExcelTable] = []  # List to store found tables
         visited: set[tuple[int, int]] = set()  # Track already visited cells
 
@@ -400,6 +400,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
+
         return tables
 
     def _find_table_bounds(
@@ -501,7 +502,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         for ri, (cell,) in enumerate(
             sheet.iter_rows(
                 min_row=start_row + 2,
-                max_row=max_row,  # Use the actual max row
+                max_row=max_row,
                 min_col=start_col + 1,
                 max_col=start_col + 1,
                 values_only=False,
@@ -546,7 +547,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 min_row=start_row + 1,
                 max_row=start_row + 1,
                 min_col=start_col + 2,
-                max_col=max_col,  # Use the actual max col
+                max_col=max_col,
                 values_only=False,
             ),
             start_col + 1,
