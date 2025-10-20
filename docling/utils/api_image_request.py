@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+from dataclasses import dataclass
 from io import BytesIO
 from typing import Dict, List, Optional
 
@@ -8,10 +9,18 @@ import requests
 from PIL import Image
 from pydantic import AnyUrl
 
-from docling.datamodel.base_models import OpenAiApiResponse
+from docling.datamodel.base_models import OpenAiApiResponse, OpenAiResponseUsage
 from docling.models.utils.generation_utils import GenerationStopper
 
 _log = logging.getLogger(__name__)
+
+
+@dataclass
+class ApiImageResponse:
+    """Generic response from image-based API calls."""
+
+    text: str
+    usage: OpenAiResponseUsage
 
 
 def api_image_request(
@@ -20,8 +29,9 @@ def api_image_request(
     url: AnyUrl,
     timeout: float = 20,
     headers: Optional[Dict[str, str]] = None,
+    token_extract_key: Optional[str] = None,
     **params,
-) -> str:
+) -> ApiImageResponse:
     img_io = BytesIO()
     image.save(img_io, "PNG")
     image_base64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
@@ -60,7 +70,14 @@ def api_image_request(
 
     api_resp = OpenAiApiResponse.model_validate_json(r.text)
     generated_text = api_resp.choices[0].message.content.strip()
-    return generated_text
+    if api_resp.usage is None:
+        usage = OpenAiResponseUsage(
+            prompt_tokens=0, completion_tokens=0, total_tokens=0
+        )
+    else:
+        usage = api_resp.usage
+
+    return ApiImageResponse(generated_text, usage)
 
 
 def api_image_request_streaming(
@@ -72,7 +89,7 @@ def api_image_request_streaming(
     headers: Optional[Dict[str, str]] = None,
     generation_stoppers: List[GenerationStopper] = [],
     **params,
-) -> str:
+) -> ApiImageResponse:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
@@ -124,6 +141,7 @@ def api_image_request_streaming(
         r.raise_for_status()
 
         full_text = []
+        usage_data = None
         for raw_line in r.iter_lines(decode_unicode=True):
             if not raw_line:  # keep-alives / blank lines
                 continue
@@ -140,6 +158,10 @@ def api_image_request_streaming(
             except json.JSONDecodeError:
                 _log.debug("Skipping non-JSON SSE chunk: %r", data[:200])
                 continue
+
+            # Try to extract usage if present (may be in final chunk)
+            if obj.get("usage"):
+                usage_data = obj["usage"]
 
             # OpenAI-compatible delta format
             # obj["choices"][0]["delta"]["content"] may be None or missing (e.g., tool calls)
@@ -162,6 +184,22 @@ def api_image_request_streaming(
                         # closing the connection when we exit the 'with' block.
                         # vLLM/OpenAI-compatible servers will detect the client disconnect
                         # and abort the request server-side.
-                        return "".join(full_text)
+                        return ApiImageResponse(
+                            text="".join(full_text),
+                            usage=OpenAiResponseUsage(
+                                prompt_tokens=0, completion_tokens=0, total_tokens=0
+                            ),
+                        )
+        if usage_data:
+            try:
+                usage = OpenAiResponseUsage(**usage_data)
+            except Exception:
+                usage = OpenAiResponseUsage(
+                    prompt_tokens=0, completion_tokens=0, total_tokens=0
+                )
+        else:
+            usage = OpenAiResponseUsage(
+                prompt_tokens=0, completion_tokens=0, total_tokens=0
+            )
 
-        return "".join(full_text)
+        return ApiImageResponse(text="".join(full_text), usage=usage)
