@@ -1,7 +1,9 @@
+import os
 from pathlib import Path
 
 import pytest
 
+from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
@@ -17,6 +19,7 @@ from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+IS_CI = bool(os.getenv("CI"))
 
 
 @pytest.mark.xfail(strict=False)
@@ -84,8 +87,22 @@ def get_converter():
 def _test_e2e_docx_conversions_impl(docx_paths: list[Path]):
     converter = get_converter()
 
+    has_libreoffice = False
+    try:
+        cmd = get_libreoffice_cmd(raise_if_unavailable=True)
+        if cmd is not None:
+            has_libreoffice = True
+    except Exception:
+        pass
+
     for docx_path in docx_paths:
-        # print(f"converting {docx_path}")
+        if (
+            not IS_CI
+            and not has_libreoffice
+            and str(docx_path) in ("tests/data/docx/drawingml.docx",)
+        ):
+            print(f"Skipping {docx_path} because no Libreoffice is installed.")
+            continue
 
         gt_path = (
             docx_path.parent.parent / "groundtruth" / "docling_v2" / docx_path.name

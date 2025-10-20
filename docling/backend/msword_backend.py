@@ -1,8 +1,9 @@
 import logging
 import re
+from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -33,6 +34,11 @@ from pydantic import AnyUrl
 from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.docx.drawingml.utils import (
+    get_docx_to_pdf_converter,
+    get_libreoffice_cmd,
+    get_pil_from_dml_docx,
+)
 from docling.backend.docx.latex.omml import oMath2Latex
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
@@ -64,6 +70,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
         self.processed_textbox_elements: List[int] = []
+        self.docx_to_pdf_converter: Optional[Callable] = None
+        self.docx_to_pdf_converter_init = False
+        self.display_drawingml_warning = True
 
         for i in range(-1, self.max_levels):
             self.parents[i] = None
@@ -80,18 +89,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "indents": [None],
         }
 
-        self.docx_obj = None
-        try:
-            if isinstance(self.path_or_stream, BytesIO):
-                self.docx_obj = Document(self.path_or_stream)
-            elif isinstance(self.path_or_stream, Path):
-                self.docx_obj = Document(str(self.path_or_stream))
-
+        self.docx_obj = self.load_msword_file(
+            path_or_stream=self.path_or_stream, document_hash=self.document_hash
+        )
+        if self.docx_obj:
             self.valid = True
-        except Exception as e:
-            raise RuntimeError(
-                f"MsWordDocumentBackend could not load document with hash {self.document_hash}"
-            ) from e
 
     @override
     def is_valid(self) -> bool:
@@ -138,6 +140,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             raise RuntimeError(
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
+
+    @staticmethod
+    def load_msword_file(
+        path_or_stream: Union[BytesIO, Path], document_hash: str
+    ) -> DocxDocument:
+        try:
+            if isinstance(path_or_stream, BytesIO):
+                return Document(path_or_stream)
+            elif isinstance(path_or_stream, Path):
+                return Document(str(path_or_stream))
+            else:
+                return None
+        except Exception as e:
+            raise RuntimeError(
+                f"MsWordDocumentBackend could not load document with hash {document_hash}"
+            ) from e
 
     def _update_history(
         self,
@@ -195,6 +213,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             }
             xpath_expr = etree.XPath(".//a:blip", namespaces=namespaces)
             drawing_blip = xpath_expr(element)
+            drawingml_els = element.findall(".//w:drawing", namespaces=namespaces)
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
@@ -274,6 +293,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 ):
                     te1 = self._handle_text_elements(element, docx_obj, doc)
                     added_elements.extend(te1)
+            # Check for DrawingML elements
+            elif drawingml_els:
+                if (
+                    self.docx_to_pdf_converter is None
+                    and self.docx_to_pdf_converter_init is False
+                ):
+                    self.docx_to_pdf_converter = get_docx_to_pdf_converter()
+                    self.docx_to_pdf_converter_init = True
+
+                if self.docx_to_pdf_converter is None:
+                    if self.display_drawingml_warning:
+                        if self.docx_to_pdf_converter is None:
+                            _log.warning(
+                                "Found DrawingML elements in document, but no DOCX to PDF converters. "
+                                "If you want these exported, make sure you have "
+                                "LibreOffice binary in PATH or specify its path with DOCLING_LIBREOFFICE_CMD."
+                            )
+                            self.display_drawingml_warning = False
+                else:
+                    self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
             # Check for the sdt containers, like table of contents
             elif tag_name in ["sdt"]:
                 sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
@@ -1381,3 +1420,39 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
                 elem_ref.append(p3.get_ref())
         return elem_ref
+
+    def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):
+        # 1) Make an empty copy of the original document
+        dml_doc = self.load_msword_file(self.path_or_stream, self.document_hash)
+        body = dml_doc._element.body
+        for child in list(body):
+            body.remove(child)
+
+        # 2) Add DrawingML to empty document
+        new_para = dml_doc.add_paragraph()
+        new_r = new_para.add_run()
+        for dml in drawingml_els:
+            new_r._r.append(deepcopy(dml))
+
+        # 3) Export DOCX->PDF->PNG and save it in DoclingDocument
+        level = self._get_level()
+        try:
+            pil_image = get_pil_from_dml_docx(
+                dml_doc, converter=self.docx_to_pdf_converter
+            )
+            if pil_image is None:
+                raise UnidentifiedImageError
+
+            doc.add_picture(
+                parent=self.parents[level - 1],
+                image=ImageRef.from_pil(image=pil_image, dpi=72),
+                caption=None,
+            )
+        except (UnidentifiedImageError, OSError):
+            _log.warning("Warning: DrawingML image cannot be loaded by Pillow")
+            doc.add_picture(
+                parent=self.parents[level - 1],
+                caption=None,
+            )
+
+        return

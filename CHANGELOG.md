@@ -1,3 +1,17 @@
+## [v2.57.0](https://github.com/docling-project/docling/releases/tag/v2.57.0) - 2025-10-15
+
+### Feature
+
+* **docx:** Process drawingml objects in docx ([#2453](https://github.com/docling-project/docling/issues/2453)) ([`1682993`](https://github.com/docling-project/docling/commit/16829939cf1f8d89974c51c1d7c5cdc2fe8045da))
+
+### Fix
+
+* Use proper page concatentation in VLM pipeline MD/HTML conversion ([#2458](https://github.com/docling-project/docling/issues/2458)) ([`cd7f7ba`](https://github.com/docling-project/docling/commit/cd7f7ba145c401fb6567ef1c7337c840100cded1))
+
+### Documentation
+
+* Example on PII obfuscation ([#2459](https://github.com/docling-project/docling/issues/2459)) ([`3e6da2c`](https://github.com/docling-project/docling/commit/3e6da2c62dee9a48b442245dbc1aa5e144c1446c))
+
 ## [v2.56.1](https://github.com/docling-project/docling/releases/tag/v2.56.1) - 2025-10-13
 
 ### Fix
