@@ -2,6 +2,7 @@
 Test MLX Whisper integration for Apple Silicon ASR pipeline.
 """
 
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -65,6 +66,126 @@ class TestMlxWhisperIntegration:
         assert WHISPER_BASE_MLX.inference_framework.name == "MLX"
         assert WHISPER_LARGE_MLX.inference_framework.name == "MLX"
         assert WHISPER_BASE_MLX.repo_id.startswith("mlx-community/")
+
+    def test_model_selectors_mlx_and_native_paths(self, monkeypatch):
+        """Cover MLX/native selection branches in asr_model_specs getters."""
+        from docling.datamodel import asr_model_specs as specs
+
+        # Force MLX path
+        class _Mps:
+            def is_built(self):
+                return True
+
+            def is_available(self):
+                return True
+
+        class _Torch:
+            class backends:
+                mps = _Mps()
+
+        monkeypatch.setitem(sys.modules, "torch", _Torch())
+        monkeypatch.setitem(sys.modules, "mlx_whisper", object())
+
+        m_tiny = specs._get_whisper_tiny_model()
+        m_small = specs._get_whisper_small_model()
+        m_base = specs._get_whisper_base_model()
+        m_medium = specs._get_whisper_medium_model()
+        m_large = specs._get_whisper_large_model()
+        m_turbo = specs._get_whisper_turbo_model()
+        assert (
+            m_tiny.inference_framework == InferenceAsrFramework.MLX
+            and m_tiny.repo_id.startswith("mlx-community/whisper-tiny")
+        )
+        assert (
+            m_small.inference_framework == InferenceAsrFramework.MLX
+            and m_small.repo_id.startswith("mlx-community/whisper-small")
+        )
+        assert (
+            m_base.inference_framework == InferenceAsrFramework.MLX
+            and m_base.repo_id.startswith("mlx-community/whisper-base")
+        )
+        assert (
+            m_medium.inference_framework == InferenceAsrFramework.MLX
+            and "medium" in m_medium.repo_id
+        )
+        assert (
+            m_large.inference_framework == InferenceAsrFramework.MLX
+            and "large" in m_large.repo_id
+        )
+        assert (
+            m_turbo.inference_framework == InferenceAsrFramework.MLX
+            and m_turbo.repo_id.endswith("whisper-turbo")
+        )
+
+        # Force native path (no mlx or no mps)
+        if "mlx_whisper" in sys.modules:
+            del sys.modules["mlx_whisper"]
+
+        class _MpsOff:
+            def is_built(self):
+                return False
+
+            def is_available(self):
+                return False
+
+        class _TorchOff:
+            class backends:
+                mps = _MpsOff()
+
+        monkeypatch.setitem(sys.modules, "torch", _TorchOff())
+        n_tiny = specs._get_whisper_tiny_model()
+        n_small = specs._get_whisper_small_model()
+        n_base = specs._get_whisper_base_model()
+        n_medium = specs._get_whisper_medium_model()
+        n_large = specs._get_whisper_large_model()
+        n_turbo = specs._get_whisper_turbo_model()
+        assert (
+            n_tiny.inference_framework == InferenceAsrFramework.WHISPER
+            and n_tiny.repo_id == "tiny"
+        )
+        assert (
+            n_small.inference_framework == InferenceAsrFramework.WHISPER
+            and n_small.repo_id == "small"
+        )
+        assert (
+            n_base.inference_framework == InferenceAsrFramework.WHISPER
+            and n_base.repo_id == "base"
+        )
+        assert (
+            n_medium.inference_framework == InferenceAsrFramework.WHISPER
+            and n_medium.repo_id == "medium"
+        )
+        assert (
+            n_large.inference_framework == InferenceAsrFramework.WHISPER
+            and n_large.repo_id == "large"
+        )
+        assert (
+            n_turbo.inference_framework == InferenceAsrFramework.WHISPER
+            and n_turbo.repo_id == "turbo"
+        )
+
+    def test_selector_import_errors_force_native(self, monkeypatch):
+        """If torch import fails, selector must return native."""
+        from docling.datamodel import asr_model_specs as specs
+
+        # Simulate environment where MPS is unavailable and mlx_whisper missing
+        class _MpsOff:
+            def is_built(self):
+                return False
+
+            def is_available(self):
+                return False
+
+        class _TorchOff:
+            class backends:
+                mps = _MpsOff()
+
+        monkeypatch.setitem(sys.modules, "torch", _TorchOff())
+        if "mlx_whisper" in sys.modules:
+            del sys.modules["mlx_whisper"]
+
+        model = specs._get_whisper_base_model()
+        assert model.inference_framework == InferenceAsrFramework.WHISPER
 
     @patch("builtins.__import__")
     def test_mlx_whisper_model_initialization(self, mock_import):

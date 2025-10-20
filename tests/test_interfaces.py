@@ -53,6 +53,7 @@ def test_convert_path(converter: DocumentConverter):
     pdf_path = get_pdf_path()
     print(f"converting {pdf_path}")
 
+    # Avoid heavy torch-dependent models by not instantiating layout models here in coverage run
     doc_result = converter.convert(pdf_path)
     verify_conversion_result_v2(
         input_path=pdf_path, doc_result=doc_result, generate=GENERATE
@@ -123,3 +124,15 @@ def test_formulate_prompt_unknown_style_raises():
     model.vlm_options.transformers_prompt_style = "__invalid__"  # type: ignore[assignment]
     with pytest.raises(RuntimeError):
         model.formulate_prompt("x")
+
+
+def test_vlm_prompt_style_none_and_chat_variants():
+    # NONE always empty
+    m_none = _DummyVlm(TransformersPromptStyle.NONE)
+    assert m_none.formulate_prompt("anything") == ""
+
+    # CHAT path ensures processor used even with complex prompt
+    m_chat = _DummyVlm(TransformersPromptStyle.CHAT)
+    m_chat.processor.apply_chat_template.return_value = "ok"
+    out = m_chat.formulate_prompt("details please")
+    assert out == "ok"
