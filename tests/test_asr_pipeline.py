@@ -1,10 +1,11 @@
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
 from docling.datamodel import asr_model_specs
 from docling.datamodel.base_models import ConversionStatus, InputFormat
-from docling.datamodel.document import ConversionResult
+from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import AsrPipelineOptions
 from docling.document_converter import AudioFormatOption, DocumentConverter
 from docling.pipeline.asr_pipeline import AsrPipeline
@@ -83,3 +84,54 @@ def test_asr_pipeline_with_silent_audio(silent_audio_path):
     assert len(doc_result.document.texts) == 0, (
         "Document should contain zero text items"
     )
+
+
+def test_has_text_and_determine_status_helpers():
+    """Unit-test _has_text and _determine_status on a minimal ConversionResult."""
+    pipeline_options = AsrPipelineOptions()
+    pipeline_options.asr_options = asr_model_specs.WHISPER_TINY
+    pipeline = AsrPipeline(pipeline_options)
+
+    # Create an empty ConversionResult with proper InputDocument
+    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    from docling.backend.noop_backend import NoOpBackend
+    from docling.datamodel.base_models import InputFormat
+
+    input_doc = InputDocument(
+        path_or_stream=doc_path,
+        format=InputFormat.AUDIO,
+        backend=NoOpBackend,
+    )
+    conv_res = ConversionResult(input=input_doc)
+
+    # Simulate run result with empty document/texts
+    conv_res.status = ConversionStatus.SUCCESS
+    assert pipeline._has_text(conv_res.document) is False
+    assert pipeline._determine_status(conv_res) in (
+        ConversionStatus.PARTIAL_SUCCESS,
+        ConversionStatus.SUCCESS,
+        ConversionStatus.FAILURE,
+    )
+
+
+def test_is_backend_supported_noop_backend():
+    from pathlib import Path
+
+    from docling.backend.noop_backend import NoOpBackend
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.document import InputDocument
+
+    class _Dummy:
+        pass
+
+    # Create a proper NoOpBackend instance
+    doc_path = Path("./tests/data/audio/sample_10s.mp3")
+    input_doc = InputDocument(
+        path_or_stream=doc_path,
+        format=InputFormat.AUDIO,
+        backend=NoOpBackend,
+    )
+    noop_backend = NoOpBackend(input_doc, doc_path)
+
+    assert AsrPipeline.is_backend_supported(noop_backend) is True
+    assert AsrPipeline.is_backend_supported(_Dummy()) is False

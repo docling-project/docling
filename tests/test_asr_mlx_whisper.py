@@ -10,7 +10,9 @@ import pytest
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
+    WHISPER_BASE_MLX,
     WHISPER_LARGE,
+    WHISPER_LARGE_MLX,
     WHISPER_MEDIUM,
     WHISPER_SMALL,
     WHISPER_TINY,
@@ -57,6 +59,12 @@ class TestMlxWhisperIntegration:
 
         assert hasattr(WHISPER_SMALL, "inference_framework")
         assert hasattr(WHISPER_SMALL, "repo_id")
+
+    def test_explicit_mlx_models_shape(self):
+        """Explicit MLX options should have MLX framework and valid repos."""
+        assert WHISPER_BASE_MLX.inference_framework.name == "MLX"
+        assert WHISPER_LARGE_MLX.inference_framework.name == "MLX"
+        assert WHISPER_BASE_MLX.repo_id.startswith("mlx-community/")
 
     @patch("builtins.__import__")
     def test_mlx_whisper_model_initialization(self, mock_import):
