@@ -246,11 +246,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.HTML}
 
-    @classmethod
-    @override
-    def get_default_options(cls) -> HTMLBackendOptions:
-        return HTMLBackendOptions()
-
     @override
     def convert(self) -> DoclingDocument:
         _log.debug("Starting HTML conversion...")

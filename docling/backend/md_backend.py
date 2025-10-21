@@ -536,11 +536,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.MD}
 
-    @classmethod
-    @override
-    def get_default_options(cls) -> MarkdownBackendOptions:
-        return MarkdownBackendOptions()
-
     def convert(self) -> DoclingDocument:
         _log.debug("converting Markdown...")
 

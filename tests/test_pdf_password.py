@@ -8,6 +8,7 @@ from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBacke
 from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,
 )
+from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -30,12 +31,13 @@ def converter_opts_gen() -> Iterable[TestOption]:
         do_table_structure=False,
     )
 
-    # TODO: set password 1234 in backend options
+    backend_options = PdfBackendOptions(password="1234")
 
     yield TestOption(
         options=PdfFormatOption(
             pipeline_options=pipeline_options,
             backend=PyPdfiumDocumentBackend,
+            backend_options=backend_options,
         ),
         name="PyPdfium",
     )
@@ -44,6 +46,7 @@ def converter_opts_gen() -> Iterable[TestOption]:
         options=PdfFormatOption(
             pipeline_options=pipeline_options,
             backend=DoclingParseV4DocumentBackend,
+            backend_options=backend_options,
         ),
         name="DoclingParseV4",
     )

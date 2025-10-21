@@ -146,15 +146,6 @@ class InputDocument(BaseModel):
         self.limits = limits or DocumentLimits()
         self.format = format
 
-        # check for backend incompatibilities
-        if issubclass(backend, DeclarativeDocumentBackend) and backend_options:
-            if not issubclass(
-                type(backend_options), type(backend.get_default_options())
-            ):
-                raise ValueError(
-                    "Incompatible types between backend and backend_options arguments."
-                )
-
         try:
             if isinstance(path_or_stream, Path):
                 self.file = path_or_stream
@@ -214,7 +205,7 @@ class InputDocument(BaseModel):
         backend: Type[AbstractDocumentBackend],
         path_or_stream: Union[BytesIO, Path],
     ) -> None:
-        if issubclass(backend, DeclarativeDocumentBackend) and self.backend_options:
+        if self.backend_options:
             self._backend = backend(
                 self,
                 path_or_stream=path_or_stream,

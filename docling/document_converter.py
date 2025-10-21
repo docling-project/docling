@@ -31,7 +31,12 @@ from docling.backend.noop_backend import NoOpBackend
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
-from docling.datamodel.backend_options import BackendOptions, HTMLBackendOptions
+from docling.datamodel.backend_options import (
+    BackendOptions,
+    HTMLBackendOptions,
+    MarkdownBackendOptions,
+    PdfBackendOptions,
+)
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,
@@ -98,7 +103,7 @@ class PowerpointFormatOption(FormatOption):
 class MarkdownFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
-    backend_options: HTMLBackendOptions = HTMLBackendOptions()
+    backend_options: Optional[MarkdownBackendOptions] = None
 
 
 class AsciiDocFormatOption(FormatOption):
@@ -109,7 +114,7 @@ class AsciiDocFormatOption(FormatOption):
 class HTMLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
-    backend_options: HTMLBackendOptions = HTMLBackendOptions()
+    backend_options: Optional[HTMLBackendOptions] = None
 
 
 class PatentUsptoFormatOption(FormatOption):
@@ -130,6 +135,7 @@ class ImageFormatOption(FormatOption):
 class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
+    backend_options: Optional[PdfBackendOptions] = None
 
 
 class AudioFormatOption(FormatOption):
@@ -139,48 +145,24 @@ class AudioFormatOption(FormatOption):
 
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
-        InputFormat.CSV: FormatOption(
-            pipeline_cls=SimplePipeline, backend=CsvDocumentBackend
-        ),
-        InputFormat.XLSX: FormatOption(
-            pipeline_cls=SimplePipeline, backend=MsExcelDocumentBackend
-        ),
-        InputFormat.DOCX: FormatOption(
-            pipeline_cls=SimplePipeline, backend=MsWordDocumentBackend
-        ),
-        InputFormat.PPTX: FormatOption(
-            pipeline_cls=SimplePipeline, backend=MsPowerpointDocumentBackend
-        ),
-        InputFormat.MD: FormatOption(
-            pipeline_cls=SimplePipeline, backend=MarkdownDocumentBackend
-        ),
-        InputFormat.ASCIIDOC: FormatOption(
-            pipeline_cls=SimplePipeline, backend=AsciiDocBackend
-        ),
-        InputFormat.HTML: FormatOption(
-            pipeline_cls=SimplePipeline,
-            backend=HTMLDocumentBackend,
-            backend_options=HTMLBackendOptions(),
-        ),
-        InputFormat.XML_USPTO: FormatOption(
-            pipeline_cls=SimplePipeline, backend=PatentUsptoDocumentBackend
-        ),
-        InputFormat.XML_JATS: FormatOption(
-            pipeline_cls=SimplePipeline, backend=JatsDocumentBackend
-        ),
+        InputFormat.CSV: CsvFormatOption(),
+        InputFormat.XLSX: ExcelFormatOption(),
+        InputFormat.DOCX: WordFormatOption(),
+        InputFormat.PPTX: PowerpointFormatOption(),
+        InputFormat.MD: MarkdownFormatOption(),
+        InputFormat.ASCIIDOC: AsciiDocFormatOption(),
+        InputFormat.HTML: HTMLFormatOption(),
+        InputFormat.XML_USPTO: PatentUsptoFormatOption(),
+        InputFormat.XML_JATS: XMLJatsFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
         ),
-        InputFormat.IMAGE: FormatOption(
-            pipeline_cls=StandardPdfPipeline, backend=DoclingParseV4DocumentBackend
-        ),
-        InputFormat.PDF: FormatOption(
-            pipeline_cls=StandardPdfPipeline, backend=DoclingParseV4DocumentBackend
-        ),
+        InputFormat.IMAGE: ImageFormatOption(),
+        InputFormat.PDF: PdfFormatOption(),
         InputFormat.JSON_DOCLING: FormatOption(
             pipeline_cls=SimplePipeline, backend=DoclingJSONBackend
         ),
-        InputFormat.AUDIO: FormatOption(pipeline_cls=AsrPipeline, backend=NoOpBackend),
+        InputFormat.AUDIO: AudioFormatOption(),
         InputFormat.VTT: FormatOption(
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),

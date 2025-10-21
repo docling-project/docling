@@ -9,6 +9,7 @@ from docling_core.types.doc.page import SegmentedPdfPage, TextCell
 from PIL import Image
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
+from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -50,8 +51,14 @@ class PdfPageBackend(ABC):
 
 
 class PdfDocumentBackend(PaginatedDocumentBackend):
-    def __init__(self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: Union[BytesIO, Path],
+        options: PdfBackendOptions = PdfBackendOptions(),
+    ):
+        super().__init__(in_doc, path_or_stream, options)
+        self.options: PdfBackendOptions
 
         if self.input_format is not InputFormat.PDF:
             if self.input_format is InputFormat.IMAGE:
