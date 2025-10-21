@@ -242,8 +242,14 @@ jobs:
               ~/.EasyOCR/
             key: models-cache
 
-        - name: Pre-download Models
-          run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+        - name: Free up disk space
+          run: |
+            df -h
+            sudo rm -rf /usr/share/dotnet
+            sudo rm -rf /usr/local/lib/android
+            sudo rm -rf /opt/ghc
+            sudo apt-get clean
+            df -h
 
         - name: Run examples
           run: |

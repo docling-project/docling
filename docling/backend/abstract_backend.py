@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Set, Union
+from typing import TYPE_CHECKING, Union
 
 from docling_core.types.doc import DoclingDocument
+
+from docling.datamodel.backend_options import BackendOptions, DeclarativeBackendOptions
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import InputFormat
@@ -35,7 +37,7 @@ class AbstractDocumentBackend(ABC):
 
     @classmethod
     @abstractmethod
-    def supported_formats(cls) -> Set["InputFormat"]:
+    def supported_formats(cls) -> set["InputFormat"]:
         pass
 
 
@@ -59,5 +61,19 @@ class DeclarativeDocumentBackend(AbstractDocumentBackend):
     """
 
     @abstractmethod
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: BackendOptions = DeclarativeBackendOptions(),
+    ) -> None:
+        super().__init__(in_doc, path_or_stream)
+        self.options: BackendOptions = options
+
+    @abstractmethod
     def convert(self) -> DoclingDocument:
         pass
+
+    @classmethod
+    def get_default_options(cls) -> BackendOptions:
+        return DeclarativeBackendOptions()

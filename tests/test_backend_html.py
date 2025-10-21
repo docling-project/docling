@@ -1,9 +1,14 @@
 from io import BytesIO
-from pathlib import Path
+from pathlib import Path, PurePath
+from unittest.mock import Mock, mock_open, patch
 
+import pytest
+from docling_core.types.doc import PictureItem
 from docling_core.types.doc.document import ContentLayer
+from pydantic import AnyUrl, ValidationError
 
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -11,12 +16,74 @@ from docling.datamodel.document import (
     InputDocument,
     SectionHeaderItem,
 )
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, HTMLFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
 
 GENERATE = GEN_TEST_DATA
+
+
+def test_html_backend_options():
+    options = HTMLBackendOptions()
+    assert options.kind == "html"
+    assert not options.fetch_images
+    assert options.source_uri is None
+
+    url = "http://example.com"
+    source_location = AnyUrl(url=url)
+    options = HTMLBackendOptions(source_uri=source_location)
+    assert options.source_uri == source_location
+
+    source_location = PurePath("/local/path/to/file.html")
+    options = HTMLBackendOptions(source_uri=source_location)
+    assert options.source_uri == source_location
+
+    with pytest.raises(ValidationError, match="Input is not a valid path"):
+        HTMLBackendOptions(source_uri=12345)
+
+
+def test_resolve_relative_path():
+    html_path = Path("./tests/data/html/example_01.html")
+    in_doc = InputDocument(
+        path_or_stream=html_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="test",
+    )
+    html_doc = HTMLDocumentBackend(path_or_stream=html_path, in_doc=in_doc)
+    html_doc.base_path = "/local/path/to/file.html"
+
+    relative_path = "subdir/another.html"
+    expected_abs_loc = "/local/path/to/subdir/another.html"
+    assert html_doc._resolve_relative_path(relative_path) == expected_abs_loc
+
+    absolute_path = "/absolute/path/to/file.html"
+    assert html_doc._resolve_relative_path(absolute_path) == absolute_path
+
+    html_doc.base_path = "http://my_host.com"
+    protocol_relative_url = "//example.com/file.html"
+    expected_abs_loc = "https://example.com/file.html"
+    assert html_doc._resolve_relative_path(protocol_relative_url) == expected_abs_loc
+
+    html_doc.base_path = "http://example.com"
+    remote_relative_path = "subdir/file.html"
+    expected_abs_loc = "http://example.com/subdir/file.html"
+    assert html_doc._resolve_relative_path(remote_relative_path) == expected_abs_loc
+
+    html_doc.base_path = "http://example.com"
+    remote_relative_path = "https://my_host.com/my_page.html"
+    expected_abs_loc = "https://my_host.com/my_page.html"
+    assert html_doc._resolve_relative_path(remote_relative_path) == expected_abs_loc
+
+    html_doc.base_path = "http://example.com"
+    remote_relative_path = "/static/images/my_image.png"
+    expected_abs_loc = "http://example.com/static/images/my_image.png"
+    assert html_doc._resolve_relative_path(remote_relative_path) == expected_abs_loc
+
+    html_doc.base_path = None
+    relative_path = "subdir/file.html"
+    assert html_doc._resolve_relative_path(relative_path) == relative_path
 
 
 def test_heading_levels():
@@ -158,8 +225,6 @@ def test_e2e_html_conversions():
     converter = get_converter()
 
     for html_path in html_paths:
-        # print(f"converting {html_path}")
-
         gt_path = (
             html_path.parent.parent / "groundtruth" / "docling_v2" / html_path.name
         )
@@ -181,6 +246,76 @@ def test_e2e_html_conversions():
         )
 
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
+
+
+@patch("docling.backend.html_backend.requests.get")
+@patch("docling.backend.html_backend.open", new_callable=mock_open)
+def test_e2e_html_conversion_with_images(mock_local, mock_remote):
+    source = "tests/data/html/example_01.html"
+    image_path = "tests/data/html/example_image_01.png"
+    with open(image_path, "rb") as f:
+        img_bytes = f.read()
+
+    # fetching image locally
+    mock_local.return_value.__enter__.return_value = BytesIO(img_bytes)
+    backend_options = HTMLBackendOptions(
+        enable_local_fetch=True, fetch_images=True, source_uri=source
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    res_local = converter.convert(source)
+    mock_local.assert_called_once()
+    assert res_local.document
+    num_pic: int = 0
+    for element, _ in res_local.document.iterate_items():
+        if isinstance(element, PictureItem):
+            assert element.image
+            num_pic += 1
+    assert num_pic == 1, "No embedded picture was found in the converted file"
+
+    # fetching image remotely
+    mock_resp = Mock()
+    mock_resp.status_code = 200
+    mock_resp.content = img_bytes
+    mock_remote.return_value = mock_resp
+    source_location = "https://example.com/example_01.html"
+
+    backend_options = HTMLBackendOptions(
+        enable_remote_fetch=True, fetch_images=True, source_uri=source_location
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    res_remote = converter.convert(source)
+    mock_remote.assert_called_once_with(
+        "https://example.com/example_image_01.png", stream=True
+    )
+    assert res_remote.document
+    num_pic = 0
+    for element, _ in res_remote.document.iterate_items():
+        if isinstance(element, PictureItem):
+            assert element.image
+            assert element.image.mimetype == "image/png"
+            num_pic += 1
+    assert num_pic == 1, "No embedded picture was found in the converted file"
+
+    # both methods should generate the same DoclingDocument
+    assert res_remote.document == res_local.document
+
+    # checking exported formats
+    gt_path = (
+        "tests/data/groundtruth/docling_v2/" + str(Path(source).stem) + "_images.html"
+    )
+    pred_md: str = res_local.document.export_to_markdown()
+    assert verify_export(pred_md, gt_path + ".md", generate=GENERATE)
+    assert verify_document(res_local.document, gt_path + ".json", GENERATE)
 
 
 def test_html_furniture():
@@ -211,3 +346,98 @@ def test_html_furniture():
         "Initial content with some **bold text**\n\n# Main Heading\n\nSome Content\n\n"
         "Some Footer Content"
     )
+
+
+def test_fetch_remote_images(monkeypatch):
+    source = "./tests/data/html/example_01.html"
+
+    # no image fetching: the image_fetch flag is False
+    backend_options = HTMLBackendOptions(
+        fetch_images=False, source_uri="http://example.com"
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    with patch("docling.backend.html_backend.requests.get") as mocked_get:
+        res = converter.convert(source)
+        mocked_get.assert_not_called()
+    assert res.document
+
+    # no image fetching: the source location is False and enable_local_fetch is False
+    backend_options = HTMLBackendOptions(fetch_images=True)
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    with (
+        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        pytest.warns(
+            match="Fetching local resources is only allowed when set explicitly"
+        ),
+    ):
+        res = converter.convert(source)
+        mocked_get.assert_not_called()
+    assert res.document
+
+    # no image fetching: the enable_remote_fetch is False
+    backend_options = HTMLBackendOptions(
+        fetch_images=True, source_uri="http://example.com"
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    with (
+        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        pytest.warns(
+            match="Fetching remote resources is only allowed when set explicitly"
+        ),
+    ):
+        res = converter.convert(source)
+        mocked_get.assert_not_called()
+    assert res.document
+
+    # image fetching: all conditions apply, source location is remote
+    backend_options = HTMLBackendOptions(
+        enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    with (
+        patch("docling.backend.html_backend.requests.get") as mocked_get,
+        pytest.warns(match="a bytes-like object is required"),
+    ):
+        res = converter.convert(source)
+        mocked_get.assert_called_once()
+    assert res.document
+
+    # image fetching: all conditions apply, local fetching allowed
+    backend_options = HTMLBackendOptions(
+        enable_local_fetch=True, fetch_images=True, source_uri=source
+    )
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.HTML],
+        format_options={
+            InputFormat.HTML: HTMLFormatOption(backend_options=backend_options)
+        },
+    )
+    with (
+        patch("docling.backend.html_backend.open") as mocked_open,
+        pytest.warns(match="a bytes-like object is required"),
+    ):
+        res = converter.convert(source)
+        mocked_open.assert_called_once_with(
+            "tests/data/html/example_image_01.png", "rb"
+        )
+        assert res.document

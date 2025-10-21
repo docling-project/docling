@@ -6,13 +6,12 @@ from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
     InputDocument,
-    SectionHeaderItem,
 )
 from docling.document_converter import DocumentConverter
 from tests.verify_utils import CONFID_PREC, COORD_PREC
 
 from .test_data_gen_flag import GEN_TEST_DATA
-from .verify_utils import verify_document, verify_export
+from .verify_utils import verify_document
 
 GENERATE = GEN_TEST_DATA
 

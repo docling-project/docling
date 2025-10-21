@@ -24,10 +24,16 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import Formatting
 from marko import Markdown
 from pydantic import AnyUrl, BaseModel, Field, TypeAdapter
-from typing_extensions import Annotated
+from typing_extensions import Annotated, override
 
-from docling.backend.abstract_backend import DeclarativeDocumentBackend
+from docling.backend.abstract_backend import (
+    DeclarativeDocumentBackend,
+)
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.datamodel.backend_options import (
+    HTMLBackendOptions,
+    MarkdownBackendOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -88,8 +94,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
 
         return shortened_text
 
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    @override
+    def __init__(
+        self,
+        in_doc: InputDocument,
+        path_or_stream: Union[BytesIO, Path],
+        options: MarkdownBackendOptions = MarkdownBackendOptions(),
+    ):
+        super().__init__(in_doc, path_or_stream, options)
 
         _log.debug("Starting MarkdownDocumentBackend...")
 
@@ -580,9 +592,12 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     format=InputFormat.HTML,
                     backend=html_backend_cls,
                     filename=self.file.name,
+                    backend_options=self.options,
                 )
                 html_backend_obj = html_backend_cls(
-                    in_doc=in_doc, path_or_stream=stream
+                    in_doc=in_doc,
+                    path_or_stream=stream,
+                    options=cast(HTMLBackendOptions, self.options),
                 )
                 doc = html_backend_obj.convert()
         else:
