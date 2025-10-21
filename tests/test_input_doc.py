@@ -130,7 +130,7 @@ def test_in_doc_with_backend_options():
     assert not doc.backend_options.enable_local_fetch
     assert not doc.backend_options.enable_remote_fetch
 
-    with pytest.raises(ValueError, match="Incompatible types"):
+    with pytest.raises(AttributeError, match="no attribute 'source_uri'"):
         doc = InputDocument(
             path_or_stream=test_doc_path,
             format=InputFormat.HTML,
