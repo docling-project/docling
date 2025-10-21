@@ -536,6 +536,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.MD}
 
+    @classmethod
+    @override
+    def get_default_options(cls) -> MarkdownBackendOptions:
+        return MarkdownBackendOptions()
+
     def convert(self) -> DoclingDocument:
         _log.debug("converting Markdown...")
 
@@ -587,17 +592,24 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 self._html_blocks = 0
                 # delegate to HTML backend
                 stream = BytesIO(bytes(html_str, encoding="utf-8"))
+                md_options = cast(MarkdownBackendOptions, self.options)
+                html_options = HTMLBackendOptions(
+                    enable_local_fetch=md_options.enable_local_fetch,
+                    enable_remote_fetch=md_options.enable_remote_fetch,
+                    fetch_images=md_options.fetch_images,
+                    source_uri=md_options.source_uri,
+                )
                 in_doc = InputDocument(
                     path_or_stream=stream,
                     format=InputFormat.HTML,
                     backend=html_backend_cls,
                     filename=self.file.name,
-                    backend_options=self.options,
+                    backend_options=html_options,
                 )
                 html_backend_obj = html_backend_cls(
                     in_doc=in_doc,
                     path_or_stream=stream,
-                    options=cast(HTMLBackendOptions, self.options),
+                    options=html_options,
                 )
                 doc = html_backend_obj.convert()
         else:
