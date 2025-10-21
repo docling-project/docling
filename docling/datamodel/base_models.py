@@ -192,7 +192,7 @@ class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
-    num_tokens: int = 0
+    num_tokens: int = -1
 
 
 class ContainerElement(

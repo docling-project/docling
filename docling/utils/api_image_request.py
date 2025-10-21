@@ -60,7 +60,8 @@ def api_image_request(
 
     api_resp = OpenAiApiResponse.model_validate_json(r.text)
     generated_text = api_resp.choices[0].message.content.strip()
-    return generated_text
+    num_tokens = api_resp.usage.total_tokens
+    return generated_text, num_tokens
 
 
 def api_image_request_streaming(
@@ -150,6 +151,16 @@ def api_image_request_streaming(
                 _log.debug("Unexpected SSE chunk shape: %s", e)
                 piece = ""
 
+            # Try to extract token count
+            num_tokens = -1
+            try:
+                if "usage" in obj:
+                    usage = obj["usage"]
+                    num_tokens = usage.get("total_tokens")
+            except Exception as e:
+                num_tokens = -1
+                _log.debug("Usage key not included in response: %s", e)
+
             if piece:
                 full_text.append(piece)
                 for stopper in generation_stoppers:
@@ -162,6 +173,6 @@ def api_image_request_streaming(
                         # closing the connection when we exit the 'with' block.
                         # vLLM/OpenAI-compatible servers will detect the client disconnect
                         # and abort the request server-side.
-                        return "".join(full_text)
+                        return "".join(full_text), num_tokens
 
-        return "".join(full_text)
+        return "".join(full_text), num_tokens
