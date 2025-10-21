@@ -120,7 +120,7 @@ class HierarchicalChunker(BaseChunker):
         processed_refs = set()
 
         # 모든 아이템 순회
-        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
+        for item, level in dl_doc.iterate_items():
             if hasattr(item, 'self_ref'):
                 processed_refs.add(item.self_ref)
 
@@ -169,8 +169,6 @@ class HierarchicalChunker(BaseChunker):
                 isinstance(item, CodeItem) or
                 isinstance(item, TableItem) or
                 isinstance(item, PictureItem)):
-                if item.label in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
-                    item.text = ""
                 all_items.append(item)
                 # 현재 아이템의 헤더 정보 저장
                 all_header_info.append({k: v for k, v in current_heading_by_level.items()})
@@ -291,9 +289,10 @@ class HybridChunker(BaseChunker):
             item_headers = header_info_list[i] if i < len(header_info_list) else {}
 
             # 헤더 정보가 변경된 경우 (새로운 섹션 시작)
-            if item_headers != current_section_headers:
+            if item_headers != current_section_headers:  
                 # 변경된 헤더 레벨들만 추가
                 headers_to_add = []
+                
                 for level in sorted(item_headers.keys()):
                     # 이전 섹션과 다른 헤더만 추가
                     if (level not in current_section_headers or
@@ -330,7 +329,10 @@ class HybridChunker(BaseChunker):
             elif isinstance(item, PictureItem):
                 text_parts.append("")  # 이미지는 빈 텍스트
 
-        result_text = self.delim.join(text_parts)
+        # delim이 정의되지 않은 경우 기본값 사용
+        delim = getattr(self, 'delim', '\n')
+        result_text = delim.join(text_parts)
+        
         return result_text
 
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument) -> str:
@@ -375,19 +377,22 @@ class HybridChunker(BaseChunker):
         return ""
 
     def _extract_used_headers(self, header_info_list: list[dict]) -> Optional[list[str]]:
-        """헤더 정보 리스트에서 실제 사용되는 헤더들을 추출"""
+        """헤더 정보 리스트에서 실제 사용되는 헤더들을 추출 """
         if not header_info_list:
             return None
 
-        # 모든 헤더 정보를 종합하여 사용되는 헤더들 추출
-        all_headers = set()
+        all_headers = [] # header 순서대로 추가 
+        seen_headers = set()  # 중복 방지용
+        
         for header_info in header_info_list:
-            if header_info:  # dict가 비어있지 않은 경우
-                for level, header_text in header_info.items():
-                    if header_text:  # 헤더 텍스트가 비어있지 않은 경우
-                        all_headers.add(header_text)
+            if header_info:  
+                for level in sorted(header_info.keys()):
+                    header_text = header_info[level]
+                    if header_text and header_text not in seen_headers:
+                        all_headers.append(header_text)
+                        seen_headers.add(header_text)
 
-        return list(all_headers) if all_headers else None
+        return all_headers if all_headers else None
 
     def _split_table_text(self, table_text: str, max_tokens: int) -> list[str]:
         """테이블 텍스트를 토큰 제한에 맞게 분할 (단순 토큰 수 기준)"""
@@ -475,7 +480,8 @@ class HybridChunker(BaseChunker):
                 if table_tokens > self.max_tokens:
                     # 테이블 텍스트만 추출하여 분할
                     table_only_text = self._extract_table_text(item, dl_doc)
-                    split_tables = self._split_table_text(table_only_text, 4096)
+                    # split_tables = self._split_table_text(table_only_text, 4096)
+                    split_tables = [table_only_text]
 
                     # 분할된 각 테이블에 대해 청크 생성
                     for split_table in split_tables:
@@ -843,7 +849,7 @@ class DocumentProcessor:
         self.pipe_line_options = PdfPipelineOptions()
         self.pipe_line_options.generate_page_images = True
         self.pipe_line_options.generate_picture_images = True
-        self.pipe_line_options.do_ocr = False
+        self.pipe_line_options.do_ocr = True
         self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.ocr_options.lang = ["ko", 'en']
         # self.pipe_line_options.ocr_options.model_storage_directory = "./.EasyOCR/model"
@@ -878,12 +884,15 @@ class DocumentProcessor:
             do_toc_enrichment=False,
             extract_metadata=True,
             toc_api_provider="custom",
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
+            
+            # mistral
+            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
+            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
             toc_api_key="9e32423947fd4a5da07a28962fe88487",
             metadata_api_key="9e32423947fd4a5da07a28962fe88487",
             toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
             metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+            
             toc_temperature=0.0,
             toc_top_p=0,
             toc_seed=33,
@@ -896,7 +905,8 @@ class DocumentProcessor:
                 format_options={
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=self.pipe_line_options,
-                        backend=DoclingParseV4DocumentBackend
+                        #backend=DoclingParseV4DocumentBackend
+                        backend=PyPdfiumDocumentBackend
                     ),
                 }
             )
@@ -925,6 +935,15 @@ class DocumentProcessor:
             },
         )
 
+    def set_content_layer_to_body(self, document: DoclingDocument):
+        """
+        content_layer가 furniture인 아이템들을 body로 변경하는 메서드
+        body로 변경하여 화면에 표시되도록 함
+        """
+        for item, level in document.iterate_items(included_content_layers=["furniture"]):
+            if hasattr(item, 'content_layer') and item.content_layer == "furniture":
+                item.content_layer = "body"  # body로 변경하여 화면에 표시되도록 함
+
     def load_documents_with_docling(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         # kwargs에서 save_images 값을 가져와서 옵션 업데이트
         save_images = kwargs.get('save_images', True)
@@ -941,6 +960,7 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
         except Exception as e:
             conv_result: ConversionResult = self.second_converter.convert(file_path, raises_on_error=True)
+        self.set_content_layer_to_body(conv_result.document)
         return conv_result.document
 
     def load_documents_with_docling_ocr(self, file_path: str, **kwargs: dict) -> DoclingDocument:
@@ -959,6 +979,7 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.ocr_converter.convert(file_path, raises_on_error=True)
         except Exception as e:
             conv_result: ConversionResult = self.ocr_second_converter.convert(file_path, raises_on_error=True)
+        self.set_content_layer_to_body(conv_result.document)
         return conv_result.document
 
     def load_documents(self, file_path: str, **kwargs) -> DoclingDocument:
@@ -1072,7 +1093,9 @@ class DocumentProcessor:
         upload_tasks = []
         for chunk_idx, chunk in enumerate(chunks):
             chunk_page = chunk.meta.doc_items[0].prov[0].page_no
-            content = self.safe_join(chunk.meta.headings) + chunk.text
+            # header 앞에 헤더 마커 추가 (HEADER: )
+            headers_text = "HEADER: " + ", ".join(chunk.meta.headings) + '\n' if chunk.meta.headings else ''
+            content = headers_text + chunk.text
 
             if chunk_page != current_page:
                 current_page = chunk_page
@@ -1235,12 +1258,13 @@ class DocumentProcessor:
         # kwargs['include_wmf'] = True   # wmf 처리
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
-        if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
-            # OCR이 필요하다고 판단되면 OCR 수행
-            document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
+        # if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
+        #     print("ocr!!")
+        #     # OCR이 필요하다고 판단되면 OCR 수행
+        #     document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
 
         # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
-        document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
+        # document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
 
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
@@ -1252,7 +1276,7 @@ class DocumentProcessor:
 
         document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
 
-        document = self.enrichment(document, **kwargs)
+        # document = self.enrichment(document, **kwargs)
 
         has_text_items = False
         for item, _ in document.iterate_items():
