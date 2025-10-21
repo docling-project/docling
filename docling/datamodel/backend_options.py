@@ -44,6 +44,10 @@ class HTMLBackendOptions(BaseBackendOptions):
     )
 
 
+class MarkdownBackendOptions(HTMLBackendOptions):
+    """Options specific to the Markdown backend."""
+
+
 BackendOptions = Annotated[
     Union[DeclarativeBackendOptions, HTMLBackendOptions], Field(discriminator="kind")
 ]

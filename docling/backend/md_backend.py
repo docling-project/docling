@@ -30,7 +30,10 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
 )
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.datamodel.backend_options import HTMLBackendOptions
+from docling.datamodel.backend_options import (
+    HTMLBackendOptions,
+    MarkdownBackendOptions,
+)
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -96,7 +99,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: InputDocument,
         path_or_stream: Union[BytesIO, Path],
-        options: HTMLBackendOptions = HTMLBackendOptions(),
+        options: MarkdownBackendOptions = MarkdownBackendOptions(),
     ):
         super().__init__(in_doc, path_or_stream, options)
 
