@@ -23,7 +23,7 @@ Docling supports the development of AI agents by providing an MCP Server. It all
 
 When using [Claude on your desktop](https://claude.ai/download), just edit the config file `claude_desktop_config.json` with the snippet above or the example provided [here](https://github.com/docling-project/docling-mcp/blob/main/docs/integrations/claude_desktop_config.json).
 
-In **[LM Studio](https://lmstudio.ai/)**, edit the `mcp.json` file with the appropriate section or simply clik on the button below for a direct install.
+In **[LM Studio](https://lmstudio.ai/)**, edit the `mcp.json` file with the appropriate section or simply click on the button below for a direct install.
 
 [![Add MCP Server docling to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=docling&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLWZyb209ZG9jbGluZy1tY3AiLCJkb2NsaW5nLW1jcC1zZXJ2ZXIiXX0%3D)
 

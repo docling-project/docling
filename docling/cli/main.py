@@ -404,7 +404,7 @@ def convert(  # noqa: C901
     ] = None,
     pdf_backend: Annotated[
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
-    ] = PdfBackend.DLPARSE_V2,
+    ] = PdfBackend.DLPARSE_V4,
     pdf_password: Annotated[
         Optional[str], typer.Option(..., help="Password for protected PDF documents")
     ] = None,
