@@ -4,16 +4,16 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from docling.backend.abstract_backend import (
-    BaseBackendOptions,
-    DeclarativeBackendOptions,
-    HTMLBackendOptions,
-)
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.backend_options import (
+    BaseBackendOptions,
+    DeclarativeBackendOptions,
+    HTMLBackendOptions,
+)
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.datamodel.settings import DocumentLimits
@@ -126,7 +126,7 @@ def test_in_doc_with_backend_options():
     assert doc.valid
     assert doc.backend_options
     assert isinstance(doc.backend_options, HTMLBackendOptions)
-    assert not doc.backend_options.image_fetch
+    assert not doc.backend_options.fetch_images
     assert not doc.backend_options.enable_local_fetch
     assert not doc.backend_options.enable_remote_fetch
 

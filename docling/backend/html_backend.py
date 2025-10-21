@@ -35,8 +35,8 @@ from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
-    HTMLBackendOptions,
 )
+from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import OperationNotAllowed
@@ -201,7 +201,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.soup: Optional[Tag] = None
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
-        self.base_path: Optional[str] = str(options.source_location)
+        self.base_path: Optional[str] = str(options.source_uri)
 
         # Initialize the parents for the hierarchy
         self.max_levels = 10
@@ -1177,7 +1177,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
 
         src_loc: str = self._get_attr_as_string(img_tag, "src")
-        if not cast(HTMLBackendOptions, self.options).image_fetch or not src_loc:
+        if not cast(HTMLBackendOptions, self.options).fetch_images or not src_loc:
             # Do not fetch the image, just add a placeholder
             placeholder: PictureItem = doc.add_picture(
                 caption=caption_item,

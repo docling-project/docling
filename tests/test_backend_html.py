@@ -7,8 +7,8 @@ from docling_core.types.doc import PictureItem
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
 
-from docling.backend.abstract_backend import HTMLBackendOptions
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -27,20 +27,20 @@ GENERATE = GEN_TEST_DATA
 def test_html_backend_options():
     options = HTMLBackendOptions()
     assert options.kind == "html"
-    assert not options.image_fetch
-    assert options.source_location is None
+    assert not options.fetch_images
+    assert options.source_uri is None
 
     url = "http://example.com"
     source_location = AnyUrl(url=url)
-    options = HTMLBackendOptions(source_location=source_location)
-    assert options.source_location == source_location
+    options = HTMLBackendOptions(source_uri=source_location)
+    assert options.source_uri == source_location
 
     source_location = PurePath("/local/path/to/file.html")
-    options = HTMLBackendOptions(source_location=source_location)
-    assert options.source_location == source_location
+    options = HTMLBackendOptions(source_uri=source_location)
+    assert options.source_uri == source_location
 
     with pytest.raises(ValidationError, match="Input is not a valid path"):
-        HTMLBackendOptions(source_location=12345)
+        HTMLBackendOptions(source_uri=12345)
 
 
 def test_resolve_relative_path():
@@ -259,7 +259,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     # fetching image locally
     mock_local.return_value.__enter__.return_value = BytesIO(img_bytes)
     backend_options = HTMLBackendOptions(
-        enable_local_fetch=True, image_fetch=True, source_location=source
+        enable_local_fetch=True, fetch_images=True, source_uri=source
     )
     converter = DocumentConverter(
         allowed_formats=[InputFormat.HTML],
@@ -285,7 +285,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     source_location = "https://example.com/example_01.html"
 
     backend_options = HTMLBackendOptions(
-        enable_remote_fetch=True, image_fetch=True, source_location=source_location
+        enable_remote_fetch=True, fetch_images=True, source_uri=source_location
     )
     converter = DocumentConverter(
         allowed_formats=[InputFormat.HTML],
@@ -353,7 +353,7 @@ def test_fetch_remote_images(monkeypatch):
 
     # no image fetching: the image_fetch flag is False
     backend_options = HTMLBackendOptions(
-        image_fetch=False, source_location="http://example.com"
+        fetch_images=False, source_uri="http://example.com"
     )
     converter = DocumentConverter(
         allowed_formats=[InputFormat.HTML],
@@ -367,7 +367,7 @@ def test_fetch_remote_images(monkeypatch):
     assert res.document
 
     # no image fetching: the source location is False and enable_local_fetch is False
-    backend_options = HTMLBackendOptions(image_fetch=True)
+    backend_options = HTMLBackendOptions(fetch_images=True)
     converter = DocumentConverter(
         allowed_formats=[InputFormat.HTML],
         format_options={
@@ -386,7 +386,7 @@ def test_fetch_remote_images(monkeypatch):
 
     # no image fetching: the enable_remote_fetch is False
     backend_options = HTMLBackendOptions(
-        image_fetch=True, source_location="http://example.com"
+        fetch_images=True, source_uri="http://example.com"
     )
     converter = DocumentConverter(
         allowed_formats=[InputFormat.HTML],
@@ -406,7 +406,7 @@ def test_fetch_remote_images(monkeypatch):
 
     # image fetching: all conditions apply, source location is remote
     backend_options = HTMLBackendOptions(
-        enable_remote_fetch=True, image_fetch=True, source_location="http://example.com"
+        enable_remote_fetch=True, fetch_images=True, source_uri="http://example.com"
     )
     converter = DocumentConverter(
         allowed_formats=[InputFormat.HTML],
@@ -424,7 +424,7 @@ def test_fetch_remote_images(monkeypatch):
 
     # image fetching: all conditions apply, local fetching allowed
     backend_options = HTMLBackendOptions(
-        enable_local_fetch=True, image_fetch=True, source_location=source
+        enable_local_fetch=True, fetch_images=True, source_uri=source
     )
     converter = DocumentConverter(
         allowed_formats=[InputFormat.HTML],

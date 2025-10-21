@@ -1,59 +1,15 @@
 from abc import ABC, abstractmethod
 from io import BytesIO
-from pathlib import Path, PurePath
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, Union
 
 from docling_core.types.doc import DoclingDocument
-from pydantic import AnyUrl, BaseModel, Field
+
+from docling.datamodel.backend_options import BackendOptions, DeclarativeBackendOptions
 
 if TYPE_CHECKING:
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.document import InputDocument
-
-
-class BaseBackendOptions(BaseModel):
-    """Common options for all declarative document backends."""
-
-    enable_remote_fetch: bool = Field(
-        False, description="Enable remote resource fetching."
-    )
-    enable_local_fetch: bool = Field(
-        False, description="Enable local resource fetching."
-    )
-
-
-class DeclarativeBackendOptions(BaseBackendOptions):
-    """Default backend options for a declarative document backend."""
-
-    kind: Literal["declarative"] = Field("declarative", exclude=True, repr=False)
-
-
-class HTMLBackendOptions(BaseBackendOptions):
-    """Options specific to the HTML backend.
-
-    This class can be extended to include options specific to HTML processing.
-    """
-
-    kind: Literal["html"] = Field("html", exclude=True, repr=False)
-    image_fetch: bool = Field(
-        False,
-        description=(
-            "Whether the backend should access remote or local resources to parse "
-            "images in an HTML document."
-        ),
-    )
-    source_location: Optional[Union[AnyUrl, PurePath]] = Field(
-        None,
-        description=(
-            "The URL that originates the HTML document. If provided, the backend "
-            "will use it to resolve relative paths in the HTML document."
-        ),
-    )
-
-
-BackendOptions = Annotated[
-    Union[DeclarativeBackendOptions, HTMLBackendOptions], Field(discriminator="kind")
-]
 
 
 class AbstractDocumentBackend(ABC):

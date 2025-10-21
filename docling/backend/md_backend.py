@@ -28,9 +28,9 @@ from typing_extensions import Annotated, override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
-    HTMLBackendOptions,
 )
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 

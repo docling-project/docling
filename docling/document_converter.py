@@ -16,8 +16,6 @@ from typing_extensions import Self
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
-    BackendOptions,
-    HTMLBackendOptions,
 )
 from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
@@ -33,6 +31,7 @@ from docling.backend.noop_backend import NoOpBackend
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
+from docling.datamodel.backend_options import BackendOptions, HTMLBackendOptions
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,

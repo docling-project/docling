@@ -52,10 +52,10 @@ from typing_extensions import deprecated
 
 from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
-    BackendOptions,
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.datamodel.backend_options import BackendOptions
 from docling.datamodel.base_models import (
     AssembledUnit,
     ConfidenceReport,
