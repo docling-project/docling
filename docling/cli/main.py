@@ -51,6 +51,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_TURBO_NATIVE,
     AsrModelType,
 )
+from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import (
     ConversionStatus,
     FormatToExtensions,
@@ -404,6 +405,9 @@ def convert(  # noqa: C901
     pdf_backend: Annotated[
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
     ] = PdfBackend.DLPARSE_V2,
+    pdf_password: Annotated[
+        Optional[str], typer.Option(..., help="Password for protected PDF documents")
+    ] = None,
     table_mode: Annotated[
         TableFormerMode,
         typer.Option(..., help="The mode to use in the table structure model."),
@@ -628,6 +632,9 @@ def convert(  # noqa: C901
         pipeline_options: PipelineOptions
 
         format_options: Dict[InputFormat, FormatOption] = {}
+        pdf_backend_options: Optional[PdfBackendOptions] = PdfBackendOptions(
+            password=pdf_password
+        )
 
         if pipeline == ProcessingPipeline.STANDARD:
             pipeline_options = PdfPipelineOptions(
@@ -658,8 +665,10 @@ def convert(  # noqa: C901
             backend: Type[PdfDocumentBackend]
             if pdf_backend == PdfBackend.DLPARSE_V1:
                 backend = DoclingParseDocumentBackend
+                pdf_backend_options = None
             elif pdf_backend == PdfBackend.DLPARSE_V2:
                 backend = DoclingParseV2DocumentBackend
+                pdf_backend_options = None
             elif pdf_backend == PdfBackend.DLPARSE_V4:
                 backend = DoclingParseV4DocumentBackend  # type: ignore
             elif pdf_backend == PdfBackend.PYPDFIUM2:
@@ -670,6 +679,7 @@ def convert(  # noqa: C901
             pdf_format_option = PdfFormatOption(
                 pipeline_options=pipeline_options,
                 backend=backend,  # pdf_backend
+                backend_options=pdf_backend_options,
             )
 
             # METS GBS options
@@ -816,7 +826,7 @@ def convert(  # noqa: C901
             _log.error(f"{asr_model} is not known")
             raise ValueError(f"{asr_model} is not known")
 
-        _log.info(f"ASR pipeline_options: {asr_pipeline_options}")
+        _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
         audio_format_option = AudioFormatOption(
             pipeline_cls=AsrPipeline,
