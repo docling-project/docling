@@ -44,8 +44,24 @@ class HTMLBackendOptions(BaseBackendOptions):
     )
 
 
-class MarkdownBackendOptions(HTMLBackendOptions):
+class MarkdownBackendOptions(BaseBackendOptions):
     """Options specific to the Markdown backend."""
+
+    kind: Literal["md"] = Field("md", exclude=True, repr=False)
+    fetch_images: bool = Field(
+        False,
+        description=(
+            "Whether the backend should access remote or local resources to parse "
+            "images in the markdown document."
+        ),
+    )
+    source_uri: Optional[Union[AnyUrl, PurePath]] = Field(
+        None,
+        description=(
+            "The URI that originates the markdown document. If provided, the backend "
+            "will use it to resolve relative paths in the markdown document."
+        ),
+    )
 
 
 class PdfBackendOptions(BaseBackendOptions):
@@ -56,6 +72,11 @@ class PdfBackendOptions(BaseBackendOptions):
 
 
 BackendOptions = Annotated[
-    Union[DeclarativeBackendOptions, HTMLBackendOptions, PdfBackendOptions],
+    Union[
+        DeclarativeBackendOptions,
+        HTMLBackendOptions,
+        MarkdownBackendOptions,
+        PdfBackendOptions,
+    ],
     Field(discriminator="kind"),
 ]
