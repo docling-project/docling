@@ -415,7 +415,6 @@ class HybridChunker(BaseChunker):
                     text_parts.append(item.text)
             elif isinstance(item, PictureItem):
                 text_parts.append("")  # 이미지는 빈 텍스트
-
         result_text = self.delim.join(text_parts)
         return result_text
 
@@ -466,14 +465,18 @@ class HybridChunker(BaseChunker):
             return None
 
         # 모든 헤더 정보를 종합하여 사용되는 헤더들 추출
-        all_headers = set()
+        all_headers = []
+        seen_headers = set()
+        
         for header_info in header_info_list:
             if header_info:  # dict가 비어있지 않은 경우
-                for level, header_text in header_info.items():
-                    if header_text:  # 헤더 텍스트가 비어있지 않은 경우
-                        all_headers.add(header_text)
+                for level in sorted(header_info.keys()):
+                    header_text = header_info[level]
+                    if header_text and header_text not in seen_headers:
+                        all_headers.append(header_text)
+                        seen_headers.add(header_text)
 
-        return list(all_headers) if all_headers else None
+        return all_headers if all_headers else None
 
     def _split_table_text(self, table_text: str, max_tokens: int) -> list[str]:
         """테이블 텍스트를 토큰 제한에 맞게 분할 (단순 토큰 수 기준)"""
@@ -1113,7 +1116,9 @@ class DocumentProcessor:
         upload_tasks = []
         for chunk_idx, chunk in enumerate(chunks):
             chunk_page = chunk.meta.doc_items[0].prov[0].page_no
-            content = self.safe_join(chunk.meta.headings) + chunk.text
+            # header 앞에 헤더 마커 추가 (HEADER: )
+            headers_text = "HEADER: " + ", ".join(chunk.meta.headings) + '\n' if chunk.meta.headings else ''
+            content = headers_text + chunk.text
 
             if chunk_page != current_page:
                 current_page = chunk_page
