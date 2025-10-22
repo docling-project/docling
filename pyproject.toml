@@ -114,6 +114,10 @@ rapidocr = [
 asr = [
     "openai-whisper>=20250625",
 ]
+genos-tools = ["genos-tools"]  # ← 경로 대신 '패키지 이름'만
+
+[tool.uv.sources]
+genos-tools = { path = "genos-tools", editable = true }
 
 [dependency-groups]
 dev = [
