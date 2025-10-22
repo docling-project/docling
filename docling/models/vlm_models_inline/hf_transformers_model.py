@@ -114,20 +114,59 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
-            self.processor.tokenizer.padding_side = "left"
+
+            # Set padding side for tokenizer, handling different processor types
+            if hasattr(self.processor, "tokenizer"):
+                self.processor.tokenizer.padding_side = "left"
+            elif hasattr(self.processor, "_tokenizer"):
+                self.processor._tokenizer.padding_side = "left"
+            else:
+                # Some processors might be different; try to find the tokenizer attribute
+                tokenizer_attrs = ["tokenizer", "_tokenizer", "text_processor"]
+                for attr in tokenizer_attrs:
+                    if hasattr(self.processor, attr):
+                        tokenizer = getattr(self.processor, attr)
+                        if hasattr(tokenizer, "padding_side"):
+                            tokenizer.padding_side = "left"
+                        break
+
+            # Determine attention implementation, with fallback for models that don't support certain implementations
+            attn_implementation = "sdpa"
+            if self.device.startswith("cuda") and accelerator_options.cuda_use_flash_attention2:
+                attn_implementation = "flash_attention_2"
+
+            # Override with user-specified attention implementation if provided
+            extra_attn_impl = self.vlm_options.extra_generation_config.get("_attn_implementation")
+            if extra_attn_impl:
+                attn_implementation = extra_attn_impl
+
+            # Handle device_map - it should be passed during model loading, not generation
+            model_loading_kwargs = {
+                "device_map": self.device,  # Use accelerator device as default
+                "dtype": self.vlm_options.torch_dtype,
+                "_attn_implementation": attn_implementation,
+                "trust_remote_code": vlm_options.trust_remote_code,
+                "revision": vlm_options.revision,
+            }
+
+            # Check if user specified a custom device_map in extra_generation_config
+            if "device_map" in self.vlm_options.extra_generation_config:
+                model_loading_kwargs["device_map"] = self.vlm_options.extra_generation_config["device_map"]
+                # Remove it from extra_generation_config to prevent it being passed during generation
+                # We need to create a copy and exclude device_map
+                filtered_extra_config = {
+                    k: v for k, v in self.vlm_options.extra_generation_config.items()
+                    if k != "device_map"
+                }
+                # Update the vlm_options with the filtered config
+                import copy
+                temp_options = copy.copy(self.vlm_options)
+                temp_options.extra_generation_config = filtered_extra_config
+                self.vlm_options = temp_options
 
             self.vlm_model = model_cls.from_pretrained(
                 artifacts_path,
-                device_map=self.device,
-                dtype=self.vlm_options.torch_dtype,
-                _attn_implementation=(
-                    "flash_attention_2"
-                    if self.device.startswith("cuda")
-                    and accelerator_options.cuda_use_flash_attention2
-                    else "sdpa"
-                ),
-                trust_remote_code=vlm_options.trust_remote_code,
-                revision=vlm_options.revision,
+                **model_loading_kwargs,
             )
             self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
 
@@ -237,6 +276,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
         # Use your prompt formatter verbatim
         if self.vlm_options.transformers_prompt_style == TransformersPromptStyle.NONE:
+            # For models that don't use prompt styles, pass images directly
             inputs = self.processor(
                 pil_images,
                 return_tensors="pt",
@@ -247,13 +287,48 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             prompts: list[str] = [self.formulate_prompt(p) for p in user_prompts]
 
             # -- Processor performs BOTH text+image preprocessing + batch padding (recommended)
-            inputs = self.processor(
-                text=prompts,
-                images=pil_images,
-                return_tensors="pt",
-                padding=True,  # pad across batch for both text and vision
-                **self.vlm_options.extra_processor_kwargs,
-            )
+            # For models that may have specific batch requirements, handle accordingly
+            try:
+                inputs = self.processor(
+                    text=prompts,
+                    images=pil_images,
+                    return_tensors="pt",
+                    padding=True,  # pad across batch for both text and vision
+                    **self.vlm_options.extra_processor_kwargs,
+                )
+            except ValueError as e:
+                if "Received inconsistently sized batches" in str(e):
+                    # Handle models that expect one-to-one image-text pairing
+                    # This is a common case where each image needs its own text
+                    _log.warning(f"Processing with image-text pairing due to: {e}")
+                    # Process each image-text pair separately and combine if needed
+                    all_inputs = []
+                    for img, prompt in zip(pil_images, prompts):
+                        single_input = self.processor(
+                            text=prompt,
+                            images=img,  # Single image for single text
+                            return_tensors="pt",
+                            **self.vlm_options.extra_processor_kwargs,
+                        )
+                        all_inputs.append(single_input)
+
+                    # Combine the inputs - this is a simplified approach
+                    # More complex logic might be needed depending on specific model requirements
+                    if len(all_inputs) == 1:
+                        inputs = all_inputs[0]
+                    else:
+                        # For multiple inputs, we'll use the first one as base and update with batched tensors
+                        inputs = {}
+                        for key in all_inputs[0].keys():
+                            # Stack tensors from each input
+                            stacked_tensors = []
+                            for single_input in all_inputs:
+                                stacked_tensors.append(single_input[key])
+                            # Concatenate along batch dimension (dim=0)
+                            import torch
+                            inputs[key] = torch.cat(stacked_tensors, dim=0)
+                else:
+                    raise
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         # -- Optional stopping criteria
@@ -307,10 +382,14 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             "clean_up_tokenization_spaces",
             "spaces_between_special_tokens",
         }
+        # Also filter out model loading specific keys that shouldn't be passed to generation
+        model_loading_keys = {
+            "_attn_implementation",  # This is for model loading, not generation
+        }
         generation_config = {
             k: v
             for k, v in self.vlm_options.extra_generation_config.items()
-            if k not in decoder_keys
+            if k not in decoder_keys and k not in model_loading_keys
         }
         decoder_config = {
             k: v
