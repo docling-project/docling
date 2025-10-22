@@ -17,7 +17,12 @@ jobs:
           RELEASE_TAG=${{ github.event.release.tag_name }}
           RELEASE_NAME="${{ github.event.release.name }}"
           RELEASE_URL=${{ github.event.release.html_url }}
-          RELEASE_BODY="${{ github.event.release.body }}"
+
+          # Capture the body safely (handles backticks, $, ", etc.)
+          RELEASE_BODY=$(cat <<'EOF'
+            ${{ github.event.release.body }}
+          EOF
+          )
 
           # Fallback if release name is empty
           if [ -z "$RELEASE_NAME" ]; then

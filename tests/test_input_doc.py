@@ -1,10 +1,19 @@
 from io import BytesIO
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.backend_options import (
+    BaseBackendOptions,
+    DeclarativeBackendOptions,
+    HTMLBackendOptions,
+)
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.datamodel.settings import DocumentLimits
@@ -15,6 +24,7 @@ def test_in_doc_from_valid_path():
     test_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
     doc = _make_input_doc(test_doc_path)
     assert doc.valid is True
+    assert doc.backend_options is None
 
 
 def test_in_doc_from_invalid_path():
@@ -103,6 +113,38 @@ def test_in_doc_with_page_range():
         limits=limits,
     )
     assert doc.valid is False
+
+
+def test_in_doc_with_backend_options():
+    test_doc_path = Path("./tests/data/html/example_01.html")
+    doc = InputDocument(
+        path_or_stream=test_doc_path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        backend_options=HTMLBackendOptions(),
+    )
+    assert doc.valid
+    assert doc.backend_options
+    assert isinstance(doc.backend_options, HTMLBackendOptions)
+    assert not doc.backend_options.fetch_images
+    assert not doc.backend_options.enable_local_fetch
+    assert not doc.backend_options.enable_remote_fetch
+
+    with pytest.raises(AttributeError, match="no attribute 'source_uri'"):
+        doc = InputDocument(
+            path_or_stream=test_doc_path,
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            backend_options=DeclarativeBackendOptions(),
+        )
+
+    with pytest.raises(ValidationError):
+        doc = InputDocument(
+            path_or_stream=test_doc_path,
+            format=InputFormat.HTML,
+            backend=HTMLDocumentBackend,
+            backend_options=BaseBackendOptions(),
+        )
 
 
 def test_guess_format(tmp_path):

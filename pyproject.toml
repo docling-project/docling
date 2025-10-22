@@ -45,7 +45,7 @@ requires-python = '>=3.9,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
   'docling-core[chunking] (>=2.48.2,<3.0.0)',
-  'docling-parse (>=4.4.0,<5.0.0)',
+  'docling-parse (>=4.7.0,<5.0.0)',
   "docling-ibm-models>=3.9.1,<4",
   'filetype (>=1.2.0,<2.0.0)',
   'pypdfium2 (>=4.30.0,!=4.30.1,<5.0.0)',
@@ -106,6 +106,7 @@ rapidocr = [
   # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
 ]
 asr = [
+    'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
     "openai-whisper>=20250625",
 ]
 
