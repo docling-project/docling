@@ -1248,7 +1248,6 @@ dependencies = [
     { name = "pandas" },
     { name = "pillow" },
     { name = "pluggy" },
-    { name = "polyfactory" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pylatexenc" },
@@ -1276,6 +1275,9 @@ easyocr = [
 ocrmac = [
     { name = "ocrmac", marker = "sys_platform == 'darwin'" },
 ]
+polyfactory = [
+    { name = "polyfactory" },
+]
 rapidocr = [
     { name = "onnxruntime", version = "1.19.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "onnxruntime", version = "1.23.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
@@ -1300,6 +1302,7 @@ constraints = [
 dev = [
     { name = "boto3-stubs" },
     { name = "coverage" },
+    { name = "docling", extra = ["polyfactory"] },
     { name = "ipykernel" },
     { name = "ipywidgets" },
     { name = "mypy" },
@@ -1360,7 +1363,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.1.4,<3.0.0" },
     { name = "pillow", specifier = ">=10.0.0,<12.0.0" },
     { name = "pluggy", specifier = ">=1.0.0,<2.0.0" },
-    { name = "polyfactory", specifier = ">=2.22.2" },
+    { name = "polyfactory", marker = "extra == 'polyfactory'", specifier = ">=2.22.2" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
     { name = "pydantic-settings", specifier = ">=2.3.0,<3.0.0" },
     { name = "pylatexenc", specifier = ">=2.10,<3.0" },
@@ -1379,7 +1382,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.12.5,<0.20.0" },
     { name = "vllm", marker = "python_full_version >= '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'vlm'", specifier = ">=0.10.0,<1.0.0" },
 ]
-provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr"]
+provides-extras = ["easyocr", "polyfactory", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr"]
 
 [package.metadata.requires-dev]
 constraints = [
@@ -1389,6 +1392,7 @@ constraints = [
 dev = [
     { name = "boto3-stubs", specifier = "~=1.37" },
     { name = "coverage", specifier = "~=7.6" },
+    { name = "docling", extras = ["polyfactory"] },
     { name = "ipykernel", specifier = "~=6.29" },
     { name = "ipywidgets", specifier = "~=8.1" },
     { name = "mypy", specifier = "~=1.10" },
