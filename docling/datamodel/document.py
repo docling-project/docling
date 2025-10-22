@@ -114,7 +114,7 @@ class InputDocument(BaseModel):
     ]
     valid: bool = Field(True, description="Whether this is is a valid input document.")
     backend_options: Optional[BackendOptions] = Field(
-        None, description="Custom options for declarative backends."
+        None, description="Custom options for backends."
     )
     limits: DocumentLimits = Field(
         DocumentLimits(), description="Limits in the input document for the conversion."
