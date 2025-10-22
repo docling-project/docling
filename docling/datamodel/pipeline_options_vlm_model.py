@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel, ConfigDict
@@ -9,6 +9,11 @@ from typing_extensions import deprecated
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.models.utils.generation_utils import GenerationStopper
 
+if TYPE_CHECKING:
+    from docling_core.types.doc.page import SegmentedPage
+
+    from docling.datamodel.base_models import Page
+
 
 class BaseVlmOptions(BaseModel):
     kind: str
@@ -17,7 +22,7 @@ class BaseVlmOptions(BaseModel):
     max_size: Optional[int] = None
     temperature: float = 0.0
 
-    def build_prompt(self, page: Optional[SegmentedPage]) -> str:
+    def build_prompt(self, page: Optional[Union["Page", "SegmentedPage"]]) -> str:
         return self.prompt
 
     def decode_response(self, text: str) -> str:
