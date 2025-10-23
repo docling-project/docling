@@ -12,11 +12,13 @@ import shutil
 import subprocess
 import tempfile
 import unicodedata
+
 # docling imports
 
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
+
 # from docling.datamodel.document import ConversionStatus
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
@@ -27,8 +29,10 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
     TesseractOcrOptions,
-    PipelineOptions
+    PipelineOptions,
 )
+
+from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
 
 from docling.document_converter import (
     DocumentConverter,
@@ -44,6 +48,7 @@ from docling_core.transforms.chunker import (
     DocChunk,
     DocMeta,
 )
+
 # from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
 # from docling_core.transforms.chunker.hierarchical_chunker import (
 #     ChunkingDocSerializer,
@@ -55,6 +60,7 @@ from docling_core.types import DoclingDocument
 
 from pandas import DataFrame
 import asyncio
+
 # from docling_core.transforms.chunker import BaseChunk, BaseChunker, BaseMeta
 from docling_core.types import DoclingDocument as DLDocument
 from docling_core.types.doc.document import (
@@ -63,7 +69,7 @@ from docling_core.types.doc.document import (
     LevelNumber,
     ListItem,
     CodeItem,
-    ContentLayer
+    ContentLayer,
     # SectionHeaderItem,
     # TableItem,
     # TextItem,
@@ -82,13 +88,12 @@ from docling_core.types.doc import (
     # TableCell,
     # TableData,
     # GroupItem,
-
     DocItem,
     PictureItem,
     SectionHeaderItem,
     TableItem,
     TextItem,
-    PageItem
+    PageItem,
 )
 from collections import Counter
 import re
@@ -118,7 +123,9 @@ except ImportError:
 #
 
 """Chunker implementation leveraging the document structure."""
-CONVERTIBLE_EXTENSIONS = ['.xlsx', '.md', '.docx', '.pptx']
+CONVERTIBLE_EXTENSIONS = [".xlsx", ".md", ".docx", ".pptx"]
+
+
 def convert_to_pdf(file_path: str) -> str | None:
     """
     LibreOffice로 PDF 변환을 시도한다.
@@ -127,7 +134,7 @@ def convert_to_pdf(file_path: str) -> str | None:
     try:
         in_path = Path(file_path).resolve()
         out_dir = in_path.parent
-        pdf_path = in_path.with_suffix('.pdf')
+        pdf_path = in_path.with_suffix(".pdf")
 
         # headless에서 UTF-8 locale 보장
         env = os.environ.copy()
@@ -136,33 +143,41 @@ def convert_to_pdf(file_path: str) -> str | None:
 
         # 확장자에 따라 필터(특히 .ppt는 impress 필터)
         ext = in_path.suffix.lower()
-        if ext in ('.ppt', '.pptx'):
+        if ext in (".ppt", ".pptx"):
             convert_arg = "pdf:impress_pdf_Export"
-        elif ext in ('.doc', '.docx'):
+        elif ext in (".doc", ".docx"):
             convert_arg = "pdf:writer_pdf_Export"
-        elif ext in ('.xls', '.xlsx', '.csv'):
+        elif ext in (".xls", ".xlsx", ".csv"):
             convert_arg = "pdf:calc_pdf_Export"
         else:
             convert_arg = "pdf"
 
         # 비ASCII 파일명 이슈 대비 임시 ASCII 파일명 복사본 시도
         try:
-            in_path.name.encode('ascii')
+            in_path.name.encode("ascii")
             candidates = [in_path]
             tmp_dir = None
         except UnicodeEncodeError:
             tmp_dir = Path(tempfile.mkdtemp())
-            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii','ignore').decode('ascii') or "file"
+            ascii_name = (
+                unicodedata.normalize("NFKD", in_path.stem)
+                .encode("ascii", "ignore")
+                .decode("ascii")
+                or "file"
+            )
             ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
             shutil.copy2(in_path, ascii_copy)
             candidates = [ascii_copy, in_path]
 
         for cand in candidates:
             cmd = [
-                "soffice", "--headless",
-                "--convert-to", convert_arg,
-                "--outdir", str(out_dir),
-                str(cand)
+                "soffice",
+                "--headless",
+                "--convert-to",
+                convert_arg,
+                "--outdir",
+                str(out_dir),
+                str(cand),
             ]
             proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
             if proc.returncode == 0 and pdf_path.exists():
@@ -182,20 +197,22 @@ def convert_to_pdf(file_path: str) -> str | None:
         print(f"[convert_to_pdf] error: {e}")
         return None
 
-def _get_pdf_path(file_path: str) -> str:
-    """
-    다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수
 
-    Args:
-        file_path (str): 원본 파일 경로
+# def _get_pdf_path(file_path: str) -> str:
+#     """
+#     다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수
 
-    Returns:
-        str: PDF 확장자로 변경된 파일 경로
-    """
-    pdf_path = file_path
-    for ext in CONVERTIBLE_EXTENSIONS:
-        pdf_path = pdf_path.replace(ext, '.pdf')
-    return pdf_path
+#     Args:
+#         file_path (str): 원본 파일 경로
+
+#     Returns:
+#         str: PDF 확장자로 변경된 파일 경로
+#     """
+#     pdf_path = file_path
+#     for ext in CONVERTIBLE_EXTENSIONS:
+#         pdf_path = pdf_path.replace(ext, '.pdf')
+#     return pdf_path
+
 
 class HierarchicalChunker(BaseChunker):
     """문서 구조와 헤더 계층을 유지하면서 아이템을 순차적으로 처리하는 청커"""
@@ -221,8 +238,10 @@ class HierarchicalChunker(BaseChunker):
         processed_refs = set()
 
         # 모든 아이템 순회
-        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
-            if hasattr(item, 'self_ref'):
+        for item, level in dl_doc.iterate_items(
+            included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}
+        ):
+            if hasattr(item, "self_ref"):
                 processed_refs.add(item.self_ref)
 
             if not isinstance(item, DocItem):
@@ -231,7 +250,7 @@ class HierarchicalChunker(BaseChunker):
             # 리스트 아이템 병합 처리
             if self.merge_list_items:
                 if isinstance(item, ListItem) or (
-                        isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
+                    isinstance(item, TextItem) and item.label == DocItemLabel.LIST_ITEM
                 ):
                     list_items.append(item)
                     continue
@@ -240,17 +259,20 @@ class HierarchicalChunker(BaseChunker):
                     for list_item in list_items:
                         all_items.append(list_item)
                         # 리스트 아이템의 헤더 정보 저장
-                        all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                        all_header_info.append(
+                            {k: v for k, v in current_heading_by_level.items()}
+                        )
                     list_items = []
 
             # 섹션 헤더 처리
             if isinstance(item, SectionHeaderItem) or (
-                    isinstance(item, TextItem) and
-                    item.label in [DocItemLabel.SECTION_HEADER, DocItemLabel.TITLE]
+                isinstance(item, TextItem)
+                and item.label in [DocItemLabel.SECTION_HEADER, DocItemLabel.TITLE]
             ):
                 # 새로운 헤더 레벨 설정
                 header_level = (
-                    item.level if isinstance(item, SectionHeaderItem)
+                    item.level
+                    if isinstance(item, SectionHeaderItem)
                     else (0 if item.label == DocItemLabel.TITLE else 1)
                 )
                 current_heading_by_level[header_level] = item.text
@@ -262,30 +284,38 @@ class HierarchicalChunker(BaseChunker):
 
                 # 헤더 아이템도 추가 (헤더 자체도 아이템임)
                 all_items.append(item)
-                all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                all_header_info.append(
+                    {k: v for k, v in current_heading_by_level.items()}
+                )
                 continue
 
-            if (isinstance(item, TextItem) or
-                    isinstance(item, ListItem) or
-                    isinstance(item, CodeItem) or
-                    isinstance(item, TableItem) or
-                    isinstance(item, PictureItem)):
+            if (
+                isinstance(item, TextItem)
+                or isinstance(item, ListItem)
+                or isinstance(item, CodeItem)
+                or isinstance(item, TableItem)
+                or isinstance(item, PictureItem)
+            ):
                 if item.label in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
                     item.text = ""
                 all_items.append(item)
                 # 현재 아이템의 헤더 정보 저장
-                all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                all_header_info.append(
+                    {k: v for k, v in current_heading_by_level.items()}
+                )
 
         # 마지막 리스트 아이템들 처리
         if list_items:
             for list_item in list_items:
                 all_items.append(list_item)
-                all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                all_header_info.append(
+                    {k: v for k, v in current_heading_by_level.items()}
+                )
 
         # iterate_items()에서 누락된 테이블들을 별도로 추가
         missing_tables = []
         for table in dl_doc.tables:
-            table_ref = getattr(table, 'self_ref', None)
+            table_ref = getattr(table, "self_ref", None)
             if table_ref not in processed_refs:
                 missing_tables.append(table)
 
@@ -321,7 +351,9 @@ class HybridChunker(BaseChunker):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    tokenizer: Union[PreTrainedTokenizerBase, str] = "sentence-transformers/all-MiniLM-L6-v2"
+    tokenizer: Union[PreTrainedTokenizerBase, str] = (
+        "sentence-transformers/all-MiniLM-L6-v2"
+    )
     max_tokens: int = 1024
     merge_peers: bool = True
 
@@ -353,12 +385,12 @@ class HybridChunker(BaseChunker):
         total_tokens = 0
 
         # 텍스트를 줄 단위로 먼저 분할
-        lines = text.split('\n')
+        lines = text.split("\n")
         current_chunk = ""
 
         for line in lines:
             # 현재 청크에 줄을 추가했을 때 길이 확인
-            temp_chunk = current_chunk + '\n' + line if current_chunk else line
+            temp_chunk = current_chunk + "\n" + line if current_chunk else line
 
             if len(temp_chunk) <= max_chunk_length:
                 current_chunk = temp_chunk
@@ -368,7 +400,9 @@ class HybridChunker(BaseChunker):
                     try:
                         total_tokens += len(self._tokenizer.tokenize(current_chunk))
                     except Exception:
-                        total_tokens += int(len(current_chunk.split()) * 1.3)  # 대략적인 계산
+                        total_tokens += int(
+                            len(current_chunk.split()) * 1.3
+                        )  # 대략적인 계산
 
                 # 새로운 청크 시작
                 current_chunk = line
@@ -382,9 +416,12 @@ class HybridChunker(BaseChunker):
 
         return total_tokens
 
-    def _generate_text_from_items_with_headers(self, items: list[DocItem],
-                                               header_info_list: list[dict],
-                                               dl_doc: DoclingDocument) -> str:
+    def _generate_text_from_items_with_headers(
+        self,
+        items: list[DocItem],
+        header_info_list: list[dict],
+        dl_doc: DoclingDocument,
+    ) -> str:
         """DocItem 리스트로부터 헤더 정보를 포함한 텍스트 생성"""
         text_parts = []
         current_section_headers = {}  # 현재 섹션의 헤더 정보
@@ -398,8 +435,10 @@ class HybridChunker(BaseChunker):
                 headers_to_add = []
                 for level in sorted(item_headers.keys()):
                     # 이전 섹션과 다른 헤더만 추가
-                    if (level not in current_section_headers or
-                            current_section_headers[level] != item_headers[level]):
+                    if (
+                        level not in current_section_headers
+                        or current_section_headers[level] != item_headers[level]
+                    ):
                         # 해당 레벨까지의 모든 상위 헤더 포함
                         for l in sorted(item_headers.keys()):
                             if l <= level:
@@ -418,13 +457,12 @@ class HybridChunker(BaseChunker):
                 table_text = self._extract_table_text(item, dl_doc)
                 if table_text:
                     text_parts.append(table_text)
-            elif hasattr(item, 'text') and item.text:
+            elif hasattr(item, "text") and item.text:
                 # 타이틀과 섹션 헤더 처리 개선
-                is_section_header = (
-                        isinstance(item, SectionHeaderItem) or
-                        (isinstance(item, TextItem) and
-                         item.label in [DocItemLabel.SECTION_HEADER])  # TITLE은 제외
-                )
+                is_section_header = isinstance(item, SectionHeaderItem) or (
+                    isinstance(item, TextItem)
+                    and item.label in [DocItemLabel.SECTION_HEADER]
+                )  # TITLE은 제외
 
                 # 타이틀은 항상 포함, 섹션 헤더는 중복 방지를 위해 스킵
                 if not is_section_header:
@@ -435,7 +473,9 @@ class HybridChunker(BaseChunker):
         result_text = self.delim.join(text_parts)
         return result_text
 
-    def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument) -> str:
+    def _extract_table_text(
+        self, table_item: TableItem, dl_doc: DoclingDocument
+    ) -> str:
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
         try:
             # 먼저 export_to_html 시도
@@ -447,53 +487,55 @@ class HybridChunker(BaseChunker):
 
         # export_to_html 실패 시 테이블 셀 데이터에서 직접 텍스트 추출
         try:
-            if hasattr(table_item, 'data') and table_item.data:
+            if hasattr(table_item, "data") and table_item.data:
                 cell_texts = []
 
                 # table_cells에서 텍스트 추출
-                if hasattr(table_item.data, 'table_cells'):
+                if hasattr(table_item.data, "table_cells"):
                     for cell in table_item.data.table_cells:
-                        if hasattr(cell, 'text') and cell.text and cell.text.strip():
+                        if hasattr(cell, "text") and cell.text and cell.text.strip():
                             cell_texts.append(cell.text.strip())
 
                 # grid에서 텍스트 추출 (table_cells가 없는 경우)
-                elif hasattr(table_item.data, 'grid') and table_item.data.grid:
+                elif hasattr(table_item.data, "grid") and table_item.data.grid:
                     for row in table_item.data.grid:
                         if isinstance(row, list):
                             for cell in row:
-                                if hasattr(cell, 'text') and cell.text and cell.text.strip():
+                                if (
+                                    hasattr(cell, "text")
+                                    and cell.text
+                                    and cell.text.strip()
+                                ):
                                     cell_texts.append(cell.text.strip())
 
                 # 추출된 셀 텍스트들을 결합
                 if cell_texts:
-                    return ' '.join(cell_texts)
+                    return " ".join(cell_texts)
         except Exception:
             pass
 
         # 모든 방법 실패 시 item.text 사용 (있는 경우)
-        if hasattr(table_item, 'text') and table_item.text:
+        if hasattr(table_item, "text") and table_item.text:
             return table_item.text
 
         return ""
 
-    def _extract_used_headers(self, header_info_list: list[dict]) -> Optional[list[str]]:
+    def _extract_used_headers(
+        self, header_info_list: list[dict]
+    ) -> Optional[list[str]]:
         """헤더 정보 리스트에서 실제 사용되는 헤더들을 추출"""
         if not header_info_list:
             return None
 
         # 모든 헤더 정보를 종합하여 사용되는 헤더들 추출
-        all_headers = []
-        seen_headers = set()
-        
+        all_headers = set()
         for header_info in header_info_list:
             if header_info:  # dict가 비어있지 않은 경우
-                for level in sorted(header_info.keys()):
-                    header_text = header_info[level]
-                    if header_text and header_text not in seen_headers:
-                        all_headers.append(header_text)
-                        seen_headers.add(header_text)
+                for level, header_text in header_info.items():
+                    if header_text:  # 헤더 텍스트가 비어있지 않은 경우
+                        all_headers.add(header_text)
 
-        return all_headers if all_headers else None
+        return list(all_headers) if all_headers else None
 
     def _split_table_text(self, table_text: str, max_tokens: int) -> list[str]:
         """테이블 텍스트를 토큰 제한에 맞게 분할 (단순 토큰 수 기준)"""
@@ -510,10 +552,14 @@ class HybridChunker(BaseChunker):
         chunks = chunker(table_text)
         return chunks if chunks else [table_text]
 
-    def _split_document_by_tokens(self, doc_chunk: DocChunk, dl_doc: DoclingDocument) -> list[DocChunk]:
+    def _split_document_by_tokens(
+        self, doc_chunk: DocChunk, dl_doc: DoclingDocument
+    ) -> list[DocChunk]:
         """문서를 토큰 제한에 맞게 분할 (여러 섹션이 하나의 청크에 포함 가능)"""
         items = doc_chunk.meta.doc_items
-        header_info_list = getattr(doc_chunk, '_header_info_list', [])  # 각 아이템의 헤더 정보 리스트
+        header_info_list = getattr(
+            doc_chunk, "_header_info_list", []
+        )  # 각 아이템의 헤더 정보 리스트
 
         if not items:
             return []
@@ -538,15 +584,17 @@ class HybridChunker(BaseChunker):
 
                     # 실제 사용된 헤더들만 추출
                     used_headers = self._extract_used_headers(current_header_infos)
-                    result_chunks.append(DocChunk(
-                        text=chunk_text,
-                        meta=DocMeta(
-                            doc_items=current_items.copy(),
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
+                    result_chunks.append(
+                        DocChunk(
+                            text=chunk_text,
+                            meta=DocMeta(
+                                doc_items=current_items.copy(),
+                                headings=used_headers,
+                                captions=None,
+                                origin=doc_chunk.meta.origin,
+                            ),
                         )
-                    ))
+                    )
                     current_items = []
                     current_header_infos = []
 
@@ -594,26 +642,30 @@ class HybridChunker(BaseChunker):
 
                         # 원래 tableitem에 들어갔어야 할 heading 값 유지
                         used_headers = self._extract_used_headers([header_info])
-                        result_chunks.append(DocChunk(
-                            text=full_text,
+                        result_chunks.append(
+                            DocChunk(
+                                text=full_text,
+                                meta=DocMeta(
+                                    doc_items=[item],
+                                    headings=used_headers,
+                                    captions=None,
+                                    origin=doc_chunk.meta.origin,
+                                ),
+                            )
+                        )
+                else:
+                    used_headers = self._extract_used_headers(table_header_infos)
+                    result_chunks.append(
+                        DocChunk(
+                            text=table_text,
                             meta=DocMeta(
-                                doc_items=[item],
+                                doc_items=table_items,
                                 headings=used_headers,
                                 captions=None,
                                 origin=doc_chunk.meta.origin,
-                            )
-                        ))
-                else:
-                    used_headers = self._extract_used_headers(table_header_infos)
-                    result_chunks.append(DocChunk(
-                        text=table_text,
-                        meta=DocMeta(
-                            doc_items=table_items,
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
+                            ),
                         )
-                    ))
+                    )
 
                 i += 1
                 continue
@@ -638,15 +690,17 @@ class HybridChunker(BaseChunker):
                     chunk_tokens = self._count_tokens(chunk_text)
 
                     used_headers = self._extract_used_headers(current_header_infos)
-                    result_chunks.append(DocChunk(
-                        text=chunk_text,
-                        meta=DocMeta(
-                            doc_items=current_items.copy(),
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
+                    result_chunks.append(
+                        DocChunk(
+                            text=chunk_text,
+                            meta=DocMeta(
+                                doc_items=current_items.copy(),
+                                headings=used_headers,
+                                captions=None,
+                                origin=doc_chunk.meta.origin,
+                            ),
                         )
-                    ))
+                    )
                     # 새로운 청크 시작
                     current_items = [item]
                     current_header_infos = [header_info]
@@ -658,15 +712,17 @@ class HybridChunker(BaseChunker):
                     single_tokens = self._count_tokens(single_text)
 
                     used_headers = self._extract_used_headers([header_info])
-                    result_chunks.append(DocChunk(
-                        text=single_text,
-                        meta=DocMeta(
-                            doc_items=[item],
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
+                    result_chunks.append(
+                        DocChunk(
+                            text=single_text,
+                            meta=DocMeta(
+                                doc_items=[item],
+                                headings=used_headers,
+                                captions=None,
+                                origin=doc_chunk.meta.origin,
+                            ),
                         )
-                    ))
+                    )
 
             i += 1
 
@@ -678,25 +734,31 @@ class HybridChunker(BaseChunker):
             chunk_tokens = self._count_tokens(chunk_text)
 
             used_headers = self._extract_used_headers(current_header_infos)
-            result_chunks.append(DocChunk(
-                text=chunk_text,
-                meta=DocMeta(
-                    doc_items=current_items,
-                    headings=used_headers,
-                    captions=None,
-                    origin=doc_chunk.meta.origin,
+            result_chunks.append(
+                DocChunk(
+                    text=chunk_text,
+                    meta=DocMeta(
+                        doc_items=current_items,
+                        headings=used_headers,
+                        captions=None,
+                        origin=doc_chunk.meta.origin,
+                    ),
                 )
-            ))
+            )
 
         # 작은 청크들 병합 처리
         return self._merge_small_chunks(result_chunks, dl_doc)
 
-    def _merge_small_chunks(self, chunks: list[DocChunk], dl_doc: DoclingDocument) -> list[DocChunk]:
+    def _merge_small_chunks(
+        self, chunks: list[DocChunk], dl_doc: DoclingDocument
+    ) -> list[DocChunk]:
         """작은 청크들을 병합하여 토큰 효율성을 높임 (개선된 버전)"""
         if not chunks:
             return chunks
 
-        min_chunk_size = self.max_tokens // 3  # 최소 청크 크기를 더 크게 설정 (2000/3 = 666토큰)
+        min_chunk_size = (
+            self.max_tokens // 3
+        )  # 최소 청크 크기를 더 크게 설정 (2000/3 = 666토큰)
         merged_chunks = []
         current_merge_candidate = None
 
@@ -719,11 +781,12 @@ class HybridChunker(BaseChunker):
                     current_merge_candidate = chunk
                 else:
                     # 병합 시도
-                    merged_items = current_merge_candidate.meta.doc_items + chunk.meta.doc_items
-                    merged_header_infos = (
-                            getattr(current_merge_candidate, '_header_info_list', []) +
-                            getattr(chunk, '_header_info_list', [])
+                    merged_items = (
+                        current_merge_candidate.meta.doc_items + chunk.meta.doc_items
                     )
+                    merged_header_infos = getattr(
+                        current_merge_candidate, "_header_info_list", []
+                    ) + getattr(chunk, "_header_info_list", [])
 
                     merged_text = self._generate_text_from_items_with_headers(
                         merged_items, merged_header_infos, dl_doc
@@ -735,10 +798,12 @@ class HybridChunker(BaseChunker):
                             text=merged_text,
                             meta=DocMeta(
                                 doc_items=merged_items,
-                                headings=self._extract_used_headers(merged_header_infos),
+                                headings=self._extract_used_headers(
+                                    merged_header_infos
+                                ),
                                 captions=None,
                                 origin=chunk.meta.origin,
-                            )
+                            ),
                         )
                         current_merge_candidate._header_info_list = merged_header_infos
                     else:
@@ -750,11 +815,13 @@ class HybridChunker(BaseChunker):
                     candidate_tokens = self._count_tokens(current_merge_candidate.text)
                     if candidate_tokens < min_chunk_size:
                         # 현재 청크와 병합 시도
-                        merged_items = current_merge_candidate.meta.doc_items + chunk.meta.doc_items
-                        merged_header_infos = (
-                                getattr(current_merge_candidate, '_header_info_list', []) +
-                                getattr(chunk, '_header_info_list', [])
+                        merged_items = (
+                            current_merge_candidate.meta.doc_items
+                            + chunk.meta.doc_items
                         )
+                        merged_header_infos = getattr(
+                            current_merge_candidate, "_header_info_list", []
+                        ) + getattr(chunk, "_header_info_list", [])
 
                         merged_text = self._generate_text_from_items_with_headers(
                             merged_items, merged_header_infos, dl_doc
@@ -762,15 +829,19 @@ class HybridChunker(BaseChunker):
                         merged_tokens = self._count_tokens(merged_text)
 
                         if merged_tokens <= self.max_tokens:
-                            merged_chunks.append(DocChunk(
-                                text=merged_text,
-                                meta=DocMeta(
-                                    doc_items=merged_items,
-                                    headings=self._extract_used_headers(merged_header_infos),
-                                    captions=None,
-                                    origin=chunk.meta.origin,
+                            merged_chunks.append(
+                                DocChunk(
+                                    text=merged_text,
+                                    meta=DocMeta(
+                                        doc_items=merged_items,
+                                        headings=self._extract_used_headers(
+                                            merged_header_infos
+                                        ),
+                                        captions=None,
+                                        origin=chunk.meta.origin,
+                                    ),
                                 )
-                            ))
+                            )
                             current_merge_candidate = None
                             continue
 
@@ -809,7 +880,7 @@ class HybridChunker(BaseChunker):
 
 class GenOSVectorMeta(BaseModel):
     class Config:
-        extra = 'allow'
+        extra = "allow"
 
     text: str = None
     n_char: int = None
@@ -858,7 +929,7 @@ class GenOSVectorMetaBuilder:
         return self
 
     def set_page_info(
-            self, i_page: int, i_chunk_on_page: int, n_chunk_of_page: int
+        self, i_page: int, i_chunk_on_page: int, n_chunk_of_page: int
     ) -> "GenOSVectorMetaBuilder":
         """페이지 정보 설정"""
         self.i_page = i_page
@@ -878,7 +949,9 @@ class GenOSVectorMetaBuilder:
                 setattr(self, key, value)
         return self
 
-    def set_chunk_bboxes(self, doc_items: list, document: DoclingDocument) -> "GenOSVectorMetaBuilder":
+    def set_chunk_bboxes(
+        self, doc_items: list, document: DoclingDocument
+    ) -> "GenOSVectorMetaBuilder":
         chunk_bboxes = []
         for item in doc_items:
             for prov in item.prov:
@@ -887,12 +960,27 @@ class GenOSVectorMetaBuilder:
                 size = document.pages.get(prov.page_no).size
                 page_no = prov.page_no
                 bbox = prov.bbox
-                bbox_data = {'l': bbox.l / size.width,
-                             't': bbox.t / size.height,
-                             'r': bbox.r / size.width,
-                             'b': bbox.b / size.height,
-                             'coord_origin': bbox.coord_origin.value}
-                chunk_bboxes.append({'page': page_no, 'bbox': bbox_data, 'type': type_, 'ref': label})
+
+                # 왜 나누는거여???????????
+                bbox_data = {
+                    "l": bbox.l / size.width,
+                    "t": bbox.t / size.height,
+                    "r": bbox.r / size.width,
+                    "b": bbox.b / size.height,
+                    "coord_origin": bbox.coord_origin.value,
+                }
+
+                # bbox_data = {
+                #     "l": bbox.l,
+                #     "t": bbox.t,
+                #     "r": bbox.r,
+                #     "b": bbox.b,
+                #     "coord_origin": bbox.coord_origin.value,
+                # }
+
+                chunk_bboxes.append(
+                    {"page": page_no, "bbox": bbox_data, "type": type_, "ref": label}
+                )
         self.chunk_bboxes = json.dumps(chunk_bboxes)
         return self
 
@@ -902,7 +990,7 @@ class GenOSVectorMetaBuilder:
             if isinstance(item, PictureItem):
                 path = str(item.image.uri)
                 name = path.rsplit("/", 1)[-1]
-                temp_list.append({'name': name, 'type': 'image', 'ref': item.self_ref})
+                temp_list.append({"name": name, "type": "image", "ref": item.self_ref})
         self.media_files = json.dumps(temp_list)
         return self
 
@@ -931,14 +1019,16 @@ class GenOSVectorMetaBuilder:
 class DocumentProcessor:
 
     def __init__(self):
-        '''
+        """
         initialize Document Converter
-        '''
+        """
         self.page_chunk_counts = defaultdict(int)
         device = AcceleratorDevice.AUTO
         num_threads = 8
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-        pipe_line_options = PdfPipelineOptions()
+        # pipe_line_options = PdfPipelineOptions()
+        # pipe_line_options = PdfPipelineOptions(images_scale=2.777777777) # 200 dpi
+        pipe_line_options = PdfPipelineOptions(images_scale=1.0)  # 72 dpi
         pipe_line_options.generate_page_images = True
         pipe_line_options.generate_picture_images = True
         pipe_line_options.do_ocr = False
@@ -953,19 +1043,19 @@ class DocumentProcessor:
         # 커스텀 layout detection 모델 사용 (artifacts_path 설정하지 않음 - tableformer는 기본 경로 사용)
         pipe_line_options.layout_options.model_spec = MNCAI_CUSTOM_LAYOUT
         pipe_line_options.do_table_structure = True
-        pipe_line_options.images_scale = 2
+        # pipe_line_options.images_scale = 2
         pipe_line_options.table_structure_options.do_cell_matching = True
         pipe_line_options.table_structure_options.mode = TableFormerMode.ACCURATE
         pipe_line_options.accelerator_options = accelerator_options
 
         simple_pipeline_options = PipelineOptions()
 
+        pipe_line_options.do_vlm_layout_and_readingorder = True
         self.converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(
                     pipeline_options=pipe_line_options,
-                    backend=DoclingParseV4DocumentBackend
-                    # backend=PyPdfiumDocumentBackend
+                    backend=DoclingParseV4DocumentBackend,
                 ),
             }
         )
@@ -973,28 +1063,34 @@ class DocumentProcessor:
         self.second_converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=pipe_line_options,
-                    backend=PyPdfiumDocumentBackend
+                    pipeline_options=pipe_line_options, backend=PyPdfiumDocumentBackend
                 ),
             },
         )
 
-    def load_documents_with_docling(self, file_path: str, **kwargs: dict) -> DoclingDocument:
+    def load_documents_with_docling(
+        self, file_path: str, **kwargs: dict
+    ) -> DoclingDocument:
         try:
-            conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
+            conv_result: ConversionResult = self.converter.convert(
+                file_path, raises_on_error=True
+            )
         except Exception as e:
-            conv_result: ConversionResult = self.second_converter.convert(file_path, raises_on_error=True)
+            conv_result: ConversionResult = self.second_converter.convert(
+                file_path, raises_on_error=True
+            )
+
+        # conv_result.document -> document -> chunks -> vectors -> result_list_as_dict[0]['text']
 
         return conv_result.document
 
     def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         return self.load_documents_with_docling(file_path, **kwargs)
 
-    def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
-        chunker: HybridChunker = HybridChunker(
-            max_tokens=2000,
-            merge_peers=True
-        )
+    def split_documents(
+        self, documents: DoclingDocument, **kwargs: dict
+    ) -> List[DocChunk]:
+        chunker: HybridChunker = HybridChunker(max_tokens=2000, merge_peers=True)
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
@@ -1002,8 +1098,8 @@ class DocumentProcessor:
 
     def safe_join(self, iterable):
         if not isinstance(iterable, (list, tuple, set)):
-            return ''
-        return ''.join(map(str, iterable)) + '\n'
+            return ""
+        return "".join(map(str, iterable)) + "\n"
 
     def parse_created_date(self, date_text: str) -> Optional[int]:
         """
@@ -1022,7 +1118,7 @@ class DocumentProcessor:
         date_text = date_text.strip()
 
         # YYYY-MM-DD 형식 매칭
-        match_full = re.match(r'^(\d{4})-(\d{1,2})-(\d{1,2})$', date_text)
+        match_full = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", date_text)
         if match_full:
             year, month, day = match_full.groups()
             try:
@@ -1033,7 +1129,7 @@ class DocumentProcessor:
                 pass
 
         # YYYY-MM 형식 매칭 (일자는 01로 설정)
-        match_month = re.match(r'^(\d{4})-(\d{1,2})$', date_text)
+        match_month = re.match(r"^(\d{4})-(\d{1,2})$", date_text)
         if match_month:
             year, month = match_month.groups()
             try:
@@ -1044,7 +1140,7 @@ class DocumentProcessor:
                 pass
 
         # YYYY 형식 매칭 (월일은 0101로 설정)
-        match_year = re.match(r'^(\d{4})$', date_text)
+        match_year = re.match(r"^(\d{4})$", date_text)
         if match_year:
             year = match_year.group(1)
             try:
@@ -1094,10 +1190,12 @@ class DocumentProcessor:
         # 문자열인 경우 (쉼표로 구분된 이름들)
         elif isinstance(authors_data, str):
             # 여러 구분자로 분리
-            separators = [',', ';', '/', '\n', '·', '•']
+            separators = [",", ";", "/", "\n", "·", "•"]
             for sep in separators:
                 if sep in authors_data:
-                    names = [name.strip() for name in authors_data.split(sep) if name.strip()]
+                    names = [
+                        name.strip() for name in authors_data.split(sep) if name.strip()
+                    ]
                     return list(set(names))  # 중복 제거
 
             # 구분자가 없는 경우 전체를 하나의 이름으로 처리
@@ -1121,26 +1219,33 @@ class DocumentProcessor:
             toc_temperature=0.0,
             toc_top_p=0,
             toc_seed=33,
-            toc_max_tokens=1000
+            toc_max_tokens=1000,
         )
 
         # 새로운 enriched result 받기
         document = enrich_document(document, enrichment_options)
         return document
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
-                              **kwargs: dict) -> \
-            list[dict]:
+    async def compose_vectors(
+        self,
+        document: DoclingDocument,
+        chunks: List[DocChunk],
+        file_path: str,
+        request: Request,
+        **kwargs: dict,
+    ) -> list[dict]:
         created_date = 0
         authors = ""
         title = ""
 
         try:
-            if (document.key_value_items and
-                    len(document.key_value_items) > 0 and
-                    hasattr(document.key_value_items[0], 'graph') and
-                    hasattr(document.key_value_items[0].graph, 'cells') and
-                    len(document.key_value_items[0].graph.cells) > 1):
+            if (
+                document.key_value_items
+                and len(document.key_value_items) > 0
+                and hasattr(document.key_value_items[0], "graph")
+                and hasattr(document.key_value_items[0].graph, "cells")
+                and len(document.key_value_items[0].graph.cells) > 1
+            ):
                 # 작성일 추출 (cells[1])
                 date_text = document.key_value_items[0].graph.cells[1].text
                 created_date = self.parse_created_date(date_text)
@@ -1153,7 +1258,7 @@ class DocumentProcessor:
             authors = json.dumps(self.parse_authors(kwargs["authors"]))
 
         for item, _ in document.iterate_items():
-            if hasattr(item, 'label'):
+            if hasattr(item, "label"):
                 if item.label == DocItemLabel.TITLE:
                     title = item.text.strip() if item.text else ""
                     break
@@ -1161,10 +1266,10 @@ class DocumentProcessor:
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
-            reg_date=datetime.now().isoformat(timespec='seconds') + 'Z',
+            reg_date=datetime.now().isoformat(timespec="seconds") + "Z",
             created_date=created_date,
             authors=authors,
-            title=title
+            title=title,
         )
 
         current_page = None
@@ -1173,21 +1278,22 @@ class DocumentProcessor:
         upload_tasks = []
         for chunk_idx, chunk in enumerate(chunks):
             chunk_page = chunk.meta.doc_items[0].prov[0].page_no
-            # header 앞에 헤더 마커 추가 (HEADER: )
-            headers_text = "HEADER: " + ", ".join(chunk.meta.headings) + '\n' if chunk.meta.headings else ''
-            content = headers_text + chunk.text
+            content = self.safe_join(chunk.meta.headings) + chunk.text
             if chunk_page != current_page:
                 current_page = chunk_page
                 chunk_index_on_page = 0
 
-            vector = (GenOSVectorMetaBuilder()
-                      .set_text(content)
-                      .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
-                      .set_chunk_index(chunk_idx)
-                      .set_global_metadata(**global_metadata)
-                      .set_chunk_bboxes(chunk.meta.doc_items, document)
-                      .set_media_files(chunk.meta.doc_items)
-                      ).build()
+            vector = (
+                GenOSVectorMetaBuilder()
+                .set_text(content)
+                .set_page_info(
+                    chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page]
+                )
+                .set_chunk_index(chunk_idx)
+                .set_global_metadata(**global_metadata)
+                .set_chunk_bboxes(chunk.meta.doc_items, document)
+                .set_media_files(chunk.meta.doc_items)
+            ).build()
             vectors.append(vector)
 
             chunk_index_on_page += 1
@@ -1199,6 +1305,9 @@ class DocumentProcessor:
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
 
+        # vectors[0].text -> 이게 암것도 없어
+        # vectors[0].chunk_bboxes -> 이게 이상해
+
         return vectors
 
     def get_media_files(self, doc_items: list):
@@ -1207,13 +1316,21 @@ class DocumentProcessor:
             if isinstance(item, PictureItem):
                 path = str(item.image.uri)
                 name = path.rsplit("/", 1)[-1]
-                temp_list.append({'path': path, 'name': name})
+                temp_list.append({"path": path, "name": name})
         return temp_list
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
+        # convresult.document. 결국 마지막에 ㅆ느는 내용은 이거.
+        # document.texts[0] 이거 bbox 좌표는 별 이상 없는데???
+        # document -> chunks -> vectors -> result_list_as_dict[0]['text']
+
         ext = Path(file_path).suffix.lower()
-        if ext in ['.pptx', '.docx', '.md']: # pdf 저장 원하는 확장자 추가(pptx, docx, md, xlsx, csv 제공가능)
+        if ext in [
+            ".pptx",
+            ".docx",
+            ".md",
+        ]:  # pdf 저장 원하는 확장자 추가(pptx, docx, md, xlsx, csv 제공가능)
             convert_to_pdf(file_path)
             pdf_path = _get_pdf_path(file_path)
 
@@ -1225,9 +1342,15 @@ class DocumentProcessor:
         else:
             reference_path = artifacts_dir.parent
 
-        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+        document = document._with_pictures_refs(
+            image_dir=artifacts_dir, reference_path=reference_path
+        )
+        # document -> chunks -> vectors -> result_list_as_dict[0]['text']
+        # [text.text for text in document.texts] 이게 다 비어있음
+        # document.dict()['tables'] 여기에 있는 텍스트만 결과로 나온듯
 
-        document = self.enrichment(document, **kwargs)
+        # document = self.enrichment(document, **kwargs)
+        # 일단 끄고 나중에 켜야 할것
 
         # Extract Chunk from DoclingDocument
         chunks: List[DocChunk] = self.split_documents(document, **kwargs)
@@ -1235,9 +1358,13 @@ class DocumentProcessor:
 
         vectors = []
         if len(chunks) >= 1:
-            vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+            vectors: list[dict] = await self.compose_vectors(
+                document, chunks, file_path, request, **kwargs
+            )
         else:
             raise GenosServiceException(1, f"chunk length is 0")
+
+        # chunks -> vectors -> result_list_as_dict[0]['text']
 
         """
         # 미디어 파일 업로드 방법
@@ -1260,7 +1387,12 @@ class DocumentProcessor:
 
 class GenosServiceException(Exception):
     # GenOS 와의 의존성 부분 제거를 위해 추가
-    def __init__(self, error_code: str, error_msg: Optional[str] = None, msg_params: Optional[dict] = None) -> None:
+    def __init__(
+        self,
+        error_code: str,
+        error_msg: Optional[str] = None,
+        msg_params: Optional[dict] = None,
+    ) -> None:
         self.code = 1
         self.error_code = error_code
         self.error_msg = error_msg or "GenOS Service Exception"

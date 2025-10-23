@@ -29,6 +29,8 @@ from docling.models.page_preprocessing_model import (
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
 from docling.models.table_structure_model import TableStructureModel
+from docling.models.dots_ocr_layout_model import DotsOCRLayoutModel
+
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.model_downloader import download_models
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -63,33 +65,53 @@ class StandardPdfPipeline(PaginatedPipeline):
 
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
-        ocr_model = self.get_ocr_model(artifacts_path=artifacts_path)
-
-        self.build_pipe = [
-            # Pre-processing
-            PagePreprocessingModel(
-                options=PagePreprocessingOptions(
-                    images_scale=pipeline_options.images_scale,
-                )
-            ),
-            # OCR
-            ocr_model,
-            # Layout model
-            LayoutModel(
-                artifacts_path=artifacts_path,
-                accelerator_options=pipeline_options.accelerator_options,
-                options=pipeline_options.layout_options,
-            ),
-            # Table structure model
-            TableStructureModel(
-                enabled=pipeline_options.do_table_structure,
-                artifacts_path=artifacts_path,
-                options=pipeline_options.table_structure_options,
-                accelerator_options=pipeline_options.accelerator_options,
-            ),
-            # Page assemble
-            PageAssembleModel(options=PageAssembleOptions()),
-        ]
+        if pipeline_options.do_vlm_layout_and_readingorder == True:
+            self.build_pipe = [
+                # Pre-processing
+                PagePreprocessingModel(
+                    options=PagePreprocessingOptions(
+                        images_scale=pipeline_options.images_scale,
+                    )
+                ),
+                # layout and reading order
+                DotsOCRLayoutModel(pipeline_options=pipeline_options),
+                # Table structure model
+                TableStructureModel(
+                    enabled=pipeline_options.do_table_structure,
+                    artifacts_path=artifacts_path,
+                    options=pipeline_options.table_structure_options,
+                    accelerator_options=pipeline_options.accelerator_options,
+                ),
+                # Page assemble
+                PageAssembleModel(options=PageAssembleOptions()),
+            ]
+        else:
+            ocr_model = self.get_ocr_model(artifacts_path=artifacts_path)
+            self.build_pipe = [
+                # Pre-processing
+                PagePreprocessingModel(
+                    options=PagePreprocessingOptions(
+                        images_scale=pipeline_options.images_scale,
+                    )
+                ),
+                # OCR
+                ocr_model,
+                # Layout model
+                LayoutModel(
+                    artifacts_path=artifacts_path,
+                    accelerator_options=pipeline_options.accelerator_options,
+                    options=pipeline_options.layout_options,
+                ),
+                # Table structure model
+                TableStructureModel(
+                    enabled=pipeline_options.do_table_structure,
+                    artifacts_path=artifacts_path,
+                    options=pipeline_options.table_structure_options,
+                    accelerator_options=pipeline_options.accelerator_options,
+                ),
+                # Page assemble
+                PageAssembleModel(options=PageAssembleOptions()),
+            ]
 
         # Picture description model
         if (
@@ -151,6 +173,7 @@ class StandardPdfPipeline(PaginatedPipeline):
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
+
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
             enabled=self.pipeline_options.do_ocr,
@@ -186,21 +209,34 @@ class StandardPdfPipeline(PaginatedPipeline):
         all_body = []
 
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
-            for p in conv_res.pages:
-                if p.assembled is not None:
-                    for el in p.assembled.body:
-                        all_body.append(el)
-                    for el in p.assembled.headers:
-                        all_headers.append(el)
-                    for el in p.assembled.elements:
-                        all_elements.append(el)
 
+            # 페이지는 이미 어셈블이 된 상황
+            # conv_res.pages[0].assembled 이거 자체가 순서가 안맞아.
+            for page in conv_res.pages:
+                if page.assembled is not None:
+                    for el in page.assembled.body:
+                        all_body.append(el)
+                    for el in page.assembled.headers:
+                        all_headers.append(el)
+                    for el in page.assembled.elements:
+                        all_elements.append(el)
+                    # elements에는 게속 어펜드 하면 다를꺼같은데??
+
+            # 이걸 왜 따로 모으지???????????????????
             conv_res.assembled = AssembledUnit(
                 elements=all_elements, headers=all_headers, body=all_body
             )
 
-            conv_res.document = self.reading_order_model(conv_res)
+            # 여기서 이미 순서가 안맞아
+            # conv_res.assembled.elements[0]
 
+            # conv_result.document -> document -> chunks -> vectors -> result_list_as_dict[0]['text']
+            conv_res.document = self.reading_order_model(conv_res)
+            # [t["text"] for t in conv_res.document.dict()["texts"]]
+
+            # bbox 별 차이 없어보임...
+
+            # 필요없음
             # Generate page images in the output
             if self.pipeline_options.generate_page_images:
                 for page in conv_res.pages:
@@ -210,6 +246,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                         page.image, dpi=int(72 * self.pipeline_options.images_scale)
                     )
 
+            # 필요없음
             # Generate images of the requested element types
             with warnings.catch_warnings():  # deprecated generate_table_images
                 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -250,6 +287,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                                 cropped_im, dpi=int(72 * scale)
                             )
 
+            # 필요없음
             # Aggregate confidence values for document:
             if len(conv_res.pages) > 0:
                 with warnings.catch_warnings():
@@ -280,6 +318,7 @@ class StandardPdfPipeline(PaginatedPipeline):
                         )
                     )
 
+        # [t["text"] for t in conv_res.document.dict()["texts"]] 이게 없넹
         return conv_res
 
     @classmethod
