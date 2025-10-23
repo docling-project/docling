@@ -298,17 +298,20 @@ class ReadingOrderModel:
             bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
         )
         label = element.label
-        if label == DocItemLabel.LIST_ITEM:
-            if current_list is None:
-                current_list = out_doc.add_group(label=GroupLabel.LIST, name="list")
 
-            # TODO: Infer if this is a numbered or a bullet list item
-            new_item = out_doc.add_list_item(
-                text=cap_text, enumerated=False, prov=prov, parent=current_list
-            )
-            self.list_item_processor.process_list_item(new_item)
+        # 20251021, disabled by shkim, list item을 그룹핑하면서 table 순서가 잘못되는 이슈가 있어서 주석처리함.
+        #           list item은 그냥 일반 텍스트로 처리하도록 함.
+        # if label == DocItemLabel.LIST_ITEM:
+        #     if current_list is None:
+        #         current_list = out_doc.add_group(label=GroupLabel.LIST, name="list")
 
-        elif label == DocItemLabel.SECTION_HEADER:
+        #     # TODO: Infer if this is a numbered or a bullet list item
+        #     new_item = out_doc.add_list_item(
+        #         text=cap_text, enumerated=False, prov=prov, parent=current_list
+        #     )
+        #     self.list_item_processor.process_list_item(new_item)
+
+        if label == DocItemLabel.SECTION_HEADER:
             current_list = None
 
             new_item = out_doc.add_heading(text=cap_text, prov=prov)
