@@ -42,6 +42,18 @@ def _import_processor():
         return DocumentProcessor, _get_pdf_path, convert_to_pdf, TextLoader
 
 
+def _import_basic_processor():
+    try:
+        # 정상 경로 시도
+        from doc_parser.doc_preprocessors.basic_processor import DocumentProcessor as BasicDocumentProcessor
+        return BasicDocumentProcessor
+    except ModuleNotFoundError:
+        # 테스트 실행 루트에 따라 sys.path 보정
+        sys.path.append(str(Path(__file__).resolve().parents[3]))
+        from doc_parser.doc_preprocessors.basic_processor import DocumentProcessor as BasicDocumentProcessor
+        return BasicDocumentProcessor
+
+
 @pytest.mark.unit
 @pytest.mark.parametrize("sample_path", _collect_samples(ALL_EXTS), ids=lambda p: p.name)
 def test_vectors_created_for_samples(sample_path: Path):
@@ -138,5 +150,4 @@ def test_pdf_generation_rules(sample_path: Path):
     # 그 외 타입은 _get_pdf_path 규칙에 따름 (여기선 샘플에 없음)
     pdf_path = Path(_get_pdf_path(str(sample_path)))
     assert pdf_path.exists()
-
 

@@ -59,7 +59,8 @@ except ImportError:
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PipelineOptions
 from docling.datamodel.document import ConversionResult
-from docling.document_converter import DocumentConverter, HwpxFormatOption
+from docling.pipeline.simple_pipeline import SimplePipeline
+from docling.document_converter import DocumentConverter, HwpxFormatOption, WordFormatOption
 from docling_core.transforms.chunker import BaseChunk, BaseChunker, DocChunk, DocMeta
 from docling_core.types import DoclingDocument as DLDocument
 from docling_core.types.doc import (
@@ -67,6 +68,7 @@ from docling_core.types.doc import (
     PictureItem, SectionHeaderItem, TableItem, TextItem
 )
 from docling_core.types.doc.document import LevelNumber, ListItem, CodeItem
+from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from utils import assert_cancelled
 from genos_utils import upload_files, merge_overlapping_bboxes
 
@@ -967,6 +969,108 @@ class HybridChunker(BaseChunker):
         return iter(res)
 
 
+class DocxProcessor:
+    def __init__(self):
+        self.page_chunk_counts = defaultdict(int)
+        self.pipeline_options = PipelineOptions()
+        self.converter = DocumentConverter(
+            format_options={
+                InputFormat.DOCX: WordFormatOption(
+                pipeline_cls=SimplePipeline, backend=GenosMsWordDocumentBackend
+                ),
+            }
+        )
+
+    def get_paths(self, file_path: str):
+        output_path, output_file = os.path.split(file_path)
+        filename, _ = os.path.splitext(output_file)
+        artifacts_dir = Path(f"{output_path}/{filename}")
+        if artifacts_dir.is_absolute():
+            reference_path = None
+        else:
+            reference_path = artifacts_dir.parent
+        return artifacts_dir, reference_path
+
+    def get_media_files(self, doc_items: list):
+        temp_list = []
+        for item in doc_items:
+            if isinstance(item, PictureItem):
+                path = str(item.image.uri)
+                name = path.rsplit("/", 1)[-1]
+                temp_list.append({'path': path, 'name': name})
+        return temp_list
+
+    def safe_join(self, iterable):
+        if not isinstance(iterable, (list, tuple, set)):
+            return ''
+        return ''.join(map(str, iterable)) + '\n'
+
+    def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
+        conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
+        return conv_result.document
+
+    def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
+        chunker = HybridChunker(max_tokens=int(1e30), merge_peers=True)
+        chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
+        for chunk in chunks:
+            self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
+        return chunks
+
+    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
+                              **kwargs: dict) -> list[dict]:
+        global_metadata = dict(
+            n_chunk_of_doc=len(chunks),
+            n_page=document.num_pages(),
+            reg_date=datetime.now().isoformat(timespec='seconds') + 'Z',
+        )
+
+        current_page = None
+        chunk_index_on_page = 0
+        vectors = []
+        upload_tasks = []
+        for chunk_idx, chunk in enumerate(chunks):
+            chunk_page = chunk.meta.doc_items[0].prov[0].page_no
+            content = self.safe_join(chunk.meta.headings) + chunk.text
+
+            if chunk_page != current_page:
+                current_page = chunk_page
+                chunk_index_on_page = 0
+
+            vector = (GenOSVectorMetaBuilder()
+                      .set_text(content)
+                      .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
+                      .set_chunk_index(chunk_idx)
+                      .set_global_metadata(**global_metadata)
+                      .set_chunk_bboxes(chunk.meta.doc_items, document)
+                      .set_media_files(chunk.meta.doc_items)
+                      ).build()
+            vectors.append(vector)
+
+            chunk_index_on_page += 1
+            file_list = self.get_media_files(chunk.meta.doc_items)
+            upload_tasks.append(asyncio.create_task(
+                upload_files(file_list, request=request)
+            ))
+
+        if upload_tasks:
+            await asyncio.gather(*upload_tasks)
+        return vectors
+
+    async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+        document: DoclingDocument = self.load_documents(file_path, **kwargs)
+        artifacts_dir, reference_path = self.get_paths(file_path)
+        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+
+        chunks: list[DocChunk] = self.split_documents(document, **kwargs)
+
+        vectors = []
+        if len(chunks) >= 1:
+            vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+        else:
+            raise GenosServiceException(1, f"chunk length is 0")
+        return vectors
+
+
 class HwpxProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
@@ -1100,6 +1204,7 @@ class DocumentProcessor:
     def __init__(self):
         self.page_chunk_counts = defaultdict(int)
         self.hwpx_processor = HwpxProcessor()
+        self.docx_processor = DocxProcessor()
 
     def get_loader(self, file_path: str):
         ext = os.path.splitext(file_path)[-1].lower()
@@ -1113,7 +1218,7 @@ class DocumentProcessor:
         # 원래 확장자 기반 로직
         elif ext == '.pdf':
             return PyMuPDFLoader(file_path)
-        elif ext in ['.doc', '.docx']:
+        elif ext == '.doc':
             convert_to_pdf(file_path)
             return UnstructuredWordDocumentLoader(file_path)
         elif ext in ['.ppt', '.pptx']:
@@ -1121,6 +1226,7 @@ class DocumentProcessor:
             return UnstructuredPowerPointLoader(file_path)
         elif ext in ['.jpg', '.jpeg', '.png']:
             convert_to_pdf(file_path)
+            # 한국어 OCR 지원을 위한 언어 설정
             return UnstructuredImageLoader(
                 file_path, 
                 languages=["kor", "eng"],  # 한국어 + 영어 OCR
@@ -1199,12 +1305,7 @@ class DocumentProcessor:
         chunks = text_splitter.split_documents(documents)
         chunks = [chunk for chunk in chunks if chunk.page_content]
         if not chunks:
-            chunks = [
-                Document(
-                    page_content=".", 
-                    metadata={"page": 0}
-                )
-            ]
+            raise Exception('Empty document')
 
         for chunk in chunks:
             page = chunk.metadata.get('page', 0)
@@ -1228,7 +1329,7 @@ class DocumentProcessor:
         else:
             pdf_path = _get_pdf_path(file_path)
 
-        doc = fitz.open(pdf_path) if (pdf_path and os.path.exists(pdf_path)) else None
+        # doc = fitz.open(pdf_path) if (pdf_path and os.path.exists(pdf_path)) else None
 
         if file_path.endswith(('.ppt', '.pptx')):
             if os.path.exists(pdf_path):
@@ -1320,6 +1421,7 @@ class DocumentProcessor:
         elif ext in ('.csv', '.xlsx'):
             loader = TabularLoader(file_path, ext)
             vectors = loader.return_vectormeta_format()
+            # pdf_path = _get_pdf_path(file_path)
             await assert_cancelled(request)
             return vectors
 
@@ -1334,6 +1436,9 @@ class DocumentProcessor:
         elif ext == '.hwpx':
             return await self.hwpx_processor(request, file_path, **kwargs)
 
+        elif ext == '.docx':
+            return await self.docx_processor(request, file_path, **kwargs)
+        
         else:
             documents: list[Document] = self.load_documents(file_path, **kwargs)
             await assert_cancelled(request)
