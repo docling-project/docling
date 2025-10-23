@@ -1,13 +1,22 @@
+import os
 import json
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 # 입력 경로
-result_json = Path("/workspaces/md_attach_preprocess/doc_parser/result.json")
-image_path = Path("/workspaces/koreabank/자른_1-1. BOK_우리나라 물가수준의 특징 및 시사점_최종/image_000004_139c0e4ffddf013830b635da02e7b6f891f9748599a85095f98e939ac58a5e28.png")
+result_json = Path("/workspace/doc_parser/doc_preprocessors/result.json")
+pdf_folder = Path(
+    "/workspace/dots_ocr_test/images/연수규정(20250113)_일부개정_72dpi"
+)
+# image_path = Path(
+#     "/workspace/dots_ocr_test/images/연수규정(20250113)_일부개정/0_dpi72.png"
+# )
 
-# 출력 경로
-out_path = image_path.with_name(image_path.stem + "_annotated.png")
+
+output_path = "./results"
+
+os.makedirs(output_path, exist_ok=True)
+
 
 # 색상 매핑
 COLOR = {
@@ -21,21 +30,32 @@ COLOR = {
 }
 DEFAULT_COLOR = (0, 255, 255)
 
-# 이미지 열기
-im = Image.open(image_path).convert("RGBA")
-W, H = im.size
-draw = ImageDraw.Draw(im, "RGBA")
+font = ImageFont.load_default(size=30)  # 폴백
 
 # result.json 읽기
 data = json.loads(result_json.read_text(encoding="utf-8"))
-# 첫 항목의 chunk_bboxes 사용 (필요시 인덱스/조건 변경)
-bboxes = data[0].get("chunk_bboxes", "[]")
-if isinstance(bboxes, str):
-    bboxes = json.loads(bboxes)
 
-# 박스 그리기
-for item in bboxes:
+img_paths = sorted(os.listdir(pdf_folder), key=lambda x: int(x.split("_")[0]))
+for img_name in img_paths:
+    img_path = os.path.join(pdf_folder, img_name)
+    im = Image.open(img_path).convert("RGBA")
+    im.save(os.path.join(output_path, img_name))
+
+bboxes = []
+for d in data:
+    bbox = d.get("chunk_bboxes", "[]")
+    bbox = json.loads(bbox)
+    bboxes.extend(bbox)
+
+
+for b_idx, item in enumerate(bboxes):
     bbox = item.get("bbox", {})
+
+    img_path = os.path.join(output_path, img_paths[item["page"] - 1])
+    im = Image.open(img_path).convert("RGBA")
+    W, H = im.size
+    draw = ImageDraw.Draw(im, "RGBA")
+
     l = float(bbox.get("l", 0.0))
     t = float(bbox.get("t", 0.0))
     r = float(bbox.get("r", 0.0))
@@ -63,9 +83,12 @@ for item in bboxes:
     label = f"{typ}"
     tw, th = draw.textlength(label), 12
     pad = 2
-    draw.rectangle([x1, y1 - th - 2*pad, x1 + tw + 2*pad, y1], fill=color + (200,))
+    draw.rectangle([x1, y1 - th - 2 * pad, x1 + tw + 2 * pad, y1], fill=color + (200,))
     draw.text((x1 + pad, y1 - th - pad), label, fill=(0, 0, 0, 255))
 
-# 저장
-im.save(out_path)
-print(f"Saved: {out_path}")
+    # 몇번째인지~
+    text = str(b_idx + 1)  # 1부터 시작
+    # text_position = (x_min, y_min - 15)  # 숫자를 BBox 위쪽에 배치
+    draw.text([x1, y1 - 15], text, fill="blue", font=font)
+
+    im.save(os.path.join(output_path, img_paths[item["page"] - 1]))

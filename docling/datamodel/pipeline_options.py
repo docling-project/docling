@@ -325,6 +325,8 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
     do_picture_classification: bool = False  # True: classify pictures in documents
     do_picture_description: bool = False  # True: run describe pictures in documents
+    do_vlm_layout_and_readingorder: bool = False
+    # TODO str로 바꿔야 할듯. dots_ocr, paddleVL etc...
     force_backend_text: bool = (
         False  # (To be used with vlms, or other generative models)
     )
@@ -362,12 +364,13 @@ class ProcessingPipeline(str, Enum):
 
 # ADD CUSTOM PIPELINE OPTION
 
+
 class DataEnrichmentOptions(BaseModel):
     """Data enrichment options for metadata extraction and other enrichment features."""
 
     # TOC enrichment options
     do_toc_enrichment: bool = False
-    toc_doc_type: Optional[str] = None # e.g., "normal"(default), "law"
+    toc_doc_type: Optional[str] = None  # e.g., "normal"(default), "law"
     toc_system_prompt: Optional[str] = None
     toc_user_prompt: Optional[str] = None
     # TOC API configuration options
@@ -385,7 +388,9 @@ class DataEnrichmentOptions(BaseModel):
     metadata_system_prompt: Optional[str] = None
     metadata_user_prompt: Optional[str] = None
     # Metadata API configuration options
-    metadata_api_provider: Optional[str] = None  # e.g., "openrouter", "openai", "custom"
+    metadata_api_provider: Optional[str] = (
+        None  # e.g., "openrouter", "openai", "custom"
+    )
     metadata_api_key: Optional[str] = None
     metadata_api_base_url: Optional[str] = None
     metadata_model: Optional[str] = None

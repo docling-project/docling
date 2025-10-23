@@ -1,14 +1,17 @@
 from fastapi import Request
 import logging
 
+# from basic_processor import DocumentProcessor
 
-from basic_processor import DocumentProcessor
 # from attachment_processor import DocumentProcessor
-# from intelligent_processor import DocumentProcessor
+from intelligent_processor import DocumentProcessor
 
 # 파일 경로 및 요청 설정
 import os
-file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_files", "/workspaces/order_sh/doc_parser/sample_files/pdf_sample.pdf")
+
+# file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_files", "/workspaces/md_attach_preprocess/doc_parser/sample_files/xlsx_sample.xlsx")
+# file_path = "/workspace/pdfs/1.pdf"
+file_path = "/workspace/pdfs/연수규정(20250113)_일부개정.pdf"
 
 # 파일 존재 여부 확인
 if not os.path.exists(file_path):
@@ -37,9 +40,16 @@ async def process_document():
 # 메인 루프 실행
 result = asyncio.run(process_document())
 
+
 result_list_as_dict = [item.model_dump() for item in result]
 
+
 import json
+
+
+# result_list_as_dict[0]['text'] 가 어떻게 만들어지는거지......
+
+
 # 최종적으로 이 리스트를 JSON으로 저장
 with open("result.json", "w", encoding="utf-8") as f:
     json.dump(result_list_as_dict, f, ensure_ascii=False, indent=4)
