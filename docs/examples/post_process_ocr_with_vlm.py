@@ -45,12 +45,13 @@ from docling.utils.utils import chunkify
 
 # Example on how to apply to Docling Document OCR as a post-processing with "nanonets-ocr2-3b" via LM Studio
 # Requires LM Studio running inference server with "nanonets-ocr2-3b" model pre-loaded
+# To run:
+# uv run python docs/examples/post_process_ocr_with_vlm.py
+
 LM_STUDIO_URL = "http://localhost:1234/v1/chat/completions"
 LM_STUDIO_MODEL = "nanonets-ocr2-3b"
 
-DEFAULT_PROMPT = (
-    "Extract the text from the above document as if you were reading it naturally. Output pure text, no html and no markdown. Pay attention on line breaks and don't miss text after line break. Put all text in one line."
-)
+DEFAULT_PROMPT = "Extract the text from the above document as if you were reading it naturally. Output pure text, no html and no markdown. Pay attention on line breaks and don't miss text after line break. Put all text in one line."
 
 PDF_DOC = "tests/data/pdf/2305.03393v1-pg9.pdf"
 JSON_DOC = "scratch/test_doc.json"
@@ -132,11 +133,8 @@ class OcrApiEnrichmentModel(
         if not self.is_processable(doc=conv_res.document, element=element):
             return None
 
-        # allowed = (DocItem, TableCell, RichTableCell, GraphCell)
         allowed = (DocItem, TableItem, GraphCell)
-        assert isinstance(
-            element, allowed
-        )  # too strict, could be DocItem, TableCell, RichTableCell, GraphCell
+        assert isinstance(element, allowed)
 
         if isinstance(element, KeyValueItem):
             # Yield from the graphCells inside here.
@@ -242,8 +240,6 @@ class OcrApiEnrichmentModel(
                     ].image.pil_image.crop(expanded_bbox.as_tuple())
                     multiple_crops.append(cropped_image)
                     # cropped_image.show()
-                    # Return the proper cropped image
-                    multiple_crops
             if len(multiple_crops) > 0:
                 return [PostOcrEnrichmentElement(item=element, image=multiple_crops)]
             else:
@@ -407,7 +403,7 @@ def main() -> None:
     print(md1)
 
     print("Post-process all bounding boxes with OCR")
-    # Post-Process OCR on top of existing Docling document:
+    # Post-Process OCR on top of existing Docling document, per element's bounding box:
     pipeline_options = PostOcrEnrichmentPipelineOptions(
         api_options=PictureDescriptionApiOptions(
             url=LM_STUDIO_URL,
@@ -435,10 +431,6 @@ def main() -> None:
     md = result.document.export_to_markdown()
     print("*** MARKDOWN ***")
     print(md)
-    # print("*** KV ITEMS ***")
-    # for kv_item in result.document.key_value_items:
-    #     for kv_item_cell in kv_item.graph.cells:
-    #         print("{} - {}".format(kv_item_cell.label, kv_item_cell.text))
 
 
 if __name__ == "__main__":
