@@ -6,7 +6,7 @@ from enum import Enum
 from html import unescape
 from io import BytesIO
 from pathlib import Path
-from typing import Literal, Optional, Union, cast
+from typing import List, Literal, Optional, Union, cast
 
 import marko
 import marko.element
@@ -108,6 +108,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         # Markdown file:
         self.path_or_stream = path_or_stream
         self.valid = True
+        self.doc_children: Optional[List[marko.element.Element]] = None  # Store document structure for caption detection
         self.markdown = ""  # To store original Markdown string
 
         self.in_table = False
@@ -240,6 +241,161 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
         return item
 
+    def _is_caption_element(self, element: marko.element.Element) -> bool:
+        """Check if an element is a caption element (HTML span with caption class or similar patterns)."""
+        if isinstance(element, marko.block.HTMLBlock):
+            html_content = element.body.strip() if hasattr(element, 'body') else ""
+            # Check for span with data-class="image-caption" or class="caption"
+            if ('data-class="image-caption"' in html_content or 
+                'class="image-caption"' in html_content or
+                'class="caption"' in html_content):
+                return True
+        elif isinstance(element, marko.inline.InlineHTML):
+            # Handle inline HTML spans
+            html_content = element.children if hasattr(element, 'children') and isinstance(element.children, str) else ""
+            if ('data-class="image-caption"' in html_content or 
+                'class="image-caption"' in html_content or
+                'class="caption"' in html_content):
+                return True
+        elif isinstance(element, marko.block.Paragraph):
+            # Check if paragraph starts with "Figure" or "Caption:" patterns
+            if (len(element.children) > 0 and 
+                isinstance(element.children[0], (marko.inline.RawText, marko.inline.Literal))):
+                text = element.children[0].children if hasattr(element.children[0], 'children') else ""
+                if isinstance(text, str):
+                    text_lower = text.lower().strip()
+                    if (text_lower.startswith('figure ') or 
+                        text_lower.startswith('caption:') or
+                        text_lower.startswith('fig. ')):
+                        return True
+        return False
+
+    def _extract_caption_text(self, element: marko.element.Element) -> str:
+        """Extract caption text from a caption element."""
+        if isinstance(element, marko.block.HTMLBlock):
+            html_content = element.body.strip() if hasattr(element, 'body') else ""
+            # Extract text from HTML span tags
+            import re
+            span_match = re.search(r'<span[^>]*>([^<]+)</span>', html_content)
+            if span_match:
+                return unescape(span_match.group(1).strip())
+        elif isinstance(element, marko.block.Paragraph):
+            # Extract text from paragraph elements
+            text_parts = []
+            for child in element.children:
+                if isinstance(child, (marko.inline.RawText, marko.inline.Literal)):
+                    if hasattr(child, 'children') and isinstance(child.children, str):
+                        text_parts.append(child.children)
+            return unescape(" ".join(text_parts).strip())
+        return ""
+
+    def _find_next_caption(self, current_element: marko.element.Element, parent_children: list) -> Optional[str]:
+        """Find the next caption element after the current image element."""
+        try:
+            current_index = parent_children.index(current_element)
+            # Look at the next few elements for potential captions
+            for i in range(current_index + 1, min(current_index + 3, len(parent_children))):
+                next_element = parent_children[i]
+                if self._is_caption_element(next_element):
+                    return self._extract_caption_text(next_element)
+        except (ValueError, AttributeError):
+            pass
+        return None
+
+    def _find_inline_caption_in_paragraph(self, paragraph: marko.block.Paragraph, image_element: marko.inline.Image) -> Optional[str]:
+        """Find caption within the same paragraph as the image (for inline HTML spans)."""
+        try:
+            _log.debug(f"Looking for inline caption in paragraph with {len(paragraph.children)} children")
+            image_index = paragraph.children.index(image_element)
+            _log.debug(f"Image found at index {image_index}")
+            
+            # Debug: print all children types and content
+            for idx, child in enumerate(paragraph.children):
+                _log.debug(f"Child {idx}: {type(child).__name__} - {getattr(child, 'children', 'no children attr')}")
+            
+            # Look for span pattern: <span data-class="image-caption">text</span>
+            # This typically appears as: InlineHTML + RawText + InlineHTML
+            for i in range(image_index + 1, len(paragraph.children) - 2):
+                current = paragraph.children[i]
+                _log.debug(f"Checking element {i}: {type(current).__name__}")
+                
+                # Check for opening span tag
+                if (isinstance(current, marko.inline.InlineHTML) and 
+                    hasattr(current, 'children') and 
+                    isinstance(current.children, str)):
+                    _log.debug(f"Found InlineHTML: {current.children}")
+                    
+                    if ('data-class="image-caption"' in current.children or 
+                        'class="image-caption"' in current.children):
+                        _log.debug("Found caption span tag!")
+                        
+                        # Look for the caption text in the next element
+                        if (i + 1 < len(paragraph.children) and 
+                            isinstance(paragraph.children[i + 1], marko.inline.RawText)):
+                            caption_text = unescape(paragraph.children[i + 1].children.strip())
+                            _log.debug(f"Found caption text: {caption_text}")
+                            return caption_text
+                        
+        except (ValueError, AttributeError, IndexError) as e:
+            _log.debug(f"Exception in _find_inline_caption_in_paragraph: {e}")
+        return None
+
+    def _find_block_caption_after_paragraph(self, doc_children: list, paragraph_index: int) -> Optional[str]:
+        """Find caption in subsequent paragraphs or HTML blocks after the image paragraph."""
+        try:
+            _log.debug(f"Looking for block caption after paragraph {paragraph_index}")
+            
+            # Look at the next few elements after the image paragraph
+            for i in range(paragraph_index + 1, min(paragraph_index + 4, len(doc_children))):
+                element = doc_children[i]
+                _log.debug(f"Checking subsequent element {i}: {type(element).__name__}")
+                
+                # Skip blank lines
+                if isinstance(element, marko.block.BlankLine):
+                    _log.debug("Skipping blank line")
+                    continue
+                
+                # Check HTML blocks for caption spans
+                if isinstance(element, marko.block.HTMLBlock):
+                    _log.debug("Found HTML block, checking for caption")
+                    if self._is_caption_element(element):
+                        return self._extract_caption_text(element)
+                
+                # Check paragraphs that might contain caption spans
+                if isinstance(element, marko.block.Paragraph):
+                    _log.debug(f"Found paragraph with {len(element.children)} children")
+                    
+                    # Check if this paragraph starts with a caption span
+                    if len(element.children) >= 3:  # Need at least opening span, text, closing span
+                        first_child = element.children[0]
+                        
+                        if (isinstance(first_child, marko.inline.InlineHTML) and 
+                            hasattr(first_child, 'children') and 
+                            isinstance(first_child.children, str)):
+                            _log.debug(f"First child is InlineHTML: {first_child.children}")
+                            
+                            if ('data-class="image-caption"' in first_child.children or 
+                                'class="image-caption"' in first_child.children):
+                                _log.debug("Found caption span in paragraph!")
+                                
+                                # Look for caption text in the next element
+                                if (len(element.children) > 1 and 
+                                    isinstance(element.children[1], marko.inline.RawText)):
+                                    caption_text = unescape(element.children[1].children.strip())
+                                    _log.debug(f"Found block caption text: {caption_text}")
+                                    return caption_text
+                    
+                    # If this paragraph contains other content, stop searching
+                    # (we don't want to pick up random content as captions)
+                    break
+                
+                # If we encounter other content, stop searching
+                break
+                        
+        except (ValueError, AttributeError, IndexError) as e:
+            _log.debug(f"Exception in _find_block_caption_after_paragraph: {e}")
+        return None
+
     def _iterate_elements(  # noqa: C901
         self,
         *,
@@ -255,6 +411,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         parent_item: Optional[NodeItem] = None,
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        current_paragraph: Optional[marko.block.Paragraph] = None,  # Track current paragraph context
     ):
         if element in visited:
             return
@@ -336,15 +493,61 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f" - Image with alt: {element.title}, url: {element.dest}")
 
             fig_caption: Optional[TextItem] = None
+            
+            # First check for title attribute (existing behavior)
             if element.title is not None and element.title != "":
                 title = unescape(element.title)
+                _log.debug(f"Using image title as caption: {title}")
                 fig_caption = doc.add_text(
                     label=DocItemLabel.CAPTION,
                     text=title,
                     formatting=formatting,
                     hyperlink=hyperlink,
                 )
+            else:
+                _log.debug("No image title found, looking for adjacent captions")
+                # Look for adjacent caption elements if no title is present
+                caption_text = None
+                
+                # First, check for inline captions within the same paragraph using the passed context
+                if current_paragraph:
+                    _log.debug("Checking for inline captions in current paragraph context")
+                    caption_text = self._find_inline_caption_in_paragraph(current_paragraph, element)
+                
+                # If no inline caption found, check for block-level captions in subsequent paragraphs
+                if not caption_text and current_paragraph and self.doc_children:
+                    try:
+                        paragraph_index = self.doc_children.index(current_paragraph)
+                        _log.debug(f"Checking for block captions after paragraph {paragraph_index}")
+                        caption_text = self._find_block_caption_after_paragraph(self.doc_children, paragraph_index)
+                    except (ValueError, AttributeError):
+                        _log.debug("Could not find paragraph index in doc_children")
+                
+                # Fallback: try to find caption in parent's children (for other block-level captions)
+                if not caption_text and hasattr(element, 'parent') and element.parent and hasattr(element.parent, 'children'):
+                    _log.debug("Checking for block-level captions in parent children")
+                    caption_text = self._find_next_caption(element, element.parent.children)
+                
+                # If no caption found and element is in a paragraph, check paragraph's siblings
+                if not caption_text and hasattr(element, 'parent'):
+                    current_parent = element.parent
+                    if (current_parent and hasattr(current_parent, 'parent') and 
+                        current_parent.parent and hasattr(current_parent.parent, 'children')):
+                        _log.debug("Checking for captions in paragraph siblings")
+                        caption_text = self._find_next_caption(current_parent, current_parent.parent.children)
+                
+                if caption_text:
+                    _log.debug(f"Creating caption text item: {caption_text}")
+                    fig_caption = doc.add_text(
+                        label=DocItemLabel.CAPTION,
+                        text=caption_text,
+                        formatting=formatting,
+                        hyperlink=hyperlink,
+                    )
+                else:
+                    _log.debug("No caption text found")
 
+            _log.debug(f"Adding picture with caption: {fig_caption}")
             doc.add_picture(parent=parent_item, caption=fig_caption)
 
         elif isinstance(element, marko.inline.Emphasis):
@@ -495,6 +698,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         if hasattr(element, "children") and not isinstance(
             element, processed_block_types
         ):
+            # Update current_paragraph if we're processing a paragraph
+            paragraph_context = current_paragraph
+            if isinstance(element, marko.block.Paragraph):
+                paragraph_context = element
+                
             for child in element.children:
                 if (
                     isinstance(element, marko.block.ListItem)
@@ -518,6 +726,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     parent_item=parent_item,
                     formatting=formatting,
                     hyperlink=hyperlink,
+                    current_paragraph=paragraph_context,
                 )
 
     def is_valid(self) -> bool:
@@ -551,6 +760,10 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             # Parse the markdown into an abstract syntax tree (AST)
             marko_parser = Markdown()
             parsed_ast = marko_parser.parse(self.markdown)
+            
+            # Store document children for block caption detection
+            self.doc_children = parsed_ast.children
+            
             # Start iterating from the root of the AST
             self._iterate_elements(
                 element=parsed_ast,
@@ -561,6 +774,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 creation_stack=[],
                 list_ordered_flag_by_ref={},
                 list_last_item_by_ref={},
+                current_paragraph=None,
             )
             self._close_table(doc=doc)  # handle any last hanging table
 
