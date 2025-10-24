@@ -3,55 +3,72 @@ from __future__ import annotations
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
-from PIL import Image
-
-from PIL.ImageOps import crop
 from docling_core.types.doc import (
     DoclingDocument,
+    ImageRefMode,
     NodeItem,
     PageItem,
     TextItem,
 )
-from docling_core.types.doc import ImageRefMode
-from docling.utils.profiling import ProfilingScope, TimeRecorder
-from docling.utils.utils import chunkify
-from docling_core.types.doc.document import ContentLayer, DocItem, GraphCell, KeyValueItem, PictureItem, TableCell, RichTableCell, TableItem
+from docling_core.types.doc.document import (
+    ContentLayer,
+    DocItem,
+    GraphCell,
+    KeyValueItem,
+    PictureItem,
+    RichTableCell,
+    TableCell,
+    TableItem,
+)
+from PIL import Image
+from PIL.ImageOps import crop
 from pydantic import BaseModel, ConfigDict
+
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import ConvertPipelineOptions, PictureDescriptionApiOptions, PdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    ConvertPipelineOptions,
+    PdfPipelineOptions,
+    PictureDescriptionApiOptions,
+)
 from docling.document_converter import DocumentConverter, FormatOption, PdfFormatOption
-from docling.pipeline.simple_pipeline import SimplePipeline
-from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BaseModelWithOptions, GenericEnrichmentModel
+from docling.pipeline.simple_pipeline import SimplePipeline
+from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.utils.api_image_request import api_image_request
+from docling.utils.profiling import ProfilingScope, TimeRecorder
+from docling.utils.utils import chunkify
 
 # Example on how to apply to Docling Document OCR as a post-processing with "nanonets-ocr2-3b" via LM Studio
 # Requires LM Studio running inference server with "nanonets-ocr2-3b" model pre-loaded
 LM_STUDIO_URL = "http://localhost:1234/v1/chat/completions"
 LM_STUDIO_MODEL = "nanonets-ocr2-3b"
-DEFAULT_PROMPT = "Extract the text from the above document as if you were reading it naturally."
+DEFAULT_PROMPT = (
+    "Extract the text from the above document as if you were reading it naturally."
+)
 
 PDF_DOC = "tests/data/pdf/2305.03393v1-pg9.pdf"
-# PDF_DOC = "tests/data/pdf/amt_handbook_sample.pdf"
-# PDF_DOC = "tests/data/pdf/2206.01062.pdf"
 JSON_DOC = "scratch/test_doc.json"
 POST_PROCESSED_JSON_DOC = "scratch/test_doc_ocr.json"
+
 
 class OcrEnrichmentElement(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     item: Union[DocItem, TableCell, RichTableCell, GraphCell]
-    image: Image # TODO maybe needs to be an array of images for multi-provenance things.
+    image: list[
+        Image.Image
+    ]  # TODO maybe needs to be an array of images for multi-provenance things.
 
 
 class OcrEnrichmentPipelineOptions(ConvertPipelineOptions):
     api_options: PictureDescriptionApiOptions
+
 
 class OcrEnrichmentPipeline(SimplePipeline):
     def __init__(self, pipeline_options: OcrEnrichmentPipelineOptions):
@@ -82,9 +99,11 @@ class OcrEnrichmentPipeline(SimplePipeline):
                     ContentLayer.BODY,
                     ContentLayer.FURNITURE,
                 },
-            ): # With all content layers, with traverse_pictures=True
-                prepared_elements = model.prepare_element( # make this one yield multiple items.
-                    conv_res=conv_res, element=doc_element
+            ):  # With all content layers, with traverse_pictures=True
+                prepared_elements = (
+                    model.prepare_element(  # make this one yield multiple items.
+                        conv_res=conv_res, element=doc_element
+                    )
                 )
                 if prepared_elements is not None:
                     yield prepared_elements
@@ -101,7 +120,10 @@ class OcrEnrichmentPipeline(SimplePipeline):
                         pass
         return conv_res
 
-class OcrApiEnrichmentModel(GenericEnrichmentModel[OcrEnrichmentElement], BaseModelWithOptions):
+
+class OcrApiEnrichmentModel(
+    GenericEnrichmentModel[OcrEnrichmentElement], BaseModelWithOptions
+):
     expansion_factor: float = 0.001
 
     def prepare_element(
@@ -112,8 +134,9 @@ class OcrApiEnrichmentModel(GenericEnrichmentModel[OcrEnrichmentElement], BaseMo
 
         # allowed = (DocItem, TableCell, RichTableCell, GraphCell)
         allowed = (DocItem, TableItem, GraphCell)
-        assert isinstance(element, allowed) # too strict, could be DocItem, TableCell, RichTableCell, GraphCell
-
+        assert isinstance(
+            element, allowed
+        )  # too strict, could be DocItem, TableCell, RichTableCell, GraphCell
 
         if isinstance(element, KeyValueItem):
             # Yield from the graphCells inside here.
@@ -122,19 +145,29 @@ class OcrApiEnrichmentModel(GenericEnrichmentModel[OcrEnrichmentElement], BaseMo
                 element_prov = c.prov  # Key / Value have only one provenance!
                 bbox = element_prov.bbox
                 page_ix = element_prov.page_no
-                bbox = bbox.scale_to_size(old_size=conv_res.document.pages[page_ix].size, new_size=conv_res.document.pages[page_ix].image.size)
+                bbox = bbox.scale_to_size(
+                    old_size=conv_res.document.pages[page_ix].size,
+                    new_size=conv_res.document.pages[page_ix].image.size,
+                )
                 expanded_bbox = bbox.expand_by_scale(
                     x_scale=self.expansion_factor, y_scale=self.expansion_factor
-                ).to_top_left_origin(page_height=conv_res.document.pages[page_ix].image.size.height)
+                ).to_top_left_origin(
+                    page_height=conv_res.document.pages[page_ix].image.size.height
+                )
 
                 good_bbox = True
-                if expanded_bbox.l > expanded_bbox.r or expanded_bbox.t > expanded_bbox.b:
+                if (
+                    expanded_bbox.l > expanded_bbox.r
+                    or expanded_bbox.t > expanded_bbox.b
+                ):
                     good_bbox = False
 
                 if good_bbox:
-                    cropped_image = conv_res.document.pages[page_ix].image.pil_image.crop(expanded_bbox.as_tuple())
+                    cropped_image = conv_res.document.pages[
+                        page_ix
+                    ].image.pil_image.crop(expanded_bbox.as_tuple())
                     # cropped_image.show()
-                    result.append(OcrEnrichmentElement(item=c, image=cropped_image))
+                    result.append(OcrEnrichmentElement(item=c, image=[cropped_image]))
             return result
         elif isinstance(element, TableItem):
             element_prov = element.prov[0]
@@ -145,43 +178,75 @@ class OcrApiEnrichmentModel(GenericEnrichmentModel[OcrEnrichmentElement], BaseMo
                     if hasattr(cell, "bbox"):
                         if cell.bbox:
                             bbox = cell.bbox
-                            bbox = bbox.scale_to_size(old_size=conv_res.document.pages[page_ix].size, new_size=conv_res.document.pages[page_ix].image.size)
+                            bbox = bbox.scale_to_size(
+                                old_size=conv_res.document.pages[page_ix].size,
+                                new_size=conv_res.document.pages[page_ix].image.size,
+                            )
                             expanded_bbox = bbox.expand_by_scale(
-                                x_scale=self.expansion_factor, y_scale=self.expansion_factor
-                            ).to_top_left_origin(page_height=conv_res.document.pages[page_ix].image.size.height)
+                                x_scale=self.expansion_factor,
+                                y_scale=self.expansion_factor,
+                            ).to_top_left_origin(
+                                page_height=conv_res.document.pages[
+                                    page_ix
+                                ].image.size.height
+                            )
 
                             good_bbox = True
-                            if expanded_bbox.l > expanded_bbox.r or expanded_bbox.t > expanded_bbox.b:
+                            if (
+                                expanded_bbox.l > expanded_bbox.r
+                                or expanded_bbox.t > expanded_bbox.b
+                            ):
                                 good_bbox = False
 
                             if good_bbox:
-                                cropped_image = conv_res.document.pages[page_ix].image.pil_image.crop(expanded_bbox.as_tuple())
+                                cropped_image = conv_res.document.pages[
+                                    page_ix
+                                ].image.pil_image.crop(expanded_bbox.as_tuple())
                                 # cropped_image.show()
-                                result.append(OcrEnrichmentElement(item=cell, image=cropped_image))
+                                result.append(
+                                    OcrEnrichmentElement(
+                                        item=cell, image=[cropped_image]
+                                    )
+                                )
             return result
         else:
+            multiple_crops = []
             # Crop the image form the page
-            element_prov = element.prov[0] # TODO: Not all items have prov
-            bbox = element_prov.bbox
+            for element_prov in element.prov:
+                # element_prov = element.prov[0] # TODO: Not all items have prov
+                bbox = element_prov.bbox
 
-            page_ix = element_prov.page_no
-            bbox = bbox.scale_to_size(old_size=conv_res.document.pages[page_ix].size, new_size=conv_res.document.pages[page_ix].image.size)
-            expanded_bbox = bbox.expand_by_scale(
-                x_scale=self.expansion_factor, y_scale=self.expansion_factor
-            ).to_top_left_origin(page_height=conv_res.document.pages[page_ix].image.size.height)
+                page_ix = element_prov.page_no
+                bbox = bbox.scale_to_size(
+                    old_size=conv_res.document.pages[page_ix].size,
+                    new_size=conv_res.document.pages[page_ix].image.size,
+                )
+                expanded_bbox = bbox.expand_by_scale(
+                    x_scale=self.expansion_factor, y_scale=self.expansion_factor
+                ).to_top_left_origin(
+                    page_height=conv_res.document.pages[page_ix].image.size.height
+                )
 
-            good_bbox = True
-            if expanded_bbox.l > expanded_bbox.r or expanded_bbox.t > expanded_bbox.b:
-                good_bbox = False
-            
-            if good_bbox:
-                cropped_image = conv_res.document.pages[page_ix].image.pil_image.crop(expanded_bbox.as_tuple())
-                cropped_image.show()
-                # Return the proper cropped image
-                return [OcrEnrichmentElement(item=element, image=cropped_image)]
+                good_bbox = True
+                if (
+                    expanded_bbox.l > expanded_bbox.r
+                    or expanded_bbox.t > expanded_bbox.b
+                ):
+                    good_bbox = False
+
+                if good_bbox:
+                    cropped_image = conv_res.document.pages[
+                        page_ix
+                    ].image.pil_image.crop(expanded_bbox.as_tuple())
+                    multiple_crops.append(cropped_image)
+                    # cropped_image.show()
+                    # Return the proper cropped image
+                    multiple_crops
+            if len(multiple_crops) > 0:
+                return [OcrEnrichmentElement(item=element, image=multiple_crops)]
             else:
                 return []
-        
+
     @classmethod
     def get_options_type(cls) -> type[PictureDescriptionApiOptions]:
         return PictureDescriptionApiOptions
@@ -239,34 +304,60 @@ class OcrApiEnrichmentModel(GenericEnrichmentModel[OcrEnrichmentElement], BaseMo
 
         elements: list[TextItem] = []
         images: list[Image.Image] = []
+        img_ind_per_element: list[int] = []
+
         for element_stack in element_batch:
             for element in element_stack:
                 allowed = (DocItem, TableCell, RichTableCell, GraphCell)
                 assert isinstance(element.item, allowed)
-                elements.append(element.item)
-                images.append(element.image)
+                for ind, img in enumerate(element.image):
+                    elements.append(element.item)
+                    images.append(img)
+                    # images.append(element.image)
+                    img_ind_per_element.append(ind)
 
         if not images:
             return
 
         outputs = list(self._annotate_images(images))
 
-        for item, output in zip(elements, outputs):
+        for item, output, img_ind in zip(elements, outputs, img_ind_per_element):
             # Sometimes model can return html tags, which are not strictly needed in our, so it's better to clean them
             def clean_html_tags(text):
-                for tag in ["<table>", "<tr>", "<td>", "<strong>", "</table>", "</tr>", "</td>", "</strong>", "<th>", "</th>", "<tbody>", "<tbody>", "<thead>", "</thead>"]:
+                for tag in [
+                    "<table>",
+                    "<tr>",
+                    "<td>",
+                    "<strong>",
+                    "</table>",
+                    "</tr>",
+                    "</td>",
+                    "</strong>",
+                    "<th>",
+                    "</th>",
+                    "<tbody>",
+                    "<tbody>",
+                    "<thead>",
+                    "</thead>",
+                ]:
                     text = text.replace(tag, "")
                 return text
+
             output = clean_html_tags(output)
 
             if isinstance(item, (TextItem)):
-                print("OLD TEXT: {}".format(item.text))
-                print("NEW TEXT: {}".format(output))
+                print(f"OLD TEXT: {item.text}")
+                print(f"NEW TEXT: {output}")
 
             # Re-populate text
             if isinstance(item, (TextItem, GraphCell)):
-                item.text = output
-                item.orig = output
+                if img_ind > 0:
+                    # Concat texts across several provenances
+                    item.text += " " + output
+                    item.orig += " " + output
+                else:
+                    item.text = output
+                    item.orig = output
             elif isinstance(item, (TableCell, RichTableCell)):
                 item.text = output
             elif isinstance(item, PictureItem):
@@ -292,14 +383,22 @@ def main() -> None:
     pipeline_options.generate_picture_images = True
     pipeline_options.images_scale = 4.0
 
-    doc_converter = DocumentConverter(  # all of the below is optional, has internal defaults.
-        allowed_formats=[InputFormat.PDF],
-        format_options={InputFormat.PDF: PdfFormatOption(pipeline_cls=StandardPdfPipeline, pipeline_options=pipeline_options)}
+    doc_converter = (
+        DocumentConverter(  # all of the below is optional, has internal defaults.
+            allowed_formats=[InputFormat.PDF],
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_cls=StandardPdfPipeline, pipeline_options=pipeline_options
+                )
+            },
+        )
     )
+
     print("Converting PDF to get a Docling document json with embedded page images...")
     conv_result = doc_converter.convert(PDF_DOC)
-    # conv_result.document.save_as_json(filename = JSON_DOC, image_mode = ImageRefMode.EMBEDDED)
-    conv_result.document.save_as_json(filename = JSON_DOC, image_mode = ImageRefMode.REFERENCED)
+    conv_result.document.save_as_json(
+        filename=JSON_DOC, image_mode=ImageRefMode.EMBEDDED
+    )
 
     md1 = conv_result.document.export_to_markdown()
     print("*** ORIGINAL MARKDOWN ***")
@@ -324,7 +423,7 @@ def main() -> None:
             InputFormat.JSON_DOCLING: FormatOption(
                 pipeline_cls=OcrEnrichmentPipeline,
                 pipeline_options=pipeline_options,
-                backend=DoclingJSONBackend
+                backend=DoclingJSONBackend,
             )
         }
     )
