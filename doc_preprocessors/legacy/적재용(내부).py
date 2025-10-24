@@ -496,7 +496,8 @@ class HybridChunker(BaseChunker):
                 if table_tokens > self.max_tokens:
                     # 테이블 텍스트만 추출하여 분할
                     table_only_text = self._extract_table_text(item, dl_doc)
-                    split_tables = self._split_table_text(table_only_text, 4096)
+                    # split_tables = self._split_table_text(table_only_text, 4096)
+                    split_tables = [table_only_text]
 
                     # 분할된 각 테이블에 대해 청크 생성
                     for split_table in split_tables:
