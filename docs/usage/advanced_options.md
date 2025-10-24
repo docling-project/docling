@@ -163,37 +163,3 @@ result = converter.convert(source)
 ## Limit resource usage
 
 You can limit the CPU threads used by Docling by setting the environment variable `OMP_NUM_THREADS` accordingly. The default setting is using 4 CPU threads.
-
-
-## Use specific backend converters
-
-!!! note
-
-    This section discusses directly invoking a [backend](../concepts/architecture.md),
-    i.e. using a low-level API. This should only be done when necessary. For most cases,
-    using a `DocumentConverter` (high-level API) as discussed in the sections above
-    should suffice — and is the recommended way.
-
-By default, Docling will try to identify the document format to apply the appropriate conversion backend (see the list of [supported formats](supported_formats.md)).
-You can restrict the `DocumentConverter` to a set of allowed document formats, as shown in the [Multi-format conversion](../examples/run_with_formats.py) example.
-Alternatively, you can also use the specific backend that matches your document content. For instance, you can use `HTMLDocumentBackend` for HTML pages:
-
-```python
-import urllib.request
-from io import BytesIO
-from docling.backend.html_backend import HTMLDocumentBackend
-from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
-
-url = "https://en.wikipedia.org/wiki/Duck"
-text = urllib.request.urlopen(url).read()
-in_doc = InputDocument(
-    path_or_stream=BytesIO(text),
-    format=InputFormat.HTML,
-    backend=HTMLDocumentBackend,
-    filename="duck.html",
-)
-backend = HTMLDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(text))
-dl_doc = backend.convert()
-print(dl_doc.export_to_markdown())
-```
