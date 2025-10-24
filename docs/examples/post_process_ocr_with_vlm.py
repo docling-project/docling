@@ -47,8 +47,9 @@ from docling.utils.utils import chunkify
 # Requires LM Studio running inference server with "nanonets-ocr2-3b" model pre-loaded
 LM_STUDIO_URL = "http://localhost:1234/v1/chat/completions"
 LM_STUDIO_MODEL = "nanonets-ocr2-3b"
+
 DEFAULT_PROMPT = (
-    "Extract the text from the above document as if you were reading it naturally."
+    "Extract the text from the above document as if you were reading it naturally. Output pure text, no html and no markdown. Pay attention on line breaks and don't miss text after line break. Put all text in one line."
 )
 
 PDF_DOC = "tests/data/pdf/2305.03393v1-pg9.pdf"
@@ -344,11 +345,10 @@ class OcrApiEnrichmentModel(
                     text = text.replace(tag, "")
                 return text
 
-            output = clean_html_tags(output)
+            output = clean_html_tags(output).strip()
 
             if isinstance(item, (TextItem)):
                 print(f"OLD TEXT: {item.text}")
-                print(f"NEW TEXT: {output}")
 
             # Re-populate text
             if isinstance(item, (TextItem, GraphCell)):
@@ -366,11 +366,14 @@ class OcrApiEnrichmentModel(
             else:
                 raise ValueError(f"Unknown item type: {type(item)}")
 
+            if isinstance(item, (TextItem)):
+                print(f"NEW TEXT: {item.text}")
+
             # Take care of charspans for relevant types
             if isinstance(item, GraphCell):
-                item.prov.charspan = [0, len(output)]
+                item.prov.charspan = [0, len(item.text)]
             elif isinstance(item, TextItem):
-                item.prov[0].charspan = [0, len(output)]
+                item.prov[0].charspan = [0, len(item.text)]
 
             yield item
 
