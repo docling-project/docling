@@ -9,7 +9,6 @@ from docling_core.types.doc import (
     DoclingDocument,
     ImageRefMode,
     NodeItem,
-    PageItem,
     TextItem,
 )
 from docling_core.types.doc.document import (
@@ -57,23 +56,23 @@ JSON_DOC = "scratch/test_doc.json"
 POST_PROCESSED_JSON_DOC = "scratch/test_doc_ocr.json"
 
 
-class OcrEnrichmentElement(BaseModel):
+class PostOcrEnrichmentElement(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     item: Union[DocItem, TableCell, RichTableCell, GraphCell]
     image: list[
         Image.Image
-    ]  # TODO maybe needs to be an array of images for multi-provenance things.
+    ]  # Needs to be an a list of images for multi-provenance elements
 
 
-class OcrEnrichmentPipelineOptions(ConvertPipelineOptions):
+class PostOcrEnrichmentPipelineOptions(ConvertPipelineOptions):
     api_options: PictureDescriptionApiOptions
 
 
-class OcrEnrichmentPipeline(SimplePipeline):
-    def __init__(self, pipeline_options: OcrEnrichmentPipelineOptions):
+class PostOcrEnrichmentPipeline(SimplePipeline):
+    def __init__(self, pipeline_options: PostOcrEnrichmentPipelineOptions):
         super().__init__(pipeline_options)
-        self.pipeline_options: OcrEnrichmentPipelineOptions
+        self.pipeline_options: PostOcrEnrichmentPipelineOptions
 
         self.enrichment_pipe = [
             OcrApiEnrichmentModel(
@@ -86,8 +85,8 @@ class OcrEnrichmentPipeline(SimplePipeline):
         ]
 
     @classmethod
-    def get_default_options(cls) -> OcrEnrichmentPipelineOptions:
-        return OcrEnrichmentPipelineOptions()
+    def get_default_options(cls) -> PostOcrEnrichmentPipelineOptions:
+        return PostOcrEnrichmentPipelineOptions()
 
     def _enrich_document(self, conv_res: ConversionResult) -> ConversionResult:
         def _prepare_elements(
@@ -122,13 +121,13 @@ class OcrEnrichmentPipeline(SimplePipeline):
 
 
 class OcrApiEnrichmentModel(
-    GenericEnrichmentModel[OcrEnrichmentElement], BaseModelWithOptions
+    GenericEnrichmentModel[PostOcrEnrichmentElement], BaseModelWithOptions
 ):
     expansion_factor: float = 0.001
 
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
-    ) -> Optional[list[OcrEnrichmentElement]]:
+    ) -> Optional[list[PostOcrEnrichmentElement]]:
         if not self.is_processable(doc=conv_res.document, element=element):
             return None
 
@@ -167,7 +166,9 @@ class OcrApiEnrichmentModel(
                         page_ix
                     ].image.pil_image.crop(expanded_bbox.as_tuple())
                     # cropped_image.show()
-                    result.append(OcrEnrichmentElement(item=c, image=[cropped_image]))
+                    result.append(
+                        PostOcrEnrichmentElement(item=c, image=[cropped_image])
+                    )
             return result
         elif isinstance(element, TableItem):
             element_prov = element.prov[0]
@@ -204,7 +205,7 @@ class OcrApiEnrichmentModel(
                                 ].image.pil_image.crop(expanded_bbox.as_tuple())
                                 # cropped_image.show()
                                 result.append(
-                                    OcrEnrichmentElement(
+                                    PostOcrEnrichmentElement(
                                         item=cell, image=[cropped_image]
                                     )
                                 )
@@ -213,7 +214,7 @@ class OcrApiEnrichmentModel(
             multiple_crops = []
             # Crop the image form the page
             for element_prov in element.prov:
-                # element_prov = element.prov[0] # TODO: Not all items have prov
+                # Iterate over provenances
                 bbox = element_prov.bbox
 
                 page_ix = element_prov.page_no
@@ -243,7 +244,7 @@ class OcrApiEnrichmentModel(
                     # Return the proper cropped image
                     multiple_crops
             if len(multiple_crops) > 0:
-                return [OcrEnrichmentElement(item=element, image=multiple_crops)]
+                return [PostOcrEnrichmentElement(item=element, image=multiple_crops)]
             else:
                 return []
 
@@ -375,8 +376,6 @@ class OcrApiEnrichmentModel(
 
 
 def main() -> None:
-    # TODO: Properly process cases for the items which have more than one provenance
-
     # Let's prepare a Docling document json with embedded page images
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
@@ -406,7 +405,7 @@ def main() -> None:
 
     print("Post-process all bounding boxes with OCR")
     # Post-Process OCR on top of existing Docling document:
-    pipeline_options = OcrEnrichmentPipelineOptions(
+    pipeline_options = PostOcrEnrichmentPipelineOptions(
         api_options=PictureDescriptionApiOptions(
             url=LM_STUDIO_URL,
             prompt=DEFAULT_PROMPT,
@@ -421,7 +420,7 @@ def main() -> None:
     doc_converter = DocumentConverter(
         format_options={
             InputFormat.JSON_DOCLING: FormatOption(
-                pipeline_cls=OcrEnrichmentPipeline,
+                pipeline_cls=PostOcrEnrichmentPipeline,
                 pipeline_options=pipeline_options,
                 backend=DoclingJSONBackend,
             )
