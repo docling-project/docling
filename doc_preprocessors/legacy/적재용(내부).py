@@ -988,18 +988,19 @@ class DocumentProcessor:
                 date_text = document.key_value_items[0].graph.cells[1].text
                 created_date = self.parse_created_date(date_text)
 
+                # 날짜 정보가 없으면 json의 정보를 적용함
                 if created_date == 0 and "last_modified_date" in kwargs:
-                    created_date = self.parse_created_date(json.dumps(kwargs["last_modified_date"]))
+                    created_date = self.parse_created_date(kwargs["last_modified_date"])
 
         except (AttributeError, IndexError) as e:
             pass
 
         # kwargs에서 authors_team와 authors_department 추출
         if "authors_team" in kwargs:
-            authors_team = json.dumps(kwargs["authors_team"])
+            authors_team = json.dumps(kwargs["authors_team"], ensure_ascii=False)
 
         if "authors_department" in kwargs:
-            authors_department = json.dumps(kwargs["authors_department"])
+            authors_department = kwargs["authors_department"]
 
         for item, _ in document.iterate_items():
             if hasattr(item, 'label'):
