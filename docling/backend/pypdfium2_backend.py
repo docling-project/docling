@@ -255,9 +255,9 @@ class PyPdfiumPageBackend(PdfPageBackend):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         AREA_THRESHOLD = 0  # 32 * 32
         page_size = self.get_size()
-        rotation = self._ppage.get_rotation()
 
         with pypdfium2_lock:
+            rotation = self._ppage.get_rotation()
             for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
                 pos = obj.get_pos()
                 if rotation == 90:
