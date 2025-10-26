@@ -1,4 +1,5 @@
 import logging
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -178,3 +179,46 @@ def test_inflated_rows_handling(documents) -> None:
         f"reported {reported_max_row:,} rows, "
         f"correctly processed as {page_count} pages with proper dimensions"
     )
+
+
+def test_bytesio_stream():
+    """Test that Excel files can be loaded from BytesIO streams.
+
+    This test verifies that the BytesIO code path in the backend is working correctly,
+    ensuring that data_only=True is applied when loading workbooks from streams.
+    """
+    # Get a test Excel file
+    path = next(item for item in get_excel_paths() if item.stem == "xlsx_01")
+
+    # Load the file into a BytesIO stream
+    buf = BytesIO(path.open("rb").read())
+
+    # Create an InputDocument with the BytesIO stream
+    in_doc = InputDocument(
+        path_or_stream=buf,
+        format=InputFormat.XLSX,
+        filename=path.stem,
+        backend=MsExcelDocumentBackend,
+    )
+
+    # Initialize the backend with the BytesIO stream
+    backend = MsExcelDocumentBackend(in_doc=in_doc, path_or_stream=buf)
+
+    # Verify the backend is valid
+    assert backend.is_valid(), "Backend should be valid when loaded from BytesIO"
+
+    # Verify page count matches expected value
+    assert backend.page_count() == 4, "Should detect 4 pages from BytesIO stream"
+
+    # Convert the document
+    doc = backend.convert()
+
+    # Verify the document was converted successfully
+    assert doc is not None, "Document should be converted from BytesIO stream"
+    assert len(doc.pages) == 4, "Document should have 4 pages"
+
+    # Verify page sizes match expected dimensions
+    assert doc.pages.get(1).size.as_tuple() == (3.0, 7.0)
+    assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
+    assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
+    assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
