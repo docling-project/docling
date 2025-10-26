@@ -117,6 +117,52 @@ def test_chartsheet(documents) -> None:
     assert doc.pages[2].size.width == 0
 
 
+def test_chartsheet_data_values(documents) -> None:
+    """Test that data values are extracted correctly from xlsx_03_chartsheet.
+
+    This test verifies that calculated values (not formulas) are returned.
+    The file contains duck observations with year 2024 having a total of 310 ducks.
+    We need to verify that both 2024 and 310 appear in the parsed data.
+
+    Args:
+        documents: The paths and converted documents.
+    """
+    doc = next(item for path, item in documents if path.stem == "xlsx_03_chartsheet")
+
+    # Find all tables
+    tables = list(doc.tables)
+    assert len(tables) > 0, "Should have at least one table"
+
+    # Look for a table that has the year 2024 in it
+    table_with_2024 = None
+    row_index_of_2024 = None
+
+    for table in tables:
+        for cell in table.data.table_cells:
+            if cell.text == "2024":
+                table_with_2024 = table
+                row_index_of_2024 = cell.start_row_offset_idx
+                break
+        if table_with_2024:
+            break
+
+    assert table_with_2024 is not None, "Should find a table containing year 2024"
+    assert row_index_of_2024 is not None, "Should find row index for 2024"
+
+    # Now verify that the value 310 exists in the document
+    # (it may be in the same table or a different table due to how the parser splits tables)
+    found_310 = False
+    for table in tables:
+        for cell in table.data.table_cells:
+            if cell.text == "310":
+                found_310 = True
+                break
+        if found_310:
+            break
+
+    assert found_310, "Should find the value 310 (total ducks for 2024) in the document"
+
+
 def test_inflated_rows_handling(documents) -> None:
     """Test that files with inflated max_row are handled correctly.
 
