@@ -1,4 +1,5 @@
 import logging
+import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -100,7 +101,18 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             return
 
         from transformers import AutoProcessor
-        from vllm import LLM, SamplingParams
+
+        try:
+            from vllm import LLM, SamplingParams
+        except ImportError:
+            if sys.version_info < (3, 14):
+                raise ImportError(
+                    "vllm is not installed. Please install it via `pip install vllm`."
+                )
+            else:
+                raise ImportError(
+                    "vllm is not installed. It is not yet available on Python 3.14."
+                )
 
         # Device selection
         self.device = decide_device(
