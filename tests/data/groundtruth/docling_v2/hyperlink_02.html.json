@@ -18,6 +18,12 @@
     "self_ref": "#/body",
     "children": [
       {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/pictures/0"
+      },
+      {
         "$ref": "#/groups/0"
       }
     ],
@@ -33,7 +39,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/0"
+          "$ref": "#/texts/1"
         }
       ],
       "content_layer": "body",
@@ -44,6 +50,18 @@
   "texts": [
     {
       "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "caption",
+      "prov": [],
+      "orig": "Image alt text",
+      "text": "Image alt text"
+    },
+    {
+      "self_ref": "#/texts/1",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -57,7 +75,26 @@
       "level": 1
     }
   ],
-  "pictures": [],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [
+        {
+          "$ref": "#/texts/0"
+        }
+      ],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    }
+  ],
   "tables": [],
   "key_value_items": [],
   "form_items": [],

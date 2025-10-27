@@ -12,6 +12,7 @@ from PIL import Image
 from pypdfium2 import PdfPage
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.datamodel.backend_options import PdfBackendOptions
 from docling.datamodel.base_models import Size
 from docling.utils.locks import pypdfium2_lock
 
@@ -189,13 +190,23 @@ class DoclingParseV4PageBackend(PdfPageBackend):
 
 
 class DoclingParseV4DocumentBackend(PdfDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: PdfBackendOptions = PdfBackendOptions(),
+    ):
+        super().__init__(in_doc, path_or_stream, options)
 
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
         with pypdfium2_lock:
-            self._pdoc = pdfium.PdfDocument(self.path_or_stream)
+            self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
         self.parser = DoclingPdfParser(loglevel="fatal")
-        self.dp_doc: PdfDocument = self.parser.load(path_or_stream=self.path_or_stream)
+        self.dp_doc: PdfDocument = self.parser.load(
+            path_or_stream=self.path_or_stream, password=password
+        )
         success = self.dp_doc is not None
 
         if not success:

@@ -20,6 +20,7 @@ from pypdfium2 import PdfTextPage
 from pypdfium2._helpers.misc import PdfiumError
 
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
+from docling.datamodel.backend_options import PdfBackendOptions
 from docling.utils.locks import pypdfium2_lock
 
 
@@ -370,12 +371,20 @@ class PyPdfiumPageBackend(PdfPageBackend):
 
 
 class PyPdfiumDocumentBackend(PdfDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
-        super().__init__(in_doc, path_or_stream)
+    def __init__(
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: PdfBackendOptions = PdfBackendOptions(),
+    ):
+        super().__init__(in_doc, path_or_stream, options)
 
+        password = (
+            self.options.password.get_secret_value() if self.options.password else None
+        )
         try:
             with pypdfium2_lock:
-                self._pdoc = pdfium.PdfDocument(self.path_or_stream)
+                self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
         except PdfiumError as e:
             raise RuntimeError(
                 f"pypdfium could not load document with hash {self.document_hash}"
