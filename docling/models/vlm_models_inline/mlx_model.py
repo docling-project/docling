@@ -59,7 +59,6 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                         "mlx-vlm is not installed. It is not yet available on Python 3.14."
                     )
 
-
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             self.apply_chat_template = apply_chat_template
