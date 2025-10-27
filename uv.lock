@@ -1468,7 +1468,7 @@ vlm = [
     { name = "mlx-vlm", marker = "python_full_version >= '3.10' and python_full_version < '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "qwen-vl-utils" },
     { name = "transformers" },
-    { name = "vllm", marker = "python_full_version >= '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "vllm", marker = "python_full_version >= '3.10' and python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
 
 [package.dev-dependencies]
@@ -1559,7 +1559,7 @@ requires-dist = [
     { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
     { name = "transformers", marker = "extra == 'vlm'", specifier = ">=4.46.0,<5.0.0" },
     { name = "typer", specifier = ">=0.12.5,<0.20.0" },
-    { name = "vllm", marker = "python_full_version >= '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'vlm'", specifier = ">=0.10.0,<1.0.0" },
+    { name = "vllm", marker = "python_full_version >= '3.10' and python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'linux' and extra == 'vlm'", specifier = ">=0.10.0,<1.0.0" },
 ]
 provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "asr"]
 
