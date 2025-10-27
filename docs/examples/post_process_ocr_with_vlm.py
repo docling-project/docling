@@ -77,7 +77,7 @@ class PostOcrEnrichmentPipeline(SimplePipeline):
         self.pipeline_options: PostOcrEnrichmentPipelineOptions
 
         self.enrichment_pipe = [
-            OcrApiEnrichmentModel(
+            PostOcrApiEnrichmentModel(
                 enabled=True,
                 enable_remote_services=True,
                 artifacts_path=None,
@@ -122,7 +122,7 @@ class PostOcrEnrichmentPipeline(SimplePipeline):
         return conv_res
 
 
-class OcrApiEnrichmentModel(
+class PostOcrApiEnrichmentModel(
     GenericEnrichmentModel[PostOcrEnrichmentElement], BaseModelWithOptions
 ):
     expansion_factor: float = 0.001
