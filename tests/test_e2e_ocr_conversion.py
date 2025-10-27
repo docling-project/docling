@@ -70,20 +70,18 @@ def test_e2e_conversions():
         (EasyOcrOptions(force_full_page_ocr=True), False),
     ]
 
-    # rapidocr is only available for Python >=3.6,<3.13
-    if sys.version_info < (3, 13):
-        engines.append((RapidOcrOptions(), False))
-        engines.append((RapidOcrOptions(force_full_page_ocr=True), False))
-        engines.append(
-            (
-                RapidOcrOptions(
-                    force_full_page_ocr=True,
-                    rec_font_path="test",
-                    rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
-                ),
-                False,
-            )
+    engines.append((RapidOcrOptions(), False))
+    engines.append((RapidOcrOptions(force_full_page_ocr=True), False))
+    engines.append(
+        (
+            RapidOcrOptions(
+                force_full_page_ocr=True,
+                rec_font_path="test",
+                rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
+            ),
+            False,
         )
+    )
 
     # only works on mac
     if "darwin" == sys.platform:
