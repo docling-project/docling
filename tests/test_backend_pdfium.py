@@ -1,3 +1,4 @@
+import concurrent.futures
 from pathlib import Path
 
 import pytest
@@ -107,3 +108,58 @@ def test_merge_row():
         cell.text
         == "The journey of the word processor—from clunky typewriters to AI-powered platforms—"
     )
+
+
+def test_multithreaded_pdf_conversion():
+    """
+    Stress test: Create a new DocumentConverter in each thread and run
+    multiple PDF conversions concurrently to uncover thread-safety issues
+    in shared backends or library-level state.
+    """
+
+    num_threads = 10
+
+    # Prepare sample PDF documents
+    directory = Path("./tests/data/pdf/")
+    # List all PDF files in the directory and its subdirectories
+    pdf_docs = [
+        directory / "2305.03393v1-pg9.pdf",
+        directory / "code_and_formula.pdf",
+        directory / "right_to_left_01.pdf",
+        directory / "picture_classification.pdf",
+        directory / "2206.01062.pdf",
+        directory / "multi_page.pdf",
+    ]
+    pdf_docs = sorted(directory.rglob("*.pdf"))
+
+    def convert_worker(pdf_path: Path):
+        # Each thread creates its own converter
+        pipeline_options = PdfPipelineOptions()
+        pipeline_options.do_ocr = False
+        doc_converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
+                )
+            }
+        )
+        try:
+            result = doc_converter.convert(pdf_path)
+            return result
+        except Exception as e:
+            return e
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+        futures = [
+            executor.submit(convert_worker, pdf_docs[i % len(pdf_docs)])
+            for i in range(num_threads)
+        ]
+        results = [f.result() for f in futures]
+
+    exceptions = [r for r in results if isinstance(r, Exception)]
+
+    if exceptions:
+        for e in exceptions:
+            print(f"Thread exception: {e}")
+
+    assert not exceptions, f"Thread-safety issues detected: {exceptions}"
