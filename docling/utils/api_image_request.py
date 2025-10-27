@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 from io import BytesIO
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import requests
 from PIL import Image
@@ -21,7 +21,7 @@ def api_image_request(
     timeout: float = 20,
     headers: Optional[Dict[str, str]] = None,
     **params,
-) -> str:
+) -> Tuple[str, int]:
     img_io = BytesIO()
     image.save(img_io, "PNG")
     image_base64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
@@ -73,7 +73,7 @@ def api_image_request_streaming(
     headers: Optional[Dict[str, str]] = None,
     generation_stoppers: List[GenerationStopper] = [],
     **params,
-) -> str:
+) -> Tuple[str, int]:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.

@@ -313,6 +313,6 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     text=decoded_output,
                     generation_time=generation_time,
                     generated_tokens=tokens,
-                    num_tokens = len(tokens)
+                    num_tokens=len(tokens),
                 )
             _log.debug("MLX model: Released global lock")

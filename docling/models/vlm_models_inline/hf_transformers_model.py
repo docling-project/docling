@@ -374,4 +374,8 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
         for text in decoded_texts:
             # Apply decode_response to the output text
             decoded_text = self.vlm_options.decode_response(text)
-            yield VlmPrediction(text=decoded_text, generation_time=generation_time, num_tokens=num_tokens)
+            yield VlmPrediction(
+                text=decoded_text,
+                generation_time=generation_time,
+                num_tokens=num_tokens,
+            )
