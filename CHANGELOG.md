@@ -1,3 +1,25 @@
+## [v2.58.0](https://github.com/docling-project/docling/releases/tag/v2.58.0) - 2025-10-22
+
+### Feature
+
+* **pdf:** Support for password-protected PDF documents ([#2499](https://github.com/docling-project/docling/issues/2499)) ([`bbe82a6`](https://github.com/docling-project/docling/commit/bbe82a68d08e5dc33191524bb636f06112edff87))
+* **backend:** Add generic options support and HTML image handling modes ([#2011](https://github.com/docling-project/docling/issues/2011)) ([`a30e6a7`](https://github.com/docling-project/docling/commit/a30e6a76148079cc48fb179e4b9ca36371026b6f))
+* **ASR:** MLX Whisper Support for Apple Silicon ([#2366](https://github.com/docling-project/docling/issues/2366)) ([`657ce8b`](https://github.com/docling-project/docling/commit/657ce8b01cecd4983075142a64c076abb35e80ae))
+
+### Fix
+
+* **markdown:** Set the correct discriminator in md backend options ([#2501](https://github.com/docling-project/docling/issues/2501)) ([`4227fcc`](https://github.com/docling-project/docling/commit/4227fcc3e1e123da1ffc1a8609aa93d9a756a67e))
+* **xlsx:** Speed up by detecting the true last non-empty row/column ([#2404](https://github.com/docling-project/docling/issues/2404)) ([`b66624b`](https://github.com/docling-project/docling/commit/b66624bfff1b0db634925fe468a7fe1c2c78c077))
+
+### Documentation
+
+* Fix typo in mcp.md ([#2502](https://github.com/docling-project/docling/issues/2502)) ([`86556d8`](https://github.com/docling-project/docling/commit/86556d8367b1ed70ba59b8c6e96a09f91ad4798e))
+* Discord badge with join link ([#2473](https://github.com/docling-project/docling/issues/2473)) ([`dd03b53`](https://github.com/docling-project/docling/commit/dd03b531178a4038291fbf5785a8f3624965de86))
+
+### Performance
+
+* Use docling-parse-v4 as default ([#2503](https://github.com/docling-project/docling/issues/2503)) ([`89820d0`](https://github.com/docling-project/docling/commit/89820d01b5272d4600bdd4ea7168f0d031fd52dc))
+
 ## [v2.57.0](https://github.com/docling-project/docling/releases/tag/v2.57.0) - 2025-10-15
 
 ### Feature

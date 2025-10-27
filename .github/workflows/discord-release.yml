@@ -1,0 +1,42 @@
+# .github/workflows/discord-release.yml
+name: Notify Discord on Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send release info to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.RELEASES_DISCORD_WEBHOOK }}
+        run: |
+          REPO_NAME=${{ github.repository }}
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+          RELEASE_NAME="${{ github.event.release.name }}"
+          RELEASE_URL=${{ github.event.release.html_url }}
+
+          # Capture the body safely (handles backticks, $, ", etc.)
+          RELEASE_BODY=$(cat <<'EOF'
+            ${{ github.event.release.body }}
+          EOF
+          )
+
+          # Fallback if release name is empty
+          if [ -z "$RELEASE_NAME" ]; then
+            RELEASE_NAME=$RELEASE_TAG
+          fi
+
+          PAYLOAD=$(jq -n \
+          --arg title "🚀 New Release: $RELEASE_NAME" \
+          --arg url "$RELEASE_URL" \
+          --arg desc "$RELEASE_BODY" \
+          --arg author_name "$REPO_NAME" \
+          --arg author_icon "https://github.com/docling-project.png" \
+          '{embeds: [{title: $title, url: $url, description: $desc, color: 5814783, author: {name: $author_name, icon_url: $author_icon}}]}')
+
+          curl -H "Content-Type: application/json" \
+               -d "$PAYLOAD" \
+               "$DISCORD_WEBHOOK"
