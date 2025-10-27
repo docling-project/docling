@@ -1,5 +1,6 @@
-from __future__ import annotations
-
+import argparse
+import logging
+import os
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -24,6 +25,7 @@ from docling_core.types.doc.document import (
 from PIL import Image
 from PIL.ImageOps import crop
 from pydantic import BaseModel, ConfigDict
+from tqdm import tqdm
 
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.datamodel.accelerator_options import AcceleratorOptions
@@ -52,10 +54,8 @@ LM_STUDIO_URL = "http://localhost:1234/v1/chat/completions"
 LM_STUDIO_MODEL = "nanonets-ocr2-3b"
 
 DEFAULT_PROMPT = "Extract the text from the above document as if you were reading it naturally. Output pure text, no html and no markdown. Pay attention on line breaks and don't miss text after line break. Put all text in one line."
-
-PDF_DOC = "tests/data/pdf/2305.03393v1-pg9.pdf"
-JSON_DOC = "scratch/test_doc.json"
-POST_PROCESSED_JSON_DOC = "scratch/test_doc_ocr.json"
+VERBOSE = False
+SHOW_IMAGE = False
 
 
 class PostOcrEnrichmentElement(BaseModel):
@@ -343,8 +343,9 @@ class PostOcrApiEnrichmentModel(
 
             output = clean_html_tags(output).strip()
 
-            if isinstance(item, (TextItem)):
-                print(f"OLD TEXT: {item.text}")
+            if VERBOSE:
+                if isinstance(item, (TextItem)):
+                    print(f"OLD TEXT: {item.text}")
 
             # Re-populate text
             if isinstance(item, (TextItem, GraphCell)):
@@ -362,8 +363,9 @@ class PostOcrApiEnrichmentModel(
             else:
                 raise ValueError(f"Unknown item type: {type(item)}")
 
-            if isinstance(item, (TextItem)):
-                print(f"NEW TEXT: {item.text}")
+            if VERBOSE:
+                if isinstance(item, (TextItem)):
+                    print(f"NEW TEXT: {item.text}")
 
             # Take care of charspans for relevant types
             if isinstance(item, GraphCell):
@@ -374,7 +376,7 @@ class PostOcrApiEnrichmentModel(
             yield item
 
 
-def main() -> None:
+def convert_pdf(pdf_path: Path, out_intermediate_json: Path):
     # Let's prepare a Docling document json with embedded page images
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
@@ -392,18 +394,23 @@ def main() -> None:
         )
     )
 
-    print("Converting PDF to get a Docling document json with embedded page images...")
-    conv_result = doc_converter.convert(PDF_DOC)
+    if VERBOSE:
+        print(
+            "Converting PDF to get a Docling document json with embedded page images..."
+        )
+    conv_result = doc_converter.convert(pdf_path)
     conv_result.document.save_as_json(
-        filename=JSON_DOC, image_mode=ImageRefMode.EMBEDDED
+        filename=out_intermediate_json, image_mode=ImageRefMode.EMBEDDED
     )
+    if VERBOSE:
+        md1 = conv_result.document.export_to_markdown()
+        print("*** ORIGINAL MARKDOWN ***")
+        print(md1)
 
-    md1 = conv_result.document.export_to_markdown()
-    print("*** ORIGINAL MARKDOWN ***")
-    print(md1)
 
-    print("Post-process all bounding boxes with OCR")
+def post_process_json(in_json: Path, out_final_json: Path):
     # Post-Process OCR on top of existing Docling document, per element's bounding box:
+    print(f"Post-process all bounding boxes with OCR... {os.path.basename(in_json)}")
     pipeline_options = PostOcrEnrichmentPipelineOptions(
         api_options=PictureDescriptionApiOptions(
             url=LM_STUDIO_URL,
@@ -425,12 +432,80 @@ def main() -> None:
             )
         }
     )
-    result = doc_converter.convert(JSON_DOC)
-    result.document.pages[1].image.pil_image.show()
-    result.document.save_as_json(POST_PROCESSED_JSON_DOC)
+    result = doc_converter.convert(in_json)
+    if SHOW_IMAGE:
+        result.document.pages[1].image.pil_image.show()
+    result.document.save_as_json(out_final_json)
     md = result.document.export_to_markdown()
     print("*** MARKDOWN ***")
     print(md)
+
+
+def process_pdf(pdf_path: Path, scratch_dir: Path, out_dir: Path):
+    inter_json = scratch_dir / (pdf_path.stem + ".json")
+    final_json = out_dir / (pdf_path.stem + ".json")
+    inter_json.parent.mkdir(parents=True, exist_ok=True)
+    final_json.parent.mkdir(parents=True, exist_ok=True)
+    if final_json.exists() and final_json.stat().st_size > 0:
+        return  # already done
+    convert_pdf(pdf_path, inter_json)
+    post_process_json(inter_json, final_json)
+
+
+def process_json(json_path: Path, out_dir: Path):
+    final_json = out_dir / (json_path.stem + ".json")
+    final_json.parent.mkdir(parents=True, exist_ok=True)
+    if final_json.exists() and final_json.stat().st_size > 0:
+        return  # already done
+    post_process_json(json_path, final_json)
+
+
+def run_jsons(in_path: Path, out_dir: Path):
+    if in_path.is_dir():
+        jsons = sorted(in_path.glob("*.json"))
+        if not jsons:
+            raise SystemExit("Folder mode expects one or more .json files")
+        for j in tqdm(jsons):
+            process_json(j, out_dir)
+    else:
+        raise SystemExit("Invalid --in path")
+
+
+def main():
+    logging.getLogger().setLevel(logging.ERROR)
+    p = argparse.ArgumentParser(description="PDF/JSON -> final JSON pipeline")
+    p.add_argument(
+        "--in",
+        dest="in_path",
+        default="tests/data/pdf/2305.03393v1-pg9.pdf",
+        required=False,
+        help="Path to a PDF/JSON file or a folder of JSONs",
+    )
+    p.add_argument(
+        "--out",
+        dest="out_dir",
+        default="scratch/",
+        required=False,
+        help="Folder for final JSONs (scratch goes inside)",
+    )
+    args = p.parse_args()
+
+    in_path = Path(args.in_path).expanduser().resolve()
+    out_dir = Path(args.out_dir).expanduser().resolve()
+    scratch_dir = out_dir / "temp"
+
+    if not in_path.exists():
+        raise SystemExit(f"Input not found: {in_path}")
+
+    if in_path.is_file():
+        if in_path.suffix.lower() == ".pdf":
+            process_pdf(in_path, scratch_dir, out_dir)
+        elif in_path.suffix.lower() == ".json":
+            process_json(in_path, out_dir)
+        else:
+            raise SystemExit("Single-file mode expects a .pdf or .json")
+    else:
+        run_jsons(in_path, out_dir)
 
 
 if __name__ == "__main__":
