@@ -117,7 +117,7 @@ def test_multithreaded_pdf_conversion():
     in shared backends or library-level state.
     """
 
-    num_threads = 10
+    num_threads = 20
 
     # Prepare sample PDF documents
     directory = Path("./tests/data/pdf/")
@@ -130,24 +130,45 @@ def test_multithreaded_pdf_conversion():
         directory / "2206.01062.pdf",
         directory / "multi_page.pdf",
     ]
-    pdf_docs = sorted(directory.rglob("*.pdf"))
 
     def convert_worker(pdf_path: Path):
-        # Each thread creates its own converter
-        pipeline_options = PdfPipelineOptions()
-        pipeline_options.do_ocr = False
-        doc_converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
-                )
-            }
-        )
+        doc_backend = _get_backend(pdf_path)
+
         try:
-            result = doc_converter.convert(pdf_path)
-            return result
+            print(f"Converting {pdf_path}..")
+            num_cells = 0
+            for page_index in range(doc_backend.page_count()):
+                for i in range(10):
+                    page_backend: PyPdfiumPageBackend = doc_backend.load_page(
+                        page_index
+                    )
+                    cells = list(page_backend.get_text_cells())
+                    num_cells += len(cells)
+            print("Convert done!")
+            return num_cells
+
         except Exception as e:
+            print("EXCEPTION!!!!")
             return e
+
+        # # Each thread creates its own converter
+        # pipeline_options = PdfPipelineOptions()
+        # pipeline_options.do_ocr = False
+        # doc_converter = DocumentConverter(
+        #     format_options={
+        #         InputFormat.PDF: PdfFormatOption(
+        #             pipeline_options=pipeline_options, backend=PyPdfiumDocumentBackend
+        #         )
+        #     }
+        # )
+        # try:
+        #     print(f"Converting {pdf_path}..")
+        #     result = doc_converter.convert(pdf_path)
+        #     print("Convert done!")
+        #     return result
+        # except Exception as e:
+        #     print("EXCEPTION!!!!")
+        #     return e
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
         futures = [
