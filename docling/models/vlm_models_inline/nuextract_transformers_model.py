@@ -153,7 +153,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
             )
-            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            self.vlm_model.eval()
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(artifacts_path)

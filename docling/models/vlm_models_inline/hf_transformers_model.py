@@ -129,7 +129,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
-            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            self.vlm_model.eval()
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(
