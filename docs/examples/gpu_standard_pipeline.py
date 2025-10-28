@@ -1,28 +1,30 @@
+import datetime
 import logging
 import time
 from pathlib import Path
 
+import numpy as np
+from pydantic import TypeAdapter
+
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.pipeline_options import (
     ThreadedPdfPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfPipeline
+from docling.utils.profiling import ProfilingItem
 
 _log = logging.getLogger(__name__)
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("docling").setLevel(logging.WARNING)
+    _log.setLevel(logging.INFO)
 
     data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_paths = [
-        data_folder / "pdf/2206.01062.pdf",
-        # data_folder / "pdf/2203.01017v2.pdf",
-        # data_folder / "pdf/2305.03393v1.pdf",
-        # data_folder / "pdf/redp5110_sampled.pdf",
-    ]
+    # input_doc_path = data_folder / "pdf" / "2305.03393v1.pdf"  # 14 pages
+    input_doc_path = data_folder / "pdf" / "redp5110_sampled.pdf"  # 18 pages
 
     pipeline_options = ThreadedPdfPipelineOptions(
         accelerator_options=AcceleratorOptions(
@@ -44,11 +46,18 @@ def main():
     )
 
     start_time = time.time()
-    conv_result = doc_converter.convert(input_doc_paths)  # noqa: F841
-    end_time = time.time() - start_time
+    doc_converter.initialize_pipeline(InputFormat.PDF)
+    init_runtime = time.time() - start_time
+    _log.info(f"Pipeline initialized in {init_runtime:.2f} seconds.")
 
-    # TODO: add timings which don't include models init.
-    _log.info(f"Document converted in {end_time:.2f} seconds.")
+    start_time = time.time()
+    conv_result = doc_converter.convert(input_doc_path)
+    pipeline_runtime = time.time() - start_time
+    assert conv_result.status == ConversionStatus.SUCCESS
+
+    num_pages = len(conv_result.pages)
+    _log.info(f"Document converted in {pipeline_runtime:.2f} seconds.")
+    _log.info(f"  {num_pages / pipeline_runtime:.2f} pages/second.")
 
 
 if __name__ == "__main__":
