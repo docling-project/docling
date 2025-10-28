@@ -363,7 +363,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
         # -- Optional logging
-        num_tokens = 0
+        num_tokens = None
         if generated_ids.shape[0] > 0:
             num_tokens = int(generated_ids[0].shape[0])
             _log.debug(

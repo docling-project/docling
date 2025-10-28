@@ -207,7 +207,7 @@ class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
-    num_tokens: Optional[int] = -1
+    num_tokens: Optional[int] = 0
     stop_reason: Optional[str] = None  # todo define an enum for possible stop reasons
 
 

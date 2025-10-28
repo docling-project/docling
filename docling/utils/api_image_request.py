@@ -21,7 +21,7 @@ def api_image_request(
     timeout: float = 20,
     headers: Optional[dict[str, str]] = None,
     **params,
-) -> Tuple[str, int]:
+) -> Tuple[str, Optional[int]]:
     img_io = BytesIO()
     image.save(img_io, "PNG")
     image_base64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
@@ -73,7 +73,7 @@ def api_image_request_streaming(
     headers: Optional[dict[str, str]] = None,
     generation_stoppers: list[GenerationStopper] = [],
     **params,
-) -> Tuple[str, int]:
+) -> Tuple[str, Optional[int]]:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.
@@ -152,13 +152,13 @@ def api_image_request_streaming(
                 piece = ""
 
             # Try to extract token count
-            num_tokens = -1
+            num_tokens = None
             try:
                 if "usage" in obj:
                     usage = obj["usage"]
                     num_tokens = usage.get("total_tokens")
             except Exception as e:
-                num_tokens = -1
+                num_tokens = None
                 _log.debug("Usage key not included in response: %s", e)
 
             if piece:
