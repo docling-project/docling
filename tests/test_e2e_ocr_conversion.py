@@ -70,18 +70,26 @@ def test_e2e_conversions():
         (EasyOcrOptions(force_full_page_ocr=True), False),
     ]
 
-    engines.append((RapidOcrOptions(), False))
-    engines.append((RapidOcrOptions(force_full_page_ocr=True), False))
-    engines.append(
-        (
-            RapidOcrOptions(
-                force_full_page_ocr=True,
-                rec_font_path="test",
-                rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
-            ),
-            False,
+    for rapidocr_backend in ["onnxruntime", "torch"]:
+        if sys.version_info >= (3, 14) and rapidocr_backend == "onnxruntime":
+            # skip onnxruntime backend on Python 3.14
+            continue
+
+        engines.append((RapidOcrOptions(backend=rapidocr_backend), False))
+        engines.append(
+            (RapidOcrOptions(backend=rapidocr_backend, force_full_page_ocr=True), False)
         )
-    )
+        engines.append(
+            (
+                RapidOcrOptions(
+                    backend=rapidocr_backend,
+                    force_full_page_ocr=True,
+                    rec_font_path="test",
+                    rapidocr_params={"Rec.font_path": None},  # overwrites rec_font_path
+                ),
+                False,
+            )
+        )
 
     # only works on mac
     if "darwin" == sys.platform:
