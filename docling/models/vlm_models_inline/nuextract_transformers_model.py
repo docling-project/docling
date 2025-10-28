@@ -1,4 +1,5 @@
 import logging
+import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -153,7 +154,10 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
             )
-            self.vlm_model.eval()
+            if sys.version_info < (3, 14):
+                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            else:
+                self.vlm_model.eval()
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(artifacts_path)

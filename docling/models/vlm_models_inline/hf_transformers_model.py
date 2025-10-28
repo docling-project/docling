@@ -1,5 +1,6 @@
 import importlib.metadata
 import logging
+import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -129,7 +130,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
-            self.vlm_model.eval()
+            if sys.version_info < (3, 14):
+                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            else:
+                self.vlm_model.eval()
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(
