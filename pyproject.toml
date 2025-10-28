@@ -70,18 +70,7 @@ dependencies = [
     'scipy (>=1.6.0,<2.0.0)',
     # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
     # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
-    'wand',
-    'grpcio',
-    'grpcio-tools',
-    "fastapi>=0.116.0",
-    "pymupdf>=1.26.4",
-    "pydub>=0.25.1",
-    "langchain>=0.3.27",
-    "langchain-community>=0.3.29",
-    "markdown2>=2.5.4",
-    "chardet>=5.2.0",
-    "unstructured>=0.8.0,<0.10.0",
-    "audioop-lts; python_version >= '3.13'",
+
 ]
 
 [project.urls]
@@ -114,10 +103,15 @@ rapidocr = [
 asr = [
     "openai-whisper>=20250625",
 ]
-genos-tools = ["genos-tools"]  # ← 경로 대신 '패키지 이름'만
-
-[tool.uv.sources]
-genos-tools = { path = "genos-tools", editable = true }
+#genos-tools = ["genos-tools"]  # ← 경로 대신 '패키지 이름'만
+#
+#[tool.uv.sources]
+#genos-tools = { path = "genos-tools", editable = true }
+#
+#[tool.uv.workspace]
+#members = [
+#    "genon/serving/ocr_paddle_server",
+#]
 
 [dependency-groups]
 dev = [

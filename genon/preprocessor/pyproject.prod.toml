@@ -1,0 +1,62 @@
+[project]
+name = "docling-preprocessor"
+version = "0.1.0"
+description = ""
+authors = [{ name = "Seunghyun Nam", email = "kslee@mnc.ai" }]
+requires-python = '>=3.9,<4.0'
+dependencies = [
+    "python-multipart==0.0.6",
+    "gunicorn==21.0.0",
+    "uvicorn==0.21.1",
+    "pyarrow==20.0.0",
+    "fastapi==0.110.2",
+    "starlette==0.37.2",
+    "aiofiles==24.1.0",
+    "aiohttp==3.12.13",
+    "transformers==4.51.3",
+    "accelerate==1.6.0",
+    "langchain==0.2.5",
+    "langchain-core==0.2.9",
+    "langchain-community==0.2.5",
+    "pymupdf==1.26.3",
+    "unstructured==0.16.9",
+    "python-pptx==1.0.2",
+    "python-docx==1.1.2",
+    "python-magic==0.4.27",
+    "pyhwp==0.1b15",
+    "markdown==3.8.2",
+    "markdown2==2.5.3",
+    "pydub==0.25.1",
+    "weasyprint==63.0",
+    "aiofile==3.9.0",
+    "watchfiles==1.1.0",
+    "pika==1.3.2",
+    "chardet==5.2.0",
+    "pdfminer-six==20250506",
+    "docling",
+]
+
+[tool.uv.sources]
+docling = [
+    { path = "../.." }
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/**/*", "*.json"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/**/*", "*.json"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/**/*" = "*"
+"*.json" = "*"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.hatch.metadata]
+allow-direct-references = true  # Direct reference 허용

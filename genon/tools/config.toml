@@ -1,0 +1,31 @@
+[profiles.bok.db]
+username = "root"
+password = "mnc1!"
+host     = "192.168.73.170"
+port     = 31745
+name     = "llmops"
+
+[profiles.bok.weaviate]
+host       = "192.168.73.170"
+port       = 32619
+grpc_port  = 30199
+skip_init_checks = true
+
+[profiles.bok.app]
+output_dir = "./bok"
+
+[profiles.mid.db]
+username = "root"
+password = "mnc1!"
+host     = "llmops-mariadb-service"
+port     = 3306
+name     = "llmops"
+
+[profiles.mid.weaviate]
+host       = "192.168.73.170"
+port       = 32619
+grpc_port  = 30199
+skip_init_checks = true
+
+[profiles.mid.app]
+output_dir = "./mid"

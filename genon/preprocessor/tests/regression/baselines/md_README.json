@@ -1,0 +1,31 @@
+{
+  "num_vectors": 1,
+  "vectors": [
+    {
+      "text": "지원되는 파일 형식사용법샘플 파일 폴더파일명 규칙\n샘플 파일 폴더\n샘플 파일 폴더\n이 폴더는 테스트용 샘플 파일들을 저장하는 곳입니다.\n샘플 파일 폴더\n사용법\n이 폴더에\nsample.pdf\n파일을 추가하세요\ngenos_di/test.py\n를 실행하면 해당 파일을 처리합니다\n샘플 파일 폴더\n지원되는 파일 형식\nPDF (.pdf)\nHWP (.hwp)\nDOCX (.docx)\nTXT (.txt)\n기타 DocumentProcessor가 지원하는 형식\n샘플 파일 폴더\n파일명 규칙\n기본적으로\nsample.pdf\n를 찾습니다\n다른 파일명을 사용하려면\ntest.py\n의\nfile_path\n변수를 수정하세요",
+      "n_char": 332,
+      "n_word": 69,
+      "n_line": 28,
+      "e_page": 1,
+      "i_page": 1,
+      "i_chunk_on_page": 0,
+      "n_chunk_of_page": 1,
+      "i_chunk_on_doc": 0,
+      "n_chunk_of_doc": 1,
+      "n_page": 1,
+      "reg_date": "2025-10-02T05:35:48Z",
+      "chunk_bboxes": "[{\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"title\", \"ref\": \"#/texts/0\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/1\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"section_header\", \"ref\": \"#/texts/2\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/3\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/4\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"code\", \"ref\": \"#/texts/5\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/6\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/7\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"code\", \"ref\": \"#/texts/8\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/9\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"section_header\", \"ref\": \"#/texts/10\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/11\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/12\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/13\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/14\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/15\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"section_header\", \"ref\": \"#/texts/16\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/17\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/18\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"code\", \"ref\": \"#/texts/19\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/20\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/21\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/22\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"code\", \"ref\": \"#/texts/23\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/24\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"code\", \"ref\": \"#/texts/25\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 1.0, \"b\": 1.0, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"text\", \"ref\": \"#/texts/26\"}]",
+      "media_files": "[]",
+      "title": "샘플 파일 폴더",
+      "created_date": 0
+    }
+  ],
+  "label_distribution": {
+    "title": 1,
+    "text": 9,
+    "section_header": 3,
+    "list_item": 9,
+    "code": 5
+  },
+  "total_characters": 332
+}

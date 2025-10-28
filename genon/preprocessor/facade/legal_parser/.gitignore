@@ -1,0 +1,4 @@
+/venv
+/resources
+*.env*
+*.sh

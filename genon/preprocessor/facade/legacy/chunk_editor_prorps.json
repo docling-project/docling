@@ -1,0 +1,470 @@
+[
+  {
+    "dataType": ["text"],
+    "description": "법령명(한글)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "law_name",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "법령 ID",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "law_id",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "행정규칙 ID",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "admrule_id",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "타입(법령, 행정규칙 등)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "type",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "본문 텍스트",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "text",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "계층 경로",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "hierarchy_path",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "조문 ID",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "article_id",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["number"],
+    "description": "조문 번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "article_num"
+  },
+  {
+    "dataType": ["number"],
+    "description": "조문 가지번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "article_sub_num"
+  },
+  {
+    "dataType": ["text"],
+    "description": "조문 제목",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "article_title",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["number"],
+    "description": "조문의 장 번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "chapter_number"
+  },
+  {
+    "dataType": ["text"],
+    "description": "조문의 장 제목",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "chapter_title",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["number"],
+    "description": "조문의 절 번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "section_number"
+  },
+  {
+    "dataType": ["text"],
+    "description": "조문의 절 제목",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "section_title",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["number"],
+    "description": "조문에서의 청크 인덱스",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "i_chunk_on_article"
+  },
+  {
+    "dataType": ["number"],
+    "description": "조문에서의 총 청크 수",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "n_chunk_of_article"
+  },
+  {
+    "dataType": ["text"],
+    "description": "부칙 ID",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "addendum_id",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "부칙 번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "addendum_num"
+  },
+  {
+    "dataType": ["text"],
+    "description": "부칙 제목",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "addendum_title",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["number"],
+    "description": "부칙에서의 청크 인덱스",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "i_chunk_on_addendum"
+  },
+  {
+    "dataType": ["number"],
+    "description": "부칙에서의 총 청크 수",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "n_chunk_of_addendum"
+  },
+  {
+    "dataType": ["text"],
+    "description": "별표 ID",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "appendix_id",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["number"],
+    "description": "별표 번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "appendix_num"
+  },
+  {
+    "dataType": ["number"],
+    "description": "별표 가지번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "appendix_sub_num"
+  },
+  {
+    "dataType": ["text"],
+    "description": "별표 제목",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "appendix_title",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "파일 링크",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "file_link",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["object[]"],
+    "description": "행정규칙 첨부파일",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "file_attached",
+    "nestedProperties": [
+    {
+      "dataType": ["text"],
+      "description": "파일 ID",
+      "name": "file_id"
+    },
+    {
+      "dataType": ["text"],
+      "description": "파일 이름",
+      "name": "filename"
+    },
+    {
+      "dataType": ["text"],
+      "description": "파일 링크",
+      "name": "filelink"
+    }
+  ]
+  },
+  {
+    "dataType": ["text"],
+    "description": "법령 번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "law_num",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "행정규칙 번호",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "admrule_num",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "행정규칙 이름",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "rule_name",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "행정규칙 유형",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "rule_type",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "현행여부",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "is_effective",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "조문 최신 공포(개정)일자 (yyyymmdd 형식)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "announce_date",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "시행일자 (yyyymmdd 형식)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "enforce_date",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "제정일자 (첫 번째 부칙의 공포일자)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "enact_date",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text"],
+    "description": "소관 부처",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "dept",
+    "tokenization": "word"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "관련 법령명 리스트",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_laws"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "관련 법조항 ID 리스트",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_articles"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "관련 부칙 ID 리스트",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_addenda"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "관련 별표 ID 리스트",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_appendices"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "부칙 (공포일자 최신순으로 정렬된 부칙 ID 리스트)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_addenda_law"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "별표 ID 목록",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_appendices_law"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "부칙 (해당 법령의 부칙 키 리스트, 공포일자 최신순으로 정렬)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_addenda_admrule"
+  },
+  {
+    "dataType": ["text[]"],
+    "description": "별표 (관련 별표 ID 리스트)",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": true,
+    "name": "related_appendices_admrule"
+  },
+  {
+    "dataType": ["object[]"],
+    "description": "상하위 법령 정보",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "hierarchy_laws",
+    "nestedProperties": [
+    {
+      "dataType": ["text"],
+      "description": "법령 ID",
+      "name": "law_id"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령 번호",
+      "name": "law_num"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령 코드",
+      "name": "law_code"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령 유형",
+      "name": "law_type"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령명",
+      "name": "law_name"
+    },
+    {
+      "dataType": ["text"],
+      "description": "상위 법령 ID",
+      "name": "parent_id"
+    }
+  ]
+  },
+  {
+    "dataType": ["object[]"],
+    "description": "연결된 법령 정보",
+    "indexFilterable": true,
+    "indexRangeFilters": false,
+    "indexSearchable": false,
+    "name": "connected_laws",
+    "nestedProperties": [
+    {
+      "dataType": ["text"],
+      "description": "법령 ID",
+      "name": "law_id"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령 번호",
+      "name": "law_num"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령 코드",
+      "name": "law_code"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령 유형",
+      "name": "law_type"
+    },
+    {
+      "dataType": ["text"],
+      "description": "법령명",
+      "name": "name"
+    }
+  ]
+  }
+]

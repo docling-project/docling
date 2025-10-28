@@ -1,0 +1,116 @@
+# syntax=docker/dockerfile:1.7
+
+########################################
+# Base: OS tools + uv + global PaddleGPU + venv(/app/.venv)
+########################################
+ARG BASE_IMAGE=paddlepaddle/paddle:3.0.0-gpu-cuda12.6-cudnn9.5-trt10.5
+FROM ${BASE_IMAGE} AS base
+
+# Basic tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tini curl ca-certificates git build-essential unzip \
+ && rm -rf /var/lib/apt/lists/*
+
+# uv (installer/runner)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Make python path predictable for tools that expect /usr/local/bin/python
+RUN ln -sf /usr/bin/python3 /usr/local/bin/python
+
+# App dir & common env
+RUN mkdir -p /app
+ENV VIRTUAL_ENV=/app/.venv \
+    UV_PYTHON=/usr/bin/python3 \
+    UV_VIRTUALENVS_CREATE=1 \
+    UV_VIRTUALENVS_IN_PROJECT=1 \
+    UV_NO_INTERACTION=1 \
+    PATH="/app/.venv/bin:/root/.local/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# ---- Global Paddle (GPU) installed in *base* layer ----
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install -U pip setuptools wheel && \
+    pip install -U paddlepaddle-gpu==3.2.0 \
+      -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+
+# Remove possible distutils PyYAML (optional; avoids conflicts)
+RUN apt-get purge -y python3-yaml || true
+
+# ---- Create venv that can see global site-packages (Paddle lives globally) ----
+RUN uv venv --system-site-packages "${VIRTUAL_ENV}" && ls -al /app/.venv
+
+########################################
+# Deps: lock & install app deps into venv
+########################################
+FROM base AS deps
+WORKDIR /app
+COPY serving/ocr_paddle_server/pyproject.toml /app/pyproject.toml
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv lock && \
+    uv sync --no-dev
+
+########################################
+# App: entrypoint + models + configs
+########################################
+FROM base AS app
+WORKDIR /app
+
+# Entrypoint
+COPY serving/ocr_paddle_server/docker/entrypoint-ocr.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# OCR models (zip → /models)
+COPY serving/ocr_paddle_server/resources/paddleocr_model.zip /tmp/paddleocr_model.zip
+RUN mkdir -p /models/paddleocr_model \
+ && unzip -q -o /tmp/paddleocr_model.zip -d /models \
+ && rm -f /tmp/paddleocr_model.zip
+
+# Pipeline & Supervisor configs + health checker
+COPY serving/ocr_paddle_server/config/ocr.yaml /tmp/ocr.yaml
+COPY serving/ocr_paddle_server/config/supervisord.conf /etc/supervisor/supervisord.conf
+COPY serving/ocr_paddle_server/etc/health_checker.sh /usr/local/bin/health_checker.sh
+RUN chmod +x /usr/local/bin/health_checker.sh
+
+########################################
+# Runtime: thin final image (inherits from base to keep global PaddleGPU)
+########################################
+FROM base AS runtime
+
+# Supervisor for process management
+RUN apt-get update && apt-get install -y --no-install-recommends supervisor \
+ && rm -rf /var/lib/apt/lists/*
+
+# Keep the predictable python path
+RUN ln -sf /usr/bin/python3 /usr/local/bin/python
+
+ENV VIRTUAL_ENV=/app/.venv \
+    PATH="/app/.venv/bin:${PATH}" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Bring venv (with deps) + app artifacts
+COPY --from=deps /app/.venv /app/.venv
+COPY --from=app /entrypoint.sh /entrypoint.sh
+COPY --from=app /models /models
+COPY --from=app /tmp/ocr.yaml /app/ocr.yaml
+COPY --from=app /etc/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+COPY --from=app /usr/local/bin/health_checker.sh /usr/local/bin/health_checker.sh
+
+# Logs & runtime dirs
+RUN mkdir -p /var/log/supervisor /var/log/paddlex /var/run
+
+# Service port & env
+EXPOSE 8080
+ENV OCR_PORT=8080
+
+# (Optional) Container-level healthcheck (expects your service to expose /health)
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${OCR_PORT}/health" || exit 1
+
+# PID1 = tini → supervisord (paddlex is managed by supervisor)
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
