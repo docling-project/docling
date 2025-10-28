@@ -75,7 +75,7 @@ class PictureDescriptionVlmModel(
                         else "sdpa"
                     ),
                 )
-                self.model = torch.compile(self.model)  # type: ignore
+                self.model.eval()
 
             self.provenance = f"{self.options.repo_id}"
 
