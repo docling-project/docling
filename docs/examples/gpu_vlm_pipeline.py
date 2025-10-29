@@ -24,7 +24,7 @@ def main():
     logging.getLogger("docling").setLevel(logging.WARNING)
     _log.setLevel(logging.INFO)
 
-    BATCH_SIZE = 24
+    BATCH_SIZE = 64
 
     settings.perf.page_batch_size = BATCH_SIZE
     settings.debug.profile_pipeline_timings = True
@@ -34,7 +34,7 @@ def main():
     input_doc_path = data_folder / "pdf" / "redp5110_sampled.pdf"  # 18 pages
 
     vlm_options = ApiVlmOptions(
-        url="http://localhost:1234/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
+        url="http://localhost:8000/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
         params=dict(
             model=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.repo_id,
             max_tokens=4096,
@@ -75,7 +75,7 @@ def main():
     num_pages = len(conv_result.pages)
     pipeline_runtime = conv_result.timings["pipeline_total"].times[0]
     _log.info(f"Document converted in {pipeline_runtime:.2f} seconds.")
-    _log.info(f"  {num_pages / pipeline_runtime:.2f} pages/second.")
+    _log.info(f"  [efficiency]: {num_pages / pipeline_runtime:.2f} pages/second.")
     for stage in ("page_init", "vlm"):
         values = np.array(conv_result.timings[stage].times)
         _log.info(

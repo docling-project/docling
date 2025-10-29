@@ -31,7 +31,7 @@ def main():
             device=AcceleratorDevice.CUDA,
         ),
         ocr_batch_size=4,
-        layout_batch_size=32,
+        layout_batch_size=64,
         table_batch_size=4,
     )
     pipeline_options.do_ocr = False
