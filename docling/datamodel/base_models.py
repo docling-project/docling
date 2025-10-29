@@ -166,6 +166,12 @@ class DoclingComponentType(str, Enum):
     USER_INPUT = "user_input"
 
 
+class StopReason(str, Enum):
+    LENGTH = "length"  # max tokens reached
+    STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
+    END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
+
+
 class ErrorItem(BaseModel):
     component_type: DoclingComponentType
     module_name: str
@@ -208,7 +214,7 @@ class VlmPrediction(BaseModel):
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
     num_tokens: Optional[int] = None
-    stop_reason: Optional[str] = None  # todo define an enum for possible stop reasons
+    stop_reason: Optional[StopReason] = None
 
 
 class ContainerElement(
