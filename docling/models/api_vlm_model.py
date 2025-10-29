@@ -1,8 +1,6 @@
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 
-from transformers import StoppingCriteria
-
 from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
