@@ -36,7 +36,6 @@ from typing_extensions import override
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
-    get_libreoffice_cmd,
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
