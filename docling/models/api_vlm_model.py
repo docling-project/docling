@@ -73,29 +73,33 @@ class ApiVlmModel(BasePageModel):
                         # Skip non-GenerationStopper criteria (should have been caught in validation)
 
                     # Streaming path with early abort support
-                    page_tags, num_tokens = api_image_request_streaming(
-                        image=hi_res_image,
-                        prompt=prompt,
-                        url=self.vlm_options.url,
-                        timeout=self.timeout,
-                        headers=self.vlm_options.headers,
-                        generation_stoppers=instantiated_stoppers,
-                        **self.params,
-                    )
+                    with TimeRecorder(conv_res, "vlm_inference"):
+                        page_tags, num_tokens = api_image_request_streaming(
+                            image=hi_res_image,
+                            prompt=prompt,
+                            url=self.vlm_options.url,
+                            timeout=self.timeout,
+                            headers=self.vlm_options.headers,
+                            generation_stoppers=instantiated_stoppers,
+                            **self.params,
+                        )
+                        page_tags = self.vlm_options.decode_response(page_tags)
                 else:
                     # Non-streaming fallback (existing behavior)
-                    page_tags, num_tokens = api_image_request(
-                        image=hi_res_image,
-                        prompt=prompt,
-                        url=self.vlm_options.url,
-                        timeout=self.timeout,
-                        headers=self.vlm_options.headers,
-                        **self.params,
-                    )
+                    with TimeRecorder(conv_res, "vlm_inference"):
+                        page_tags, num_tokens, stop_reason = api_image_request(
+                            image=hi_res_image,
+                            prompt=prompt,
+                            url=self.vlm_options.url,
+                            timeout=self.timeout,
+                            headers=self.vlm_options.headers,
+                            **self.params,
+                        )
 
-                page_tags = self.vlm_options.decode_response(page_tags)
+                        page_tags = self.vlm_options.decode_response(page_tags)
+
                 page.predictions.vlm_response = VlmPrediction(
-                    text=page_tags, num_tokens=num_tokens
+                    text=page_tags, num_tokens=num_tokens, stop_reason=stop_reason
                 )
             return page
 
