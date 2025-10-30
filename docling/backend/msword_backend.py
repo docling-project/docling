@@ -17,6 +17,7 @@ from docling_core.types.doc import (
     RichTableCell,
     TableCell,
     TableData,
+    TableItem,
     TextItem,
 )
 from docling_core.types.doc.document import Formatting
@@ -133,7 +134,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self.is_valid():
             assert self.docx_obj is not None
             doc, _ = self._walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
-            # doc, _ = doc_info
+
             return doc
         else:
             raise RuntimeError(
@@ -1238,6 +1239,28 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
         return elem_ref
 
+    @staticmethod
+    def _group_cell_elements(
+        group_name: str,
+        doc: DoclingDocument,
+        provs_in_cell: list[RefItem],
+        docling_table: TableItem,
+    ) -> RefItem:
+        group_element = doc.add_group(
+            label=GroupLabel.UNSPECIFIED,
+            name=group_name,
+            parent=docling_table,
+        )
+        for prov in provs_in_cell:
+            group_element.children.append(prov)
+            pr_item = prov.resolve(doc)
+            item_parent = pr_item.parent.resolve(doc)
+            if pr_item.get_ref() in item_parent.children:
+                item_parent.children.remove(pr_item.get_ref())
+            pr_item.parent = group_element.get_ref()
+        ref_for_rich_cell = group_element.get_ref()
+        return ref_for_rich_cell
+
     def _handle_tables(
         self,
         element: BaseOxmlElement,
@@ -1299,51 +1322,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
-                _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
-                ref_for_rich_cell = provs_in_cell[0]
-                rich_table_cell = False
+                rich_table_cell: bool = MsWordDocumentBackend._is_rich_table_cell(
+                    cell, docx_obj
+                )
 
-                def group_cell_elements(
-                    group_name: str, doc: DoclingDocument, provs_in_cell: list[RefItem]
-                ) -> RefItem:
-                    group_element = doc.add_group(
-                        label=GroupLabel.UNSPECIFIED,
-                        name=group_name,
-                        parent=docling_table,
-                    )
-                    for prov in provs_in_cell:
-                        group_element.children.append(prov)
-                        pr_item = prov.resolve(doc)
-                        item_parent = pr_item.parent.resolve(doc)
-                        if pr_item.get_ref() in item_parent.children:
-                            item_parent.children.remove(pr_item.get_ref())
-                        pr_item.parent = group_element.get_ref()
-                    ref_for_rich_cell = group_element.get_ref()
-                    return ref_for_rich_cell
+                if rich_table_cell:
+                    _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
+                _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
-                if len(provs_in_cell) > 1:
+                if len(provs_in_cell) > 0:
                     # Cell has multiple elements, we need to group them
                     rich_table_cell = True
                     group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
-                    ref_for_rich_cell = group_cell_elements(
-                        group_name, doc, provs_in_cell
+                    ref_for_rich_cell = MsWordDocumentBackend._group_cell_elements(
+                        group_name, doc, provs_in_cell, docling_table
                     )
-
-                elif len(provs_in_cell) == 1:
-                    item_ref = provs_in_cell[0]
-                    pr_item = item_ref.resolve(doc)
-                    if isinstance(pr_item, TextItem):
-                        # Cell has only one element and it's just a text
-                        rich_table_cell = False
-                        doc.delete_items(node_items=[pr_item])
-                    else:
-                        rich_table_cell = True
-                        group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
-                        ref_for_rich_cell = group_cell_elements(
-                            group_name, doc, provs_in_cell
-                        )
-                else:
-                    rich_table_cell = False
 
                 if rich_table_cell:
                     rich_cell = RichTableCell(
@@ -1375,6 +1368,63 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
                     col_idx += cell.grid_span
         return elem_ref
+
+    @staticmethod
+    def _is_rich_table_cell(cell: _Cell, docx_obj: DocxDocument) -> bool:
+        """Determine whether a docx cell should be parsed as a Docling RichTableCell.
+
+        A docx cell can hold rich content and be parsed with a Docling RichTableCell.
+        However, this requires walking through the lxml elements and creating
+        node items. If the cell holds only plain text, a TableCell, the parsing
+        is simpler and using a TableCell is prefered.
+
+        Plain text means:
+        - The cell has only one paragraph
+        - The paragraph consists solely of runs with no run properties
+          (no need of Docling formatting).
+        - No other block-level elements are present inside the cell element.
+
+        Args:
+            cell: A docx cell
+            docx_obj: The document object of the cell
+
+        Returns:
+            Whether the docx cell should be parsed as RichTableCell
+        """
+        tc = cell._tc
+
+        # must contain only one paragraph
+        paragraphs = list(
+            tc.iterchildren(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"
+            )
+        )
+        if len(paragraphs) > 1:
+            return True
+
+        # no other content
+        allowed_tags = {"p", "tcPr"}  # paragraph or table-cell properties
+        for child in tc:
+            tag = child.tag.split("}")[-1]
+            if tag not in allowed_tags:
+                return True
+
+        # paragraph must contain runs with no run-properties
+        for para in paragraphs:
+            runs = list(
+                para.iterchildren(
+                    "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
+                )
+            )
+            for idx, r in enumerate(runs):
+                item: Run = Run(r, docx_obj)
+                if item is not None:
+                    fm = MsWordDocumentBackend._get_format_from_run(item)
+                    if fm and any({fm.bold, fm.italic, fm.strikethrough}):
+                        return True
+
+        # All checks passed: plain text only
+        return False
 
     def _handle_pictures(
         self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
