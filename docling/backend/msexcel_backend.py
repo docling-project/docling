@@ -139,10 +139,14 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         self.workbook = None
         try:
             if isinstance(self.path_or_stream, BytesIO):
-                self.workbook = load_workbook(filename=self.path_or_stream)
+                self.workbook = load_workbook(
+                    filename=self.path_or_stream, data_only=True
+                )
 
             elif isinstance(self.path_or_stream, Path):
-                self.workbook = load_workbook(filename=str(self.path_or_stream))
+                self.workbook = load_workbook(
+                    filename=str(self.path_or_stream), data_only=True
+                )
 
             self.valid = self.workbook is not None
         except Exception as e:

@@ -64,6 +64,7 @@ nav:
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
+      - GPU support: usage/gpu.md
       - MCP server: usage/mcp.md
       - Jobkit: usage/jobkit.md
     - FAQ:
@@ -116,6 +117,9 @@ nav:
       - "Figure enrichment": examples/develop_picture_enrichment.py
       - "Formula enrichment": examples/develop_formula_understanding.py
       - "Enrich a DoclingDocument": examples/enrich_doclingdocument.py
+    - ⚡️ GPU optimization:
+      - "Standard pipeline": examples/gpu_standard_pipeline.py
+      - "VLM pipeline": examples/gpu_vlm_pipeline.py
     - 🗂️ More examples:
       - examples/dpk-ingest-chunk-tokenize.ipynb
       - examples/rag_azuresearch.ipynb

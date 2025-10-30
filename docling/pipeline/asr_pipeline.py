@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -117,9 +118,15 @@ class _NativeWhisperModel:
             try:
                 import whisper  # type: ignore
             except ImportError:
-                raise ImportError(
-                    "whisper is not installed. Please install it via `pip install openai-whisper` or do `uv sync --extra asr`."
-                )
+                if sys.version_info < (3, 14):
+                    raise ImportError(
+                        "whisper is not installed. Please install it via `pip install openai-whisper` or do `uv sync --extra asr`."
+                    )
+                else:
+                    raise ImportError(
+                        "whisper is not installed. Unfortunately its dependencies are not yet available for Python 3.14."
+                    )
+
             self.asr_options = asr_options
             self.max_tokens = asr_options.max_new_tokens
             self.temperature = asr_options.temperature

@@ -73,7 +73,7 @@ class ApiVlmModel(BasePageModel):
                         # Skip non-GenerationStopper criteria (should have been caught in validation)
 
                     # Streaming path with early abort support
-                    page_tags = api_image_request_streaming(
+                    page_tags, num_tokens = api_image_request_streaming(
                         image=hi_res_image,
                         prompt=prompt,
                         url=self.vlm_options.url,
@@ -84,7 +84,7 @@ class ApiVlmModel(BasePageModel):
                     )
                 else:
                     # Non-streaming fallback (existing behavior)
-                    page_tags = api_image_request(
+                    page_tags, num_tokens = api_image_request(
                         image=hi_res_image,
                         prompt=prompt,
                         url=self.vlm_options.url,
@@ -94,7 +94,9 @@ class ApiVlmModel(BasePageModel):
                     )
 
                 page_tags = self.vlm_options.decode_response(page_tags)
-                page.predictions.vlm_response = VlmPrediction(text=page_tags)
+                page.predictions.vlm_response = VlmPrediction(
+                    text=page_tags, num_tokens=num_tokens
+                )
             return page
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
