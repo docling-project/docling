@@ -185,9 +185,12 @@ def test_pypdfium_threaded_pipeline():
     )
 
     test_file = "tests/data/pdf/2206.01062.pdf"
-    for i in range(5):
+    for i in range(6):
+        print(f"iteration {i=}")
         conv_result = doc_converter.convert(test_file)
         assert conv_result.status == ConversionStatus.SUCCESS
+        print(f"[{i=}] Success")
+    print("All done!")
 
 
 if __name__ == "__main__":
