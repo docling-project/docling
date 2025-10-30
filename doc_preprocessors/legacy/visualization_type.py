@@ -29,7 +29,12 @@ def visualize_bboxes(data, pdf_path, dpi=72):
     page_dict = defaultdict(list)
     for item in data:
         i_page = item["i_page"]  # 문서 아이템 내부 페이지 인덱스
-        for cb in item["chunk_bboxes"]:
+        # chunk_bboxes가 문자열인 경우 JSON으로 파싱
+        chunk_bboxes = item.get("chunk_bboxes", [])
+        if isinstance(chunk_bboxes, str):
+            chunk_bboxes = json.loads(chunk_bboxes)
+
+        for cb in chunk_bboxes:
             page_num = cb["page"]  # 실제 PDF 페이지 번호(1-based)
             bbox_info = cb["bbox"]  # {l, t, r, b}
             typ = cb["type"]
@@ -120,5 +125,5 @@ def visualize_bboxes(data, pdf_path, dpi=72):
 
 if __name__ == "__main__":
     # 시각화 함수 호출
-    path = './[타사업소 아차사고 사례]폐수오니 반출작업 관련 안전개선 대책(안)(환경관리부-20.pdf'
+    path = './../sample_files/test.pdf'
     visualize_bboxes(data, path)
