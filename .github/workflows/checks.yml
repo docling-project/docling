@@ -20,7 +20,7 @@ env:
     tests/test_asr_pipeline.py
     tests/test_threaded_pipeline.py
   PYTEST_TO_SKIP: |-
-  EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping|gpu_standard_pipeline|gpu_vlm_pipeline)\.py$'
+  EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping|mlx_whisper_exampl|gpu_standard_pipeline|gpu_vlm_pipeline)\.py$'
 
 jobs:
   lint:
@@ -62,7 +62,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
       steps:
         - uses: actions/checkout@v5
 
@@ -129,7 +129,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
       steps:
         - uses: actions/checkout@v5
 
@@ -201,7 +201,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
       steps:
         - uses: actions/checkout@v5
 
