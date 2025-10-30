@@ -4,6 +4,12 @@
 
 This guide describes how to maximize GPU performance for Docling pipelines. It covers device selection, pipeline differences, and provides example snippets for configuring batch size and concurrency in the VLM pipeline for both Linux and Windows.
 
+!!! note
+
+    Improvements and optimizations strategies for maximizing the GPU performance is an
+    active topic. Regularly check these guidelines for updates.
+
+
 ### Standard Pipeline
 
 Enable GPU acceleration by configuring the accelerator device and concurrency options using Docling's API:
@@ -32,6 +38,8 @@ pipeline_options = ThreadedPdfPipelineOptions(
 ```
 
 Setting a higher `page_batch_size` will run the Docling models (in particular the layout detection stage) with a GPU batch inference mode.
+
+#### Complete example
 
 For a complete example see [gpu_standard_pipeline.py](../examples/gpu_standard_pipeline.py).
 
@@ -87,6 +95,8 @@ from docling.datamodel.settings import settings
 
 settings.perf.page_batch_size = 64  # default is 4
 ```
+
+#### Complete example
 
 For a complete example see [gpu_vlm_pipeline.py](../examples/gpu_vlm_pipeline.py).
 
