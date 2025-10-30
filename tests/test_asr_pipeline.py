@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -9,6 +10,11 @@ from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import AsrPipelineOptions
 from docling.document_converter import AudioFormatOption, DocumentConverter
 from docling.pipeline.asr_pipeline import AsrPipeline
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="Python 3.14 is not yet supported by whisper dependencies.",
+)
 
 
 @pytest.fixture
