@@ -5,6 +5,7 @@ from typing import List
 
 import pytest
 
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
@@ -169,6 +170,27 @@ def test_pipeline_comparison():
 
     assert len(sync_doc.pages) == len(threaded_doc.pages)
     assert len(sync_doc.texts) == len(threaded_doc.texts)
+
+
+def test_pypdfium_threaded_pipeline():
+    doc_converter = (
+        DocumentConverter(  # all of the below is optional, has internal defaults.
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_cls=ThreadedStandardPdfPipeline,
+                    backend=PyPdfiumDocumentBackend,
+                ),
+            },
+        )
+    )
+
+    test_file = "tests/data/pdf/2206.01062.pdf"
+    for i in range(6):
+        print(f"iteration {i=}")
+        conv_result = doc_converter.convert(test_file)
+        assert conv_result.status == ConversionStatus.SUCCESS
+        print(f"[{i=}] Success")
+    print("All done!")
 
 
 if __name__ == "__main__":

@@ -229,10 +229,10 @@ class PyPdfiumPageBackend(PdfPageBackend):
                     b=max(cell.rect.to_bounding_box().b for cell in group),
                 )
 
-                assert self._ppage is not None
-                self.text_page = self._ppage.get_textpage()
+                assert self.text_page is not None
                 bbox = merged_bbox.to_bottom_left_origin(page_size.height)
-                merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
+                with pypdfium2_lock:
+                    merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
 
                 return TextCell(
                     index=group[0].index,
