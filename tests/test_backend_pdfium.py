@@ -1,4 +1,3 @@
-import concurrent.futures
 from pathlib import Path
 
 import pytest
@@ -10,12 +9,8 @@ from docling.backend.pypdfium2_backend import (
 )
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
-from docling.datamodel.pipeline_options import (
-    PdfPipelineOptions,
-    ThreadedPdfPipelineOptions,
-)
+from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
-from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfPipeline
 
 
 @pytest.fixture
