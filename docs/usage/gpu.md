@@ -124,5 +124,5 @@ Test infrastructure:
 
 | Pipeline | Page efficiency |
 | - | - |
-| Standard | 3.1 pages/second |
-| VLM (GraniteDocling) | 2.4 pages/second |
+| Standard - Inline | 3.1 pages/second |
+| VLM - Inference server (GraniteDocling) | 2.4 pages/second |
