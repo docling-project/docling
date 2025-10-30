@@ -28,9 +28,10 @@ class HierarchicalChunker(BaseChunker):
         all_items = []
         all_header_info = []  # 각 아이템의 헤더 정보
         current_heading_by_level: dict[LevelNumber, str] = {}
+        list_items: list[TextItem] = []
 
         # 모든 아이템 순회하며 헤더 정보 추적
-        for item, level in dl_doc.iterate_items():
+        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
             # 섹션 헤더 처리
             if isinstance(item, SectionHeaderItem) or (
                 isinstance(item, TextItem) and
@@ -592,15 +593,19 @@ Python
                 # 작성일 추출 (cells[1])
                 date_text = document.key_value_items[0].graph.cells[1].text
                 created_date = self.parse_created_date(date_text)
+
+                # 날짜 정보가 없으면 json의 정보를 적용함
+                if created_date == 0 and "last_modified_date" in kwargs:
+                    created_date = self.parse_created_date(kwargs["last_modified_date"])
         except (AttributeError, IndexError) as e:
             pass
 
         # kwargs에서 authors_team와 authors_department 추출
         if "authors_team" in kwargs:
-            authors_team = json.dumps(kwargs["authors_team"])
+            authors_team = json.dumps(kwargs["authors_team"], ensure_ascii=False)
 
         if "authors_department" in kwargs:
-            authors_department = json.dumps(kwargs["authors_department"])
+            authors_department = kwargs["authors_department"]
 
         for item, _ in document.iterate_items():
             if hasattr(item, 'label'):

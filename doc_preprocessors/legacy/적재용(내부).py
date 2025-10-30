@@ -951,17 +951,17 @@ class DocumentProcessor:
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         # enrichment 옵션 설정
         enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=True,
+            do_toc_enrichment=False,
             extract_metadata=True,
             toc_api_provider="custom",
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
+            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
+            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
             toc_api_key="9e32423947fd4a5da07a28962fe88487",
             metadata_api_key="9e32423947fd4a5da07a28962fe88487",
-            toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+            toc_model="model",
+            metadata_model="model",
             toc_temperature=0.0,
-            toc_top_p=0,
+            toc_top_p=0.00001,
             toc_seed=33,
             toc_max_tokens=1000
         )

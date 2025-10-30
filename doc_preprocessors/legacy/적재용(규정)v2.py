@@ -316,7 +316,7 @@ class HybridChunker(BaseChunker):
                                 headers_to_add.append(item_headers[l])
                             elif l == level:
                                 headers_to_add.append('')
-                              
+
                         break
 
                 # 헤더가 있으면 추가
@@ -397,11 +397,11 @@ class HybridChunker(BaseChunker):
         if not header_info_list:
             return None
 
-        all_headers = [] # header 순서대로 추가 
+        all_headers = [] # header 순서대로 추가
         seen_headers = set()  # 중복 방지용
-        
+
         for header_info in header_info_list:
-            if header_info:  
+            if header_info:
                 for level in sorted(header_info.keys()):
                     header_text = header_info[level]
                     if header_text and header_text not in seen_headers:
@@ -522,6 +522,19 @@ class HybridChunker(BaseChunker):
                 current_section_header_short_infos
             ))
 
+        # 1.5단계: "제x장/절/관" 헤더는 다음 섹션과 병합
+        for i in range(len(sections) - 2, -1, -1):
+            items, h_infos, h_short = sections[i]
+
+            text = ""
+            if h_short and h_short[0].values():
+                text = list(h_short[0].values())[-1]
+
+            if re.match(r"제\s*\d+\s*(장|절|관)", text):
+                n_items, n_h_infos, n_h_short = sections[i + 1]
+                sections[i] = (items + n_items, h_infos + n_h_infos, h_short + n_h_short)
+                sections.pop(i + 1)
+
         # 2단계: 각 섹션의 텍스트에 heading 붙이기
         sections_with_text = []
         for section_items, section_header_infos, section_header_short_infos in sections:
@@ -609,7 +622,7 @@ class HybridChunker(BaseChunker):
 
         return iter(final_chunks)
 
-        
+
 class GenOSVectorMeta(BaseModel):
     class Config:
         extra = 'allow'
@@ -791,24 +804,26 @@ class DocumentProcessor:
             toc_doc_type="law",
             extract_metadata=True,
             toc_api_provider="custom",
-            
-            # hcx-007
-            #toc_api_base_url="http://llmops-gateway-api-service:8080/serving/20/47/v1/chat/completions",
-            #metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/20/47/v1/chat/completions",
-            #toc_api_key="03d335c7c26b4b089040477aa6a3f9f6",
-            #metadata_api_key="03d335c7c26b4b089040477aa6a3f9f6",
-            
+
             # mistral
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
+            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
+            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
             toc_api_key="9e32423947fd4a5da07a28962fe88487",
             metadata_api_key="9e32423947fd4a5da07a28962fe88487",
-            toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+
+            # hcx-007
+            #toc_api_base_url="http://llmops-gateway-api-service:8080/serving/34/103/v1/chat/completions",
+            #metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/34/103/v1/chat/completions",
+            #toc_api_key="1d071e40c58a44dba635fcbd46e23569",
+            #metadata_api_key="1d071e40c58a44dba635fcbd46e23569",
+
+            toc_model="model",
+            metadata_model="model",
             toc_temperature=0.0,
-            toc_top_p=0,
+            toc_top_p=0.00001,
             toc_seed=33,
             toc_max_tokens=10000,
+
             toc_system_prompt=toc_system_prompt,
             toc_user_prompt=toc_user_prompt,
         )
@@ -1006,6 +1021,7 @@ class DocumentProcessor:
         upload_tasks = []
         for chunk_idx, chunk in enumerate(chunks):
             chunk_page = chunk.meta.doc_items[0].prov[0].page_no
+            # header 앞에 헤더 마커 추가 (HEADER: )
             headers_text = "HEADER: " + ", ".join(chunk.meta.headings) + '\n' if chunk.meta.headings else ''
             content = headers_text + chunk.text
 

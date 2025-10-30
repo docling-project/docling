@@ -6,7 +6,7 @@
 
 기업 환경에서 처리하는 문서는 복잡한 레이아웃, 표, 그래프, 다단 구성 등 다양한 형식적 요소를 포함합니다.
 
-![복잡한 문서 예시](./images/document_complexity.png)
+![복잡한 문서 예시](./images/pre_document_complexity.png)
 *복잡한 문서 구조: 다단 레이아웃, 표, 차트, 각주 등*
 
 **전처리 없이 RAG 수행 시 발생하는 문제:**
@@ -37,7 +37,7 @@ Genos는 문서 유형 및 문제 상황 별로 4가지 전처리기를 제공�
 
 #### 🔍 Layout Detection - 문서 구조 이해
 
-![Layout Detection 결과](./images/layout_detection_example.png)
+![Layout Detection 결과](./images/pre_layout_detection_example.png)
 *AI 모델이 문서 요소를 자동 식별: TITLE, SECTION_HEADER, TEXT, TABLE, PICTURE 등*
 
 Layout Detection은 딥러닝 모델을 활용하여 문서의 시각적 구조를 분석하고 각 요소의 유형을 식별합니다.
@@ -52,7 +52,7 @@ Layout Detection은 딥러닝 모델을 활용하여 문서의 시각적 구조�
 
 #### 📊 TableFormer - 복잡한 표도 완벽 복원
 
-![TableFormer 처리 결과](./images/tableformer_result.png)
+![TableFormer 처리 결과](./images/pre_tableformer_result.png)
 *복잡한 표를 구조화된 데이터로 변환: 병합 셀, 계층적 헤더를 Markdown으로 변환*
 
 **Layout Detection과 TableFormer의 연계 처리:**

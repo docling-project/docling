@@ -120,7 +120,7 @@ class HierarchicalChunker(BaseChunker):
         processed_refs = set()
 
         # 모든 아이템 순회
-        for item, level in dl_doc.iterate_items():
+        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
             if hasattr(item, 'self_ref'):
                 processed_refs.add(item.self_ref)
 
@@ -289,10 +289,10 @@ class HybridChunker(BaseChunker):
             item_headers = header_info_list[i] if i < len(header_info_list) else {}
 
             # 헤더 정보가 변경된 경우 (새로운 섹션 시작)
-            if item_headers != current_section_headers:  
+            if item_headers != current_section_headers:
                 # 변경된 헤더 레벨들만 추가
                 headers_to_add = []
-                
+
                 for level in sorted(item_headers.keys()):
                     # 이전 섹션과 다른 헤더만 추가
                     if (level not in current_section_headers or
@@ -305,8 +305,9 @@ class HybridChunker(BaseChunker):
 
                 # 헤더가 있으면 추가
                 if headers_to_add:
-                    header_text = "\n".join(headers_to_add)
-                    text_parts.append(header_text)
+                    header_text = ", ".join(headers_to_add)
+                    if header_text not in text_parts:
+                        text_parts.append(header_text)
 
                 current_section_headers = item_headers.copy()
 
@@ -317,14 +318,16 @@ class HybridChunker(BaseChunker):
                     text_parts.append(table_text)
             elif hasattr(item, 'text') and item.text:
                 # 타이틀과 섹션 헤더 처리 개선
-                is_section_header = (
-                    isinstance(item, SectionHeaderItem) or
-                    (isinstance(item, TextItem) and
-                     item.label in [DocItemLabel.SECTION_HEADER])  # TITLE은 제외
-                )
+                # is_section_header = (
+                #     isinstance(item, SectionHeaderItem) or
+                #     (isinstance(item, TextItem) and
+                #      item.label in [DocItemLabel.SECTION_HEADER])  # TITLE은 제외
+                # )
 
                 # 타이틀은 항상 포함, 섹션 헤더는 중복 방지를 위해 스킵
-                if not is_section_header:
+                # if not is_section_header:
+                # 20250909, shkim, text_parts에 없는 경우만 추가. 섹션헤더가 반복해서 추가되는 것 방지
+                if item.text not in text_parts:
                     text_parts.append(item.text)
             elif isinstance(item, PictureItem):
                 text_parts.append("")  # 이미지는 빈 텍스트
@@ -332,7 +335,7 @@ class HybridChunker(BaseChunker):
         # delim이 정의되지 않은 경우 기본값 사용
         delim = getattr(self, 'delim', '\n')
         result_text = delim.join(text_parts)
-        
+
         return result_text
 
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument) -> str:
@@ -381,11 +384,11 @@ class HybridChunker(BaseChunker):
         if not header_info_list:
             return None
 
-        all_headers = [] # header 순서대로 추가 
+        all_headers = [] # header 순서대로 추가
         seen_headers = set()  # 중복 방지용
-        
+
         for header_info in header_info_list:
-            if header_info:  
+            if header_info:
                 for level in sorted(header_info.keys()):
                     header_text = header_info[level]
                     if header_text and header_text not in seen_headers:
@@ -849,7 +852,7 @@ class DocumentProcessor:
         self.pipe_line_options = PdfPipelineOptions()
         self.pipe_line_options.generate_page_images = True
         self.pipe_line_options.generate_picture_images = True
-        self.pipe_line_options.do_ocr = True
+        self.pipe_line_options.do_ocr = False
         self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.ocr_options.lang = ["ko", 'en']
         # self.pipe_line_options.ocr_options.model_storage_directory = "./.EasyOCR/model"
@@ -884,17 +887,17 @@ class DocumentProcessor:
             do_toc_enrichment=False,
             extract_metadata=True,
             toc_api_provider="custom",
-            
+
             # mistral
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
+            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
+            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
             toc_api_key="9e32423947fd4a5da07a28962fe88487",
             metadata_api_key="9e32423947fd4a5da07a28962fe88487",
-            toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            
+            toc_model="model",
+            metadata_model="model",
+
             toc_temperature=0.0,
-            toc_top_p=0,
+            toc_top_p=0.00001,
             toc_seed=33,
             toc_max_tokens=1000
         )
@@ -905,8 +908,7 @@ class DocumentProcessor:
                 format_options={
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=self.pipe_line_options,
-                        #backend=DoclingParseV4DocumentBackend
-                        backend=PyPdfiumDocumentBackend
+                        backend=DoclingParseV4DocumentBackend
                     ),
                 }
             )
@@ -935,15 +937,6 @@ class DocumentProcessor:
             },
         )
 
-    def set_content_layer_to_body(self, document: DoclingDocument):
-        """
-        content_layer가 furniture인 아이템들을 body로 변경하는 메서드
-        body로 변경하여 화면에 표시되도록 함
-        """
-        for item, level in document.iterate_items(included_content_layers=["furniture"]):
-            if hasattr(item, 'content_layer') and item.content_layer == "furniture":
-                item.content_layer = "body"  # body로 변경하여 화면에 표시되도록 함
-
     def load_documents_with_docling(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         # kwargs에서 save_images 값을 가져와서 옵션 업데이트
         save_images = kwargs.get('save_images', True)
@@ -960,7 +953,6 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
         except Exception as e:
             conv_result: ConversionResult = self.second_converter.convert(file_path, raises_on_error=True)
-        self.set_content_layer_to_body(conv_result.document)
         return conv_result.document
 
     def load_documents_with_docling_ocr(self, file_path: str, **kwargs: dict) -> DoclingDocument:
@@ -979,7 +971,6 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.ocr_converter.convert(file_path, raises_on_error=True)
         except Exception as e:
             conv_result: ConversionResult = self.ocr_second_converter.convert(file_path, raises_on_error=True)
-        self.set_content_layer_to_body(conv_result.document)
         return conv_result.document
 
     def load_documents(self, file_path: str, **kwargs) -> DoclingDocument:
@@ -1258,13 +1249,12 @@ class DocumentProcessor:
         # kwargs['include_wmf'] = True   # wmf 처리
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
-        # if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
-        #     print("ocr!!")
-        #     # OCR이 필요하다고 판단되면 OCR 수행
-        #     document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
+        if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
+            # OCR이 필요하다고 판단되면 OCR 수행
+            document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
 
         # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
-        # document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
+        document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
 
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
@@ -1276,7 +1266,7 @@ class DocumentProcessor:
 
         document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
 
-        # document = self.enrichment(document, **kwargs)
+        document = self.enrichment(document, **kwargs)
 
         has_text_items = False
         for item, _ in document.iterate_items():
