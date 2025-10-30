@@ -25,8 +25,8 @@ from docling.datamodel.pipeline_options import (
 )
 
 pipeline_options = ThreadedPdfPipelineOptions(
-    ocr_batch_size=32,  # default 4
-    layout_batch_size=32,  # default 4
+    ocr_batch_size=64,  # default 4
+    layout_batch_size=64,  # default 4
     table_batch_size=4,  # currently not using GPU batching
 )
 ```
@@ -44,6 +44,22 @@ For best GPU utilization, use a local inference server. Docling supports inferen
 - LM Studio: `http://localhost:1234/v1/chat/completions` (available both on Linux and Windows)
 - Ollama: `http://localhost:11434/v1/chat/completions` (available both on Linux and Windows)
 
+
+#### Start the inference server
+
+Here is an example on how to start the [vllm](https://docs.vllm.ai/) inference server with optimum parameters for Granite Docling.
+
+```sh
+vllm serve ibm-granite/granite-docling-258M \
+  --host 127.0.0.1 --port 8000 \
+  --max-num-seqs 512 \
+  --max-num-batched-tokens 8192 \
+  --enable-chunked-prefill \
+  --gpu-memory-utilization 0.9
+```
+
+#### Configure Docling
+
 Configure the VLM pipeline using Docling's VLM options:
 
 ```python
@@ -57,7 +73,7 @@ vlm_options = VlmPipelineOptions(
             "model": "ibm-granite/granite-docling-258M",
             "max_tokens": 4096,
         },
-        "concurrency": 20,  # default is 1
+        "concurrency": 64,  # default is 1
         "prompt": "Convert this page to docling.",
         "timeout": 90,
     }
@@ -69,7 +85,7 @@ Additionally to the concurrency, we also have to set the `page_batch_size` Docli
 ```python
 from docling.datamodel.settings import settings
 
-settings.perf.page_batch_size = 20  # default is 4
+settings.perf.page_batch_size = 64  # default is 4
 ```
 
 For a complete example see [gpu_vlm_pipeline.py](../examples/gpu_vlm_pipeline.py).
@@ -85,5 +101,18 @@ TBA.
 
 ## Performance results
 
-TBA.
+Test data:
+- Number of pages: 192
+- Number of tables: 95
 
+Test infrastructure:
+- Instance type: `g6e.2xlarge`
+- CPU: 8 vCPUs, AMD EPYC 7R13
+- RAM: 64GB
+- GPU: NVIDIA L40S 48GB
+- CUDA Version: 13.0, Driver Version: 580.95.05
+
+| Pipeline | Page efficiency |
+| - | - |
+| Standard | 3.1 pages/second |
+| VLM (GraniteDocling) | 2.4 pages/second |
