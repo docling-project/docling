@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Final, Optional, Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -18,7 +18,6 @@ from docling_core.types.doc import (
     TableCell,
     TableData,
     TableItem,
-    TextItem,
 )
 from docling_core.types.doc.document import Formatting
 from docx import Document
@@ -47,6 +46,18 @@ _log = logging.getLogger(__name__)
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
+    _BLIP_NAMESPACES: Final = {
+        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+        "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
+        "v": "urn:schemas-microsoft-com:vml",
+        "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
+        "w10": "urn:schemas-microsoft-com:office:word",
+        "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
+    }
+
     @override
     def __init__(
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
@@ -58,6 +69,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.xml_namespaces = {
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
         }
+        self.blip_xpath_expr = etree.XPath(
+            ".//a:blip", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+        )
         # self.initialise(path_or_stream)
         # Word file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
@@ -200,20 +214,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for element in body:
             tag_name = etree.QName(element).localname
             # Check for Inline Images (blip elements)
-            namespaces = {
-                "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-                "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-                "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
-                "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
-                "v": "urn:schemas-microsoft-com:vml",
-                "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
-                "w10": "urn:schemas-microsoft-com:office:word",
-                "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
-            }
-            xpath_expr = etree.XPath(".//a:blip", namespaces=namespaces)
-            drawing_blip = xpath_expr(element)
-            drawingml_els = element.findall(".//w:drawing", namespaces=namespaces)
+            drawing_blip = self.blip_xpath_expr(element)
+            drawingml_els = element.findall(
+                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            )
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
@@ -221,7 +225,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if element_id not in self.processed_textbox_elements:
                 # Modern Word textboxes
                 txbx_xpath = etree.XPath(
-                    ".//w:txbxContent|.//v:textbox//w:p", namespaces=namespaces
+                    ".//w:txbxContent|.//v:textbox//w:p",
+                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                 )
                 textbox_elements = txbx_xpath(element)
 
@@ -230,7 +235,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Additional checks for textboxes in DrawingML and VML formats
                     alt_txbx_xpath = etree.XPath(
                         ".//wps:txbx//w:p|.//w10:wrap//w:p|.//a:p//a:t",
-                        namespaces=namespaces,
+                        namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                     )
                     textbox_elements = alt_txbx_xpath(element)
 
@@ -238,7 +243,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if not textbox_elements:
                         shape_text_xpath = etree.XPath(
                             ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-                            namespaces=namespaces,
+                            namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                         )
                         shape_text_elements = shape_text_xpath(element)
                         if shape_text_elements:
@@ -276,7 +281,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     added_elements.extend(tbc)
 
             # Check for Tables
-            if element.tag.endswith("tbl"):
+            if tag_name == "tbl":
                 try:
                     t = self._handle_tables(element, docx_obj, doc)
                     added_elements.extend(t)
@@ -288,8 +293,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 added_elements.extend(pics)
                 # Check for Text after the Image
                 if (
-                    tag_name in ["p"]
-                    and element.find(".//w:t", namespaces=namespaces) is not None
+                    tag_name == "p"
+                    and element.find(
+                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
+                    is not None
                 ):
                     te1 = self._handle_text_elements(element, docx_obj, doc)
                     added_elements.extend(te1)
@@ -314,16 +322,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
             # Check for the sdt containers, like table of contents
-            elif tag_name in ["sdt"]:
-                sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
+            elif tag_name == "sdt":
+                sdt_content = element.find(
+                    ".//w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                )
                 if sdt_content is not None:
                     # Iterate paragraphs, runs, or text inside <w:sdtContent>.
-                    paragraphs = sdt_content.findall(".//w:p", namespaces=namespaces)
+                    paragraphs = sdt_content.findall(
+                        ".//w:p", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
                     for p in paragraphs:
                         te = self._handle_text_elements(p, docx_obj, doc)
                         added_elements.extend(te)
             # Check for Text
-            elif tag_name in ["p"]:
+            elif tag_name == "p":
                 # "tcPr", "sectPr"
                 te = self._handle_text_elements(element, docx_obj, doc)
                 added_elements.extend(te)
@@ -1322,9 +1334,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
-                rich_table_cell: bool = MsWordDocumentBackend._is_rich_table_cell(
-                    cell, docx_obj
-                )
+                rich_table_cell: bool = self._is_rich_table_cell(cell, docx_obj)
 
                 if rich_table_cell:
                     _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
@@ -1369,8 +1379,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     col_idx += cell.grid_span
         return elem_ref
 
-    @staticmethod
-    def _is_rich_table_cell(cell: _Cell, docx_obj: DocxDocument) -> bool:
+    def _is_rich_table_cell(self, cell: _Cell, docx_obj: DocxDocument) -> bool:
         """Determine whether a docx cell should be parsed as a Docling RichTableCell.
 
         A docx cell can hold rich content and be parsed with a Docling RichTableCell.
@@ -1407,6 +1416,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for child in tc:
             tag = child.tag.split("}")[-1]
             if tag not in allowed_tags:
+                return True
+        for elem in tc:
+            if self.blip_xpath_expr(elem):
+                return True
+            if elem.findall(
+                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            ):
                 return True
 
         # paragraph must contain runs with no run-properties
