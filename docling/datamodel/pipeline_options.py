@@ -369,7 +369,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     table_batch_size: int = 4
 
     # Timing control
-    batch_timeout_seconds: float = 0.5
+    batch_polling_interval_seconds: float = 0.5
 
     # Backpressure and queue control
     queue_max_size: int = 100

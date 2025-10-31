@@ -42,7 +42,7 @@ def test_threaded_pipeline_multiple_documents():
                         layout_batch_size=1,
                         table_batch_size=1,
                         ocr_batch_size=1,
-                        batch_timeout_seconds=1.0,
+                        batch_polling_interval_seconds=1.0,
                         do_table_structure=do_ts,
                         do_ocr=do_ocr,
                     ),

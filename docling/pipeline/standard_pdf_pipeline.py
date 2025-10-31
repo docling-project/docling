@@ -466,7 +466,7 @@ class StandardPdfPipeline(ConvertPipeline):
     def _create_run_ctx(self) -> RunContext:
         opts = self.pipeline_options
         preprocess = PreprocessThreadedStage(
-            batch_timeout=opts.batch_timeout_seconds,
+            batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
             model=self.preprocessing_model,
         )
@@ -474,28 +474,28 @@ class StandardPdfPipeline(ConvertPipeline):
             name="ocr",
             model=self.ocr_model,
             batch_size=opts.ocr_batch_size,
-            batch_timeout=opts.batch_timeout_seconds,
+            batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
         )
         layout = ThreadedPipelineStage(
             name="layout",
             model=self.layout_model,
             batch_size=opts.layout_batch_size,
-            batch_timeout=opts.batch_timeout_seconds,
+            batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
         )
         table = ThreadedPipelineStage(
             name="table",
             model=self.table_model,
             batch_size=opts.table_batch_size,
-            batch_timeout=opts.batch_timeout_seconds,
+            batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
         )
         assemble = ThreadedPipelineStage(
             name="assemble",
             model=self.assemble_model,
             batch_size=1,
-            batch_timeout=opts.batch_timeout_seconds,
+            batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
             postprocess=self._release_page_resources,
         )

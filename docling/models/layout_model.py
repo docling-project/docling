@@ -167,6 +167,10 @@ class LayoutModel(BasePageModel):
             valid_pages.append(page)
             valid_page_images.append(page_image)
 
+        print(f"{len(pages)=}, {pages[0].page_no}-{pages[-1].page_no}")
+        print(f"{len(valid_pages)=}")
+        print(f"{len(valid_page_images)=}")
+
         # Process all valid pages with batch prediction
         batch_predictions = []
         if valid_page_images:
