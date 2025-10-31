@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel, Field
 
-from docling.datamodel.base_models import ConversionStatus, ErrorItem
+from docling.datamodel.base_models import ConversionStatus, ErrorItem, VlmStopReason
 from docling.datamodel.document import InputDocument
 
 
@@ -19,6 +19,9 @@ class ExtractedPageData(BaseModel):
     errors: List[str] = Field(
         default_factory=list,
         description="Any errors encountered during extraction for this page",
+    )
+    vlm_stop_reason: Optional[VlmStopReason] = Field(
+        None, description="Reason for stopping VLM processing"
     )
 
 

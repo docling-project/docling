@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from docling.backend.abstract_backend import PaginatedDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.base_models import ConversionStatus, ErrorItem
+from docling.datamodel.base_models import ConversionStatus, ErrorItem, VlmStopReason
 from docling.datamodel.document import InputDocument
 from docling.datamodel.extraction import (
     ExtractedPageData,
@@ -83,6 +83,11 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                         # Parse the extracted text as JSON if possible, otherwise use as-is
                         extracted_text = predictions[0].text
                         extracted_data = None
+                        vlm_stop_reason: Optional[VlmStopReason] = predictions[
+                            0
+                        ].stop_reason
+                        if vlm_stop_reason == VlmStopReason.LENGTH:
+                            ext_res.status = ConversionStatus.PARTIAL_SUCCESS
 
                         try:
                             extracted_data = json.loads(extracted_text)
@@ -127,6 +132,8 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
 
     def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
         """Determine the status based on extraction results."""
+        if ext_res.status == ConversionStatus.PARTIAL_SUCCESS:
+            return ConversionStatus.PARTIAL_SUCCESS
         if ext_res.pages and not any(page.errors for page in ext_res.pages):
             return ConversionStatus.SUCCESS
         else:
