@@ -11,9 +11,9 @@ from PIL.Image import Image
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import (
     Page,
-    StopReason,
     VlmPrediction,
     VlmPredictionToken,
+    VlmStopReason,
 )
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -317,9 +317,9 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         for output in outputs:
             text = output.outputs[0].text if output.outputs else ""
             stop_reason = (
-                StopReason.END_OF_SEQUENCE
+                VlmStopReason.END_OF_SEQUENCE
                 if output.outputs[0].stop_reason
-                else StopReason.LENGTH
+                else VlmStopReason.LENGTH
             )
             generated_tokens = (
                 [VlmPredictionToken(token=int(p)) for p in output.outputs[0].token_ids]
