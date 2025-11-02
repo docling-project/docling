@@ -19,6 +19,7 @@
 # - Use proxy config for restricted networks.
 
 # Requires `pip install docling-surya`
+# See https://pypi.org/project/docling-surya/
 from docling_surya import SuryaOcrOptions
 
 from docling.datamodel.base_models import InputFormat
