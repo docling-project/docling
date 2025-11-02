@@ -94,6 +94,7 @@ nav:
       - "Force full page OCR": examples/full_page_ocr.py
       - "Automatic OCR language detection with tesseract": examples/tesseract_lang_detection.py
       - "RapidOCR with custom OCR models": examples/rapidocr_with_custom_models.py
+      - "SuryaOCR with custom OCR models": examples/suryaocr_with_custom_models.py
       - "Accelerator options": examples/run_with_accelerator.py
       - "Detect and obfuscate PII": examples/pii_obfuscate.py
       - "Simple translation": examples/translate.py
