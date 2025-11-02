@@ -8,6 +8,7 @@ from docling_core.types.doc import (
     ContentLayer,
     CoordOrigin,
     DocItem,
+    DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     GroupLabel,
@@ -275,9 +276,10 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         if self.workbook is not None:
             content_layer = self._get_sheet_content_layer(sheet)
-            tables = self._find_data_tables(sheet)
+            # Returns list of (ExcelTable, optional_title_text) tuples
+            tables_with_titles = self._find_data_tables(sheet)
 
-            for excel_table in tables:
+            for excel_table, title_text in tables_with_titles:
                 origin_col = excel_table.anchor[0]
                 origin_row = excel_table.anchor[1]
                 num_rows = excel_table.num_rows
@@ -303,9 +305,19 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                     )
                     table_data.table_cells.append(cell)
 
+                # Create caption if a title was found
+                caption = None
+                if title_text:
+                    caption = doc.add_text(
+                        text=title_text,
+                        parent=self.parents[0],
+                        label=DocItemLabel.CAPTION,
+                    )
+
                 page_no = self.workbook.index(sheet) + 1
                 doc.add_table(
                     data=table_data,
+                    caption=caption,
                     parent=self.parents[0],
                     prov=ProvenanceItem(
                         page_no=page_no,
@@ -367,14 +379,20 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
         return DataRegion(min_row, max_row, min_col, max_col)
 
-    def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
+    def _find_data_tables(
+        self, sheet: Worksheet
+    ) -> list[tuple[ExcelTable, Optional[str]]]:
         """Find all compact rectangular data tables in an Excel worksheet.
+
+        Detects 1x1 tables positioned above larger tables (with at least one empty row
+        between them) as titles, and associates them as captions.
 
         Args:
             sheet: The Excel worksheet to be parsed.
 
         Returns:
-            A list of ExcelTable objects representing the data tables.
+            A list of tuples (ExcelTable, title_text) where title_text is None
+            if no title was found, or a string if a 1x1 table above serves as title.
         """
         bounds: DataRegion = self._find_true_data_bounds(
             sheet
@@ -405,7 +423,30 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 visited.update(visited_cells)  # Mark these cells as visited
                 tables.append(table_bounds)
 
-        return tables
+        # detect titles (1x1 tables above larger tables)
+        tables_with_titles: list[tuple[ExcelTable, str | None]] = []
+        skip_next = False
+
+        for i, table in enumerate(tables):
+            if skip_next:
+                skip_next = False
+                continue
+
+            # Check if this is a 1x1 table that could be a title
+            if table.num_rows == 1 and table.num_cols == 1 and i + 1 < len(tables):
+                next_table = tables[i + 1]
+                title_end_row = table.anchor[1] + table.num_rows
+                next_table_start_row = next_table.anchor[1]
+
+                if next_table_start_row > title_end_row:
+                    title_text = table.data[0].text if table.data else ""
+                    tables_with_titles.append((next_table, title_text))
+                    skip_next = True
+                    continue
+
+            tables_with_titles.append((table, None))
+
+        return tables_with_titles
 
     def _find_table_bounds(
         self,

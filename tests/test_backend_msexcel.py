@@ -227,6 +227,53 @@ def test_inflated_rows_handling(documents) -> None:
     )
 
 
+def test_table_with_title():
+    """Test that 1x1 tables above larger tables are detected as titles.
+
+    xlsx_05_table_with_title.xlsx contains a 1x1 cell title.  This test verifies that when a 1x1
+    cell which is positioned above a larger table (with one empty row between them), it's
+    treated as a caption for that table rather than a separate table.
+    """
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_05_table_with_title"
+    )
+
+    converter = get_converter()
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    tables = list(doc.tables)
+    assert len(tables) == 1, (
+        f"Should have 1 table (title should not be separate), got {len(tables)}"
+    )
+
+    table = tables[0]
+
+    assert table.captions, "Table should have a caption"
+    assert len(table.captions) == 1, "Table should have exactly one caption"
+
+    # Get the caption text
+    caption_ref = table.captions[0]
+    caption_text = None
+    for text_item in doc.texts:
+        if text_item.self_ref == caption_ref.cref:
+            caption_text = text_item.text
+            break
+
+    assert caption_text is not None, "Should be able to find caption text"
+    assert caption_text == "Number of freshwater ducks per year", (
+        f"Caption should be 'Number of freshwater ducks per year', got '{caption_text}'"
+    )
+
+    # table dimensions should be the data table, not including the title
+    assert table.data.num_rows == 7, (
+        f"Table should have 7 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 2, (
+        f"Table should have 2 columns, got {table.data.num_cols}"
+    )
+
+
 def test_bytesio_stream():
     """Test that Excel files can be loaded from BytesIO streams.
 
