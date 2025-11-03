@@ -53,9 +53,9 @@ ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 # ocr 프로젝트 pyproject만 먼저 복사
 # (여기서 경로 주의: 너 구조가 /workspace/doc_parser/genon/serving/paddle/ocr_paddle_server/pyproject.toml 이라서)
-COPY genon/serving/paddle/ocr_paddle_server/pyproject.toml ${APP_DIR}/pyproject.toml
+COPY genon/serving/paddle/pyproject.toml ${APP_DIR}/pyproject.toml
 # lock 있으면 같이
-COPY genon/serving/paddle/ocr_paddle_server/uv.lock ${APP_DIR}/uv.lock
+COPY genon/serving/paddle/uv.lock ${APP_DIR}/uv.lock
 
 # venv 만들고 uv sync
 # pyproject.toml 안에
@@ -79,7 +79,7 @@ FROM deps AS models
 ENV MODEL_DIR=/models
 
 # 네가 올려둔 zip이 있을 때
-COPY genon/serving/paddle/ocr_paddle_server/resources/paddleocr_model.zip /tmp/paddleocr_model.zip
+COPY genon/serving/paddle/resources/paddleocr_model.zip /tmp/paddleocr_model.zip
 
 RUN mkdir -p ${MODEL_DIR}/paddleocr_model && \
     unzip -q -o /tmp/paddleocr_model.zip -d ${MODEL_DIR} && \
@@ -104,7 +104,7 @@ COPY --from=deps ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 # 2) 앱 소스 들여오기
 #    config / docker / etc / resources ... 전부 살려서 가져옴
-COPY genon/serving/paddle/ocr_paddle_server ${OCR_DIR}
+COPY genon/serving/paddle ${OCR_DIR}
 
 # 3) 모델 들여오기
 COPY --from=models /models /models
