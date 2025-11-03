@@ -46,7 +46,7 @@ theme:
     # - navigation.instant.preview
     - navigation.instant.progress
     - navigation.path
-    - navigation.sections  # <=
+    # - navigation.sections  # <=
     - navigation.top
     - navigation.tracking
     - search.suggest
