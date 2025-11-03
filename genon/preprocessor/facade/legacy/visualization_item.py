@@ -36,7 +36,12 @@ def visualize_bboxes_item_superset(data, pdf_path, dpi=72):
 
     for item_index, item in enumerate(data):
         # chunk_bboxes를 순회하며 좌표를 합산
-        for cb in item.get("chunk_bboxes", []):
+        # chunk_bboxes가 문자열인 경우 JSON으로 파싱
+        chunk_bboxes = item.get("chunk_bboxes", [])
+        if isinstance(chunk_bboxes, str):
+            chunk_bboxes = json.loads(chunk_bboxes)
+
+        for cb in chunk_bboxes:
             page_num = cb["page"]  # 1-based
             bbox_info = cb["bbox"]
             l, b, r, t = bbox_info["l"], bbox_info["b"], bbox_info["r"], bbox_info["t"]
@@ -142,7 +147,7 @@ if __name__ == "__main__":
         data = json.load(f)
 
     # PDF 파일 경로
-    pdf_path = "./[타사업소 아차사고 사례]폐수오니 반출작업 관련 안전개선 대책(안)(환경관리부-20.pdf"
+    pdf_path = "./../sample_files/가스산업 인사이트 6호.pdf"
 
     # item 단위로 Superset bbox 시각화
     visualize_bboxes_item_superset(data, pdf_path)

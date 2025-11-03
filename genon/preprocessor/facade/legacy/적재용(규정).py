@@ -492,7 +492,8 @@ class HybridChunker(BaseChunker):
                 if table_tokens > self.max_tokens:
                     # 테이블 텍스트만 추출하여 분할
                     table_only_text = self._extract_table_text(item, dl_doc)
-                    split_tables = self._split_table_text(table_only_text, 4096)
+                    # split_tables = self._split_table_text(table_only_text, 4096)
+                    split_tables = [table_only_text]
 
                     # 분할된 각 테이블에 대해 청크 생성
                     for split_table in split_tables:
@@ -750,6 +751,7 @@ class GenOSVectorMeta(BaseModel):
     media_files: str = None
     title: str = None
     created_date: int = None
+    appendix: str = None ## !! appendix feature (2025-09-30, geonhee kim) !!
 
 
 class GenOSVectorMetaBuilder:
@@ -771,6 +773,7 @@ class GenOSVectorMetaBuilder:
         self.media_files: Optional[str] = None
         self.title: Optional[str] = None
         self.created_date: Optional[int] = None
+        self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -849,6 +852,7 @@ class GenOSVectorMetaBuilder:
             media_files=self.media_files,
             title=self.title,
             created_date=self.created_date,
+            appendix=self.appendix or "" # !! appendix feature (2025-09-30, geonhee kim) !!
         )
 
 
@@ -928,7 +932,8 @@ class DocumentProcessor:
                 format_options={
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=self.pipe_line_options,
-                        backend=DoclingParseV4DocumentBackend
+                        # backend=DoclingParseV4DocumentBackend
+                        backend=PyPdfiumDocumentBackend
                     ),
                 }
             )
@@ -1090,6 +1095,17 @@ class DocumentProcessor:
                 if item.label == DocItemLabel.TITLE:
                     title = item.text.strip() if item.text else ""
                     break
+
+        # kwargs에서 부록 정보 추출 !! appendix feature (2025-09-30, geonhee kim) !!
+        appendix_info = kwargs.get('appendix', '')
+        appendix_list = []
+        if isinstance(appendix_info, str):
+            appendix_list = [item.strip() for item in json.loads(appendix_info) if item.strip()] if appendix_info else []
+        elif isinstance(appendix_info, list):
+            appendix_list = appendix_info
+        else:
+            appendix_list = []
+
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
@@ -1106,6 +1122,13 @@ class DocumentProcessor:
             chunk_page = chunk.meta.doc_items[0].prov[0].page_no
             content = self.safe_join(chunk.meta.headings) + chunk.text
 
+            # appendix 추출 !! appendix feature (2025-09-30, geonhee kim) !!
+            matched_appendices = self.check_appendix_keywords(content, appendix_list)
+            # print(appendix_list, matched_appendices)
+            chunk_global_metadata = global_metadata.copy()
+            chunk_global_metadata['appendix'] = matched_appendices  # Only matched ones
+            ###
+
             if chunk_page != current_page:
                 current_page = chunk_page
                 chunk_index_on_page = 0
@@ -1114,7 +1137,7 @@ class DocumentProcessor:
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
                       .set_chunk_index(chunk_idx)
-                      .set_global_metadata(**global_metadata)
+                      .set_global_metadata(**chunk_global_metadata) #!! appendix feature (2025-09-30, geonhee kim) !!
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
                       .set_media_files(chunk.meta.doc_items)
                       ).build()
@@ -1167,6 +1190,50 @@ class DocumentProcessor:
                     return True
 
         return False
+
+    def check_appendix_keywords(self, content: str, appendix_list: list) -> str: # !! appendix feature (2025-09-30, geonhee kim) !!
+        if not content or not appendix_list:
+            return ""
+
+        matched_appendices = []
+
+        # 1. Find appendix patterns in content first
+        found_patterns = []
+
+        # Complex patterns: 별지/별표/장부 + numbers (with hyphens, Roman numerals)
+        # Updated regex to capture full patterns like "별지 제 Ⅰ -1 호 서식" by matching until closing delimiters
+        content = re.sub(r"\s+", "", content)
+        complex_patterns = re.findall(r'(별지|별표|장부)(?:제)?([^<>()\[\]]+?)(?=(?:호|서식)|[<>\)\]]|$)', content)
+        for pattern_type, number in complex_patterns:
+            found_patterns.extend([
+                f"{pattern_type} {number}",
+                f"{pattern_type} 제{number}호",
+                f"{pattern_type}{number}",
+                f"{pattern_type}제{number}호"
+            ])
+
+        # Standalone patterns: (별표), (별지), (장부)
+        standalone_patterns = re.findall(r'[\(\[]+(별지|별표|장부)[\)\]]+', content)
+        for pattern_type in set(standalone_patterns):
+            found_patterns.extend([
+                pattern_type,
+                f"{pattern_type}",
+            ])
+
+        # 2. Check if found patterns match any appendix in the list
+        for appendix in appendix_list:
+            if not appendix or not isinstance(appendix, str):
+                continue
+
+            appendix_clean = appendix.replace('.pdf', '').lower().strip()
+
+            # If any found pattern exists in appendix filename, it's a match
+            for pattern in found_patterns:
+                if pattern.lower().strip() in appendix_clean:
+                    matched_appendices.append(appendix)
+                    break  # Prevent duplicates
+
+        return ', '.join(matched_appendices) if matched_appendices else ""
 
     def ocr_all_table_cells(self, document: DoclingDocument, pdf_path) -> List[Dict[str, Any]]:
         """

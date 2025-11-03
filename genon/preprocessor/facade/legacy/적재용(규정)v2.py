@@ -99,7 +99,7 @@ from genos_utils import upload_files
 class HierarchicalChunker(BaseChunker):
     """문서 구조와 헤더 계층을 유지하면서 아이템을 순차적으로 처리하는 청커"""
 
-    merge_list_items: bool = True
+    merge_list_items: bool = False
 
     def chunk(self, dl_doc: DLDocument, **kwargs: Any) -> Iterator[BaseChunk]:
         """문서의 모든 아이템을 헤더 정보와 함께 청크로 생성
@@ -114,6 +114,8 @@ class HierarchicalChunker(BaseChunker):
         all_items = []
         all_header_info = []  # 각 아이템의 헤더 정보
         current_heading_by_level: dict[LevelNumber, str] = {}
+        all_header_short_info = []  # 각 아이템의 짧은 헤더 정보
+        current_heading_short_by_level: dict[LevelNumber, str] = {}
         list_items: list[TextItem] = []
 
         # iterate_items()로 수집된 아이템들의 self_ref 추적
@@ -140,6 +142,7 @@ class HierarchicalChunker(BaseChunker):
                         all_items.append(list_item)
                         # 리스트 아이템의 헤더 정보 저장
                         all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                        all_header_short_info.append({k: v for k, v in current_heading_short_by_level.items()})
                     list_items = []
 
             # 섹션 헤더 처리
@@ -153,15 +156,20 @@ class HierarchicalChunker(BaseChunker):
                     else (0 if item.label == DocItemLabel.TITLE else 1)
                 )
                 current_heading_by_level[header_level] = item.text
+                current_heading_short_by_level[header_level] = item.orig  # 첫 단어로 짧은 헤더 정보 설정
 
                 # 더 깊은 레벨의 헤더들 제거
                 keys_to_del = [k for k in current_heading_by_level if k > header_level]
                 for k in keys_to_del:
                     current_heading_by_level.pop(k, None)
+                keys_to_del_short = [k for k in current_heading_short_by_level if k > header_level]
+                for k in keys_to_del_short:
+                    current_heading_short_by_level.pop(k, None)
 
                 # 헤더 아이템도 추가 (헤더 자체도 아이템임)
                 all_items.append(item)
                 all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                all_header_short_info.append({k: v for k, v in current_heading_short_by_level.items()})
                 continue
 
             if (isinstance(item, TextItem) or
@@ -169,15 +177,19 @@ class HierarchicalChunker(BaseChunker):
                 isinstance(item, CodeItem) or
                 isinstance(item, TableItem) or
                 isinstance(item, PictureItem)):
+                # if item.label in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
+                #     item.text = ""
                 all_items.append(item)
                 # 현재 아이템의 헤더 정보 저장
                 all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                all_header_short_info.append({k: v for k, v in current_heading_short_by_level.items()})
 
         # 마지막 리스트 아이템들 처리
         if list_items:
             for list_item in list_items:
                 all_items.append(list_item)
                 all_header_info.append({k: v for k, v in current_heading_by_level.items()})
+                all_header_short_info.append({k: v for k, v in current_heading_short_by_level.items()})
 
         # iterate_items()에서 누락된 테이블들을 별도로 추가
         missing_tables = []
@@ -192,6 +204,7 @@ class HierarchicalChunker(BaseChunker):
                 # 첫 번째 위치에 삽입 (헤더 테이블일 가능성이 높음)
                 all_items.insert(0, missing_table)
                 all_header_info.insert(0, {})  # 빈 헤더 정보
+                all_header_short_info.insert(0, {})  # 빈 짧은 헤더 정보
 
         # 아이템이 없으면 빈 문서
         if not all_items:
@@ -210,10 +223,11 @@ class HierarchicalChunker(BaseChunker):
         )
         # 헤더 정보를 별도 속성으로 저장
         chunk._header_info_list = all_header_info
+        chunk._header_short_info_list = all_header_short_info  # 짧은 헤더 정보도 저장
         yield chunk
 
 class HybridChunker(BaseChunker):
-    """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커"""
+    """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커 (v2)"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -292,15 +306,17 @@ class HybridChunker(BaseChunker):
             if item_headers != current_section_headers:
                 # 변경된 헤더 레벨들만 추가
                 headers_to_add = []
-
                 for level in sorted(item_headers.keys()):
                     # 이전 섹션과 다른 헤더만 추가
                     if (level not in current_section_headers or
                         current_section_headers[level] != item_headers[level]):
                         # 해당 레벨까지의 모든 상위 헤더 포함
                         for l in sorted(item_headers.keys()):
-                            if l <= level:
+                            if l < level:
                                 headers_to_add.append(item_headers[l])
+                            elif l == level:
+                                headers_to_add.append('')
+
                         break
 
                 # 헤더가 있으면 추가
@@ -332,10 +348,7 @@ class HybridChunker(BaseChunker):
             elif isinstance(item, PictureItem):
                 text_parts.append("")  # 이미지는 빈 텍스트
 
-        # delim이 정의되지 않은 경우 기본값 사용
-        delim = getattr(self, 'delim', '\n')
-        result_text = delim.join(text_parts)
-
+        result_text = self.delim.join(text_parts)
         return result_text
 
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument) -> str:
@@ -380,7 +393,7 @@ class HybridChunker(BaseChunker):
         return ""
 
     def _extract_used_headers(self, header_info_list: list[dict]) -> Optional[list[str]]:
-        """헤더 정보 리스트에서 실제 사용되는 헤더들을 추출 """
+        """헤더 정보 리스트에서 실제 사용되는 모든 헤더들을 level 순서대로 추출하고 ', '로 연결"""
         if not header_info_list:
             return None
 
@@ -412,282 +425,182 @@ class HybridChunker(BaseChunker):
         chunks = chunker(table_text)
         return chunks if chunks else [table_text]
 
+    def _is_section_header(self, item: DocItem) -> bool:
+        """아이템이 section header인지 확인"""
+        return (isinstance(item, SectionHeaderItem) or
+                (isinstance(item, TextItem) and
+                 item.label in [DocItemLabel.SECTION_HEADER, DocItemLabel.TITLE]))
+
+    def _get_section_header_level(self, item: DocItem) -> Optional[int]:
+        """Section header의 level을 반환"""
+        if isinstance(item, SectionHeaderItem):
+            return item.level
+        elif isinstance(item, TextItem):
+            if item.label == DocItemLabel.TITLE:
+                return 0
+            elif item.label == DocItemLabel.SECTION_HEADER:
+                return 1
+        return None
+
+    def _generate_section_text_with_heading(self, section_items: list[DocItem],
+                                            section_header_infos: list[dict],
+                                            dl_doc: DoclingDocument) -> str:
+        """섹션의 텍스트를 생성하되, 앞에 heading을 붙임"""
+        # 첫 번째 item의 header_info에서 heading 추출
+        if section_header_infos and section_header_infos[0]:
+            merged_headers = {}
+            for level, header_text in section_header_infos[0].items():
+                if header_text:
+                    merged_headers[level] = header_text
+
+            # level 순서대로 정렬해서 ', '로 연결
+            if merged_headers:
+                sorted_levels = sorted(merged_headers.keys())
+                headers = [merged_headers[level] for level in sorted_levels]
+                heading_text = ', '.join(headers)
+            else:
+                heading_text = ""
+        else:
+            heading_text = ""
+
+        # 섹션의 일반 텍스트 생성
+        section_text = self._generate_text_from_items_with_headers(
+            section_items, section_header_infos, dl_doc
+        )
+
+        # heading이 있으면 앞에 붙이기
+        if heading_text:
+            return heading_text + ", " + section_text
+        else:
+            return section_text
+
     def _split_document_by_tokens(self, doc_chunk: DocChunk, dl_doc: DoclingDocument) -> list[DocChunk]:
-        """문서를 토큰 제한에 맞게 분할 (여러 섹션이 하나의 청크에 포함 가능)"""
+        """문서를 토큰 제한에 맞게 분할 (v2: 섹션 헤더 기준으로 분할 후 max_tokens로 병합)"""
         items = doc_chunk.meta.doc_items
-        header_info_list = getattr(doc_chunk, '_header_info_list', [])  # 각 아이템의 헤더 정보 리스트
+        header_info_list = getattr(doc_chunk, '_header_info_list', [])
+        header_short_info_list = getattr(doc_chunk, '_header_short_info_list', [])
 
         if not items:
             return []
 
-        result_chunks = []
-        current_items = []
-        current_header_infos = []
+        # 1단계: 섹션 헤더가 바뀔 때마다 분할
+        sections = []  # [(items, header_infos, header_short_infos), ...]
+        current_section_items = []
+        current_section_header_infos = []
+        current_section_header_short_infos = []
 
-        i = 0
-        while i < len(items):
+        for i in range(len(items)):
             item = items[i]
             header_info = header_info_list[i] if i < len(header_info_list) else {}
+            header_short_info = header_short_info_list[i] if i < len(header_short_info_list) else {}
 
-            # 테이블 아이템인 경우 특별 처리
-            if isinstance(item, TableItem):
-                # 현재까지 누적된 아이템들이 있으면 먼저 청크로 생성
-                if current_items:
-                    chunk_text = self._generate_text_from_items_with_headers(
-                        current_items, current_header_infos, dl_doc
-                    )
-                    tokens = self._count_tokens(chunk_text)
-
-                    # 실제 사용된 헤더들만 추출
-                    used_headers = self._extract_used_headers(current_header_infos)
-                    result_chunks.append(DocChunk(
-                        text=chunk_text,
-                        meta=DocMeta(
-                            doc_items=current_items.copy(),
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
-                        )
-                    ))
-                    current_items = []
-                    current_header_infos = []
-
-                # 테이블과 앞뒤 아이템을 포함한 청크 생성
-                table_items = []
-                table_header_infos = []
-
-                # 앞 아이템 추가 (가능한 경우)
-                # if i > 0 and len(result_chunks) == 0:  # 첫 번째 테이블이고 앞에 아이템이 있는 경우
-                #     table_items.append(items[i-1])
-                #     prev_header_info = header_info_list[i-1] if i-1 < len(header_info_list) else {}
-                #     table_header_infos.append(prev_header_info)
-
-                # 테이블 추가
-                table_items.append(item)
-                table_header_infos.append(header_info)
-
-                # 뒤 아이템 추가 (가능한 경우)
-                # if i + 1 < len(items):
-                #     table_items.append(items[i+1])
-                #     next_header_info = header_info_list[i+1] if i+1 < len(header_info_list) else {}
-                #     table_header_infos.append(next_header_info)
-                #     i += 1  # 다음 아이템은 이미 처리했으므로 스킵
-
-                # 테이블 청크 생성 (토큰 제한 확인)
-                table_text = self._generate_text_from_items_with_headers(
-                    table_items, table_header_infos, dl_doc
-                )
-                table_tokens = self._count_tokens(table_text)
-
-                # 테이블이 max_tokens를 초과하는 경우, 테이블을 분할
-                if table_tokens > self.max_tokens:
-                    # 테이블 텍스트만 추출하여 분할
-                    table_only_text = self._extract_table_text(item, dl_doc)
-                    # split_tables = self._split_table_text(table_only_text, 4096)
-                    split_tables = [table_only_text]
-
-                    # 분할된 각 테이블에 대해 청크 생성
-                    for split_table in split_tables:
-                        # 기존 _generate_text_from_items_with_headers 함수 활용
-                        full_text = self._generate_text_from_items_with_headers(
-                            [item], [header_info], dl_doc
-                        )
-                        # 원본 테이블 텍스트를 분할된 테이블로 교체
-                        full_text = full_text.replace(table_only_text, split_table)
-
-                        # 원래 tableitem에 들어갔어야 할 heading 값 유지
-                        used_headers = self._extract_used_headers([header_info])
-                        result_chunks.append(DocChunk(
-                            text=full_text,
-                            meta=DocMeta(
-                                doc_items=[item],
-                                headings=used_headers,
-                                captions=None,
-                                origin=doc_chunk.meta.origin,
-                            )
-                        ))
-                else:
-                    used_headers = self._extract_used_headers(table_header_infos)
-                    result_chunks.append(DocChunk(
-                        text=table_text,
-                        meta=DocMeta(
-                            doc_items=table_items,
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
-                        )
+            # 섹션 헤더를 만나면
+            if self._is_section_header(item):
+                # 이전 섹션이 있으면 저장
+                if current_section_items:
+                    sections.append((
+                        current_section_items,
+                        current_section_header_infos,
+                        current_section_header_short_infos
                     ))
 
-                i += 1
-                continue
+                # 새로운 섹션 시작
+                current_section_items = [item]
+                current_section_header_infos = [header_info]
+                current_section_header_short_infos = [header_short_info]
+            else:
+                # 섹션 헤더가 아니면 현재 섹션에 추가
+                current_section_items.append(item)
+                current_section_header_infos.append(header_info)
+                current_section_header_short_infos.append(header_short_info)
 
-            # 일반 아이템 처리 - 토큰 제한 확인
-            test_items = current_items + [item]
-            test_header_infos = current_header_infos + [header_info]
-            test_text = self._generate_text_from_items_with_headers(
-                test_items, test_header_infos, dl_doc
+        # 마지막 섹션 저장
+        if current_section_items:
+            sections.append((
+                current_section_items,
+                current_section_header_infos,
+                current_section_header_short_infos
+            ))
+
+        # 1.5단계: "제x장/절/관" 헤더는 다음 섹션과 병합
+        for i in range(len(sections) - 2, -1, -1):
+            items, h_infos, h_short = sections[i]
+
+            text = ""
+            if h_short and h_short[0].values():
+                text = list(h_short[0].values())[-1]
+
+            if re.match(r"제\s*\d+\s*(장|절|관)", text):
+                n_items, n_h_infos, n_h_short = sections[i + 1]
+                sections[i] = (items + n_items, h_infos + n_h_infos, h_short + n_h_short)
+                sections.pop(i + 1)
+
+        # 2단계: 각 섹션의 텍스트에 heading 붙이기
+        sections_with_text = []
+        for section_items, section_header_infos, section_header_short_infos in sections:
+            section_text = self._generate_section_text_with_heading(
+                section_items, section_header_short_infos, dl_doc
             )
+            sections_with_text.append((
+                section_text,
+                section_items,
+                section_header_infos,
+                section_header_short_infos
+            ))
+
+        # 3단계: 섹션들을 max_tokens 기준으로 병합
+        result_chunks = []
+        merged_texts = []
+        merged_items = []
+        merged_header_infos = []
+        merged_header_short_infos = []
+
+        for section_text, section_items, section_header_infos, section_header_short_infos in sections_with_text:
+            # 병합 가능한지 테스트
+            test_text = "\n".join(merged_texts + [section_text])
             test_tokens = self._count_tokens(test_text)
 
-            if test_tokens <= self.max_tokens:
-                current_items.append(item)
-                current_header_infos.append(header_info)
+            # max_tokens 이하이거나 첫 섹션이면 병합
+            if test_tokens <= self.max_tokens or len(merged_texts) == 0:
+                merged_texts.append(section_text)
+                merged_items.extend(section_items)
+                merged_header_infos.extend(section_header_infos)
+                merged_header_short_infos.extend(section_header_short_infos)
             else:
-                # 토큰 제한 초과 - 현재까지의 아이템들로 청크 생성
-                if current_items:
-                    chunk_text = self._generate_text_from_items_with_headers(
-                        current_items, current_header_infos, dl_doc
+                # max_tokens 초과하면 현재까지 chunk 생성
+                chunk_text = "\n".join(merged_texts)
+                used_headers = self._extract_used_headers(merged_header_short_infos)
+                result_chunks.append(DocChunk(
+                    text=chunk_text,
+                    meta=DocMeta(
+                        doc_items=merged_items,
+                        headings=used_headers,
+                        captions=None,
+                        origin=doc_chunk.meta.origin,
                     )
-                    chunk_tokens = self._count_tokens(chunk_text)
+                ))
 
-                    used_headers = self._extract_used_headers(current_header_infos)
-                    result_chunks.append(DocChunk(
-                        text=chunk_text,
-                        meta=DocMeta(
-                            doc_items=current_items.copy(),
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
-                        )
-                    ))
-                    # 새로운 청크 시작
-                    current_items = [item]
-                    current_header_infos = [header_info]
-                else:
-                    # 단일 아이템이 토큰 제한을 초과하는 경우
-                    single_text = self._generate_text_from_items_with_headers(
-                        [item], [header_info], dl_doc
-                    )
-                    single_tokens = self._count_tokens(single_text)
+                # 새로운 병합 시작
+                merged_texts = [section_text]
+                merged_items = section_items
+                merged_header_infos = section_header_infos
+                merged_header_short_infos = section_header_short_infos
 
-                    used_headers = self._extract_used_headers([header_info])
-                    result_chunks.append(DocChunk(
-                        text=single_text,
-                        meta=DocMeta(
-                            doc_items=[item],
-                            headings=used_headers,
-                            captions=None,
-                            origin=doc_chunk.meta.origin,
-                        )
-                    ))
-
-            i += 1
-
-        # 마지막 남은 아이템들 처리
-        if current_items:
-            chunk_text = self._generate_text_from_items_with_headers(
-                current_items, current_header_infos, dl_doc
-            )
-            chunk_tokens = self._count_tokens(chunk_text)
-
-            used_headers = self._extract_used_headers(current_header_infos)
+        # 마지막 병합된 items 처리
+        if merged_texts:
+            chunk_text = "\n".join(merged_texts)
+            used_headers = self._extract_used_headers(merged_header_short_infos)
             result_chunks.append(DocChunk(
                 text=chunk_text,
                 meta=DocMeta(
-                    doc_items=current_items,
+                    doc_items=merged_items,
                     headings=used_headers,
                     captions=None,
                     origin=doc_chunk.meta.origin,
                 )
             ))
 
-        # 작은 청크들 병합 처리
-        return self._merge_small_chunks(result_chunks, dl_doc)
-
-    def _merge_small_chunks(self, chunks: list[DocChunk], dl_doc: DoclingDocument) -> list[DocChunk]:
-        """작은 청크들을 병합하여 토큰 효율성을 높임 (개선된 버전)"""
-        if not chunks:
-            return chunks
-
-        min_chunk_size = self.max_tokens // 3  # 최소 청크 크기를 더 크게 설정 (2000/3 = 666토큰)
-        merged_chunks = []
-        current_merge_candidate = None
-
-        for i, chunk in enumerate(chunks):
-            chunk_tokens = self._count_tokens(chunk.text)
-
-            # 아주 큰 청크는 분할 필요
-            if chunk_tokens > self.max_tokens:
-                if current_merge_candidate:
-                    merged_chunks.append(current_merge_candidate)
-                    current_merge_candidate = None
-
-                # 큰 청크를 분할 (임시로 그대로 추가하되, 경고 표시)
-                merged_chunks.append(chunk)
-                continue
-
-            # 작은 청크인 경우 병합 대상 (테이블 청크도 포함)
-            if chunk_tokens < min_chunk_size:
-                if current_merge_candidate is None:
-                    current_merge_candidate = chunk
-                else:
-                    # 병합 시도
-                    merged_items = current_merge_candidate.meta.doc_items + chunk.meta.doc_items
-                    merged_header_infos = (
-                        getattr(current_merge_candidate, '_header_info_list', []) +
-                        getattr(chunk, '_header_info_list', [])
-                    )
-
-                    merged_text = self._generate_text_from_items_with_headers(
-                        merged_items, merged_header_infos, dl_doc
-                    )
-                    merged_tokens = self._count_tokens(merged_text)
-
-                    if merged_tokens <= self.max_tokens:
-                        current_merge_candidate = DocChunk(
-                            text=merged_text,
-                            meta=DocMeta(
-                                doc_items=merged_items,
-                                headings=self._extract_used_headers(merged_header_infos),
-                                captions=None,
-                                origin=chunk.meta.origin,
-                            )
-                        )
-                        current_merge_candidate._header_info_list = merged_header_infos
-                    else:
-                        merged_chunks.append(current_merge_candidate)
-                        current_merge_candidate = chunk
-            else:
-                if current_merge_candidate:
-                    # 이전 병합 후보가 있으면 현재 청크와 병합 시도
-                    candidate_tokens = self._count_tokens(current_merge_candidate.text)
-                    if candidate_tokens < min_chunk_size:
-                        # 현재 청크와 병합 시도
-                        merged_items = current_merge_candidate.meta.doc_items + chunk.meta.doc_items
-                        merged_header_infos = (
-                            getattr(current_merge_candidate, '_header_info_list', []) +
-                            getattr(chunk, '_header_info_list', [])
-                        )
-
-                        merged_text = self._generate_text_from_items_with_headers(
-                            merged_items, merged_header_infos, dl_doc
-                        )
-                        merged_tokens = self._count_tokens(merged_text)
-
-                        if merged_tokens <= self.max_tokens:
-                            merged_chunks.append(DocChunk(
-                                text=merged_text,
-                                meta=DocMeta(
-                                    doc_items=merged_items,
-                                    headings=self._extract_used_headers(merged_header_infos),
-                                    captions=None,
-                                    origin=chunk.meta.origin,
-                                )
-                            ))
-                            current_merge_candidate = None
-                            continue
-
-                    # 병합할 수 없으면 후보를 먼저 추가
-                    merged_chunks.append(current_merge_candidate)
-                    current_merge_candidate = None
-
-                merged_chunks.append(chunk)
-
-        # 마지막 병합 후보 처리
-        if current_merge_candidate:
-            merged_chunks.append(current_merge_candidate)
-
-        return merged_chunks
+        return result_chunks
 
     def chunk(self, dl_doc: DoclingDocument, **kwargs: Any) -> Iterator[BaseChunk]:
         """문서를 청킹하여 반환
@@ -730,6 +643,7 @@ class GenOSVectorMeta(BaseModel):
     media_files: str = None
     title: str = None
     created_date: int = None
+    appendix: str = None ## !! appendix feature (2025-09-30, geonhee kim) !!
 
 
 class GenOSVectorMetaBuilder:
@@ -751,6 +665,7 @@ class GenOSVectorMetaBuilder:
         self.media_files: Optional[str] = None
         self.title: Optional[str] = None
         self.created_date: Optional[int] = None
+        self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -829,6 +744,7 @@ class GenOSVectorMetaBuilder:
             media_files=self.media_files,
             title=self.title,
             created_date=self.created_date,
+            appendix=self.appendix or "" # !! appendix feature (2025-09-30, geonhee kim) !!
         )
 
 
@@ -884,7 +800,8 @@ class DocumentProcessor:
 
         # enrichment 옵션 설정
         self.enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=False,
+            do_toc_enrichment=True,
+            toc_doc_type="law",
             extract_metadata=True,
             toc_api_provider="custom",
 
@@ -893,13 +810,22 @@ class DocumentProcessor:
             metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
             toc_api_key="9e32423947fd4a5da07a28962fe88487",
             metadata_api_key="9e32423947fd4a5da07a28962fe88487",
+
+            # hcx-007
+            #toc_api_base_url="http://llmops-gateway-api-service:8080/serving/34/103/v1/chat/completions",
+            #metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/34/103/v1/chat/completions",
+            #toc_api_key="1d071e40c58a44dba635fcbd46e23569",
+            #metadata_api_key="1d071e40c58a44dba635fcbd46e23569",
+
             toc_model="model",
             metadata_model="model",
-
             toc_temperature=0.0,
             toc_top_p=0.00001,
             toc_seed=33,
-            toc_max_tokens=1000
+            toc_max_tokens=10000,
+
+            toc_system_prompt=toc_system_prompt,
+            toc_user_prompt=toc_user_prompt,
         )
 
     def _create_converters(self):
@@ -908,7 +834,7 @@ class DocumentProcessor:
                 format_options={
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=self.pipe_line_options,
-                        backend=DoclingParseV4DocumentBackend
+                        backend=PyPdfiumDocumentBackend
                     ),
                 }
             )
@@ -1070,6 +996,17 @@ class DocumentProcessor:
                 if item.label == DocItemLabel.TITLE:
                     title = item.text.strip() if item.text else ""
                     break
+
+        # kwargs에서 부록 정보 추출 !! appendix feature (2025-09-30, geonhee kim) !!
+        appendix_info = kwargs.get('appendix', '')
+        appendix_list = []
+        if isinstance(appendix_info, str):
+            appendix_list = [item.strip() for item in json.loads(appendix_info) if item.strip()] if appendix_info else []
+        elif isinstance(appendix_info, list):
+            appendix_list = appendix_info
+        else:
+            appendix_list = []
+
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
@@ -1088,6 +1025,13 @@ class DocumentProcessor:
             headers_text = "HEADER: " + ", ".join(chunk.meta.headings) + '\n' if chunk.meta.headings else ''
             content = headers_text + chunk.text
 
+            # appendix 추출 !! appendix feature (2025-09-30, geonhee kim) !!
+            matched_appendices = self.check_appendix_keywords(content, appendix_list)
+            # print(appendix_list, matched_appendices)
+            chunk_global_metadata = global_metadata.copy()
+            chunk_global_metadata['appendix'] = matched_appendices  # Only matched ones
+            ###
+
             if chunk_page != current_page:
                 current_page = chunk_page
                 chunk_index_on_page = 0
@@ -1096,7 +1040,7 @@ class DocumentProcessor:
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
                       .set_chunk_index(chunk_idx)
-                      .set_global_metadata(**global_metadata)
+                      .set_global_metadata(**chunk_global_metadata) #!! appendix feature (2025-09-30, geonhee kim) !!
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
                       .set_media_files(chunk.meta.doc_items)
                       ).build()
@@ -1149,6 +1093,50 @@ class DocumentProcessor:
                     return True
 
         return False
+
+    def check_appendix_keywords(self, content: str, appendix_list: list) -> str: # !! appendix feature (2025-09-30, geonhee kim) !!
+        if not content or not appendix_list:
+            return ""
+
+        matched_appendices = []
+
+        # 1. Find appendix patterns in content first
+        found_patterns = []
+
+        # Complex patterns: 별지/별표/장부 + numbers (with hyphens, Roman numerals)
+        # Updated regex to capture full patterns like "별지 제 Ⅰ -1 호 서식" by matching until closing delimiters
+        content = re.sub(r"\s+", "", content)
+        complex_patterns = re.findall(r'(별지|별표|장부)(?:제)?([^<>()\[\]]+?)(?=(?:호|서식)|[<>\)\]]|$)', content)
+        for pattern_type, number in complex_patterns:
+            found_patterns.extend([
+                f"{pattern_type} {number}",
+                f"{pattern_type} 제{number}호",
+                f"{pattern_type}{number}",
+                f"{pattern_type}제{number}호"
+            ])
+
+        # Standalone patterns: (별표), (별지), (장부)
+        standalone_patterns = re.findall(r'[\(\[]+(별지|별표|장부)[\)\]]+', content)
+        for pattern_type in set(standalone_patterns):
+            found_patterns.extend([
+                pattern_type,
+                f"{pattern_type}",
+            ])
+
+        # 2. Check if found patterns match any appendix in the list
+        for appendix in appendix_list:
+            if not appendix or not isinstance(appendix, str):
+                continue
+
+            appendix_clean = appendix.replace('.pdf', '').lower().strip()
+
+            # If any found pattern exists in appendix filename, it's a match
+            for pattern in found_patterns:
+                if pattern.lower().strip() in appendix_clean:
+                    matched_appendices.append(appendix)
+                    break  # Prevent duplicates
+
+        return ', '.join(matched_appendices) if matched_appendices else ""
 
     def ocr_all_table_cells(self, document: DoclingDocument, pdf_path) -> List[Dict[str, Any]]:
         """
@@ -1344,3 +1332,87 @@ class GenosServiceException(Exception):
 async def assert_cancelled(request: Request):
     if await request.is_disconnected():
         raise GenosServiceException(1, f"Cancelled")
+
+
+#-----------------------------------------------------------------
+# enrichment 프롬프트
+#-----------------------------------------------------------------
+
+# 규정용 프롬프트
+toc_system_prompt = "당신은 규정/규칙/지침과 같은 한국어 문서에서 **목차**를 생성하는 전문가입니다."
+toc_user_prompt = """주어진 법령문서 텍스트에서 문서제목, 장/절/조, 부칙, 부록/별지/별표의 제목을 추출한다.
+
+## 단계별 추론 (CoT 방식)
+1. 문서제목은 chunk 초반에서 제목 후보를 탐색하고 나열한다.
+2. 문서제목 가능성이 높은 문구를 하나 선택하고 `TITLE:<문서제목>` 형식으로 기록한다.
+    - 단, 제목으로 보이는 문구가 없으면 `TITLE:` 로 기록
+3. 모든 "제x조(...)" 패턴을 모두 탐색하고 나열한다.
+    - 반복적 패턴(재등록, 재재등록 등) 생성을 피한다.
+4. 나머지 장/절, 부칙, 부록/별지/별표의 패턴을 모두 탐색하고 나열한다.
+    - "제x장","제x절"
+    - "부칙 <제xxx호, YYYY. MM. DD>(...)" 또는 "부칙 (YYYY. MM. DD)(...)"
+    - "부록", "<별지>", "<별표>", "[별지 ...] <개정 YYYY.MM.DD>", "[별표 ...] <개정 YYYY.MM.DD>"
+    - 본문의 리스트 항목이 탐색되는 것을 피한다. ("①", "②","①(...)", "②(...)", "1.", "가." 등)
+5. 탐색된 모든 항목을 재검토하여 패턴에 맞는 항목만 남긴다.
+6. 남겨진 항목을 문서내 순서대로 나열한 후 계층관계를 분석한다.
+    - 1, 1.1, 1.1.1 등으로 표현
+    - 부칙 하위에 나오는 조는 부칙의 하위로 둔다.
+7. 분석된 계층관계가 올바른지 재검토한다.
+    - 장/절/조는 "조"까지만 남긴다.
+
+## 주의사항
+- 반드시 chunk 내부에서 보이는 내용만 처리한다.
+- 목차가 있으면 참고만하고 반드시 본문에서 추출한다.
+
+## 출력 형식
+- 첫 줄: `TITLE:<문서제목>`, (없으면 `TITLE:` 만 출력)
+- 이후 줄: 장/절/조, 부칙, 부록/별지/별표 제목
+- 일반 텍스트 형식으로 출력한다.
+- 원문의 텍스트를 그대로 출력한다.
+
+## Few-shot 예시
+
+### 예시 1 (중간 chunk)
+
+#### 입력
+
+인원보안 규정
+
+에 과다한 비용을 요한다고 인정하는 경우 또는 당행이 공종별 목적물을 관계법령에 따른 내구연한(耐久年限)이나 설계상의 구조내력을 초과하여사용한 것을 원인으로 하여 하자가 발생하였다고 인정하는 경우에는 그러하지 아니하다.
+
+제18조 (자격등록 확인) 세칙 제52조에 따라 하자검사를 하는 자는...
+제19조 (자격등록 및 갱신등록의 거부) 하자보수보증금률을 정하여야 한다...
+제5장 인원보안
+제1절 보안책임
+제30조(보안책임자) 보안담당은...
+제30조의2 (자격등록 및 갱신등록의 거부) 하자보수보증금을 직접 사용하고자 할 때에는...
+부칙 (2022. 1. 2)
+제4조(조사절차) 계약담당은 제1항의 보증채무 이행 대금, ...
+제7조(조사결과 보고) 락률 산정은 다음 각 호의 산식에따른다. ...
+[별지 제6호 서식] 여비정산신청서
+[별표 1] <개정 2026.2.11>
+<별표 2> 회계장부의 보존연한표
+[별지 제1호 서식]<개정 2022.04.25> 보안심사(실무)위원회 회의록
+
+#### 출력
+
+TITLE:인원보안 규정
+1. 제18조 (자격등록 확인)
+2. 제19조 (자격등록 및 갱신등록의 거부)
+3. 제5장 인원보안
+3.1. 제1절 보안책임
+3.1.1. 제30조(보안책임자)
+3.1.2. 제30조의2 (자격등록 및 갱신등록의 거부)
+4. 부칙 (2022. 1. 2)
+4.1. 제4조(조사절차)
+4.2. 제7조(조사결과 보고)
+5. [별지 제6호 서식] 여비정산신청서
+6. [별표 1] <개정 2026.2.11>
+7. [별표 2] 회계장부의 보존연한표
+8. [별지 제1호 서식]<개정 2022.04.25> 보안심사(실무)위원회 회의록
+
+---
+
+## 실제 작업할 입력
+{raw_text}
+"""

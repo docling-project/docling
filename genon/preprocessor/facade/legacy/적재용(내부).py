@@ -496,7 +496,8 @@ class HybridChunker(BaseChunker):
                 if table_tokens > self.max_tokens:
                     # 테이블 텍스트만 추출하여 분할
                     table_only_text = self._extract_table_text(item, dl_doc)
-                    split_tables = self._split_table_text(table_only_text, 4096)
+                    # split_tables = self._split_table_text(table_only_text, 4096)
+                    split_tables = [table_only_text]
 
                     # 분할된 각 테이블에 대해 청크 생성
                     for split_table in split_tables:
@@ -950,17 +951,17 @@ class DocumentProcessor:
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
         # enrichment 옵션 설정
         enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=True,
+            do_toc_enrichment=False,
             extract_metadata=True,
             toc_api_provider="custom",
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
+            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
+            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/1/118/v1/chat/completions",
             toc_api_key="9e32423947fd4a5da07a28962fe88487",
             metadata_api_key="9e32423947fd4a5da07a28962fe88487",
-            toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+            toc_model="model",
+            metadata_model="model",
             toc_temperature=0.0,
-            toc_top_p=0,
+            toc_top_p=0.00001,
             toc_seed=33,
             toc_max_tokens=1000
         )
@@ -987,18 +988,19 @@ class DocumentProcessor:
                 date_text = document.key_value_items[0].graph.cells[1].text
                 created_date = self.parse_created_date(date_text)
 
+                # 날짜 정보가 없으면 json의 정보를 적용함
                 if created_date == 0 and "last_modified_date" in kwargs:
-                    created_date = self.parse_created_date(json.dumps(kwargs["last_modified_date"]))
+                    created_date = self.parse_created_date(kwargs["last_modified_date"])
 
         except (AttributeError, IndexError) as e:
             pass
 
         # kwargs에서 authors_team와 authors_department 추출
         if "authors_team" in kwargs:
-            authors_team = json.dumps(kwargs["authors_team"])
+            authors_team = json.dumps(kwargs["authors_team"], ensure_ascii=False)
 
         if "authors_department" in kwargs:
-            authors_department = json.dumps(kwargs["authors_department"])
+            authors_department = kwargs["authors_department"]
 
         for item, _ in document.iterate_items():
             if hasattr(item, 'label'):

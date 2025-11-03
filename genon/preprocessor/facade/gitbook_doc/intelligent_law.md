@@ -33,7 +33,7 @@ class HierarchicalChunker(BaseChunker):
         list_items: list[TextItem] = []
 
         # 모든 아이템 순회하며 헤더 정보 추적
-        for item, level in dl_doc.iterate_items():
+        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
             # 섹션 헤더 처리
             if isinstance(item, SectionHeaderItem) or (
                 isinstance(item, TextItem) and
@@ -119,6 +119,7 @@ class GenOSVectorMeta(BaseModel):
     media_files: str = None
     title: str = None
     created_date: int = None
+    appendix: str = None
 ```
 
 **설명:**
@@ -135,7 +136,7 @@ class GenOSVectorMeta(BaseModel):
   * `bboxes`: 페이지 내 해당 청크의 경계 상자 (JSON 문자열 형태).
   * `chunk_bboxes`: 청크를 구성하는 각 `DocItem`의 상세 경계 상자 정보 리스트.
   * `media_files`: 청크 내 포함된 미디어 파일(이미지) 정보 리스트.
-  * **고객사별 필드**: `title`, `created_date` 등은 고객사의 특정 요구사항에 따라 추가된 메타데이터 필드입니다.
+  * **고객사별 필드**: `title`, `created_date`, `appendix` 등은 고객사의 특정 요구사항에 따라 추가된 메타데이터 필드입니다.
 
 **사용자 정의 포인트:**
 
@@ -159,6 +160,7 @@ class GenOSVectorMetaBuilder:
         # ... (다른 필드들도 초기화) ...
         self.title: str = None
         self.created_date: Optional[int] = None
+        self.appendix: Optional[str] = None
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -226,6 +228,7 @@ class GenOSVectorMetaBuilder:
             # ... (모든 필드를 GenOSVectorMeta 생성자에 전달) ...
             title=self.title,
             created_date=self.created_date,
+            appendix=self.appendix or ""
         )
 ```
 
@@ -316,7 +319,9 @@ class DocumentProcessor:
             toc_temperature=0.0,
             toc_top_p=0,
             toc_seed=33,
-            toc_max_tokens=10000
+            toc_max_tokens=10000,
+            toc_system_prompt=toc_system_prompt,
+            toc_user_prompt=toc_user_prompt,
         )
 ```
 
@@ -353,6 +358,26 @@ class DocumentProcessor:
   * `toc_top_p = 0`: 목차 생성 시 top-p 설정입니다.
   * `toc_seed = 33`: 목차 생성 시 시드 설정입니다.
   * `toc_max_tokens = 10000`: 목차 생성 시 최대 토큰 수 설정입니다. 규정문서의 목차는 10000으로 설정하여 충분한 길이를 확보합니다.
+  * `toc_system_prompt = toc_system_prompt`: 목차 생성할 때 사용하는 시스템 프롬프트입니다. 소스파일 하단에 정의되어 있습니다.
+    ```python
+    toc_system_prompt = "당신은 규정/규칙/지침과 같은 한국어 문서에서 **목차**를 생성하는 전문가입니다."
+    ```
+  * `toc_user_prompt = toc_user_prompt`: 목차 생성할 때 사용하는 사용자 프롬프트입니다. 소스파일 하단에 정의되어 있습니다.
+    ```python
+    toc_user_prompt = """주어진 법령문서 텍스트에서 문서제목, 장/절/조, 부칙, 부록/별지/별표의 제목을 추출한다.
+
+    ## 단계별 추론 (CoT 방식)
+    1. 문서제목은 chunk 초반에서 제목 후보를 탐색하고 나열한다.
+    2. 문서제목 가능성이 높은 문구를 하나 선택하고 `TITLE:<문서제목>` 형식으로 기록한다.
+
+    <중략>
+
+    ---
+
+    ## 실제 작업할 입력
+    {raw_text}
+    """
+    ```
 
 ***
 
@@ -369,7 +394,7 @@ Python
                 format_options={
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=self.pipe_line_options,
-                        backend=DoclingParseV4DocumentBackend
+                        backend=PyPdfiumDocumentBackend
                     ),
                 }
             )
@@ -401,7 +426,7 @@ Python
 
 **설명:**
 
-* **`self.converter` (기본 변환기)**: PDF를 처리하는 Primary 문서 변환기입니다. 이 백엔드는 복잡한 레이아웃이나 테이블 구조 인식에 강점이 있습니다.
+* **`self.converter` (기본 변환기)**: PDF를 처리하는 Primary 문서 변환기입니다. 이 백엔드는 복잡한 레이아웃이나 테이블 구조 인식에 강점이 있습니다. 규정 문서에 적합한 `PyPdfiumDocumentBackend`를 사용합니다.
 * **`self.second_converter` (보조 변환기)**: `PyPdfiumDocumentBackend`를 사용하는 보조 변환기입니다. 기본 변환기가 특정 PDF 처리 중 오류를 발생시킬 경우, 이 변환기를 통해 재시도하는 폴백(fallback) 메커니즘으로 사용됩니다. `PyPdfium`은 비교적 간단한 PDF나 특정 유형의 PDF 처리에 더 안정적일 수 있습니다.
 * **`self.ocr_converter` 및 `self.ocr_second_converter`**: OCR이 필요한 문서(예: 스캔된 이미지 PDF)를 처리하기 위한 변환기들입니다. 이들은 각각 `DoclingParseV4DocumentBackend`와 `PyPdfiumDocumentBackend`를 사용하여 OCR 처리를 수행합니다. OCR이 필요한 경우, 이 변환기들이 사용됩니다.s
 
@@ -453,7 +478,6 @@ Python
     def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         # ducling 방식으로 문서 로드
         return self.load_documents_with_docling(file_path, **kwargs)
-        # return documents
 ```
 
 **설명:**
@@ -469,7 +493,7 @@ Python
   * 주어진 `file_path`로부터 OCR이 필요한 문서를 로드하고 `DoclingDocument` 객체로 변환하여 반환합니다.
   * 핵심 로직은 `try-except` 블록 안에 있습니다.
     * 먼저 `self.ocr_converter` (기본 OCR 변환기: `DoclingParseV4DocumentBackend`)를 사용하여 문서 변환을 시도합니다.
-    * 만약 `Exception`이 발생하면 (즉, 기본 OCR 변환기가 실패하면), `self.ocr_second_converter` (보조 OCR 변환기: `PyPdfiumDocumentBackend`)를 사용하여 다시 변환을 시도합니다. 이는 문서 처리의 안정성을 높여줍니다.s
+    * 만약 `Exception`이 발생하면 (즉, 기본 OCR 변환기가 실패하면), `self.ocr_second_converter` (보조 OCR 변환기: `PyPdfiumDocumentBackend`)를 사용하여 다시 변환을 시도합니다. 이는 문서 처리의 안정성을 높여줍니다.
 * `load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument`:
   * `load_documents_with_docling` 메서드를 호출하여 문서를 로드하는 공개 인터페이스 역할을 합니다.
   * `**kwargs`를 통해 추가적인 파라미터를 내부 메서드로 전달할 수 있는 구조입니다. (현재,`kwargs`가 직접적으로 활용되지는 않고 있습니다.)

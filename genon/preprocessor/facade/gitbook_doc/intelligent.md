@@ -30,7 +30,7 @@ class HierarchicalChunker(BaseChunker):
         current_heading_by_level: dict[LevelNumber, str] = {}
 
         # 모든 아이템 순회하며 헤더 정보 추적
-        for item, level in dl_doc.iterate_items():
+        for item, level in dl_doc.iterate_items(included_content_layers={ContentLayer.BODY, ContentLayer.FURNITURE}):
             # 섹션 헤더 처리
             if isinstance(item, SectionHeaderItem) or (
                 isinstance(item, TextItem) and
