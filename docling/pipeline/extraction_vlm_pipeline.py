@@ -86,7 +86,10 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                         vlm_stop_reason: Optional[VlmStopReason] = predictions[
                             0
                         ].stop_reason
-                        if vlm_stop_reason == VlmStopReason.LENGTH:
+                        if (
+                            vlm_stop_reason == VlmStopReason.LENGTH
+                            or vlm_stop_reason == VlmStopReason.STOP_SEQUENCE
+                        ):
                             ext_res.status = ConversionStatus.PARTIAL_SUCCESS
 
                         try:
