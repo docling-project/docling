@@ -122,8 +122,6 @@ class PaddleOcrOptions(OcrOptions):
 
     kind: ClassVar[Literal["paddleocr"]] = "paddleocr"
 
-    grpc_server_count: int = 4  # Number of gRPC servers to use
-
     # lang: List[str] = [
     #     "korean"
     # ]
@@ -142,6 +140,9 @@ class PaddleOcrOptions(OcrOptions):
     model_config = ConfigDict(
         extra="forbid",
     )
+
+    ocr_endpoint: str = ""
+    timeout: int = 60  # seconds
 
 
 class EasyOcrOptions(OcrOptions):

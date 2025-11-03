@@ -1,0 +1,22 @@
+[project]
+name = "genos-tools"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "namseunghyun", email = "seunghyun.nam@genon.ai" }
+]
+requires-python = ">=3.9, <4.0"
+dependencies = [
+    "sqlalchemy>=2.0.43",
+    "weaviate-client==4.15.1",
+    "mysql-connector-python>=9.3.0",
+    "asyncmy>=0.2.10",
+    "greenlet>=3.2.4",
+]
+
+[project.scripts]
+genos-tools = "genos_tools.cli:main"   # 콘솔명령: genos-tools
+
+[tool.uv]
+# 필요시 여기에 uv용 세부 옵션을 둘 수도 있음

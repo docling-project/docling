@@ -1,0 +1,5 @@
+# Python cache
+*.pyc
+__pycache__/
+
+# Note: baselines are committed to track regression changes

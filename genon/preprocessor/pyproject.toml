@@ -1,0 +1,92 @@
+[project]
+name = "doc-parser-preprocessor"
+version = "1.2.0"
+description = ""
+authors = [{ name = "Seunghyun Nam", email = "seunghyun.nam@genon.ai" }]
+requires-python = '>=3.11,<4.0'
+dependencies = [
+    "python-multipart==0.0.19",
+    "gunicorn==23.0.0",
+    "uvicorn==0.21.1",
+    "pyarrow==20.0.0",
+    "starlette>=0.46.2",
+    "aiofiles==24.1.0",
+    "aiohttp==3.12.13",
+    "transformers==4.53.0",
+    "accelerate==1.6.0",
+    "unstructured>=0.18.15",
+    "python-pptx==1.0.2",
+    "python-docx==1.1.2",
+    "python-magic==0.4.27",
+    "pyhwp==0.1b15",
+    "markdown==3.8.2",
+    "pydub==0.25.1",
+    "weasyprint==63.0",
+    "aiofile==3.9.0",
+    "watchfiles==1.1.0",
+    "pika==1.3.2",
+    "chardet==5.2.0",
+    'wand',
+    'grpcio',
+    'grpcio-tools',
+    "fastapi>=0.115.12",
+    "pymupdf>=1.26.4",
+    "pydub>=0.25.1",
+    "langchain>=1.0.2",
+    "langchain-core>=1.0.0",
+    "langchain-community>=0.4",
+    "numpy>=2.3.4",
+    "markdown2>=2.5.4",
+    "audioop-lts; python_version >= '3.13'",
+    "pdfminer-six==20250506",
+    "docling",
+    "hatchling>=1.27.0",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit~=3.7",
+    "mypy~=1.10",
+    "types-setuptools~=70.3",
+    "pandas-stubs~=2.1",
+    "types-openpyxl~=3.1",
+    "types-requests~=2.31",
+    "boto3-stubs~=1.37",
+    "types-urllib3~=1.26",
+    "types-tqdm~=4.67",
+    "coverage~=7.6",
+    "pytest~=8.3",
+    "pytest-cov>=6.1.1",
+    "pytest-dependency~=0.6",
+    "pytest-xdist~=3.3",
+    "ipykernel~=6.29",
+    "ipywidgets~=8.1",
+    "nbqa~=1.9",
+    "python-semantic-release~=7.32",
+    "pytest-asyncio>=1.2.0",
+]
+
+[tool.uv.sources]
+docling = [
+    { path = "../.." }
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/**/*", "*.json"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/**/*", "*.json"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/**/*" = "*"
+"*.json" = "*"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[tool.hatch.metadata]
+allow-direct-references = true  # Direct reference 허용

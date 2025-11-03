@@ -1,0 +1,7 @@
+aiohttp==3.11.14
+fastapi==0.115.12
+ruff==0.11.2
+pandas==2.2.3
+pytz>=2020.1
+typeguard==4.4.2
+pydantic-settings==2.9.1

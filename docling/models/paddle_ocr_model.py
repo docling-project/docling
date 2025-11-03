@@ -28,6 +28,10 @@ import docling.models.ocr_pb2_grpc as ocr_pb2_grpc
 import io
 from PIL import Image
 
+import base64
+import numpy as np
+import requests
+
 class PaddleOcrModel(BaseOcrModel):
     def __init__(
         self,
@@ -47,13 +51,9 @@ class PaddleOcrModel(BaseOcrModel):
         self.scale = 1
 
         if self.enabled:
-            # try:
-            #     from paddleocr import PaddleOCR
-            # except ImportError:
-            #     raise ImportError(
-            #         "PaddleOCR is not installed. Please install it via `pip install paddleocr` to use this OCR engine. "
-            #         "Alternatively, Docling has support for other OCR engines. See the documentation."
-            #     )
+
+            if self.options.ocr_endpoint == "":
+                raise ValueError("PaddleOcrOptions.ocr_endpoint must be set when using PaddleOcrModel.")
 
             # Decide the accelerator devices
             device = decide_device(accelerator_options.device)
@@ -61,25 +61,8 @@ class PaddleOcrModel(BaseOcrModel):
             use_dml = accelerator_options.device == AcceleratorDevice.AUTO
             intra_op_num_threads = accelerator_options.num_threads
 
-            # self.reader = PaddleOCR(
-            #     lang=self.options.lang[0],
-            #     use_doc_orientation_classify=self.options.use_doc_orientation_classify,
-            #     use_doc_unwarping=self.options.use_doc_unwarping,
-            #     use_textline_orientation=self.options.use_textline_orientation,
-            #     cpu_threads=intra_op_num_threads,
-            #     text_rec_score_thresh=self.options.text_score,
-            #     text_detection_model_dir=self.options.det_model_dir,
-            #     text_detection_model_name=self.options.det_model_name,
-            #     text_recognition_model_dir=self.options.rec_model_dir,
-            #     text_recognition_model_name=self.options.rec_model_name,
-            # )
-
-            PORTS = [50051 + i for i in range(self.options.grpc_server_count)]
-            # print(f"Connecting to gRPC servers on ports: {PORTS}")
-            channels = [grpc.insecure_channel(f"localhost:{p}") for p in PORTS]
-            stubs = [(ocr_pb2_grpc.OCRServiceStub(ch), p) for ch, p in zip(channels, PORTS)]
-            self.rr = itertools.cycle(stubs)
-
+            self.ocr_endpoint = self.options.ocr_endpoint
+            self.timeout = self.options.timeout
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
@@ -106,40 +89,37 @@ class PaddleOcrModel(BaseOcrModel):
                         )
                         im = numpy.array(high_res_image)
 
-                        # result = self.reader.predict(
-                        #     im
-                        # )
-                        result = self.perform_ocr_with_grpc(im)
+                        result = self.ocr_numpy_image(im, timeout=self.timeout)
+                        rec_texts, rec_scores, rec_boxes = self.extract_ocr_fields(result)
 
                         del high_res_image
                         del im
 
-                        if result is not None:# and len(result) > 0:
+                        if len(rec_texts) > 0:
                             cells = [
                                 TextCell(
                                     index=ix,
-                                    text=line["text"],
-                                    orig=line["text"],
-                                    confidence=line["confidence"],
+                                    text=t,
+                                    orig=t,
+                                    confidence=s,
                                     from_ocr=True,
                                     rect=BoundingRectangle.from_bounding_box(
                                         BoundingBox.from_tuple(
                                             coord=(
-                                                (line["box"][0] / self.scale)
+                                                (b[0] / self.scale)
                                                 + ocr_rect.l,
-                                                (line["box"][1] / self.scale)
+                                                (b[1] / self.scale)
                                                 + ocr_rect.t,
-                                                (line["box"][2] / self.scale)
+                                                (b[2] / self.scale)
                                                 + ocr_rect.l,
-                                                (line["box"][3] / self.scale)
+                                                (b[3] / self.scale)
                                                 + ocr_rect.t,
                                             ),
                                             origin=CoordOrigin.TOPLEFT,
                                         )
                                     ),
                                 )
-                                # for ix, (text, score, box) in enumerate(zip(result[0]["rec_texts"], result[0]["rec_scores"], result[0]["rec_boxes"]))
-                                for ix, line in enumerate(result)
+                                for ix, (t, s, b) in enumerate(zip(rec_texts, rec_scores, rec_boxes))
                             ]
                             all_ocr_cells.extend(cells)
 
@@ -153,38 +133,73 @@ class PaddleOcrModel(BaseOcrModel):
                 yield page
 
 
-    def perform_ocr_with_grpc(self, im):
-        # 이미지를 메모리에서 바이너리로 변환
-        img_byte_arr = io.BytesIO()
-        pil_image = Image.fromarray(im)  # numpy 배열을 PIL 이미지로 변환
-        pil_image.save(img_byte_arr, format='PNG')
-        img_byte_arr = img_byte_arr.getvalue()  # 이미지 데이터를 바이너리로 추출
+    def numpy_to_image(self, arr: np.ndarray) -> Image.Image:
+        if arr.dtype != np.uint8:
+            a_min, a_max = float(arr.min()), float(arr.max())
+            arr = ((arr - a_min) / (a_max - a_min) * 255.0).astype(np.uint8) if a_max > a_min else np.zeros_like(arr, dtype=np.uint8)
+        if arr.ndim == 2:
+            return Image.fromarray(arr, mode="L")
+        if arr.ndim == 3 and arr.shape[2] == 3:
+            return Image.fromarray(arr, mode="RGB")
+        if arr.ndim == 3 and arr.shape[2] == 4:
+            return Image.fromarray(arr, mode="RGBA")
+        raise ValueError(f"Unsupported array shape: {arr.shape}")
 
-        # # gRPC 서버와 연결
-        # channel = grpc.insecure_channel('localhost:50051')  # 서버 주소
-        # stub = ocr_pb2_grpc.OCRServiceStub(channel)
+    def pil_to_bytes(self, img: Image.Image) -> tuple[bytes]:
+        """
+        이미지를 PNG로 직렬화.
+        """
+        buf = io.BytesIO()
+        img.save(buf, format="PNG", optimize=True)
+        return buf.getvalue()
 
-        # # OCR 요청: 이미지 데이터를 바이너리로 전송
-        # response = stub.PerformOCR(ocr_pb2.OCRRequest(image_data=img_byte_arr))
+    def post_ocr_bytes(self, img_bytes: bytes, timeout=60) -> dict:
+        HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
+        payload = {"file": base64.b64encode(img_bytes).decode("ascii"), "fileType": 1, "visualize": False}
+        r = requests.post(self.ocr_endpoint, json=payload, headers=HEADERS, timeout=timeout)
+        if not r.ok:
+            # 진단에 도움되도록 본문 일부 출력
+            raise RuntimeError(f"OCR HTTP {r.status_code}: {r.text[:500]}")
+        return r.json()
 
-        req = ocr_pb2.OCRRequest(image_data=img_byte_arr)
-        stub, port = next(self.rr)  # 라운드 로빈 방식으로 스텁 선택
-        # print(f"[gRPC] call → {port}")
-        response = stub.PerformOCR(req)
+    def ocr_numpy_image(self, arr: np.ndarray, timeout=60) -> dict:
+        img = self.numpy_to_image(arr)
+        img_bytes = self.pil_to_bytes(img)
+        return self.post_ocr_bytes(img_bytes, timeout=timeout)
 
-        # 결과 출력
-        ocr_results = []
-        for result in response.results:
-            text = result.text
-            confidence = result.confidence
-            box = result.box
-            ocr_results.append({
-                'text': text,
-                'confidence': confidence,
-                'box': box
-            })
-        return ocr_results
+    def extract_ocr_fields(self, resp: dict):
+        """
+        resp: 위와 같은 OCR 응답 JSON(dict)
+        return: (rec_texts, rec_scores, rec_boxes) — 모두 list
+        """
+        if resp is None:
+            return [], [], []
 
+        # 최상위 상태 체크
+        if resp.get("errorCode") not in (0, None):
+            return [], [], []
+
+        ocr_results = (
+            resp.get("result", {})
+                .get("ocrResults", [])
+        )
+        if not ocr_results:
+            return [], [], []
+
+        pruned = (
+            ocr_results[0]
+            .get("prunedResult", {})
+        )
+        if not pruned:
+            return [], [], []
+
+        rec_texts  = pruned.get("rec_texts", [])   # list[str]
+        rec_scores = pruned.get("rec_scores", [])  # list[float]
+        rec_boxes  = pruned.get("rec_boxes", [])   # list[[x1,y1,x2,y2]]
+
+        # 길이 불일치 방어: 최소 길이에 맞춰 자르기
+        n = min(len(rec_texts), len(rec_scores), len(rec_boxes))
+        return rec_texts[:n], rec_scores[:n], rec_boxes[:n]
 
     @classmethod
     def get_options_type(cls) -> Type[OcrOptions]:

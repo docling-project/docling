@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doc-parser-ocr-deployment
+  namespace: llmops
+  labels:
+    app: doc-parser-ocr
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: doc-parser-ocr
+  template:
+    metadata:
+      labels:
+        app: doc-parser-ocr
+    spec:
+      serviceAccountName: llmops
+      containers:
+        - name: doc-parser-ocr
+          image: mncregistry:30500/doc-parser-ocr:0.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: TZ
+              value: Asia/Seoul
+            - name: PROFILE
+              value: prod
+          volumeMounts:
+            - name: nfs-root
+              mountPath: /nfs-root
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 15
+      volumes:
+        - name: nfs-root
+          persistentVolumeClaim:
+            claimName: llmops-nfs-root
+        - name: license-volume
+          secret:
+            secretName: llmops-license
+        - name: global-configmap
+          configMap:
+            name: llmops-global-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doc-parser-ocr-service
+  namespace: llmops
+  labels:
+    app: doc-parser-ocr
+spec:
+  type: NodePort
+  selector:
+    app: doc-parser-ocr
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      # NodePort는 클러스터 노드 외부 IP로 접근할 수 있는 포트입니다.
+      # 범위는 30000~32767 사이여야 하며, 명시하지 않으면 자동 할당됩니다.
+      nodePort: 30880
