@@ -76,8 +76,7 @@ RUN --mount=type=cache,target=/opt/h2o_cache \
 RUN set -eux; \
     mkdir -p /usr/share/fonts && \
     tar zxf /app/HCRBatang.ttf.tar.gz -C /usr/share/fonts/ && \
-    fc-cache -f -v && rm /app/HCRBatang.ttf.tar.gz && \
-    tar zxf /app/tessedata.tar.gz -C /usr/share/tessdata/
+    fc-cache -f -v && rm /app/HCRBatang.ttf.tar.gz
 
 ############################
 # 3) Builder (앱 venv만)
