@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # 기본값
-CONFIG_FILE="${ROOT_DIR}/build.config"
+CONFIG_FILE="${ROOT_DIR}/doc-parser-build.config"
 
 if [[ -f "${CONFIG_FILE}" ]]; then
   # shellcheck source=/dev/null

@@ -1,0 +1,31 @@
+[project]
+name = "doc-parser-ocr"
+version = "1.0.0"
+requires-python = ">=3.9,<4.0"
+description = "PaddleX OCR serving"
+readme = "README.md"
+
+# 👇 여기서부터는 uv가 전부 설치
+dependencies = [
+    # GPU 빌드
+    "paddlepaddle-gpu==3.2.0",
+    # 너가 쓰던 애들
+    "paddlex==3.3.6",
+    "paddlex[serving,ocr]",
+    "fastapi==0.120.1",
+    "uvicorn>=0.21,<0.22",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# 👇 여기가 중요
+# uv가 "파이파이 말고 이 레포도 같이 봐라" 라고 알려주는 부분
+# 최신 uv 문법 기준 (도큐가 조금씩 바뀌어서 이렇게 쓰는 게 제일 안전해)
+[tool.uv]
+# pypi도 보고,
+index-url = "https://pypi.org/simple"
+# paddlepaddle 전용 레포는 extra로 추가
+extra-index-url = ["https://www.paddlepaddle.org.cn/packages/stable/cu126/"]
+# 필요하면 인증/미러 더 넣을 수 있음

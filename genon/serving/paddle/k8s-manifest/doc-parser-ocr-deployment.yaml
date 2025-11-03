@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doc-parser-ocr
+  namespace: llmops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doc-parser-ocr
+  template:
+    metadata:
+      labels:
+        app: doc-parser-ocr
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: ocr
+          image: your-registry/doc-parser-ocr:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              nvidia.com/gpu: 1
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doc-parser-ocr
+  namespace: llmops
+spec:
+  selector:
+    app: doc-parser-ocr
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
