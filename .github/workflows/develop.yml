@@ -1,31 +1,43 @@
 name: CI (PR → develop)
 on:
   pull_request:
-    branches: [develop]
-  workflow_dispatch: {}
+    branches: [ develop ]
+  workflow_dispatch: { }
 
 jobs:
   pr-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.12', '3.13']
+        python-version: [ '3.12', '3.13' ]
     env:
-      PYTHONPATH: ${{ github.workspace }}
+      # 이제 기준을 preprocessor로 둘 거니까 PYTHONPATH도 거기로 맞춰주는 게 안전
+      PYTHONPATH: ${{ github.workspace }}/genon/preprocessor
       # DOCLING_ARTIFACTS_PATH를 설정하지 않아 자동 다운로드 사용
     steps:
       - uses: actions/checkout@v5
+
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+
       - uses: astral-sh/setup-uv@v6
+
       - run: uv python pin ${{ matrix.python-version }}
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libreoffice poppler-utils tesseract-ocr tesseract-ocr-kor
-      - run: uv sync --dev
+
+      # ⬇️ 여기부터는 도커파일처럼 preprocessor 안에서 실행
+      - name: Sync deps (preprocessor)
+        working-directory: genon/preprocessor
+        run: |
+          uv sync --dev
+
       - name: Install additional Python packages
+        working-directory: genon/preprocessor
         run: |
           uv pip install --upgrade "unstructured>=0.8.0,<0.10.0" \
             pdf2image>=1.16.0 \
@@ -33,22 +45,35 @@ jobs:
             pytesseract>=0.3.10 \
             weasyprint>=60.0 \
             opencv-python>=4.8.0
+
       - name: Download NLTK data
+        working-directory: genon/preprocessor
         run: |
           uv run python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng'); nltk.download('punkt_tab')"
+
       - name: Download custom layout model from HuggingFace
+        working-directory: genon/preprocessor
         run: |
           uv run python -c "
-          from docling.models.layout_model import LayoutModel
-          from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
-          print('Downloading custom layout model...')
-          model_path = LayoutModel.download_models(layout_model_config=MNCAI_CUSTOM_LAYOUT, progress=True)
-          print(f'Model downloaded to: {model_path}')
+            from docling.models.layout_model import LayoutModel
+            from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
+            print('Downloading custom layout model...')
+            model_path = LayoutModel.download_models(layout_model_config=MNCAI_CUSTOM_LAYOUT, progress=True)
+          print(f'Model downloaded to: { model_path }')
           "
-      - run: uv run python -m compileall -q .
+
+      - name: Compile sources
+        working-directory: genon/preprocessor
+        run: uv run python -m compileall -q .
+
       - name: Import smoke
-        run: uv run python -c "import importlib; importlib.import_module('doc_preprocessors.basic_processor')"
+        working-directory: genon/preprocessor
+        run: uv run python -c "import importlib; importlib.import_module('facade.basic_processor')"
+
       - name: Pytest (unit+smoke+regression)
-        run: uv run pytest -m "unit or smoke or regression" -v -ra --durations=10
+        working-directory: genon/preprocessor
+        run: uv run pytest tests -m "unit or smoke or regression" -v -ra --durations=10
+
       - name: Build package
+        working-directory: genon/preprocessor
         run: uv build

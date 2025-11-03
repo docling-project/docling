@@ -38,8 +38,32 @@ dependencies = [
     "numpy>=2.3.4",
     "markdown2>=2.5.4",
     "audioop-lts; python_version >= '3.13'",
+    "pdfminer-six==20250506",
     "docling",
     "hatchling>=1.27.0",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit~=3.7",
+    "mypy~=1.10",
+    "types-setuptools~=70.3",
+    "pandas-stubs~=2.1",
+    "types-openpyxl~=3.1",
+    "types-requests~=2.31",
+    "boto3-stubs~=1.37",
+    "types-urllib3~=1.26",
+    "types-tqdm~=4.67",
+    "coverage~=7.6",
+    "pytest~=8.3",
+    "pytest-cov>=6.1.1",
+    "pytest-dependency~=0.6",
+    "pytest-xdist~=3.3",
+    "ipykernel~=6.29",
+    "ipywidgets~=8.1",
+    "nbqa~=1.9",
+    "python-semantic-release~=7.32",
+    "pytest-asyncio>=1.2.0",
 ]
 
 [tool.uv.sources]

@@ -936,6 +936,7 @@ class DocumentProcessor:
         ocr_options = PaddleOcrOptions(
             force_full_page_ocr=False,
             lang=['korean'],
+            ocr_endpoint="http://192.168.73.176:48080/ocr",
             text_score=0.3)
 
         self.page_chunk_counts = defaultdict(int)

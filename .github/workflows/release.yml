@@ -15,8 +15,11 @@ jobs:
         with: { python-version: '3.12' }
       - uses: astral-sh/setup-uv@v6
       - run: uv python pin 3.12
-      - run: uv sync --dev
+      - name: Sync deps
+        working-directory: genon/preprocessor
+        run: uv sync --dev
       - name: Download custom layout model from HuggingFace
+        working-directory: genon/preprocessor
         run: |
           uv run python -c "
           from docling.models.layout_model import LayoutModel
@@ -26,8 +29,11 @@ jobs:
           print(f'Model downloaded to: {model_path}')
           "
       - name: Import smoke
-        run: uv run python -c "import importlib; importlib.import_module('doc_preprocessors.basic_processor')"
+        working-directory: genon/preprocessor
+        run: uv run python -c "import importlib; importlib.import_module('facade.basic_processor')"
       - name: Pytest (smoke only)
+        working-directory: genon/preprocessor
         run: uv run pytest -m "smoke" -v -ra --durations=5
       - name: Build package (optional)
+        working-directory: genon/preprocessor
         run: uv build

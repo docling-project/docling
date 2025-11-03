@@ -3,7 +3,7 @@
 ########################################
 # 0) 공통 ARG
 ########################################
-ARG PY_VER=3.12
+ARG PY_VER=3.10
 ARG DEBIAN_DIST=bookworm
 
 # Paddle GPU wheel 있는 곳 (변수화)
@@ -11,7 +11,7 @@ ARG PADDLE_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/stable/cu12
 
 # 이미지 안에서 우리가 쓸 경로
 ARG APP_DIR=/app
-ARG OCR_DIR=${APP_DIR}/ocr_paddle_server
+ARG OCR_DIR=${APP_DIR}
 
 ########################################
 # 1) Base (OS + uv + supervisor)
@@ -36,6 +36,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         git \
         build-essential \
         unzip \
+        libgl1 \
+        libglib2.0-0 \
+        libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # uv 바이너리
@@ -50,33 +53,32 @@ WORKDIR ${APP_DIR}
 ########################################
 FROM base AS deps
 
-ARG PADDLE_EXTRA_INDEX_URL
+# 너가 위에서 썼던 거 그대로
 ARG APP_DIR
-ENV APP_DIR=${APP_DIR}
+ENV APP_DIR=${APP_DIR:-/app}
 
-# venv 하나만 전역으로
+# paddle 레포는 환경변수로만 넘겨
+ENV PADDLE_EXTRA_INDEX_URL="https://www.paddlepaddle.org.cn/packages/stable/cu126/"
+
+WORKDIR ${APP_DIR}
+
+# pyproject / uv.lock
+COPY genon/serving/paddle/pyproject.toml ${APP_DIR}/pyproject.toml
+COPY genon/serving/paddle/README.md ${APP_DIR}/README.md
+COPY genon/serving/paddle/uv.lock        ${APP_DIR}/uv.lock
+
+# venv 만들기
+RUN uv venv ${APP_DIR}/.venv
 ENV VIRTUAL_ENV=${APP_DIR}/.venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
-# ocr 프로젝트 pyproject만 먼저 복사
-# (여기서 경로 주의: 너 구조가 /workspace/doc_parser/genon/serving/paddle/ocr_paddle_server/pyproject.toml 이라서)
-COPY genon/serving/paddle/pyproject.toml ${APP_DIR}/pyproject.toml
-# lock 있으면 같이
-COPY genon/serving/paddle/uv.lock ${APP_DIR}/uv.lock
-
-# venv 만들고 uv sync
-# pyproject.toml 안에
-# [tool.uv]
-# extra-index-url = ["https://www.paddlepaddle.org.cn/packages/stable/cu126/"]
-# 가 있으면 이 RUN 한방으로 paddlepaddle-gpu까지 들어온다.
-RUN uv venv ${VIRTUAL_ENV}
-
-# 중국 레포를 pyproject에 안 넣고 도커에서만 넣고 싶을 때를 대비해서 ENV로도 한 번 더 줌
+# ❗❗ 여기가 핵심
+# 1) --frozen 없애고
+# 2) paddle 레포 + pypi 둘 다 보라고 하고
+# 3) 인덱스 순서 고정 안 됐을 때도 뒤에 있는 것도 보라고 함
 RUN --mount=type=cache,target=/root/.cache/uv \
     UV_EXTRA_INDEX_URL="${PADDLE_EXTRA_INDEX_URL}" \
-    uv sync --frozen || \
-    UV_EXTRA_INDEX_URL="${PADDLE_EXTRA_INDEX_URL}" \
-    uv sync
+    uv sync --index-strategy unsafe-best-match --python ${VIRTUAL_ENV}/bin/python
 
 ########################################
 # 3) models (OCR 모델만 받는 스테이지)
@@ -104,14 +106,11 @@ RUN mkdir -p ${MODEL_DIR}/paddleocr_model && \
 FROM base AS runtime
 
 ARG APP_DIR=/app
-ARG OCR_DIR=${APP_DIR}/ocr_paddle_server
+ARG OCR_DIR=${APP_DIR}
 ENV VIRTUAL_ENV=${APP_DIR}/.venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 WORKDIR ${APP_DIR}
-
-# 1) venv 들여오기
-COPY --from=deps ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 # 2) 앱 소스 들여오기
 #    config / docker / etc / resources ... 전부 살려서 가져옴
@@ -120,14 +119,13 @@ COPY genon/serving/paddle ${OCR_DIR}
 # 3) 모델 들여오기
 COPY --from=models /models /models
 
+COPY --from=deps ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+
 # supervisor 설정이 ocr_paddle_server/config/supervisord.conf 라고 했으니 링크만 잡아줌
-RUN ln -sf ${OCR_DIR}/config/supervisord.conf /etc/supervisor/supervisord.conf && \
-    mkdir -p /var/log/supervisor /var/log/paddlex
+RUN ln -sf ${OCR_DIR}/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 8080
 
 # healthchecker 있으면 그대로
 # RUN chmod +x ${OCR_DIR}/etc/health_checker.sh
-
-ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["supervisord", "-n"]

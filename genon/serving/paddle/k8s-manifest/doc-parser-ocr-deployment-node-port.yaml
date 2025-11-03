@@ -59,9 +59,13 @@ metadata:
   labels:
     app: doc-parser-ocr
 spec:
+  type: NodePort
   selector:
     app: doc-parser-ocr
   ports:
     - name: http
       port: 8080
       targetPort: 8080
+      # NodePort는 클러스터 노드 외부 IP로 접근할 수 있는 포트입니다.
+      # 범위는 30000~32767 사이여야 하며, 명시하지 않으면 자동 할당됩니다.
+      nodePort: 30880
