@@ -18,6 +18,9 @@ ARG OCR_DIR=${APP_DIR}/ocr_paddle_server
 ########################################
 FROM python:${PY_VER}-slim-${DEBIAN_DIST} AS base
 
+ARG APP_DIR
+ENV APP_DIR=${APP_DIR}
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
@@ -47,6 +50,10 @@ WORKDIR ${APP_DIR}
 ########################################
 FROM base AS deps
 
+ARG PADDLE_EXTRA_INDEX_URL
+ARG APP_DIR
+ENV APP_DIR=${APP_DIR}
+
 # venv 하나만 전역으로
 ENV VIRTUAL_ENV=${APP_DIR}/.venv
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
@@ -75,6 +82,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # 3) models (OCR 모델만 받는 스테이지)
 ########################################
 FROM deps AS models
+
+ARG APP_DIR
+ENV APP_DIR=${APP_DIR}
+ENV MODEL_DIR=/models
 # 모델을 한 곳에만
 ENV MODEL_DIR=/models
 
