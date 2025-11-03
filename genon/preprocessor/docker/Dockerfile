@@ -50,6 +50,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       fonts-nanum \
       imagemagick \
       poppler-utils \
+      tesseract-ocr \
+      tesseract-ocr-eng \
+      tesseract-ocr-kor \
     && rm -rf /var/lib/apt/lists/*
 RUN sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen \
     && locale-gen \

@@ -36,15 +36,15 @@ jobs:
         run: |
           uv sync --dev
 
-      - name: Install additional Python packages
-        working-directory: genon/preprocessor
-        run: |
-          uv pip install --upgrade "unstructured>=0.8.0,<0.10.0" \
-            pdf2image>=1.16.0 \
-            pdfminer.six>=20220524 \
-            pytesseract>=0.3.10 \
-            weasyprint>=60.0 \
-            opencv-python>=4.8.0
+#      - name: Install additional Python packages
+#        working-directory: genon/preprocessor
+#        run: |
+#          uv pip install --upgrade "unstructured>=0.8.0,<0.10.0" \
+#            pdf2image>=1.16.0 \
+#            pdfminer.six>=20220524 \
+#            pytesseract>=0.3.10 \
+#            weasyprint>=60.0 \
+#            opencv-python>=4.8.0
 
       - name: Download NLTK data
         working-directory: genon/preprocessor
@@ -57,7 +57,7 @@ jobs:
           uv run python -c "from docling.models.layout_model import LayoutModel; from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT; print('Downloading custom layout model...'); model_path = LayoutModel.download_models(layout_model_config=MNCAI_CUSTOM_LAYOUT, progress=True); print(f'Model downloaded to: { model_path }')"
       - name: Compile sources
         working-directory: genon/preprocessor
-        run: uv run python -m compileall -q .
+        run: uv run python -m compileall -q . -x 'olefile'
 
       - name: Import smoke
         working-directory: genon/preprocessor

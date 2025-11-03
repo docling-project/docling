@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, Optional, Union,List
 from datetime import datetime
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel, Field
 
 from fastapi import Request

@@ -19,7 +19,7 @@ import warnings
 from datetime import datetime
 from fastapi import Request
 from glob import glob
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
     # TextLoader,                       # TXT
     PyMuPDFLoader,  # PDF

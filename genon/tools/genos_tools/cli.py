@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse
-from genos_tools.config import load_profile_config
-from genos_tools.commands import export_chunks
+from .config import load_profile_config
+from .commands import export_chunks
 
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="genos-tools", description="GenOS utilities")

@@ -11,7 +11,7 @@ from docling_core.types.doc import (
     DocItemLabel, SectionHeaderItem, TextItem, DoclingDocument
 )
 from docling_core.types.doc.document import (
-    GraphData, GraphCell, GraphCellLabel
+    GraphData, GraphCell, GraphCellLabel, ListItem
 )
 from docling.prompts import PromptManager
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
