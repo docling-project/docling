@@ -50,6 +50,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       fonts-nanum \
       imagemagick \
       poppler-utils \
+      tesseract-ocr \
+      tesseract-ocr-eng \
+      tesseract-ocr-kor \
     && rm -rf /var/lib/apt/lists/*
 RUN sed -i 's/# \(ko_KR.UTF-8\)/\1/' /etc/locale.gen \
     && locale-gen \
@@ -73,7 +76,8 @@ RUN --mount=type=cache,target=/opt/h2o_cache \
 RUN set -eux; \
     mkdir -p /usr/share/fonts && \
     tar zxf /app/HCRBatang.ttf.tar.gz -C /usr/share/fonts/ && \
-    fc-cache -f -v && rm /app/HCRBatang.ttf.tar.gz
+    fc-cache -f -v && rm /app/HCRBatang.ttf.tar.gz && \
+    tar zxf /app/tessedata.tar.gz -C /usr/share/tessdata/
 
 ############################
 # 3) Builder (앱 venv만)

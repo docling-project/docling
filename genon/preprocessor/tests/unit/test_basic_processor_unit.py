@@ -80,7 +80,7 @@ class TestBasicProcessor:
             pytest.skip(f"Sample file {filename} not found")
         
         # convert_to_pdf 함수 import
-        from doc_preprocessors.basic_processor import convert_to_pdf
+        from facade.basic_processor import convert_to_pdf
         
         # PDF 변환 시도
         pdf_path = convert_to_pdf(str(test_file))
@@ -261,7 +261,7 @@ class TestBasicProcessor:
 
     def test_convertible_extensions(self):
         """변환 가능한 확장자 목록 확인"""
-        from doc_preprocessors.basic_processor import CONVERTIBLE_EXTENSIONS
+        from facade.basic_processor import CONVERTIBLE_EXTENSIONS
         
         expected_extensions = ['.xlsx', '.md', '.docx', '.pptx']
         assert CONVERTIBLE_EXTENSIONS == expected_extensions, f"Expected {expected_extensions}, got {CONVERTIBLE_EXTENSIONS}"

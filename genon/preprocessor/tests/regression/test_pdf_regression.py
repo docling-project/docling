@@ -6,7 +6,20 @@ from collections import Counter
 
 # sample_files에서 모든 PDF 파일 자동 검색
 SAMPLE_DIR = Path(__file__).resolve().parents[2] / "sample_files"
-PDF_FILES = sorted([f for f in SAMPLE_DIR.glob("*.pdf") if f.is_file()])
+
+# 디렉터리 내 전체 파일 파악
+all_files = [f for f in SAMPLE_DIR.iterdir() if f.is_file()]
+
+# stem -> 확장자 집합 만들기
+stem_to_exts = {}
+for f in all_files:
+    stem_to_exts.setdefault(f.stem, set()).add(f.suffix.lower())
+
+# PDF만 뽑되, 같은 stem에 다른 확장자가 없는 것만 남기기
+PDF_FILES = sorted([
+    f for f in all_files
+    if f.suffix.lower() == ".pdf" and len(stem_to_exts.get(f.stem, set())) == 1
+])
 
 async def run_pdf_test(pdf_path, baseline_path, basic_processor):
     """PDF 파일에 대한 regression test 실행"""
@@ -93,7 +106,6 @@ async def create_pdf_baseline(pdf_path, baseline_path, basic_processor):
 
     label_counts = Counter()
     for vector in vectors:
-        # vector를 dict로 변환
         if hasattr(vector, "model_dump"):
             vector_data = vector.model_dump()
         else:
@@ -102,7 +114,6 @@ async def create_pdf_baseline(pdf_path, baseline_path, basic_processor):
         result["vectors"].append(vector_data)
         result["total_characters"] += vector_data.get("n_char", len(vector_data.get("text", "")))
 
-        # Label 분포 수집 - chunk_bboxes에서 type 추출
         if "chunk_bboxes" in vector_data:
             try:
                 bboxes = json.loads(vector_data["chunk_bboxes"])
@@ -114,14 +125,12 @@ async def create_pdf_baseline(pdf_path, baseline_path, basic_processor):
 
     result["label_distribution"] = dict(label_counts)
 
-    # 저장
     baseline_path.parent.mkdir(parents=True, exist_ok=True)
     with open(baseline_path, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2, ensure_ascii=False)
 
     print(f"✓ Updated baseline: {baseline_path}")
 
-# 각 PDF 파일에 대해 자동으로 테스트 생성
 @pytest.mark.regression
 @pytest.mark.parametrize("pdf_file", PDF_FILES, ids=lambda f: f.stem)
 @pytest.mark.asyncio
@@ -136,7 +145,6 @@ async def test_update_pdf_baselines(basic_processor):
     """모든 PDF baseline 데이터를 업데이트합니다."""
     baseline_dir = Path(__file__).parent / "baselines"
     baseline_dir.mkdir(parents=True, exist_ok=True)
-
     for pdf_file in PDF_FILES:
         baseline_path = baseline_dir / f"pdf_{pdf_file.stem}.json"
         await create_pdf_baseline(pdf_file, baseline_path, basic_processor)

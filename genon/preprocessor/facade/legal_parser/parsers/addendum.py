@@ -1,9 +1,9 @@
-from commons.regex_handler import RegexProcessor
-from commons.type_converter import TypeConverter
-from commons.utils import format_date
-from parsers.extractor import extract_related_appendices
-from schemas.law_schema import AddendumMetadata
-from schemas.schema import ParserContent
+from ..commons.regex_handler import RegexProcessor
+from ..commons.type_converter import TypeConverter
+from ..commons.utils import format_date
+from ..parsers.extractor import extract_related_appendices
+from ..schemas.law_schema import AddendumMetadata
+from ..schemas.schema import ParserContent
 
 # 초기화
 regex_processor = RegexProcessor()

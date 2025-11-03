@@ -198,20 +198,20 @@ def convert_to_pdf(file_path: str) -> str | None:
         return None
 
 
-# def _get_pdf_path(file_path: str) -> str:
-#     """
-#     다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수
+def _get_pdf_path(file_path: str) -> str:
+    """
+    다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수
 
-#     Args:
-#         file_path (str): 원본 파일 경로
+    Args:
+        file_path (str): 원본 파일 경로
 
-#     Returns:
-#         str: PDF 확장자로 변경된 파일 경로
-#     """
-#     pdf_path = file_path
-#     for ext in CONVERTIBLE_EXTENSIONS:
-#         pdf_path = pdf_path.replace(ext, '.pdf')
-#     return pdf_path
+    Returns:
+        str: PDF 확장자로 변경된 파일 경로
+    """
+    pdf_path = file_path
+    for ext in CONVERTIBLE_EXTENSIONS:
+        pdf_path = pdf_path.replace(ext, '.pdf')
+    return pdf_path
 
 
 class HierarchicalChunker(BaseChunker):

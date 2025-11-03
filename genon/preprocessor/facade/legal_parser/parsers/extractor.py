@@ -1,7 +1,7 @@
 from typing import Union
 
-from commons.regex_handler import RegexProcessor
-from commons.utils import format_date
+from ..commons.regex_handler import RegexProcessor
+from ..commons.utils import format_date
 
 regex_processor = RegexProcessor()
 
