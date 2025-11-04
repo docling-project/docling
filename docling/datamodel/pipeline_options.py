@@ -309,7 +309,7 @@ class LayoutOptions(BaseModel):
     """Options for layout processing."""
 
     create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
-    model_spec: LayoutModelConfig = DOCLING_LAYOUT_V2
+    model_spec: LayoutModelConfig = DOCLING_LAYOUT_HERON_101
 
 
 class AsrPipelineOptions(PipelineOptions):
