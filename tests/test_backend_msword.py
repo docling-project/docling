@@ -3,12 +3,15 @@ import os
 from pathlib import Path
 
 import pytest
+from docx import Document
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
+from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
     DoclingDocument,
+    InputDocument,
     SectionHeaderItem,
     TextItem,
 )
@@ -170,3 +173,41 @@ def test_text_after_image_anchors(documents):
         and found_text_after_anchor_3
         and found_text_after_anchor_4
     )
+
+
+def test_is_rich_table_cell():
+    """Test the function is_rich_table_cell."""
+
+    name = "docx_rich_cells.docx"
+    all_paths = get_docx_paths()
+    path = next(item for item in all_paths if item.name == name)
+
+    doc = Document(path)
+    assert doc, f"Could not create a docx.Document from {path}"
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+        filename=name,
+    )
+    backend = MsWordDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=path,
+    )
+
+    gt_cells: list[bool] = []
+    # table: Table with rich cells
+    gt_cells.extend([False, False, True, True, True, True, True, False])
+    # table: Table with nested table
+    gt_cells.extend([False, False, False, True, True, True])
+    # table: Table with pictures
+    gt_cells.extend([False, False, False, True, True, False])
+    gt_it = iter(gt_cells)
+
+    for idx_t, table in enumerate(doc.tables):
+        for idx_r, row in enumerate(table.rows):
+            for idx_c, cell in enumerate(row.cells):
+                assert next(gt_it) == backend._is_rich_table_cell(cell), (
+                    f"Wrong cell type in table {idx_t}, row {idx_r}, col {idx_c} "
+                    f"with text: {cell.text}"
+                )

@@ -1,0 +1,2765 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.7.0",
+  "name": "docx_rich_cells",
+  "origin": {
+    "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "binary_hash": 6012562787861319930,
+    "filename": "docx_rich_cells.docx"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/groups/0"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/1"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-0",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        },
+        {
+          "$ref": "#/texts/30"
+        },
+        {
+          "$ref": "#/texts/56"
+        }
+      ],
+      "content_layer": "body",
+      "name": "header-1",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/12"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/texts/6"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/texts/9"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/10"
+        },
+        {
+          "$ref": "#/texts/11"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/7",
+      "parent": {
+        "$ref": "#/texts/12"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/8",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/groups/4"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_1_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/9",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/17"
+        },
+        {
+          "$ref": "#/texts/18"
+        },
+        {
+          "$ref": "#/texts/19"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/10",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/15"
+        },
+        {
+          "$ref": "#/texts/16"
+        },
+        {
+          "$ref": "#/groups/9"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/12",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/20"
+        },
+        {
+          "$ref": "#/texts/21"
+        },
+        {
+          "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/23"
+        },
+        {
+          "$ref": "#/texts/24"
+        },
+        {
+          "$ref": "#/texts/25"
+        },
+        {
+          "$ref": "#/texts/26"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_1_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/13",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/27"
+        },
+        {
+          "$ref": "#/texts/28"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_3",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/14",
+      "parent": {
+        "$ref": "#/texts/30"
+      },
+      "children": [],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/15",
+      "parent": {
+        "$ref": "#/tables/1"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/texts/33"
+        },
+        {
+          "$ref": "#/texts/34"
+        },
+        {
+          "$ref": "#/texts/35"
+        },
+        {
+          "$ref": "#/texts/36"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_2_1_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/16",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/37"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_0_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/17",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/38"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_1_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/18",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/39"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_2_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/19",
+      "parent": {
+        "$ref": "#/tables/1"
+      },
+      "children": [
+        {
+          "$ref": "#/tables/2"
+        },
+        {
+          "$ref": "#/texts/40"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_0_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/20",
+      "parent": {
+        "$ref": "#/tables/3"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/42"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_4_0_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/21",
+      "parent": {
+        "$ref": "#/tables/3"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/43"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_4_1_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/22",
+      "parent": {
+        "$ref": "#/tables/3"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/44"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_4_2_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/23",
+      "parent": {
+        "$ref": "#/tables/1"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/41"
+        },
+        {
+          "$ref": "#/tables/3"
+        },
+        {
+          "$ref": "#/texts/45"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_4_1_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/24",
+      "parent": {
+        "$ref": "#/texts/30"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/46"
+        },
+        {
+          "$ref": "#/texts/47"
+        },
+        {
+          "$ref": "#/texts/48"
+        },
+        {
+          "$ref": "#/texts/49"
+        },
+        {
+          "$ref": "#/texts/50"
+        },
+        {
+          "$ref": "#/texts/51"
+        },
+        {
+          "$ref": "#/texts/52"
+        },
+        {
+          "$ref": "#/texts/53"
+        },
+        {
+          "$ref": "#/texts/54"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/25",
+      "parent": {
+        "$ref": "#/tables/4"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/0"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_5_1_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/26",
+      "parent": {
+        "$ref": "#/tables/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/58"
+        },
+        {
+          "$ref": "#/pictures/1"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_5_0_2",
+      "label": "unspecified"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/tables/0"
+        },
+        {
+          "$ref": "#/groups/11"
+        },
+        {
+          "$ref": "#/texts/29"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Table with rich cells",
+      "text": "Table with rich cells",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is a list:",
+      "text": "This is a list:",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "A First",
+      "text": "A First",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "A Second",
+      "text": "A Second",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "A Third",
+      "text": "A Third",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is a formatted list:",
+      "text": "This is a formatted list:",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/5"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "B",
+      "text": "B",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "First",
+      "text": "First",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/6"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "B",
+      "text": "B",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Second",
+      "text": "Second",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/7"
+        }
+      ],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "B",
+      "text": "B",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Third",
+      "text": "Third",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "First Paragraph\n\nSecond Paragraph",
+      "text": "First Paragraph\n\nSecond Paragraph",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Third paragraph before a numbered list",
+      "text": "Third paragraph before a numbered list",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Number one",
+      "text": "Number one",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "1."
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Number two",
+      "text": "Number two",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "2."
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "Number three",
+      "text": "Number three",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": true,
+      "marker": "3."
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is simple text with",
+      "text": "This is simple text with",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ",",
+      "text": ",",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "strikethrough",
+      "text": "strikethrough",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": true,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "and",
+      "text": "and",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/26",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "formatting",
+      "text": "formatting",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is a paragraph",
+      "text": "This is a paragraph",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/groups/13"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "This is another paragraph",
+      "text": "This is another paragraph",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/29",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/30",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/31"
+        },
+        {
+          "$ref": "#/tables/1"
+        },
+        {
+          "$ref": "#/groups/14"
+        },
+        {
+          "$ref": "#/groups/24"
+        },
+        {
+          "$ref": "#/texts/55"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Table with nested table",
+      "text": "Table with nested table",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/31",
+      "parent": {
+        "$ref": "#/texts/30"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Before table",
+      "text": "Before table",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/32",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Simple cell with",
+      "text": "Simple cell with",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/33",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/34",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "and",
+      "text": "and",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/35",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/groups/15"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "text",
+      "text": "text",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/groups/16"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Cell 1",
+      "text": "Cell 1",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/38",
+      "parent": {
+        "$ref": "#/groups/17"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Cell 2",
+      "text": "Cell 2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/39",
+      "parent": {
+        "$ref": "#/groups/18"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Cell 3",
+      "text": "Cell 3",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/40",
+      "parent": {
+        "$ref": "#/groups/19"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/41",
+      "parent": {
+        "$ref": "#/groups/23"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Rich cell\nA nested table",
+      "text": "Rich cell\nA nested table",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/groups/20"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Cell 1",
+      "text": "Cell 1",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": true,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/43",
+      "parent": {
+        "$ref": "#/groups/21"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Cell 2",
+      "text": "Cell 2",
+      "formatting": {
+        "bold": true,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/44",
+      "parent": {
+        "$ref": "#/groups/22"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Cell 3",
+      "text": "Cell 3",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/45",
+      "parent": {
+        "$ref": "#/groups/23"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/46",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "After table with",
+      "text": "After table with",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/47",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "bold",
+      "text": "bold",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/48",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ",",
+      "text": ",",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/49",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "underline",
+      "text": "underline",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/50",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ",",
+      "text": ",",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/51",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "strikethrough",
+      "text": "strikethrough",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": true,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ", and",
+      "text": ", and",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/53",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/54",
+      "parent": {
+        "$ref": "#/groups/24"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "formatting",
+      "text": "formatting",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/55",
+      "parent": {
+        "$ref": "#/texts/30"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/56",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/57"
+        },
+        {
+          "$ref": "#/tables/4"
+        },
+        {
+          "$ref": "#/texts/59"
+        }
+      ],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [],
+      "orig": "Table with pictures",
+      "text": "Table with pictures",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/57",
+      "parent": {
+        "$ref": "#/texts/56"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/58",
+      "parent": {
+        "$ref": "#/groups/26"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Text and picture",
+      "text": "Text and picture",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/59",
+      "parent": {
+        "$ref": "#/texts/56"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    }
+  ],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "$ref": "#/groups/25"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "image": {
+        "mimetype": "image/png",
+        "dpi": 72,
+        "size": {
+          "width": 48.0,
+          "height": 48.0
+        },
+        "uri": "data:image/png;base64,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"
+      },
+      "annotations": []
+    },
+    {
+      "self_ref": "#/pictures/1",
+      "parent": {
+        "$ref": "#/groups/26"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "picture",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "image": {
+        "mimetype": "image/png",
+        "dpi": 72,
+        "size": {
+          "width": 48.0,
+          "height": 48.0
+        },
+        "uri": "data:image/png;base64,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"
+      },
+      "annotations": []
+    }
+  ],
+  "tables": [
+    {
+      "self_ref": "#/tables/0",
+      "parent": {
+        "$ref": "#/texts/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/3"
+        },
+        {
+          "$ref": "#/groups/8"
+        },
+        {
+          "$ref": "#/groups/10"
+        },
+        {
+          "$ref": "#/groups/12"
+        },
+        {
+          "$ref": "#/groups/13"
+        }
+      ],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": " Column A",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Column B",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "This is a list:\nA First\nA Second\nA Third ",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/3"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "This is a formatted list:\nB First\nB Second\nB Third",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/8"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "First Paragraph\n\nSecond Paragraph\n\nThird paragraph before a numbered list\nNumber one\nNumber two\nNumber three",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/10"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "This is simple text with bold, strikethrough and italic formatting",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/12"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "This is a paragraph\nThis is another paragraph ",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/13"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          }
+        ],
+        "num_rows": 4,
+        "num_cols": 2,
+        "grid": [
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": " Column A",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Column B",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "This is a list:\nA First\nA Second\nA Third ",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "This is a formatted list:\nB First\nB Second\nB Third",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "First Paragraph\n\nSecond Paragraph\n\nThird paragraph before a numbered list\nNumber one\nNumber two\nNumber three",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "This is simple text with bold, strikethrough and italic formatting",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 3,
+              "end_row_offset_idx": 4,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "This is a paragraph\nThis is another paragraph ",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 3,
+              "end_row_offset_idx": 4,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
+    },
+    {
+      "self_ref": "#/tables/1",
+      "parent": {
+        "$ref": "#/texts/30"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/15"
+        },
+        {
+          "$ref": "#/groups/19"
+        },
+        {
+          "$ref": "#/groups/23"
+        }
+      ],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": " Column A",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Column B",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Simple cell upper left",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Simple cell with bold and italic text",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/15"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/19"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Rich cell\nA nested table\n\n",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/23"
+            }
+          }
+        ],
+        "num_rows": 3,
+        "num_cols": 2,
+        "grid": [
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": " Column A",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Column B",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Simple cell upper left",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Simple cell with bold and italic text",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Rich cell\nA nested table\n\n",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
+    },
+    {
+      "self_ref": "#/tables/2",
+      "parent": {
+        "$ref": "#/groups/19"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/16"
+        },
+        {
+          "$ref": "#/groups/17"
+        },
+        {
+          "$ref": "#/groups/18"
+        }
+      ],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "A",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "B",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "C",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Cell 1",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/16"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Cell 2",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/17"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Cell 3",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/18"
+            }
+          }
+        ],
+        "num_rows": 2,
+        "num_cols": 3,
+        "grid": [
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "A",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "B",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "C",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Cell 1",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Cell 2",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Cell 3",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
+    },
+    {
+      "self_ref": "#/tables/3",
+      "parent": {
+        "$ref": "#/groups/23"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/20"
+        },
+        {
+          "$ref": "#/groups/21"
+        },
+        {
+          "$ref": "#/groups/22"
+        }
+      ],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "A",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "B",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "C",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Cell 1",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/20"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Cell 2",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/21"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "Cell 3",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/22"
+            }
+          }
+        ],
+        "num_rows": 2,
+        "num_cols": 3,
+        "grid": [
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "A",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "B",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "C",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Cell 1",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Cell 2",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
+              "text": "Cell 3",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
+    },
+    {
+      "self_ref": "#/tables/4",
+      "parent": {
+        "$ref": "#/texts/56"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/25"
+        },
+        {
+          "$ref": "#/groups/26"
+        }
+      ],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Column A",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Column B",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Only text",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/25"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Text and picture\n",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/26"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          }
+        ],
+        "num_rows": 3,
+        "num_cols": 2,
+        "grid": [
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Column A",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Column B",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Only text",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Text and picture\n",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
+    }
+  ],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}
