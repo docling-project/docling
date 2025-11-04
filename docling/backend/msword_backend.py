@@ -147,7 +147,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
-            doc, _ = self._walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
+            doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
 
             return doc
         else:
@@ -206,7 +206,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _walk_linear(
         self,
         body: BaseOxmlElement,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
         # parent:
     ) -> tuple[DoclingDocument, list[RefItem]]:
@@ -277,19 +276,19 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     _log.debug(
                         f"Found textbox content with {len(textbox_elements)} elements"
                     )
-                    tbc = self._handle_textbox_content(textbox_elements, docx_obj, doc)
+                    tbc = self._handle_textbox_content(textbox_elements, doc)
                     added_elements.extend(tbc)
 
             # Check for Tables
             if tag_name == "tbl":
                 try:
-                    t = self._handle_tables(element, docx_obj, doc)
+                    t = self._handle_tables(element, doc)
                     added_elements.extend(t)
                 except Exception:
                     _log.debug("could not parse a table, broken docx table")
             # Check for Image
             elif drawing_blip:
-                pics = self._handle_pictures(docx_obj, drawing_blip, doc)
+                pics = self._handle_pictures(drawing_blip, doc)
                 added_elements.extend(pics)
                 # Check for Text after the Image
                 if (
@@ -299,7 +298,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     )
                     is not None
                 ):
-                    te1 = self._handle_text_elements(element, docx_obj, doc)
+                    te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
             # Check for DrawingML elements
             elif drawingml_els:
@@ -332,12 +331,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         ".//w:p", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
                     )
                     for p in paragraphs:
-                        te = self._handle_text_elements(p, docx_obj, doc)
+                        te = self._handle_text_elements(p, doc)
                         added_elements.extend(te)
             # Check for Text
             elif tag_name == "p":
                 # "tcPr", "sectPr"
-                te = self._handle_text_elements(element, docx_obj, doc)
+                te = self._handle_text_elements(element, doc)
                 added_elements.extend(te)
             else:
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
@@ -396,16 +395,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for key in keys_to_reset:
             self.list_counters[key] = 0
 
-    def _is_numbered_list(self, docx_obj: DocxDocument, numId: int, ilvl: int) -> bool:
+    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
         """Check if a list is numbered based on its numFmt value."""
         try:
             # Access the numbering part of the document
-            if not hasattr(docx_obj, "part") or not hasattr(docx_obj.part, "package"):
+            if not hasattr(self.docx_obj, "part") or not hasattr(
+                self.docx_obj.part, "package"
+            ):
                 return False
 
             numbering_part = None
             # Find the numbering part
-            for part in docx_obj.part.package.parts:
+            for part in self.docx_obj.part.package.parts:
                 if "numbering" in part.partname:
                     numbering_part = part
                     break
@@ -738,7 +739,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_textbox_content(
         self,
         textbox_elements: list,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
@@ -780,7 +780,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Process all the paragraphs
         for p, position in all_paragraphs:
             # Create paragraph object to get text content
-            paragraph = Paragraph(p, docx_obj)
+            paragraph = Paragraph(p, self.docx_obj)
             text_content = paragraph.text
 
             # Create a unique identifier based on content and position
@@ -796,7 +796,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Mark this paragraph as processed
             processed_paragraphs.add(paragraph_id)
 
-            elem_ref.extend(self._handle_text_elements(p, docx_obj, doc))
+            elem_ref.extend(self._handle_text_elements(p, doc))
 
         # Restore original parent
         self.parents[level] = original_parent
@@ -868,11 +868,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_text_elements(
         self,
         element: BaseOxmlElement,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
-        paragraph = Paragraph(element, docx_obj)
+        paragraph = Paragraph(element, self.docx_obj)
         paragraph_elements = self._get_paragraph_elements(paragraph)
         text, equations = self._handle_equations_in_text(
             element=element, text=paragraph.text
@@ -898,7 +897,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and p_style_id not in ["Title", "Heading"]
         ):
             # Check if this is actually a numbered list by examining the numFmt
-            is_numbered = self._is_numbered_list(docx_obj, numid, ilevel)
+            is_numbered = self._is_numbered_list(numid, ilevel)
 
             li = self._add_list_item(
                 doc=doc,
@@ -1278,11 +1277,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_tables(
         self,
         element: BaseOxmlElement,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
-        table: Table = Table(element, docx_obj)
+        table: Table = Table(element, self.docx_obj)
         num_rows = len(table.rows)
         num_cols = len(table.columns)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
@@ -1291,7 +1289,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
-            self._walk_linear(cell_element._element, docx_obj, doc)
+            self._walk_linear(cell_element._element, doc)
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
@@ -1336,10 +1334,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
-                rich_table_cell: bool = self._is_rich_table_cell(cell, docx_obj)
+                rich_table_cell: bool = self._is_rich_table_cell(cell)
 
                 if rich_table_cell:
-                    _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
+                    _, provs_in_cell = self._walk_linear(cell._element, doc)
                 _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
                 if len(provs_in_cell) > 0:
@@ -1381,7 +1379,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     col_idx += cell.grid_span
         return elem_ref
 
-    def _is_rich_table_cell(self, cell: _Cell, docx_obj: DocxDocument) -> bool:
+    def _is_rich_table_cell(self, cell: _Cell) -> bool:
         """Determine whether a docx cell should be parsed as a Docling RichTableCell.
 
         A docx cell can hold rich content and be parsed with a Docling RichTableCell.
@@ -1397,7 +1395,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         Args:
             cell: A docx cell
-            docx_obj: The document object of the cell
 
         Returns:
             Whether the docx cell should be parsed as RichTableCell
@@ -1435,7 +1432,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             )
             for rn in runs:
-                item: Run = Run(rn, docx_obj)
+                item: Run = Run(rn, self.docx_obj)
                 if item is not None:
                     fm = MsWordDocumentBackend._get_format_from_run(item)
                     if fm and any({fm.bold, fm.italic, fm.underline, fm.strikethrough}):
@@ -1445,16 +1442,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return False
 
     def _handle_pictures(
-        self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
+        self, drawing_blip: Any, doc: DoclingDocument
     ) -> list[RefItem]:
         def get_docx_image(drawing_blip: Any) -> Optional[bytes]:
             image_data: Optional[bytes] = None
             rId = drawing_blip[0].get(
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
-            if rId in docx_obj.part.rels:
+            if rId in self.docx_obj.part.rels:
                 # Access the image part using the relationship ID
-                image_part = docx_obj.part.rels[rId].target_part
+                image_part = self.docx_obj.part.rels[rId].target_part
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
