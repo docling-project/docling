@@ -535,15 +535,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_format_from_run(cls, run: Run) -> Optional[Formatting]:
         # The .bold and .italic properties are booleans, but .underline can be an enum
         # like WD_UNDERLINE.THICK (value 6), so we need to convert it to a boolean
-        has_bold = run.bold or False
-        has_italic = run.italic or False
+        is_bold = run.bold or False
+        is_italic = run.italic or False
+        is_strikethrough = run.font.strike or False
         # Convert any non-None underline value to True
-        has_underline = bool(run.underline is not None and run.underline)
+        is_underline = bool(run.underline is not None and run.underline)
 
         return Formatting(
-            bold=has_bold,
-            italic=has_italic,
-            underline=has_underline,
+            bold=is_bold,
+            italic=is_italic,
+            underline=is_underline,
+            strikethrough=is_strikethrough,
         )
 
     def _get_paragraph_elements(self, paragraph: Paragraph):
@@ -1432,11 +1434,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
                 )
             )
-            for idx, r in enumerate(runs):
-                item: Run = Run(r, docx_obj)
+            for rn in runs:
+                item: Run = Run(rn, docx_obj)
                 if item is not None:
                     fm = MsWordDocumentBackend._get_format_from_run(item)
-                    if fm and any({fm.bold, fm.italic, fm.strikethrough}):
+                    if fm and any({fm.bold, fm.italic, fm.underline, fm.strikethrough}):
                         return True
 
         # All checks passed: plain text only
