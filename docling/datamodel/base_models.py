@@ -170,6 +170,7 @@ class VlmStopReason(str, Enum):
     LENGTH = "length"  # max tokens reached
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
+    UNSPECIFIED = "unspecified"  # Defaul none value
 
 
 class ErrorItem(BaseModel):
@@ -214,7 +215,7 @@ class VlmPrediction(BaseModel):
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
     num_tokens: Optional[int] = None
-    stop_reason: Optional[VlmStopReason] = None
+    stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
 
 
 class ContainerElement(

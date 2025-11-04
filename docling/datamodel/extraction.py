@@ -20,9 +20,6 @@ class ExtractedPageData(BaseModel):
         default_factory=list,
         description="Any errors encountered during extraction for this page",
     )
-    vlm_stop_reason: Optional[VlmStopReason] = Field(
-        None, description="Reason for stopping VLM processing"
-    )
 
 
 class ExtractionResult(BaseModel):

@@ -83,9 +83,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
                         # Parse the extracted text as JSON if possible, otherwise use as-is
                         extracted_text = predictions[0].text
                         extracted_data = None
-                        vlm_stop_reason: Optional[VlmStopReason] = predictions[
-                            0
-                        ].stop_reason
+                        vlm_stop_reason: VlmStopReason = predictions[0].stop_reason
                         if (
                             vlm_stop_reason == VlmStopReason.LENGTH
                             or vlm_stop_reason == VlmStopReason.STOP_SEQUENCE
@@ -135,10 +133,12 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
 
     def _determine_status(self, ext_res: ExtractionResult) -> ConversionStatus:
         """Determine the status based on extraction results."""
-        if ext_res.status == ConversionStatus.PARTIAL_SUCCESS:
-            return ConversionStatus.PARTIAL_SUCCESS
         if ext_res.pages and not any(page.errors for page in ext_res.pages):
-            return ConversionStatus.SUCCESS
+            return (
+                ConversionStatus.PARTIAL_SUCCESS
+                if ext_res.status == ConversionStatus.PARTIAL_SUCCESS
+                else ConversionStatus.SUCCESS
+            )
         else:
             return ConversionStatus.FAILURE
 

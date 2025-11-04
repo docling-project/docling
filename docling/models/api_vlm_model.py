@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from transformers import StoppingCriteria
 
-from docling.datamodel.base_models import Page, VlmPrediction
+from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
 from docling.exceptions import OperationNotAllowed
@@ -59,6 +59,7 @@ class ApiVlmModel(BasePageModel):
                     hi_res_image = hi_res_image.convert("RGB")
 
                 prompt = self.vlm_options.build_prompt(page.parsed_page)
+                stop_reason = VlmStopReason.UNSPECIFIED
 
                 if self.vlm_options.custom_stopping_criteria:
                     # Instantiate any GenerationStopper classes before passing to streaming

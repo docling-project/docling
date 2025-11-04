@@ -12,7 +12,7 @@ from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationC
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.base_models import VlmPrediction
+from docling.datamodel.base_models import VlmPrediction, VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BaseVlmModel
 from docling.models.utils.hf_model_download import (
@@ -298,4 +298,5 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 text=decoded_text,
                 generation_time=generation_time,
                 num_tokens=num_tokens,
+                stop_reason=VlmStopReason.UNSPECIFIED,
             )

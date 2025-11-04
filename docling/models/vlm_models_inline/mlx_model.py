@@ -13,7 +13,12 @@ from transformers import StoppingCriteria
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.base_models import Page, VlmPrediction, VlmPredictionToken
+from docling.datamodel.base_models import (
+    Page,
+    VlmPrediction,
+    VlmPredictionToken,
+    VlmStopReason,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BaseVlmPageModel
@@ -319,5 +324,6 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     generation_time=generation_time,
                     generated_tokens=tokens,
                     num_tokens=len(tokens),
+                    stop_reason=VlmStopReason.UNSPECIFIED,
                 )
             _log.debug("MLX model: Released global lock")

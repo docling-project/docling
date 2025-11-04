@@ -13,7 +13,7 @@ from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCrite
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.base_models import Page, VlmPrediction
+from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
@@ -382,4 +382,5 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 text=decoded_text,
                 generation_time=generation_time,
                 num_tokens=num_tokens,
+                stop_reason=VlmStopReason.UNSPECIFIED,
             )
