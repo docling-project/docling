@@ -284,6 +284,7 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         # Optional logging
         num_tokens = None
         if generated_ids.shape[0] > 0:  # type: ignore
+            # Todo: confirm num tokens is actually from first item, code was already like this
             num_tokens = int(generated_ids[0].shape[0])
             _log.debug(
                 f"Generated {num_tokens} tokens in {generation_time:.2f}s "

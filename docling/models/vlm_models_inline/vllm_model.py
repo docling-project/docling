@@ -322,7 +322,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 else VlmStopReason.LENGTH
             )
             generated_tokens = (
-                [VlmPredictionToken(token=int(p)) for p in output.outputs[0].token_ids]
+                [VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids]
                 if self.vlm_options.track_generated_tokens
                 else []
             )
