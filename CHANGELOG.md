@@ -1,3 +1,41 @@
+## [v2.60.1](https://github.com/docling-project/docling/releases/tag/v2.60.1) - 2025-11-04
+
+### Fix
+
+* Extract response from api_image_request in picture description ([#2571](https://github.com/docling-project/docling/issues/2571)) ([`8360aa5`](https://github.com/docling-project/docling/commit/8360aa54492bc5b5e07fcd07b0b85284910f1a14))
+
+## [v2.60.0](https://github.com/docling-project/docling/releases/tag/v2.60.0) - 2025-10-31
+
+### Feature
+
+* Use threading in the standard pipeline and move old behavior to legacy ([#2452](https://github.com/docling-project/docling/issues/2452)) ([`268d027`](https://github.com/docling-project/docling/commit/268d027c8f2abae7339b4c7d33642c3135c56e7a))
+
+### Fix
+
+* **pdf:** Threadsafe for pypdfium2 backend ([#2527](https://github.com/docling-project/docling/issues/2527)) ([`a51275d`](https://github.com/docling-project/docling/commit/a51275d08037a30ebaa07e33b0c4e82623791259))
+
+### Documentation
+
+* Update link to Open WebUI docs ([#2549](https://github.com/docling-project/docling/issues/2549)) ([`01577e9`](https://github.com/docling-project/docling/commit/01577e92d15653a517c81226695821a7ea4c955e))
+* Update installation options with extras and review FAQ ([#2548](https://github.com/docling-project/docling/issues/2548)) ([`cb10043`](https://github.com/docling-project/docling/commit/cb100437facdfc064c83396c3aebb185717bead6))
+* Fix typos ([#2546](https://github.com/docling-project/docling/issues/2546)) ([`741c44f`](https://github.com/docling-project/docling/commit/741c44fa45250c7d0e5687547fc5d2453dc20e6b))
+
+## [v2.59.0](https://github.com/docling-project/docling/releases/tag/v2.59.0) - 2025-10-30
+
+### Feature
+
+* **vlm:** Add num_tokens as attribtue for VlmPrediction ([#2489](https://github.com/docling-project/docling/issues/2489)) ([`b6c892b`](https://github.com/docling-project/docling/commit/b6c892b505bf29a12ce7e8d9b4e88e1253440ebc))
+* Support for Python 3.14 ([#2530](https://github.com/docling-project/docling/issues/2530)) ([`cdffb47`](https://github.com/docling-project/docling/commit/cdffb47b9a12da23489e345ea633786914776f7d))
+
+### Fix
+
+* Xlsx cell parsing, now returning values instead of formulas ([#2520](https://github.com/docling-project/docling/issues/2520)) ([`d9c90eb`](https://github.com/docling-project/docling/commit/d9c90eb45e899b2f3b608d959cb664c016e63821))
+
+### Documentation
+
+* Add details and examples on optimal GPU setup ([#2531](https://github.com/docling-project/docling/issues/2531)) ([`97aa06b`](https://github.com/docling-project/docling/commit/97aa06bfbca6f9a0bfca81c4ed99bf83f36c9f9b))
+* Update opensearch notebook and backend documentation ([#2519](https://github.com/docling-project/docling/issues/2519)) ([`9a6fdf9`](https://github.com/docling-project/docling/commit/9a6fdf936bd59421c9b133c065059c3a0783ca2b))
+
 ## [v2.58.0](https://github.com/docling-project/docling/releases/tag/v2.58.0) - 2025-10-22
 
 ### Feature

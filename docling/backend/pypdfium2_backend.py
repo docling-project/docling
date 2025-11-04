@@ -229,10 +229,10 @@ class PyPdfiumPageBackend(PdfPageBackend):
                     b=max(cell.rect.to_bounding_box().b for cell in group),
                 )
 
-                assert self._ppage is not None
-                self.text_page = self._ppage.get_textpage()
+                assert self.text_page is not None
                 bbox = merged_bbox.to_bottom_left_origin(page_size.height)
-                merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
+                with pypdfium2_lock:
+                    merged_text = self.text_page.get_text_bounded(*bbox.as_tuple())
 
                 return TextCell(
                     index=group[0].index,
@@ -255,9 +255,9 @@ class PyPdfiumPageBackend(PdfPageBackend):
     def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
         AREA_THRESHOLD = 0  # 32 * 32
         page_size = self.get_size()
-        rotation = self._ppage.get_rotation()
 
         with pypdfium2_lock:
+            rotation = self._ppage.get_rotation()
             for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
                 pos = obj.get_pos()
                 if rotation == 90:
