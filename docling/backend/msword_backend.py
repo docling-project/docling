@@ -1435,7 +1435,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 item: Run = Run(rn, self.docx_obj)
                 if item is not None:
                     fm = MsWordDocumentBackend._get_format_from_run(item)
-                    if fm and any({fm.bold, fm.italic, fm.underline, fm.strikethrough}):
+                    if fm != Formatting():
                         return True
 
         # All checks passed: plain text only

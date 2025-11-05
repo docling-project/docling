@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 import pytest
-from docx import Document
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
@@ -26,12 +25,14 @@ GENERATE = GEN_TEST_DATA
 IS_CI = bool(os.getenv("CI"))
 
 
-def get_docx_paths():
+@pytest.fixture(scope="module")
+def docx_paths() -> list[Path]:
     # Define the directory you want to search
     directory = Path("./tests/data/docx/")
 
     # List all docx files in the directory and its subdirectories
     docx_files = sorted(directory.rglob("*.docx"))
+
     return docx_files
 
 
@@ -42,10 +43,9 @@ def get_converter():
 
 
 @pytest.fixture(scope="module")
-def documents() -> list[tuple[Path, DoclingDocument]]:
+def documents(docx_paths) -> list[tuple[Path, DoclingDocument]]:
     documents: list[dict[Path, DoclingDocument]] = []
 
-    docx_paths = get_docx_paths()
     converter = get_converter()
 
     for docx_path in docx_paths:
@@ -175,15 +175,12 @@ def test_text_after_image_anchors(documents):
     )
 
 
-def test_is_rich_table_cell():
+def test_is_rich_table_cell(docx_paths):
     """Test the function is_rich_table_cell."""
 
     name = "docx_rich_cells.docx"
-    all_paths = get_docx_paths()
-    path = next(item for item in all_paths if item.name == name)
+    path = next(item for item in docx_paths if item.name == name)
 
-    doc = Document(path)
-    assert doc, f"Could not create a docx.Document from {path}"
     in_doc = InputDocument(
         path_or_stream=path,
         format=InputFormat.DOCX,
@@ -204,7 +201,7 @@ def test_is_rich_table_cell():
     gt_cells.extend([False, False, False, True, True, False])
     gt_it = iter(gt_cells)
 
-    for idx_t, table in enumerate(doc.tables):
+    for idx_t, table in enumerate(backend.docx_obj.tables):
         for idx_r, row in enumerate(table.rows):
             for idx_c, cell in enumerate(row.cells):
                 assert next(gt_it) == backend._is_rich_table_cell(cell), (
