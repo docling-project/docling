@@ -77,15 +77,14 @@ class ApiVlmModel(BaseVlmPageModel):
                     # Only process pages with valid images
                     if hi_res_image is not None:
                         images.append(hi_res_image)
-                        prompt = self.vlm_options.build_prompt(
-                            page.parsed_page
-                        )  # ask christoph
+                        prompt = self.vlm_options.build_prompt(page)  # ask christoph
                         prompts.append(prompt)
                         pages_with_images.append(page)
 
                 # Use process_images for the actual inference
                 if images:  # Only if we have valid images
-                    predictions = list(self.process_images(images, prompts))
+                    with TimeRecorder(conv_res, "vlm_inference"):
+                        predictions = list(self.process_images(images, prompts))
 
                     # Attach results to pages
                     for page, prediction in zip(pages_with_images, predictions):
