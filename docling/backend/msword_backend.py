@@ -19,7 +19,7 @@ from docling_core.types.doc import (
     TableData,
     TableItem,
 )
-from docling_core.types.doc.document import Formatting
+from docling_core.types.doc.document import Formatting, Script
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.table import CT_Tc
@@ -541,12 +541,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         is_strikethrough = run.font.strike or False
         # Convert any non-None underline value to True
         is_underline = bool(run.underline is not None and run.underline)
+        is_sub = run.font.subscript or False
+        is_sup = run.font.superscript or False
+        script = Script.SUB if is_sub else Script.SUPER if is_sup else Script.BASELINE
 
         return Formatting(
             bold=is_bold,
             italic=is_italic,
             underline=is_underline,
             strikethrough=is_strikethrough,
+            script=script,
         )
 
     def _get_paragraph_elements(self, paragraph: Paragraph):

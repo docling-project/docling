@@ -40,59 +40,68 @@ Second Paragraph
             item-37 at level 6: text: strikethrough
             item-38 at level 6: text: and
             item-39 at level 6: text: italic
-            item-40 at level 6: text: formatting
-          item-41 at level 5: unspecified: group rich_cell_group_1_0_3
-            item-42 at level 6: text: This is a paragraph
-            item-43 at level 6: text: This is another paragraph
-        item-44 at level 4: inline: group group
-        item-45 at level 4: text: 
-      item-46 at level 3: section_header: Table with nested table
-        item-47 at level 4: text: Before table
-        item-48 at level 4: table with [3x2]
-          item-49 at level 5: unspecified: group rich_cell_group_2_1_1
-            item-50 at level 6: text: Simple cell with
-            item-51 at level 6: text: bold
-            item-52 at level 6: text: and
-            item-53 at level 6: text: italic
-            item-54 at level 6: text: text
-          item-55 at level 5: unspecified: group rich_cell_group_3_0_2
-            item-56 at level 6: table with [2x3]
-              item-57 at level 7: unspecified: group rich_cell_group_3_0_1
-                item-58 at level 8: text: Cell 1
-              item-59 at level 7: unspecified: group rich_cell_group_3_1_1
-                item-60 at level 8: text: Cell 2
-              item-61 at level 7: unspecified: group rich_cell_group_3_2_1
-                item-62 at level 8: text: Cell 3
-            item-63 at level 6: text: 
-          item-64 at level 5: unspecified: group rich_cell_group_4_1_2
-            item-65 at level 6: text: Rich cell
+            item-40 at level 6: text: formatting with x
+            item-41 at level 6: text: 2
+            item-42 at level 6: text: and H
+            item-43 at level 6: text: 2
+            item-44 at level 6: text: O
+          item-45 at level 5: unspecified: group rich_cell_group_1_0_3
+            item-46 at level 6: text: This is a paragraph
+            item-47 at level 6: text: This is another paragraph
+        item-48 at level 4: inline: group group
+        item-49 at level 4: text: 
+        item-50 at level 4: text: 
+        item-51 at level 4: text: 
+        item-52 at level 4: text: 
+        item-53 at level 4: text: 
+        item-54 at level 4: text: 
+      item-55 at level 3: section_header: Table with nested table
+        item-56 at level 4: text: Before table
+        item-57 at level 4: table with [3x2]
+          item-58 at level 5: unspecified: group rich_cell_group_2_1_1
+            item-59 at level 6: text: Simple cell with
+            item-60 at level 6: text: bold
+            item-61 at level 6: text: and
+            item-62 at level 6: text: italic
+            item-63 at level 6: text: text
+          item-64 at level 5: unspecified: group rich_cell_group_3_0_2
+            item-65 at level 6: table with [2x3]
+              item-66 at level 7: unspecified: group rich_cell_group_3_0_1
+                item-67 at level 8: text: Cell 1
+              item-68 at level 7: unspecified: group rich_cell_group_3_1_1
+                item-69 at level 8: text: Cell 2
+              item-70 at level 7: unspecified: group rich_cell_group_3_2_1
+                item-71 at level 8: text: Cell 3
+            item-72 at level 6: text: 
+          item-73 at level 5: unspecified: group rich_cell_group_4_1_2
+            item-74 at level 6: text: Rich cell
 A nested table
-            item-66 at level 6: table with [2x3]
-              item-67 at level 7: unspecified: group rich_cell_group_4_0_1
-                item-68 at level 8: text: Cell 1
-              item-69 at level 7: unspecified: group rich_cell_group_4_1_1
-                item-70 at level 8: text: Cell 2
-              item-71 at level 7: unspecified: group rich_cell_group_4_2_1
-                item-72 at level 8: text: Cell 3
-            item-73 at level 6: text: 
-        item-74 at level 4: inline: group group
-        item-75 at level 4: inline: group group
-          item-76 at level 5: text: After table with
-          item-77 at level 5: text: bold
-          item-78 at level 5: text: ,
-          item-79 at level 5: text: underline
-          item-80 at level 5: text: ,
-          item-81 at level 5: text: strikethrough
-          item-82 at level 5: text: , and
-          item-83 at level 5: text: italic
-          item-84 at level 5: text: formatting
-        item-85 at level 4: text: 
-      item-86 at level 3: section_header: Table with pictures
-        item-87 at level 4: text: 
-        item-88 at level 4: table with [3x2]
-          item-89 at level 5: unspecified: group rich_cell_group_5_1_1
-            item-90 at level 6: picture
-          item-91 at level 5: unspecified: group rich_cell_group_5_0_2
-            item-92 at level 6: text: Text and picture
-            item-93 at level 6: picture
+            item-75 at level 6: table with [2x3]
+              item-76 at level 7: unspecified: group rich_cell_group_4_0_1
+                item-77 at level 8: text: Cell 1
+              item-78 at level 7: unspecified: group rich_cell_group_4_1_1
+                item-79 at level 8: text: Cell 2
+              item-80 at level 7: unspecified: group rich_cell_group_4_2_1
+                item-81 at level 8: text: Cell 3
+            item-82 at level 6: text: 
+        item-83 at level 4: inline: group group
+        item-84 at level 4: inline: group group
+          item-85 at level 5: text: After table with
+          item-86 at level 5: text: bold
+          item-87 at level 5: text: ,
+          item-88 at level 5: text: underline
+          item-89 at level 5: text: ,
+          item-90 at level 5: text: strikethrough
+          item-91 at level 5: text: , and
+          item-92 at level 5: text: italic
+          item-93 at level 5: text: formatting
         item-94 at level 4: text: 
+      item-95 at level 3: section_header: Table with pictures
+        item-96 at level 4: text: 
+        item-97 at level 4: table with [3x2]
+          item-98 at level 5: unspecified: group rich_cell_group_5_1_1
+            item-99 at level 6: picture
+          item-100 at level 5: unspecified: group rich_cell_group_5_0_2
+            item-101 at level 6: text: Text and picture
+            item-102 at level 6: picture
+        item-103 at level 4: text: 
