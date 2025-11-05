@@ -296,7 +296,7 @@ class LayoutPostprocessor:
                 break
             prev_count = len(clusters)
             clusters = self._adjust_cluster_bboxes(clusters)
-            clusters = self._remove_overlapping_clusters(clusters, "regular")
+            clusters = self._remove_overlapping_clusters(clusters, "regular", containment_threshold=0.1) # 20251105, shkim, 문단간 overlap 방지
 
         return clusters
 
