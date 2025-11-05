@@ -8,7 +8,7 @@ import requests
 from PIL import Image
 from pydantic import AnyUrl
 
-from docling.datamodel.base_models import OpenAiApiResponse
+from docling.datamodel.base_models import OpenAiApiResponse, VlmStopReason
 from docling.models.utils.generation_utils import GenerationStopper
 
 _log = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def api_image_request(
     timeout: float = 20,
     headers: Optional[dict[str, str]] = None,
     **params,
-) -> Tuple[str, Optional[int]]:
+) -> Tuple[str, Optional[int], VlmStopReason]:
     img_io = BytesIO()
     image.save(img_io, "PNG")
     image_base64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
@@ -61,7 +61,13 @@ def api_image_request(
     api_resp = OpenAiApiResponse.model_validate_json(r.text)
     generated_text = api_resp.choices[0].message.content.strip()
     num_tokens = api_resp.usage.total_tokens
-    return generated_text, num_tokens
+    stop_reason = (
+        VlmStopReason.LENGTH
+        if api_resp.choices[0].finish_reason == "length"
+        else VlmStopReason.END_OF_SEQUENCE
+    )
+
+    return generated_text, num_tokens, stop_reason
 
 
 def api_image_request_streaming(

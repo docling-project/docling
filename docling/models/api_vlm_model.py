@@ -10,9 +10,12 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions
 from docling.exceptions import OperationNotAllowed
 from docling.models.base_model import BaseVlmPageModel
-from docling.utils.api_image_request import api_image_request, api_image_request_streaming
-from docling.utils.profiling import TimeRecorder
 from docling.models.utils.generation_utils import GenerationStopper
+from docling.utils.api_image_request import (
+    api_image_request,
+    api_image_request_streaming,
+)
+from docling.utils.profiling import TimeRecorder
 
 
 class ApiVlmModel(BaseVlmPageModel):
@@ -74,7 +77,9 @@ class ApiVlmModel(BaseVlmPageModel):
                     # Only process pages with valid images
                     if hi_res_image is not None:
                         images.append(hi_res_image)
-                        prompt = self.vlm_options.build_prompt(page.parsed_page)        # ask christoph
+                        prompt = self.vlm_options.build_prompt(
+                            page.parsed_page
+                        )  # ask christoph
                         prompts.append(prompt)
                         pages_with_images.append(page)
 
@@ -94,7 +99,6 @@ class ApiVlmModel(BaseVlmPageModel):
         self,
         image_batch: Iterable[Union[Image, np.ndarray]],
         prompt: Union[str, list[str]],
-        conv_res: ConversionResult,
     ) -> Iterable[VlmPrediction]:
         """Process raw images without page metadata."""
         images = list(image_batch)
@@ -109,7 +113,7 @@ class ApiVlmModel(BaseVlmPageModel):
                 )
             prompts = prompt
 
-        def _process_single_image(image_prompt_pair, conv_res: ConversionResult):
+        def _process_single_image(image_prompt_pair):
             image, prompt_text = image_prompt_pair
 
             # Convert numpy array to PIL Image if needed
@@ -131,7 +135,7 @@ class ApiVlmModel(BaseVlmPageModel):
 
             stop_reason = VlmStopReason.UNSPECIFIED
 
-            if self.vlm_options.custom_stopping_criteria:               # Ask christoph
+            if self.vlm_options.custom_stopping_criteria:  # Ask christoph
                 # Instantiate any GenerationStopper classes before passing to streaming
                 instantiated_stoppers = []
                 for criteria in self.vlm_options.custom_stopping_criteria:
@@ -144,34 +148,30 @@ class ApiVlmModel(BaseVlmPageModel):
                     # Skip non-GenerationStopper criteria (should have been caught in validation)
 
                 # Streaming path with early abort support
-                with TimeRecorder(conv_res, "vlm_inference"):
-                    page_tags, num_tokens = api_image_request_streaming(
-                        image=image,
-                        prompt=prompt_text,
-                        url=self.vlm_options.url,
-                        timeout=self.timeout,
-                        headers=self.vlm_options.headers,
-                        generation_stoppers=instantiated_stoppers,
-                        **self.params,
-                    )
-                    page_tags = self.vlm_options.decode_response(page_tags)
+                page_tags, num_tokens = api_image_request_streaming(
+                    image=image,
+                    prompt=prompt_text,
+                    url=self.vlm_options.url,
+                    timeout=self.timeout,
+                    headers=self.vlm_options.headers,
+                    generation_stoppers=instantiated_stoppers,
+                    **self.params,
+                )
             else:
                 # Non-streaming fallback (existing behavior)
-                with TimeRecorder(conv_res, "vlm_inference"):
-                    page_tags, num_tokens, stop_reason = api_image_request(
-                        image=image,
-                        prompt=prompt_text,
-                        url=self.vlm_options.url,
-                        timeout=self.timeout,
-                        headers=self.vlm_options.headers,
-                        **self.params,
-                    )
+                page_tags, num_tokens, stop_reason = api_image_request(
+                    image=image,
+                    prompt=prompt_text,
+                    url=self.vlm_options.url,
+                    timeout=self.timeout,
+                    headers=self.vlm_options.headers,
+                    **self.params,
+                )
 
-                    page_tags = self.vlm_options.decode_response(page_tags)
-            return VlmPrediction(text=page_tags, num_tokens=num_tokens, stop_reason=stop_reason)
+            page_tags = self.vlm_options.decode_response(page_tags)
+            return VlmPrediction(
+                text=page_tags, num_tokens=num_tokens, stop_reason=stop_reason
+            )
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
-            # Use partial to bind the conv_res parameter
-            from functools import partial
-            process_fn = partial(_process_single_image, conv_res=conv_res)
-            yield from executor.map(process_fn, zip(images, prompts))
+            yield from executor.map(_process_single_image, zip(images, prompts))

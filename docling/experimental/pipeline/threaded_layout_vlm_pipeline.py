@@ -37,7 +37,7 @@ from docling.models.vlm_models_inline.hf_transformers_model import (
 )
 from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import BasePipeline
-from docling.pipeline.threaded_standard_pdf_pipeline import (
+from docling.pipeline.standard_pdf_pipeline import (
     ProcessingResult,
     RunContext,
     ThreadedItem,

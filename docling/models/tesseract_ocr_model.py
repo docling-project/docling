@@ -97,9 +97,7 @@ class TesseractOcrModel(BaseOcrModel):
 
             # Set main OCR reader with configurable PSM
             main_psm = (
-                tesserocr.PSM(self.options.psm)
-                if self.options.psm is not None
-                else tesserocr.PSM.AUTO
+                self.options.psm if self.options.psm is not None else tesserocr.PSM.AUTO
             )
             if lang == "auto":
                 self.reader = tesserocr.PyTessBaseAPI(psm=main_psm, **tesserocr_kwargs)
@@ -195,7 +193,7 @@ class TesseractOcrModel(BaseOcrModel):
                                         tesserocr.PyTessBaseAPI(
                                             path=self.reader.GetDatapath(),
                                             lang=lang,
-                                            psm=tesserocr.PSM(self.options.psm)
+                                            psm=self.options.psm
                                             if self.options.psm is not None
                                             else tesserocr.PSM.AUTO,
                                             init=True,
