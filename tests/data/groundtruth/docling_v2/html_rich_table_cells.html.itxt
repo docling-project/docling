@@ -27,11 +27,21 @@ item-0 at level 0: unspecified: group _root_
         item-26 at level 4: text: Oxyura
         item-27 at level 4: text: (Benthic ducks)
     item-28 at level 2: table with [4x2]
-      item-29 at level 3: unspecified: group rich_cell_group_4_0_3
-        item-30 at level 4: table with [3x2]
-    item-31 at level 2: table with [5x3]
-      item-32 at level 3: unspecified: group rich_cell_group_5_1_2
-        item-33 at level 4: picture
-          item-33 at level 5: caption: White-headed duck thumbnail
-    item-34 at level 2: picture
-  item-35 at level 1: caption: White-headed duck thumbnail
+      item-29 at level 3: unspecified: group rich_cell_group_3_0_1
+        item-30 at level 4: text: Swim
+      item-31 at level 3: unspecified: group rich_cell_group_3_0_2
+        item-32 at level 4: text: Fly
+      item-33 at level 3: unspecified: group rich_cell_group_3_0_3
+        item-34 at level 4: text: Quack
+      item-35 at level 3: unspecified: group rich_cell_group_4_0_3
+        item-36 at level 4: table with [3x2]
+    item-37 at level 2: table with [5x3]
+      item-38 at level 3: unspecified: group rich_cell_group_5_1_1
+        item-39 at level 4: text: View PNG
+      item-40 at level 3: unspecified: group rich_cell_group_5_1_2
+        item-41 at level 4: picture
+          item-41 at level 5: caption: White-headed duck thumbnail
+      item-42 at level 3: unspecified: group rich_cell_group_5_1_3
+        item-43 at level 4: text: View Full-Size Image
+    item-44 at level 2: picture
+  item-45 at level 1: caption: White-headed duck thumbnail

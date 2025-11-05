@@ -236,20 +236,20 @@ This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duc
 
 "Duckling" redirects here. For other uses, see [Duckling (disambiguation)](/wiki/Duckling_(disambiguation)) .
 
-| Duck                                                                                            | Duck         |
-|-------------------------------------------------------------------------------------------------|--------------|
-| <!-- image -->                                                                                  |              |
-| [Bufflehead](/wiki/Bufflehead)  *Bucephala albeola*  ( )                                        |              |
-| [Scientific classification](/wiki/Taxonomy_(biology))  Edit this classification  <!-- image --> |              |
-| Domain:                                                                                         | Eukaryota    |
-| Kingdom:                                                                                        | Animalia     |
-| Phylum:                                                                                         | Chordata     |
-| Class:                                                                                          | Aves         |
-| Order:                                                                                          | Anseriformes |
-| Superfamily:                                                                                    | Anatoidea    |
-| Family:                                                                                         | Anatidae     |
-| Subfamilies                                                                                     | Subfamilies  |
-| See text                                                                                        | See text     |
+| Duck                                                                                            | Duck                               |
+|-------------------------------------------------------------------------------------------------|------------------------------------|
+| <!-- image -->                                                                                  |                                    |
+| [Bufflehead](/wiki/Bufflehead)  *Bucephala albeola*  ( )                                        |                                    |
+| [Scientific classification](/wiki/Taxonomy_(biology))  Edit this classification  <!-- image --> |                                    |
+| Domain:                                                                                         | [Eukaryota](/wiki/Eukaryote)       |
+| Kingdom:                                                                                        | [Animalia](/wiki/Animal)           |
+| Phylum:                                                                                         | [Chordata](/wiki/Chordate)         |
+| Class:                                                                                          | [Aves](/wiki/Bird)                 |
+| Order:                                                                                          | [Anseriformes](/wiki/Anseriformes) |
+| Superfamily:                                                                                    | [Anatoidea](/wiki/Anatoidea)       |
+| Family:                                                                                         | [Anatidae](/wiki/Anatidae)         |
+| Subfamilies                                                                                     | Subfamilies                        |
+| See text                                                                                        | See text                           |
 
 <!-- image -->
 

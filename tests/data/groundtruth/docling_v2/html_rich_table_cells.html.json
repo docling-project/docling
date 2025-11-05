@@ -24,7 +24,7 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/texts/18"
+        "$ref": "#/texts/22"
       }
     ],
     "content_layer": "body",
@@ -181,6 +181,48 @@
       },
       "children": [
         {
+          "$ref": "#/texts/18"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_0_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/9",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/19"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_0_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/10",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/20"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_0_3",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
           "$ref": "#/tables/3"
         }
       ],
@@ -189,7 +231,21 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/9",
+      "self_ref": "#/groups/12",
+      "parent": {
+        "$ref": "#/tables/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/21"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_5_1_1",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/13",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -200,6 +256,20 @@
       ],
       "content_layer": "body",
       "name": "rich_cell_group_5_1_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/14",
+      "parent": {
+        "$ref": "#/tables/4"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/23"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_5_1_3",
       "label": "unspecified"
     }
   ],
@@ -477,6 +547,76 @@
     {
       "self_ref": "#/texts/18",
       "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Swim",
+      "text": "Swim",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Fly",
+      "text": "Fly",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Quack",
+      "text": "Quack",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/groups/12"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "View PNG",
+      "text": "View PNG",
+      "hyperlink": "https://en.wikipedia.org/wiki/Donald_Duck#/media/File:Donald_Duck_angry_transparent_background.png"
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
         "$ref": "#/body"
       },
       "children": [],
@@ -486,13 +626,26 @@
       "orig": "White-headed duck thumbnail",
       "text": "White-headed duck thumbnail",
       "hyperlink": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif/lossy-page1-1920px-Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif.jpg"
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/groups/14"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "View Full-Size Image",
+      "text": "View Full-Size Image",
+      "hyperlink": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Mandarin_duck_%28Aix_galericulata%29.jpg/250px-Mandarin_duck_%28Aix_galericulata%29.jpg"
     }
   ],
   "pictures": [
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/groups/9"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -500,7 +653,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/18"
+          "$ref": "#/texts/22"
         }
       ],
       "references": [],
@@ -1229,6 +1382,15 @@
       "children": [
         {
           "$ref": "#/groups/8"
+        },
+        {
+          "$ref": "#/groups/9"
+        },
+        {
+          "$ref": "#/groups/10"
+        },
+        {
+          "$ref": "#/groups/11"
         }
       ],
       "content_layer": "body",
@@ -1263,7 +1425,10 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/8"
+            }
           },
           {
             "row_span": 1,
@@ -1289,7 +1454,10 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/9"
+            }
           },
           {
             "row_span": 1,
@@ -1315,7 +1483,10 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/10"
+            }
           },
           {
             "row_span": 1,
@@ -1330,7 +1501,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/8"
+              "$ref": "#/groups/11"
             }
           }
         ],
@@ -1456,7 +1627,7 @@
     {
       "self_ref": "#/tables/3",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -1644,7 +1815,13 @@
       },
       "children": [
         {
-          "$ref": "#/groups/9"
+          "$ref": "#/groups/12"
+        },
+        {
+          "$ref": "#/groups/13"
+        },
+        {
+          "$ref": "#/groups/14"
         }
       ],
       "content_layer": "body",
@@ -1731,7 +1908,10 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/12"
+            }
           },
           {
             "row_span": 1,
@@ -1772,7 +1952,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/9"
+              "$ref": "#/groups/13"
             }
           },
           {
@@ -1812,7 +1992,10 @@
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/14"
+            }
           },
           {
             "row_span": 1,

@@ -365,8 +365,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif len(provs_in_cell) == 1:
             item_ref = provs_in_cell[0]
             pr_item = item_ref.resolve(doc)
-            if isinstance(pr_item, TextItem):
-                # Cell has only one element and it's just a text
+            if isinstance(pr_item, TextItem) and pr_item.formatting == Formatting():
+                # Cell has only one element and it's just text.
+                # With _is_rich_table_cell, this case should never happen.
+                _log.warning(
+                    f"A rich table cell was found with simple text. TextItem={pr_item}"
+                )
                 rich_table_cell = False
                 try:
                     doc.delete_items(node_items=[pr_item])
