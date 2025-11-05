@@ -354,33 +354,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> tuple[bool, Union[RefItem, None]]:
         rich_table_cell = False
         ref_for_rich_cell = None
-        if len(provs_in_cell) > 0:
-            ref_for_rich_cell = provs_in_cell[0]
-        if len(provs_in_cell) > 1:
-            # Cell has multiple elements, we need to group them
+        if len(provs_in_cell) >= 1:
+            # Cell rich cell has multiple elements, we need to group them
             rich_table_cell = True
             ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
                 group_name, doc, provs_in_cell, docling_table
             )
-        elif len(provs_in_cell) == 1:
-            item_ref = provs_in_cell[0]
-            pr_item = item_ref.resolve(doc)
-            if isinstance(pr_item, TextItem) and pr_item.formatting == Formatting():
-                # Cell has only one element and it's just text.
-                # With _is_rich_table_cell, this case should never happen.
-                _log.warning(
-                    f"A rich table cell was found with simple text. TextItem={pr_item}"
-                )
-                rich_table_cell = False
-                try:
-                    doc.delete_items(node_items=[pr_item])
-                except Exception as e:
-                    _log.error(f"Error while making rich table: {e}.")
-            else:
-                rich_table_cell = True
-                ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
-                    group_name, doc, provs_in_cell, docling_table
-                )
 
         return rich_table_cell, ref_for_rich_cell
 
