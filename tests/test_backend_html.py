@@ -483,7 +483,7 @@ def test_is_rich_table_cell(html_paths):
     # table: Duck family tree
     gt_cells[1] = [False, False, True, False, True, False, True, False]
     # table: Duck-related actions
-    gt_cells[2] = [False, True, False, True, False, True, True]
+    gt_cells[2] = [False, True, True, True, False, True, True]
     # table: nested table
     gt_cells[3] = [False, False, False, False, False, False]
     # table: Famous Ducks with Images

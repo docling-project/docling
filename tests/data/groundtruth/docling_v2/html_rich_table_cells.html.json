@@ -4,7 +4,7 @@
   "name": "html_rich_table_cells",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 3766720058750710315,
+    "binary_hash": 12445331835808292382,
     "filename": "html_rich_table_cells.html"
   },
   "furniture": {
@@ -24,7 +24,7 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/texts/22"
+        "$ref": "#/texts/27"
       }
     ],
     "content_layer": "body",
@@ -52,6 +52,12 @@
         },
         {
           "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
         }
       ],
       "content_layer": "body",
@@ -65,13 +71,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/7"
-        },
-        {
-          "$ref": "#/texts/8"
-        },
-        {
           "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
+        },
+        {
+          "$ref": "#/texts/11"
         }
       ],
       "content_layer": "body",
@@ -99,10 +105,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/10"
+          "$ref": "#/texts/12"
         },
         {
-          "$ref": "#/texts/11"
+          "$ref": "#/texts/13"
         }
       ],
       "content_layer": "body",
@@ -130,10 +136,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/12"
+          "$ref": "#/texts/14"
         },
         {
-          "$ref": "#/texts/13"
+          "$ref": "#/texts/15"
         }
       ],
       "content_layer": "body",
@@ -147,10 +153,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/14"
+          "$ref": "#/texts/16"
         },
         {
-          "$ref": "#/texts/15"
+          "$ref": "#/texts/17"
         }
       ],
       "content_layer": "body",
@@ -164,10 +170,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/16"
+          "$ref": "#/texts/18"
         },
         {
-          "$ref": "#/texts/17"
+          "$ref": "#/texts/19"
         }
       ],
       "content_layer": "body",
@@ -181,7 +187,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/18"
+          "$ref": "#/texts/20"
         }
       ],
       "content_layer": "body",
@@ -195,11 +201,17 @@
       },
       "children": [
         {
-          "$ref": "#/texts/19"
+          "$ref": "#/texts/21"
+        },
+        {
+          "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/23"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_3_0_2",
+      "name": "rich_cell_group_3_0_1",
       "label": "unspecified"
     },
     {
@@ -209,7 +221,21 @@
       },
       "children": [
         {
-          "$ref": "#/texts/20"
+          "$ref": "#/texts/24"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_3_0_2",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/11",
+      "parent": {
+        "$ref": "#/tables/2"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/25"
         }
       ],
       "content_layer": "body",
@@ -217,7 +243,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/11",
+      "self_ref": "#/groups/12",
       "parent": {
         "$ref": "#/tables/2"
       },
@@ -231,13 +257,13 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/12",
+      "self_ref": "#/groups/13",
       "parent": {
         "$ref": "#/tables/4"
       },
       "children": [
         {
-          "$ref": "#/texts/21"
+          "$ref": "#/texts/26"
         }
       ],
       "content_layer": "body",
@@ -245,7 +271,7 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/13",
+      "self_ref": "#/groups/14",
       "parent": {
         "$ref": "#/tables/4"
       },
@@ -259,13 +285,13 @@
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/14",
+      "self_ref": "#/groups/15",
       "parent": {
         "$ref": "#/tables/4"
       },
       "children": [
         {
-          "$ref": "#/texts/23"
+          "$ref": "#/texts/28"
         }
       ],
       "content_layer": "body",
@@ -342,6 +368,18 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
+      "orig": ",",
+      "text": ","
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
       "orig": "loud",
       "text": "loud",
       "formatting": {
@@ -353,7 +391,19 @@
       }
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ",",
+      "text": ","
+    },
+    {
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -372,7 +422,19 @@
       }
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ",",
+      "text": ","
+    },
+    {
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -391,19 +453,7 @@
       }
     },
     {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", , ,",
-      "text": ", , ,"
-    },
-    {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -417,7 +467,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -431,7 +481,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -445,7 +495,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -459,7 +509,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/13",
       "parent": {
         "$ref": "#/groups/3"
       },
@@ -473,7 +523,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -485,7 +535,7 @@
       "text": "Aythya"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/groups/5"
       },
@@ -497,7 +547,7 @@
       "text": "(Diving ducks)"
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -509,7 +559,7 @@
       "text": "Lophonetta"
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/groups/6"
       },
@@ -521,7 +571,7 @@
       "text": "(Pintail group)"
     },
     {
-      "self_ref": "#/texts/16",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -533,7 +583,7 @@
       "text": "Oxyura"
     },
     {
-      "self_ref": "#/texts/17",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/groups/7"
       },
@@ -545,7 +595,7 @@
       "text": "(Benthic ducks)"
     },
     {
-      "self_ref": "#/texts/18",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/groups/8"
       },
@@ -564,9 +614,52 @@
       }
     },
     {
-      "self_ref": "#/texts/19",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Gracefully glide on H",
+      "text": "Gracefully glide on H"
+    },
+    {
+      "self_ref": "#/texts/22",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "2",
+      "text": "2",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "sub"
+      }
+    },
+    {
+      "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "O surfaces.",
+      "text": "O surfaces."
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -583,9 +676,9 @@
       }
     },
     {
-      "self_ref": "#/texts/20",
+      "self_ref": "#/texts/25",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
@@ -602,9 +695,9 @@
       }
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -615,7 +708,7 @@
       "hyperlink": "https://en.wikipedia.org/wiki/Donald_Duck#/media/File:Donald_Duck_angry_transparent_background.png"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/body"
       },
@@ -628,9 +721,9 @@
       "hyperlink": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif/lossy-page1-1920px-Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif.jpg"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/groups/14"
+        "$ref": "#/groups/15"
       },
       "children": [],
       "content_layer": "body",
@@ -645,7 +738,7 @@
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/groups/13"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -653,7 +746,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/22"
+          "$ref": "#/texts/27"
         }
       ],
       "references": [],
@@ -1391,6 +1484,9 @@
         },
         {
           "$ref": "#/groups/11"
+        },
+        {
+          "$ref": "#/groups/12"
         }
       ],
       "content_layer": "body",
@@ -1437,11 +1533,14 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Gracefully glide on water surfaces.",
+            "text": "Gracefully glide on H2O surfaces.",
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/9"
+            }
           },
           {
             "row_span": 1,
@@ -1456,7 +1555,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/9"
+              "$ref": "#/groups/10"
             }
           },
           {
@@ -1485,7 +1584,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/10"
+              "$ref": "#/groups/11"
             }
           },
           {
@@ -1501,7 +1600,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/11"
+              "$ref": "#/groups/12"
             }
           }
         ],
@@ -1557,7 +1656,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Gracefully glide on water surfaces.",
+              "text": "Gracefully glide on H2O surfaces.",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1627,7 +1726,7 @@
     {
       "self_ref": "#/tables/3",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
@@ -1815,13 +1914,13 @@
       },
       "children": [
         {
-          "$ref": "#/groups/12"
-        },
-        {
           "$ref": "#/groups/13"
         },
         {
           "$ref": "#/groups/14"
+        },
+        {
+          "$ref": "#/groups/15"
         }
       ],
       "content_layer": "body",
@@ -1910,7 +2009,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/12"
+              "$ref": "#/groups/13"
             }
           },
           {
@@ -1952,7 +2051,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/13"
+              "$ref": "#/groups/14"
             }
           },
           {
@@ -1994,7 +2093,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/14"
+              "$ref": "#/groups/15"
             }
           },
           {

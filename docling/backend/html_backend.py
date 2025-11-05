@@ -576,6 +576,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if im_ref3:
                         added_refs.append(im_ref3)
                 elif name in _FORMAT_TAG_MAP:
+                    flush_buffer()
                     with self._use_format([name]):
                         wk = self._walk(node, doc)
                         added_refs.extend(wk)

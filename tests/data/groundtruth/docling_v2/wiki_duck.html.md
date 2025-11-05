@@ -239,7 +239,7 @@ This article is about the bird. For duck as a food, see [Duck as food](/wiki/Duc
 | Duck                                                                                            | Duck                               |
 |-------------------------------------------------------------------------------------------------|------------------------------------|
 | <!-- image -->                                                                                  |                                    |
-| [Bufflehead](/wiki/Bufflehead)  *Bucephala albeola*  ( )                                        |                                    |
+| [Bufflehead](/wiki/Bufflehead)  (  *Bucephala albeola*  )                                       |                                    |
 | [Scientific classification](/wiki/Taxonomy_(biology))  Edit this classification  <!-- image --> |                                    |
 | Domain:                                                                                         | [Eukaryota](/wiki/Eukaryote)       |
 | Kingdom:                                                                                        | [Animalia](/wiki/Animal)           |
