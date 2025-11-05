@@ -20,7 +20,7 @@ env:
     tests/test_asr_pipeline.py
     tests/test_threaded_pipeline.py
   PYTEST_TO_SKIP: |-
-  EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping)\.py$'
+  EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping|mlx_whisper_example|gpu_standard_pipeline|gpu_vlm_pipeline)\.py$'
 
 jobs:
   lint:
@@ -62,7 +62,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
       steps:
         - uses: actions/checkout@v5
 
@@ -129,7 +129,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
       steps:
         - uses: actions/checkout@v5
 
@@ -201,7 +201,7 @@ jobs:
       strategy:
         fail-fast: false
         matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
       steps:
         - uses: actions/checkout@v5
 
@@ -242,8 +242,14 @@ jobs:
               ~/.EasyOCR/
             key: models-cache
 
-        - name: Pre-download Models
-          run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+        - name: Free up disk space
+          run: |
+            df -h
+            sudo rm -rf /usr/share/dotnet
+            sudo rm -rf /usr/local/lib/android
+            sudo rm -rf /opt/ghc
+            sudo apt-get clean
+            df -h
 
         - name: Run examples
           run: |

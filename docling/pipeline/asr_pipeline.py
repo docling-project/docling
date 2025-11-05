@@ -1,10 +1,11 @@
 import logging
 import os
 import re
+import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Optional, Union, cast
 
 from docling_core.types.doc import DoclingDocument, DocumentOrigin
 
@@ -32,6 +33,7 @@ from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
 )
 from docling.datamodel.pipeline_options_asr_model import (
+    InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
     # AsrResponseFormat,
     InlineAsrOptions,
@@ -116,9 +118,15 @@ class _NativeWhisperModel:
             try:
                 import whisper  # type: ignore
             except ImportError:
-                raise ImportError(
-                    "whisper is not installed. Please install it via `pip install openai-whisper` or do `uv sync --extra asr`."
-                )
+                if sys.version_info < (3, 14):
+                    raise ImportError(
+                        "whisper is not installed. Please install it via `pip install openai-whisper` or do `uv sync --extra asr`."
+                    )
+                else:
+                    raise ImportError(
+                        "whisper is not installed. Unfortunately its dependencies are not yet available for Python 3.14."
+                    )
+
             self.asr_options = asr_options
             self.max_tokens = asr_options.max_new_tokens
             self.temperature = asr_options.temperature
@@ -228,22 +236,157 @@ class _NativeWhisperModel:
         return convo
 
 
+class _MlxWhisperModel:
+    def __init__(
+        self,
+        enabled: bool,
+        artifacts_path: Optional[Path],
+        accelerator_options: AcceleratorOptions,
+        asr_options: InlineAsrMlxWhisperOptions,
+    ):
+        """
+        Transcriber using MLX Whisper for Apple Silicon optimization.
+        """
+        self.enabled = enabled
+
+        _log.info(f"artifacts-path: {artifacts_path}")
+        _log.info(f"accelerator_options: {accelerator_options}")
+
+        if self.enabled:
+            try:
+                import mlx_whisper  # type: ignore
+            except ImportError:
+                raise ImportError(
+                    "mlx-whisper is not installed. Please install it via `pip install mlx-whisper` or do `uv sync --extra asr`."
+                )
+            self.asr_options = asr_options
+            self.mlx_whisper = mlx_whisper
+
+            self.device = decide_device(
+                accelerator_options.device,
+                supported_devices=asr_options.supported_devices,
+            )
+            _log.info(f"Available device for MLX Whisper: {self.device}")
+
+            self.model_name = asr_options.repo_id
+            _log.info(f"loading _MlxWhisperModel({self.model_name})")
+
+            # MLX Whisper models are loaded differently - they use HuggingFace repos
+            self.model_path = self.model_name
+
+            # Store MLX-specific options
+            self.language = asr_options.language
+            self.task = asr_options.task
+            self.word_timestamps = asr_options.word_timestamps
+            self.no_speech_threshold = asr_options.no_speech_threshold
+            self.logprob_threshold = asr_options.logprob_threshold
+            self.compression_ratio_threshold = asr_options.compression_ratio_threshold
+
+    def run(self, conv_res: ConversionResult) -> ConversionResult:
+        audio_path: Path = Path(conv_res.input.file).resolve()
+
+        try:
+            conversation = self.transcribe(audio_path)
+
+            # Ensure we have a proper DoclingDocument
+            origin = DocumentOrigin(
+                filename=conv_res.input.file.name or "audio.wav",
+                mimetype="audio/x-wav",
+                binary_hash=conv_res.input.document_hash,
+            )
+            conv_res.document = DoclingDocument(
+                name=conv_res.input.file.stem or "audio.wav", origin=origin
+            )
+
+            for citem in conversation:
+                conv_res.document.add_text(
+                    label=DocItemLabel.TEXT, text=citem.to_string()
+                )
+
+            conv_res.status = ConversionStatus.SUCCESS
+            return conv_res
+
+        except Exception as exc:
+            _log.error(f"MLX Audio transcription has an error: {exc}")
+
+        conv_res.status = ConversionStatus.FAILURE
+        return conv_res
+
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        """
+        Transcribe audio using MLX Whisper.
+
+        Args:
+            fpath: Path to audio file
+
+        Returns:
+            List of conversation items with timestamps
+        """
+        result = self.mlx_whisper.transcribe(
+            str(fpath),
+            path_or_hf_repo=self.model_path,
+            language=self.language,
+            task=self.task,
+            word_timestamps=self.word_timestamps,
+            no_speech_threshold=self.no_speech_threshold,
+            logprob_threshold=self.logprob_threshold,
+            compression_ratio_threshold=self.compression_ratio_threshold,
+        )
+
+        convo: list[_ConversationItem] = []
+
+        # MLX Whisper returns segments similar to native Whisper
+        for segment in result.get("segments", []):
+            item = _ConversationItem(
+                start_time=segment.get("start"),
+                end_time=segment.get("end"),
+                text=segment.get("text", "").strip(),
+                words=[],
+            )
+
+            # Add word-level timestamps if available
+            if self.word_timestamps and "words" in segment:
+                item.words = []
+                for word_data in segment["words"]:
+                    item.words.append(
+                        _ConversationWord(
+                            start_time=word_data.get("start"),
+                            end_time=word_data.get("end"),
+                            text=word_data.get("word", ""),
+                        )
+                    )
+            convo.append(item)
+
+        return convo
+
+
 class AsrPipeline(BasePipeline):
     def __init__(self, pipeline_options: AsrPipelineOptions):
         super().__init__(pipeline_options)
         self.keep_backend = True
 
         self.pipeline_options: AsrPipelineOptions = pipeline_options
+        self._model: Union[_NativeWhisperModel, _MlxWhisperModel]
 
         if isinstance(self.pipeline_options.asr_options, InlineAsrNativeWhisperOptions):
-            asr_options: InlineAsrNativeWhisperOptions = (
+            native_asr_options: InlineAsrNativeWhisperOptions = (
                 self.pipeline_options.asr_options
             )
             self._model = _NativeWhisperModel(
                 enabled=True,  # must be always enabled for this pipeline to make sense.
                 artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
-                asr_options=asr_options,
+                asr_options=native_asr_options,
+            )
+        elif isinstance(self.pipeline_options.asr_options, InlineAsrMlxWhisperOptions):
+            mlx_asr_options: InlineAsrMlxWhisperOptions = (
+                self.pipeline_options.asr_options
+            )
+            self._model = _MlxWhisperModel(
+                enabled=True,  # must be always enabled for this pipeline to make sense.
+                artifacts_path=self.artifacts_path,
+                accelerator_options=pipeline_options.accelerator_options,
+                asr_options=mlx_asr_options,
             )
         else:
             _log.error(f"No model support for {self.pipeline_options.asr_options}")

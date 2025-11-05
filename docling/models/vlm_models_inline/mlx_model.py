@@ -50,9 +50,14 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 from mlx_vlm.prompt_utils import apply_chat_template  # type: ignore
                 from mlx_vlm.utils import load_config  # type: ignore
             except ImportError:
-                raise ImportError(
-                    "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` to use MLX VLM models."
-                )
+                if sys.version_info < (3, 14):
+                    raise ImportError(
+                        "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` to use MLX VLM models."
+                    )
+                else:
+                    raise ImportError(
+                        "mlx-vlm is not installed. It is not yet available on Python 3.14."
+                    )
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -310,5 +315,6 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     text=decoded_output,
                     generation_time=generation_time,
                     generated_tokens=tokens,
+                    num_tokens=len(tokens),
                 )
             _log.debug("MLX model: Released global lock")

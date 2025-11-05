@@ -1,5 +1,6 @@
 import importlib.metadata
 import logging
+import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -129,7 +130,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
-            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            if sys.version_info < (3, 14):
+                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            else:
+                self.vlm_model.eval()
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(
@@ -363,13 +367,19 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
         # -- Optional logging
+        num_tokens = None
         if generated_ids.shape[0] > 0:
+            num_tokens = int(generated_ids[0].shape[0])
             _log.debug(
-                f"Generated {int(generated_ids[0].shape[0])} tokens in {generation_time:.2f}s "
+                f"Generated {num_tokens} tokens in {generation_time:.2f}s "
                 f"for batch size {generated_ids.shape[0]}."
             )
 
         for text in decoded_texts:
             # Apply decode_response to the output text
             decoded_text = self.vlm_options.decode_response(text)
-            yield VlmPrediction(text=decoded_text, generation_time=generation_time)
+            yield VlmPrediction(
+                text=decoded_text,
+                generation_time=generation_time,
+                num_tokens=num_tokens,
+            )

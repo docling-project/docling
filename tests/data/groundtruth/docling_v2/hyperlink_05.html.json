@@ -66,8 +66,8 @@
       "content_layer": "body",
       "label": "caption",
       "prov": [],
-      "orig": "Image Hyperlink.",
-      "text": "Image Hyperlink.",
+      "orig": "Clickable Example",
+      "text": "Clickable Example",
       "hyperlink": "https://www.example.com/"
     },
     {
