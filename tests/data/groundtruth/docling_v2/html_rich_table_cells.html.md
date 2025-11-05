@@ -13,11 +13,11 @@
 | Lophonetta  (Pintail group) | Fulvous Whistling Duck    |
 | Oxyura  (Benthic ducks)     | Wigee, Banded Water-screw |
 
-| Action   | Action                              |
-|----------|-------------------------------------|
-| Swim     | Gracefully glide on water surfaces. |
-| Fly      |                                     |
-| Quack    | - Short "quak" - Long "quaaaaaack"  |
+| Action   | Action                                                                                                  |
+|----------|---------------------------------------------------------------------------------------------------------|
+| Swim     | Gracefully glide on water surfaces.                                                                     |
+| Fly      |                                                                                                         |
+| Quack    | | Type   | Sound        | |--------|--------------| | Short  | "quak"       | | Long   | "quaaaaaack" | |
 
 | Name              | Description                                  | Image                                       |
 |-------------------|----------------------------------------------|---------------------------------------------|

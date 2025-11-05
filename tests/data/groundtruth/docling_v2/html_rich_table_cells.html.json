@@ -4,7 +4,7 @@
   "name": "html_rich_table_cells",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 1673375685668385661,
+    "binary_hash": 3766720058750710315,
     "filename": "html_rich_table_cells.html"
   },
   "furniture": {
@@ -24,7 +24,7 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/texts/20"
+        "$ref": "#/texts/18"
       }
     ],
     "content_layer": "body",
@@ -177,38 +177,21 @@
     {
       "self_ref": "#/groups/8",
       "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/18"
-        },
-        {
-          "$ref": "#/texts/19"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/9",
-      "parent": {
         "$ref": "#/tables/2"
       },
       "children": [
         {
-          "$ref": "#/groups/8"
+          "$ref": "#/tables/3"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_3_0_3",
+      "name": "rich_cell_group_4_0_3",
       "label": "unspecified"
     },
     {
-      "self_ref": "#/groups/10",
+      "self_ref": "#/groups/9",
       "parent": {
-        "$ref": "#/tables/3"
+        "$ref": "#/tables/4"
       },
       "children": [
         {
@@ -216,7 +199,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_4_1_2",
+      "name": "rich_cell_group_5_1_2",
       "label": "unspecified"
     }
   ],
@@ -249,7 +232,7 @@
           "$ref": "#/tables/2"
         },
         {
-          "$ref": "#/tables/3"
+          "$ref": "#/tables/4"
         },
         {
           "$ref": "#/pictures/1"
@@ -494,34 +477,6 @@
     {
       "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/groups/8"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "Short “quak”",
-      "text": "Short \"quak\"",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/groups/8"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [],
-      "orig": "Long “quaaaaaack”",
-      "text": "Long \"quaaaaaack\"",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
         "$ref": "#/body"
       },
       "children": [],
@@ -537,7 +492,7 @@
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
@@ -545,7 +500,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/20"
+          "$ref": "#/texts/18"
         }
       ],
       "references": [],
@@ -1273,7 +1228,7 @@
       },
       "children": [
         {
-          "$ref": "#/groups/9"
+          "$ref": "#/groups/8"
         }
       ],
       "content_layer": "body",
@@ -1369,13 +1324,13 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "Short \"quak\" \nLong \"quaaaaaack\"",
+            "text": "TypeSound\n\n\n\nShort\n\"quak\"\n\n\nLong\n\"quaaaaaack\"",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/9"
+              "$ref": "#/groups/8"
             }
           }
         ],
@@ -1487,7 +1442,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "Short \"quak\" \nLong \"quaaaaaack\"",
+              "text": "TypeSound\n\n\n\nShort\n\"quak\"\n\n\nLong\n\"quaaaaaack\"",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1501,11 +1456,195 @@
     {
       "self_ref": "#/tables/3",
       "parent": {
+        "$ref": "#/groups/8"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "table",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "data": {
+        "table_cells": [
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Type",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Sound",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Short",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "\"quak\"",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Long",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "\"quaaaaaack\"",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          }
+        ],
+        "num_rows": 3,
+        "num_cols": 2,
+        "grid": [
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Type",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "Sound",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Short",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "\"quak\"",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Long",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "\"quaaaaaack\"",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ]
+        ]
+      },
+      "annotations": []
+    },
+    {
+      "self_ref": "#/tables/4",
+      "parent": {
         "$ref": "#/texts/1"
       },
       "children": [
         {
-          "$ref": "#/groups/10"
+          "$ref": "#/groups/9"
         }
       ],
       "content_layer": "body",
@@ -1633,7 +1772,7 @@
             "row_section": false,
             "fillable": false,
             "ref": {
-              "$ref": "#/groups/10"
+              "$ref": "#/groups/9"
             }
           },
           {

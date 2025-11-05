@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rich Table Cells in HTML</title>
+<style>
+  table { border-collapse: collapse; width: 90%; margin: 1em auto; }
+  th, td { border: 1px solid #aaa; padding: 0.5rem; text-align: left; vertical-align: top; }
+  th { background:#f2f2f2; }
+</style>
+</head>
+
+<body>
+
+<h1>Rich Table Cells in HTML</h1>
+
+<!-- Simple data table -->
+<table>
+  <caption>Basic duck facts</caption>
+  <thead>
+    <tr><th>Name</th><th>Habitat</th><th>Comment</th></tr>
+  </thead>
+  <tbody>
+    <!-- empty cell -->
+    <tr><td>Wood Duck</td><td>&nbsp;</td><td>Often seen near ponds.</td></tr>
+
+    <!-- plain text -->
+    <tr><td>Mallard</td><td>Ponds, lakes, rivers</td><td>Quack</td></tr>
+
+    <!-- formatted text -->
+    <tr>
+      <td>Goose (not a duck!)</td>
+      <td style="color:#777;">Water & wetlands</td>
+      <td><strong>Large</strong>, <em>loud</em>, <u>noisy</u>, <s>small</s></td>
+    </tr>
+
+    <!-- list -->
+    <tr>
+      <td>Teal</td>
+      <td>
+        <ul style="margin:0;padding-left:1.2rem;">
+          <li>Pond</li>
+          <li>Marsh</li>
+          <li>Riverbank</li>
+        </ul>
+      </td>
+      <td>
+        <ol style="margin:0;padding-left:1.2rem;">
+          <li>Fly south in winter</li>
+          <li>Build nest on ground</li>
+        </ol>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Table with mixed cell content -->
+<table>
+  <caption>Duck family tree (simplified)</caption>
+  <thead>
+    <tr><th>Genus</th><th>Species</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Aythya<br><small>(Diving ducks)</small></td>
+      <td>Hawser, Common Pochard</td>
+    </tr>
+    <tr>
+      <td>Lophonetta<br><small>(Pintail group)</small></td>
+      <td>Fulvous Whistling Duck</td>
+    </tr>
+    <tr>
+      <td>Oxyura<br><small>(Benthic ducks)</small></td>
+      <td>Wigee, Banded Water‑screw</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Table with a mix of cell types and a nested table -->
+<table>
+  <caption>Duck‑related actions</caption>
+  <thead>
+    <tr style="background:#cce5ff;">
+      <th colspan="2">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Swim</strong></td>
+      <td>Gracefully glide on water surfaces.</td>
+    </tr>
+    <tr>
+      <td><em>Fly</em></td>
+      <td>&nbsp;</td> <!-- empty cell -->
+    </tr>
+    <tr>
+      <td><u>Quack</u></td>
+      <td>
+        <table>
+          <thead>
+            <tr><th>Type</th><th>Sound</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Short</td>
+              <td>“quak”</td>
+            </tr>
+            <tr>
+              <td>Long</td>
+              <td>“quaaaaaack”</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Table with links -->
+<table>
+  <caption>Famous Ducks with Images</caption>
+  <thead>
+    <tr><th>Name</th><th>Description</th><th>Image</th></tr>
+  </thead>
+  <tbody>
+    <!-- Plain link to a PNG/JPG file -->
+    <tr>
+      <td>Donald Duck</td>
+      <td>Cartoon character.</td>
+      <td><a href="https://en.wikipedia.org/wiki/Donald_Duck#/media/File:Donald_Duck_angry_transparent_background.png" target="_blank">View PNG</a></td>
+    </tr>
+
+    <!-- Thumbnail image that opens in a new tab -->
+    <tr>
+      <td>White-headed duck</td>
+      <td>A small diving duck some 45 cm (18 in) long.</td>
+      <td>
+        <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif/lossy-page1-1920px-Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif.jpg" target="_blank">
+          <img class="thumb"
+               src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif/lossy-page1-250px-Witkopeend_-_white-headed_duck_-_Oxyura_leucocephala_3.tif.jpg"
+               alt="White-headed duck thumbnail">
+        </a>
+      </td>
+    </tr>
+
+    <!-- Link to a larger image with a caption -->
+    <tr>
+      <td>Mandarin Duck</td>
+      <td>Known for its striking plumage.</td>
+      <td>
+        <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Mandarin_duck_%28Aix_galericulata%29.jpg/250px-Mandarin_duck_%28Aix_galericulata%29.jpg" target="_blank">
+          View Full‑Size Image
+        </a>
+      </td>
+    </tr>
+
+    <!-- Empty image cell (to illustrate the empty case) -->
+    <tr>
+      <td>Unknown Duck</td>
+      <td>No photo available.</td>
+      <td>&nbsp;</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

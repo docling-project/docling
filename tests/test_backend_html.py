@@ -205,12 +205,14 @@ def test_extract_parent_hyperlinks():
     assert str(annotated_text_list[0].hyperlink) == a_tag.get("href")
 
 
-def get_html_paths():
+@pytest.fixture(scope="module")
+def html_paths() -> list[Path]:
     # Define the directory you want to search
     directory = Path("./tests/data/html/")
 
     # List all HTML files in the directory and its subdirectories
     html_files = sorted(directory.rglob("*.html"))
+
     return html_files
 
 
@@ -220,8 +222,7 @@ def get_converter():
     return converter
 
 
-def test_e2e_html_conversions():
-    html_paths = get_html_paths()
+def test_e2e_html_conversions(html_paths):
     converter = get_converter()
 
     for html_path in html_paths:
@@ -441,3 +442,84 @@ def test_fetch_remote_images(monkeypatch):
             "tests/data/html/example_image_01.png", "rb"
         )
         assert res.document
+
+
+def test_is_rich_table_cell(html_paths):
+    """Test the function is_rich_table_cell."""
+
+    name = "html_rich_table_cells.html"
+    path = next(item for item in html_paths if item.name == name)
+
+    in_doc = InputDocument(
+        path_or_stream=path,
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename=name,
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=path,
+    )
+
+    gt_cells: dict[int, list[bool]] = {}
+    # table: Basic duck facts
+    gt_cells[0] = [
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+    ]
+    # table: Duck family tree
+    gt_cells[1] = [False, False, True, False, True, False, True, False]
+    # table: Duck-related actions
+    gt_cells[2] = [False, True, False, True, False, True, True]
+    # table: nested table
+    gt_cells[3] = [False, False, False, False, False, False]
+    # table: Famous Ducks with Images
+    gt_cells[4] = [
+        False,
+        False,
+        False,
+        False,
+        False,
+        True,
+        False,
+        False,
+        True,
+        False,
+        False,
+        True,
+        False,
+        False,
+        False,
+    ]
+
+    for idx_t, table in enumerate(backend.soup.find_all("table")):
+        gt_it = iter(gt_cells[idx_t])
+        num_cells = 0
+        containers = table.find_all(["thead", "tbody"], recursive=False)
+        for part in containers:
+            for idx_r, row in enumerate(part.find_all("tr", recursive=False)):
+                cells = row.find_all(["td", "th"], recursive=False)
+                if not cells:
+                    continue
+                for idx_c, cell in enumerate(cells):
+                    assert next(gt_it) == backend._is_rich_table_cell(cell), (
+                        f"Wrong cell type in table {idx_t}, row {idx_r}, col {idx_c} "
+                        f"with text: {cell.text}"
+                    )
+                    num_cells += 1
+        assert num_cells == len(gt_cells[idx_t]), (
+            f"Cell number does not match in table {idx_t}"
+        )
