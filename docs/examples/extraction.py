@@ -132,17 +132,16 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
 
 def main(argv: Optional[Sequence[str]] = None) -> None:
     args = parse_args(argv)
-    match args.example:
-        case "string":
-            example_with_string_template(args.source)
-        case "dict":
-            example_with_dict_template(args.source)
-        case "pydantic":
-            example_with_pydantic_template(args.source)
-        case "advanced":
-            example_with_advanced_pydantic_template(args.source)
-        case _:
-            run_all_examples(args.source)
+    if args.example == "string":
+        example_with_string_template(args.source)
+    elif args.example == "dict":
+        example_with_dict_template(args.source)
+    elif args.example == "pydantic":
+        example_with_pydantic_template(args.source)
+    elif args.example == "advanced":
+        example_with_advanced_pydantic_template(args.source)
+    else:
+        run_all_examples(args.source)
 
 
 if __name__ == "__main__":
