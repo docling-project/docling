@@ -287,7 +287,7 @@ DOLPHIN_TRANSFORMERS = InlineVlmOptions(
 # NuExtract
 NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
     repo_id="numind/NuExtract-2.0-2B",
-    revision="fe5b2f0b63b81150721435a3ca1129a75c59c74e",  # 489efed leads to MPS issues; TODO ensure wiring is in place
+    revision="fe5b2f0b63b81150721435a3ca1129a75c59c74e",  # 489efed leads to MPS issues
     prompt="",  # This won't be used, template is passed separately
     torch_dtype="bfloat16",
     inference_framework=InferenceFramework.TRANSFORMERS,

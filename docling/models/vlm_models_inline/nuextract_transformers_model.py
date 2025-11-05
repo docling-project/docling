@@ -131,7 +131,10 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(self.vlm_options.repo_id)
+                artifacts_path = self.download_models(
+                    repo_id=self.vlm_options.repo_id,
+                    revision=self.vlm_options.revision,
+                )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
