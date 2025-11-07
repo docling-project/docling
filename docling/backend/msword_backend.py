@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Final, Optional, Union
 
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -148,6 +149,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if self.is_valid():
             assert self.docx_obj is not None
             doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
+            self._add_header_footer(self.docx_obj, doc)
 
             return doc
         else:
@@ -1524,3 +1526,59 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
         return
+
+    def _add_header_footer(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
+        """Add section headers and footers.
+
+        Headers and footers are added in the furniture content and only the text paragraphs
+        are parsed. The paragraphs are attached to a single group item for the header or the
+        footer. If the document has a section with new header and footer, they will be parsed
+        in new group items.
+
+        Args:
+            docx_obj: A docx Document object to be parsed.
+            doc: A DoclingDocument object to add the header and footer from docx_obj.
+        """
+        for sec_idx, section in enumerate(docx_obj.sections):
+            if sec_idx > 0 and not section.different_first_page_header_footer:
+                continue
+
+            hdr = (
+                section.first_page_header
+                if section.different_first_page_header_footer
+                else section.header
+            )
+            par = [txt for txt in (par.text.strip() for par in hdr.paragraphs) if txt]
+            if par:
+                hdr_group = doc.add_group(
+                    label=GroupLabel.SECTION,
+                    name="page header",
+                    content_layer=ContentLayer.FURNITURE,
+                )
+                for text in par:
+                    doc.add_text(
+                        label=DocItemLabel.PAGE_HEADER,
+                        text=text,
+                        parent=hdr_group,
+                        content_layer=ContentLayer.FURNITURE,
+                    )
+
+            ftr = (
+                section.first_page_footer
+                if section.different_first_page_header_footer
+                else section.footer
+            )
+            par = [txt for txt in (par.text.strip() for par in ftr.paragraphs) if txt]
+            if par:
+                ftr_group = doc.add_group(
+                    label=GroupLabel.SECTION,
+                    name="page footer",
+                    content_layer=ContentLayer.FURNITURE,
+                )
+                for text in par:
+                    doc.add_text(
+                        label=DocItemLabel.PAGE_FOOTER,
+                        text=text,
+                        parent=ftr_group,
+                        content_layer=ContentLayer.FURNITURE,
+                    )

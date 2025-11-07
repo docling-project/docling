@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import pytest
+from docling_core.types.doc import GroupItem
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
@@ -208,3 +209,29 @@ def test_is_rich_table_cell(docx_paths):
                     f"Wrong cell type in table {idx_t}, row {idx_r}, col {idx_c} "
                     f"with text: {cell.text}"
                 )
+
+
+def test_add_header_footer(documents):
+    """Test the funciton _add_header_footer."""
+
+    name = "unit_test_formatting.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    headers: list[GroupItem] = []
+    footers: list[GroupItem] = []
+    for group in doc.groups:
+        if not isinstance(group, GroupItem):
+            continue
+        if group.name == "page header":
+            headers.append(group)
+        elif group.name == "page footer":
+            footers.append(group)
+
+    assert len(headers) == 2, "Expected 2 different headers"
+    assert len(footers) == 2, "Expected 2 different footers"
+
+    assert len(headers[0].children) == 1, "First page header should have 1 paragraph"
+    assert len(headers[1].children) == 2, "Second page header should have 2 paragraphs"
+
+    assert len(footers[0].children) == 1, "First page header should have 1 paragraph"
+    assert len(footers[1].children) == 3, "Second page header should have 3 paragraphs"
