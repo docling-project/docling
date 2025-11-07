@@ -52,10 +52,8 @@ theme:
     - search.suggest
     - toc.follow
 nav:
-  - Home:
-    - "Docling": index.md
-    - Getting started:
-      - Getting started: getting_started/index.md
+  - Documentation:
+    - "Docling documentation": index.md
     - Installation:
       - Installation: installation/index.md
     - Usage:
