@@ -945,7 +945,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             else:
                 is_numbered_style = False
-            h1 = self._add_header(doc, p_level, text, is_numbered_style)
+            h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
@@ -1045,7 +1045,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self._update_history(p_style_id, p_level, numid, ilevel)
         return elem_ref
 
-    def _add_header(
+    def _add_heading(
         self,
         doc: DoclingDocument,
         curr_level: Optional[int],
