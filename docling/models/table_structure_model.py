@@ -27,7 +27,7 @@ from docling.utils.profiling import TimeRecorder
 
 
 class TableStructureModel(BasePageModel):
-    _model_repo_folder = "ds4sd--docling-models"
+    _model_repo_folder = "docling-project--docling-models"
     _model_path = "model_artifacts/tableformer"
 
     def __init__(
@@ -93,7 +93,7 @@ class TableStructureModel(BasePageModel):
         local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
     ) -> Path:
         return download_hf_model(
-            repo_id="ds4sd/docling-models",
+            repo_id="docling-project/docling-models",
             revision="v2.3.0",
             local_dir=local_dir,
             force=force,
