@@ -195,7 +195,7 @@ class InputDocument(BaseModel):
             self.valid = False
             _log.exception(
                 "An unexpected error occurred while opening the document "
-                "f{self.file.name}",
+                f"{self.file.name}",
                 exc_info=e,
             )
             # raise
