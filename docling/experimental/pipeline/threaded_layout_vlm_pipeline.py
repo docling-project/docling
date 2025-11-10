@@ -10,7 +10,7 @@ from __future__ import annotations
 import itertools
 import logging
 from pathlib import Path
-from typing import Iterable, List, Optional, Union, cast
+from typing import List, Optional, Union, cast
 
 from docling_core.types.doc import DoclingDocument
 from docling_core.types.doc.document import DocTagsDocument
@@ -79,10 +79,14 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         base_vlm_options = self.pipeline_options.vlm_options
 
         class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
-            def build_prompt(self, page):
+            # Store document name for prompt saving (set per document)
+            _current_doc_name: Optional[str] = None
+
+            def build_prompt(self, page: Page) -> str:
                 from docling.datamodel.base_models import Page
 
                 base_prompt = self.prompt
+                final_prompt = base_prompt
 
                 # If we have a full Page object with layout predictions, enhance the prompt
                 if isinstance(page, Page) and page.predictions.layout:
@@ -94,6 +98,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         tag_name = DocumentToken.create_token_name_from_doc_item_label(
                             label=cluster.label
                         )
+
+                        if not page.size:
+                            continue
 
                         # Convert bbox to tuple and get location tokens
                         bbox_tuple = cluster.bbox.as_tuple()
@@ -116,12 +123,11 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         )
                         layout_injection = f"{layout_xml}"
 
-                        custom_prompt = base_prompt + layout_injection
-                        print(f"Layout injection prompt: {custom_prompt}")
+                        final_prompt = base_prompt + layout_injection
 
-                        return custom_prompt
+                    print("Enhanced Prompt with Layout Info:\n", final_prompt)
 
-                return base_prompt
+                return final_prompt
 
         vlm_options = LayoutAwareVlmOptions(**base_vlm_options.model_dump())
 

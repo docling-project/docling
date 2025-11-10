@@ -233,7 +233,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     images.append(hi_res_image)
 
                     # Define prompt structure
-                    user_prompt = self.vlm_options.build_prompt(page.parsed_page)
+                    user_prompt = self.vlm_options.build_prompt(page)
 
                     user_prompts.append(user_prompt)
                     pages_with_images.append(page)
@@ -321,12 +321,18 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 if output.outputs[0].stop_reason
                 else VlmStopReason.LENGTH
             )
-            generated_tokens = (
-                [VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids]
-                if self.vlm_options.track_generated_tokens
-                else []
-            )
+
+            generated_tokens = [
+                VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids
+            ]
             num_tokens = len(generated_tokens)
+
+            generated_tokens = (
+                generated_tokens if self.vlm_options.track_generated_tokens else []
+            )
+            input_prompt = prompts if self.vlm_options.save_input_prompt else []
+            print("vllm input promts:", input_prompt)
+
             decoded_text = self.vlm_options.decode_response(text)
             yield VlmPrediction(
                 text=decoded_text,
@@ -334,4 +340,5 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 num_tokens=num_tokens,
                 stop_reason=stop_reason,
                 generated_tokens=generated_tokens,
+                input_prompt=input_prompt,
             )

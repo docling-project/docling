@@ -13,7 +13,6 @@ from pathlib import Path
 from docling.datamodel.base_models import ConversionStatus, DocumentStream, InputFormat
 from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.datamodel.vlm_model_specs import (
-    GRANITEDOCLING_TRANSFORMERS,
     GRANITEDOCLING_VLLM,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -61,7 +60,7 @@ def demo_threaded_layout_vlm_pipeline(
     print("Configuring pipeline options...")
     pipeline_options_layout_aware = ThreadedLayoutVlmPipelineOptions(
         # VLM configuration - defaults to GRANITEDOCLING_TRANSFORMERS
-        vlm_options=GRANITEDOCLING_TRANSFORMERS,
+        vlm_options=GRANITEDOCLING_VLLM,
         # Layout configuration - defaults to DOCLING_LAYOUT_HERON
         # Batch sizes for parallel processing
         layout_batch_size=2,
@@ -112,9 +111,7 @@ def demo_threaded_layout_vlm_pipeline(
             continue
 
         doc_filename = conv_result.input.file.stem
-        conv_result.document.save_as_doctags(
-            out_dir_layout_aware / f"{doc_filename}.dt"
-        )
+        conv_result.document.save_as_json(out_dir_layout_aware / f"{doc_filename}.dt")
 
     for conv_result in result_without_layout:
         if conv_result.status == ConversionStatus.FAILURE:
@@ -122,7 +119,7 @@ def demo_threaded_layout_vlm_pipeline(
             continue
 
         doc_filename = conv_result.input.file.stem
-        conv_result.document.save_as_doctags(out_dir_classic_vlm / f"{doc_filename}.dt")
+        conv_result.document.save_as_json(out_dir_classic_vlm / f"{doc_filename}.dt")
 
 
 if __name__ == "__main__":
