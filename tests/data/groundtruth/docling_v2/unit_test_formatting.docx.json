@@ -4,7 +4,7 @@
   "name": "unit_test_formatting",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 15570721693976286404,
+    "binary_hash": 4350524979083842953,
     "filename": "unit_test_formatting.docx"
   },
   "furniture": {
@@ -63,7 +63,7 @@
         "$ref": "#/groups/7"
       },
       {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       }
     ],
     "content_layer": "body",
@@ -221,10 +221,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/31"
+          "$ref": "#/groups/8"
         },
         {
-          "$ref": "#/texts/32"
+          "$ref": "#/texts/34"
         }
       ],
       "content_layer": "furniture",
@@ -234,17 +234,40 @@
     {
       "self_ref": "#/groups/8",
       "parent": {
+        "$ref": "#/groups/7"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/31"
+        },
+        {
+          "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/texts/33"
+        }
+      ],
+      "content_layer": "furniture",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/9",
+      "parent": {
         "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/33"
-        },
-        {
-          "$ref": "#/texts/34"
-        },
-        {
           "$ref": "#/texts/35"
+        },
+        {
+          "$ref": "#/texts/36"
+        },
+        {
+          "$ref": "#/pictures/0"
+        },
+        {
+          "$ref": "#/texts/37"
         }
       ],
       "content_layer": "furniture",
@@ -797,10 +820,17 @@
       },
       "children": [],
       "content_layer": "furniture",
-      "label": "page_header",
+      "label": "text",
       "prov": [],
       "orig": "This is a header",
-      "text": "This is a header"
+      "text": "This is a header",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/30",
@@ -809,34 +839,55 @@
       },
       "children": [],
       "content_layer": "furniture",
-      "label": "page_footer",
+      "label": "text",
       "prov": [],
       "orig": "This is a footer",
-      "text": "This is a footer"
+      "text": "This is a footer",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/31",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "furniture",
-      "label": "page_header",
+      "label": "text",
       "prov": [],
-      "orig": "Another header",
-      "text": "Another header"
+      "orig": "Another",
+      "text": "Another",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/32",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "furniture",
-      "label": "page_header",
+      "label": "text",
       "prov": [],
-      "orig": "With 2 paragraphs",
-      "text": "With 2 paragraphs"
+      "orig": "header",
+      "text": "header",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/33",
@@ -845,37 +896,111 @@
       },
       "children": [],
       "content_layer": "furniture",
-      "label": "page_footer",
+      "label": "text",
       "prov": [],
-      "orig": "Another footer",
-      "text": "Another footer"
+      "orig": "in bold",
+      "text": "in bold",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/34",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/7"
       },
       "children": [],
       "content_layer": "furniture",
-      "label": "page_footer",
+      "label": "text",
       "prov": [],
-      "orig": "With",
-      "text": "With"
+      "orig": "With 2 paragraphs",
+      "text": "With 2 paragraphs",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/35",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "furniture",
-      "label": "page_footer",
+      "label": "text",
       "prov": [],
-      "orig": "3 paragraphs",
-      "text": "3 paragraphs"
+      "orig": "Another footer",
+      "text": "Another footer",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/36",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "With",
+      "text": "With",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/37",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "text",
+      "prov": [],
+      "orig": "3 paragraphs and a picture",
+      "text": "3 paragraphs and a picture",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     }
   ],
-  "pictures": [],
+  "pictures": [
+    {
+      "self_ref": "#/pictures/0",
+      "parent": {
+        "$ref": "#/groups/9"
+      },
+      "children": [],
+      "content_layer": "furniture",
+      "label": "picture",
+      "prov": [],
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "annotations": []
+    }
+  ],
   "tables": [],
   "key_value_items": [],
   "form_items": [],

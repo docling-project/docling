@@ -96,6 +96,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.listIter = 0
         # Track list counters per numId and ilvl
         self.list_counters: dict[tuple[int, int], int] = {}
+        # Set starting content layer
+        self.content_layer = ContentLayer.BODY
 
         self.history: dict[str, Any] = {
             "names": [None],
@@ -260,12 +262,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                     label=GroupLabel.SECTION,
                                     parent=self.parents[level - 1],
                                     name="shape-text",
+                                    content_layer=self.content_layer,
                                 )
                                 added_elements.append(shape_group.get_ref())
                                 doc.add_text(
                                     label=DocItemLabel.TEXT,
                                     parent=shape_group,
                                     text=text_content,
+                                    content_layer=self.content_layer,
                                 )
 
                 if textbox_elements:
@@ -752,7 +756,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         level = self._get_level()
         # Create a textbox group to contain all text from the textbox
         textbox_group = doc.add_group(
-            label=GroupLabel.SECTION, parent=self.parents[level - 1], name="textbox"
+            label=GroupLabel.SECTION,
+            parent=self.parents[level - 1],
+            name="textbox",
+            content_layer=self.content_layer,
         )
         elem_ref.append(textbox_group.get_ref())
         # Set this as the current parent to ensure textbox content
@@ -866,7 +873,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         paragraph_elements: list,
     ) -> Optional[NodeItem]:
         return (
-            doc.add_inline_group(parent=prev_parent)
+            doc.add_inline_group(parent=prev_parent, content_layer=self.content_layer)
             if len(paragraph_elements) > 1
             else prev_parent
         )
@@ -934,7 +941,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
-            te = doc.add_text(parent=None, label=DocItemLabel.TITLE, text=text)
+            te = doc.add_text(
+                parent=None,
+                label=DocItemLabel.TITLE,
+                text=text,
+                content_layer=self.content_layer,
+            )
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
@@ -958,12 +970,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     label=DocItemLabel.FORMULA,
                     parent=self.parents[level - 1],
                     text=text.replace("<eq>", "").replace("</eq>", ""),
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(t1.get_ref())
             else:
                 # Inline equation
                 level = self._get_level()
-                inline_equation = doc.add_inline_group(parent=self.parents[level - 1])
+                inline_equation = doc.add_inline_group(
+                    parent=self.parents[level - 1], content_layer=self.content_layer
+                )
                 elem_ref.append(inline_equation.get_ref())
                 text_tmp = text
                 for eq in equations:
@@ -980,12 +995,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             label=DocItemLabel.TEXT,
                             parent=inline_equation,
                             text=pre_eq_text,
+                            content_layer=self.content_layer,
                         )
                         elem_ref.append(e1.get_ref())
                     e2 = doc.add_text(
                         label=DocItemLabel.FORMULA,
                         parent=inline_equation,
                         text=eq.replace("<eq>", "").replace("</eq>", ""),
+                        content_layer=self.content_layer,
                     )
                     elem_ref.append(e2.get_ref())
 
@@ -994,6 +1011,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         label=DocItemLabel.TEXT,
                         parent=inline_equation,
                         text=text_tmp.strip(),
+                        content_layer=self.content_layer,
                     )
                     elem_ref.append(e3.get_ref())
 
@@ -1020,6 +1038,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(t2.get_ref())
 
@@ -1039,6 +1058,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(t3.get_ref())
 
@@ -1156,6 +1176,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         text=text,
                         formatting=format,
                         hyperlink=hyperlink,
+                        content_layer=self.content_layer,
                     )
         return elem_ref
 
@@ -1182,7 +1203,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Reset counters for the new numbering sequence
             self._reset_list_counters_for_new_sequence(numid)
 
-            list_gr = doc.add_list_group(name="list", parent=self.parents[level - 1])
+            list_gr = doc.add_list_group(
+                name="list",
+                parent=self.parents[level - 1],
+                content_layer=self.content_layer,
+            )
             self.parents[level] = list_gr
             elem_ref.append(list_gr.get_ref())
 
@@ -1205,7 +1230,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + prev_indent + 1,
                 self.level_at_new_list + ilevel + 1,
             ):
-                list_gr1 = doc.add_list_group(name="list", parent=self.parents[i - 1])
+                list_gr1 = doc.add_list_group(
+                    name="list",
+                    parent=self.parents[i - 1],
+                    content_layer=self.content_layer,
+                )
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
 
@@ -1264,11 +1293,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc: DoclingDocument,
         provs_in_cell: list[RefItem],
         docling_table: TableItem,
+        content_layer: ContentLayer = ContentLayer.BODY,
     ) -> RefItem:
         group_element = doc.add_group(
             label=GroupLabel.UNSPECIFIED,
             name=group_name,
             parent=docling_table,
+            content_layer=content_layer,
         )
         for prov in provs_in_cell:
             group_element.children.append(prov)
@@ -1300,7 +1331,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
         level = self._get_level()
-        docling_table = doc.add_table(data=data, parent=self.parents[level - 1])
+        docling_table = doc.add_table(
+            data=data, parent=self.parents[level - 1], content_layer=self.content_layer
+        )
         elem_ref.append(docling_table.get_ref())
 
         cell_set: set[CT_Tc] = set()
@@ -1351,7 +1384,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     rich_table_cell = True
                     group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
                     ref_for_rich_cell = MsWordDocumentBackend._group_cell_elements(
-                        group_name, doc, provs_in_cell, docling_table
+                        group_name,
+                        doc,
+                        provs_in_cell,
+                        docling_table,
+                        content_layer=self.content_layer,
                     )
 
                 if rich_table_cell:
@@ -1384,6 +1421,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     doc.add_table_cell(table_item=docling_table, cell=simple_cell)
                     col_idx += cell.grid_span
         return elem_ref
+
+    def _has_blip(self, element: BaseOxmlElement) -> bool:
+        """Check if a docx element holds any BLIP as a child.
+
+        Args:
+            element: a docx element
+
+        Returns:
+            Whether the element contains a BLIP as a direct child.
+        """
+
+        for item in element:
+            if self.blip_xpath_expr(item):
+                return True
+            if item.findall(
+                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            ):
+                return True
+
+        return False
 
     def _is_rich_table_cell(self, cell: _Cell) -> bool:
         """Determine whether a docx cell should be parsed as a Docling RichTableCell.
@@ -1422,13 +1479,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             tag = child.tag.split("}")[-1]
             if tag not in allowed_tags:
                 return True
-        for elem in tc:
-            if self.blip_xpath_expr(elem):
-                return True
-            if elem.findall(
-                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
-            ):
-                return True
+        if self._has_blip(tc):
+            return True
 
         # paragraph must contain runs with no run-properties
         for para in paragraphs:
@@ -1470,6 +1522,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             p1 = doc.add_picture(
                 parent=self.parents[level - 1],
                 caption=None,
+                content_layer=self.content_layer,
             )
             elem_ref.append(p1.get_ref())
         else:
@@ -1480,6 +1533,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     parent=self.parents[level - 1],
                     image=ImageRef.from_pil(image=pil_image, dpi=72),
                     caption=None,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(p2.get_ref())
             except (UnidentifiedImageError, OSError):
@@ -1487,6 +1541,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 p3 = doc.add_picture(
                     parent=self.parents[level - 1],
                     caption=None,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(p3.get_ref())
         return elem_ref
@@ -1517,12 +1572,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[level - 1],
                 image=ImageRef.from_pil(image=pil_image, dpi=72),
                 caption=None,
+                content_layer=self.content_layer,
             )
         except (UnidentifiedImageError, OSError):
             _log.warning("Warning: DrawingML image cannot be loaded by Pillow")
             doc.add_picture(
                 parent=self.parents[level - 1],
                 caption=None,
+                content_layer=self.content_layer,
             )
 
         return
@@ -1539,6 +1596,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             docx_obj: A docx Document object to be parsed.
             doc: A DoclingDocument object to add the header and footer from docx_obj.
         """
+        self.content_layer = ContentLayer.FURNITURE
         for sec_idx, section in enumerate(docx_obj.sections):
             if sec_idx > 0 and not section.different_first_page_header_footer:
                 continue
@@ -1549,19 +1607,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else section.header
             )
             par = [txt for txt in (par.text.strip() for par in hdr.paragraphs) if txt]
-            if par:
-                hdr_group = doc.add_group(
+            tables = hdr.tables
+            has_blip = self._has_blip(hdr._element)
+            if par or tables or has_blip:
+                self.parents[0] = doc.add_group(
                     label=GroupLabel.SECTION,
                     name="page header",
-                    content_layer=ContentLayer.FURNITURE,
+                    content_layer=self.content_layer,
                 )
-                for text in par:
-                    doc.add_text(
-                        label=DocItemLabel.PAGE_HEADER,
-                        text=text,
-                        parent=hdr_group,
-                        content_layer=ContentLayer.FURNITURE,
-                    )
+                self._walk_linear(hdr._element, doc)
 
             ftr = (
                 section.first_page_footer
@@ -1569,16 +1623,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else section.footer
             )
             par = [txt for txt in (par.text.strip() for par in ftr.paragraphs) if txt]
-            if par:
-                ftr_group = doc.add_group(
+            tables = ftr.tables
+            has_blip = self._has_blip(ftr._element)
+            if par or tables or has_blip:
+                self.parents[0] = doc.add_group(
                     label=GroupLabel.SECTION,
                     name="page footer",
-                    content_layer=ContentLayer.FURNITURE,
+                    content_layer=self.content_layer,
                 )
-                for text in par:
-                    doc.add_text(
-                        label=DocItemLabel.PAGE_FOOTER,
-                        text=text,
-                        parent=ftr_group,
-                        content_layer=ContentLayer.FURNITURE,
-                    )
+                self._walk_linear(ftr._element, doc)
+
+        self.parents[0] = None
+        self.content_layer = ContentLayer.BODY

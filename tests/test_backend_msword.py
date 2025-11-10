@@ -233,5 +233,7 @@ def test_add_header_footer(documents):
     assert len(headers[0].children) == 1, "First page header should have 1 paragraph"
     assert len(headers[1].children) == 2, "Second page header should have 2 paragraphs"
 
-    assert len(footers[0].children) == 1, "First page header should have 1 paragraph"
-    assert len(footers[1].children) == 3, "Second page header should have 3 paragraphs"
+    assert len(footers[0].children) == 1, "First page footer should have 1 paragraph"
+    assert len(footers[1].children) == 4, (
+        "Second page footer should have 3 paragraphs and 1 picture"
+    )
