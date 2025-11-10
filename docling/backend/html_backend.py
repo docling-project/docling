@@ -354,31 +354,50 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> tuple[bool, Union[RefItem, None]]:
         rich_table_cell = False
         ref_for_rich_cell = None
-        if len(provs_in_cell) > 0:
-            ref_for_rich_cell = provs_in_cell[0]
-        if len(provs_in_cell) > 1:
-            # Cell has multiple elements, we need to group them
+        if len(provs_in_cell) >= 1:
+            # Cell rich cell has multiple elements, we need to group them
             rich_table_cell = True
             ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
                 group_name, doc, provs_in_cell, docling_table
             )
-        elif len(provs_in_cell) == 1:
-            item_ref = provs_in_cell[0]
-            pr_item = item_ref.resolve(doc)
-            if isinstance(pr_item, TextItem):
-                # Cell has only one element and it's just a text
-                rich_table_cell = False
-                try:
-                    doc.delete_items(node_items=[pr_item])
-                except Exception as e:
-                    _log.error(f"Error while making rich table: {e}.")
-            else:
-                rich_table_cell = True
-                ref_for_rich_cell = HTMLDocumentBackend.group_cell_elements(
-                    group_name, doc, provs_in_cell, docling_table
-                )
 
         return rich_table_cell, ref_for_rich_cell
+
+    def _is_rich_table_cell(self, table_cell: Tag) -> bool:
+        """Determine whether an table cell should be parsed as a Docling RichTableCell.
+
+        A table cell can hold rich content and be parsed with a Docling RichTableCell.
+        However, this requires walking through the content elements and creating
+        Docling node items. If the cell holds only plain text, the parsing is simpler
+        and using a TableCell is prefered.
+
+        Args:
+            table_cell: The HTML tag representing a table cell.
+
+        Returns:
+            Whether the cell should be parsed as RichTableCell.
+        """
+        is_rich: bool = True
+
+        children = table_cell.find_all(recursive=True)  # all descendants of type Tag
+        if not children:
+            content = [
+                item
+                for item in table_cell.contents
+                if isinstance(item, NavigableString)
+            ]
+            is_rich = len(content) > 1
+        else:
+            annotations = self._extract_text_and_hyperlink_recursively(
+                table_cell, find_parent_annotation=True
+            )
+            if not annotations:
+                is_rich = bool(item for item in children if item.name == "img")
+            elif len(annotations) == 1:
+                anno: AnnotatedText = annotations[0]
+                is_rich = bool(anno.formatting) or bool(anno.hyperlink) or anno.code
+
+        return is_rich
 
     def parse_table_data(
         self,
@@ -437,23 +456,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         formula.replace_with(NavigableString(math_formula))
 
                 provs_in_cell: list[RefItem] = []
-                # Parse table cell sub-tree for Rich Cells content:
-                table_level = self.level
-                provs_in_cell = self._walk(html_cell, doc)
-                # After walking sub-tree in cell, restore previously set level
-                self.level = table_level
+                rich_table_cell = self._is_rich_table_cell(html_cell)
+                if rich_table_cell:
+                    # Parse table cell sub-tree for Rich Cells content:
+                    table_level = self.level
+                    provs_in_cell = self._walk(html_cell, doc)
+                    # After walking sub-tree in cell, restore previously set level
+                    self.level = table_level
 
-                rich_table_cell = False
-                ref_for_rich_cell = None
-                group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
-                rich_table_cell, ref_for_rich_cell = (
-                    HTMLDocumentBackend.process_rich_table_cells(
-                        provs_in_cell, group_name, doc, docling_table
+                    group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
+                    rich_table_cell, ref_for_rich_cell = (
+                        HTMLDocumentBackend.process_rich_table_cells(
+                            provs_in_cell, group_name, doc, docling_table
+                        )
                     )
-                )
 
                 # Extracting text
-                text = self.get_text(html_cell).strip()
+                text = HTMLDocumentBackend._clean_unicode(
+                    self.get_text(html_cell).strip()
+                )
                 col_span, row_span = self._get_cell_spans(html_cell)
                 if row_header:
                     row_span -= 1
@@ -555,6 +576,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     if im_ref3:
                         added_refs.append(im_ref3)
                 elif name in _FORMAT_TAG_MAP:
+                    flush_buffer()
                     with self._use_format([name]):
                         wk = self._walk(node, doc)
                         added_refs.extend(wk)

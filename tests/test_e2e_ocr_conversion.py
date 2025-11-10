@@ -63,6 +63,7 @@ def test_e2e_conversions():
         (TesseractOcrOptions(), True),
         (TesseractCliOcrOptions(), True),
         (EasyOcrOptions(), False),
+        (TesseractOcrOptions(psm=3), True),
         (TesseractOcrOptions(force_full_page_ocr=True), True),
         (TesseractOcrOptions(force_full_page_ocr=True, lang=["auto"]), True),
         (TesseractCliOcrOptions(force_full_page_ocr=True), True),

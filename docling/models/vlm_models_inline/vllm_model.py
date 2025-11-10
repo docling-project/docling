@@ -9,7 +9,12 @@ import numpy as np
 from PIL.Image import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import Page, VlmPrediction, VlmPredictionToken
+from docling.datamodel.base_models import (
+    Page,
+    VlmPrediction,
+    VlmPredictionToken,
+    VlmStopReason,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
@@ -311,24 +316,22 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         # Emit predictions
         for output in outputs:
             text = output.outputs[0].text if output.outputs else ""
-            stop_reason = output.outputs[0].stop_reason if output.outputs else ""
-            generated_tokens = [
-                VlmPredictionToken(token=int(p)) for p in output.outputs[0].token_ids
-            ]
+            stop_reason = (
+                VlmStopReason.END_OF_SEQUENCE
+                if output.outputs[0].stop_reason
+                else VlmStopReason.LENGTH
+            )
+            generated_tokens = (
+                [VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids]
+                if self.vlm_options.track_generated_tokens
+                else []
+            )
             num_tokens = len(generated_tokens)
             decoded_text = self.vlm_options.decode_response(text)
-            if self.vlm_options.track_generated_tokens:
-                yield VlmPrediction(
-                    text=decoded_text,
-                    generation_time=generation_time,
-                    num_tokens=num_tokens,
-                    stop_reason=stop_reason,
-                    generated_tokens=generated_tokens,
-                )
-            else:
-                yield VlmPrediction(
-                    text=decoded_text,
-                    generation_time=generation_time,
-                    num_tokens=num_tokens,
-                    stop_reason=stop_reason,
-                )
+            yield VlmPrediction(
+                text=decoded_text,
+                generation_time=generation_time,
+                num_tokens=num_tokens,
+                stop_reason=stop_reason,
+                generated_tokens=generated_tokens,
+            )
