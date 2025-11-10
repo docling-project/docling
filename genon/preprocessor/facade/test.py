@@ -1,17 +1,19 @@
+import os
 from fastapi import Request
 import logging
+import asyncio
+import json
+import time
 
-# from basic_processor import DocumentProcessor
+# 테스트할 전처리기 임포트
+# from attachment_processor import DocumentProcessor # 첨부용
+# from basic_processor import DocumentProcessor # 기본형
+# from intelligent_processor import DocumentProcessor # 지능형
+from intelligent_processor_ocr import DocumentProcessor # 지능형 + OCR
+# from intelligent_processor_law import DocumentProcessor # 지능형 + 법률문서특화
 
-# from attachment_processor import DocumentProcessor
-from intelligent_processor import DocumentProcessor
-
-# 파일 경로 및 요청 설정
-import os
-
-# file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_files", "/workspaces/md_attach_preprocess/doc_parser/sample_files/xlsx_sample.xlsx")
-# file_path = "/workspace/pdfs/1.pdf"
-file_path = "/workspace/pdfs/연수규정(20250113)_일부개정.pdf"
+# 파일 경로
+file_path = "../sample_files/pdf_sample.pdf"
 
 # 파일 존재 여부 확인
 if not os.path.exists(file_path):
@@ -26,30 +28,22 @@ doc_processor = DocumentProcessor()
 mock_request = Request(scope={"type": "http"})
 
 # 비동기 메서드 실행
-import asyncio
-
-
 async def process_document():
-    # print(file_path)  # 파일 경로 출력 숨김
+    # print(file_path)
     vectors = await doc_processor(mock_request, file_path)
     # WMF 변환 여부는 include_wmf 파라미터 전달: 현재 한글만 지원
     # vectors = await doc_processor(mock_request, file_path, save_images=True, include_wmf=False)
     return vectors
 
-
+begin = time.time()
 # 메인 루프 실행
 result = asyncio.run(process_document())
 
-
 result_list_as_dict = [item.model_dump() for item in result]
-
-
-import json
-
-
-# result_list_as_dict[0]['text'] 가 어떻게 만들어지는거지......
-
 
 # 최종적으로 이 리스트를 JSON으로 저장
 with open("result.json", "w", encoding="utf-8") as f:
     json.dump(result_list_as_dict, f, ensure_ascii=False, indent=4)
+
+end = time.time()
+print(f"Processing time: {end - begin:.2f} seconds")
