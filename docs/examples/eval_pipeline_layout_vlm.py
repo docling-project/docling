@@ -44,15 +44,13 @@ def parse_args():
         default="test",
         help="Dataset split to use (default: 'test')",
     )
-    (
-        parser.add_argument(
-            "--engine",
-            type=str,
-            required=False,
-            default="vllm",
-            choices=["vllm", "mlx"],
-            help="VLM backend: 'vllm' (NVIDIA+vLLM), 'mlx' (Apple Silicon)",
-        ),
+    parser.add_argument(
+        "--engine",
+        type=str,
+        required=False,
+        default="vllm",
+        choices=["vllm", "mlx"],
+        help="VLM backend: 'vllm' (NVIDIA+vLLM), 'mlx' (Apple Silicon)",
     )
     return parser.parse_args()
 
@@ -382,5 +380,5 @@ def main():
 
 # print(f"Visualization complete. Results saved to: {evaluation_output_dir}")
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
