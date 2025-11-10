@@ -314,7 +314,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 num_tokens_within_batch = 0
 
         # Emit predictions
-        for output in outputs:
+        for i, output in enumerate(outputs):
             text = output.outputs[0].text if output.outputs else ""
             stop_reason = (
                 VlmStopReason.END_OF_SEQUENCE
@@ -327,11 +327,11 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             ]
             num_tokens = len(generated_tokens)
 
-            generated_tokens = (
-                generated_tokens if self.vlm_options.track_generated_tokens else []
-            )
-            input_prompt = prompts if self.vlm_options.save_input_prompt else []
-            print("vllm input promts:", input_prompt)
+            if not self.vlm_options.track_generated_tokens:
+                generated_tokens = []
+
+            input_prompt = prompts[i] if self.vlm_options.track_input_prompt else None
+            _log.info(f"VLM generated response carries prompt: {input_prompt}")
 
             decoded_text = self.vlm_options.decode_response(text)
             yield VlmPrediction(

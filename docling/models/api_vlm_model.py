@@ -77,7 +77,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     # Only process pages with valid images
                     if hi_res_image is not None:
                         images.append(hi_res_image)
-                        prompt = self.vlm_options.build_prompt(page)  # ask christoph
+                        prompt = self.vlm_options.build_prompt(page)
                         prompts.append(prompt)
                         pages_with_images.append(page)
 
@@ -134,7 +134,7 @@ class ApiVlmModel(BaseVlmPageModel):
 
             stop_reason = VlmStopReason.UNSPECIFIED
 
-            if self.vlm_options.custom_stopping_criteria:  # Ask christoph
+            if self.vlm_options.custom_stopping_criteria:
                 # Instantiate any GenerationStopper classes before passing to streaming
                 instantiated_stoppers = []
                 for criteria in self.vlm_options.custom_stopping_criteria:

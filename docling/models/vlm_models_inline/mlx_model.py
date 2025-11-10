@@ -316,11 +316,15 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
                 # Apply decode_response to the output before yielding
                 decoded_output = self.vlm_options.decode_response(output)
+                input_prompt = (
+                    formatted_prompt if self.vlm_options.track_input_prompt else None
+                )
                 yield VlmPrediction(
                     text=decoded_output,
                     generation_time=generation_time,
                     generated_tokens=tokens,
                     num_tokens=len(tokens),
                     stop_reason=VlmStopReason.UNSPECIFIED,
+                    input_prompt=input_prompt,
                 )
             _log.debug("MLX model: Released global lock")

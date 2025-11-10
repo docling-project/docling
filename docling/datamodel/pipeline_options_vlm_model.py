@@ -88,7 +88,7 @@ class InlineVlmOptions(BaseVlmOptions):
     use_kv_cache: bool = True
     max_new_tokens: int = 4096
     track_generated_tokens: bool = False
-    save_input_prompt: bool = False
+    track_input_prompt: bool = False
 
     @property
     def repo_cache_folder(self) -> str:

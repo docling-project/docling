@@ -79,14 +79,17 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         base_vlm_options = self.pipeline_options.vlm_options
 
         class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
-            # Store document name for prompt saving (set per document)
-            _current_doc_name: Optional[str] = None
-
             def build_prompt(self, page: Page) -> str:
                 from docling.datamodel.base_models import Page
 
                 base_prompt = self.prompt
                 final_prompt = base_prompt
+
+                if not page.size:
+                    _log.warning(
+                        f"Page size not available for page {page.page_no}. Cannot enhance prompt with layout info."
+                    )
+                    return ""
 
                 # If we have a full Page object with layout predictions, enhance the prompt
                 if isinstance(page, Page) and page.predictions.layout:
@@ -98,9 +101,6 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         tag_name = DocumentToken.create_token_name_from_doc_item_label(
                             label=cluster.label
                         )
-
-                        if not page.size:
-                            continue
 
                         # Convert bbox to tuple and get location tokens
                         bbox_tuple = cluster.bbox.as_tuple()
@@ -125,7 +125,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
                         final_prompt = base_prompt + layout_injection
 
-                    print("Enhanced Prompt with Layout Info:\n", final_prompt)
+                    _log.info("Enhanced Prompt with Layout Info: %s\n", final_prompt)
 
                 return final_prompt
 

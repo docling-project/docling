@@ -10,9 +10,7 @@ import logging
 from pathlib import Path
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
-from docling.datamodel.vlm_model_specs import (
-    GRANITEDOCLING_MLX,
-)
+from docling.datamodel.vlm_model_specs import GRANITEDOCLING_TRANSFORMERS
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
@@ -55,11 +53,14 @@ def _parse_args():
 def demo_threaded_layout_vlm_pipeline(input_doc_path: Path, out_dir_layout_aware: Path):
     """Demonstrate the threaded layout+VLM pipeline."""
 
+    vlm_options = GRANITEDOCLING_TRANSFORMERS.model_copy()
+    vlm_options.track_input_prompt = True
+
     # Configure pipeline options
     print("Configuring pipeline options...")
     pipeline_options_layout_aware = ThreadedLayoutVlmPipelineOptions(
         # VLM configuration - defaults to GRANITEDOCLING_TRANSFORMERS
-        vlm_options=GRANITEDOCLING_MLX,
+        vlm_options=vlm_options,
         # Layout configuration - defaults to DOCLING_LAYOUT_HERON
         # Batch sizes for parallel processing
         layout_batch_size=2,
@@ -98,12 +99,17 @@ def demo_threaded_layout_vlm_pipeline(input_doc_path: Path, out_dir_layout_aware
         out_dir_layout_aware / f"{doc_filename}.json"
     )
 
+    for page in result_layout_aware.pages:
+        _log.info("Page %s of VLM response:", page.page_no)
+        if page.predictions.vlm_response:
+            _log.info(page.predictions.vlm_response)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     try:
         args = _parse_args()
-        print(f"Parsed arguments: input={args.input}, output={args.output}")
+        _log.info(f"Parsed arguments: input={args.input}, output={args.output}")
 
         input_path = Path(args.input)
 
