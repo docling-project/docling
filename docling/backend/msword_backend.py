@@ -1596,6 +1596,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             docx_obj: A docx Document object to be parsed.
             doc: A DoclingDocument object to add the header and footer from docx_obj.
         """
+        current_layer = self.content_layer
+        base_parent = self.parents[0]
         self.content_layer = ContentLayer.FURNITURE
         for sec_idx, section in enumerate(docx_obj.sections):
             if sec_idx > 0 and not section.different_first_page_header_footer:
@@ -1633,5 +1635,5 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
                 self._walk_linear(ftr._element, doc)
 
-        self.parents[0] = None
-        self.content_layer = ContentLayer.BODY
+        self.content_layer = current_layer
+        self.parents[0] = base_parent
