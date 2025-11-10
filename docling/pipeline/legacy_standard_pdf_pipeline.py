@@ -15,15 +15,17 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
 from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
-from docling.models.factories import get_ocr_factory
-from docling.models.layout_model import LayoutModel
+from docling.models.factories import (
+    get_layout_factory,
+    get_ocr_factory,
+    get_table_structure_factory,
+)
 from docling.models.page_assemble_model import PageAssembleModel, PageAssembleOptions
 from docling.models.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
 )
 from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
-from docling.models.table_structure_model import TableStructureModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.model_downloader import download_models
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -48,6 +50,24 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
 
         ocr_model = self.get_ocr_model(artifacts_path=self.artifacts_path)
 
+        layout_factory = get_layout_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        layout_model = layout_factory.create_instance(
+            options=pipeline_options.layout_options,
+            artifacts_path=self.artifacts_path,
+            accelerator_options=pipeline_options.accelerator_options,
+        )
+        table_factory = get_table_structure_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        table_model = table_factory.create_instance(
+            options=pipeline_options.table_structure_options,
+            enabled=pipeline_options.do_table_structure,
+            artifacts_path=self.artifacts_path,
+            accelerator_options=pipeline_options.accelerator_options,
+        )
+
         self.build_pipe = [
             # Pre-processing
             PagePreprocessingModel(
@@ -58,18 +78,9 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             # OCR
             ocr_model,
             # Layout model
-            LayoutModel(
-                artifacts_path=self.artifacts_path,
-                accelerator_options=pipeline_options.accelerator_options,
-                options=pipeline_options.layout_options,
-            ),
+            layout_model,
             # Table structure model
-            TableStructureModel(
-                enabled=pipeline_options.do_table_structure,
-                artifacts_path=self.artifacts_path,
-                options=pipeline_options.table_structure_options,
-                accelerator_options=pipeline_options.accelerator_options,
-            ),
+            table_model,
             # Page assemble
             PageAssembleModel(options=PageAssembleOptions()),
         ]

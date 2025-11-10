@@ -35,15 +35,17 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
-from docling.models.factories import get_ocr_factory
-from docling.models.layout_model import LayoutModel
+from docling.models.factories import (
+    get_layout_factory,
+    get_ocr_factory,
+    get_table_structure_factory,
+)
 from docling.models.page_assemble_model import PageAssembleModel, PageAssembleOptions
 from docling.models.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
 )
 from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
-from docling.models.table_structure_model import TableStructureModel
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
@@ -396,15 +398,21 @@ class StandardPdfPipeline(ConvertPipeline):
             )
         )
         self.ocr_model = self._make_ocr_model(art_path)
-        self.layout_model = LayoutModel(
+        layout_factory = get_layout_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        self.layout_model = layout_factory.create_instance(
+            options=self.pipeline_options.layout_options,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
-            options=self.pipeline_options.layout_options,
         )
-        self.table_model = TableStructureModel(
+        table_factory = get_table_structure_factory(
+            allow_external_plugins=self.pipeline_options.allow_external_plugins
+        )
+        self.table_model = table_factory.create_instance(
+            options=self.pipeline_options.table_structure_options,
             enabled=self.pipeline_options.do_table_structure,
             artifacts_path=art_path,
-            options=self.pipeline_options.table_structure_options,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())

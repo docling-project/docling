@@ -1,6 +1,6 @@
 import copy
 import warnings
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Optional
 
@@ -20,13 +20,13 @@ from docling.datamodel.pipeline_options import (
     TableStructureOptions,
 )
 from docling.datamodel.settings import settings
-from docling.models.base_model import BasePageModel
+from docling.models.base_table_model import BaseTableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import TimeRecorder
 
 
-class TableStructureModel(BasePageModel):
+class TableStructureModel(BaseTableStructureModel):
     _model_repo_folder = "ds4sd--docling-models"
     _model_path = "model_artifacts/tableformer"
 
@@ -87,6 +87,10 @@ class TableStructureModel(BasePageModel):
                 self.tm_config, device, accelerator_options.num_threads
             )
             self.scale = 2.0  # Scale up table input images to 144 dpi
+
+    @classmethod
+    def get_options_type(cls) -> type[TableStructureOptions]:
+        return TableStructureOptions
 
     @staticmethod
     def download_models(
@@ -167,138 +171,135 @@ class TableStructureModel(BasePageModel):
             out_file = out_path / f"table_struct_page_{page.page_no:05}.png"
             image.save(str(out_file), format="png")
 
-    def __call__(
-        self, conv_res: ConversionResult, page_batch: Iterable[Page]
-    ) -> Iterable[Page]:
-        if not self.enabled:
-            yield from page_batch
-            return
+    def predict_tables(
+        self,
+        conv_res: ConversionResult,
+        pages: Sequence[Page],
+    ) -> Sequence[TableStructurePrediction]:
+        pages = list(pages)
+        predictions: list[TableStructurePrediction] = []
 
-        for page in page_batch:
+        for page in pages:
             assert page._backend is not None
             if not page._backend.is_valid():
-                yield page
-            else:
-                with TimeRecorder(conv_res, "table_structure"):
-                    assert page.predictions.layout is not None
-                    assert page.size is not None
+                existing_prediction = (
+                    page.predictions.tablestructure or TableStructurePrediction()
+                )
+                page.predictions.tablestructure = existing_prediction
+                predictions.append(existing_prediction)
+                continue
 
-                    page.predictions.tablestructure = (
-                        TableStructurePrediction()
-                    )  # dummy
+            with TimeRecorder(conv_res, "table_structure"):
+                assert page.predictions.layout is not None
+                assert page.size is not None
 
-                    in_tables = [
-                        (
-                            cluster,
-                            [
-                                round(cluster.bbox.l) * self.scale,
-                                round(cluster.bbox.t) * self.scale,
-                                round(cluster.bbox.r) * self.scale,
-                                round(cluster.bbox.b) * self.scale,
-                            ],
+                table_prediction = TableStructurePrediction()
+                page.predictions.tablestructure = table_prediction
+
+                in_tables = [
+                    (
+                        cluster,
+                        [
+                            round(cluster.bbox.l) * self.scale,
+                            round(cluster.bbox.t) * self.scale,
+                            round(cluster.bbox.r) * self.scale,
+                            round(cluster.bbox.b) * self.scale,
+                        ],
+                    )
+                    for cluster in page.predictions.layout.clusters
+                    if cluster.label
+                    in [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
+                ]
+                if not in_tables:
+                    predictions.append(table_prediction)
+                    continue
+
+                page_input = {
+                    "width": page.size.width * self.scale,
+                    "height": page.size.height * self.scale,
+                    "image": numpy.asarray(page.get_image(scale=self.scale)),
+                }
+
+                for table_cluster, tbl_box in in_tables:
+                    # Check if word-level cells are available from backend:
+                    sp = page._backend.get_segmented_page()
+                    if sp is not None:
+                        tcells = sp.get_cells_in_bbox(
+                            cell_unit=TextCellUnit.WORD,
+                            bbox=table_cluster.bbox,
                         )
-                        for cluster in page.predictions.layout.clusters
-                        if cluster.label
-                        in [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
-                    ]
-                    if not len(in_tables):
-                        yield page
-                        continue
-
-                    page_input = {
-                        "width": page.size.width * self.scale,
-                        "height": page.size.height * self.scale,
-                        "image": numpy.asarray(page.get_image(scale=self.scale)),
-                    }
-
-                    table_clusters, table_bboxes = zip(*in_tables)
-
-                    if len(table_bboxes):
-                        for table_cluster, tbl_box in in_tables:
-                            # Check if word-level cells are available from backend:
-                            sp = page._backend.get_segmented_page()
-                            if sp is not None:
-                                tcells = sp.get_cells_in_bbox(
-                                    cell_unit=TextCellUnit.WORD,
-                                    bbox=table_cluster.bbox,
-                                )
-                                if len(tcells) == 0:
-                                    # In case word-level cells yield empty
-                                    tcells = table_cluster.cells
-                            else:
-                                # Otherwise - we use normal (line/phrase) cells
-                                tcells = table_cluster.cells
-                            tokens = []
-                            for c in tcells:
-                                # Only allow non empty strings (spaces) into the cells of a table
-                                if len(c.text.strip()) > 0:
-                                    new_cell = copy.deepcopy(c)
-                                    new_cell.rect = BoundingRectangle.from_bounding_box(
-                                        new_cell.rect.to_bounding_box().scaled(
-                                            scale=self.scale
-                                        )
-                                    )
-                                    tokens.append(
-                                        {
-                                            "id": new_cell.index,
-                                            "text": new_cell.text,
-                                            "bbox": new_cell.rect.to_bounding_box().model_dump(),
-                                        }
-                                    )
-                            page_input["tokens"] = tokens
-
-                            tf_output = self.tf_predictor.multi_table_predict(
-                                page_input, [tbl_box], do_matching=self.do_cell_matching
+                        if len(tcells) == 0:
+                            # In case word-level cells yield empty
+                            tcells = table_cluster.cells
+                    else:
+                        # Otherwise - we use normal (line/phrase) cells
+                        tcells = table_cluster.cells
+                    tokens = []
+                    for c in tcells:
+                        # Only allow non empty strings (spaces) into the cells of a table
+                        if len(c.text.strip()) > 0:
+                            new_cell = copy.deepcopy(c)
+                            new_cell.rect = BoundingRectangle.from_bounding_box(
+                                new_cell.rect.to_bounding_box().scaled(scale=self.scale)
                             )
-                            table_out = tf_output[0]
-                            table_cells = []
-                            for element in table_out["tf_responses"]:
-                                if not self.do_cell_matching:
-                                    the_bbox = BoundingBox.model_validate(
-                                        element["bbox"]
-                                    ).scaled(1 / self.scale)
-                                    text_piece = page._backend.get_text_in_rect(
-                                        the_bbox
-                                    )
-                                    element["bbox"]["token"] = text_piece
-
-                                tc = TableCell.model_validate(element)
-                                if tc.bbox is not None:
-                                    tc.bbox = tc.bbox.scaled(1 / self.scale)
-                                table_cells.append(tc)
-
-                            assert "predict_details" in table_out
-
-                            # Retrieving cols/rows, after post processing:
-                            num_rows = table_out["predict_details"].get("num_rows", 0)
-                            num_cols = table_out["predict_details"].get("num_cols", 0)
-                            otsl_seq = (
-                                table_out["predict_details"]
-                                .get("prediction", {})
-                                .get("rs_seq", [])
+                            tokens.append(
+                                {
+                                    "id": new_cell.index,
+                                    "text": new_cell.text,
+                                    "bbox": new_cell.rect.to_bounding_box().model_dump(),
+                                }
                             )
+                    page_input["tokens"] = tokens
 
-                            tbl = Table(
-                                otsl_seq=otsl_seq,
-                                table_cells=table_cells,
-                                num_rows=num_rows,
-                                num_cols=num_cols,
-                                id=table_cluster.id,
-                                page_no=page.page_no,
-                                cluster=table_cluster,
-                                label=table_cluster.label,
-                            )
+                    tf_output = self.tf_predictor.multi_table_predict(
+                        page_input, [tbl_box], do_matching=self.do_cell_matching
+                    )
+                    table_out = tf_output[0]
+                    table_cells = []
+                    for element in table_out["tf_responses"]:
+                        if not self.do_cell_matching:
+                            the_bbox = BoundingBox.model_validate(
+                                element["bbox"]
+                            ).scaled(1 / self.scale)
+                            text_piece = page._backend.get_text_in_rect(the_bbox)
+                            element["bbox"]["token"] = text_piece
 
-                            page.predictions.tablestructure.table_map[
-                                table_cluster.id
-                            ] = tbl
+                        tc = TableCell.model_validate(element)
+                        if tc.bbox is not None:
+                            tc.bbox = tc.bbox.scaled(1 / self.scale)
+                        table_cells.append(tc)
 
-                    # For debugging purposes:
-                    if settings.debug.visualize_tables:
-                        self.draw_table_and_cells(
-                            conv_res,
-                            page,
-                            page.predictions.tablestructure.table_map.values(),
-                        )
+                    assert "predict_details" in table_out
 
-                yield page
+                    # Retrieving cols/rows, after post processing:
+                    num_rows = table_out["predict_details"].get("num_rows", 0)
+                    num_cols = table_out["predict_details"].get("num_cols", 0)
+                    otsl_seq = (
+                        table_out["predict_details"]
+                        .get("prediction", {})
+                        .get("rs_seq", [])
+                    )
+
+                    tbl = Table(
+                        otsl_seq=otsl_seq,
+                        table_cells=table_cells,
+                        num_rows=num_rows,
+                        num_cols=num_cols,
+                        id=table_cluster.id,
+                        page_no=page.page_no,
+                        cluster=table_cluster,
+                        label=table_cluster.label,
+                    )
+
+                    table_prediction.table_map[table_cluster.id] = tbl
+
+                if settings.debug.visualize_tables:
+                    self.draw_table_and_cells(
+                        conv_res,
+                        page,
+                        page.predictions.tablestructure.table_map.values(),
+                    )
+
+                predictions.append(table_prediction)
+
+        return predictions
