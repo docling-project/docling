@@ -87,16 +87,16 @@ def demo_threaded_layout_vlm_pipeline(input_doc_path: Path, out_dir_layout_aware
     )
 
     result_layout_aware = doc_converter_layout_enhanced.convert(
-        input_doc_path, raises_on_error=False
+        source=input_doc_path, raises_on_error=False
     )
 
-    for conv_result in result_layout_aware:
-        if conv_result.status == ConversionStatus.FAILURE:
-            _log.error(f"Conversion failed: {conv_result.status}")
-            continue
+    if result_layout_aware.status == ConversionStatus.FAILURE:
+        _log.error(f"Conversion failed: {result_layout_aware.status}")
 
-        doc_filename = conv_result.input.file.stem
-        conv_result.document.save_as_json(out_dir_layout_aware / f"{doc_filename}.json")
+    doc_filename = result_layout_aware.input.file.stem
+    result_layout_aware.document.save_as_json(
+        out_dir_layout_aware / f"{doc_filename}.json"
+    )
 
 
 if __name__ == "__main__":
