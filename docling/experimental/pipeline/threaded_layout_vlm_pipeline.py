@@ -88,8 +88,6 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 *,
                 _internal_page: Optional[Page] = None,
             ) -> str:
-                from docling.datamodel.base_models import Page
-
                 base_prompt = self.prompt
                 augmented_prompt = base_prompt
 
@@ -119,8 +117,6 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                             bbox=bbox_tuple,
                             page_w=_internal_page.size.width,
                             page_h=_internal_page.size.height,
-                            xsize=500,
-                            ysize=500,
                         )
 
                         # Create XML element with DocTags format
@@ -136,7 +132,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
                         augmented_prompt = base_prompt + layout_injection
 
-                    _log.info(
+                    _log.debug(
                         "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
                     )
 
@@ -312,6 +308,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
     ) -> None:
         """Integrate processing results into conversion result."""
         page_map = {p.page_no: p for p in proc.pages}
+
+        # Track failed pages for cleanup
+        failed_page_nos = {fp for fp, _ in proc.failed_pages}
+
+        # Collect pages that will be removed (failed pages) for resource cleanup
+        pages_to_remove = [p for p in conv_res.pages if p.page_no in failed_page_nos]
+
         conv_res.pages = [
             page_map.get(p.page_no, p)
             for p in conv_res.pages
@@ -326,7 +329,17 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         else:
             conv_res.status = ConversionStatus.SUCCESS
 
-        # Clean up images if not needed
+        # Clean up resources for failed pages that were removed
+        for p in pages_to_remove:
+            if p._backend is not None:
+                p._backend.unload()
+            p._image_cache = {}
+            # Clean up parsed_page if it exists (it's Optional[SegmentedPdfPage])
+            if p.parsed_page is not None:
+                del p.parsed_page
+                p.parsed_page = None
+
+        # Clean up images if not needed for remaining pages
         if not self.pipeline_options.generate_page_images:
             for p in conv_res.pages:
                 p._image_cache = {}
@@ -338,19 +351,21 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
-            # Assemble document using DOCTAGS format only
+            # Response format validation is done in ThreadedLayoutVlmPipelineOptions
+            # This check is kept as a safety net, but should never trigger if validation works
             if (
                 self.pipeline_options.vlm_options.response_format
-                == ResponseFormat.DOCTAGS
+                != ResponseFormat.DOCTAGS
             ):
-                conv_res.document = self._turn_dt_into_doc(conv_res)
-            else:
                 raise RuntimeError(
                     f"Unsupported VLM response format {self.pipeline_options.vlm_options.response_format}. Only DOCTAGS format is supported."
                 )
+            conv_res.document = self._turn_dt_into_doc(conv_res)
 
             # Generate images of the requested element types
             if self.pipeline_options.generate_picture_images:
+                # Create mapping from page_no to Page object since pages may be non-continuous
+                page_map = {p.page_no: p for p in conv_res.pages}
                 scale = self.pipeline_options.images_scale
                 for element, _level in conv_res.document.iterate_items():
                     if not isinstance(element, DocItem) or len(element.prov) == 0:
@@ -359,8 +374,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         isinstance(element, PictureItem)
                         and self.pipeline_options.generate_picture_images
                     ):
-                        page_ix = element.prov[0].page_no - 1
-                        page = conv_res.pages[page_ix]
+                        page_no = element.prov[0].page_no
+                        page = page_map.get(page_no)
+                        if page is None:
+                            _log.warning(
+                                f"Page {page_no} not found in conversion result for picture element. Skipping image generation."
+                            )
+                            continue
                         assert page.size is not None
                         assert page.image is not None
 

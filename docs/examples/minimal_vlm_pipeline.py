@@ -43,9 +43,9 @@ converter = DocumentConverter(
     }
 )
 
-# doc = converter.convert(source=source).document
+doc = converter.convert(source=source).document
 
-# print(doc.export_to_markdown())
+print(doc.export_to_markdown())
 
 
 ###### USING MACOS MPS ACCELERATOR
