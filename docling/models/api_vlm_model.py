@@ -77,7 +77,7 @@ class ApiVlmModel(BaseVlmPageModel):
                     # Only process pages with valid images
                     if hi_res_image is not None:
                         images.append(hi_res_image)
-                        prompt = self.vlm_options.build_prompt(page)
+                        prompt = self._build_prompt_safe(page)
                         prompts.append(prompt)
                         pages_with_images.append(page)
 

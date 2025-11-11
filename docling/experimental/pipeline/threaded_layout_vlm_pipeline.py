@@ -10,11 +10,14 @@ from __future__ import annotations
 import itertools
 import logging
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import TYPE_CHECKING, List, Optional, Union, cast
 
 from docling_core.types.doc import DoclingDocument
 from docling_core.types.doc.document import DocTagsDocument
 from PIL import Image as PILImage
+
+if TYPE_CHECKING:
+    from docling_core.types.doc.page import SegmentedPage
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -79,24 +82,32 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         base_vlm_options = self.pipeline_options.vlm_options
 
         class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
-            def build_prompt(self, page: Page) -> str:
+            def build_prompt(
+                self,
+                page: Optional[Union[Page, SegmentedPage]],
+                *,
+                _internal_page: Optional[Page] = None,
+            ) -> str:
                 from docling.datamodel.base_models import Page
 
                 base_prompt = self.prompt
                 augmented_prompt = base_prompt
 
-                if not page.size:
+                # In this layout-aware pipeline, _internal_page is always provided
+                if _internal_page is None:
+                    return base_prompt
+
+                if not _internal_page.size:
                     _log.warning(
-                        f"Page size not available for page {page.page_no}. Cannot enhance prompt with layout info."
+                        f"Page size not available for page {_internal_page.page_no}. Cannot enhance prompt with layout info."
                     )
                     return base_prompt
 
-                # If we have a full Page object with layout predictions, enhance the prompt
-                if isinstance(page, Page) and page.predictions.layout:
+                if _internal_page.predictions.layout:
                     from docling_core.types.doc.tokens import DocumentToken
 
                     layout_elements = []
-                    for cluster in page.predictions.layout.clusters:
+                    for cluster in _internal_page.predictions.layout.clusters:
                         # Get proper tag name from DocItemLabel
                         tag_name = DocumentToken.create_token_name_from_doc_item_label(
                             label=cluster.label
@@ -106,8 +117,8 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         bbox_tuple = cluster.bbox.as_tuple()
                         location_tokens = DocumentToken.get_location(
                             bbox=bbox_tuple,
-                            page_w=page.size.width,
-                            page_h=page.size.height,
+                            page_w=_internal_page.size.width,
+                            page_h=_internal_page.size.height,
                             xsize=500,
                             ysize=500,
                         )

@@ -234,19 +234,19 @@ def main():
     # > lms load ibm-granite/granite-docling-258M-mlx
 
     # Example using the Granite-Docling model with LM Studio or VLLM:
-    pipeline_options.vlm_options = openai_compatible_vlm_options(
-        model="granite-docling-258m-mlx",  # For VLLM use "ibm-granite/granite-docling-258M"
-        hostname_and_port="localhost:1234",  # LM studio defaults to port 1234, VLLM to 8000
-        prompt="Convert this page to docling.",
-        format=ResponseFormat.DOCTAGS,
-        api_key="",
-    )
+    # pipeline_options.vlm_options = openai_compatible_vlm_options(
+    #    model="granite-docling-258m-mlx",  # For VLLM use "ibm-granite/granite-docling-258M"
+    #    hostname_and_port="localhost:1234",  # LM studio defaults to port 1234, VLLM to 8000
+    #    prompt="Convert this page to docling.",
+    #    format=ResponseFormat.DOCTAGS,
+    #    api_key="",
+    # )
 
     # Example using the OlmOcr (dynamic prompt) model with LM Studio:
     # (uncomment the following lines)
-    # pipeline_options.vlm_options = lms_olmocr_vlm_options(
-    #     model="hf.co/lmstudio-community/olmOCR-7B-0225-preview-GGUF",
-    # )
+    pipeline_options.vlm_options = lms_olmocr_vlm_options(
+        model="hf.co/lmstudio-community/olmOCR-7B-0225-preview-GGUF",
+    )
 
     # Example using the Granite Vision model with Ollama:
     # (uncomment the following lines)
