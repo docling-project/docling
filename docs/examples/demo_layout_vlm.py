@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
 from docling.datamodel.vlm_model_specs import GRANITEDOCLING_TRANSFORMERS
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
@@ -29,7 +30,7 @@ def _parse_args():
     parser.add_argument(
         "--input",
         type=str,
-        default="tests/data/pdf/2203.01017v2.pdf",
+        default="tests/data/pdf/code_and_formula.pdf",
         help="Path to a PDF file",
     )
     parser.add_argument(
@@ -50,10 +51,53 @@ def _parse_args():
 #         yield stream
 
 
-def demo_threaded_layout_vlm_pipeline(input_doc_path: Path, out_dir_layout_aware: Path):
+def openai_compatible_vlm_options(
+    model: str,
+    prompt: str,
+    format: ResponseFormat,
+    hostname_and_port,
+    temperature: float = 0.7,
+    max_tokens: int = 4096,
+    api_key: str = "",
+    skip_special_tokens=False,
+):
+    headers = {}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    options = ApiVlmOptions(
+        url=f"http://{hostname_and_port}/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
+        params=dict(
+            model=model,
+            max_tokens=max_tokens,
+            skip_special_tokens=skip_special_tokens,  # needed for VLLM
+        ),
+        headers=headers,
+        prompt=prompt,
+        timeout=90,
+        scale=2.0,
+        temperature=temperature,
+        response_format=format,
+    )
+
+    return options
+
+
+def demo_threaded_layout_vlm_pipeline(
+    input_doc_path: Path, out_dir_layout_aware: Path, use_api_vlm: bool
+):
     """Demonstrate the threaded layout+VLM pipeline."""
 
     vlm_options = GRANITEDOCLING_TRANSFORMERS.model_copy()
+
+    if use_api_vlm:
+        vlm_options = openai_compatible_vlm_options(
+            model="granite-docling-258m-mlx",  # For VLLM use "ibm-granite/granite-docling-258M"
+            hostname_and_port="localhost:1234",  # LM studio defaults to port 1234, VLLM to 8000
+            prompt="Convert this page to docling.",
+            format=ResponseFormat.DOCTAGS,
+            api_key="",
+        )
     vlm_options.track_input_prompt = True
 
     # Configure pipeline options
@@ -74,6 +118,7 @@ def demo_threaded_layout_vlm_pipeline(input_doc_path: Path, out_dir_layout_aware
         # Image processing
         images_scale=2.0,
         generate_page_images=True,
+        enable_remote_services=use_api_vlm,
     )
 
     # Create converter with the new pipeline
@@ -123,7 +168,9 @@ if __name__ == "__main__":
 
         out_dir_layout_aware.mkdir(parents=True, exist_ok=True)
 
-        demo_threaded_layout_vlm_pipeline(input_path, out_dir_layout_aware)
+        use_api_vlm = False  # Set to False to use inline VLM model
+
+        demo_threaded_layout_vlm_pipeline(input_path, out_dir_layout_aware, use_api_vlm)
         _log.info("Script completed successfully!")
     except Exception as e:
         print(f"ERROR: {type(e).__name__}: {e}")

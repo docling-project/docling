@@ -116,3 +116,4 @@ class ApiVlmOptions(BaseVlmOptions):
 
     stop_strings: List[str] = []
     custom_stopping_criteria: List[Union[GenerationStopper]] = []
+    track_input_prompt: bool = False

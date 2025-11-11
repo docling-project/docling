@@ -168,8 +168,12 @@ class ApiVlmModel(BaseVlmPageModel):
                 )
 
             page_tags = self.vlm_options.decode_response(page_tags)
+            input_prompt = prompt_text if self.vlm_options.track_input_prompt else None
             return VlmPrediction(
-                text=page_tags, num_tokens=num_tokens, stop_reason=stop_reason
+                text=page_tags,
+                num_tokens=num_tokens,
+                stop_reason=stop_reason,
+                input_prompt=input_prompt,
             )
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
