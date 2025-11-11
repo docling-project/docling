@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Demo script for the new ThreadedLayoutVlmPipeline.
 
-This script demonstrates the usage of the new pipeline that combines
-layout model preprocessing with VLM processing in a threaded manner.
+This script demonstrates the usage of the experimental ThreadedLayoutVlmPipeline pipeline
+that combines layout model preprocessing with VLM processing in a threaded manner.
 """
 
 import argparse
 import logging
+import traceback
 from pathlib import Path
 
 from docling.datamodel.base_models import ConversionStatus, InputFormat
@@ -25,18 +26,18 @@ _log = logging.getLogger(__name__)
 
 def _parse_args():
     parser = argparse.ArgumentParser(
-        description="Demo script for the new ThreadedLayoutVlmPipeline"
+        description="Demo script for the experimental ThreadedLayoutVlmPipeline"
     )
     parser.add_argument(
-        "--input",
+        "--input-file",
         type=str,
         default="tests/data/pdf/code_and_formula.pdf",
         help="Path to a PDF file",
     )
     parser.add_argument(
-        "--output",
+        "--output-dir",
         type=str,
-        default="../results/",
+        default="scratch/demo_layout_vlm/",
         help="Output directory for converted files",
     )
     return parser.parse_args()
@@ -111,10 +112,6 @@ def demo_threaded_layout_vlm_pipeline(
         vlm_batch_size=1,
         # Queue configuration
         queue_max_size=10,
-        batch_timeout_seconds=1.0,
-        # Layout coordinate injection
-        include_layout_coordinates=True,
-        coordinate_precision=1,
         # Image processing
         images_scale=2.0,
         generate_page_images=True,
@@ -144,6 +141,9 @@ def demo_threaded_layout_vlm_pipeline(
         out_dir_layout_aware / f"{doc_filename}.json"
     )
 
+    result_layout_aware.document.save_as_html(
+        out_dir_layout_aware / f"{doc_filename}.html"
+    )
     for page in result_layout_aware.pages:
         _log.info("Page %s of VLM response:", page.page_no)
         if page.predictions.vlm_response:
@@ -154,9 +154,11 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     try:
         args = _parse_args()
-        _log.info(f"Parsed arguments: input={args.input}, output={args.output}")
+        _log.info(
+            f"Parsed arguments: input={args.input_file}, output={args.output_dir}"
+        )
 
-        input_path = Path(args.input)
+        input_path = Path(args.input_file)
 
         if not input_path.exists():
             raise FileNotFoundError(f"Input file does not exist: {input_path}")
@@ -164,17 +166,12 @@ if __name__ == "__main__":
         if input_path.suffix.lower() != ".pdf":
             raise ValueError(f"Input file must be a PDF: {input_path}")
 
-        out_dir_layout_aware = Path(args.output) / "layout_aware/"
-
+        out_dir_layout_aware = Path(args.output_dir) / "layout_aware/"
         out_dir_layout_aware.mkdir(parents=True, exist_ok=True)
 
         use_api_vlm = False  # Set to False to use inline VLM model
 
         demo_threaded_layout_vlm_pipeline(input_path, out_dir_layout_aware, use_api_vlm)
-        _log.info("Script completed successfully!")
-    except Exception as e:
-        print(f"ERROR: {type(e).__name__}: {e}")
-        import traceback
-
+    except Exception:
         traceback.print_exc()
         raise
