@@ -134,7 +134,9 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                         images.append(hi_res_image)
 
                         # Define prompt structure
-                        user_prompt = self.vlm_options.build_prompt(page)
+                        user_prompt = self.vlm_options.build_prompt(
+                            page.parsed_page, _internal_page=page
+                        )
 
                         user_prompts.append(user_prompt)
                         pages_with_images.append(page)

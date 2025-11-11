@@ -22,7 +22,22 @@ class BaseVlmOptions(BaseModel):
     max_size: Optional[int] = None
     temperature: float = 0.0
 
-    def build_prompt(self, page: Optional[Union["Page", "SegmentedPage"]]) -> str:
+    def build_prompt(
+        self,
+        page: Optional[Union["Page", "SegmentedPage"]],
+        *,
+        _internal_page: Optional["Page"] = None,
+    ) -> str:
+        """Build the prompt for VLM inference.
+
+        Args:
+            page: The parsed/segmented page to process.
+            _internal_page: Internal parameter for experimental layout-aware pipelines.
+                Do not rely on this in user code - subject to change.
+
+        Returns:
+            The formatted prompt string.
+        """
         return self.prompt
 
     def decode_response(self, text: str) -> str:

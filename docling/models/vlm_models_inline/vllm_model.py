@@ -1,5 +1,4 @@
 import logging
-import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -9,12 +8,7 @@ import numpy as np
 from PIL.Image import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
-from docling.datamodel.base_models import (
-    Page,
-    VlmPrediction,
-    VlmPredictionToken,
-    VlmStopReason,
-)
+from docling.datamodel.base_models import Page, VlmPrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
@@ -93,7 +87,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         vlm_options: InlineVlmOptions,
     ):
         self.enabled = enabled
-        self.vlm_options: InlineVlmOptions = vlm_options
+        self.vlm_options = vlm_options
 
         self.llm = None
         self.sampling_params = None
@@ -106,18 +100,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
             return
 
         from transformers import AutoProcessor
-
-        try:
-            from vllm import LLM, SamplingParams
-        except ImportError:
-            if sys.version_info < (3, 14):
-                raise ImportError(
-                    "vllm is not installed. Please install it via `pip install vllm`."
-                )
-            else:
-                raise ImportError(
-                    "vllm is not installed. It is not yet available on Python 3.14."
-                )
+        from vllm import LLM, SamplingParams
 
         # Device selection
         self.device = decide_device(
@@ -233,7 +216,9 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     images.append(hi_res_image)
 
                     # Define prompt structure
-                    user_prompt = self.vlm_options.build_prompt(page)
+                    user_prompt = self.vlm_options.build_prompt(
+                        page.parsed_page, _internal_page=page
+                    )
 
                     user_prompts.append(user_prompt)
                     pages_with_images.append(page)
@@ -306,39 +291,13 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
         # Optional debug
         if outputs:
             try:
-                num_tokens_within_batch = len(outputs[0].outputs[0].token_ids)
-                _log.debug(
-                    f"Generated {num_tokens_within_batch} tokens for batch in {generation_time:.2f}s."
-                )
+                num_tokens = len(outputs[0].outputs[0].token_ids)
+                _log.debug(f"Generated {num_tokens} tokens in {generation_time:.2f}s.")
             except Exception:
-                num_tokens_within_batch = 0
+                pass
 
         # Emit predictions
-        for i, output in enumerate(outputs):
+        for output in outputs:
             text = output.outputs[0].text if output.outputs else ""
-            stop_reason = (
-                VlmStopReason.END_OF_SEQUENCE
-                if output.outputs[0].stop_reason
-                else VlmStopReason.LENGTH
-            )
-
-            generated_tokens = [
-                VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids
-            ]
-            num_tokens = len(generated_tokens)
-
-            if not self.vlm_options.track_generated_tokens:
-                generated_tokens = []
-
-            input_prompt = prompts[i] if self.vlm_options.track_input_prompt else None
-            _log.info(f"VLM generated response carries input prompt: {input_prompt}")
-
             decoded_text = self.vlm_options.decode_response(text)
-            yield VlmPrediction(
-                text=decoded_text,
-                generation_time=generation_time,
-                num_tokens=num_tokens,
-                stop_reason=stop_reason,
-                generated_tokens=generated_tokens,
-                input_prompt=input_prompt,
-            )
+            yield VlmPrediction(text=decoded_text, generation_time=generation_time)
