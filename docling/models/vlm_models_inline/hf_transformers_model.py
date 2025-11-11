@@ -183,7 +183,8 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
 
                 # Use process_images for the actual inference
                 if images:  # Only if we have valid images
-                    predictions = list(self.process_images(images, user_prompts))
+                    with TimeRecorder(conv_res, "vlm_inference"):
+                        predictions = list(self.process_images(images, user_prompts))
 
                     # Attach results to pages
                     for page, prediction in zip(pages_with_images, predictions):
@@ -375,7 +376,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 f"for batch size {generated_ids.shape[0]}."
             )
 
-        for text in decoded_texts:
+        for i, text in enumerate(decoded_texts):
+            input_prompt = (
+                prompts[i] if self.vlm_options.track_input_prompt and prompts else None
+            )
             # Apply decode_response to the output text
             decoded_text = self.vlm_options.decode_response(text)
             yield VlmPrediction(
@@ -383,4 +387,5 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 generation_time=generation_time,
                 num_tokens=num_tokens,
                 stop_reason=VlmStopReason.UNSPECIFIED,
+                input_prompt=input_prompt,
             )

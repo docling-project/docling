@@ -331,7 +331,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 generated_tokens = []
 
             input_prompt = prompts[i] if self.vlm_options.track_input_prompt else None
-            _log.info(f"VLM generated response carries prompt: {input_prompt}")
+            _log.info(f"VLM generated response carries input prompt: {input_prompt}")
 
             decoded_text = self.vlm_options.decode_response(text)
             yield VlmPrediction(

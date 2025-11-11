@@ -83,13 +83,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 from docling.datamodel.base_models import Page
 
                 base_prompt = self.prompt
-                final_prompt = base_prompt
+                augmented_prompt = base_prompt
 
                 if not page.size:
                     _log.warning(
                         f"Page size not available for page {page.page_no}. Cannot enhance prompt with layout info."
                     )
-                    return ""
+                    return base_prompt
 
                 # If we have a full Page object with layout predictions, enhance the prompt
                 if isinstance(page, Page) and page.predictions.layout:
@@ -123,11 +123,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         )
                         layout_injection = f"{layout_xml}"
 
-                        final_prompt = base_prompt + layout_injection
+                        augmented_prompt = base_prompt + layout_injection
 
-                    _log.info("Enhanced Prompt with Layout Info: %s\n", final_prompt)
+                    _log.info(
+                        "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
+                    )
 
-                return final_prompt
+                return augmented_prompt
 
         vlm_options = LayoutAwareVlmOptions(**base_vlm_options.model_dump())
 
