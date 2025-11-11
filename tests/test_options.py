@@ -164,6 +164,20 @@ def test_parser_backends(test_doc_path):
         assert doc_result.status == ConversionStatus.SUCCESS
 
 
+def test_document_timeout(test_doc_path):
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=PdfPipelineOptions(document_timeout=1)
+            )
+        }
+    )
+    result = converter.convert(test_doc_path)
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+        "Expected document timeout to be used"
+    )
+
+
 def test_confidence(test_doc_path):
     converter = DocumentConverter()
     doc_result: ConversionResult = converter.convert(test_doc_path, page_range=(6, 9))
