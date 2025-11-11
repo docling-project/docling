@@ -84,7 +84,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
             def build_prompt(
                 self,
-                page: Optional[Union[Page, SegmentedPage]],
+                page: Optional[SegmentedPage],
                 *,
                 _internal_page: Optional[Page] = None,
             ) -> str:

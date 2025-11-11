@@ -24,7 +24,7 @@ class BaseVlmOptions(BaseModel):
 
     def build_prompt(
         self,
-        page: Optional[Union["Page", "SegmentedPage"]],
+        page: Optional["SegmentedPage"],
         *,
         _internal_page: Optional["Page"] = None,
     ) -> str:
