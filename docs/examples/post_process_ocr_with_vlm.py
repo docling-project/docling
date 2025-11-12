@@ -370,9 +370,9 @@ class PostOcrApiEnrichmentModel(
 
             # Take care of charspans for relevant types
             if isinstance(item, GraphCell):
-                item.prov.charspan = [0, len(item.text)]
+                item.prov.charspan = (0, len(item.text))
             elif isinstance(item, TextItem):
-                item.prov[0].charspan = [0, len(item.text)]
+                item.prov[0].charspan = (0, len(item.text))
 
             yield item
 
