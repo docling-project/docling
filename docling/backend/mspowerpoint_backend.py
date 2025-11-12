@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Set, Union
+from typing import Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -80,7 +80,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.path_or_stream = None
 
     @classmethod
-    def supported_formats(cls) -> Set[InputFormat]:
+    def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.PPTX}
 
     def convert(self) -> DoclingDocument:

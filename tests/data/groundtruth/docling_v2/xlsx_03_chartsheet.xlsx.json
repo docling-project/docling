@@ -71,7 +71,7 @@
           "bbox": {
             "l": 0.0,
             "t": 0.0,
-            "r": 3.0,
+            "r": 4.0,
             "b": 7.0,
             "coord_origin": "TOPLEFT"
           },
@@ -128,6 +128,19 @@
           {
             "row_span": 1,
             "col_span": 1,
+            "start_row_offset_idx": 0,
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "Ducks",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
             "start_row_offset_idx": 1,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
@@ -159,6 +172,19 @@
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
             "text": "80",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "200",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -206,6 +232,19 @@
           {
             "row_span": 1,
             "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "230",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
             "start_row_offset_idx": 3,
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
@@ -237,6 +276,19 @@
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
             "text": "100",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "250",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -284,6 +336,19 @@
           {
             "row_span": 1,
             "col_span": 1,
+            "start_row_offset_idx": 4,
+            "end_row_offset_idx": 5,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "280",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
             "start_row_offset_idx": 5,
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
@@ -315,6 +380,19 @@
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
             "text": "120",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "280",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -358,10 +436,23 @@
             "row_header": false,
             "row_section": false,
             "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 6,
+            "end_row_offset_idx": 7,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "310",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
           }
         ],
         "num_rows": 7,
-        "num_cols": 3,
+        "num_cols": 4,
         "grid": [
           [
             {
@@ -398,6 +489,19 @@
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
               "text": "Saltwater Ducks",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "Ducks",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -443,6 +547,19 @@
               "row_header": false,
               "row_section": false,
               "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 1,
+              "end_row_offset_idx": 2,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "200",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -480,6 +597,19 @@
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
               "text": "95",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 2,
+              "end_row_offset_idx": 3,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "230",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -525,6 +655,19 @@
               "row_header": false,
               "row_section": false,
               "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 3,
+              "end_row_offset_idx": 4,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "250",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -562,6 +705,19 @@
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
               "text": "110",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 4,
+              "end_row_offset_idx": 5,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "280",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -607,6 +763,19 @@
               "row_header": false,
               "row_section": false,
               "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 5,
+              "end_row_offset_idx": 6,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "280",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
             }
           ],
           [
@@ -648,6 +817,19 @@
               "row_header": false,
               "row_section": false,
               "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 6,
+              "end_row_offset_idx": 7,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "310",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
             }
           ]
         ]
@@ -660,7 +842,7 @@
   "pages": {
     "1": {
       "size": {
-        "width": 3.0,
+        "width": 4.0,
         "height": 7.0
       },
       "page_no": 1

@@ -65,7 +65,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         Processes the given batch of elements and enriches them with predictions.
     """
 
-    _model_repo_folder = "ds4sd--CodeFormulaV2"
+    _model_repo_folder = "docling-project--CodeFormulaV2"
     elements_batch_size = 5
     images_scale = 1.67  # = 120 dpi, aligned with training data resolution
     expansion_factor = 0.18
@@ -121,7 +121,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         progress: bool = False,
     ) -> Path:
         return download_hf_model(
-            repo_id="ds4sd/CodeFormulaV2",
+            repo_id="docling-project/CodeFormulaV2",
             revision="main",
             local_dir=local_dir,
             force=force,

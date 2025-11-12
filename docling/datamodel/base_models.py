@@ -94,7 +94,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.XML_USPTO: ["xml", "txt"],
     InputFormat.METS_GBS: ["tar.gz"],
     InputFormat.JSON_DOCLING: ["json"],
-    InputFormat.AUDIO: ["wav", "mp3"],
+    InputFormat.AUDIO: ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "avi", "mov"],
     InputFormat.VTT: ["vtt"],
 }
 
@@ -128,7 +128,22 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     InputFormat.XML_USPTO: ["application/xml", "text/plain"],
     InputFormat.METS_GBS: ["application/mets+xml"],
     InputFormat.JSON_DOCLING: ["application/json"],
-    InputFormat.AUDIO: ["audio/x-wav", "audio/mpeg", "audio/wav", "audio/mp3"],
+    InputFormat.AUDIO: [
+        "audio/x-wav",
+        "audio/mpeg",
+        "audio/wav",
+        "audio/mp3",
+        "audio/mp4",
+        "audio/m4a",
+        "audio/aac",
+        "audio/ogg",
+        "audio/flac",
+        "audio/x-flac",
+        "video/mp4",
+        "video/avi",
+        "video/x-msvideo",
+        "video/quicktime",
+    ],
     InputFormat.VTT: ["text/vtt"],
 }
 
@@ -149,6 +164,13 @@ class DoclingComponentType(str, Enum):
     MODEL = "model"
     DOC_ASSEMBLER = "doc_assembler"
     USER_INPUT = "user_input"
+
+
+class VlmStopReason(str, Enum):
+    LENGTH = "length"  # max tokens reached
+    STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
+    END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
+    UNSPECIFIED = "unspecified"  # Defaul none value
 
 
 class ErrorItem(BaseModel):
@@ -192,6 +214,9 @@ class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
+    num_tokens: Optional[int] = None
+    stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
+    input_prompt: Optional[str] = None
 
 
 class ContainerElement(

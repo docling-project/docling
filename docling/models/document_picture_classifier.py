@@ -59,7 +59,7 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
         Processes a batch of elements and adds classification annotations.
     """
 
-    _model_repo_folder = "ds4sd--DocumentFigureClassifier"
+    _model_repo_folder = "docling-project--DocumentFigureClassifier"
     images_scale = 2
 
     def __init__(
@@ -108,7 +108,7 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
         local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
     ) -> Path:
         return download_hf_model(
-            repo_id="ds4sd/DocumentFigureClassifier",
+            repo_id="docling-project/DocumentFigureClassifier",
             revision="v1.0.1",
             local_dir=local_dir,
             force=force,

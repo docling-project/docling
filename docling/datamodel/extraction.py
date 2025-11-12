@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel, Field
 
-from docling.datamodel.base_models import ConversionStatus, ErrorItem
+from docling.datamodel.base_models import ConversionStatus, ErrorItem, VlmStopReason
 from docling.datamodel.document import InputDocument
 
 

@@ -1,4 +1,5 @@
 import logging
+import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -11,7 +12,7 @@ from transformers import AutoModelForImageTextToText, AutoProcessor, GenerationC
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.base_models import VlmPrediction
+from docling.datamodel.base_models import VlmPrediction, VlmStopReason
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BaseVlmModel
 from docling.models.utils.hf_model_download import (
@@ -130,7 +131,10 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
             if artifacts_path is None:
-                artifacts_path = self.download_models(self.vlm_options.repo_id)
+                artifacts_path = self.download_models(
+                    repo_id=self.vlm_options.repo_id,
+                    revision=self.vlm_options.revision,
+                )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
 
@@ -153,7 +157,10 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
                 ),
                 trust_remote_code=vlm_options.trust_remote_code,
             )
-            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            if sys.version_info < (3, 14):
+                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            else:
+                self.vlm_model.eval()
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(artifacts_path)
@@ -278,13 +285,21 @@ class NuExtractTransformersModel(BaseVlmModel, HuggingFaceModelDownloadMixin):
         )
 
         # Optional logging
+        num_tokens = None
         if generated_ids.shape[0] > 0:  # type: ignore
+            # Todo: confirm num tokens is actually from first item, code was already like this
+            num_tokens = int(generated_ids[0].shape[0])
             _log.debug(
-                f"Generated {int(generated_ids[0].shape[0])} tokens in {generation_time:.2f}s "
+                f"Generated {num_tokens} tokens in {generation_time:.2f}s "
                 f"for batch size {generated_ids.shape[0]}."  # type: ignore
             )
 
         for text in decoded_texts:
             # Apply decode_response to the output text
             decoded_text = self.vlm_options.decode_response(text)
-            yield VlmPrediction(text=decoded_text, generation_time=generation_time)
+            yield VlmPrediction(
+                text=decoded_text,
+                generation_time=generation_time,
+                num_tokens=num_tokens,
+                stop_reason=VlmStopReason.UNSPECIFIED,
+            )

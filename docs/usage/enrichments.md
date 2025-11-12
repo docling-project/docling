@@ -47,7 +47,7 @@ doc = result.document
 
 ### Formula understanding
 
-The formula understanding step will analize the equation formulas in documents and extract their LaTeX representation.
+The formula understanding step will analyze the equation formulas in documents and extract their LaTeX representation.
 The HTML export functions in the DoclingDocument will leverage the formula and visualize the result using the mathml html syntax.
 
 Model specs: see the [`CodeFormula` model card](https://huggingface.co/ds4sd/CodeFormula).
@@ -197,7 +197,7 @@ pipeline_options.picture_description_options = PictureDescriptionApiOptions(
         seed=42,
         max_completion_tokens=200,
     ),
-    prompt="Describe the image in three sentences. Be consise and accurate.",
+    prompt="Describe the image in three sentences. Be concise and accurate.",
     timeout=90,
 )
 ```

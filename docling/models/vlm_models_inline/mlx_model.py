@@ -13,7 +13,12 @@ from transformers import StoppingCriteria
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.base_models import Page, VlmPrediction, VlmPredictionToken
+from docling.datamodel.base_models import (
+    Page,
+    VlmPrediction,
+    VlmPredictionToken,
+    VlmStopReason,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import InlineVlmOptions
 from docling.models.base_model import BaseVlmPageModel
@@ -50,9 +55,14 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 from mlx_vlm.prompt_utils import apply_chat_template  # type: ignore
                 from mlx_vlm.utils import load_config  # type: ignore
             except ImportError:
-                raise ImportError(
-                    "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` to use MLX VLM models."
-                )
+                if sys.version_info < (3, 14):
+                    raise ImportError(
+                        "mlx-vlm is not installed. Please install it via `pip install mlx-vlm` to use MLX VLM models."
+                    )
+                else:
+                    raise ImportError(
+                        "mlx-vlm is not installed. It is not yet available on Python 3.14."
+                    )
 
             repo_cache_folder = vlm_options.repo_id.replace("/", "--")
 
@@ -124,10 +134,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                         images.append(hi_res_image)
 
                         # Define prompt structure
-                        if callable(self.vlm_options.prompt):
-                            user_prompt = self.vlm_options.prompt(page.parsed_page)
-                        else:
-                            user_prompt = self.vlm_options.prompt
+                        user_prompt = self._build_prompt_safe(page)
 
                         user_prompts.append(user_prompt)
                         pages_with_images.append(page)
@@ -309,9 +316,15 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
                 # Apply decode_response to the output before yielding
                 decoded_output = self.vlm_options.decode_response(output)
+                input_prompt = (
+                    formatted_prompt if self.vlm_options.track_input_prompt else None
+                )
                 yield VlmPrediction(
                     text=decoded_output,
                     generation_time=generation_time,
                     generated_tokens=tokens,
+                    num_tokens=len(tokens),
+                    stop_reason=VlmStopReason.UNSPECIFIED,
+                    input_prompt=input_prompt,
                 )
             _log.debug("MLX model: Released global lock")

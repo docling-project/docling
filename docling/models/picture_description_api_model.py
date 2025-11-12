@@ -51,7 +51,7 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
         # Note: technically we could make a batch request here,
         # but not all APIs will allow for it. For example, vllm won't allow more than 1.
         def _api_request(image):
-            return api_image_request(
+            page_tags, _, _ = api_image_request(
                 image=image,
                 prompt=self.options.prompt,
                 url=self.options.url,
@@ -59,6 +59,8 @@ class PictureDescriptionApiModel(PictureDescriptionBaseModel):
                 headers=self.options.headers,
                 **self.options.params,
             )
+
+            return page_tags
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
             yield from executor.map(_api_request, images)

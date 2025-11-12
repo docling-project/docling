@@ -76,6 +76,24 @@ class BaseVlmPageModel(BasePageModel, BaseVlmModel):
     vlm_options: InlineVlmOptions
     processor: Any
 
+    def _build_prompt_safe(self, page: Page) -> str:
+        """Build prompt with backward compatibility for user overrides.
+
+        Tries to call build_prompt with _internal_page parameter (for layout-aware
+        pipelines). Falls back to basic call if user override doesn't accept it.
+
+        Args:
+            page: The full Page object with layout predictions and parsed_page.
+
+        Returns:
+            The formatted prompt string.
+        """
+        try:
+            return self.vlm_options.build_prompt(page.parsed_page, _internal_page=page)
+        except TypeError:
+            # User override doesn't accept _internal_page - fall back to basic call
+            return self.vlm_options.build_prompt(page.parsed_page)
+
     @abstractmethod
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]

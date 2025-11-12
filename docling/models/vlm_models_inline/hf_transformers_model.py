@@ -1,5 +1,6 @@
 import importlib.metadata
 import logging
+import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -12,7 +13,7 @@ from transformers import StoppingCriteria, StoppingCriteriaList, StopStringCrite
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
-from docling.datamodel.base_models import Page, VlmPrediction
+from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
@@ -129,7 +130,10 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                 trust_remote_code=vlm_options.trust_remote_code,
                 revision=vlm_options.revision,
             )
-            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            if sys.version_info < (3, 14):
+                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore
+            else:
+                self.vlm_model.eval()
 
             # Load generation config
             self.generation_config = GenerationConfig.from_pretrained(
@@ -172,14 +176,15 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                         images.append(hi_res_image)
 
                         # Define prompt structure
-                        user_prompt = self.vlm_options.build_prompt(page.parsed_page)
+                        user_prompt = self._build_prompt_safe(page)
 
                         user_prompts.append(user_prompt)
                         pages_with_images.append(page)
 
                 # Use process_images for the actual inference
                 if images:  # Only if we have valid images
-                    predictions = list(self.process_images(images, user_prompts))
+                    with TimeRecorder(conv_res, "vlm_inference"):
+                        predictions = list(self.process_images(images, user_prompts))
 
                     # Attach results to pages
                     for page, prediction in zip(pages_with_images, predictions):
@@ -363,13 +368,24 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
         # -- Optional logging
+        num_tokens = None
         if generated_ids.shape[0] > 0:
+            num_tokens = int(generated_ids[0].shape[0])
             _log.debug(
-                f"Generated {int(generated_ids[0].shape[0])} tokens in {generation_time:.2f}s "
+                f"Generated {num_tokens} tokens in {generation_time:.2f}s "
                 f"for batch size {generated_ids.shape[0]}."
             )
 
-        for text in decoded_texts:
+        for i, text in enumerate(decoded_texts):
+            input_prompt = (
+                prompts[i] if self.vlm_options.track_input_prompt and prompts else None
+            )
             # Apply decode_response to the output text
             decoded_text = self.vlm_options.decode_response(text)
-            yield VlmPrediction(text=decoded_text, generation_time=generation_time)
+            yield VlmPrediction(
+                text=decoded_text,
+                generation_time=generation_time,
+                num_tokens=num_tokens,
+                stop_reason=VlmStopReason.UNSPECIFIED,
+                input_prompt=input_prompt,
+            )

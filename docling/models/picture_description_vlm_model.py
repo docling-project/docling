@@ -1,3 +1,4 @@
+import sys
 import threading
 from collections.abc import Iterable
 from pathlib import Path
@@ -75,7 +76,10 @@ class PictureDescriptionVlmModel(
                         else "sdpa"
                     ),
                 )
-                self.model = torch.compile(self.model)  # type: ignore
+                if sys.version_info < (3, 14):
+                    self.model = torch.compile(self.model)  # type: ignore
+                else:
+                    self.model.eval()
 
             self.provenance = f"{self.options.repo_id}"
 

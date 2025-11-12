@@ -3,6 +3,13 @@
 This is a collection of FAQ collected from the user questions on <https://github.com/docling-project/docling/discussions>.
 
 
+??? question "Is Python 3.14 supported?"
+
+    ### Is Python 3.14 supported?
+
+    Python 3.14 is supported from Docling 2.59.0.
+
+
 ??? question "Is Python 3.13 supported?"
 
     ### Is Python 3.13 supported?
@@ -61,14 +68,46 @@ This is a collection of FAQ collected from the user questions on <https://github
     Source: Issue [#1694](https://github.com/docling-project/docling/issues/1694).
 
 
+??? question "I get this error ImportError: libGL.so.1: cannot open shared object file: No such file or directory"
+
+    ### I get this error ImportError: libGL.so.1: cannot open shared object file: No such file or directory
+
+    This error orginates from conflicting OpenCV distribution in some Docling third-party dependencies.
+    `opencv-python` and `opencv-python-headless` both define the same python package `cv2` and, if installed together,
+    this often creates conflicts. Moreover, the `opencv-python` package (which is more common) depends on the OpenGL UI
+    framework, which is usually not included for headless environments like Docker containers or remote VMs.
+
+    When you encouter the error above, you have two possibilities.
+
+    Solution 1: Force the headless OpenCV (preferred)
+
+    ```sh
+    pip uninstall -y opencv-python opencv-python-headless
+    pip install --no-cache-dir opencv-python-headless
+    ```
+
+    Solution 2: Install the libGL system dependency.
+
+    === "Debian-based"
+
+        ```console
+        apt-get install libgl1
+        ```
+
+    === "RHEL / Fedora"
+
+        ```console
+        dnf install mesa-libGL
+        ```
+
+
 ??? question "Are text styles (bold, underline, etc) supported?"
 
     ### Are text styles (bold, underline, etc) supported?
 
-    Currently text styles are not supported in the `DoclingDocument` format.
-    If you are interest in contributing this feature, please open a discussion topic to brainstorm on the design.
-
-    _Note: this is not a simple topic_
+    Text styles are supported in the `DoclingDocument` format.
+    Currently only the declarative backends (i.e. the ones used for docx, pptx, markdown, html, etc) are able to set
+    the correct text styles. Support for PDF is not yet possible.
 
 
 ??? question "How do I run completely offline?"
