@@ -278,7 +278,7 @@ class PostOcrApiEnrichmentModel(
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         def _api_request(image: Image.Image) -> str:
-            return api_image_request(
+            res = api_image_request(
                 image=image,
                 prompt=self.options.prompt,
                 url=self.options.url,
@@ -286,6 +286,7 @@ class PostOcrApiEnrichmentModel(
                 headers=self.options.headers,
                 **self.options.params,
             )
+            return res[0]
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
             yield from executor.map(_api_request, images)
