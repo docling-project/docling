@@ -30,7 +30,11 @@ from docling.datamodel.base_models import (
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.models import _reading_order_patch
 from docling.utils.profiling import ProfilingScope, TimeRecorder
+
+# Apply patch to fix KeyError in reading order prediction
+_reading_order_patch.apply_patch()
 
 
 class ReadingOrderOptions(BaseModel):
