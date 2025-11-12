@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "ocr_test_rotated_180",
   "origin": {
     "mimetype": "application/pdf",

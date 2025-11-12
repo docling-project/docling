@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "xlsx_03_chartsheet",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "binary_hash": 548415533138925042,
+    "binary_hash": 472193488349663234,
     "filename": "xlsx_03_chartsheet.xlsx"
   },
   "furniture": {

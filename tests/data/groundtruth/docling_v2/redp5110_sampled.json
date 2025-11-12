@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "redp5110_sampled",
   "origin": {
     "mimetype": "application/pdf",

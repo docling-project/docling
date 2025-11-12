@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "example_01",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 13726679883013609282,
+    "binary_hash": 3245959421868226348,
     "filename": "example_01.html"
   },
   "furniture": {

@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
-  "name": "test-01",
+  "version": "1.8.0",
+  "name": "xlsx_01",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "binary_hash": 5648670872883457266,
-    "filename": "test-01.xlsx"
+    "filename": "xlsx_01.xlsx"
   },
   "furniture": {
     "self_ref": "#/furniture",
