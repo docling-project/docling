@@ -357,6 +357,13 @@ def convert(  # noqa: C901
         AsrModelType,
         typer.Option(..., help="Choose the ASR model to use with audio/video files."),
     ] = AsrModelType.WHISPER_TINY,
+    asr_no_timing: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="Disable printing timing metadata in ASR transcription output.",
+        ),
+    ] = False,
     ocr: Annotated[
         bool,
         typer.Option(
@@ -836,6 +843,10 @@ def convert(  # noqa: C901
         else:
             _log.error(f"{asr_model} is not known")
             raise ValueError(f"{asr_model} is not known")
+
+        # Apply timing metadata preference
+        if asr_pipeline_options.asr_options is not None:
+            asr_pipeline_options.asr_options.include_time_metadata = not asr_no_timing
 
         _log.debug(f"ASR pipeline_options: {asr_pipeline_options}")
 
