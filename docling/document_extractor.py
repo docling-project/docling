@@ -14,8 +14,8 @@ from pydantic import ConfigDict, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
-from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,

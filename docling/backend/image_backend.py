@@ -3,10 +3,9 @@ from io import BytesIO
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
-from PIL import Image
-
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
+from PIL import Image
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend, PdfPageBackend
@@ -52,16 +51,16 @@ class _ImagePageBackend(PdfPageBackend):
             if cropbox.coord_origin != CoordOrigin.TOPLEFT:
                 # Convert to TOPLEFT relative to current image height
                 cropbox = cropbox.to_top_left_origin(img.height)
-            l, t, r, b = cropbox.as_tuple()
-            l = max(0, int(round(l)))
-            t = max(0, int(round(t)))
-            r = min(img.width, int(round(r)))
-            b = min(img.height, int(round(b)))
-            img = img.crop((l, t, r, b))
+            left, top, right, bottom = cropbox.as_tuple()
+            left = max(0, round(left))
+            top = max(0, round(top))
+            right = min(img.width, round(right))
+            bottom = min(img.height, round(bottom))
+            img = img.crop((left, top, right, bottom))
 
         if scale != 1:
-            new_w = max(1, int(round(img.width * scale)))
-            new_h = max(1, int(round(img.height * scale)))
+            new_w = max(1, round(img.width * scale))
+            new_h = max(1, round(img.height * scale))
             img = img.resize((new_w, new_h))
 
         return img
@@ -106,21 +105,15 @@ class ImageDocumentBackend(PdfDocumentBackend):
         try:
             img = Image.open(self.path_or_stream)  # type: ignore[arg-type]
             # Handle multi-frame (e.g., TIFF) and single-frame images
-            if getattr(img, "n_frames", 1) > 1:
-                try:
-                    for i in range(img.n_frames):
-                        img.seek(i)
-                        self._frames.append(img.copy().convert("RGB"))
-                except Exception as e:
-                    _log.warning("Failed to iterate all frames; falling back to first frame only.", exc_info=e)
-                    if not self._frames:
-                        self._frames.append(img.convert("RGB"))
+            frame_count = img.n_frames  # type: ignore[attr-defined]
+            if frame_count > 1:
+                for i in range(frame_count):
+                    img.seek(i)
+                    self._frames.append(img.copy().convert("RGB"))
             else:
                 self._frames.append(img.convert("RGB"))
         except Exception as e:
-            raise RuntimeError(
-                f"Could not load image for document {self.file}"
-            ) from e
+            raise RuntimeError(f"Could not load image for document {self.file}") from e
 
     def is_valid(self) -> bool:
         return len(self._frames) > 0
@@ -145,4 +138,3 @@ class ImageDocumentBackend(PdfDocumentBackend):
     def unload(self):
         super().unload()
         self._frames = []
-
