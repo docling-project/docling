@@ -99,7 +99,7 @@ def watsonx_vlm_options():
     options = PictureDescriptionApiOptions(
         url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
         params=dict(
-            model_id="ibm/granite-vision-3-2-2b",
+            model_id="ibm-granite/granite-vision-3.3-2b",
             project_id=project_id,
             parameters=dict(
                 max_new_tokens=400,
