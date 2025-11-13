@@ -15,6 +15,7 @@ from typing_extensions import Self
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.datamodel.base_models import (
     BaseFormatOption,
     ConversionStatus,
@@ -72,7 +73,7 @@ def _get_default_extraction_option(fmt: InputFormat) -> ExtractionFormatOption:
     the format registry between convert/extract.
     """
     format_to_default_backend: dict[InputFormat, Type[AbstractDocumentBackend]] = {
-        InputFormat.IMAGE: PyPdfiumDocumentBackend,
+        InputFormat.IMAGE: ImageDocumentBackend,
         InputFormat.PDF: PyPdfiumDocumentBackend,
     }
 

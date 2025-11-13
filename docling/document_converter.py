@@ -30,6 +30,7 @@ from docling.backend.msword_backend import MsWordDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
@@ -129,7 +130,7 @@ class XMLJatsFormatOption(FormatOption):
 
 class ImageFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
+    backend: Type[AbstractDocumentBackend] = ImageDocumentBackend
 
 
 class PdfFormatOption(FormatOption):
