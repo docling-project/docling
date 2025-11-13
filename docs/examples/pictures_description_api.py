@@ -99,7 +99,7 @@ def watsonx_vlm_options():
     # Background information in case the model_id is updated:
     # [1] Official list of models: https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx
     # [2] Info on granite vision 3.3: https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models-ibm.html?context=wx#granite-vision-3-3-2b
-    
+
     options = PictureDescriptionApiOptions(
         url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
         params=dict(
