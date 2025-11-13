@@ -104,8 +104,12 @@ class ImageDocumentBackend(PdfDocumentBackend):
         self._frames: List[Image.Image] = []
         try:
             img = Image.open(self.path_or_stream)  # type: ignore[arg-type]
-            # Handle multi-frame (e.g., TIFF) and single-frame images
-            frame_count = img.n_frames  # type: ignore[attr-defined]
+
+            # Handle multi-frame and single-frame images
+            # - multiframe formats: TIFF, GIF, ICO
+            # - singleframe formats: JPEG (.jpg, .jpeg), PNG (.png), BMP, WEBP (unless animated), HEIC
+            frame_count = getattr(img, "n_frames", 1)
+
             if frame_count > 1:
                 for i in range(frame_count):
                     img.seek(i)
