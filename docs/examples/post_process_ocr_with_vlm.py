@@ -60,6 +60,14 @@ VERBOSE = True
 SHOW_IMAGE = False
 
 
+def remove_break_lines(text: str) -> str:
+    # Replace any newline types with a single space
+    cleaned = re.sub(r'[\r\n]+', ' ', text)
+    # Collapse multiple spaces into one
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    return cleaned.strip()
+
+
 def safe_crop(img: Image.Image, bbox):
     left, top, right, bottom = bbox
     # Clamp to image boundaries
@@ -383,6 +391,8 @@ class PostOcrApiEnrichmentModel(
                 return text
 
             output = clean_html_tags(output).strip()
+            output = remove_break_lines(output)
+
             if no_long_repeats(output, 50):
                 if VERBOSE:
                     if isinstance(item, (TextItem)):
@@ -393,10 +403,10 @@ class PostOcrApiEnrichmentModel(
                     if img_ind > 0:
                         # Concat texts across several provenances
                         item.text += " " + output
-                        item.orig += " " + output
+                        # item.orig += " " + output
                     else:
                         item.text = output
-                        item.orig = output
+                        # item.orig = output
                 elif isinstance(item, (TableCell, RichTableCell)):
                     item.text = output
                 elif isinstance(item, PictureItem):
