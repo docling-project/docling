@@ -82,7 +82,7 @@ class _ImagePageBackend(PdfPageBackend):
         )
         if scale != 1:
             full_page_bbox = full_page_bbox.scaled(scale=scale)
-        return [full_page_bbox]
+        yield full_page_bbox
 
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
