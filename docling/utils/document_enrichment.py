@@ -374,7 +374,7 @@ class DocumentEnrichmentUtils:
                 self._convert_section_headers_to_text(document)
 
                 toc_content = self.extract_content(toc_content)
-                print(f"--- only TOC ---\n{toc_content}\n")
+                # print(f"--- only TOC ---\n{toc_content}\n")
 
                 # 목차를 기반으로 SectionHeader 적용
                 matched_count = self._apply_toc_to_law_document(document, toc_content)
