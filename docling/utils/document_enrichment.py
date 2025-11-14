@@ -286,39 +286,13 @@ class DocumentEnrichmentUtils:
     def extract_content(self, text: str) -> str:
 
         # -------------------------------------
-        # 1) TITLE: 기준 추출
+        # <toc> 블록 추출
         # -------------------------------------
-        title_match = re.search(r"^TITLE:.*", text, re.MULTILINE)
-        if title_match:
-            return text[title_match.start():].replace("```", "").strip()
+        matches = re.findall(r"<toc>(.*?)</toc>", text, flags=re.S | re.I)
+        if matches:
+            # 가장 마지막 <toc> 블록
+            return matches[-1].replace("```", "").strip()
 
-        # -------------------------------------
-        # 2) 코드블록 ``` ... ``` 추출
-        # -------------------------------------
-        code_blocks = re.search(r"```(.*?)```", text, re.S)
-        if code_blocks:
-            return code_blocks.group(1).strip()
-
-        # -------------------------------------
-        # 3) Final Table of Contents 이후 추출
-        # -------------------------------------
-        ftoc_match = re.search(r"Final Table of Contents", text, re.IGNORECASE)
-        if ftoc_match:# "Final Table of Contents" 이후 지점
-            start_pos = ftoc_match.end()
-
-            # 이후 문자열
-            rest = text[start_pos:]
-
-            # 첫 번째 줄바꿈을 찾아 그 다음 줄부터 반환
-            newline_idx = rest.find("\n")
-            if newline_idx != -1:
-                rest = rest[newline_idx+1:]
-
-            return rest.replace("```", "").strip()
-
-        # -------------------------------------
-        # 4) 위 조건이 모두 없으면 전체 반환
-        # -------------------------------------
         return text.strip()
 
     def apply_law_toc_enrichment(self, document: DoclingDocument) -> int:
