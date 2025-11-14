@@ -15,7 +15,7 @@ def test_doc_path():
 def _get_backend(pdf_doc):
     in_doc = InputDocument(
         path_or_stream=pdf_doc,
-        format=InputFormat.PDF,
+        format=InputFormat.METS_GBS,
         backend=MetsGbsDocumentBackend,
     )
 
