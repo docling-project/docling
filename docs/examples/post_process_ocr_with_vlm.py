@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import re
 from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -17,6 +18,7 @@ from docling_core.types.doc.document import (
     DocItem,
     GraphCell,
     KeyValueItem,
+    FormItem,
     PictureItem,
     RichTableCell,
     TableCell,
@@ -54,8 +56,27 @@ LM_STUDIO_URL = "http://localhost:1234/v1/chat/completions"
 LM_STUDIO_MODEL = "nanonets-ocr2-3b"
 
 DEFAULT_PROMPT = "Extract the text from the above document as if you were reading it naturally. Output pure text, no html and no markdown. Pay attention on line breaks and don't miss text after line break. Put all text in one line."
-VERBOSE = False
+VERBOSE = True
 SHOW_IMAGE = False
+
+
+def safe_crop(img: Image.Image, bbox):
+    left, top, right, bottom = bbox
+    # Clamp to image boundaries
+    left   = max(0, min(left,   img.width))
+    top    = max(0, min(top,    img.height))
+    right  = max(0, min(right,  img.width))
+    bottom = max(0, min(bottom, img.height))
+    return img.crop((left, top, right, bottom))
+
+
+def no_long_repeats(s: str, threshold: int) -> bool:
+    """
+    Returns False if the string `s` contains more than `threshold`
+    identical characters in a row, otherwise True.
+    """
+    pattern = r'(.)\1{' + str(threshold) + ',}'
+    return re.search(pattern, s) is None
 
 
 class PostOcrEnrichmentElement(BaseModel):
@@ -136,7 +157,7 @@ class PostOcrApiEnrichmentModel(
         allowed = (DocItem, TableItem, GraphCell)
         assert isinstance(element, allowed)
 
-        if isinstance(element, KeyValueItem):
+        if isinstance(element, (KeyValueItem, FormItem)):
             # Yield from the graphCells inside here.
             result = []
             for c in element.graph.cells:
@@ -164,6 +185,9 @@ class PostOcrApiEnrichmentModel(
                     cropped_image = conv_res.document.pages[
                         page_ix
                     ].image.pil_image.crop(expanded_bbox.as_tuple())
+
+                    # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
+
                     # cropped_image.show()
                     result.append(
                         PostOcrEnrichmentElement(item=c, image=[cropped_image])
@@ -202,6 +226,8 @@ class PostOcrApiEnrichmentModel(
                                 cropped_image = conv_res.document.pages[
                                     page_ix
                                 ].image.pil_image.crop(expanded_bbox.as_tuple())
+
+                                # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
                                 # cropped_image.show()
                                 result.append(
                                     PostOcrEnrichmentElement(
@@ -234,15 +260,27 @@ class PostOcrApiEnrichmentModel(
                 ):
                     good_bbox = False
 
-                if good_bbox:
-                    cropped_image = conv_res.document.pages[
-                        page_ix
-                    ].image.pil_image.crop(expanded_bbox.as_tuple())
-                    multiple_crops.append(cropped_image)
-                    # cropped_image.show()
+                if hasattr(element, "text"):
+                    if good_bbox:
+                        cropped_image = conv_res.document.pages[
+                            page_ix
+                        ].image.pil_image.crop(expanded_bbox.as_tuple())
+                        # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
+
+                        multiple_crops.append(cropped_image)
+                        print("")
+                        print("cropped image size: {}".format(cropped_image.size))
+                        print(type(element))
+                        if hasattr(element, "text"):
+                            print("OLD TEXT: {}".format(element.text))
+                        # cropped_image.show()
+                else:
+                    print("Not a text element")
             if len(multiple_crops) > 0:
+                # good crops
                 return [PostOcrEnrichmentElement(item=element, image=multiple_crops)]
             else:
+                # nothing
                 return []
 
     @classmethod
@@ -260,8 +298,9 @@ class PostOcrApiEnrichmentModel(
     ):
         self.enabled = enabled
         self.options = options
-        self.concurrency = 4
+        self.concurrency = 2
         self.expansion_factor = 0.05
+        # self.expansion_factor = 0.0
         self.elements_batch_size = 4
         self._accelerator_options = accelerator_options
         self._artifacts_path = (
@@ -282,7 +321,8 @@ class PostOcrApiEnrichmentModel(
                 image=image,
                 prompt=self.options.prompt,
                 url=self.options.url,
-                timeout=self.options.timeout,
+                # timeout=self.options.timeout,
+                timeout=30,
                 headers=self.options.headers,
                 **self.options.params,
             )
@@ -343,36 +383,36 @@ class PostOcrApiEnrichmentModel(
                 return text
 
             output = clean_html_tags(output).strip()
+            if no_long_repeats(output, 50):
+                if VERBOSE:
+                    if isinstance(item, (TextItem)):
+                        print(f"OLD TEXT: {item.text}")
 
-            if VERBOSE:
-                if isinstance(item, (TextItem)):
-                    print(f"OLD TEXT: {item.text}")
-
-            # Re-populate text
-            if isinstance(item, (TextItem, GraphCell)):
-                if img_ind > 0:
-                    # Concat texts across several provenances
-                    item.text += " " + output
-                    item.orig += " " + output
-                else:
+                # Re-populate text
+                if isinstance(item, (TextItem, GraphCell)):
+                    if img_ind > 0:
+                        # Concat texts across several provenances
+                        item.text += " " + output
+                        item.orig += " " + output
+                    else:
+                        item.text = output
+                        item.orig = output
+                elif isinstance(item, (TableCell, RichTableCell)):
                     item.text = output
-                    item.orig = output
-            elif isinstance(item, (TableCell, RichTableCell)):
-                item.text = output
-            elif isinstance(item, PictureItem):
-                pass
-            else:
-                raise ValueError(f"Unknown item type: {type(item)}")
+                elif isinstance(item, PictureItem):
+                    pass
+                else:
+                    raise ValueError(f"Unknown item type: {type(item)}")
 
-            if VERBOSE:
-                if isinstance(item, (TextItem)):
-                    print(f"NEW TEXT: {item.text}")
+                if VERBOSE:
+                    if isinstance(item, (TextItem)):
+                        print(f"NEW TEXT: {item.text}")
 
-            # Take care of charspans for relevant types
-            if isinstance(item, GraphCell):
-                item.prov.charspan = (0, len(item.text))
-            elif isinstance(item, TextItem):
-                item.prov[0].charspan = (0, len(item.text))
+                # Take care of charspans for relevant types
+                if isinstance(item, GraphCell):
+                    item.prov.charspan = (0, len(item.text))
+                elif isinstance(item, TextItem):
+                    item.prov[0].charspan = (0, len(item.text))
 
             yield item
 
@@ -382,7 +422,8 @@ def convert_pdf(pdf_path: Path, out_intermediate_json: Path):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.generate_page_images = True
     pipeline_options.generate_picture_images = True
-    pipeline_options.images_scale = 4.0
+    # pipeline_options.images_scale = 4.0
+    pipeline_options.images_scale = 2.0
 
     doc_converter = (
         DocumentConverter(  # all of the below is optional, has internal defaults.
@@ -424,6 +465,7 @@ def post_process_json(in_json: Path, out_final_json: Path):
         )
     )
 
+    # try:
     doc_converter = DocumentConverter(
         format_options={
             InputFormat.JSON_DOCLING: FormatOption(
@@ -440,6 +482,8 @@ def post_process_json(in_json: Path, out_final_json: Path):
     md = result.document.export_to_markdown()
     print("*** MARKDOWN ***")
     print(md)
+    # except:
+    #     print("ERROR IN OCR for: {}".format(in_json))
 
 
 def process_pdf(pdf_path: Path, scratch_dir: Path, out_dir: Path):

@@ -23,51 +23,68 @@ def api_image_request(
     **params,
 ) -> Tuple[str, Optional[int], VlmStopReason]:
     img_io = BytesIO()
-    image.save(img_io, "PNG")
-    image_base64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
-    messages = [
-        {
-            "role": "user",
-            "content": [
+    image = image.copy()
+    image = image.convert("RGBA")
+    good_image = True
+    try:
+        image.save(img_io, "PNG")
+    except:
+        good_image = False
+        _log.error("Error, corrupter PNG of size: {}".format(image.size))
+
+    if good_image:
+        try:
+            image_base64 = base64.b64encode(img_io.getvalue()).decode("utf-8")
+
+            messages = [
                 {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/png;base64,{image_base64}"},
-                },
-                {
-                    "type": "text",
-                    "text": prompt,
-                },
-            ],
-        }
-    ]
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image_base64}"},
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt,
+                        },
+                    ],
+                }
+            ]
 
-    payload = {
-        "messages": messages,
-        **params,
-    }
+            payload = {
+                "messages": messages,
+                **params,
+            }
 
-    headers = headers or {}
+            headers = headers or {}
 
-    r = requests.post(
-        str(url),
-        headers=headers,
-        json=payload,
-        timeout=timeout,
-    )
-    if not r.ok:
-        _log.error(f"Error calling the API. Response was {r.text}")
-    r.raise_for_status()
+            r = requests.post(
+                str(url),
+                headers=headers,
+                json=payload,
+                timeout=timeout,
+            )
+            if not r.ok:
+                _log.error(f"Error calling the API. Response was {r.text}")
+                # image.show()
+            # r.raise_for_status()
 
-    api_resp = OpenAiApiResponse.model_validate_json(r.text)
-    generated_text = api_resp.choices[0].message.content.strip()
-    num_tokens = api_resp.usage.total_tokens
-    stop_reason = (
-        VlmStopReason.LENGTH
-        if api_resp.choices[0].finish_reason == "length"
-        else VlmStopReason.END_OF_SEQUENCE
-    )
+            api_resp = OpenAiApiResponse.model_validate_json(r.text)
+            generated_text = api_resp.choices[0].message.content.strip()
+            num_tokens = api_resp.usage.total_tokens
+            stop_reason = (
+                VlmStopReason.LENGTH
+                if api_resp.choices[0].finish_reason == "length"
+                else VlmStopReason.END_OF_SEQUENCE
+            )
 
-    return generated_text, num_tokens, stop_reason
+            return generated_text, num_tokens, 
+        except Exception as e:
+            _log.error(f"Error, could not process request: {e}")
+            return "", 0, "bad request"
+    else:
+        return "", 0, "bad image"
 
 
 def api_image_request_streaming(
