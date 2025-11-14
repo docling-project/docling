@@ -4,7 +4,13 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Union
 
 from docling_core.types.doc import BoundingBox, CoordOrigin
-from docling_core.types.doc.page import SegmentedPdfPage, TextCell
+from docling_core.types.doc.page import (
+    BoundingRectangle,
+    PdfPageBoundaryType,
+    PdfPageGeometry,
+    SegmentedPdfPage,
+    TextCell,
+)
 from PIL import Image
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
@@ -28,17 +34,55 @@ class _ImagePageBackend(PdfPageBackend):
         # No text extraction from raw images without OCR
         return ""
 
-    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
-        # No segmentation for raw images
-        return None
+    def get_segmented_page(self) -> SegmentedPdfPage:
+        # Return empty segmented page with proper dimensions for raw images
+        assert self._image is not None
+        page_size = self.get_size()
+        bbox = BoundingBox(
+            l=0.0,
+            t=0.0,
+            r=float(page_size.width),
+            b=float(page_size.height),
+            coord_origin=CoordOrigin.BOTTOMLEFT,
+        )
+        dimension = PdfPageGeometry(
+            angle=0.0,
+            rect=BoundingRectangle.from_bounding_box(bbox),
+            boundary_type=PdfPageBoundaryType.CROP_BOX,
+            art_bbox=bbox,
+            bleed_bbox=bbox,
+            crop_bbox=bbox,
+            media_bbox=bbox,
+            trim_bbox=bbox,
+        )
+        return SegmentedPdfPage(
+            dimension=dimension,
+            char_cells=[],
+            word_cells=[],
+            textline_cells=[],
+            has_chars=False,
+            has_words=False,
+            has_lines=False,
+        )
 
     def get_text_cells(self) -> Iterable[TextCell]:
         # No text cells on raw images
         return []
 
-    def get_bitmap_rects(self, float: int = 1) -> Iterable[BoundingBox]:
-        # Not used for raw images; return empty iterator
-        return []
+    def get_bitmap_rects(self, scale: float = 1) -> Iterable[BoundingBox]:
+        # For raw images, the entire page is a bitmap
+        assert self._image is not None
+        page_size = self.get_size()
+        full_page_bbox = BoundingBox(
+            l=0.0,
+            t=0.0,
+            r=float(page_size.width),
+            b=float(page_size.height),
+            coord_origin=CoordOrigin.TOPLEFT,
+        )
+        if scale != 1:
+            full_page_bbox = full_page_bbox.scaled(scale=scale)
+        return [full_page_bbox]
 
     def get_page_image(
         self, scale: float = 1, cropbox: Optional[BoundingBox] = None
