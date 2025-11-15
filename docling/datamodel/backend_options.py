@@ -71,12 +71,26 @@ class PdfBackendOptions(BaseBackendOptions):
     password: Optional[SecretStr] = None
 
 
+class MsExcelBackendOptions(BaseBackendOptions):
+    """Options specific to the MS Excel backend."""
+
+    kind: Literal["xlsx"] = Field("xlsx", exclude=True, repr=False)
+    treat_singleton_as_text: bool = Field(
+        False,
+        description=(
+            "Whether to treat singleton cells (1x1 tables with empty neighboring "
+            "cells) as TextItem instead of TableItem."
+        ),
+    )
+
+
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
         HTMLBackendOptions,
         MarkdownBackendOptions,
         PdfBackendOptions,
+        MsExcelBackendOptions,
     ],
     Field(discriminator="kind"),
 ]

@@ -6,9 +6,10 @@ import pytest
 from openpyxl import load_workbook
 
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
+from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, ExcelFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -224,6 +225,49 @@ def test_inflated_rows_handling(documents) -> None:
         f"✓ Successfully handled inflated max_row: "
         f"reported {reported_max_row:,} rows, "
         f"correctly processed as {page_count} pages with proper dimensions"
+    )
+
+
+def test_table_with_title():
+    """Test that singleton cells with non-numeric content are treated as TextItem.
+
+    When treat_singleton_as_text option is enabled, 1x1 tables containing non-numeric
+    text should be converted to TextItem instead of TableItem. This test verifies that
+    xlsx_05_table_with_title.xlsx is correctly parsed with this option.
+    """
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_05_table_with_title"
+    )
+
+    # Create converter with treat_singleton_as_text=True
+    options = MsExcelBackendOptions(treat_singleton_as_text=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    # With treat_singleton_as_text=True, the singleton title cell should be a TextItem
+    texts = list(doc.texts)
+    tables = list(doc.tables)
+
+    assert len(texts) == 1, f"Should have 1 text item (the title), got {len(texts)}"
+    assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
+
+    # Verify the text item contains the title
+    assert texts[0].text == "Number of freshwater ducks per year", (
+        f"Text should be 'Number of freshwater ducks per year', got '{texts[0].text}'"
+    )
+
+    # Verify table dimensions
+    table = tables[0]
+    assert table.data.num_rows == 7, (
+        f"Table should have 7 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 2, (
+        f"Table should have 2 columns, got {table.data.num_cols}"
     )
 
 

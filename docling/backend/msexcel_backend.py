@@ -8,6 +8,7 @@ from docling_core.types.doc import (
     ContentLayer,
     CoordOrigin,
     DocItem,
+    DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     GroupLabel,
@@ -31,6 +32,7 @@ from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
     PaginatedDocumentBackend,
 )
+from docling.datamodel.backend_options import MsExcelBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 
@@ -116,18 +118,22 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
     @override
     def __init__(
-        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+        self,
+        in_doc: "InputDocument",
+        path_or_stream: Union[BytesIO, Path],
+        options: MsExcelBackendOptions = MsExcelBackendOptions(),
     ) -> None:
         """Initialize the MsExcelDocumentBackend object.
 
         Parameters:
             in_doc: The input document object.
             path_or_stream: The path or stream to the Excel file.
+            options: Backend options for Excel parsing.
 
         Raises:
             RuntimeError: An error occurred parsing the file.
         """
-        super().__init__(in_doc, path_or_stream)
+        super().__init__(in_doc, path_or_stream, options)
 
         # Initialise the parents for the hierarchy
         self.max_levels = 10
@@ -277,51 +283,83 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             content_layer = self._get_sheet_content_layer(sheet)
             tables = self._find_data_tables(sheet)
 
+            treat_singleton_as_text = (
+                isinstance(self.options, MsExcelBackendOptions)
+                and self.options.treat_singleton_as_text
+            )
+
             for excel_table in tables:
                 origin_col = excel_table.anchor[0]
                 origin_row = excel_table.anchor[1]
                 num_rows = excel_table.num_rows
                 num_cols = excel_table.num_cols
 
-                table_data = TableData(
-                    num_rows=num_rows,
-                    num_cols=num_cols,
-                    table_cells=[],
-                )
-
-                for excel_cell in excel_table.data:
-                    cell = TableCell(
-                        text=excel_cell.text,
-                        row_span=excel_cell.row_span,
-                        col_span=excel_cell.col_span,
-                        start_row_offset_idx=excel_cell.row,
-                        end_row_offset_idx=excel_cell.row + excel_cell.row_span,
-                        start_col_offset_idx=excel_cell.col,
-                        end_col_offset_idx=excel_cell.col + excel_cell.col_span,
-                        column_header=excel_cell.row == 0,
-                        row_header=False,
-                    )
-                    table_data.table_cells.append(cell)
-
-                page_no = self.workbook.index(sheet) + 1
-                doc.add_table(
-                    data=table_data,
-                    parent=self.parents[0],
-                    prov=ProvenanceItem(
-                        page_no=page_no,
-                        charspan=(0, 0),
-                        bbox=BoundingBox.from_tuple(
-                            (
-                                origin_col,
-                                origin_row,
-                                origin_col + num_cols,
-                                origin_row + num_rows,
+                if (
+                    treat_singleton_as_text
+                    and num_rows == 1
+                    and num_cols == 1
+                    and excel_table.data
+                ):
+                    page_no = self.workbook.index(sheet) + 1
+                    doc.add_text(
+                        text=excel_table.data[0].text,
+                        label=DocItemLabel.TEXT,
+                        parent=self.parents[0],
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, 0),
+                            bbox=BoundingBox.from_tuple(
+                                (
+                                    origin_col,
+                                    origin_row,
+                                    origin_col + num_cols,
+                                    origin_row + num_rows,
+                                ),
+                                origin=CoordOrigin.TOPLEFT,
                             ),
-                            origin=CoordOrigin.TOPLEFT,
                         ),
-                    ),
-                    content_layer=content_layer,
-                )
+                        content_layer=content_layer,
+                    )
+                else:
+                    table_data = TableData(
+                        num_rows=num_rows,
+                        num_cols=num_cols,
+                        table_cells=[],
+                    )
+
+                    for excel_cell in excel_table.data:
+                        cell = TableCell(
+                            text=excel_cell.text,
+                            row_span=excel_cell.row_span,
+                            col_span=excel_cell.col_span,
+                            start_row_offset_idx=excel_cell.row,
+                            end_row_offset_idx=excel_cell.row + excel_cell.row_span,
+                            start_col_offset_idx=excel_cell.col,
+                            end_col_offset_idx=excel_cell.col + excel_cell.col_span,
+                            column_header=excel_cell.row == 0,
+                            row_header=False,
+                        )
+                        table_data.table_cells.append(cell)
+
+                    page_no = self.workbook.index(sheet) + 1
+                    doc.add_table(
+                        data=table_data,
+                        parent=self.parents[0],
+                        prov=ProvenanceItem(
+                            page_no=page_no,
+                            charspan=(0, 0),
+                            bbox=BoundingBox.from_tuple(
+                                (
+                                    origin_col,
+                                    origin_row,
+                                    origin_col + num_cols,
+                                    origin_row + num_rows,
+                                ),
+                                origin=CoordOrigin.TOPLEFT,
+                            ),
+                        ),
+                        content_layer=content_layer,
+                    )
 
         return doc
 
