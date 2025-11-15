@@ -1066,10 +1066,10 @@ class DocumentProcessor:
             toc_api_provider="custom",
 
             # Mistral-Small-3.1-24B-Instruct-2503, 운영망
-            toc_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
-            metadata_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
-            toc_api_key="022653a3743849e299f19f19d323490b",
-            metadata_api_key="022653a3743849e299f19f19d323490b",
+            # toc_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            # metadata_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            # toc_api_key="022653a3743849e299f19f19d323490b",
+            # metadata_api_key="022653a3743849e299f19f19d323490b",
 
             # Mistral-Small-3.1-24B-Instruct-2503, 한국은행 클러스터
             # toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
@@ -1078,10 +1078,10 @@ class DocumentProcessor:
             # metadata_api_key="9e32423947fd4a5da07a28962fe88487",
 
             # Gemma-3 27B docling, 운영망
-            # toc_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
-            # metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
-            # toc_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
-            # metadata_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
+            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
+            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
+            toc_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
+            metadata_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
 
             toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
             metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
