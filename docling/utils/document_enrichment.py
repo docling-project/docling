@@ -283,6 +283,18 @@ class DocumentEnrichmentUtils:
         lines.extend(renum)
         return joiner.join(lines)
 
+    def extract_content(self, text: str) -> str:
+
+        # -------------------------------------
+        # <toc> 블록 추출
+        # -------------------------------------
+        matches = re.findall(r"<toc>(.*?)</toc>", text, flags=re.S | re.I)
+        if matches:
+            # 가장 마지막 <toc> 블록
+            return matches[-1].replace("```", "").strip()
+
+        return text.strip()
+
     def apply_law_toc_enrichment(self, document: DoclingDocument) -> int:
         """
         문서에 TOC enrichment 적용
@@ -334,6 +346,10 @@ class DocumentEnrichmentUtils:
             if toc_content:
                 # 모든 SectionHeaderItem을 TextItem으로 변환
                 self._convert_section_headers_to_text(document)
+
+                toc_content = self.extract_content(toc_content)
+                # print(f"--- only TOC ---\n{toc_content}\n")
+
                 # 목차를 기반으로 SectionHeader 적용
                 matched_count = self._apply_toc_to_law_document(document, toc_content)
                 _log.info(f"TOC 추출 완료 - {matched_count}개 섹션 헤더 생성")
