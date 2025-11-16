@@ -32,8 +32,6 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
 )
 
-from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
-
 from docling.document_converter import (
     DocumentConverter,
     PdfFormatOption,
@@ -961,7 +959,6 @@ class GenOSVectorMetaBuilder:
                 page_no = prov.page_no
                 bbox = prov.bbox
 
-                # 왜 나누는거여???????????
                 bbox_data = {
                     "l": bbox.l / size.width,
                     "t": bbox.t / size.height,
@@ -969,14 +966,6 @@ class GenOSVectorMetaBuilder:
                     "b": bbox.b / size.height,
                     "coord_origin": bbox.coord_origin.value,
                 }
-
-                # bbox_data = {
-                #     "l": bbox.l,
-                #     "t": bbox.t,
-                #     "r": bbox.r,
-                #     "b": bbox.b,
-                #     "coord_origin": bbox.coord_origin.value,
-                # }
 
                 chunk_bboxes.append(
                     {"page": page_no, "bbox": bbox_data, "type": type_, "ref": label}
@@ -1026,8 +1015,6 @@ class DocumentProcessor:
         device = AcceleratorDevice.AUTO
         num_threads = 8
         accelerator_options = AcceleratorOptions(num_threads=num_threads, device=device)
-        # pipe_line_options = PdfPipelineOptions()
-        # pipe_line_options = PdfPipelineOptions(images_scale=2.777777777) # 200 dpi
         pipe_line_options = PdfPipelineOptions(images_scale=1.0)  # 72 dpi
         pipe_line_options.generate_page_images = True
         pipe_line_options.generate_picture_images = True
@@ -1040,17 +1027,14 @@ class DocumentProcessor:
         # ocr_options.path = './.tesseract/tessdata'
         # pipe_line_options.ocr_options = ocr_options
         # pipe_line_options.artifacts_path = Path("/nfs-root/models/8/12")
-        # 커스텀 layout detection 모델 사용 (artifacts_path 설정하지 않음 - tableformer는 기본 경로 사용)
-        pipe_line_options.layout_options.model_spec = MNCAI_CUSTOM_LAYOUT
         pipe_line_options.do_table_structure = True
-        # pipe_line_options.images_scale = 2
+        pipe_line_options.images_scale = 2
         pipe_line_options.table_structure_options.do_cell_matching = True
         pipe_line_options.table_structure_options.mode = TableFormerMode.ACCURATE
         pipe_line_options.accelerator_options = accelerator_options
 
         simple_pipeline_options = PipelineOptions()
 
-        pipe_line_options.do_vlm_layout_and_readingorder = True
         self.converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(
@@ -1210,12 +1194,21 @@ class DocumentProcessor:
             do_toc_enrichment=True,
             extract_metadata=True,
             toc_api_provider="custom",
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/23/v1/chat/completions",
-            toc_api_key="9e32423947fd4a5da07a28962fe88487",
-            metadata_api_key="9e32423947fd4a5da07a28962fe88487",
-            toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
+
+            # Mistral-Small-3.1-24B-Instruct-2503, 운영망
+            toc_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            metadata_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            toc_api_key="022653a3743849e299f19f19d323490b",
+            metadata_api_key="022653a3743849e299f19f19d323490b",
+
+            # Mistral-Small-3.1-24B-Instruct-2503, 한국은행 클러스터
+            # toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
+            # metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
+            # toc_api_key="9e32423947fd4a5da07a28962fe88487",
+            # metadata_api_key="9e32423947fd4a5da07a28962fe88487",
+
+            toc_model="model",
+            metadata_model="model",
             toc_temperature=0.0,
             toc_top_p=0,
             toc_seed=33,
@@ -1321,16 +1314,9 @@ class DocumentProcessor:
 
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
-        # convresult.document. 결국 마지막에 ㅆ느는 내용은 이거.
-        # document.texts[0] 이거 bbox 좌표는 별 이상 없는데???
-        # document -> chunks -> vectors -> result_list_as_dict[0]['text']
 
         ext = Path(file_path).suffix.lower()
-        if ext in [
-            ".pptx",
-            ".docx",
-            ".md",
-        ]:  # pdf 저장 원하는 확장자 추가(pptx, docx, md, xlsx, csv 제공가능)
+        if ext in ['.pptx', '.docx', '.md']: # pdf 저장 원하는 확장자 추가(pptx, docx, md, xlsx, csv 제공가능)
             convert_to_pdf(file_path)
             pdf_path = _get_pdf_path(file_path)
 
@@ -1342,15 +1328,9 @@ class DocumentProcessor:
         else:
             reference_path = artifacts_dir.parent
 
-        document = document._with_pictures_refs(
-            image_dir=artifacts_dir, reference_path=reference_path
-        )
-        # document -> chunks -> vectors -> result_list_as_dict[0]['text']
-        # [text.text for text in document.texts] 이게 다 비어있음
-        # document.dict()['tables'] 여기에 있는 텍스트만 결과로 나온듯
+        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
 
-        # document = self.enrichment(document, **kwargs)
-        # 일단 끄고 나중에 켜야 할것
+        document = self.enrichment(document, **kwargs)
 
         # Extract Chunk from DoclingDocument
         chunks: List[DocChunk] = self.split_documents(document, **kwargs)
@@ -1358,13 +1338,9 @@ class DocumentProcessor:
 
         vectors = []
         if len(chunks) >= 1:
-            vectors: list[dict] = await self.compose_vectors(
-                document, chunks, file_path, request, **kwargs
-            )
+            vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
         else:
             raise GenosServiceException(1, f"chunk length is 0")
-
-        # chunks -> vectors -> result_list_as_dict[0]['text']
 
         """
         # 미디어 파일 업로드 방법

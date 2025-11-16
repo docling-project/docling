@@ -9,13 +9,9 @@ from datetime import datetime
 from typing import Optional, Iterable, Any, List, Dict, Tuple
 
 from fastapi import Request
-import shutil
-import subprocess
-import tempfile
-import unicodedata
+
 # docling imports
 
-from docling.backend.xml.hwpx_backend import HwpxDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.base_models import InputFormat
@@ -24,26 +20,21 @@ from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
-    # EasyOcrOptions,
     # OcrEngine,
     # PdfBackend,
     PdfPipelineOptions,
     TableFormerMode,
-    TesseractOcrOptions,
-    PipelineOptions
+    PipelineOptions,
+    PaddleOcrOptions,
 )
-
-from docling.datamodel.layout_model_specs import MNCAI_CUSTOM_LAYOUT
 
 from docling.document_converter import (
     DocumentConverter,
     PdfFormatOption,
-    HwpxFormatOption,
-    FormatOption,
-    WordFormatOption
+    FormatOption
 )
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
-from docling.utils.document_enrichment import enrich_document
+from docling.utils.document_enrichment import enrich_document, check_document
 from docling.datamodel.document import ConversionResult
 from docling_core.transforms.chunker import (
     BaseChunk,
@@ -61,7 +52,7 @@ from docling_core.types.doc.document import (
     LevelNumber,
     ListItem,
     CodeItem,
-    ContentLayer
+    ContentLayer,
 )
 from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc import (
@@ -103,84 +94,7 @@ except ImportError:
 #
 
 """Chunker implementation leveraging the document structure."""
-CONVERTIBLE_EXTENSIONS = ['.xlsx', '.md', '.docx', '.pptx']
-def convert_to_pdf(file_path: str) -> str | None:
-    """
-    LibreOffice로 PDF 변환을 시도한다.
-    실패해도 예외를 던지지 않고 None을 반환한다.
-    """
-    try:
-        in_path = Path(file_path).resolve()
-        out_dir = in_path.parent
-        pdf_path = in_path.with_suffix('.pdf')
 
-        # headless에서 UTF-8 locale 보장
-        env = os.environ.copy()
-        env.setdefault("LANG", "C.UTF-8")
-        env.setdefault("LC_ALL", "C.UTF-8")
-
-        # 확장자에 따라 필터(특히 .ppt는 impress 필터)
-        ext = in_path.suffix.lower()
-        if ext in ('.ppt', '.pptx'):
-            convert_arg = "pdf:impress_pdf_Export"
-        elif ext in ('.doc', '.docx'):
-            convert_arg = "pdf:writer_pdf_Export"
-        elif ext in ('.xls', '.xlsx', '.csv'):
-            convert_arg = "pdf:calc_pdf_Export"
-        else:
-            convert_arg = "pdf"
-
-        # 비ASCII 파일명 이슈 대비 임시 ASCII 파일명 복사본 시도
-        try:
-            in_path.name.encode('ascii')
-            candidates = [in_path]
-            tmp_dir = None
-        except UnicodeEncodeError:
-            tmp_dir = Path(tempfile.mkdtemp())
-            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii','ignore').decode('ascii') or "file"
-            ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
-            shutil.copy2(in_path, ascii_copy)
-            candidates = [ascii_copy, in_path]
-
-        for cand in candidates:
-            cmd = [
-                "soffice", "--headless",
-                "--convert-to", convert_arg,
-                "--outdir", str(out_dir),
-                str(cand)
-            ]
-            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
-            if proc.returncode == 0 and pdf_path.exists():
-                # 성공
-                if tmp_dir:
-                    shutil.rmtree(tmp_dir, ignore_errors=True)
-                return str(pdf_path)
-            # 실패해도 계속 시도 (로그만 찍고 무시)
-            print(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
-            print(f"[convert_to_pdf] stdout: {proc.stdout.strip()}")
-
-        if tmp_dir:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-        return None
-    except Exception as e:
-        # 어떤 에러든 삼키고 None 반환
-        print(f"[convert_to_pdf] error: {e}")
-        return None
-
-def _get_pdf_path(file_path: str) -> str:
-    """
-    다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수
-
-    Args:
-        file_path (str): 원본 파일 경로
-
-    Returns:
-        str: PDF 확장자로 변경된 파일 경로
-    """
-    pdf_path = file_path
-    for ext in CONVERTIBLE_EXTENSIONS:
-        pdf_path = pdf_path.replace(ext, '.pdf')
-    return pdf_path
 
 class HierarchicalChunker(BaseChunker):
     """문서 구조와 헤더 계층을 유지하면서 아이템을 순차적으로 처리하는 청커"""
@@ -255,8 +169,6 @@ class HierarchicalChunker(BaseChunker):
                 isinstance(item, CodeItem) or
                 isinstance(item, TableItem) or
                 isinstance(item, PictureItem)):
-                if item.label in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
-                    item.text = ""
                 all_items.append(item)
                 # 현재 아이템의 헤더 정보 저장
                 all_header_info.append({k: v for k, v in current_heading_by_level.items()})
@@ -380,6 +292,7 @@ class HybridChunker(BaseChunker):
             if item_headers != current_section_headers:
                 # 변경된 헤더 레벨들만 추가
                 headers_to_add = []
+
                 for level in sorted(item_headers.keys()):
                     # 이전 섹션과 다른 헤더만 추가
                     if (level not in current_section_headers or
@@ -392,8 +305,9 @@ class HybridChunker(BaseChunker):
 
                 # 헤더가 있으면 추가
                 if headers_to_add:
-                    header_text = "\n".join(headers_to_add)
-                    text_parts.append(header_text)
+                    header_text = ", ".join(headers_to_add)
+                    if header_text not in text_parts:
+                        text_parts.append(header_text)
 
                 current_section_headers = item_headers.copy()
 
@@ -404,31 +318,37 @@ class HybridChunker(BaseChunker):
                     text_parts.append(table_text)
             elif hasattr(item, 'text') and item.text:
                 # 타이틀과 섹션 헤더 처리 개선
-                is_section_header = (
-                    isinstance(item, SectionHeaderItem) or
-                    (isinstance(item, TextItem) and
-                     item.label in [DocItemLabel.SECTION_HEADER])  # TITLE은 제외
-                )
+                # is_section_header = (
+                #     isinstance(item, SectionHeaderItem) or
+                #     (isinstance(item, TextItem) and
+                #      item.label in [DocItemLabel.SECTION_HEADER])  # TITLE은 제외
+                # )
 
                 # 타이틀은 항상 포함, 섹션 헤더는 중복 방지를 위해 스킵
-                if not is_section_header:
+                # if not is_section_header:
+                # 20250909, shkim, text_parts에 없는 경우만 추가. 섹션헤더가 반복해서 추가되는 것 방지
+                if item.text not in text_parts:
                     text_parts.append(item.text)
             elif isinstance(item, PictureItem):
                 text_parts.append("")  # 이미지는 빈 텍스트
-        result_text = self.delim.join(text_parts)
+
+        # delim이 정의되지 않은 경우 기본값 사용
+        delim = getattr(self, 'delim', '\n')
+        result_text = delim.join(text_parts)
+
         return result_text
 
     def _extract_table_text(self, table_item: TableItem, dl_doc: DoclingDocument) -> str:
         """테이블에서 텍스트를 추출하는 일반화된 메서드"""
         try:
-            # 먼저 export_to_html 시도
-            table_text = table_item.export_to_html(dl_doc)
+            # 먼저 export_to_markdown 시도
+            table_text = table_item.export_to_markdown(dl_doc)
             if table_text and table_text.strip():
                 return table_text
         except Exception:
             pass
 
-        # export_to_html 실패 시 테이블 셀 데이터에서 직접 텍스트 추출
+        # export_to_markdown 실패 시 테이블 셀 데이터에서 직접 텍스트 추출
         try:
             if hasattr(table_item, 'data') and table_item.data:
                 cell_texts = []
@@ -460,16 +380,15 @@ class HybridChunker(BaseChunker):
         return ""
 
     def _extract_used_headers(self, header_info_list: list[dict]) -> Optional[list[str]]:
-        """헤더 정보 리스트에서 실제 사용되는 헤더들을 추출"""
+        """헤더 정보 리스트에서 실제 사용되는 헤더들을 추출 """
         if not header_info_list:
             return None
 
-        # 모든 헤더 정보를 종합하여 사용되는 헤더들 추출
-        all_headers = []
-        seen_headers = set()
+        all_headers = [] # header 순서대로 추가
+        seen_headers = set()  # 중복 방지용
 
         for header_info in header_info_list:
-            if header_info:  # dict가 비어있지 않은 경우
+            if header_info:
                 for level in sorted(header_info.keys()):
                     header_text = header_info[level]
                     if header_text and header_text not in seen_headers:
@@ -564,7 +483,8 @@ class HybridChunker(BaseChunker):
                 if table_tokens > self.max_tokens:
                     # 테이블 텍스트만 추출하여 분할
                     table_only_text = self._extract_table_text(item, dl_doc)
-                    split_tables = self._split_table_text(table_only_text, 4096)
+                    # split_tables = self._split_table_text(table_only_text, 4096)
+                    split_tables = [table_only_text]
 
                     # 분할된 각 테이블에 대해 청크 생성
                     for split_table in split_tables:
@@ -918,6 +838,13 @@ class DocumentProcessor:
         '''
         initialize Document Converter
         '''
+        self.ocr_endpoint = "http://192.168.73.170:30880/ocr"
+        ocr_options = PaddleOcrOptions(
+            force_full_page_ocr=False,
+            lang=['korean'],
+            ocr_endpoint=self.ocr_endpoint,
+            text_score=0.3)
+
         self.page_chunk_counts = defaultdict(int)
         device = AcceleratorDevice.AUTO
         num_threads = 8
@@ -927,6 +854,7 @@ class DocumentProcessor:
         self.pipe_line_options.generate_page_images = True
         self.pipe_line_options.generate_picture_images = True
         self.pipe_line_options.do_ocr = False
+        self.pipe_line_options.ocr_options = ocr_options
         # self.pipe_line_options.ocr_options.lang = ["ko", 'en']
         # self.pipe_line_options.ocr_options.model_storage_directory = "./.EasyOCR/model"
         # self.pipe_line_options.ocr_options.force_full_page_ocr = True
@@ -934,8 +862,7 @@ class DocumentProcessor:
         # ocr_options.lang = ['kor', 'kor_vert', 'eng', 'jpn', 'jpn_vert']
         # ocr_options.path = './.tesseract/tessdata'
         # self.pipe_line_options.ocr_options = ocr_options
-        # self.pipe_line_options.artifacts_path = Path("/nfs-root/models/223/760")  # Path("/nfs-root/aiModel/.cache/huggingface/hub/models--ds4sd--docling-models/snapshots/4659a7d29247f9f7a94102e1f313dad8e8c8f2f6/")
-        self.pipe_line_options.layout_options.model_spec = MNCAI_CUSTOM_LAYOUT
+        # self.pipe_line_options.artifacts_path = Path("/models/")
         self.pipe_line_options.do_table_structure = True
         self.pipe_line_options.images_scale = 2
         self.pipe_line_options.table_structure_options.do_cell_matching = True
@@ -945,17 +872,48 @@ class DocumentProcessor:
         # Simple 파이프라인 옵션을 인스턴스 변수로 저장
         self.simple_pipeline_options = PipelineOptions()
         self.simple_pipeline_options.save_images = False
+
+        # ocr 파이프라인 옵션
+        self.ocr_pipe_line_options = PdfPipelineOptions()
+        self.ocr_pipe_line_options = self.pipe_line_options.model_copy(deep=True)
+        self.ocr_pipe_line_options.do_ocr = True
+        self.ocr_pipe_line_options.ocr_options = ocr_options.model_copy(deep=True)
+        self.ocr_pipe_line_options.ocr_options.force_full_page_ocr = True
+
         # 기본 컨버터들 생성
         self._create_converters()
 
+        # enrichment 옵션 설정
+        self.enrichment_options = DataEnrichmentOptions(
+            do_toc_enrichment=False,
+            extract_metadata=True,
+            toc_api_provider="custom",
+
+            # Mistral-Small-3.1-24B-Instruct-2503, 운영망
+            toc_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            metadata_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            toc_api_key="022653a3743849e299f19f19d323490b",
+            metadata_api_key="022653a3743849e299f19f19d323490b",
+
+            # Mistral-Small-3.1-24B-Instruct-2503, 한국은행 클러스터
+            # toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
+            # metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
+            # toc_api_key="9e32423947fd4a5da07a28962fe88487",
+            # metadata_api_key="9e32423947fd4a5da07a28962fe88487",
+
+            toc_model="model",
+            metadata_model="model",
+
+            toc_temperature=0.0,
+            toc_top_p=0.00001,
+            toc_seed=33,
+            toc_max_tokens=1000
+        )
+
     def _create_converters(self):
         """컨버터들을 생성하는 헬퍼 메서드"""
-        # HWP와 HWPX 모두 지원하는 통합 컨버터
         self.converter = DocumentConverter(
                 format_options={
-                    InputFormat.XML_HWPX: HwpxFormatOption(
-                        pipeline_options=self.simple_pipeline_options,
-                    ),
                     InputFormat.PDF: PdfFormatOption(
                         pipeline_options=self.pipe_line_options,
                         backend=DoclingParseV4DocumentBackend
@@ -966,6 +924,22 @@ class DocumentProcessor:
             format_options={
                 InputFormat.PDF: PdfFormatOption(
                     pipeline_options=self.pipe_line_options,
+                    backend=PyPdfiumDocumentBackend
+                ),
+            },
+        )
+        self.ocr_converter = DocumentConverter(
+                format_options={
+                    InputFormat.PDF: PdfFormatOption(
+                        pipeline_options=self.ocr_pipe_line_options,
+                        backend=DoclingParseV4DocumentBackend
+                    ),
+                }
+            )
+        self.ocr_second_converter = DocumentConverter(
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=self.ocr_pipe_line_options,
                     backend=PyPdfiumDocumentBackend
                 ),
             },
@@ -989,12 +963,30 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.second_converter.convert(file_path, raises_on_error=True)
         return conv_result.document
 
+    def load_documents_with_docling_ocr(self, file_path: str, **kwargs: dict) -> DoclingDocument:
+        # kwargs에서 save_images 값을 가져와서 옵션 업데이트
+        save_images = kwargs.get('save_images', True)
+        include_wmf = kwargs.get('include_wmf', False)
+
+        # save_images 옵션이 현재 설정과 다르면 컨버터 재생성
+        if (self.simple_pipeline_options.save_images != save_images or
+            getattr(self.simple_pipeline_options, 'include_wmf', False) != include_wmf):
+            self.simple_pipeline_options.save_images = save_images
+            self.simple_pipeline_options.include_wmf = include_wmf
+            self._create_converters()
+
+        try:
+            conv_result: ConversionResult = self.ocr_converter.convert(file_path, raises_on_error=True)
+        except Exception as e:
+            conv_result: ConversionResult = self.ocr_second_converter.convert(file_path, raises_on_error=True)
+        return conv_result.document
+
     def load_documents(self, file_path: str, **kwargs) -> DoclingDocument:
         return self.load_documents_with_docling(file_path, **kwargs)
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         chunker: HybridChunker = HybridChunker(
-            max_tokens=2000,
+            max_tokens=1000,
             merge_peers=True
         )
 
@@ -1059,40 +1051,9 @@ class DocumentProcessor:
         return 0
 
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
-        # enrichment 옵션 설정
-        enrichment_options = DataEnrichmentOptions(
-            do_toc_enrichment=True,
-            extract_metadata=True,
-            toc_api_provider="custom",
-
-            # Mistral-Small-3.1-24B-Instruct-2503, 운영망
-            # toc_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
-            # metadata_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
-            # toc_api_key="022653a3743849e299f19f19d323490b",
-            # metadata_api_key="022653a3743849e299f19f19d323490b",
-
-            # Mistral-Small-3.1-24B-Instruct-2503, 한국은행 클러스터
-            # toc_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
-            # metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/13/31/v1/chat/completions",
-            # toc_api_key="9e32423947fd4a5da07a28962fe88487",
-            # metadata_api_key="9e32423947fd4a5da07a28962fe88487",
-
-            # Gemma-3 27B docling, 운영망
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
-            toc_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
-            metadata_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
-
-            toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
-            toc_temperature=0.0,
-            toc_top_p=0,
-            toc_seed=33,
-            toc_max_tokens=1000
-        )
 
         # 새로운 enriched result 받기
-        document = enrich_document(document, enrichment_options)
+        document = enrich_document(document, self.enrichment_options)
         return document
 
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
@@ -1169,14 +1130,166 @@ class DocumentProcessor:
                 temp_list.append({'path': path, 'name': name})
         return temp_list
 
+    def check_glyph_text(self, text: str, threshold: int = 1) -> bool:
+        """텍스트에 GLYPH 항목이 있는지 확인하는 메서드"""
+        if not text:
+            return False
+
+        # GLYPH 항목이 있는지 정규식으로 확인
+        matches = re.findall(r'GLYPH\w*', text)
+        if len(matches) >= threshold:
+            # print(f"Text has glyphs. len(matches): {len(matches)}. ")
+            return True
+
+        return False
+
+    def check_glyphs(self, document: DoclingDocument) -> bool:
+        """문서에 글리프가 있는지 확인하는 메서드"""
+        for item, level in document.iterate_items():
+            if isinstance(item, TextItem) and hasattr(item, 'prov') and item.prov:
+                page_no = item.prov[0].page_no
+                # page_texts += item.text
+
+                # GLYPH 항목이 있는지 확인. 정규식사용
+                matches = re.findall(r'GLYPH\w*', item.text)
+                if len(matches) > 10:
+                    # print(f"Document has glyphs on page {page_no}. len(matches): {len(matches)}. ")
+                    return True
+
+        return False
+
+    def ocr_all_table_cells(self, document: DoclingDocument, pdf_path) -> List[Dict[str, Any]]:
+        """
+        글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR을 수행합니다.
+        Args:
+            document: DoclingDocument 객체
+            pdf_path: PDF 파일 경로
+        Returns:
+            OCR이 완료된 문서의 DoclingDocument 객체
+        """
+        import fitz
+        import base64
+        import requests
+
+        def post_ocr_bytes(img_bytes: bytes, timeout=60) -> dict:
+            HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
+            payload = {"file": base64.b64encode(img_bytes).decode("ascii"), "fileType": 1, "visualize": False}
+            r = requests.post(self.ocr_endpoint, json=payload, headers=HEADERS, timeout=timeout)
+            if not r.ok:
+                # 진단에 도움되도록 본문 일부 출력
+                raise RuntimeError(f"OCR HTTP {r.status_code}: {r.text[:500]}")
+            return r.json()
+
+        def extract_ocr_fields(resp: dict):
+            """
+            resp: 위와 같은 OCR 응답 JSON(dict)
+            return: (rec_texts, rec_scores, rec_boxes) — 모두 list
+            """
+            if resp is None:
+                return [], [], []
+
+            # 최상위 상태 체크
+            if resp.get("errorCode") not in (0, None):
+                return [], [], []
+
+            ocr_results = (
+                resp.get("result", {})
+                    .get("ocrResults", [])
+            )
+            if not ocr_results:
+                return [], [], []
+
+            pruned = (
+                ocr_results[0]
+                .get("prunedResult", {})
+            )
+            if not pruned:
+                return [], [], []
+
+            rec_texts  = pruned.get("rec_texts", [])   # list[str]
+            rec_scores = pruned.get("rec_scores", [])  # list[float]
+            rec_boxes  = pruned.get("rec_boxes", [])   # list[[x1,y1,x2,y2]]
+
+            # 길이 불일치 방어: 최소 길이에 맞춰 자르기
+            n = min(len(rec_texts), len(rec_scores), len(rec_boxes))
+            return rec_texts[:n], rec_scores[:n], rec_boxes[:n]
+
+        try:
+            doc = fitz.open(pdf_path)
+
+            for table_idx, table_item in enumerate(document.tables):
+                if not table_item.data or not table_item.data.table_cells:
+                    continue
+
+                b_ocr = False
+                for cell_idx, cell in enumerate(table_item.data.table_cells):
+                    if self.check_glyph_text(cell.text, threshold=1):
+                        b_ocr = True
+                        break
+
+                if b_ocr is False:
+                    # 글리프 깨진 텍스트가 없는 경우, OCR을 수행하지 않음
+                    continue
+
+                for cell_idx, cell in enumerate(table_item.data.table_cells):
+
+                    # Provenance 정보에서 위치 정보 추출
+                    if not table_item.prov:
+                        continue
+
+                    page_no = table_item.prov[0].page_no - 1
+                    bbox = cell.bbox
+
+                    page = doc.load_page(page_no)
+
+                    # 셀의 바운딩 박스를 사용하여 이미지에서 해당 영역을 잘라냄
+                    cell_bbox = fitz.Rect(
+                        bbox.l, min(bbox.t, bbox.b),
+                        bbox.r, max(bbox.t, bbox.b)
+                    )
+
+                    # bbox 높이 계산 (PDF 좌표계 단위)
+                    bbox_height = cell_bbox.height
+
+                    # 목표 픽셀 높이
+                    target_height = 20
+
+                    # zoom factor 계산
+                    # (너무 작은 bbox일 경우 0으로 나누는 걸 방지)
+                    zoom_factor = target_height / bbox_height if bbox_height > 0 else 1.0
+                    zoom_factor = min(zoom_factor, 4.0)  # 최대 확대 비율 제한
+                    zoom_factor = max(zoom_factor, 1)  # 최소 확대 비율 제한
+
+                    # 페이지를 이미지로 렌더링
+                    mat = fitz.Matrix(zoom_factor, zoom_factor)
+                    pix = page.get_pixmap(matrix=mat, clip=cell_bbox)
+                    img_data = pix.tobytes("png")
+
+                    result = post_ocr_bytes(img_data, timeout=60)
+                    rec_texts, rec_scores, rec_boxes = extract_ocr_fields(result)
+
+                    cell.text = ""
+                    for t in rec_texts:
+                        if len(cell.text) > 0:
+                            cell.text += " "
+                        cell.text += t if t else ""
+        except Exception as e:
+            print(f"OCR processing failed: {e}")
+            pass
+
+        return document
+
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         # kwargs['save_images'] = True    # 이미지 처리
         # kwargs['include_wmf'] = True   # wmf 처리
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
-        ext = Path(file_path).suffix.lower()
-        if ext in ['.pptx', '.docx', '.md']: # pdf 저장 원하는 확장자 추가(pptx, docx, md, xlsx, csv 제공가능)
-            convert_to_pdf(file_path)
-            pdf_path = _get_pdf_path(file_path)
+
+        if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
+            # OCR이 필요하다고 판단되면 OCR 수행
+            document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
+
+        # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
+        document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
 
         output_path, output_file = os.path.split(file_path)
         filename, _ = os.path.splitext(output_file)
