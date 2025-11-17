@@ -17,7 +17,7 @@
 # - Default source: EPA PDF URL; substitute with local path as needed.
 # - Models cached in `~/.cache/huggingface`; override with HF_HOME env var.
 # - Use proxy config for restricted networks.
-# - **Important Licensing Note**: The `docling-surya` package integrates SuryaOCR, which is licensed under the GNU General Public License (GPL). 
+# - **Important Licensing Note**: The `docling-surya` package integrates SuryaOCR, which is licensed under the GNU General Public License (GPL).
 #   Using this integration may impose GPL obligations on your project. Review the license terms carefully.
 
 # Requires `pip install docling-surya`
