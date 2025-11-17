@@ -171,9 +171,6 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
     assert true_item.data is not None, "documents are expected to have table data"
     assert pred_item.data is not None, "documents are expected to have table data"
 
-    # print("True: \n", true_item.export_to_dataframe().to_markdown())
-    # print("Pred: \n", true_item.export_to_dataframe().to_markdown())
-
     for i, row in enumerate(true_item.data.grid):
         for j, col in enumerate(true_item.data.grid[i]):
             # print("true: ", true_item.data[i][j].text)
