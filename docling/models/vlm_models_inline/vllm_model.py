@@ -233,7 +233,7 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                     images.append(hi_res_image)
 
                     # Define prompt structure
-                    user_prompt = self.vlm_options.build_prompt(page.parsed_page)
+                    user_prompt = self._build_prompt_safe(page)
 
                     user_prompts.append(user_prompt)
                     pages_with_images.append(page)
@@ -314,19 +314,25 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 num_tokens_within_batch = 0
 
         # Emit predictions
-        for output in outputs:
+        for i, output in enumerate(outputs):
             text = output.outputs[0].text if output.outputs else ""
             stop_reason = (
                 VlmStopReason.END_OF_SEQUENCE
                 if output.outputs[0].stop_reason
                 else VlmStopReason.LENGTH
             )
-            generated_tokens = (
-                [VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids]
-                if self.vlm_options.track_generated_tokens
-                else []
-            )
+
+            generated_tokens = [
+                VlmPredictionToken(token=int(t)) for t in output.outputs[0].token_ids
+            ]
             num_tokens = len(generated_tokens)
+
+            if not self.vlm_options.track_generated_tokens:
+                generated_tokens = []
+
+            input_prompt = prompts[i] if self.vlm_options.track_input_prompt else None
+            _log.debug(f"VLM generated response carries input prompt: {input_prompt}")
+
             decoded_text = self.vlm_options.decode_response(text)
             yield VlmPrediction(
                 text=decoded_text,
@@ -334,4 +340,5 @@ class VllmVlmModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 num_tokens=num_tokens,
                 stop_reason=stop_reason,
                 generated_tokens=generated_tokens,
+                input_prompt=input_prompt,
             )

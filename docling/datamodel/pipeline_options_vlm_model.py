@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel, ConfigDict
@@ -9,6 +9,11 @@ from typing_extensions import deprecated
 from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.models.utils.generation_utils import GenerationStopper
 
+if TYPE_CHECKING:
+    from docling_core.types.doc.page import SegmentedPage
+
+    from docling.datamodel.base_models import Page
+
 
 class BaseVlmOptions(BaseModel):
     kind: str
@@ -17,7 +22,22 @@ class BaseVlmOptions(BaseModel):
     max_size: Optional[int] = None
     temperature: float = 0.0
 
-    def build_prompt(self, page: Optional[SegmentedPage]) -> str:
+    def build_prompt(
+        self,
+        page: Optional["SegmentedPage"],
+        *,
+        _internal_page: Optional["Page"] = None,
+    ) -> str:
+        """Build the prompt for VLM inference.
+
+        Args:
+            page: The parsed/segmented page to process.
+            _internal_page: Internal parameter for experimental layout-aware pipelines.
+                Do not rely on this in user code - subject to change.
+
+        Returns:
+            The formatted prompt string.
+        """
         return self.prompt
 
     def decode_response(self, text: str) -> str:
@@ -83,6 +103,7 @@ class InlineVlmOptions(BaseVlmOptions):
     use_kv_cache: bool = True
     max_new_tokens: int = 4096
     track_generated_tokens: bool = False
+    track_input_prompt: bool = False
 
     @property
     def repo_cache_folder(self) -> str:
@@ -110,3 +131,4 @@ class ApiVlmOptions(BaseVlmOptions):
 
     stop_strings: List[str] = []
     custom_stopping_criteria: List[Union[GenerationStopper]] = []
+    track_input_prompt: bool = False
