@@ -118,6 +118,7 @@ nav:
     - ⚡️ GPU optimization:
       - "Standard pipeline": examples/gpu_standard_pipeline.py
       - "VLM pipeline": examples/gpu_vlm_pipeline.py
+      - "Parquet benchmark": examples/parquet_images.py
     - 🗂️ More examples:
       - examples/dpk-ingest-chunk-tokenize.ipynb
       - examples/rag_azuresearch.ipynb
