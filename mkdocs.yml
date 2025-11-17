@@ -180,6 +180,9 @@ markdown_extensions:
   - mkdocs-click
 plugins:
   - search
+  - redirects:
+      redirect_maps:
+        getting_started/index.md: index.md
   - mkdocs-jupyter
   - mkdocstrings:
       default_handler: python
