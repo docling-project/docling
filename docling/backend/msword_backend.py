@@ -3,9 +3,10 @@ import re
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Final, Optional, Union
 
 from docling_core.types.doc import (
+    ContentLayer,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -17,9 +18,9 @@ from docling_core.types.doc import (
     RichTableCell,
     TableCell,
     TableData,
-    TextItem,
+    TableItem,
 )
-from docling_core.types.doc.document import Formatting
+from docling_core.types.doc.document import Formatting, Script
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.table import CT_Tc
@@ -36,7 +37,6 @@ from typing_extensions import override
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.docx.drawingml.utils import (
     get_docx_to_pdf_converter,
-    get_libreoffice_cmd,
     get_pil_from_dml_docx,
 )
 from docling.backend.docx.latex.omml import oMath2Latex
@@ -47,6 +47,18 @@ _log = logging.getLogger(__name__)
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
+    _BLIP_NAMESPACES: Final = {
+        "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+        "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+        "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
+        "v": "urn:schemas-microsoft-com:vml",
+        "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
+        "w10": "urn:schemas-microsoft-com:office:word",
+        "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
+    }
+
     @override
     def __init__(
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
@@ -58,6 +70,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.xml_namespaces = {
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
         }
+        self.blip_xpath_expr = etree.XPath(
+            ".//a:blip", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+        )
         # self.initialise(path_or_stream)
         # Word file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
@@ -81,6 +96,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.listIter = 0
         # Track list counters per numId and ilvl
         self.list_counters: dict[tuple[int, int], int] = {}
+        # Set starting content layer
+        self.content_layer = ContentLayer.BODY
 
         self.history: dict[str, Any] = {
             "names": [None],
@@ -133,8 +150,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
-            doc, _ = self._walk_linear(self.docx_obj.element.body, self.docx_obj, doc)
-            # doc, _ = doc_info
+            doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
+            self._add_header_footer(self.docx_obj, doc)
+
             return doc
         else:
             raise RuntimeError(
@@ -192,7 +210,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _walk_linear(
         self,
         body: BaseOxmlElement,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
         # parent:
     ) -> tuple[DoclingDocument, list[RefItem]]:
@@ -200,20 +217,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for element in body:
             tag_name = etree.QName(element).localname
             # Check for Inline Images (blip elements)
-            namespaces = {
-                "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-                "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-                "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
-                "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
-                "v": "urn:schemas-microsoft-com:vml",
-                "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
-                "w10": "urn:schemas-microsoft-com:office:word",
-                "a14": "http://schemas.microsoft.com/office/drawing/2010/main",
-            }
-            xpath_expr = etree.XPath(".//a:blip", namespaces=namespaces)
-            drawing_blip = xpath_expr(element)
-            drawingml_els = element.findall(".//w:drawing", namespaces=namespaces)
+            drawing_blip = self.blip_xpath_expr(element)
+            drawingml_els = element.findall(
+                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            )
 
             # Check for textbox content - check multiple textbox formats
             # Only process if the element hasn't been processed before
@@ -221,7 +228,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if element_id not in self.processed_textbox_elements:
                 # Modern Word textboxes
                 txbx_xpath = etree.XPath(
-                    ".//w:txbxContent|.//v:textbox//w:p", namespaces=namespaces
+                    ".//w:txbxContent|.//v:textbox//w:p",
+                    namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                 )
                 textbox_elements = txbx_xpath(element)
 
@@ -230,7 +238,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     # Additional checks for textboxes in DrawingML and VML formats
                     alt_txbx_xpath = etree.XPath(
                         ".//wps:txbx//w:p|.//w10:wrap//w:p|.//a:p//a:t",
-                        namespaces=namespaces,
+                        namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                     )
                     textbox_elements = alt_txbx_xpath(element)
 
@@ -238,7 +246,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if not textbox_elements:
                         shape_text_xpath = etree.XPath(
                             ".//a:bodyPr/ancestor::*//a:t|.//a:txBody//a:t",
-                            namespaces=namespaces,
+                            namespaces=MsWordDocumentBackend._BLIP_NAMESPACES,
                         )
                         shape_text_elements = shape_text_xpath(element)
                         if shape_text_elements:
@@ -254,12 +262,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                                     label=GroupLabel.SECTION,
                                     parent=self.parents[level - 1],
                                     name="shape-text",
+                                    content_layer=self.content_layer,
                                 )
                                 added_elements.append(shape_group.get_ref())
                                 doc.add_text(
                                     label=DocItemLabel.TEXT,
                                     parent=shape_group,
                                     text=text_content,
+                                    content_layer=self.content_layer,
                                 )
 
                 if textbox_elements:
@@ -272,26 +282,29 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     _log.debug(
                         f"Found textbox content with {len(textbox_elements)} elements"
                     )
-                    tbc = self._handle_textbox_content(textbox_elements, docx_obj, doc)
+                    tbc = self._handle_textbox_content(textbox_elements, doc)
                     added_elements.extend(tbc)
 
             # Check for Tables
-            if element.tag.endswith("tbl"):
+            if tag_name == "tbl":
                 try:
-                    t = self._handle_tables(element, docx_obj, doc)
+                    t = self._handle_tables(element, doc)
                     added_elements.extend(t)
                 except Exception:
                     _log.debug("could not parse a table, broken docx table")
             # Check for Image
             elif drawing_blip:
-                pics = self._handle_pictures(docx_obj, drawing_blip, doc)
+                pics = self._handle_pictures(drawing_blip, doc)
                 added_elements.extend(pics)
                 # Check for Text after the Image
                 if (
-                    tag_name in ["p"]
-                    and element.find(".//w:t", namespaces=namespaces) is not None
+                    tag_name == "p"
+                    and element.find(
+                        ".//w:t", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
+                    is not None
                 ):
-                    te1 = self._handle_text_elements(element, docx_obj, doc)
+                    te1 = self._handle_text_elements(element, doc)
                     added_elements.extend(te1)
             # Check for DrawingML elements
             elif drawingml_els:
@@ -314,18 +327,22 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     self._handle_drawingml(doc=doc, drawingml_els=drawingml_els)
             # Check for the sdt containers, like table of contents
-            elif tag_name in ["sdt"]:
-                sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
+            elif tag_name == "sdt":
+                sdt_content = element.find(
+                    ".//w:sdtContent", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                )
                 if sdt_content is not None:
                     # Iterate paragraphs, runs, or text inside <w:sdtContent>.
-                    paragraphs = sdt_content.findall(".//w:p", namespaces=namespaces)
+                    paragraphs = sdt_content.findall(
+                        ".//w:p", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+                    )
                     for p in paragraphs:
-                        te = self._handle_text_elements(p, docx_obj, doc)
+                        te = self._handle_text_elements(p, doc)
                         added_elements.extend(te)
             # Check for Text
-            elif tag_name in ["p"]:
+            elif tag_name == "p":
                 # "tcPr", "sectPr"
-                te = self._handle_text_elements(element, docx_obj, doc)
+                te = self._handle_text_elements(element, doc)
                 added_elements.extend(te)
             else:
                 _log.debug(f"Ignoring element in DOCX with tag: {tag_name}")
@@ -384,16 +401,18 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         for key in keys_to_reset:
             self.list_counters[key] = 0
 
-    def _is_numbered_list(self, docx_obj: DocxDocument, numId: int, ilvl: int) -> bool:
+    def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
         """Check if a list is numbered based on its numFmt value."""
         try:
             # Access the numbering part of the document
-            if not hasattr(docx_obj, "part") or not hasattr(docx_obj.part, "package"):
+            if not hasattr(self.docx_obj, "part") or not hasattr(
+                self.docx_obj.part, "package"
+            ):
                 return False
 
             numbering_part = None
             # Find the numbering part
-            for part in docx_obj.part.package.parts:
+            for part in self.docx_obj.part.package.parts:
                 if "numbering" in part.partname:
                     numbering_part = part
                     break
@@ -523,15 +542,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _get_format_from_run(cls, run: Run) -> Optional[Formatting]:
         # The .bold and .italic properties are booleans, but .underline can be an enum
         # like WD_UNDERLINE.THICK (value 6), so we need to convert it to a boolean
-        has_bold = run.bold or False
-        has_italic = run.italic or False
+        is_bold = run.bold or False
+        is_italic = run.italic or False
+        is_strikethrough = run.font.strike or False
         # Convert any non-None underline value to True
-        has_underline = bool(run.underline is not None and run.underline)
+        is_underline = bool(run.underline is not None and run.underline)
+        is_sub = run.font.subscript or False
+        is_sup = run.font.superscript or False
+        script = Script.SUB if is_sub else Script.SUPER if is_sup else Script.BASELINE
 
         return Formatting(
-            bold=has_bold,
-            italic=has_italic,
-            underline=has_underline,
+            bold=is_bold,
+            italic=is_italic,
+            underline=is_underline,
+            strikethrough=is_strikethrough,
+            script=script,
         )
 
     def _get_paragraph_elements(self, paragraph: Paragraph):
@@ -724,7 +749,6 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_textbox_content(
         self,
         textbox_elements: list,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
@@ -732,7 +756,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         level = self._get_level()
         # Create a textbox group to contain all text from the textbox
         textbox_group = doc.add_group(
-            label=GroupLabel.SECTION, parent=self.parents[level - 1], name="textbox"
+            label=GroupLabel.SECTION,
+            parent=self.parents[level - 1],
+            name="textbox",
+            content_layer=self.content_layer,
         )
         elem_ref.append(textbox_group.get_ref())
         # Set this as the current parent to ensure textbox content
@@ -766,7 +793,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Process all the paragraphs
         for p, position in all_paragraphs:
             # Create paragraph object to get text content
-            paragraph = Paragraph(p, docx_obj)
+            paragraph = Paragraph(p, self.docx_obj)
             text_content = paragraph.text
 
             # Create a unique identifier based on content and position
@@ -782,7 +809,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Mark this paragraph as processed
             processed_paragraphs.add(paragraph_id)
 
-            elem_ref.extend(self._handle_text_elements(p, docx_obj, doc))
+            elem_ref.extend(self._handle_text_elements(p, doc))
 
         # Restore original parent
         self.parents[level] = original_parent
@@ -846,7 +873,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         paragraph_elements: list,
     ) -> Optional[NodeItem]:
         return (
-            doc.add_inline_group(parent=prev_parent)
+            doc.add_inline_group(parent=prev_parent, content_layer=self.content_layer)
             if len(paragraph_elements) > 1
             else prev_parent
         )
@@ -854,11 +881,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_text_elements(
         self,
         element: BaseOxmlElement,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
-        paragraph = Paragraph(element, docx_obj)
+        paragraph = Paragraph(element, self.docx_obj)
         paragraph_elements = self._get_paragraph_elements(paragraph)
         text, equations = self._handle_equations_in_text(
             element=element, text=paragraph.text
@@ -884,7 +910,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             and p_style_id not in ["Title", "Heading"]
         ):
             # Check if this is actually a numbered list by examining the numFmt
-            is_numbered = self._is_numbered_list(docx_obj, numid, ilevel)
+            is_numbered = self._is_numbered_list(numid, ilevel)
 
             li = self._add_list_item(
                 doc=doc,
@@ -915,7 +941,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if p_style_id in ["Title"]:
             for key in range(len(self.parents)):
                 self.parents[key] = None
-            te = doc.add_text(parent=None, label=DocItemLabel.TITLE, text=text)
+            te = doc.add_text(
+                parent=None,
+                label=DocItemLabel.TITLE,
+                text=text,
+                content_layer=self.content_layer,
+            )
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
@@ -926,7 +957,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             else:
                 is_numbered_style = False
-            h1 = self._add_header(doc, p_level, text, is_numbered_style)
+            h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
@@ -939,12 +970,15 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     label=DocItemLabel.FORMULA,
                     parent=self.parents[level - 1],
                     text=text.replace("<eq>", "").replace("</eq>", ""),
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(t1.get_ref())
             else:
                 # Inline equation
                 level = self._get_level()
-                inline_equation = doc.add_inline_group(parent=self.parents[level - 1])
+                inline_equation = doc.add_inline_group(
+                    parent=self.parents[level - 1], content_layer=self.content_layer
+                )
                 elem_ref.append(inline_equation.get_ref())
                 text_tmp = text
                 for eq in equations:
@@ -961,12 +995,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             label=DocItemLabel.TEXT,
                             parent=inline_equation,
                             text=pre_eq_text,
+                            content_layer=self.content_layer,
                         )
                         elem_ref.append(e1.get_ref())
                     e2 = doc.add_text(
                         label=DocItemLabel.FORMULA,
                         parent=inline_equation,
                         text=eq.replace("<eq>", "").replace("</eq>", ""),
+                        content_layer=self.content_layer,
                     )
                     elem_ref.append(e2.get_ref())
 
@@ -975,6 +1011,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         label=DocItemLabel.TEXT,
                         parent=inline_equation,
                         text=text_tmp.strip(),
+                        content_layer=self.content_layer,
                     )
                     elem_ref.append(e3.get_ref())
 
@@ -1001,6 +1038,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(t2.get_ref())
 
@@ -1020,13 +1058,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text=text,
                     formatting=format,
                     hyperlink=hyperlink,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(t3.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
         return elem_ref
 
-    def _add_header(
+    def _add_heading(
         self,
         doc: DoclingDocument,
         curr_level: Optional[int],
@@ -1137,6 +1176,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                         text=text,
                         formatting=format,
                         hyperlink=hyperlink,
+                        content_layer=self.content_layer,
                     )
         return elem_ref
 
@@ -1163,7 +1203,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             # Reset counters for the new numbering sequence
             self._reset_list_counters_for_new_sequence(numid)
 
-            list_gr = doc.add_list_group(name="list", parent=self.parents[level - 1])
+            list_gr = doc.add_list_group(
+                name="list",
+                parent=self.parents[level - 1],
+                content_layer=self.content_layer,
+            )
             self.parents[level] = list_gr
             elem_ref.append(list_gr.get_ref())
 
@@ -1186,7 +1230,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + prev_indent + 1,
                 self.level_at_new_list + ilevel + 1,
             ):
-                list_gr1 = doc.add_list_group(name="list", parent=self.parents[i - 1])
+                list_gr1 = doc.add_list_group(
+                    name="list",
+                    parent=self.parents[i - 1],
+                    content_layer=self.content_layer,
+                )
                 self.parents[i] = list_gr1
                 elem_ref.append(list_gr1.get_ref())
 
@@ -1239,14 +1287,37 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
         return elem_ref
 
+    @staticmethod
+    def _group_cell_elements(
+        group_name: str,
+        doc: DoclingDocument,
+        provs_in_cell: list[RefItem],
+        docling_table: TableItem,
+        content_layer: ContentLayer = ContentLayer.BODY,
+    ) -> RefItem:
+        group_element = doc.add_group(
+            label=GroupLabel.UNSPECIFIED,
+            name=group_name,
+            parent=docling_table,
+            content_layer=content_layer,
+        )
+        for prov in provs_in_cell:
+            group_element.children.append(prov)
+            pr_item = prov.resolve(doc)
+            item_parent = pr_item.parent.resolve(doc)
+            if pr_item.get_ref() in item_parent.children:
+                item_parent.children.remove(pr_item.get_ref())
+            pr_item.parent = group_element.get_ref()
+        ref_for_rich_cell = group_element.get_ref()
+        return ref_for_rich_cell
+
     def _handle_tables(
         self,
         element: BaseOxmlElement,
-        docx_obj: DocxDocument,
         doc: DoclingDocument,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
-        table: Table = Table(element, docx_obj)
+        table: Table = Table(element, self.docx_obj)
         num_rows = len(table.rows)
         num_cols = len(table.columns)
         _log.debug(f"Table grid with {num_rows} rows and {num_cols} columns")
@@ -1255,12 +1326,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             cell_element = table.rows[0].cells[0]
             # In case we have a table of only 1 cell, we consider it furniture
             # And proceed processing the content of the cell as though it's in the document body
-            self._walk_linear(cell_element._element, docx_obj, doc)
+            self._walk_linear(cell_element._element, doc)
             return elem_ref
 
         data = TableData(num_rows=num_rows, num_cols=num_cols)
         level = self._get_level()
-        docling_table = doc.add_table(data=data, parent=self.parents[level - 1])
+        docling_table = doc.add_table(
+            data=data, parent=self.parents[level - 1], content_layer=self.content_layer
+        )
         elem_ref.append(docling_table.get_ref())
 
         cell_set: set[CT_Tc] = set()
@@ -1300,51 +1373,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     text = text.replace("<eq>", "$").replace("</eq>", "$")
 
                 provs_in_cell: list[RefItem] = []
-                _, provs_in_cell = self._walk_linear(cell._element, docx_obj, doc)
-                ref_for_rich_cell = provs_in_cell[0]
-                rich_table_cell = False
+                rich_table_cell: bool = self._is_rich_table_cell(cell)
 
-                def group_cell_elements(
-                    group_name: str, doc: DoclingDocument, provs_in_cell: list[RefItem]
-                ) -> RefItem:
-                    group_element = doc.add_group(
-                        label=GroupLabel.UNSPECIFIED,
-                        name=group_name,
-                        parent=docling_table,
-                    )
-                    for prov in provs_in_cell:
-                        group_element.children.append(prov)
-                        pr_item = prov.resolve(doc)
-                        item_parent = pr_item.parent.resolve(doc)
-                        if pr_item.get_ref() in item_parent.children:
-                            item_parent.children.remove(pr_item.get_ref())
-                        pr_item.parent = group_element.get_ref()
-                    ref_for_rich_cell = group_element.get_ref()
-                    return ref_for_rich_cell
+                if rich_table_cell:
+                    _, provs_in_cell = self._walk_linear(cell._element, doc)
+                _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
-                if len(provs_in_cell) > 1:
+                if len(provs_in_cell) > 0:
                     # Cell has multiple elements, we need to group them
                     rich_table_cell = True
                     group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
-                    ref_for_rich_cell = group_cell_elements(
-                        group_name, doc, provs_in_cell
+                    ref_for_rich_cell = MsWordDocumentBackend._group_cell_elements(
+                        group_name,
+                        doc,
+                        provs_in_cell,
+                        docling_table,
+                        content_layer=self.content_layer,
                     )
-
-                elif len(provs_in_cell) == 1:
-                    item_ref = provs_in_cell[0]
-                    pr_item = item_ref.resolve(doc)
-                    if isinstance(pr_item, TextItem):
-                        # Cell has only one element and it's just a text
-                        rich_table_cell = False
-                        doc.delete_items(node_items=[pr_item])
-                    else:
-                        rich_table_cell = True
-                        group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{row.grid_cols_before + row_idx}"
-                        ref_for_rich_cell = group_cell_elements(
-                            group_name, doc, provs_in_cell
-                        )
-                else:
-                    rich_table_cell = False
 
                 if rich_table_cell:
                     rich_cell = RichTableCell(
@@ -1377,17 +1422,94 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     col_idx += cell.grid_span
         return elem_ref
 
+    def _has_blip(self, element: BaseOxmlElement) -> bool:
+        """Check if a docx element holds any BLIP as a child.
+
+        Args:
+            element: a docx element
+
+        Returns:
+            Whether the element contains a BLIP as a direct child.
+        """
+
+        for item in element:
+            if self.blip_xpath_expr(item):
+                return True
+            if item.findall(
+                ".//w:drawing", namespaces=MsWordDocumentBackend._BLIP_NAMESPACES
+            ):
+                return True
+
+        return False
+
+    def _is_rich_table_cell(self, cell: _Cell) -> bool:
+        """Determine whether a docx cell should be parsed as a Docling RichTableCell.
+
+        A docx cell can hold rich content and be parsed with a Docling RichTableCell.
+        However, this requires walking through the lxml elements and creating
+        node items. If the cell holds only plain text, a TableCell, the parsing
+        is simpler and using a TableCell is prefered.
+
+        Plain text means:
+        - The cell has only one paragraph
+        - The paragraph consists solely of runs with no run properties
+          (no need of Docling formatting).
+        - No other block-level elements are present inside the cell element.
+
+        Args:
+            cell: A docx cell
+
+        Returns:
+            Whether the docx cell should be parsed as RichTableCell
+        """
+        tc = cell._tc
+
+        # must contain only one paragraph
+        paragraphs = list(
+            tc.iterchildren(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"
+            )
+        )
+        if len(paragraphs) > 1:
+            return True
+
+        # no other content
+        allowed_tags = {"p", "tcPr"}  # paragraph or table-cell properties
+        for child in tc:
+            tag = child.tag.split("}")[-1]
+            if tag not in allowed_tags:
+                return True
+        if self._has_blip(tc):
+            return True
+
+        # paragraph must contain runs with no run-properties
+        for para in paragraphs:
+            runs = list(
+                para.iterchildren(
+                    "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
+                )
+            )
+            for rn in runs:
+                item: Run = Run(rn, self.docx_obj)
+                if item is not None:
+                    fm = MsWordDocumentBackend._get_format_from_run(item)
+                    if fm != Formatting():
+                        return True
+
+        # All checks passed: plain text only
+        return False
+
     def _handle_pictures(
-        self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
+        self, drawing_blip: Any, doc: DoclingDocument
     ) -> list[RefItem]:
         def get_docx_image(drawing_blip: Any) -> Optional[bytes]:
             image_data: Optional[bytes] = None
             rId = drawing_blip[0].get(
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
-            if rId in docx_obj.part.rels:
+            if rId in self.docx_obj.part.rels:
                 # Access the image part using the relationship ID
-                image_part = docx_obj.part.rels[rId].target_part
+                image_part = self.docx_obj.part.rels[rId].target_part
                 image_data = image_part.blob  # Get the binary image data
             return image_data
 
@@ -1400,6 +1522,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             p1 = doc.add_picture(
                 parent=self.parents[level - 1],
                 caption=None,
+                content_layer=self.content_layer,
             )
             elem_ref.append(p1.get_ref())
         else:
@@ -1410,6 +1533,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     parent=self.parents[level - 1],
                     image=ImageRef.from_pil(image=pil_image, dpi=72),
                     caption=None,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(p2.get_ref())
             except (UnidentifiedImageError, OSError):
@@ -1417,6 +1541,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 p3 = doc.add_picture(
                     parent=self.parents[level - 1],
                     caption=None,
+                    content_layer=self.content_layer,
                 )
                 elem_ref.append(p3.get_ref())
         return elem_ref
@@ -1447,12 +1572,68 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[level - 1],
                 image=ImageRef.from_pil(image=pil_image, dpi=72),
                 caption=None,
+                content_layer=self.content_layer,
             )
         except (UnidentifiedImageError, OSError):
             _log.warning("Warning: DrawingML image cannot be loaded by Pillow")
             doc.add_picture(
                 parent=self.parents[level - 1],
                 caption=None,
+                content_layer=self.content_layer,
             )
 
         return
+
+    def _add_header_footer(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
+        """Add section headers and footers.
+
+        Headers and footers are added in the furniture content and only the text paragraphs
+        are parsed. The paragraphs are attached to a single group item for the header or the
+        footer. If the document has a section with new header and footer, they will be parsed
+        in new group items.
+
+        Args:
+            docx_obj: A docx Document object to be parsed.
+            doc: A DoclingDocument object to add the header and footer from docx_obj.
+        """
+        current_layer = self.content_layer
+        base_parent = self.parents[0]
+        self.content_layer = ContentLayer.FURNITURE
+        for sec_idx, section in enumerate(docx_obj.sections):
+            if sec_idx > 0 and not section.different_first_page_header_footer:
+                continue
+
+            hdr = (
+                section.first_page_header
+                if section.different_first_page_header_footer
+                else section.header
+            )
+            par = [txt for txt in (par.text.strip() for par in hdr.paragraphs) if txt]
+            tables = hdr.tables
+            has_blip = self._has_blip(hdr._element)
+            if par or tables or has_blip:
+                self.parents[0] = doc.add_group(
+                    label=GroupLabel.SECTION,
+                    name="page header",
+                    content_layer=self.content_layer,
+                )
+                self._walk_linear(hdr._element, doc)
+
+            ftr = (
+                section.first_page_footer
+                if section.different_first_page_header_footer
+                else section.footer
+            )
+            par = [txt for txt in (par.text.strip() for par in ftr.paragraphs) if txt]
+            tables = ftr.tables
+            has_blip = self._has_blip(ftr._element)
+            if par or tables or has_blip:
+                self.parents[0] = doc.add_group(
+                    label=GroupLabel.SECTION,
+                    name="page footer",
+                    content_layer=self.content_layer,
+                )
+                self._walk_linear(ftr._element, doc)
+
+        self.content_layer = current_layer
+        self.parents[0] = base_parent

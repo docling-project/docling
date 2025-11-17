@@ -57,7 +57,7 @@ GRANITEDOCLING_MLX = InlineVlmOptions(
 
 # SmolDocling
 SMOLDOCLING_MLX = InlineVlmOptions(
-    repo_id="ds4sd/SmolDocling-256M-preview-mlx-bf16",
+    repo_id="docling-project/SmolDocling-256M-preview-mlx-bf16",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.MLX,
@@ -68,7 +68,7 @@ SMOLDOCLING_MLX = InlineVlmOptions(
 )
 
 SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
-    repo_id="ds4sd/SmolDocling-256M-preview",
+    repo_id="docling-project/SmolDocling-256M-preview",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.TRANSFORMERS,
@@ -84,7 +84,7 @@ SMOLDOCLING_TRANSFORMERS = InlineVlmOptions(
 )
 
 SMOLDOCLING_VLLM = InlineVlmOptions(
-    repo_id="ds4sd/SmolDocling-256M-preview",
+    repo_id="docling-project/SmolDocling-256M-preview",
     prompt="Convert this page to docling.",
     response_format=ResponseFormat.DOCTAGS,
     inference_framework=InferenceFramework.VLLM,
@@ -287,6 +287,7 @@ DOLPHIN_TRANSFORMERS = InlineVlmOptions(
 # NuExtract
 NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
     repo_id="numind/NuExtract-2.0-2B",
+    revision="fe5b2f0b63b81150721435a3ca1129a75c59c74e",  # 489efed leads to MPS issues
     prompt="",  # This won't be used, template is passed separately
     torch_dtype="bfloat16",
     inference_framework=InferenceFramework.TRANSFORMERS,

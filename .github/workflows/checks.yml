@@ -20,7 +20,7 @@ env:
     tests/test_asr_pipeline.py
     tests/test_threaded_pipeline.py
   PYTEST_TO_SKIP: |-
-  EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|suryaocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping|mlx_whisper_example|gpu_standard_pipeline|gpu_vlm_pipeline)\.py$'
+  EXAMPLES_TO_SKIP: '^(batch_convert|compare_vlm_models|minimal|minimal_vlm_pipeline|minimal_asr_pipeline|export_multimodal|custom_convert|develop_picture_enrichment|rapidocr_with_custom_models|suryaocr_with_custom_models|offline_convert|pictures_description|pictures_description_api|vlm_pipeline_api_model|granitedocling_repetition_stopping|mlx_whisper_example|gpu_standard_pipeline|gpu_vlm_pipeline|demo_layout_vlm)\.py$'
 
 jobs:
   lint:
@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.12']
+        python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v5
 
@@ -58,240 +58,240 @@ jobs:
           uv run pre-commit run --all-files
 
   run-tests-1:
-      runs-on: ubuntu-latest
-      strategy:
-        fail-fast: false
-        matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
-      steps:
-        - uses: actions/checkout@v5
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
 
-        - name: Grant permissions to APT cache directory # allows restore
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+      - name: Grant permissions to APT cache directory # allows restore
+        run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
-        - name: Cache APT packages
-          id: apt-cache
-          uses: actions/cache@v4
-          with:
-            path: /var/cache/apt/archives
-            key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
-            restore-keys: |
-              apt-packages-${{ runner.os }}-
+      - name: Cache APT packages
+        id: apt-cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
+          restore-keys: |
+            apt-packages-${{ runner.os }}-
 
-        - name: Install System Dependencies
-          run: |
-            sudo apt-get -qq update
-            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
 
-        - name: Set TESSDATA_PREFIX
-          run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
+      - name: Set TESSDATA_PREFIX
+        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
-        - name: Install uv and set the python version
-          uses: astral-sh/setup-uv@v6
-          with:
-            python-version: ${{ matrix.python-version }}
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
-        - name: Install Python Dependencies
-          run: uv sync --frozen --all-extras
+      - name: Install Python Dependencies
+        run: uv sync --frozen --all-extras
 
-        - name: Cache Models
-          uses: actions/cache@v4
-          with:
-            path: |
-              ~/.cache/huggingface
-              ~/.cache/modelscope
-              ~/.EasyOCR/
-            key: models-cache
+      - name: Cache Models
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.cache/modelscope
+            ~/.EasyOCR/
+          key: models-cache
 
-        - name: Pre-download Models
-          run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+      - name: Pre-download Models
+        run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
-        - name: Run tests for GROUP1
-          run: |
-            echo "--- Running tests ---"
-            GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
-            echo "Running tests for GROUP1"
-            uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
+      - name: Run tests for GROUP1
+        run: |
+          echo "--- Running tests ---"
+          GROUP1=$(echo "$PYTEST_ML" | sed -e 's/^/--ignore=/' | tr '\n' ' ')
+          echo "Running tests for GROUP1"
+          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP1
 
-        - name: Upload coverage to Codecov
-          if: inputs.push_coverage
-          uses: codecov/codecov-action@v5
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: ./coverage.xml
-            flags: run-tests-1
+      - name: Upload coverage to Codecov
+        if: inputs.push_coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: run-tests-1
 
-        - name: Grant permissions to APT cache directory # allows backup
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+      - name: Grant permissions to APT cache directory # allows backup
+        run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-tests-2:
-      runs-on: ubuntu-latest
-      strategy:
-        fail-fast: false
-        matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
-      steps:
-        - uses: actions/checkout@v5
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
 
-        - name: Grant permissions to APT cache directory # allows restore
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+      - name: Grant permissions to APT cache directory # allows restore
+        run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
-        - name: Cache APT packages
-          id: apt-cache
-          uses: actions/cache@v4
-          with:
-            path: /var/cache/apt/archives
-            key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
-            restore-keys: |
-              apt-packages-${{ runner.os }}-
+      - name: Cache APT packages
+        id: apt-cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
+          restore-keys: |
+            apt-packages-${{ runner.os }}-
 
-        - name: Install System Dependencies
-          run: |
-            sudo apt-get -qq update
-            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
 
-        - name: Set TESSDATA_PREFIX
-          run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
+      - name: Set TESSDATA_PREFIX
+        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
-        - name: Install uv and set the python version
-          uses: astral-sh/setup-uv@v6
-          with:
-            python-version: ${{ matrix.python-version }}
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
-        - name: Install Python Dependencies
-          run: uv sync --frozen --all-extras
+      - name: Install Python Dependencies
+        run: uv sync --frozen --all-extras
 
-        - name: Cache Models
-          uses: actions/cache@v4
-          with:
-            path: |
-              ~/.cache/huggingface
-              ~/.cache/modelscope
-              ~/.EasyOCR/
-            key: models-cache
+      - name: Cache Models
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.cache/modelscope
+            ~/.EasyOCR/
+          key: models-cache
 
-        - name: Pre-download Models
-          run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
+      - name: Pre-download Models
+        run: uv run python -c "import easyocr; reader = easyocr.Reader(['en', 'fr', 'de', 'es'])"
 
-        - name: Run tests for GROUP2
-          run: |
-            echo "--- Running tests ---"
-            GROUP2=$(echo "$PYTEST_ML" | tr '\n' ' ')
-            echo "Running tests for GROUP2"
-            DESELECT_OPT=""
-            if [ -n "$PYTEST_TO_SKIP" ]; then
-              DESELECT_OPT="--deselect $PYTEST_TO_SKIP"
-            fi
-            echo "Running tests for GROUP2"
-            uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 $DESELECT_OPT
+      - name: Run tests for GROUP2
+        run: |
+          echo "--- Running tests ---"
+          GROUP2=$(echo "$PYTEST_ML" | tr '\n' ' ')
+          echo "Running tests for GROUP2"
+          DESELECT_OPT=""
+          if [ -n "$PYTEST_TO_SKIP" ]; then
+            DESELECT_OPT="--deselect $PYTEST_TO_SKIP"
+          fi
+          echo "Running tests for GROUP2"
+          uv run pytest -v --durations=0 --cov=docling --cov-report=xml --cov-context=test $GROUP2 $DESELECT_OPT
 
-        - name: Upload coverage to Codecov
-          if: inputs.push_coverage
-          uses: codecov/codecov-action@v5
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: ./coverage.xml
-            flags: run-tests-2
+      - name: Upload coverage to Codecov
+        if: inputs.push_coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: run-tests-2
 
-        - name: Grant permissions to APT cache directory # allows backup
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+      - name: Grant permissions to APT cache directory # allows backup
+        run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   run-examples:
-      runs-on: ubuntu-latest
-      strategy:
-        fail-fast: false
-        matrix:
-          python-version: ['3.9', '3.10', '3.11', '3.12', '3.13', '3.14']
-      steps:
-        - uses: actions/checkout@v5
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
 
-        - name: Grant permissions to APT cache directory # allows restore
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+      - name: Grant permissions to APT cache directory # allows restore
+        run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
-        - name: Cache APT packages
-          id: apt-cache
-          uses: actions/cache@v4
-          with:
-            path: /var/cache/apt/archives
-            key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
-            restore-keys: |
-              apt-packages-${{ runner.os }}-
+      - name: Cache APT packages
+        id: apt-cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
+          restore-keys: |
+            apt-packages-${{ runner.os }}-
 
-        - name: Install System Dependencies
-          run: |
-            sudo apt-get -qq update
-            sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y ffmpeg tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra tesseract-ocr-deu tesseract-ocr-spa tesseract-ocr-script-latn libleptonica-dev libtesseract-dev libreoffice pkg-config
 
-        - name: Set TESSDATA_PREFIX
-          run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
+      - name: Set TESSDATA_PREFIX
+        run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
-        - name: Install uv and set the python version
-          uses: astral-sh/setup-uv@v6
-          with:
-            python-version: ${{ matrix.python-version }}
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
-        - name: Install Python Dependencies
-          run: uv sync --frozen --all-extras
+      - name: Install Python Dependencies
+        run: uv sync --frozen --all-extras
 
-        - name: Cache Models
-          uses: actions/cache@v4
-          with:
-            path: |
-              ~/.cache/huggingface
-              ~/.cache/modelscope
-              ~/.EasyOCR/
-            key: models-cache
+      - name: Cache Models
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.cache/modelscope
+            ~/.EasyOCR/
+          key: models-cache
 
-        - name: Free up disk space
-          run: |
-            df -h
-            sudo rm -rf /usr/share/dotnet
-            sudo rm -rf /usr/local/lib/android
-            sudo rm -rf /opt/ghc
-            sudo apt-get clean
-            df -h
+      - name: Free up disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
+          df -h
 
-        - name: Run examples
-          run: |
-            echo "--- Creating output directory ---"
-            mkdir -p scratch
-            
-            echo "--- Running examples ---"
-            
-            summary_file="runtime_summary.log"
-            echo "--- Example Runtimes ---" > "$summary_file"
-            
-            for file in docs/examples/*.py; do
-              if [[ "$(basename "$file")" =~ ${EXAMPLES_TO_SKIP} ]]; then
-                echo "Skipping example: $(basename "$file")"
-              else
-                echo "--- Running example $(basename "$file") ---"
-                
-                start_time=$SECONDS
+      - name: Run examples
+        run: |
+          echo "--- Creating output directory ---"
+          mkdir -p scratch
 
-                uv run --no-sync python "$file" || exit 1
-                duration=$((SECONDS - start_time))
-                echo "Finished in ${duration}s."
-                
-                echo "$(basename "$file"): ${duration}s" >> "$summary_file"
-              fi
-            done
-            
-            echo
-            echo "==================================="
-            echo "       Final Runtime Summary       "
-            echo "==================================="
-            cat "$summary_file"
-            echo "==================================="
+          echo "--- Running examples ---"
 
-        - name: Grant permissions to APT cache directory # allows backup
-          run: sudo chown -R $USER:$USER /var/cache/apt/archives
+          summary_file="runtime_summary.log"
+          echo "--- Example Runtimes ---" > "$summary_file"
+
+          for file in docs/examples/*.py; do
+            if [[ "$(basename "$file")" =~ ${EXAMPLES_TO_SKIP} ]]; then
+              echo "Skipping example: $(basename "$file")"
+            else
+              echo "--- Running example $(basename "$file") ---"
+              
+              start_time=$SECONDS
+
+              uv run --no-sync python "$file" || exit 1
+              duration=$((SECONDS - start_time))
+              echo "Finished in ${duration}s."
+              
+              echo "$(basename "$file"): ${duration}s" >> "$summary_file"
+            fi
+          done
+
+          echo
+          echo "==================================="
+          echo "       Final Runtime Summary       "
+          echo "==================================="
+          cat "$summary_file"
+          echo "==================================="
+
+      - name: Grant permissions to APT cache directory # allows backup
+        run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
   build-package:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ["3.12"]
     steps:
       - uses: actions/checkout@v5
 
@@ -322,7 +322,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ["3.12"]
     steps:
       - name: Download all the dists
         uses: actions/download-artifact@v4
