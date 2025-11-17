@@ -134,10 +134,7 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                         images.append(hi_res_image)
 
                         # Define prompt structure
-                        if callable(self.vlm_options.prompt):
-                            user_prompt = self.vlm_options.prompt(page.parsed_page)
-                        else:
-                            user_prompt = self.vlm_options.prompt
+                        user_prompt = self._build_prompt_safe(page)
 
                         user_prompts.append(user_prompt)
                         pages_with_images.append(page)
@@ -319,11 +316,15 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
 
                 # Apply decode_response to the output before yielding
                 decoded_output = self.vlm_options.decode_response(output)
+                input_prompt = (
+                    formatted_prompt if self.vlm_options.track_input_prompt else None
+                )
                 yield VlmPrediction(
                     text=decoded_output,
                     generation_time=generation_time,
                     generated_tokens=tokens,
                     num_tokens=len(tokens),
                     stop_reason=VlmStopReason.UNSPECIFIED,
+                    input_prompt=input_prompt,
                 )
             _log.debug("MLX model: Released global lock")

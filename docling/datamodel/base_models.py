@@ -216,6 +216,7 @@ class VlmPrediction(BaseModel):
     generation_time: float = -1
     num_tokens: Optional[int] = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
+    input_prompt: Optional[str] = None
 
 
 class ContainerElement(
