@@ -30,7 +30,13 @@ from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
-from docling.datamodel.base_models import AssembledUnit, ConversionStatus, Page
+from docling.datamodel.base_models import (
+    AssembledUnit,
+    ConversionStatus,
+    DoclingComponentType,
+    ErrorItem,
+    Page,
+)
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
 from docling.datamodel.settings import settings
@@ -265,7 +271,9 @@ class ThreadedPipelineStage:
                         )
                     )
             except Exception as exc:
-                _log.error("Stage %s failed for run %d: %s", self.name, rid, exc)
+                _log.error(
+                    "Stage %s failed for run %d: %s", self.name, rid, exc, exc_info=True
+                )
                 for it in items:
                     it.is_failed = True
                     it.error = exc
@@ -598,6 +606,16 @@ class StandardPdfPipeline(ConvertPipeline):
             if p.page_no in page_map
             or not any(fp == p.page_no for fp, _ in proc.failed_pages)
         ]
+        # Add error details from failed pages
+        for page_no, error in proc.failed_pages:
+            page_label = f"Page {page_no + 1}" if page_no >= 0 else "Unknown page"
+            error_msg = str(error) if error else ""
+            error_item = ErrorItem(
+                component_type=DoclingComponentType.PIPELINE,
+                module_name=self.__class__.__name__,
+                error_message=f"{page_label}: {error_msg}" if error_msg else page_label,
+            )
+            conv_res.errors.append(error_item)
         if proc.is_complete_failure:
             conv_res.status = ConversionStatus.FAILURE
         elif proc.is_partial_success:

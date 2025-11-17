@@ -3,6 +3,7 @@ import logging
 import sys
 import threading
 import time
+import warnings
 from collections.abc import Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -21,6 +22,7 @@ from docling.backend.asciidoc_backend import AsciiDocBackend
 from docling.backend.csv_backend import CsvDocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
@@ -129,7 +131,7 @@ class XMLJatsFormatOption(FormatOption):
 
 class ImageFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
-    backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
+    backend: Type[AbstractDocumentBackend] = ImageDocumentBackend
 
 
 class PdfFormatOption(FormatOption):
@@ -184,10 +186,35 @@ class DocumentConverter:
         self.allowed_formats = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
+
+        # Normalize format options: ensure IMAGE format uses ImageDocumentBackend
+        # for backward compatibility (old code might use PdfFormatOption or other backends for images)
+        normalized_format_options: dict[InputFormat, FormatOption] = {}
+        if format_options:
+            for format, option in format_options.items():
+                if (
+                    format == InputFormat.IMAGE
+                    and option.backend is not ImageDocumentBackend
+                ):
+                    warnings.warn(
+                        f"Using {option.backend.__name__} for InputFormat.IMAGE is deprecated. "
+                        "Images should use ImageDocumentBackend via ImageFormatOption. "
+                        "Automatically correcting the backend, please update your code to avoid this warning.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
+                    # Convert to ImageFormatOption while preserving pipeline and backend options
+                    normalized_format_options[format] = ImageFormatOption(
+                        pipeline_options=option.pipeline_options,
+                        backend_options=option.backend_options,
+                    )
+                else:
+                    normalized_format_options[format] = option
+
         self.format_to_options: dict[InputFormat, FormatOption] = {
             format: (
                 _get_default_option(format=format)
-                if (custom_option := (format_options or {}).get(format)) is None
+                if (custom_option := normalized_format_options.get(format)) is None
                 else custom_option
             )
             for format in self.allowed_formats
@@ -263,8 +290,12 @@ class DocumentConverter:
                 ConversionStatus.SUCCESS,
                 ConversionStatus.PARTIAL_SUCCESS,
             }:
+                error_details = ""
+                if conv_res.errors:
+                    error_messages = [err.error_message for err in conv_res.errors]
+                    error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
-                    f"Conversion failed for: {conv_res.input.file} with status: {conv_res.status}"
+                    f"Conversion failed for: {conv_res.input.file} with status: {conv_res.status}.{error_details}"
                 )
             else:
                 yield conv_res

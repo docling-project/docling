@@ -26,6 +26,7 @@ from rich.console import Console
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -698,9 +699,16 @@ def convert(  # noqa: C901
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
 
+            # Use image-native backend for IMAGE to avoid pypdfium2 locking
+            image_format_option = PdfFormatOption(
+                pipeline_options=pipeline_options,
+                backend=ImageDocumentBackend,
+                backend_options=pdf_backend_options,
+            )
+
             format_options = {
                 InputFormat.PDF: pdf_format_option,
-                InputFormat.IMAGE: pdf_format_option,
+                InputFormat.IMAGE: image_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
                 InputFormat.DOCX: WordFormatOption(
                     pipeline_options=simple_format_option

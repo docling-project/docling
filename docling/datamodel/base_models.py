@@ -164,6 +164,7 @@ class DoclingComponentType(str, Enum):
     MODEL = "model"
     DOC_ASSEMBLER = "doc_assembler"
     USER_INPUT = "user_input"
+    PIPELINE = "pipeline"
 
 
 class VlmStopReason(str, Enum):

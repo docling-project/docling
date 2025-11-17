@@ -76,8 +76,15 @@ class BasePipeline(ABC):
                 conv_res.status = self._determine_status(conv_res)
         except Exception as e:
             conv_res.status = ConversionStatus.FAILURE
-            if raises_on_error:
-                raise e
+            if not raises_on_error:
+                error_item = ErrorItem(
+                    component_type=DoclingComponentType.PIPELINE,
+                    module_name=self.__class__.__name__,
+                    error_message=str(e),
+                )
+                conv_res.errors.append(error_item)
+            else:
+                raise RuntimeError(f"Pipeline {self.__class__.__name__} failed") from e
         finally:
             self._unload(conv_res)
 
