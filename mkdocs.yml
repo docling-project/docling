@@ -53,11 +53,11 @@ theme:
     - toc.follow
 nav:
   - Documentation:
-    - "Docling documentation": index.md
-    - Installation:
-      - Installation: installation/index.md
+    - Documentation: index.md
+    - Getting started : 
+      - "Installation": documentation/installation.md
+      - "Quickstart": documentation/quickstart.md
     - Usage:
-      - Usage: usage/index.md
       - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
@@ -183,6 +183,8 @@ plugins:
   - redirects:
       redirect_maps:
         getting_started/index.md: index.md
+        installation/index.md: documentation/installation.md
+        usage/index.md: documentation/quickstart.md
   - mkdocs-jupyter
   - mkdocstrings:
       default_handler: python
