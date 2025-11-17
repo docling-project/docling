@@ -538,6 +538,8 @@ class StandardPdfPipeline(ConvertPipeline):
         proc = ProcessingResult(total_expected=total_pages)
         fed_idx: int = 0  # number of pages successfully queued
         batch_size: int = 32  # drain chunk
+        start_time: float = time.monotonic()
+        timeout_exceeded: bool = False
         try:
             while proc.success_count + proc.failure_count < total_pages:
                 # 1) feed - try to enqueue until the first queue is full
@@ -571,7 +573,17 @@ class StandardPdfPipeline(ConvertPipeline):
                         assert itm.payload is not None
                         proc.pages.append(itm.payload)
 
-                # 3) failure safety - downstream closed early -> mark missing pages failed
+                # 3) timeout check - respect document_timeout if configured
+                if self.pipeline_options.document_timeout is not None:
+                    elapsed_time = time.monotonic() - start_time
+                    if elapsed_time > self.pipeline_options.document_timeout:
+                        _log.warning(
+                            f"Document processing time ({elapsed_time:.3f} seconds) exceeded the specified timeout of {self.pipeline_options.document_timeout:.3f} seconds"
+                        )
+                        timeout_exceeded = True
+                        break
+
+                # 4) failure safety - downstream closed early -> mark missing pages failed
                 if not out_batch and ctx.output_queue.closed:
                     missing = total_pages - (proc.success_count + proc.failure_count)
                     if missing > 0:
@@ -584,12 +596,12 @@ class StandardPdfPipeline(ConvertPipeline):
                 st.stop()
             ctx.output_queue.close()
 
-        self._integrate_results(conv_res, proc)
+        self._integrate_results(conv_res, proc, timeout_exceeded=timeout_exceeded)
         return conv_res
 
     # ---------------------------------------------------- integrate_results()
     def _integrate_results(
-        self, conv_res: ConversionResult, proc: ProcessingResult
+        self, conv_res: ConversionResult, proc: ProcessingResult, timeout_exceeded: bool = False
     ) -> None:
         page_map = {p.page_no: p for p in proc.pages}
         conv_res.pages = [
@@ -600,7 +612,7 @@ class StandardPdfPipeline(ConvertPipeline):
         ]
         if proc.is_complete_failure:
             conv_res.status = ConversionStatus.FAILURE
-        elif proc.is_partial_success:
+        elif timeout_exceeded or proc.is_partial_success:
             conv_res.status = ConversionStatus.PARTIAL_SUCCESS
         else:
             conv_res.status = ConversionStatus.SUCCESS

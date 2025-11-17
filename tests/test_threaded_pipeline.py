@@ -17,6 +17,32 @@ from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from docling.pipeline.threaded_standard_pdf_pipeline import ThreadedStandardPdfPipeline
 
 
+def test_standard_pipeline_document_timeout():
+    """Test that StandardPdfPipeline respects document_timeout"""
+    test_file = "tests/data/pdf/2203.01017v2.pdf"  # Large file to ensure timeout can occur
+
+    # Configure pipeline with very short timeout
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_cls=StandardPdfPipeline,
+                pipeline_options=ThreadedPdfPipelineOptions(
+                    document_timeout=0.1,  # Very short timeout (100ms)
+                    do_ocr=False,  # Disable OCR to speed up processing
+                    do_table_structure=False,  # Disable table structure to speed up processing
+                ),
+            )
+        }
+    )
+
+    result = converter.convert(test_file)
+
+    # Verify that timeout was respected
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+        f"Expected PARTIAL_SUCCESS due to timeout, got {result.status}"
+    )
+
+
 def test_threaded_pipeline_multiple_documents():
     """Test threaded pipeline with multiple documents and compare with standard pipeline"""
     test_files = [
