@@ -892,7 +892,7 @@ class DocumentEnrichmentUtils:
             return {"작성일": None, "작성자": []}
 
 
-    def _extract_document_metadata_date(self, document_content, **kwargs):
+    def _extract_document_metadata_date(self, document_content: str, **kwargs: dict) -> Dict[str, Any]:
         """
         문서 내용에서 메타데이터 정보를 추출하는 함수
 
@@ -908,7 +908,7 @@ class DocumentEnrichmentUtils:
             custom_user = self.enrichment_options.metadata_user_prompt
 
             # 불필요한 태그 제거 (이미지 정보를 나타내는 태그 제거)
-            document_content = document_content.replace("<!-- image -->", "").strip()
+            document_content = document_content.replace("<!-- image -->", "")
 
             # document_content 에 추가 정보 삽입
             if 'org_filename' in kwargs:
