@@ -36,6 +36,8 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
     VlmPipelineOptions,
 )
+from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
+from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, ImageFormatOption
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
@@ -96,10 +98,29 @@ def run(
             table_batch_size=4,
         )
     elif pipeline == "vlm":
+        settings.perf.page_batch_size = batch_size
         pipeline_cls = VlmPipeline
-        pipeline_options = VlmPipelineOptions(
-            vlm_options=vlm_model_specs.GRANITEDOCLING_MLX,
+        vlm_options = ApiVlmOptions(
+            url="http://localhost:8000/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
+            params=dict(
+                model=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.repo_id,
+                max_tokens=4096,
+                skip_special_tokens=True,
+            ),
+            prompt=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.prompt,
+            timeout=90,
+            scale=2.0,
+            temperature=0.0,
+            concurrency=batch_size,
+            stop_strings=["</doctag>", "<|end_of_text|>"],
+            response_format=ResponseFormat.DOCTAGS,
         )
+        pipeline_options = VlmPipelineOptions(
+            vlm_options=vlm_options,
+            enable_remote_services=True,  # required when using a remote inference service.
+        )
+
+        # pipeline_options.vlm_options.scale = 1.0
     else:
         raise RuntimeError(f"Pipeline {pipeline} not available.")
 
