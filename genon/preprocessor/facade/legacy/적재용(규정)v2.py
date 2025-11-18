@@ -522,15 +522,23 @@ class HybridChunker(BaseChunker):
                 current_section_header_short_infos
             ))
 
-        # 1.5단계: "제x장/절/관" 헤더는 다음 섹션과 병합
+        # 1.5단계: "제x장/절/관" 헤더는 다음 섹션과 병합. 한줄만으로 구성된 섹션 대상
         for i in range(len(sections) - 2, -1, -1):
             items, h_infos, h_short = sections[i]
+
+            if len(items) > 1:
+                continue  # 아이템이 하나인 섹션만 검사
 
             text = ""
             if h_short and h_short[0].values():
                 text = list(h_short[0].values())[-1]
 
             if re.match(r"제\s*\d+\s*(장|절|관)", text):
+                # 문단이 이미 구성된 것은 제외
+                item_text = "".join(item.text for item in items if hasattr(item, "text"))
+                if len(item_text) > 30:
+                    continue
+
                 n_items, n_h_infos, n_h_short = sections[i + 1]
                 sections[i] = (items + n_items, h_infos + n_h_infos, h_short + n_h_short)
                 sections.pop(i + 1)
