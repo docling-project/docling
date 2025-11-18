@@ -248,15 +248,12 @@ class ConversionResult(BaseModel):
         filepath: Path,
         indent: Optional[int] = 2,
     ):
-        """Serialize the full ConversionResult to JSON.
-        """
+        """Serialize the full ConversionResult to JSON."""
         json_str = self.model_dump_json(indent=indent, exclude_none=True)
         filepath.write_text(json_str, encoding="utf-8")
-    
+
     @classmethod
-    def load_from_json(
-        cls, filepath: Path
-    ) -> "ConversionResult":
+    def load_from_json(cls, filepath: Path) -> "ConversionResult":
         """Load a ConversionResult from JSON content or a .json file path.
 
         Accepts either a path (``str`` or ``Path``) to a ``.json`` file or a

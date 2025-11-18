@@ -404,7 +404,9 @@ class PageConfidenceScores(BaseModel):
     ocr_score: ScoreValue = np.nan
 
     # Accept null/None or string "NaN" values on input and coerce to np.nan
-    @field_validator("parse_score", "layout_score", "table_score", "ocr_score", mode="before")
+    @field_validator(
+        "parse_score", "layout_score", "table_score", "ocr_score", mode="before"
+    )
     @classmethod
     def _coerce_none_or_nan_str(cls, v):
         if v is None:
