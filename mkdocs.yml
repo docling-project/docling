@@ -55,8 +55,8 @@ nav:
   - Documentation:
     - Documentation: index.md
     - Getting started : 
-      - "Installation": documentation/installation.md
-      - "Quickstart": documentation/quickstart.md
+      - Installation: getting_started/installation.md
+      - Quickstart: getting_started/quickstart.md
     - Usage:
       - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
@@ -183,8 +183,8 @@ plugins:
   - redirects:
       redirect_maps:
         getting_started/index.md: index.md
-        installation/index.md: documentation/installation.md
-        usage/index.md: documentation/quickstart.md
+        installation/index.md: getting_started/installation.md
+        usage/index.md: getting_started/quickstart.md
   - mkdocs-jupyter
   - mkdocstrings:
       default_handler: python
