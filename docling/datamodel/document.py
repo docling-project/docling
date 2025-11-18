@@ -241,6 +241,48 @@ class ConversionResult(BaseModel):
     def legacy_document(self):
         return docling_document_to_legacy(self.document)
 
+    def save_as_json(
+        self, filename: Optional[Union[str, Path]] = None, indent: Optional[int] = 2
+    ) -> Optional[str]:
+        """Serialize the full ConversionResult to JSON.
+
+        If a filename is provided, writes the JSON to disk and returns None.
+        If no filename is provided, returns the JSON string instead.
+        """
+        json_str = self.model_dump_json(indent=indent)
+        if filename is not None:
+            Path(filename).write_text(json_str, encoding="utf-8")
+            return None
+        return json_str
+
+    @classmethod
+    def load_from_json(
+        cls, source: Union[str, bytes, Path]
+    ) -> "ConversionResult":
+        """Load a ConversionResult from JSON content or a .json file path.
+
+        - If `source` is a Path (or a str that points to an existing file), the file
+          is read and parsed as JSON.
+        - Otherwise, `source` is treated as raw JSON (str or bytes).
+        """
+        if isinstance(source, Path):
+            data = source.read_text(encoding="utf-8")
+            return cls.model_validate_json(data)
+
+        if isinstance(source, (str, bytes)):
+            # Try path-like first when str points to an existing file
+            if isinstance(source, str):
+                p = Path(source)
+                if p.exists() and p.is_file():
+                    data = p.read_text(encoding="utf-8")
+                    return cls.model_validate_json(data)
+            # Otherwise, treat as raw JSON payload
+            return cls.model_validate_json(source)
+
+        raise TypeError(
+            f"Unsupported source type for load_from_json: {type(source)}"
+        )
+
 
 class _DummyBackend(AbstractDocumentBackend):
     def __init__(self, *args, **kwargs):
