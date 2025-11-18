@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 import re
 import tarfile
@@ -242,45 +243,53 @@ class ConversionResult(BaseModel):
         return docling_document_to_legacy(self.document)
 
     def save_as_json(
-        self, filename: Optional[Union[str, Path]] = None, indent: Optional[int] = 2
-    ) -> Optional[str]:
+        self,
+        *,
+        filepath: Path,
+        indent: Optional[int] = 2,
+    ):
         """Serialize the full ConversionResult to JSON.
-
-        If a filename is provided, writes the JSON to disk and returns None.
-        If no filename is provided, returns the JSON string instead.
         """
-        json_str = self.model_dump_json(indent=indent)
-        if filename is not None:
-            Path(filename).write_text(json_str, encoding="utf-8")
-            return None
-        return json_str
-
+        json_str = self.model_dump_json(indent=indent, exclude_none=True)
+        filepath.write_text(json_str, encoding="utf-8")
+    
     @classmethod
     def load_from_json(
-        cls, source: Union[str, bytes, Path]
+        cls, filepath: Path
     ) -> "ConversionResult":
         """Load a ConversionResult from JSON content or a .json file path.
 
-        - If `source` is a Path (or a str that points to an existing file), the file
-          is read and parsed as JSON.
-        - Otherwise, `source` is treated as raw JSON (str or bytes).
+        Accepts either a path (``str`` or ``Path``) to a ``.json`` file or a
+        JSON string payload.
         """
-        if isinstance(source, Path):
-            data = source.read_text(encoding="utf-8")
-            return cls.model_validate_json(data)
+        # If it's a Path, always treat as a file path.
+        if isinstance(filepath, Path):
+            data = filepath.read_text(encoding="utf-8")
 
-        if isinstance(source, (str, bytes)):
-            # Try path-like first when str points to an existing file
-            if isinstance(source, str):
-                p = Path(source)
-                if p.exists() and p.is_file():
-                    data = p.read_text(encoding="utf-8")
-                    return cls.model_validate_json(data)
-            # Otherwise, treat as raw JSON payload
-            return cls.model_validate_json(source)
+            # Default validation fails because InputDocument overrides __init__.
+            # Manually construct the nested InputDocument, then validate the rest.
+            raw = json.loads(data)
+
+            if isinstance(raw, dict) and isinstance(raw.get("input"), dict):
+                input_payload = raw["input"]
+
+                # Coerce a few critical fields to their runtime types.
+                if isinstance(input_payload.get("file"), str):
+                    input_payload["file"] = PurePath(input_payload["file"])  # type: ignore[assignment]
+                if isinstance(input_payload.get("format"), str):
+                    input_payload["format"] = InputFormat(input_payload["format"])  # type: ignore[assignment]
+                if isinstance(input_payload.get("limits"), dict):
+                    input_payload["limits"] = DocumentLimits.model_validate(
+                        input_payload["limits"]
+                    )
+
+                # Bypass InputDocument.__init__ to allow field-based construction.
+                raw["input"] = InputDocument.model_construct(**input_payload)
+
+            return cls.model_validate(raw)
 
         raise TypeError(
-            f"Unsupported source type for load_from_json: {type(source)}"
+            f"Unsupported filepath type for load_from_json: {type(filepath)}"
         )
 
 

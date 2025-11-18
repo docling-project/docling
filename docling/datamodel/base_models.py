@@ -24,6 +24,7 @@ from pydantic import (
     FieldSerializationInfo,
     computed_field,
     field_serializer,
+    field_validator,
 )
 
 if TYPE_CHECKING:
@@ -401,6 +402,16 @@ class PageConfidenceScores(BaseModel):
     layout_score: ScoreValue = np.nan
     table_score: ScoreValue = np.nan
     ocr_score: ScoreValue = np.nan
+
+    # Accept null/None or string "NaN" values on input and coerce to np.nan
+    @field_validator("parse_score", "layout_score", "table_score", "ocr_score", mode="before")
+    @classmethod
+    def _coerce_none_or_nan_str(cls, v):
+        if v is None:
+            return np.nan
+        if isinstance(v, str) and v.strip().lower() in {"nan", "null", "none", ""}:
+            return np.nan
+        return v
 
     def _score_to_grade(self, score: ScoreValue) -> QualityGrade:
         if score < 0.5:

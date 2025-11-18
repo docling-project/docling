@@ -21,6 +21,8 @@ def test_conversion_result_json_roundtrip_string():
     
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = False
+    pipeline_options.images_scale = 1.0 
+    pipeline_options.generate_page_images = False 
     pipeline_options.do_table_structure = False
     pipeline_options.table_structure_options.do_cell_matching = True
     pipeline_options.generate_parsed_pages = True
@@ -33,17 +35,16 @@ def test_conversion_result_json_roundtrip_string():
         }
     )
     conv_res = doc_converter.convert(pdf_doc)
-    
-    json_str = conv_res.save_as_json("./test-conversion.json")  # returns string when no filename is given
-    print(json_str)
-    
-    assert isinstance(json_str, str) and len(json_str) > 0
 
-    loaded = ConversionResult.load_from_json("./test-conversion.json")
+    fpath: Path = Path("./test-conversion.json")
+    
+    conv_res.save_as_json(filepath=fpath)  # returns string when no filename is given
+    # assert isinstance(json_str, str) and len(json_str) > 0
 
-    assert loaded.status == conv.status
+    loaded = ConversionResult.load_from_json(filepath=fpath)
+
+    assert loaded.status == conv_res.status
     assert loaded.input.valid is True
-    assert loaded.input.file.name == conv.input.file.name
-    assert loaded.document.name == conv.document.name
-
+    assert loaded.input.file.name == conv_res.input.file.name
+    assert loaded.document.name == conv_res.document.name
 
