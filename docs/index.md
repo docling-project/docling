@@ -26,7 +26,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 <div class="grid">
   <a href="../docling/getting_started/installation/" class="card"><b>⬇️ Installation</b><br />Quickly install Docling in your environment</a>
-  <a href="../docling/getting_started/quickstart/" class="card"><b>▶️ Usage</b><br />Get a jumpstart on basic Docling usage</a>
+  <a href="../docling/getting_started/quickstart/" class="card"><b>▶️ Quickstart</b><br />Get a jumpstart on basic Docling usage</a>
   <a href="../docling/concepts/" class="card"><b>🧩 Concepts</b><br />Learn Docling fundamentals and get a glimpse under the hood</a>
   <a href="../docling/examples/" class="card"><b>🧑🏽‍🍳 Examples</b><br />Try out recipes for various use cases, including conversion, RAG, and more</a>
   <a href="../docling/integrations/" class="card"><b>🤖 Integrations</b><br />Check out integrations with popular AI tools and frameworks</a>
