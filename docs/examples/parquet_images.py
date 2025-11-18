@@ -97,7 +97,7 @@ def run(
     ),
     doc_size: int = 192,
     batch_size: int = 64,
-    pipeline: Literal["standard", "vlm"] = "vlm",
+    pipeline: Literal["standard", "vlm"] = "standard",
 ):
     if pipeline == "standard":
         pipeline_cls: type[ConvertPipeline] = StandardPdfPipeline
