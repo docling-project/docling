@@ -61,7 +61,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ## What's next
 
-🚀 The journey has just begun! Join us and become a part of the growing Docling community!
+🚀 The journey has just begun! Join us and become a part of the growing Docling community.
 
 - <a href="https://github.com/docling-project/docling">:fontawesome-brands-github: GitHub</a>
 - <a href="https://docling.ai/discord">:fontawesome-brands-discord: Discord</a>
