@@ -310,7 +310,7 @@ class DocumentConverter:
         self,
         content: str,
         format: InputFormat,
-        name: Optional[str],
+        name: Optional[str] = None,
     ) -> ConversionResult:
         name = name or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
