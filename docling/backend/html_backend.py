@@ -369,7 +369,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         A table cell can hold rich content and be parsed with a Docling RichTableCell.
         However, this requires walking through the content elements and creating
         Docling node items. If the cell holds only plain text, the parsing is simpler
-        and using a TableCell is prefered.
+        and using a TableCell is preferred.
 
         Args:
             table_cell: The HTML tag representing a table cell.
@@ -783,7 +783,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """Create a group with the content of a details tag.
 
         While the context manager is active, the hierarchy level is set one
-        level higher as the cuurent parent.
+        level higher as the current parent.
 
         Args:
             tag: The details tag.
@@ -807,7 +807,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """Create a group with a footer.
 
         Create a group with the content of a footer tag. While the context manager
-        is active, the hierarchy level is set one level higher as the cuurent parent.
+        is active, the hierarchy level is set one level higher as the current parent.
 
         Args:
             tag: The footer tag.
