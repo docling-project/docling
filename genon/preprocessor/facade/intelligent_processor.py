@@ -1216,7 +1216,7 @@ class DocumentProcessor:
         )
 
         # 새로운 enriched result 받기
-        document = enrich_document(document, enrichment_options)
+        document = enrich_document(document, enrichment_options, **kwargs)
         return document
 
     async def compose_vectors(

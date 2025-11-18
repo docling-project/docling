@@ -30,7 +30,9 @@ mock_request = Request(scope={"type": "http"})
 # 비동기 메서드 실행
 async def process_document():
     # print(file_path)
-    vectors = await doc_processor(mock_request, file_path)
+    kwargs = {}
+    kwargs['org_filename'] = os.path.basename(file_path)
+    vectors = await doc_processor(mock_request, file_path, **kwargs)
     # WMF 변환 여부는 include_wmf 파라미터 전달: 현재 한글만 지원
     # vectors = await doc_processor(mock_request, file_path, save_images=True, include_wmf=False)
     return vectors
