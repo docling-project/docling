@@ -15,9 +15,15 @@
 # For example:
 # - https://huggingface.co/datasets/vidore/vidore_v3_hr/blob/main/corpus/test-00000-of-00001.parquet
 #
-# Notes
-# - The converter auto-detects supported formats (PDF, DOCX, HTML, PPTX, images, etc.).
-# - For batch processing or saving outputs to files, see `docs/examples/batch_convert.py`.
+# ### Start models with vllm
+# ```console
+# vllm serve ibm-granite/granite-docling-258M \
+#   --host 127.0.0.1 --port 8000 \
+#   --max-num-seqs 512 \
+#   --max-num-batched-tokens 8192 \
+#   --enable-chunked-prefill \
+#   --gpu-memory-utilization 0.9
+# ```
 # %%
 
 import io
@@ -34,6 +40,7 @@ from docling.datamodel.base_models import ConversionStatus, DocumentStream, Inpu
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PipelineOptions,
+    RapidOcrOptions,
     VlmPipelineOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
@@ -93,6 +100,7 @@ def run(
     if pipeline == "standard":
         pipeline_cls: type[ConvertPipeline] = StandardPdfPipeline
         pipeline_options: PipelineOptions = PdfPipelineOptions(
+            ocr_options=RapidOcrOptions(backend="openvino"),
             ocr_batch_size=batch_size,
             layout_batch_size=batch_size,
             table_batch_size=4,
@@ -101,7 +109,7 @@ def run(
         settings.perf.page_batch_size = batch_size
         pipeline_cls = VlmPipeline
         vlm_options = ApiVlmOptions(
-            url="http://localhost:8000/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
+            url="http://localhost:8000/v1/chat/completions",
             params=dict(
                 model=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.repo_id,
                 max_tokens=4096,
@@ -109,7 +117,7 @@ def run(
             ),
             prompt=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.prompt,
             timeout=90,
-            scale=2.0,
+            scale=1.0,
             temperature=0.0,
             concurrency=batch_size,
             stop_strings=["</doctag>", "<|end_of_text|>"],
@@ -119,8 +127,6 @@ def run(
             vlm_options=vlm_options,
             enable_remote_services=True,  # required when using a remote inference service.
         )
-
-        # pipeline_options.vlm_options.scale = 1.0
     else:
         raise RuntimeError(f"Pipeline {pipeline} not available.")
 
