@@ -92,7 +92,9 @@ def process_document(
 
 
 def run(
-    filename: Annotated[Path, typer.Argument()],
+    filename: Annotated[Path, typer.Argument()] = Path(
+        "docs/examples/data/vidore_v3_hr-slice.parquet"
+    ),
     doc_size: int = 192,
     batch_size: int = 64,
     pipeline: Literal["standard", "vlm"] = "vlm",
