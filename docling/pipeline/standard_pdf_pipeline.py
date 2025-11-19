@@ -687,11 +687,9 @@ class StandardPdfPipeline(ConvertPipeline):
         timeout_exceeded: bool = False,
     ) -> None:
         page_map = {p.page_no: p for p in proc.pages}
+        # Only keep pages that successfully completed processing
         conv_res.pages = [
-            page_map.get(p.page_no, p)
-            for p in conv_res.pages
-            if p.page_no in page_map
-            or not any(fp == p.page_no for fp, _ in proc.failed_pages)
+            page_map[p.page_no] for p in conv_res.pages if p.page_no in page_map
         ]
         # Add error details from failed pages
         for page_no, error in proc.failed_pages:
