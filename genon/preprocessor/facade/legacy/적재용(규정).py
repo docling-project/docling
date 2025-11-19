@@ -1070,7 +1070,7 @@ class DocumentProcessor:
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
 
         # 새로운 enriched result 받기
-        document = enrich_document(document, self.enrichment_options)
+        document = enrich_document(document, self.enrichment_options, **kwargs)
         return document
 
     async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,

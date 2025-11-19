@@ -362,7 +362,7 @@ class DocumentEnrichmentUtils:
             _log.error(f"TOC 추출 중 오류 발생: {str(e)}")
             return 0
 
-    def apply_metadata_enrichment(self, document: DoclingDocument) -> bool:
+    def apply_metadata_enrichment(self, document: DoclingDocument, **kwargs: dict) -> bool:
         """
         문서에 메타데이터 enrichment 적용
 
@@ -376,13 +376,13 @@ class DocumentEnrichmentUtils:
             return False
 
         try:
-            # 문서의 처음 2페이지에서 텍스트 추출
+            # 문서의 처음 4페이지에서 텍스트 추출
             temp_content = ""
             total_pages = len(document.pages)
-            for page in range(1, min(3, total_pages + 1)):
+            for page in range(1, min(5, total_pages + 1)):
                 temp_content += document.export_to_markdown(page_no=page)
 
-            metadata = self._extract_document_metadata_date(temp_content)
+            metadata = self._extract_document_metadata_date(temp_content, **kwargs)
             if metadata:
                 _log.info(f"추출된 메타데이터: {json.dumps(metadata, ensure_ascii=False, indent=2)}")
 
@@ -892,7 +892,7 @@ class DocumentEnrichmentUtils:
             return {"작성일": None, "작성자": []}
 
 
-    def _extract_document_metadata_date(self, document_content):
+    def _extract_document_metadata_date(self, document_content: str, **kwargs: dict) -> Dict[str, Any]:
         """
         문서 내용에서 메타데이터 정보를 추출하는 함수
 
@@ -906,6 +906,18 @@ class DocumentEnrichmentUtils:
             # 사용자 정의 프롬프트 가져오기
             custom_system = self.enrichment_options.metadata_system_prompt
             custom_user = self.enrichment_options.metadata_user_prompt
+
+            # 불필요한 태그 제거 (이미지 정보를 나타내는 태그 제거)
+            document_content = document_content.replace("<!-- image -->", "")
+
+            # document_content 에 추가 정보 삽입
+            if 'org_filename' in kwargs:
+                document_content = f"filename: {kwargs['org_filename']}\n\n{document_content}"
+
+            document_content = document_content.strip()
+
+            if len(document_content) == 0:
+                return {"작성일": None, "작성자": []}
 
             # 프롬프트 매니저를 사용하여 AI 모델 호출
             response = self.prompt_manager.call_ai_model(
@@ -940,7 +952,7 @@ class DocumentEnrichmentUtils:
 
 
 # 간단한 함수형 API
-def enrich_document(document: DoclingDocument, enrichment_options: DataEnrichmentOptions) -> DoclingDocument:
+def enrich_document(document: DoclingDocument, enrichment_options: DataEnrichmentOptions, **kwargs: dict) -> DoclingDocument:
     """
     DoclingDocument에 enrichment를 적용한 새로운 DoclingDocument를 반환
 
@@ -974,7 +986,7 @@ def enrich_document(document: DoclingDocument, enrichment_options: DataEnrichmen
                 toc_count = enricher.apply_law_toc_enrichment(enriched_doc)
 
         if enrichment_options.extract_metadata:
-            metadata_extracted = enricher.apply_metadata_enrichment(enriched_doc)
+            metadata_extracted = enricher.apply_metadata_enrichment(enriched_doc, **kwargs)
         _log.info(f"Document enrichment 완료: TOC {toc_count}개, 메타데이터 {metadata_extracted}")
 
         return enriched_doc
