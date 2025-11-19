@@ -53,11 +53,11 @@ theme:
     - toc.follow
 nav:
   - Documentation:
-    - "Docling documentation": index.md
-    - Installation:
-      - Installation: installation/index.md
+    - Documentation: index.md
+    - Getting started : 
+      - Installation: getting_started/installation.md
+      - Quickstart: getting_started/quickstart.md
     - Usage:
-      - Usage: usage/index.md
       - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
@@ -92,6 +92,7 @@ nav:
       - "Force full page OCR": examples/full_page_ocr.py
       - "Automatic OCR language detection with tesseract": examples/tesseract_lang_detection.py
       - "RapidOCR with custom OCR models": examples/rapidocr_with_custom_models.py
+      - "SuryaOCR with custom OCR models": examples/suryaocr_with_custom_models.py
       - "Accelerator options": examples/run_with_accelerator.py
       - "Detect and obfuscate PII": examples/pii_obfuscate.py
       - "Simple translation": examples/translate.py
@@ -118,6 +119,7 @@ nav:
     - ⚡️ GPU optimization:
       - "Standard pipeline": examples/gpu_standard_pipeline.py
       - "VLM pipeline": examples/gpu_vlm_pipeline.py
+      - "Parquet benchmark": examples/parquet_images.py
     - 🗂️ More examples:
       - examples/dpk-ingest-chunk-tokenize.ipynb
       - examples/rag_azuresearch.ipynb
@@ -183,6 +185,8 @@ plugins:
   - redirects:
       redirect_maps:
         getting_started/index.md: index.md
+        installation/index.md: getting_started/installation.md
+        usage/index.md: getting_started/quickstart.md
   - mkdocs-jupyter
   - mkdocstrings:
       default_handler: python
