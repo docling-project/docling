@@ -543,34 +543,7 @@ class HybridChunker(BaseChunker):
             sections.append((cur_items, cur_h_infos, cur_h_short))
 
         # ================================================================
-        # 2단계: 단독 타이틀(1줄만) → 다음 섹션으로 병합
-        # ================================================================
-
-        for i in range(len(sections) - 2, -1, -1):
-            items, h_infos, h_short = sections[i]
-
-            # 아이템이 하나인 섹션 헤더만 검사
-            if len(items) != 1 or not self._is_section_header(items[0]):
-                continue
-
-            # 문단이 이미 구성된 것은 제외 (문자 수가 30자 이상이면 문단을 구성했다고 간주)
-            item_text = "".join(getattr(it, "text", "") for it in items)
-            if len(item_text) > 30:
-                continue
-
-            # 현재 섹션헤더 레벨이 다음 섹션헤더 레벨보다 더 높은 경우에만 병합 (높은 레벨이 더 작은 숫자)
-            n_items, n_h_infos, n_h_short = sections[i + 1]
-            current_level = get_header_level(h_infos, first=False)
-            next_level = get_header_level(n_h_infos, first=True)
-            if 0 <= next_level < current_level:
-                continue
-
-            # 다음 섹션과 병합
-            sections[i] = (items + n_items, h_infos + n_h_infos, h_short + n_h_short)
-            sections.pop(i + 1)
-
-        # ================================================================
-        # 3단계: 각 섹션의 텍스트에 heading 붙이기
+        # 2단계: 각 섹션의 텍스트에 heading 붙이기
         # ================================================================
 
         sections_with_text = []
@@ -584,6 +557,39 @@ class HybridChunker(BaseChunker):
                 header_infos,
                 header_short_infos
             ))
+
+            print(f'header text: {text}')
+            item_text = "".join(getattr(it, "text", "") for it in items)
+            print(f'item text: {item_text[:30]}')
+            print(f'header_short_infos: {header_short_infos}')
+            print('\n')
+
+        # ================================================================
+        # 3단계: 단독 타이틀(1줄만) → 다음 섹션으로 병합
+        # ================================================================
+
+        for i in range(len(sections_with_text) - 2, -1, -1):
+            text, items, h_infos, h_short = sections_with_text[i]
+
+            # 아이템이 하나인 섹션 헤더만 검사
+            if len(items) != 1 or not self._is_section_header(items[0]):
+                continue
+
+            # 문단이 이미 구성된 것은 제외 (문자 수가 30자 이상이면 문단을 구성했다고 간주)
+            item_text = "".join(getattr(it, "text", "") for it in items)
+            if len(item_text) > 30:
+                continue
+
+            # 현재 섹션헤더 레벨이 다음 섹션헤더 레벨보다 더 높은 경우에만 병합 (높은 레벨이 더 작은 숫자)
+            n_text, n_items, n_h_infos, n_h_short = sections_with_text[i + 1]
+            current_level = get_header_level(h_infos, first=False)
+            next_level = get_header_level(n_h_infos, first=True)
+            if 0 <= next_level < current_level:
+                continue
+
+            # 다음 섹션과 병합
+            sections_with_text[i] = (text + '\n' + n_text, items + n_items, h_infos + n_h_infos, h_short + n_h_short)
+            sections_with_text.pop(i + 1)
 
         # ================================================================
         # 4단계: 토큰 기준 병합
