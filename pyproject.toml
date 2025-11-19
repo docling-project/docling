@@ -148,6 +148,7 @@ examples = [
   "langchain-milvus~=0.1",
   "langchain-text-splitters~=0.2",
   "modelscope>=1.29.0",
+  "openvino>=2025.0.0",
   'gliner>=0.2.21 ; python_version < "3.14"',  # gliner depends on onnxruntime which is not available on py3.14
 ]
 constraints = [

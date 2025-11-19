@@ -102,7 +102,7 @@ def run(
     if pipeline == "standard":
         pipeline_cls: type[ConvertPipeline] = StandardPdfPipeline
         pipeline_options: PipelineOptions = PdfPipelineOptions(
-            # ocr_options=RapidOcrOptions(backend="openvino"),
+            ocr_options=RapidOcrOptions(backend="openvino"),
             ocr_batch_size=batch_size,
             layout_batch_size=batch_size,
             table_batch_size=4,
