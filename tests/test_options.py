@@ -15,6 +15,7 @@ from docling.datamodel.pipeline_options import (
     TableFormerMode,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
 
 
 @pytest.fixture
@@ -116,6 +117,33 @@ def test_page_range(test_doc_path):
         test_doc_path, page_range=(10, 10), raises_on_error=False
     )
     assert doc_result.status == ConversionStatus.FAILURE
+
+
+def test_document_timeout(test_doc_path):
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=PdfPipelineOptions(document_timeout=1)
+            )
+        }
+    )
+    result = converter.convert(test_doc_path)
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+        "Expected document timeout to be used"
+    )
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=PdfPipelineOptions(document_timeout=1),
+                pipeline_cls=LegacyStandardPdfPipeline,
+            )
+        }
+    )
+    result = converter.convert(test_doc_path)
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+        "Expected document timeout to be used"
+    )
 
 
 def test_ocr_coverage_threshold(test_doc_path):
