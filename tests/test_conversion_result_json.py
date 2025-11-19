@@ -35,10 +35,10 @@ def test_conversion_result_json_roundtrip_string():
 
     fpath: Path = Path("./test-conversion.json")
 
-    conv_res.save_as_json(filepath=fpath)  # returns string when no filename is given
+    conv_res.save_as_json(filename=fpath)  # returns string when no filename is given
     # assert isinstance(json_str, str) and len(json_str) > 0
 
-    loaded = ConversionResult.load_from_json(filepath=fpath)
+    loaded = ConversionResult.load_from_json(filename=fpath)
 
     assert loaded.status == conv_res.status
     assert loaded.input.valid is True

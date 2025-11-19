@@ -245,49 +245,68 @@ class ConversionResult(BaseModel):
     def save_as_json(
         self,
         *,
-        filepath: Path,
+        filename: Union[str, Path],
         indent: Optional[int] = 2,
     ):
-        """Serialize the full ConversionResult to JSON."""
-        json_str = self.model_dump_json(indent=indent, exclude_none=True)
-        filepath.write_text(json_str, encoding="utf-8")
+        """Serialize the full ConversionResult to JSON.
+
+        - When ``indent`` is an integer, pretty-print with that number of spaces.
+        - When ``indent`` is ``None``, write a compact single-line JSON (no extra spaces).
+        """
+        if isinstance(filename, str):
+            filename = Path(filename)
+
+        # Dump in JSON mode to ensure all values are JSON-serializable
+        # (e.g., pathlib.Path/PurePath becomes a string).
+        data = self.model_dump(mode="json", by_alias=True, exclude_none=True)
+
+        if indent is None:
+            # Compact JSON: remove spaces after separators and keep unicode characters
+            json_str = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+        else:
+            # Pretty JSON with the requested indentation
+            json_str = json.dumps(data, ensure_ascii=False, indent=indent)
+
+        # Ensure parent directory exists if any
+        if filename.parent:
+            filename.parent.mkdir(parents=True, exist_ok=True)
+
+        filename.write_text(json_str, encoding="utf-8")
 
     @classmethod
-    def load_from_json(cls, filepath: Path) -> "ConversionResult":
+    def load_from_json(cls, filename: Union[str, Path]) -> "ConversionResult":
         """Load a ConversionResult from JSON content or a .json file path.
 
         Accepts either a path (``str`` or ``Path``) to a ``.json`` file or a
         JSON string payload.
         """
+        if isinstance(filename, str):
+            filename = Path(filename)
+
         # If it's a Path, always treat as a file path.
-        if isinstance(filepath, Path):
-            data = filepath.read_text(encoding="utf-8")
+        data = filename.read_text(encoding="utf-8")
 
-            # Default validation fails because InputDocument overrides __init__.
-            # Manually construct the nested InputDocument, then validate the rest.
-            raw = json.loads(data)
+        # Default validation fails because InputDocument overrides __init__.
+        # Manually construct the nested InputDocument, then validate the rest.
+        raw = json.loads(data)
 
-            if isinstance(raw, dict) and isinstance(raw.get("input"), dict):
-                input_payload = raw["input"]
+        if isinstance(raw, dict) and isinstance(raw.get("input"), dict):
+            input_payload = raw["input"]
 
-                # Coerce a few critical fields to their runtime types.
-                if isinstance(input_payload.get("file"), str):
-                    input_payload["file"] = PurePath(input_payload["file"])  # type: ignore[assignment]
-                if isinstance(input_payload.get("format"), str):
-                    input_payload["format"] = InputFormat(input_payload["format"])  # type: ignore[assignment]
-                if isinstance(input_payload.get("limits"), dict):
-                    input_payload["limits"] = DocumentLimits.model_validate(
-                        input_payload["limits"]
-                    )
+            # Coerce a few critical fields to their runtime types.
+            if isinstance(input_payload.get("file"), str):
+                input_payload["file"] = PurePath(input_payload["file"])  # type: ignore[assignment]
+            if isinstance(input_payload.get("format"), str):
+                input_payload["format"] = InputFormat(input_payload["format"])  # type: ignore[assignment]
+            if isinstance(input_payload.get("limits"), dict):
+                input_payload["limits"] = DocumentLimits.model_validate(
+                    input_payload["limits"]
+                )
 
-                # Bypass InputDocument.__init__ to allow field-based construction.
-                raw["input"] = InputDocument.model_construct(**input_payload)
+            # Bypass InputDocument.__init__ to allow field-based construction.
+            raw["input"] = InputDocument.model_construct(**input_payload)
 
-            return cls.model_validate(raw)
-
-        raise TypeError(
-            f"Unsupported filepath type for load_from_json: {type(filepath)}"
-        )
+        return cls.model_validate(raw)
 
 
 class _DummyBackend(AbstractDocumentBackend):
