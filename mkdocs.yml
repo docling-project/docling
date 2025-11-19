@@ -134,6 +134,7 @@ nav:
       - "Bee Agent Framework": integrations/bee.md
       - "Crew AI": integrations/crewai.md
       - "Haystack": integrations/haystack.md
+      - "Hector": integrations/hector.md
       - "LangChain": integrations/langchain.md
       - "Langflow": integrations/langflow.md
       - "LlamaIndex": integrations/llamaindex.md
