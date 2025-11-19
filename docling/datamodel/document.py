@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import tarfile
+import zipfile
 from collections.abc import Iterable, Mapping
 from enum import Enum
 from io import BytesIO
@@ -224,14 +225,11 @@ class DocumentFormat(str, Enum):
     V1 = "v1"
 
 
-class ConversionResult(BaseModel):
-    input: InputDocument
-
+class ConversionAssets(BaseModel):
     status: ConversionStatus = ConversionStatus.PENDING  # failure, success
     errors: list[ErrorItem] = []  # structure to keep errors
 
     pages: list[Page] = []
-    assembled: AssembledUnit = AssembledUnit()
     timings: dict[str, ProfilingItem] = {}
     confidence: ConfidenceReport = Field(default_factory=ConfidenceReport)
 
@@ -242,71 +240,144 @@ class ConversionResult(BaseModel):
     def legacy_document(self):
         return docling_document_to_legacy(self.document)
 
-    def save_as_json(
+    def save(
         self,
         *,
         filename: Union[str, Path],
         indent: Optional[int] = 2,
     ):
-        """Serialize the full ConversionResult to JSON.
-
-        - When ``indent`` is an integer, pretty-print with that number of spaces.
-        - When ``indent`` is ``None``, write a compact single-line JSON (no extra spaces).
-        """
+        """Serialize the full ConversionAssets to JSON."""
         if isinstance(filename, str):
             filename = Path(filename)
+        # Build an in-memory ZIP archive containing JSON for each asset
+        buf = BytesIO()
 
-        # Dump in JSON mode to ensure all values are JSON-serializable
-        # (e.g., pathlib.Path/PurePath becomes a string).
-        data = self.model_dump(mode="json", by_alias=True, exclude_none=True)
+        def to_jsonable(obj):
+            try:
+                # pydantic v2 models
+                if hasattr(obj, "model_dump"):
+                    return obj.model_dump(mode="json")  # type: ignore[attr-defined]
+            except TypeError:
+                # some models may not accept mode argument
+                return obj.model_dump()  # type: ignore[attr-defined]
 
-        if indent is None:
-            # Compact JSON: remove spaces after separators and keep unicode characters
-            json_str = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-        else:
-            # Pretty JSON with the requested indentation
-            json_str = json.dumps(data, ensure_ascii=False, indent=indent)
+            # enums
+            try:
+                from enum import Enum
 
-        # Ensure parent directory exists if any
-        if filename.parent:
+                if isinstance(obj, Enum):
+                    return obj.value
+            except Exception:
+                pass
+
+            # containers
+            if isinstance(obj, list):
+                return [to_jsonable(x) for x in obj]
+            if isinstance(obj, dict):
+                return {k: to_jsonable(v) for k, v in obj.items()}
+
+            # passthrough primitives
+            return obj
+
+        with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+
+            def write_json(name: str, payload) -> None:
+                data = json.dumps(
+                    to_jsonable(payload), ensure_ascii=False, indent=indent
+                )
+                zf.writestr(name, data.encode("utf-8"))
+
+            # Store each component in its own JSON file
+            write_json("status.json", self.status)
+            write_json("errors.json", self.errors)
+            write_json("pages.json", self.pages)
+            write_json("timings.json", self.timings)
+            write_json("confidence.json", self.confidence)
+            # For the document, ensure stable schema via export_to_dict
+            doc_dict = self.document.export_to_dict()
+            zf.writestr(
+                "document.json",
+                json.dumps(doc_dict, ensure_ascii=False, indent=indent).encode("utf-8"),
+            )
+
+        # Persist the ZIP to disk
+        buf.seek(0)
+        if filename.parent and not filename.parent.exists():
             filename.parent.mkdir(parents=True, exist_ok=True)
-
-        filename.write_text(json_str, encoding="utf-8")
+        with filename.open("wb") as f:
+            f.write(buf.getvalue())
 
     @classmethod
-    def load_from_json(cls, filename: Union[str, Path]) -> "ConversionResult":
-        """Load a ConversionResult from JSON content or a .json file path.
-
-        Accepts either a path (``str`` or ``Path``) to a ``.json`` file or a
-        JSON string payload.
-        """
+    def load(cls, filename: Union[str, Path]) -> "ConversionAssets":
+        """Load a ConversionAssets."""
         if isinstance(filename, str):
             filename = Path(filename)
 
-        # If it's a Path, always treat as a file path.
-        data = filename.read_text(encoding="utf-8")
+        # Read the ZIP and deserialize all items
+        status = ConversionStatus.PENDING
+        errors: list[ErrorItem] = []
+        pages: list[Page] = []
+        timings: dict[str, ProfilingItem] = {}
+        confidence = ConfidenceReport()
+        document: DoclingDocument = _EMPTY_DOCLING_DOC
 
-        # Default validation fails because InputDocument overrides __init__.
-        # Manually construct the nested InputDocument, then validate the rest.
-        raw = json.loads(data)
+        with zipfile.ZipFile(filename, mode="r") as zf:
 
-        if isinstance(raw, dict) and isinstance(raw.get("input"), dict):
-            input_payload = raw["input"]
+            def read_json(name: str):
+                try:
+                    with zf.open(name, "r") as fp:
+                        return json.loads(fp.read().decode("utf-8"))
+                except KeyError:
+                    return None
 
-            # Coerce a few critical fields to their runtime types.
-            if isinstance(input_payload.get("file"), str):
-                input_payload["file"] = PurePath(input_payload["file"])  # type: ignore[assignment]
-            if isinstance(input_payload.get("format"), str):
-                input_payload["format"] = InputFormat(input_payload["format"])  # type: ignore[assignment]
-            if isinstance(input_payload.get("limits"), dict):
-                input_payload["limits"] = DocumentLimits.model_validate(
-                    input_payload["limits"]
-                )
+            # status
+            if (data := read_json("status.json")) is not None:
+                try:
+                    status = ConversionStatus(data)
+                except Exception:
+                    status = ConversionStatus.PENDING
 
-            # Bypass InputDocument.__init__ to allow field-based construction.
-            raw["input"] = InputDocument.model_construct(**input_payload)
+            # errors
+            if (data := read_json("errors.json")) is not None and isinstance(
+                data, list
+            ):
+                errors = [ErrorItem.model_validate(item) for item in data]
 
-        return cls.model_validate(raw)
+            # pages
+            if (data := read_json("pages.json")) is not None and isinstance(data, list):
+                pages = [Page.model_validate(item) for item in data]
+
+            # timings
+            if (data := read_json("timings.json")) is not None and isinstance(
+                data, dict
+            ):
+                timings = {k: ProfilingItem.model_validate(v) for k, v in data.items()}
+
+            # confidence
+            if (data := read_json("confidence.json")) is not None and isinstance(
+                data, dict
+            ):
+                confidence = ConfidenceReport.model_validate(data)
+
+            # document
+            if (data := read_json("document.json")) is not None and isinstance(
+                data, dict
+            ):
+                document = DoclingDocument.model_validate(data)
+
+        return cls(
+            status=status,
+            errors=errors,
+            pages=pages,
+            timings=timings,
+            confidence=confidence,
+            document=document,
+        )
+
+
+class ConversionResult(ConversionAssets):
+    input: InputDocument
+    assembled: AssembledUnit = AssembledUnit()
 
 
 class _DummyBackend(AbstractDocumentBackend):
