@@ -110,6 +110,9 @@ class RapidOcrModel(BaseOcrModel):
             use_cuda = str(AcceleratorDevice.CUDA.value).lower() in device
             use_dml = accelerator_options.device == AcceleratorDevice.AUTO
             intra_op_num_threads = accelerator_options.num_threads
+            gpu_id = 0
+            if use_cuda and ":" in device:
+                gpu_id = int(device.split(":")[1])
             _ALIASES = {
                 "onnxruntime": EngineType.ONNXRUNTIME,
                 "openvino": EngineType.OPENVINO,
@@ -184,6 +187,10 @@ class RapidOcrModel(BaseOcrModel):
                 "Det.engine_type": backend_enum,
                 "Cls.engine_type": backend_enum,
                 "Rec.engine_type": backend_enum,
+                "EngineConfig.paddle.use_cuda": use_cuda,
+                "EngineConfig.paddle.gpu_id": gpu_id,
+                "EngineConfig.torch.use_cuda": use_cuda,
+                "EngineConfig.torch.gpu_id": gpu_id,
             }
 
             if self.options.rec_font_path is not None:

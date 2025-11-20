@@ -4,9 +4,6 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.backend_options import (
@@ -17,7 +14,7 @@ from docling.datamodel.backend_options import (
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import InputDocument, _DocumentConversionInput
 from docling.datamodel.settings import DocumentLimits
-from docling.document_converter import PdfFormatOption
+from docling.document_converter import ImageFormatOption, PdfFormatOption
 
 
 def test_in_doc_from_valid_path():
@@ -49,36 +46,6 @@ def test_in_doc_from_invalid_buf():
 
     doc = _make_input_doc_from_stream(stream)
     assert doc.valid is False
-
-
-def test_image_in_pdf_backend():
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=PyPdfiumDocumentBackend,
-    )
-
-    assert in_doc.valid
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=DoclingParseDocumentBackend,
-    )
-    assert in_doc.valid
-
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=DoclingParseV2DocumentBackend,
-    )
-    assert in_doc.valid
-
-    in_doc = InputDocument(
-        path_or_stream=Path("tests/data/2305.03393v1-pg9-img.png"),
-        format=InputFormat.IMAGE,
-        backend=DoclingParseV4DocumentBackend,
-    )
-    assert in_doc.valid
 
 
 def test_in_doc_with_page_range():
@@ -297,7 +264,7 @@ def test_tiff_two_pages():
     doc = InputDocument(
         path_or_stream=tiff_path,
         format=InputFormat.IMAGE,
-        backend=PdfFormatOption().backend,  # use default backend
+        backend=ImageFormatOption().backend,  # use default backend
     )
     assert doc.valid is True
     assert doc.page_count == 2

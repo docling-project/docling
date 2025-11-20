@@ -26,6 +26,7 @@ from rich.console import Console
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -58,7 +59,7 @@ from docling.datamodel.base_models import (
     InputFormat,
     OutputFormat,
 )
-from docling.datamodel.document import ConversionResult
+from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     ConvertPipelineOptions,
@@ -167,19 +168,13 @@ def logo_callback(value: bool):
 
 def version_callback(value: bool):
     if value:
-        docling_version = importlib.metadata.version("docling")
-        docling_core_version = importlib.metadata.version("docling-core")
-        docling_ibm_models_version = importlib.metadata.version("docling-ibm-models")
-        docling_parse_version = importlib.metadata.version("docling-parse")
-        platform_str = platform.platform()
-        py_impl_version = sys.implementation.cache_tag
-        py_lang_version = platform.python_version()
-        print(f"Docling version: {docling_version}")
-        print(f"Docling Core version: {docling_core_version}")
-        print(f"Docling IBM Models version: {docling_ibm_models_version}")
-        print(f"Docling Parse version: {docling_parse_version}")
-        print(f"Python: {py_impl_version} ({py_lang_version})")
-        print(f"Platform: {platform_str}")
+        v = DoclingVersion()
+        print(f"Docling version: {v.docling_version}")
+        print(f"Docling Core version: {v.docling_core_version}")
+        print(f"Docling IBM Models version: {v.docling_ibm_models_version}")
+        print(f"Docling Parse version: {v.docling_parse_version}")
+        print(f"Python: {v.py_impl_version} ({v.py_lang_version})")
+        print(f"Platform: {v.platform_str}")
         raise typer.Exit()
 
 
@@ -285,7 +280,7 @@ def export_documents(
             if export_doctags:
                 fname = output_dir / f"{doc_filename}.doctags"
                 _log.info(f"writing Doc Tags output to {fname}")
-                conv_res.document.save_as_document_tokens(filename=fname)
+                conv_res.document.save_as_doctags(filename=fname)
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
@@ -698,9 +693,16 @@ def convert(  # noqa: C901
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
 
+            # Use image-native backend for IMAGE to avoid pypdfium2 locking
+            image_format_option = PdfFormatOption(
+                pipeline_options=pipeline_options,
+                backend=ImageDocumentBackend,
+                backend_options=pdf_backend_options,
+            )
+
             format_options = {
                 InputFormat.PDF: pdf_format_option,
-                InputFormat.IMAGE: pdf_format_option,
+                InputFormat.IMAGE: image_format_option,
                 InputFormat.METS_GBS: mets_gbs_format_option,
                 InputFormat.DOCX: WordFormatOption(
                     pipeline_options=simple_format_option

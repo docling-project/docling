@@ -79,7 +79,7 @@ def export_documents(
                     output_dir / f"{doc_filename}.html",
                     image_mode=ImageRefMode.EMBEDDED,
                 )
-                conv_res.document.save_as_document_tokens(
+                conv_res.document.save_as_doctags(
                     output_dir / f"{doc_filename}.doctags.txt"
                 )
                 conv_res.document.save_as_markdown(
@@ -98,7 +98,7 @@ def export_documents(
 
                 # Export Docling document format to doctags:
                 with (output_dir / f"{doc_filename}.doctags.txt").open("w") as fp:
-                    fp.write(conv_res.document.export_to_document_tokens())
+                    fp.write(conv_res.document.export_to_doctags())
 
                 # Export Docling document format to markdown:
                 with (output_dir / f"{doc_filename}.md").open("w") as fp:

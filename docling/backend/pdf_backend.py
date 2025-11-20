@@ -60,41 +60,10 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.options: PdfBackendOptions
 
-        if self.input_format is not InputFormat.PDF:
-            if self.input_format is InputFormat.IMAGE:
-                buf = BytesIO()
-                img = Image.open(self.path_or_stream)
-
-                # Handle multi-page TIFF images
-                if hasattr(img, "n_frames") and img.n_frames > 1:
-                    # Extract all frames from multi-page image
-                    frames = []
-                    try:
-                        for i in range(img.n_frames):
-                            img.seek(i)
-                            frame = img.copy().convert("RGB")
-                            frames.append(frame)
-                    except EOFError:
-                        pass
-
-                    # Save as multi-page PDF
-                    if frames:
-                        frames[0].save(
-                            buf, "PDF", save_all=True, append_images=frames[1:]
-                        )
-                    else:
-                        # Fallback to single page if frame extraction fails
-                        img.convert("RGB").save(buf, "PDF")
-                else:
-                    # Single page image - convert to RGB and save
-                    img.convert("RGB").save(buf, "PDF")
-
-                buf.seek(0)
-                self.path_or_stream = buf
-            elif self.input_format not in self.supported_formats():
-                raise RuntimeError(
-                    f"Incompatible file format {self.input_format} was passed to a PdfDocumentBackend. Valid format are {','.join(self.supported_formats())}."
-                )
+        if self.input_format not in self.supported_formats():
+            raise RuntimeError(
+                f"Incompatible file format {self.input_format} was passed to a PdfDocumentBackend. Valid format are {','.join(self.supported_formats())}."
+            )
 
     @abstractmethod
     def load_page(self, page_no: int) -> PdfPageBackend:
@@ -106,7 +75,7 @@ class PdfDocumentBackend(PaginatedDocumentBackend):
 
     @classmethod
     def supported_formats(cls) -> Set[InputFormat]:
-        return {InputFormat.PDF, InputFormat.IMAGE}
+        return {InputFormat.PDF}
 
     @classmethod
     def supports_pagination(cls) -> bool:

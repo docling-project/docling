@@ -52,7 +52,7 @@ def main():
 
     # Export tables
     for table_ix, table in enumerate(conv_res.document.tables):
-        table_df: pd.DataFrame = table.export_to_dataframe()
+        table_df: pd.DataFrame = table.export_to_dataframe(doc=conv_res.document)
         print(f"## Table {table_ix}")
         print(table_df.to_markdown())
 

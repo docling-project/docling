@@ -1,8 +1,14 @@
 import csv
+import importlib
+import json
 import logging
+import platform
 import re
+import sys
 import tarfile
+import zipfile
 from collections.abc import Iterable, Mapping
+from datetime import datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
@@ -223,14 +229,25 @@ class DocumentFormat(str, Enum):
     V1 = "v1"
 
 
-class ConversionResult(BaseModel):
-    input: InputDocument
+class DoclingVersion(BaseModel):
+    docling_version: str = importlib.metadata.version("docling")
+    docling_core_version: str = importlib.metadata.version("docling-core")
+    docling_ibm_models_version: str = importlib.metadata.version("docling-ibm-models")
+    docling_parse_version: str = importlib.metadata.version("docling-parse")
+    platform_str: str = platform.platform()
+    py_impl_version: str = sys.implementation.cache_tag
+    py_lang_version: str = platform.python_version()
+
+
+class ConversionAssets(BaseModel):
+    version: DoclingVersion = DoclingVersion()
+    # When the assets were saved (ISO string from datetime.now())
+    timestamp: Optional[str] = None
 
     status: ConversionStatus = ConversionStatus.PENDING  # failure, success
     errors: list[ErrorItem] = []  # structure to keep errors
 
     pages: list[Page] = []
-    assembled: AssembledUnit = AssembledUnit()
     timings: dict[str, ProfilingItem] = {}
     confidence: ConfidenceReport = Field(default_factory=ConfidenceReport)
 
@@ -240,6 +257,166 @@ class ConversionResult(BaseModel):
     @deprecated("Use document instead.")
     def legacy_document(self):
         return docling_document_to_legacy(self.document)
+
+    def save(
+        self,
+        *,
+        filename: Union[str, Path],
+        indent: Optional[int] = 2,
+    ):
+        """Serialize the full ConversionAssets to JSON."""
+        if isinstance(filename, str):
+            filename = Path(filename)
+        # Build an in-memory ZIP archive containing JSON for each asset
+        buf = BytesIO()
+
+        def to_jsonable(obj):
+            try:
+                # pydantic v2 models
+                if hasattr(obj, "model_dump"):
+                    return obj.model_dump(mode="json")  # type: ignore[attr-defined]
+            except TypeError:
+                # some models may not accept mode argument
+                return obj.model_dump()  # type: ignore[attr-defined]
+
+            # enums
+            try:
+                from enum import Enum
+
+                if isinstance(obj, Enum):
+                    return obj.value
+            except Exception:
+                pass
+
+            # containers
+            if isinstance(obj, list):
+                return [to_jsonable(x) for x in obj]
+            if isinstance(obj, dict):
+                return {k: to_jsonable(v) for k, v in obj.items()}
+
+            # passthrough primitives
+            return obj
+
+        with zipfile.ZipFile(buf, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+
+            def write_json(name: str, payload) -> None:
+                data = json.dumps(
+                    to_jsonable(payload), ensure_ascii=False, indent=indent
+                )
+                zf.writestr(name, data.encode("utf-8"))
+
+            # Update and persist a save timestamp
+            self.timestamp = datetime.now().isoformat()
+            write_json("timestamp.json", self.timestamp)
+
+            # Store each component in its own JSON file
+            write_json("version.json", self.version)
+            write_json("status.json", self.status)
+            write_json("errors.json", self.errors)
+            write_json("pages.json", self.pages)
+            write_json("timings.json", self.timings)
+            write_json("confidence.json", self.confidence)
+            # For the document, ensure stable schema via export_to_dict
+            doc_dict = self.document.export_to_dict()
+            zf.writestr(
+                "document.json",
+                json.dumps(doc_dict, ensure_ascii=False, indent=indent).encode("utf-8"),
+            )
+
+        # Persist the ZIP to disk
+        buf.seek(0)
+        if filename.parent and not filename.parent.exists():
+            filename.parent.mkdir(parents=True, exist_ok=True)
+        with filename.open("wb") as f:
+            f.write(buf.getvalue())
+
+    @classmethod
+    def load(cls, filename: Union[str, Path]) -> "ConversionAssets":
+        """Load a ConversionAssets."""
+        if isinstance(filename, str):
+            filename = Path(filename)
+
+        # Read the ZIP and deserialize all items
+        version_info: DoclingVersion = DoclingVersion()
+        timestamp: Optional[str] = None
+        status = ConversionStatus.PENDING
+        errors: list[ErrorItem] = []
+        pages: list[Page] = []
+        timings: dict[str, ProfilingItem] = {}
+        confidence = ConfidenceReport()
+        document: DoclingDocument = _EMPTY_DOCLING_DOC
+
+        with zipfile.ZipFile(filename, mode="r") as zf:
+
+            def read_json(name: str):
+                try:
+                    with zf.open(name, "r") as fp:
+                        return json.loads(fp.read().decode("utf-8"))
+                except KeyError:
+                    return None
+
+            # version
+            if (data := read_json("version.json")) is not None:
+                try:
+                    version_info = DoclingVersion.model_validate(data)
+                except Exception as exc:
+                    _log.error(f"Could not read version: {exc}")
+
+            # timestamp
+            if (data := read_json("timestamp.json")) is not None:
+                if isinstance(data, str):
+                    timestamp = data
+
+            # status
+            if (data := read_json("status.json")) is not None:
+                try:
+                    status = ConversionStatus(data)
+                except Exception:
+                    status = ConversionStatus.PENDING
+
+            # errors
+            if (data := read_json("errors.json")) is not None and isinstance(
+                data, list
+            ):
+                errors = [ErrorItem.model_validate(item) for item in data]
+
+            # pages
+            if (data := read_json("pages.json")) is not None and isinstance(data, list):
+                pages = [Page.model_validate(item) for item in data]
+
+            # timings
+            if (data := read_json("timings.json")) is not None and isinstance(
+                data, dict
+            ):
+                timings = {k: ProfilingItem.model_validate(v) for k, v in data.items()}
+
+            # confidence
+            if (data := read_json("confidence.json")) is not None and isinstance(
+                data, dict
+            ):
+                confidence = ConfidenceReport.model_validate(data)
+
+            # document
+            if (data := read_json("document.json")) is not None and isinstance(
+                data, dict
+            ):
+                document = DoclingDocument.model_validate(data)
+
+        return cls(
+            version=version_info,
+            timestamp=timestamp,
+            status=status,
+            errors=errors,
+            pages=pages,
+            timings=timings,
+            confidence=confidence,
+            document=document,
+        )
+
+
+class ConversionResult(ConversionAssets):
+    input: InputDocument
+    assembled: AssembledUnit = AssembledUnit()
 
 
 class _DummyBackend(AbstractDocumentBackend):

@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 from typing import List
 
+from pydantic.type_adapter import R
+
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument
 from docling.datamodel.pipeline_options import (
@@ -72,7 +74,9 @@ def test_e2e_webp_conversions():
         for webp_path in webp_paths:
             print(f"converting {webp_path}")
 
-            doc_result: ConversionResult = converter.convert(webp_path)
+            doc_result: ConversionResult = converter.convert(
+                webp_path, raises_on_error=True
+            )
 
             verify_conversion_result_v2(
                 input_path=webp_path,

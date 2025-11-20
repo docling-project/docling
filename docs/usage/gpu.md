@@ -43,6 +43,21 @@ Setting a higher `page_batch_size` will run the Docling models (in particular th
 
 For a complete example see [gpu_standard_pipeline.py](../examples/gpu_standard_pipeline.py).
 
+#### OCR engines
+
+The current Docling OCR engines rely on third-party libraries, hence GPU support depends on the availability in the respective engines.
+
+The only setup which is known to work at the moment is RapidOCR with the torch backend, which can be enabled via
+
+```py
+pipeline_options = PdfPipelineOptions()
+pipeline_options.ocr_options = RapidOcrOptions(
+    backend="torch",
+)
+```
+
+More details in the GitHub discussion [#2451](https://github.com/docling-project/docling/discussions/2451).
+
 
 ### VLM Pipeline
 
