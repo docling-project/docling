@@ -58,7 +58,7 @@ from docling.datamodel.base_models import (
     InputFormat,
     OutputFormat,
 )
-from docling.datamodel.document import ConversionResult
+from docling.datamodel.document import ConversionResult, DoclingVersion
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
     ConvertPipelineOptions,
@@ -167,19 +167,13 @@ def logo_callback(value: bool):
 
 def version_callback(value: bool):
     if value:
-        docling_version = importlib.metadata.version("docling")
-        docling_core_version = importlib.metadata.version("docling-core")
-        docling_ibm_models_version = importlib.metadata.version("docling-ibm-models")
-        docling_parse_version = importlib.metadata.version("docling-parse")
-        platform_str = platform.platform()
-        py_impl_version = sys.implementation.cache_tag
-        py_lang_version = platform.python_version()
-        print(f"Docling version: {docling_version}")
-        print(f"Docling Core version: {docling_core_version}")
-        print(f"Docling IBM Models version: {docling_ibm_models_version}")
-        print(f"Docling Parse version: {docling_parse_version}")
-        print(f"Python: {py_impl_version} ({py_lang_version})")
-        print(f"Platform: {platform_str}")
+        v = DoclingVersion()
+        print(f"Docling version: {v.docling_version}")
+        print(f"Docling Core version: {v.docling_core_version}")
+        print(f"Docling IBM Models version: {v.docling_ibm_models_version}")
+        print(f"Docling Parse version: {v.docling_parse_version}")
+        print(f"Python: {v.py_impl_version} ({v.py_lang_version})")
+        print(f"Platform: {v.platform_str}")
         raise typer.Exit()
 
 

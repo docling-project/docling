@@ -1,10 +1,14 @@
 import csv
+import importlib
 import json
 import logging
+import platform
 import re
+import sys
 import tarfile
 import zipfile
 from collections.abc import Iterable, Mapping
+from datetime import datetime
 from enum import Enum
 from io import BytesIO
 from pathlib import Path, PurePath
@@ -225,7 +229,21 @@ class DocumentFormat(str, Enum):
     V1 = "v1"
 
 
+class DoclingVersion(BaseModel):
+    docling_version: str = importlib.metadata.version("docling")
+    docling_core_version: str = importlib.metadata.version("docling-core")
+    docling_ibm_models_version: str = importlib.metadata.version("docling-ibm-models")
+    docling_parse_version: str = importlib.metadata.version("docling-parse")
+    platform_str: str = platform.platform()
+    py_impl_version: str = sys.implementation.cache_tag
+    py_lang_version: str = platform.python_version()
+
+
 class ConversionAssets(BaseModel):
+    version: DoclingVersion = DoclingVersion()
+    # When the assets were saved (ISO string from datetime.now())
+    time_stamp: Optional[str] = None
+
     status: ConversionStatus = ConversionStatus.PENDING  # failure, success
     errors: list[ErrorItem] = []  # structure to keep errors
 
@@ -287,7 +305,12 @@ class ConversionAssets(BaseModel):
                 )
                 zf.writestr(name, data.encode("utf-8"))
 
+            # Update and persist a save time-stamp
+            self.time_stamp = datetime.now().isoformat()
+            write_json("time_stamp.json", self.time_stamp)
+
             # Store each component in its own JSON file
+            write_json("version.json", self.version)
             write_json("status.json", self.status)
             write_json("errors.json", self.errors)
             write_json("pages.json", self.pages)
@@ -314,6 +337,8 @@ class ConversionAssets(BaseModel):
             filename = Path(filename)
 
         # Read the ZIP and deserialize all items
+        version_info: DoclingVersion = DoclingVersion()
+        time_stamp: Optional[str] = None
         status = ConversionStatus.PENDING
         errors: list[ErrorItem] = []
         pages: list[Page] = []
@@ -329,6 +354,18 @@ class ConversionAssets(BaseModel):
                         return json.loads(fp.read().decode("utf-8"))
                 except KeyError:
                     return None
+
+            # version
+            if (data := read_json("version.json")) is not None:
+                try:
+                    version_info = DoclingVersion.model_validate(data)
+                except Exception as exc:
+                    _log.error(f"Could not read version: {exc}")
+
+            # time stamp
+            if (data := read_json("time_stamp.json")) is not None:
+                if isinstance(data, str):
+                    time_stamp = data
 
             # status
             if (data := read_json("status.json")) is not None:
@@ -366,6 +403,8 @@ class ConversionAssets(BaseModel):
                 document = DoclingDocument.model_validate(data)
 
         return cls(
+            version=version_info,
+            time_stamp=time_stamp,
             status=status,
             errors=errors,
             pages=pages,
