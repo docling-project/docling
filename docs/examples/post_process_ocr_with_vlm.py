@@ -24,8 +24,9 @@ from docling_core.types.doc.document import (
     TableCell,
     TableItem,
 )
-from PIL import Image
+from PIL import Image, ImageFilter
 from PIL.ImageOps import crop
+import numpy as np
 from pydantic import BaseModel, ConfigDict
 from tqdm import tqdm
 
@@ -58,6 +59,105 @@ LM_STUDIO_MODEL = "nanonets-ocr2-3b"
 DEFAULT_PROMPT = "Extract the text from the above document as if you were reading it naturally. Output pure text, no html and no markdown. Pay attention on line breaks and don't miss text after line break. Put all text in one line."
 VERBOSE = True
 SHOW_IMAGE = False
+
+
+def is_empty_fast_with_lines_pil(
+    pil_img: Image.Image,
+    downscale_max_side: int = 64,
+    grad_threshold: float = 10.0,   # how strong a gradient must be to count as edge
+    min_line_coverage: float = 0.6, # line must cover 60% of height/width
+    max_allowed_lines: int = 2,     # allow up to this many strong lines
+    edge_fraction_threshold: float = 0.001
+):
+    """
+    Fast 'empty' detector using only PIL + NumPy.
+
+    Treats an image as empty if:
+      - It has very few edges overall, OR
+      - Edges can be explained by at most `max_allowed_lines` long vertical/horizontal lines.
+
+    Returns:
+      (is_empty: bool, remaining_edge_fraction: float, debug: dict)
+    """
+
+    # 1) Convert to grayscale
+    gray = pil_img.convert("L")
+
+    # 2) Aggressive downscale, keeping aspect ratio
+    w0, h0 = gray.size
+    max_side = max(w0, h0)
+    if max_side > downscale_max_side:
+        scale = downscale_max_side / max_side
+        new_w = max(1, int(w0 * scale))
+        new_h = max(1, int(h0 * scale))
+        gray = gray.resize((new_w, new_h), resample=Image.BILINEAR)
+
+    w, h = gray.size
+    if w == 0 or h == 0:
+        return True, 0.0, {"reason": "zero_size"}
+
+    # 3) Small blur to reduce noise
+    gray = gray.filter(ImageFilter.BoxBlur(1))
+
+    # 4) Convert to NumPy
+    arr = np.asarray(gray, dtype=np.float32)  # shape (h, w) in PIL, but note: PIL size is (w, h)
+    H, W = arr.shape
+    total_pixels = H * W
+
+    # 5) Compute simple gradients (forward differences)
+    gx = np.zeros_like(arr)
+    gy = np.zeros_like(arr)
+
+    gx[:, :-1] = arr[:, 1:] - arr[:, :-1]   # horizontal differences
+    gy[:-1, :] = arr[1:, :] - arr[:-1, :]   # vertical differences
+
+    mag = np.hypot(gx, gy)  # gradient magnitude
+
+    # 6) Threshold gradients to get edges (boolean mask)
+    edges = mag > grad_threshold
+    edge_fraction = edges.mean()
+
+    # Quick early-exit: almost no edges => empty
+    if edge_fraction < edge_fraction_threshold:
+        return True, float(edge_fraction), {"reason": "few_edges"}
+
+    # 7) Detect strong vertical & horizontal lines via edge sums
+    col_sum = edges.sum(axis=0)  # per column
+    row_sum = edges.sum(axis=1)  # per row
+
+    # Line must have edge pixels in at least `min_line_coverage` of the dimension
+    vert_line_cols = np.where(col_sum >= min_line_coverage * H)[0]
+    horiz_line_rows = np.where(row_sum >= min_line_coverage * W)[0]
+
+    num_lines = len(vert_line_cols) + len(horiz_line_rows)
+
+    # If we have more long lines than allowed => non-empty
+    if num_lines > max_allowed_lines:
+        return False, float(edge_fraction), {
+            "reason": "too_many_lines",
+            "num_lines": int(num_lines),
+            "edge_fraction": float(edge_fraction),
+        }
+
+    # 8) Mask out those lines and recompute remaining edges
+    line_mask = np.zeros_like(edges, dtype=bool)
+    if len(vert_line_cols) > 0:
+        line_mask[:, vert_line_cols] = True
+    if len(horiz_line_rows) > 0:
+        line_mask[horiz_line_rows, :] = True
+
+    remaining_edges = edges & ~line_mask
+    remaining_edge_fraction = remaining_edges.mean()
+
+    is_empty = remaining_edge_fraction < edge_fraction_threshold
+
+    debug = {
+        "original_edge_fraction": float(edge_fraction),
+        "remaining_edge_fraction": float(remaining_edge_fraction),
+        "num_vert_lines": int(len(vert_line_cols)),
+        "num_horiz_lines": int(len(horiz_line_rows)),
+    }
+    return is_empty, float(remaining_edge_fraction), debug
 
 
 def remove_break_lines(text: str) -> str:
@@ -195,11 +295,15 @@ class PostOcrApiEnrichmentModel(
                     ].image.pil_image.crop(expanded_bbox.as_tuple())
 
                     # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
-
-                    # cropped_image.show()
-                    result.append(
-                        PostOcrEnrichmentElement(item=c, image=[cropped_image])
-                    )
+                    is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
+                    if is_empty:
+                        # cropped_image.show()
+                        print("!!! DETECTED EMPTY FORM ITEM IMAGE CROP !!! {}".format(rem_frac))
+                        print(debug)
+                    else:
+                        result.append(
+                            PostOcrEnrichmentElement(item=c, image=[cropped_image])
+                        )
             return result
         elif isinstance(element, TableItem):
             element_prov = element.prov[0]
@@ -236,12 +340,17 @@ class PostOcrApiEnrichmentModel(
                                 ].image.pil_image.crop(expanded_bbox.as_tuple())
 
                                 # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
-                                # cropped_image.show()
-                                result.append(
-                                    PostOcrEnrichmentElement(
-                                        item=cell, image=[cropped_image]
+                                is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
+                                if is_empty:
+                                    # cropped_image.show()
+                                    print("!!! DETECTED EMPTY TABLE CELL IMAGE CROP !!! {}".format(rem_frac))
+                                    print(debug)
+                                else:
+                                    result.append(
+                                        PostOcrEnrichmentElement(
+                                            item=cell, image=[cropped_image]
+                                        )
                                     )
-                                )
             return result
         else:
             multiple_crops = []
@@ -275,13 +384,18 @@ class PostOcrApiEnrichmentModel(
                         ].image.pil_image.crop(expanded_bbox.as_tuple())
                         # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
 
-                        multiple_crops.append(cropped_image)
-                        print("")
-                        print("cropped image size: {}".format(cropped_image.size))
-                        print(type(element))
-                        if hasattr(element, "text"):
-                            print("OLD TEXT: {}".format(element.text))
-                        # cropped_image.show()
+                        is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
+                        if is_empty:
+                            # cropped_image.show()
+                            print("!!! DETECTED EMPTY TEXT IMAGE CROP !!! {}".format(rem_frac))
+                            print(debug)
+                        else:
+                            multiple_crops.append(cropped_image)
+                            print("")
+                            print("cropped image size: {}".format(cropped_image.size))
+                            print(type(element))
+                            if hasattr(element, "text"):
+                                print("OLD TEXT: {}".format(element.text))
                 else:
                     print("Not a text element")
             if len(multiple_crops) > 0:
@@ -520,6 +634,7 @@ def run_jsons(in_path: Path, out_dir: Path):
         jsons = sorted(in_path.glob("*.json"))
         if not jsons:
             raise SystemExit("Folder mode expects one or more .json files")
+        # Look for ocr_documents.txt, in case found, respect only the jsons
         for j in tqdm(jsons):
             process_json(j, out_dir)
     else:
