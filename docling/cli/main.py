@@ -280,7 +280,7 @@ def export_documents(
             if export_doctags:
                 fname = output_dir / f"{doc_filename}.doctags"
                 _log.info(f"writing Doc Tags output to {fname}")
-                conv_res.document.save_as_document_tokens(filename=fname)
+                conv_res.document.save_as_doctags(filename=fname)
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
