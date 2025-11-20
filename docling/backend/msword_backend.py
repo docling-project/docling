@@ -1145,6 +1145,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elem_ref: list[RefItem] = []
         # This should not happen by construction
         if not isinstance(self.parents[level], ListGroup):
+            _log.warning(
+                "Parent element of the list item is not a ListGroup. The list item will be ignored."
+            )
             return elem_ref
         if not elements:
             return elem_ref
@@ -1197,7 +1200,12 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         level = self._get_level()
         prev_indent = self._prev_indent()
-        if self._prev_numid() is None:  # Open new list
+        current_parent = self.parents.get(level)
+        if self._prev_numid() is None or (
+            self._prev_numid() == numid
+            and current_parent is None
+            and self.level_at_new_list is None
+        ):  # Open new list
             self.level_at_new_list = level
 
             # Reset counters for the new numbering sequence
@@ -1285,6 +1293,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_formatted_list_item(
                 doc, elements, enum_marker, is_numbered, level - 1
             )
+        else:
+            _log.warning("List item not matching any insert condition.")
         return elem_ref
 
     @staticmethod
