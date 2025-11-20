@@ -545,7 +545,7 @@ class StandardPdfPipeline(ConvertPipeline):
 
         proc = ProcessingResult(total_expected=total_pages)
         fed_idx: int = 0  # number of pages successfully queued
-        batch_size: int = 32  # drain chunk
+        batch_size: int = total_pages  # drain chunk
         try:
             while proc.success_count + proc.failure_count < total_pages:
                 # 1) feed - try to enqueue until the first queue is full

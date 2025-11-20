@@ -252,7 +252,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
         proc = ProcessingResult(total_expected=total_pages)
         fed_idx = 0
-        batch_size = 32
+        batch_size = total_pages
 
         try:
             while proc.success_count + proc.failure_count < total_pages:
