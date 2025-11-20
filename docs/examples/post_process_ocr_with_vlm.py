@@ -59,15 +59,19 @@ LM_STUDIO_MODEL = "nanonets-ocr2-3b"
 DEFAULT_PROMPT = "Extract the text from the above document as if you were reading it naturally. Output pure text, no html and no markdown. Pay attention on line breaks and don't miss text after line break. Put all text in one line."
 VERBOSE = True
 SHOW_IMAGE = False
-
+SHOW_EMPTY_CROPS = False
+SHOW_NONEMPTY_CROPS = False
+PRINT_RESULT_MARKDOWN = False
 
 def is_empty_fast_with_lines_pil(
     pil_img: Image.Image,
-    downscale_max_side: int = 64,
-    grad_threshold: float = 10.0,   # how strong a gradient must be to count as edge
+    # downscale_max_side: int = 64,
+    downscale_max_side: int = 48,
+    grad_threshold: float = 15.0,   # how strong a gradient must be to count as edge
     min_line_coverage: float = 0.6, # line must cover 60% of height/width
-    max_allowed_lines: int = 2,     # allow up to this many strong lines
-    edge_fraction_threshold: float = 0.001
+    # max_allowed_lines: int = 4,     # allow up to this many strong lines
+    max_allowed_lines: int = 10,     # allow up to this many strong lines
+    edge_fraction_threshold: float = 0.0035
 ):
     """
     Fast 'empty' detector using only PIL + NumPy.
@@ -87,9 +91,13 @@ def is_empty_fast_with_lines_pil(
     w0, h0 = gray.size
     max_side = max(w0, h0)
     if max_side > downscale_max_side:
-        scale = downscale_max_side / max_side
-        new_w = max(1, int(w0 * scale))
-        new_h = max(1, int(h0 * scale))
+        # scale = downscale_max_side / max_side
+        # new_w = max(1, int(w0 * scale))
+        # new_h = max(1, int(h0 * scale))
+
+        new_w = downscale_max_side
+        new_h = downscale_max_side
+
         gray = gray.resize((new_w, new_h), resample=Image.BILINEAR)
 
     w, h = gray.size
@@ -297,7 +305,11 @@ class PostOcrApiEnrichmentModel(
                     # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
                     is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
                     if is_empty:
-                        # cropped_image.show()
+                        if SHOW_EMPTY_CROPS:
+                            try:
+                                cropped_image.show()
+                            except Exception as e:
+                                print("Error with image: {}".format(e))
                         print("!!! DETECTED EMPTY FORM ITEM IMAGE CROP !!! {}".format(rem_frac))
                         print(debug)
                     else:
@@ -318,9 +330,21 @@ class PostOcrApiEnrichmentModel(
                                 old_size=conv_res.document.pages[page_ix].size,
                                 new_size=conv_res.document.pages[page_ix].image.size,
                             )
+
+                            """
                             expanded_bbox = bbox.expand_by_scale(
                                 x_scale=self.expansion_factor,
                                 y_scale=self.expansion_factor,
+                            ).to_top_left_origin(
+                                page_height=conv_res.document.pages[
+                                    page_ix
+                                ].image.size.height
+                            )
+                            """
+
+                            expanded_bbox = bbox.expand_by_scale(
+                                x_scale=0,
+                                y_scale=0,
                             ).to_top_left_origin(
                                 page_height=conv_res.document.pages[
                                     page_ix
@@ -342,10 +366,16 @@ class PostOcrApiEnrichmentModel(
                                 # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
                                 is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
                                 if is_empty:
-                                    # cropped_image.show()
+                                    if SHOW_EMPTY_CROPS:
+                                        try:
+                                            cropped_image.show()
+                                        except Exception as e:
+                                            print("Error with image: {}".format(e))
                                     print("!!! DETECTED EMPTY TABLE CELL IMAGE CROP !!! {}".format(rem_frac))
                                     print(debug)
                                 else:
+                                    if SHOW_NONEMPTY_CROPS:
+                                        cropped_image.show()
                                     result.append(
                                         PostOcrEnrichmentElement(
                                             item=cell, image=[cropped_image]
@@ -386,7 +416,11 @@ class PostOcrApiEnrichmentModel(
 
                         is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
                         if is_empty:
-                            # cropped_image.show()
+                            if SHOW_EMPTY_CROPS:
+                                try:
+                                    cropped_image.show()
+                                except Exception as e:
+                                    print("Error with image: {}".format(e))
                             print("!!! DETECTED EMPTY TEXT IMAGE CROP !!! {}".format(rem_frac))
                             print(debug)
                         else:
@@ -506,6 +540,10 @@ class PostOcrApiEnrichmentModel(
 
             output = clean_html_tags(output).strip()
             output = remove_break_lines(output)
+            # The last measure against hallucinations
+            # Detect hallucinated string...
+            if output.startswith("The first of these"):
+                output = ""
 
             if no_long_repeats(output, 50):
                 if VERBOSE:
@@ -568,7 +606,7 @@ def convert_pdf(pdf_path: Path, out_intermediate_json: Path):
     conv_result.document.save_as_json(
         filename=out_intermediate_json, image_mode=ImageRefMode.EMBEDDED
     )
-    if VERBOSE:
+    if PRINT_RESULT_MARKDOWN:
         md1 = conv_result.document.export_to_markdown()
         print("*** ORIGINAL MARKDOWN ***")
         print(md1)
@@ -603,9 +641,10 @@ def post_process_json(in_json: Path, out_final_json: Path):
     if SHOW_IMAGE:
         result.document.pages[1].image.pil_image.show()
     result.document.save_as_json(out_final_json)
-    md = result.document.export_to_markdown()
-    print("*** MARKDOWN ***")
-    print(md)
+    if PRINT_RESULT_MARKDOWN:
+        md = result.document.export_to_markdown()
+        print("*** MARKDOWN ***")
+        print(md)
     # except:
     #     print("ERROR IN OCR for: {}".format(in_json))
 
@@ -629,13 +668,37 @@ def process_json(json_path: Path, out_dir: Path):
     post_process_json(json_path, final_json)
 
 
+def filter_jsons_by_ocr_list(jsons, folder):
+    """
+    jsons: list[Path] - JSON files
+    folder: Path - folder containing ocr_documents.txt
+    """
+    ocr_file = folder / "ocr_documents.txt"
+
+    # If the file doesn't exist, return the list unchanged
+    if not ocr_file.exists():
+        return jsons
+
+    # Read file names (strip whitespace, ignore empty lines)
+    with ocr_file.open("r", encoding="utf-8") as f:
+        allowed = {line.strip() for line in f if line.strip()}
+
+    # Keep only JSONs whose stem is in allowed list
+    filtered = [p for p in jsons if p.stem in allowed]
+    return filtered
+
+
 def run_jsons(in_path: Path, out_dir: Path):
     if in_path.is_dir():
         jsons = sorted(in_path.glob("*.json"))
         if not jsons:
             raise SystemExit("Folder mode expects one or more .json files")
-        # Look for ocr_documents.txt, in case found, respect only the jsons
-        for j in tqdm(jsons):
+        # TODO: Look for ocr_documents.txt, in case found, respect only the jsons
+        filtered_jsons = filter_jsons_by_ocr_list(jsons, in_path)
+        for j in tqdm(filtered_jsons):
+            print("")
+            print("Processing file...")
+            print(j)
             process_json(j, out_dir)
     else:
         raise SystemExit("Invalid --in path")
