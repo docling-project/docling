@@ -242,7 +242,7 @@ class DoclingVersion(BaseModel):
 class ConversionAssets(BaseModel):
     version: DoclingVersion = DoclingVersion()
     # When the assets were saved (ISO string from datetime.now())
-    time_stamp: Optional[str] = None
+    timestamp: Optional[str] = None
 
     status: ConversionStatus = ConversionStatus.PENDING  # failure, success
     errors: list[ErrorItem] = []  # structure to keep errors
@@ -305,9 +305,9 @@ class ConversionAssets(BaseModel):
                 )
                 zf.writestr(name, data.encode("utf-8"))
 
-            # Update and persist a save time-stamp
-            self.time_stamp = datetime.now().isoformat()
-            write_json("time_stamp.json", self.time_stamp)
+            # Update and persist a save timestamp
+            self.timestamp = datetime.now().isoformat()
+            write_json("timestamp.json", self.timestamp)
 
             # Store each component in its own JSON file
             write_json("version.json", self.version)
@@ -338,7 +338,7 @@ class ConversionAssets(BaseModel):
 
         # Read the ZIP and deserialize all items
         version_info: DoclingVersion = DoclingVersion()
-        time_stamp: Optional[str] = None
+        timestamp: Optional[str] = None
         status = ConversionStatus.PENDING
         errors: list[ErrorItem] = []
         pages: list[Page] = []
@@ -362,10 +362,10 @@ class ConversionAssets(BaseModel):
                 except Exception as exc:
                     _log.error(f"Could not read version: {exc}")
 
-            # time stamp
-            if (data := read_json("time_stamp.json")) is not None:
+            # timestamp
+            if (data := read_json("timestamp.json")) is not None:
                 if isinstance(data, str):
-                    time_stamp = data
+                    timestamp = data
 
             # status
             if (data := read_json("status.json")) is not None:
@@ -404,7 +404,7 @@ class ConversionAssets(BaseModel):
 
         return cls(
             version=version_info,
-            time_stamp=time_stamp,
+            timestamp=timestamp,
             status=status,
             errors=errors,
             pages=pages,
