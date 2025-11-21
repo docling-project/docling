@@ -71,6 +71,7 @@ from docling.datamodel.pipeline_options import (
     PipelineOptions,
     ProcessingPipeline,
     TableFormerMode,
+    TableStructureOptions,
     TesseractCliOcrOptions,
     TesseractOcrOptions,
     VlmPipelineOptions,
@@ -645,10 +646,13 @@ def convert(  # noqa: C901
                 do_picture_classification=enrich_picture_classes,
                 document_timeout=document_timeout,
             )
-            pipeline_options.table_structure_options.do_cell_matching = (
-                True  # do_cell_matching
-            )
-            pipeline_options.table_structure_options.mode = table_mode
+            if isinstance(
+                pipeline_options.table_structure_options, TableStructureOptions
+            ):
+                pipeline_options.table_structure_options.do_cell_matching = (
+                    True  # do_cell_matching
+                )
+                pipeline_options.table_structure_options.mode = table_mode
 
             if image_export_mode != ImageRefMode.PLACEHOLDER:
                 pipeline_options.generate_page_images = True
