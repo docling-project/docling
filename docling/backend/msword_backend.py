@@ -1200,11 +1200,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         level = self._get_level()
         prev_indent = self._prev_indent()
-        current_parent = self.parents.get(level)
         if self._prev_numid() is None or (
-            self._prev_numid() == numid
-            and current_parent is None
-            and self.level_at_new_list is None
+            self._prev_numid() == numid and self.level_at_new_list is None
         ):  # Open new list
             self.level_at_new_list = level
 
