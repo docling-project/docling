@@ -6,7 +6,7 @@ from typing import Type
 
 from docling.datamodel.base_models import LayoutPrediction, Page
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import LayoutOptions
+from docling.datamodel.pipeline_options import BaseLayoutOptions
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 
@@ -15,7 +15,7 @@ class BaseLayoutModel(BasePageModel, BaseModelWithOptions, ABC):
 
     @classmethod
     @abstractmethod
-    def get_options_type(cls) -> Type[LayoutOptions]:
+    def get_options_type(cls) -> Type[BaseLayoutOptions]:
         """Return the options type supported by this layout model."""
 
     @abstractmethod

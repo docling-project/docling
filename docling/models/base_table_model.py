@@ -6,7 +6,7 @@ from typing import Type
 
 from docling.datamodel.base_models import Page, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import TableStructureOptions
+from docling.datamodel.pipeline_options import BaseTableStructureOptions
 from docling.models.base_model import BaseModelWithOptions, BasePageModel
 
 
@@ -17,7 +17,7 @@ class BaseTableStructureModel(BasePageModel, BaseModelWithOptions, ABC):
 
     @classmethod
     @abstractmethod
-    def get_options_type(cls) -> Type[TableStructureOptions]:
+    def get_options_type(cls) -> Type[BaseTableStructureOptions]:
         """Return the options type supported by this table model."""
 
     @abstractmethod
