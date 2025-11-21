@@ -2,7 +2,7 @@ Docling's document conversion can be executed as distributed jobs using [Docling
 
 This library provides:
 
-- Pipelines for running jobs with Kueflow pipelines, Ray, or locally.
+- Pipelines for running jobs with Kubeflow pipelines, Ray, or locally.
 - Connectors to import and export documents via HTTP endpoints, S3, or Google Drive.
 
 ## Usage
