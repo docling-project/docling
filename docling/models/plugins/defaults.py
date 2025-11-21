@@ -31,11 +31,15 @@ def picture_description():
 
 
 def layout_engines():
+    from docling.experimental.models.table_crops_layout_model import (
+        TableCropsLayoutModel,
+    )
     from docling.models.layout_model import LayoutModel
 
     return {
         "layout_engines": [
             LayoutModel,
+            TableCropsLayoutModel,
         ]
     }
 
