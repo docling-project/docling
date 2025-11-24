@@ -1,0 +1,21 @@
+<doctag><section_header_level_1><loc_46><loc_45><loc_289><loc_64>Some kind of text document</section_header_level_1>
+<section_header_level_1><loc_46><loc_76><loc_170><loc_95>1. Introduction</section_header_level_1>
+<text><loc_46><loc_98><loc_452><loc_121>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis consequat tincidunt tempor.</text>
+<section_header_level_2><loc_46><loc_135><loc_149><loc_150>1.1 Background</section_header_level_2>
+<text><loc_46><loc_153><loc_426><loc_176>Praesent venenatis leo vel nibh tincidunt, nec iaculis est dictum. Integer ac purus at mi volutpat feugiat.</text>
+<section_header_level_2><loc_46><loc_190><loc_126><loc_205>1.2 Purpose</section_header_level_2>
+<text><loc_46><loc_208><loc_416><loc_231>Nunc rhoncus, risus ut pretium hendrerit, ipsum nulla lobortis augue, nec vestibulum magna turpis sit amet erat.</text>
+<section_header_level_1><loc_46><loc_245><loc_185><loc_264>2. Main Content</section_header_level_1>
+<text><loc_46><loc_267><loc_452><loc_290>Aliquam erat volutpat. Morbi interdum, eros eget venenatis euismod, velit sapien tristique risus, ac tincidunt massa lorem nec felis.</text>
+<section_header_level_2><loc_46><loc_304><loc_152><loc_318>2.1 Section One</section_header_level_2>
+<text><loc_46><loc_321><loc_441><loc_344>Phasellus ullamcorper nunc a lacus imperdiet, at luctus sem euismod. Integer feugiat commodo orci.</text>
+<section_header_level_3><loc_46><loc_359><loc_131><loc_370>2.1.1 Subsection</section_header_level_3>
+<text><loc_46><loc_373><loc_444><loc_396>Duis porttitor magna ut urna efficitur, ac sollicitudin odio volutpat. Suspendisse potenti.</text>
+<section_header_level_3><loc_46><loc_410><loc_174><loc_422>2.1.2 Another Subsection</section_header_level_3>
+<text><loc_46><loc_425><loc_451><loc_448>Sed vestibulum porta sem, eu egestas nulla gravida vel. Morbi feugiat vulputate odio sed placerat.</text>
+<page_break>
+<section_header_level_2><loc_46><loc_35><loc_151><loc_50>2.2 Section Two</section_header_level_2>
+<text><loc_46><loc_53><loc_444><loc_76>Vivamus venenatis magna at metus imperdiet consequat. Ut semper risus nec odio ultrices gravida.</text>
+<section_header_level_1><loc_46><loc_90><loc_165><loc_109>3. Conclusion</section_header_level_1>
+<text><loc_46><loc_112><loc_446><loc_135>In hac habitasse platea dictumst. Sed pretium, felis ac dignissim dictum, lectus erat pharetra quam, vel ullamcorper est lorem vitae ligula.</text>
+</doctag>

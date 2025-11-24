@@ -1,0 +1,9 @@
+  Abstract
+  1 Introduction
+    1.2 Approximation of the halfspace depth
+    1.3 Proposal
+  2 Theory
+    Algorithms
+  3.1 Combinatorial algorithm, k = d - 1
+  5 Conclusions
+    A Proof of Lemma 1
