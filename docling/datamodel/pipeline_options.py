@@ -288,6 +288,9 @@ class PipelineOptions(BaseOptions):
 class ConvertPipelineOptions(PipelineOptions):
     """Base convert pipeline options."""
 
+    do_ocr: bool = True  # True: perform OCR, replace programmatic PDF text
+    ocr_options: OcrOptions = OcrAutoOptions()
+
     do_picture_classification: bool = False  # True: classify pictures in documents
 
     do_picture_description: bool = False  # True: run describe pictures in documents
@@ -346,7 +349,6 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     """Options for the PDF pipeline."""
 
     do_table_structure: bool = True  # True: perform table structure extraction
-    do_ocr: bool = True  # True: perform OCR, replace programmatic PDF text
     do_code_enrichment: bool = False  # True: perform code OCR
     do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
     force_backend_text: bool = (
@@ -355,7 +357,6 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     # If True, text from backend will be used instead of generated text
 
     table_structure_options: TableStructureOptions = TableStructureOptions()
-    ocr_options: OcrOptions = OcrAutoOptions()
     layout_options: LayoutOptions = LayoutOptions()
 
     images_scale: float = 1.0
