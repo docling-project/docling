@@ -155,7 +155,9 @@ TBA.
     <tr><th>PDF doc</th><th>ViDoRe V3 HR</th><th>PDF doc</th><th>ViDoRe V3 HR</th><th>PDF doc</th><th>ViDoRe V3 HR</th></tr>
   </thead>
   <tbody>
-    <tr><td>Standard - Inline (no OCR)</td><td>3.1 pages/second</td><td>-</td><td>7.9 pages/second</td><td>-</td><td>4.2 pages/second</td><td>-</td></tr>
+    <tr><td>Standard - Inline (no OCR)</td><td>3.1 pages/second</td><td>-</td><td>7.9 pages/second<br /><small><em>[cpu-only]* 1.5 pages/second</em></small></td><td>-</td><td>4.2 pages/second<br /><small><em>[cpu-only]* 1.2 pages/second</em></small></td><td>-</td></tr>
     <tr><td>VLM - Inference server (GraniteDocling)</td><td>2.4 pages/second</td><td>-</td><td>3.8 pages/second</td><td>3.6-4.5 pages/second</td><td>-</td><td>-</td></tr>
   </tbody>
 </table>
+
+_* cpu-only timing computed with 16 pytorch threads._
