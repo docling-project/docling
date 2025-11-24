@@ -26,7 +26,7 @@ from docling_core.types.doc.document import (
 )
 from docling_core.types.doc.labels import DocItemLabel, GroupLabel
 from docling_core.types.doc.document import Formatting
-from docling_core.types.doc import Size
+from docling_core.types.doc.base import Size
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.xmlchemy import BaseOxmlElement
@@ -34,7 +34,7 @@ from docx.table import Table, _Cell
 from docx.text.hyperlink import Hyperlink
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
-from lxml import etree
+import lxml.etree as etree
 from PIL import Image, UnidentifiedImageError
 from pydantic import AnyUrl
 from typing_extensions import override
@@ -60,7 +60,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
         }
         # Word file:
-        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
+        self.path_or_stream: Optional[Union[BytesIO, Path]] = path_or_stream
         self.valid: bool = False
         # Initialise the parents for the hierarchy
         self.max_levels: int = 10
@@ -81,7 +81,9 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         self.level = 0
         self.listIter = 0
-
+        # Header/Footer context flag: None | 'hdr' | 'ftr'
+        self._in_hf = None
+        self._seen_sectpr_ids = set()
         self.history: dict[str, Any] = {
             "names": [None],
             "levels": [None],
@@ -90,6 +92,29 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         }
 
         self.docx_obj = None
+        try:
+            # 🔧 BytesIO는 포인터를 처음으로
+            if isinstance(self.path_or_stream, BytesIO):
+                try:
+                    self.path_or_stream.seek(0)
+                except Exception:
+                    pass
+                self.docx_obj = Document(self.path_or_stream)
+
+            elif isinstance(self.path_or_stream, Path):
+                self.docx_obj = Document(str(self.path_or_stream))
+            else:
+                raise TypeError(f"Unsupported path_or_stream type: {type(self.path_or_stream)}")
+
+            self.valid = True
+            # self.docx_obj가 유효할 때만 접근
+            self.package = self.docx_obj.part.package
+
+        except Exception as e:
+            # 로딩 실패 시 명확한 메시지 + 원인 유지
+            raise RuntimeError(
+                f"GenosMsWordDocumentBackend could not load document with hash {self.document_hash}"
+            ) from e
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.docx_obj = Document(self.path_or_stream)
@@ -131,10 +156,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             The parsed document.
         """
 
+        # binary_hash 는 Uint64 로 기대되므로, 해시 문자열을 64비트 정수로 축소
+        try:
+            bin_hash = int(self.document_hash, 16) & ((1 << 64) - 1)
+        except Exception:
+            bin_hash = 0
+
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            binary_hash=self.document_hash,
+            binary_hash=bin_hash,
         )
 
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
@@ -143,20 +174,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             raise RuntimeError(
                 f"Cannot convert doc with {self.document_hash} because the backend failed to init."
             )
-
-        # # --- 1) 각 섹션의 헤더(header.xml) 순회 ---
-        # for section in self.docx_obj.sections:
-        #     header_el = section.header._element
-        #     doc = self._walk_linear(header_el, self.docx_obj, doc)
-
-        # --- 2) 본문(document.xml) 전체 처리 ---
+        # 🔁 document.xml(body)만 시작점으로 순차 처리
+        assert self.docx_obj is not None
         body_el = self.docx_obj.element.body
-        doc = self._walk_linear(body_el, self.docx_obj, doc)
+        doc = self._walk_linear(
+            body=body_el,
+            docx_obj=self.docx_obj,
+            doc=doc,
+            owner_part=self.docx_obj.part,  # ← 현재 XML의 소유 파트
+        )
 
-        # # --- 3) 각 섹션의 푸터(footer.xml) 순회 ---
-        # for section in self.docx_obj.sections:
-        #     footer_el = section.footer._element
-        #     doc = self._walk_linear(footer_el, self.docx_obj, doc)
         doc.pages[1] =  doc.add_page(page_no=1, size=Size(width=595, height=842))
         return doc
 
@@ -229,6 +256,200 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return None, None  # If the paragraph is not part of a list
 
+    def _get_style_numId_and_ilvl(self, paragraph: Paragraph) -> tuple[Optional[int], Optional[int]]:
+        """
+        Try to resolve numId/ilvl from the paragraph's style definition if present.
+        This helps when numbering is attached via style rather than inline paragraph properties.
+        """
+        try:
+            style = paragraph.style
+            style_element = getattr(style, "element", None)
+            if style_element is None:
+                return None, None
+            # style_element.xml is a string; parse to an element to query
+            root = etree.fromstring(style_element.xml.encode("utf-8")) if isinstance(style_element.xml, str) else None
+            if root is None:
+                return None, None
+            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            numPr = root.find('.//w:pPr/w:numPr', namespaces=ns)
+            if numPr is None:
+                return None, None
+            numId_elem = numPr.find('w:numId', namespaces=ns)
+            ilvl_elem = numPr.find('w:ilvl', namespaces=ns)
+            numId = None
+            ilvl = None
+            if numId_elem is not None:
+                val = numId_elem.get(self.XML_KEY)
+                numId = self._str_to_int(val, None)
+            if ilvl_elem is not None:
+                val = ilvl_elem.get(self.XML_KEY)
+                ilvl = self._str_to_int(val, None)
+            return numId, ilvl
+        except Exception:
+            return None, None
+
+    def _get_numbering_root(self, docx_obj: DocxDocument):
+        """
+        Locate and return the numbering part root element (numbering.xml) or None.
+        """
+        try:
+            for rel in docx_obj.part.rels.values():
+                reltype = getattr(rel, "reltype", "")
+                if isinstance(reltype, str) and reltype.endswith("/numbering"):
+                    target_part = getattr(rel, "target_part", None)
+                    if target_part is not None:
+                        return getattr(target_part, "_element", None)
+        except Exception:
+            return None
+        return None
+
+    def _get_numFmt(
+        self, docx_obj: DocxDocument, numId: Optional[int], ilvl: Optional[int]
+    ) -> Optional[str]:
+        """
+        Return w:numFmt value (e.g., 'decimal', 'bullet') for given numId/ilvl.
+        If unavailable, return None.
+        """
+        try:
+            if numId is None or ilvl is None:
+                return None
+            numbering_root = self._get_numbering_root(docx_obj)
+            if numbering_root is None:
+                return None
+            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            num_xpath = f".//w:num[@w:numId='{numId}']/w:abstractNumId"
+            abstractNumId_el = numbering_root.find(num_xpath, namespaces=ns)
+            if abstractNumId_el is None:
+                return None
+            abstract_id = abstractNumId_el.get(self.XML_KEY)
+            if not abstract_id:
+                return None
+            base_xpath = f".//w:abstractNum[@w:abstractNumId='{abstract_id}']/w:lvl[@w:ilvl='{ilvl}']"
+            numFmt_el = numbering_root.find(base_xpath + "/w:numFmt", namespaces=ns)
+            if numFmt_el is None:
+                return None
+            fmt = numFmt_el.get(self.XML_KEY)
+            return str(fmt).lower() if fmt is not None else None
+        except Exception:
+            return None
+
+    def _build_number_label(self, numId: Optional[int], ilvl: Optional[int], docx_obj: DocxDocument) -> Optional[str]:
+        """
+        Build the numbering label (e.g., "1.3.2") for a given numId/ilvl using numbering.xml.
+        Maintains counters per numId across calls.
+        """
+        if numId is None or ilvl is None:
+            return None
+        try:
+            numbering_root = self._get_numbering_root(docx_obj)
+            if numbering_root is None:
+                return None
+            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            # Find abstractNumId via num
+            num_xpath = f".//w:num[@w:numId='{numId}']/w:abstractNumId"
+            abstractNumId_el = numbering_root.find(num_xpath, namespaces=ns)
+            if abstractNumId_el is None:
+                return None
+            abstract_id = abstractNumId_el.get(self.XML_KEY)
+            if abstract_id is None:
+                return None
+            # Find lvl for ilvl
+            lvl_xpath = f".//w:abstractNum[@w:abstractNumId='{abstract_id}']/w:lvl[@w:ilvl='{ilvl}']/w:lvlText"
+            lvlText_el = numbering_root.find(lvl_xpath, namespaces=ns)
+            if lvlText_el is None:
+                return None
+            pattern = lvlText_el.get(self.XML_KEY) or ""
+            if not hasattr(self, "_num_counters_by_numid"):
+                self._num_counters_by_numid = {}
+            counters = self._num_counters_by_numid.get(numId)
+            if counters is None:
+                counters = [0] * 10
+                self._num_counters_by_numid[numId] = counters
+            # Increment current level and reset deeper levels
+            level_idx = max(0, int(ilvl))
+            counters[level_idx] += 1
+            for j in range(level_idx + 1, len(counters)):
+                counters[j] = 0
+            # Replace %n placeholders
+            def repl(m):
+                try:
+                    idx = int(m.group(1)) - 1
+                    if 0 <= idx < len(counters):
+                        return str(counters[idx]) if counters[idx] > 0 else ""
+                except Exception:
+                    pass
+                return ""
+            label = re.sub(r"%(\d+)", repl, pattern)
+            return label.strip()
+        except Exception:
+            return None
+
+    def _is_numbered_list(self, paragraph: Paragraph, docx_obj: DocxDocument) -> bool:
+        """
+        Paragraph의 numId/ilvl를 바탕으로 numbering.xml을 조회해
+        해당 목록이 숫자/문자식의 순서형인지(ordered) 여부를 판정한다.
+
+        판정 기준:
+        - w:numFmt 가 'bullet' 또는 'none' 이면 False
+        - 그 외의 numFmt 는 True (대부분 순서형임)
+        - numFmt 가 없을 경우 w:lvlText 의 "%1", "%2" 같은 플레이스홀더 존재시 True
+        - 위를 모두 판정하지 못하면 False
+        """
+        try:
+            numid, ilvl = self._get_numId_and_ilvl(paragraph)
+            if numid is None or ilvl is None:
+                # 스타일에 의한 번호 지정일 수 있으므로 보조 조회
+                s_numid, s_ilvl = self._get_style_numId_and_ilvl(paragraph)
+                if numid is None:
+                    numid = s_numid
+                if ilvl is None:
+                    ilvl = s_ilvl
+
+            if numid is None or ilvl is None:
+                return False
+
+            numbering_root = self._get_numbering_root(docx_obj)
+            if numbering_root is None:
+                return False
+
+            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            # numId → abstractNumId
+            num_xpath = f".//w:num[@w:numId='{numid}']/w:abstractNumId"
+            abstractNumId_el = numbering_root.find(num_xpath, namespaces=ns)
+            if abstractNumId_el is None:
+                return False
+            abstract_id = abstractNumId_el.get(self.XML_KEY)
+            if not abstract_id:
+                return False
+
+            base_xpath = f".//w:abstractNum[@w:abstractNumId='{abstract_id}']/w:lvl[@w:ilvl='{ilvl}']"
+            # 1) 명시적 numFmt 우선
+            numFmt_el = numbering_root.find(base_xpath + "/w:numFmt", namespaces=ns)
+            if numFmt_el is not None:
+                fmt = numFmt_el.get(self.XML_KEY)
+                if fmt is None:
+                    return False
+                fmt_str = str(fmt).lower()
+                if fmt_str in ("bullet", "none"):
+                    return False
+                # bullet/none 이외 대부분은 순서형으로 간주
+                return True
+
+            # 2) numFmt 없으면 lvlText 패턴으로 추정
+            lvlText_el = numbering_root.find(base_xpath + "/w:lvlText", namespaces=ns)
+            if lvlText_el is not None:
+                pattern = lvlText_el.get(self.XML_KEY) or ""
+                # %n 플레이스홀더가 있으면 순서형
+                if re.search(r"%\d+", pattern):
+                    return True
+                # 대표적인 불릿 기호가 포함되어 있으면 비순서형으로 간주
+                if any(ch in pattern for ch in ("•", "●", "■", "–", "-", "○", "▪")):
+                    return False
+
+            return False
+        except Exception:
+            return False
+
     def _get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
         parts = self._split_text_and_number(style_label)
 
@@ -268,7 +489,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         if "heading" in label.lower():
             return self._get_heading_and_level(label)
-        if "heading" in name.lower():
+        if name and "heading" in name.lower():
             return self._get_heading_and_level(name)
         if base_style_label and "heading" in base_style_label.lower():
             return self._get_heading_and_level(base_style_label)
@@ -291,13 +512,96 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             italic=has_italic,
             underline=has_underline,
         )
+        
+    # 클래스 내부에 유틸 추가
+    def _resolve_part_by_rid(self, owner_part, rId):
+        """
+        owner_part.rels 에서 rId를 찾아 target_part를 반환.
+        owner_part 는 document.xml, headerX.xml, footerY.xml 등 현재 XML의 소유 파트.
+        """
+        if not owner_part or not rId:
+            return None
+        rel = owner_part.rels.get(rId)
+        return getattr(rel, "target_part", None) if rel else None
+    def _is_owner_header_footer(self, owner_part) -> bool:
+        try:
+            pn = getattr(owner_part, "partname", None)
+            if pn is None:
+                return False
+            pn_str = str(pn).lower()
+            return "/word/header" in pn_str or "/word/footer" in pn_str
+        except Exception:
+            return False
+    def _process_header_footer_refs(self, sectPr_el, docx_obj, doc, owner_part):
+        """
+        sectPr 안의 w:headerReference / w:footerReference 태그를 만나는 순서대로 처리.
+        각 reference의 r:id를 현재 owner_part.rels에서 해석해 header/footer 파트를 로드,
+        해당 파트의 루트 엘리먼트를 _walk_linear 로 순회한다.
+        """
+        ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+            "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
 
+        # sectPr 자식들을 "등장 순서"대로 순회하며 header/footerReference를 만나는 즉시 처리
+        for child in sectPr_el.iterchildren():
+            lname = etree.QName(child).localname
+            if lname in ("headerReference", "footerReference"):
+                rid = child.get("{%s}id" % ns["r"])  # r:id
+                target_part = self._resolve_part_by_rid(owner_part, rid)
+                if not target_part:
+                    continue
+
+                root_el = getattr(target_part, "_element", None)  # headerX.xml / footerY.xml 루트
+                if root_el is None:
+                    continue
+                
+                # 헤더/푸터 컨텍스트 설정
+                original_hf = self._in_hf
+                self._in_hf = 'hdr' if lname == 'headerReference' else 'ftr'
+                
+                try:
+                    # header/footer의 내부도 "그 자리에서" 순차 파싱
+                    self._walk_linear(
+                        body=root_el,
+                        docx_obj=docx_obj,
+                        doc=doc,
+                        owner_part=target_part,
+                    )
+                finally:
+                    self._in_hf = original_hf
     def _walk_linear(
         self,
         body: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
+        owner_part=None,  # ← 추가: 현재 body를 소유한 OPC 파트
     ) -> DoclingDocument:
+        if owner_part is None:
+            owner_part = docx_obj.part
+        # Header/Footer 루트일 경우 섹션 그룹 컨텍스트를 열어준다
+        header_footer_ctx_opened = False
+        original_parent_for_hf = None
+        try:
+            root_local = etree.QName(body).localname
+        except Exception:
+            root_local = None
+        if root_local in ("hdr", "ftr"):
+            level = self._get_level()
+            group_name = "header" if root_local == "hdr" else "footer"
+            hf_group = doc.add_group(
+                label=GroupLabel.SECTION,
+                parent=self.parents.get(level - 1),
+                name=group_name,
+            )
+            original_parent_for_hf = self.parents.get(level)
+            # 또한 level-1 부모도 임시로 헤더/푸터 그룹으로 덮어써서 내부 추가물이 그룹에 귀속되도록 함
+            original_parent_for_hf_m1 = self.parents.get(level - 1)
+            self.parents[level - 1] = hf_group
+            self.parents[level] = hf_group
+            header_footer_ctx_opened = True
+            try:
+                print(f"[HF] enter {group_name}")
+            except Exception:
+                pass
         for element in body:
 
             # Check for Inline Images (blip elements)
@@ -322,10 +626,32 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 if choice is not None:
                     # inline its children into our loop
                     for child in choice:
-                        doc = self._walk_linear([child], docx_obj, doc)
+                        doc = self._walk_linear(child, docx_obj, doc, owner_part)
                 # skip the rest (Fallback)
                 continue
             tag_name = etree.QName(element).localname
+            # 1) body 직속 sectPr (드물지만 존재)
+            sectprs = []
+            if tag_name == "sectPr":
+                sectprs = [element]
+
+            # 2) 일반 케이스: 문단 pPr 안의 sectPr
+            elif tag_name == "p":
+                sectprs = element.findall("./w:pPr/w:sectPr", namespaces=namespaces)
+
+            # 3) 만난 순서대로 전부 처리 (중복 방지)
+            for sectPr_el in sectprs:
+                sid = id(sectPr_el)
+                if sid in self._seen_sectpr_ids:
+                    continue
+                self._seen_sectpr_ids.add(sid)
+
+                self._process_header_footer_refs(
+                    sectPr_el=sectPr_el,
+                    docx_obj=docx_obj,
+                    doc=doc,
+                    owner_part=owner_part,
+                )
             # Check for shape content (including textboxes and other shapes)
             # Only process if the element hasn't been processed before
             element_id = id(element)
@@ -366,7 +692,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                                     name="shape-text",
                                 )
                                 doc.add_text(
-                                    label=DocItemLabel.PARAGRAPH,
+                                    label=(
+                                        DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
+                                        else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
+                                        else DocItemLabel.PARAGRAPH
+                                    ),
                                     parent=shape_group,
                                     text=text_content,
                                     prov=ProvenanceItem(
@@ -387,34 +717,93 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Check for shape content (similar to hwpx_backend's _process_rect)
             if tag_name in ["drawing", "pict"] and element_id not in self.processed_textbox_elements:
-                self._handle_shape_content(element, docx_obj, doc)
+                self._handle_shape_content(element, docx_obj, doc, owner_part=owner_part)
 
             # Check for Tables - Use enhanced table processing
             if element.tag.endswith("tbl"):
                 try:
-                    self._handle_tables_enhanced(element, docx_obj, doc)
+                    if header_footer_ctx_opened:
+                        try:
+                            print("[HF] handle table")
+                        except Exception:
+                            pass
+                    # header/footer 내부 테이블 이미지를 위해 owner_part 전달
+                    self._handle_tables_enhanced(element, docx_obj, doc, owner_part=owner_part)
                 except Exception as e:
                     _log.debug(f"[MSWORD] _handle_tables_enhanced failed: {e}")
 
             elif drawing_blip:
-                self._handle_pictures(docx_obj, drawing_blip, doc)
-                # Check for Text after the Image
+                # 소유 파트를 넘겨서 rId 해석이 올바르게 header/footer에서도 작동
+                if header_footer_ctx_opened:
+                    try:
+                        print("[HF] handle image (blip)", drawing_blip)
+                    except Exception:
+                        pass
+                self._handle_pictures(owner_part, docx_obj, drawing_blip, doc)
+                # 이미지 뒤 텍스트 처리
                 if (tag_name in ["p"]
-                    and element.find(".//w:t", namespaces=namespaces) is not None
-                ):
-                    self._handle_text_elements(element, docx_obj, doc)      
+                    and (element.find(".//w:t", namespaces=namespaces) is not None or element.find(".//w:instrText", namespaces=namespaces) is not None)):
+                    if header_footer_ctx_opened:
+                        try:
+                            texts = [t.text for t in element.findall(".//w:t", namespaces=namespaces) if t.text]
+                            instrs = [t.text for t in element.findall(".//w:instrText", namespaces=namespaces) if t.text]
+                            fldchars = [fc.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldCharType") for fc in element.findall(".//w:fldChar", namespaces=namespaces)]
+                            parts = []
+                            if texts:
+                                parts.append(" ".join(texts))
+                            if instrs:
+                                parts.append(f"[instr] {' '.join(instrs)}")
+                            if fldchars:
+                                parts.append(f"[fld] {','.join([c for c in fldchars if c])}")
+                            joined = " | ".join(parts)
+                            preview = (joined[:80] + ("…" if len(joined) > 80 else "")) if joined else ""
+                           
+                        except Exception:
+                            pass
+                    self._handle_text_elements(element, docx_obj, doc)    
                               
             # Check for the sdt containers, like table of contents
             elif tag_name in ["sdt"]:
                 sdt_content = element.find(".//w:sdtContent", namespaces=namespaces)
                 if sdt_content is not None:
+                    if header_footer_ctx_opened:
+                        try:
+                            print("[HF] handle sdt content")
+                        except Exception:
+                            pass
                     paragraphs = sdt_content.findall(".//w:p", namespaces=namespaces)
                     for p in paragraphs:
                         self._handle_text_elements(p, docx_obj, doc)
             # Check for Text
             elif tag_name in ["p"]:
                 # "tcPr", "sectPr"
+                if header_footer_ctx_opened:
+                    try:
+                        texts = [t.text for t in element.findall(".//w:t", namespaces=namespaces) if t.text]
+                        instrs = [t.text for t in element.findall(".//w:instrText", namespaces=namespaces) if t.text]
+                        fldchars = [fc.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}fldCharType") for fc in element.findall(".//w:fldChar", namespaces=namespaces)]
+                        parts = []
+                        if texts:
+                            parts.append(" ".join(texts))
+                        if instrs:
+                            parts.append(f"[instr] {' '.join(instrs)}")
+                        if fldchars:
+                            parts.append(f"[fld] {','.join([c for c in fldchars if c])}")
+                        joined = " | ".join(parts)
+                        preview = (joined[:80] + ("…" if len(joined) > 80 else "")) if joined else ""
+                    except Exception:
+                        pass
                 self._handle_text_elements(element, docx_obj, doc)
+                
+        # Header/Footer 컨텍스트 닫기
+        if header_footer_ctx_opened:
+            level = self._get_level()
+            self.parents[level] = original_parent_for_hf
+            # level-1 부모 복원
+            try:
+                self.parents[level - 1] = original_parent_for_hf_m1
+            except Exception:
+                pass
         return doc 
 
     def _extract_image_from_drawing(
@@ -453,8 +842,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         # 4) ImageRef 생성
         return ImageRef.from_pil(image=pil_img, dpi=72)
     
-    def _handle_tables_enhanced(self, element: etree._Element, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
+    def _handle_tables_enhanced(self, element: etree._Element, docx_obj: DocxDocument, doc: DoclingDocument, owner_part=None) -> None:
         # 이 element 가 mc:Fallback 계층 안이라면 스킵
+        if owner_part is None:
+            owner_part = docx_obj.part
+        hf_only = self._is_owner_header_footer(owner_part)
         if element.getparent() is not None and etree.QName(element.getparent()).localname == "Fallback":
             return
 
@@ -480,6 +872,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     self._processed_table_contents = set()
                 
                 if table_content_hash in self._processed_table_contents:
+                    if hf_only:
+                        try:
+                            print("[HF][tbl] skip: duplicate content in AlternateContent")
+                        except Exception:
+                            pass
                     return
                 
                 self._processed_table_contents.add(table_content_hash)
@@ -523,15 +920,12 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # 3) 중첩 구조 버퍼: (r, c) → list of (typ, payload)
         cell_buffer = defaultdict(list)
-        
-        def get_docx_image_bytes(drawing_blip: List[etree._Element]) -> Optional[bytes]:
-            # drawing_blip[0] 은 <w:drawing> 엘리먼트
-            rId = drawing_blip[0].get(
-                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
-            )
-            if not rId or rId not in docx_obj.part.rels:
+            
+        def get_docx_image_bytes_from_owner(drawing_blip: List[etree._Element]) -> Optional[bytes]:
+            rId = drawing_blip[0].get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+            if not rId or rId not in owner_part.rels:
                 return None
-            return docx_obj.part.rels[rId].target_part.blob
+            return owner_part.rels[rId].target_part.blob
         
         # 4) 각 셀 순회
         for r_idx, row in enumerate(table.rows):
@@ -561,13 +955,14 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                                 if t.text and t.text.strip()
                             ]
                             if texts:
-                                cell_buffer[(r_idx, c_idx)].append(("text", " ".join(texts)))
+                                if not self._is_duplicate_content(" ".join(texts)):
+                                    cell_buffer[(r_idx, c_idx)].append(("text", " ".join(texts))) 
                                 continue
 
                             # -- 2) drawing 수집
                             drawings = ch.findall(".//w:drawing", namespaces=ns)
                             if drawings:
-                                blob = get_docx_image_bytes(drawings)
+                                blob = get_docx_image_bytes_from_owner(drawings)
                                 if blob is None:
                                     cell_buffer[(r_idx, c_idx)].append(("picture", None))
                                 else:
@@ -575,14 +970,19 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                                         pil_img = Image.open(BytesIO(blob))
                                         img_ref = ImageRef.from_pil(image=pil_img, dpi=72)
                                         cell_buffer[(r_idx, c_idx)].append(("picture", img_ref))
+          
                                     except UnidentifiedImageError:
-                                        # 실패해도 자리 표시
-                                        cell_buffer[(r_idx, c_idx)].append(("picture", None)) 
+                                        pass
                             continue                                
 
 
                     # 만약 버퍼에 뭔가 담겼다면, TableData에 추가하지 않고 continue
                     if (r_idx, c_idx) in cell_buffer:
+                        if hf_only:
+                            try:
+                                print(f"[HF][tbl] cell({r_idx},{c_idx}) buffered-only (skip TableData)")
+                            except Exception:
+                                pass
                         continue
                     
                 # 5) 일반 셀: TableData 에 추가
@@ -603,6 +1003,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # 6) 버퍼 출력
         parent = self.parents[self._get_level() - 1]
+        if parent is None:
+            # Try current level
+            parent = self.parents.get(self._get_level())
+            # Try to find nearest non-None parent (prefer HF group)
+            if parent is None:
+                for k in range(self._get_level(), -2, -1):
+                    if self.parents.get(k) is not None:
+                        parent = self.parents[k]
+                        break
+
         for (r, c), items in sorted(cell_buffer.items(), key=lambda x: (x[0][0], x[0][1])):
             for typ, payload in items:
                 prov = ProvenanceItem(
@@ -611,9 +1021,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     charspan=(0, len(payload) if typ == "text" else 0)
                 )
                 if typ == "text":
-                    # 중복 텍스트 방지
-                    if payload and not self._is_duplicate_content(payload):
-                        doc.add_text(label=DocItemLabel.PARAGRAPH, text=payload, parent=parent, prov=prov)
+                    doc.add_text(label=DocItemLabel.PARAGRAPH, text=payload, parent=parent, prov=prov)
                     continue
                 elif typ == "picture":
                     if payload is None:
@@ -628,11 +1036,20 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # 7) TableData 형태로 출력 (중첩 없는 가장 바깥쪽만)
         if data.table_cells:
+            # parent 보정: 여전히 None 이면 최상위에 붙여 중단을 방지
+            if parent is None:
+                if self._is_owner_header_footer(owner_part):
+                    try:
+                        print("[HF][tbl] warn: parent None, attaching table at document root")
+                    except Exception:
+                        pass
+                parent = self.parents.get(0)
             doc.add_table(data=data, parent=parent, prov=ProvenanceItem(
                 page_no=1,
                 bbox=BoundingBox(l=0, t=0, r=1, b=num_rows),
                 charspan=(0, 0)
             ))
+
 
     def _should_fallback_table_to_text(self, table: Table, docx_obj: DocxDocument) -> bool:
         """
@@ -820,7 +1237,6 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         Extract text from cell including content inside SDT (Structured Document Tags).
         This is needed for cells that have form fields or content controls.
         """
-        
         namespaces = {
             "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         }
@@ -1079,6 +1495,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         element: BaseOxmlElement,
         docx_obj: DocxDocument,
         doc: DoclingDocument,
+        owner_part=None,
     ) -> None:
         """Process shape content including tables, text, and images within shapes."""
         namespaces = {
@@ -1111,7 +1528,13 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         )
         para_elements = shape_para_xpath(element)
 
-        if not text_elements and not table_elements and not para_elements:
+        # Look for images in shapes (a:blip and VML v:imagedata)
+        shape_img_xpath = etree.XPath(
+            ".//a:blip|.//v:imagedata", namespaces=namespaces
+        )
+        image_elements = shape_img_xpath(element)
+
+        if not text_elements and not table_elements and not para_elements and not image_elements:
             return
 
         # Extract all text content from the shape
@@ -1137,7 +1560,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         # Process tables within the shape first
         for table_elem in table_elements:
             try:
-                self._handle_tables_enhanced(table_elem, docx_obj, doc)
+                self._handle_tables_enhanced(table_elem, docx_obj, doc, owner_part=owner_part)
             except Exception as e:
                     _log.debug(f"Could not parse table in shape: {e}")
 
@@ -1151,17 +1574,32 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         # If we have text but no structured content, add it as plain text
         if full_text and not table_elements and not para_elements:
             # Check for duplicate content before adding
-            if not self._is_duplicate_content(full_text):
-                doc.add_text(
-                    label=DocItemLabel.PARAGRAPH,
-                    text=full_text,
-                    parent=shape_group,
+                if not self._is_duplicate_content(full_text):
+                    doc.add_text(
+                        label=(
+                            DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
+                            else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
+                            else DocItemLabel.PARAGRAPH
+                        ),
+                        text=full_text,
+                        parent=shape_group,
                     prov=ProvenanceItem(
                         page_no=1,
                         bbox=BoundingBox(l=0, t=0, r=1, b=1),
                         charspan=(0, len(full_text))
                     )
                 )
+
+        # Process images within the shape
+        for img_elem in image_elements:
+            try:
+                local = etree.QName(img_elem).localname
+                # Handle a:blip and v:imagedata uniformly by passing list to _handle_pictures
+                blips = [img_elem] if local in ("blip", "imagedata") else []
+                if blips:
+                    self._handle_pictures(owner_part or docx_obj.part, docx_obj, blips, doc)
+            except Exception as e:
+                _log.debug(f"Could not parse image in shape: {e}")
 
         # Restore original parent
         self.parents[level] = original_parent
@@ -1256,10 +1694,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         text = text.strip()
 
         # Common styles for bullet and numbered lists.
-        # "List Bullet", "List Number", "List Paragraph"
-        # Identify whether list is a numbered list or not
-        # is_numbered = "List Bullet" not in paragraph.style.name
-        is_numbered = False
+        # numbering.xml 기반으로 순서형 여부 판정
+        is_numbered = self._is_numbered_list(paragraph, docx_obj)
         p_style_id, p_level = self._get_label_and_level(paragraph)
         numid, ilevel = self._get_numId_and_ilvl(paragraph)
 
@@ -1281,6 +1717,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             self._update_history(p_style_id, p_level, numid, ilevel)
             return
+            
         
         elif (
             numid is None
@@ -1308,6 +1745,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 charspan=(0, 0)
                 )
             )
+            self._update_history(p_style_id, p_level, numid, ilevel)
+            return
             
         elif "Heading" in p_style_id:
             style_element = getattr(paragraph.style, "element", None)
@@ -1317,6 +1756,25 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             else:
                 is_numbered_style = False
+            # 헤딩 텍스트가 비어 있으면 runs 기반으로 재구성 시도
+            if len(text.strip()) == 0:
+                reconstructed = " ".join([t for t, _, _ in paragraph_elements if isinstance(t, str) and len(t.strip()) > 0]).strip()
+                if len(reconstructed) > 0:
+                    text = reconstructed
+            # 여전히 비어 있으면 빈 제목 추가를 방지
+            if len(text.strip()) == 0:
+                self._update_history(p_style_id, p_level, numid, ilevel)
+                return
+            # 번호 스타일이면 numbering.xml 기반 라벨을 계산해서 원문 텍스트 앞에 붙인다
+            if is_numbered_style:
+                num_for_label, ilvl_for_label = numid, ilevel
+                if num_for_label is None or ilvl_for_label is None:
+                    n2, i2 = self._get_style_numId_and_ilvl(paragraph)
+                    num_for_label = num_for_label if num_for_label is not None else n2
+                    ilvl_for_label = ilvl_for_label if ilvl_for_label is not None else i2
+                label = self._build_number_label(num_for_label, ilvl_for_label, docx_obj)
+                if label:
+                    text = f"{label} {text}".strip()
             self._add_header(doc, p_level, text, is_numbered_style)
 
         elif len(equations) > 0:
@@ -1333,6 +1791,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                     charspan=(0, 0)
                     )
                 )
+                self._update_history(p_style_id, p_level, numid, ilevel)
+                return
             else:
                 # Inline equation
                 level = self._get_level()
@@ -1351,7 +1811,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
                     if len(pre_eq_text) > 0:
                         doc.add_text(
-                            label=DocItemLabel.PARAGRAPH,
+                            label=(
+                                DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
+                                else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
+                                else DocItemLabel.PARAGRAPH
+                            ),
                             parent=inline_equation,
                             text=pre_eq_text,
                             prov=ProvenanceItem(
@@ -1373,7 +1837,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
                 if len(text_tmp) > 0:
                     doc.add_text(
-                        label=DocItemLabel.PARAGRAPH,
+                        label=(
+                            DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
+                            else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
+                            else DocItemLabel.PARAGRAPH
+                        ),
                         parent=inline_equation,
                         text=text_tmp.strip(),
                         prov=ProvenanceItem(
@@ -1382,6 +1850,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                         charspan=(0, 0)
                         )
                     )
+                self._update_history(p_style_id, p_level, numid, ilevel)
+                return
 
         elif p_style_id in [
             "Paragraph",
@@ -1403,7 +1873,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for duplicate content before adding
                 if not self._is_duplicate_content(text):
                     doc.add_text(
-                        label=DocItemLabel.PARAGRAPH,
+                        label=(
+                            DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
+                            else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
+                            else DocItemLabel.PARAGRAPH
+                        ),
                         parent=parent,
                         text=text,
                         formatting=format,
@@ -1414,6 +1888,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                         charspan=(0, 0)
                         )
                     )
+            self._update_history(p_style_id, p_level, numid, ilevel)
+            return
 
         else:
             # Text style names can, and will have, not only default values but user values too
@@ -1428,7 +1904,11 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Check for duplicate content before adding
                 if not self._is_duplicate_content(text):
                     doc.add_text(
-                        label=DocItemLabel.PARAGRAPH,
+                        label=(
+                            DocItemLabel.PAGE_HEADER if self._in_hf == 'hdr'
+                            else DocItemLabel.PAGE_FOOTER if self._in_hf == 'ftr'
+                            else DocItemLabel.PARAGRAPH
+                        ),
                         parent=parent,
                         text=text,
                         formatting=format,
@@ -1439,6 +1919,8 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                         charspan=(0, 0)
                         )
                     )
+            self._update_history(p_style_id, p_level, numid, ilevel)
+            return
 
         self._update_history(p_style_id, p_level, numid, ilevel)
         return
@@ -1479,7 +1961,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.numbered_headers[add_level] += 1
             else:
                 self.numbered_headers[add_level] = 1
-            text = f"{self.numbered_headers[add_level]} {text}"
+            # text = f"{self.numbered_headers[add_level]} {text}"
 
             # Reset deeper levels
             next_level = add_level + 1
@@ -1496,7 +1978,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 if self.numbered_headers[previous_level] == 0:
                     self.numbered_headers[previous_level] += 1
 
-                text = f"{self.numbered_headers[previous_level]}.{text}"
+                # text = f"{self.numbered_headers[previous_level]}.{text}"
                 previous_level -= 1
 
         heading_prov = ProvenanceItem(
@@ -1533,10 +2015,18 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             )
 
             # Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
-            if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+            # Set marker: numbering.xml 기반 라벨을 우선 사용
+            # self.docx_obj 는 __init__에서 항상 설정되며 convert 전에 None 아님
+            assert self.docx_obj is not None
+            label = self._build_number_label(numid, ilevel, self.docx_obj)
+            if is_numbered and label:
+                enum_marker = label
+            else:
+                # fallback: 단순 증가형
+                self.listIter += 1
+                if is_numbered:
+                    enum_marker = str(self.listIter) + "."
+                    is_numbered = True
             new_parent = self._create_or_reuse_parent(
                 doc=doc,
                 prev_parent=self.parents[level],
@@ -1581,11 +2071,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                         label=GroupLabel.LIST, name="list", parent=self.parents[i - 1]
                     )
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
-            if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+            # numbering.xml 기반 라벨 재사용
+            assert self.docx_obj is not None
+            label = self._build_number_label(numid, ilevel, self.docx_obj)
+            if is_numbered and label:
+                enum_marker = label
+            else:
+                self.listIter += 1
+                if is_numbered:
+                    enum_marker = str(self.listIter) + "."
+                    is_numbered = True
 
             new_parent = self._create_or_reuse_parent(
                 doc=doc,
@@ -1616,11 +2111,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 if k > self.level_at_new_list + ilevel:
                     self.parents[k] = None
 
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
-            if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+            # numbering.xml 기반 라벨 재사용
+            assert self.docx_obj is not None
+            label = self._build_number_label(numid, ilevel, self.docx_obj)
+            if is_numbered and label:
+                enum_marker = label
+            else:
+                self.listIter += 1
+                if is_numbered:
+                    enum_marker = str(self.listIter) + "."
+                    is_numbered = True
             new_parent = self._create_or_reuse_parent(
                 doc=doc,
                 prev_parent=self.parents[self.level_at_new_list + ilevel],
@@ -1643,11 +2143,16 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             self.listIter = 0
 
         elif self._prev_numid() == numid or prev_indent == ilevel:
-            # TODO: Set marker and enumerated arguments if this is an enumeration element.
-            self.listIter += 1
-            if is_numbered:
-                enum_marker = str(self.listIter) + "."
-                is_numbered = True
+            # numbering.xml 기반 라벨 재사용
+            assert self.docx_obj is not None
+            label = self._build_number_label(numid, ilevel, self.docx_obj)
+            if is_numbered and label:
+                enum_marker = label
+            else:
+                self.listIter += 1
+                if is_numbered:
+                    enum_marker = str(self.listIter) + "."
+                    is_numbered = True
             new_parent = self._create_or_reuse_parent(
                 doc=doc,
                 prev_parent=self.parents[level - 1],
@@ -1671,7 +2176,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
         return
 
     def _handle_pictures(
-        self, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
+        self, owner_part, docx_obj: DocxDocument, drawing_blip: Any, doc: DoclingDocument
     ) -> None:
         def get_docx_image_info(drawing_blip: Any) -> tuple[Optional[bytes], Optional[str]]:
             """이미지 데이터와 형식 정보를 반환합니다."""
@@ -1688,6 +2193,14 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                 # Try to get content type to identify format
                 image_format = getattr(image_part, 'content_type', None)
                 
+            return image_data, image_format
+        def get_image_info_from_owner(owner_part, drawing_blip: Any) -> tuple[Optional[bytes], Optional[str]]:
+            rId = drawing_blip[0].get("{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed")
+            if not rId or rId not in owner_part.rels:
+                return None, None
+            image_part = owner_part.rels[rId].target_part
+            image_data = image_part.blob
+            image_format = getattr(image_part, 'content_type', None)
             return image_data, image_format
 
         def is_valid_image_format(image_format: Optional[str], image_data: Optional[bytes]) -> bool:
@@ -1744,7 +2257,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
 
         level = self._get_level()
         # Open the BytesIO object with PIL to create an Image
-        image_data, image_format = get_docx_image_info(drawing_blip)
+        image_data, image_format = get_image_info_from_owner(owner_part, drawing_blip)
         
         # 이미지 데이터가 없거나 형식이 None인 경우에도 add_picture 호출
         
@@ -1766,6 +2279,7 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
             return
             
         try:
+            assert image_data is not None
             image_bytes = BytesIO(image_data)
             image_bytes.seek(0)  # 포인터를 시작으로 이동
             pil_image = Image.open(image_bytes)
@@ -1847,4 +2361,3 @@ class GenosMsWordDocumentBackend(DeclarativeDocumentBackend):
                         )
                     )
         return
-
