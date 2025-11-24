@@ -1,3 +1,32 @@
+# %% [markdown]
+#
+# What this example does
+# - Run a conversion using the best setup for GPU using VLM models
+#
+# Requirements
+# - Python 3.10+
+# - Install Docling: `pip install docling`
+# - Install vLLM: `pip install vllm`
+#
+# How to run
+# - `python docs/examples/gpu_vlm_pipeline.py`
+#
+# This example is part of a set of GPU optimization strategies. Read more about it in [GPU support](../../usage/gpu/)
+#
+# ### Start models with vllm
+#
+# ```console
+# vllm serve ibm-granite/granite-docling-258M \
+#   --host 127.0.0.1 --port 8000 \
+#   --max-num-seqs 512 \
+#   --max-num-batched-tokens 8192 \
+#   --enable-chunked-prefill \
+#   --gpu-memory-utilization 0.9
+# ```
+#
+# ## Example code
+# %%
+
 import datetime
 import logging
 import time

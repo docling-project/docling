@@ -1,3 +1,20 @@
+# %% [markdown]
+#
+# What this example does
+# - Run a conversion using the best setup for GPU for the standard pipeline
+#
+# Requirements
+# - Python 3.9+
+# - Install Docling: `pip install docling`
+#
+# How to run
+# - `python docs/examples/gpu_standard_pipeline.py`
+#
+# This example is part of a set of GPU optimization strategies. Read more about it in [GPU support](../../usage/gpu/)
+#
+# ## Example code
+# %%
+
 import datetime
 import logging
 import time
