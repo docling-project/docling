@@ -105,8 +105,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             else:
                 artifacts_path = artifacts_path / self._model_repo_folder
 
+            # Use model name instead of local path to avoid transformers bug where
+            # config is loaded as dict but accessed as object attribute
+            # Transformers will automatically use the cached model from artifacts_path
             self._processor = AutoProcessor.from_pretrained(
-                artifacts_path,
+                "docling-project/CodeFormulaV2",
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
             self._model = AutoModelForImageTextToText.from_pretrained(
