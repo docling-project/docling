@@ -483,102 +483,25 @@ class HybridChunker(BaseChunker):
         if not items:
             return []
 
-        # 1단계: 섹션 헤더가 바뀔 때마다 분할
-        sections = []  # [(items, header_infos, header_short_infos), ...]
-        current_section_items = []
-        current_section_header_infos = []
-        current_section_header_short_infos = []
+        # ================================================================
+        # 헬퍼 함수들
+        # ================================================================
 
-        for i in range(len(items)):
-            item = items[i]
-            header_info = header_info_list[i] if i < len(header_info_list) else {}
-            header_short_info = header_short_info_list[i] if i < len(header_short_info_list) else {}
+        def get_header_level(header_infos, *, first=False, default=-1):
+            """header_infos에서 최종 레벨 계산"""
+            if not header_infos:
+                return default
+            info = header_infos[0] if first else header_infos[-1]
+            return max(info.keys(), default=default)
 
-            # 섹션 헤더를 만나면
-            if self._is_section_header(item):
-                # 이전 섹션이 있으면 저장
-                if current_section_items:
-                    sections.append((
-                        current_section_items,
-                        current_section_header_infos,
-                        current_section_header_short_infos
-                    ))
+        def get_current_chunk(doc_chunk: DocChunk, merged_texts: list[str], merged_header_short_infos: list[dict], merged_items: list[DocItem]):
+            """현재까지 병합된 내용으로 DocChunk 생성"""
+            if not merged_texts:
+                return None
+            chunk_text = "\n".join(merged_texts)
+            used_headers = self._extract_used_headers(merged_header_short_infos)
 
-                # 새로운 섹션 시작
-                current_section_items = [item]
-                current_section_header_infos = [header_info]
-                current_section_header_short_infos = [header_short_info]
-            else:
-                # 섹션 헤더가 아니면 현재 섹션에 추가
-                current_section_items.append(item)
-                current_section_header_infos.append(header_info)
-                current_section_header_short_infos.append(header_short_info)
-
-        # 마지막 섹션 저장
-        if current_section_items:
-            sections.append((
-                current_section_items,
-                current_section_header_infos,
-                current_section_header_short_infos
-            ))
-
-        # 1.5단계: "제x장/절/관" 헤더는 다음 섹션과 병합. 한줄만으로 구성된 섹션 대상
-        for i in range(len(sections) - 2, -1, -1):
-            items, h_infos, h_short = sections[i]
-
-            if len(items) > 1:
-                continue  # 아이템이 하나인 섹션만 검사
-
-            text = ""
-            if h_short and h_short[0].values():
-                text = list(h_short[0].values())[-1]
-
-            if re.match(r"제\s*\d+\s*(장|절|관)", text):
-                # 문단이 이미 구성된 것은 제외
-                item_text = "".join(item.text for item in items if hasattr(item, "text"))
-                if len(item_text) > 30:
-                    continue
-
-                n_items, n_h_infos, n_h_short = sections[i + 1]
-                sections[i] = (items + n_items, h_infos + n_h_infos, h_short + n_h_short)
-                sections.pop(i + 1)
-
-        # 2단계: 각 섹션의 텍스트에 heading 붙이기
-        sections_with_text = []
-        for section_items, section_header_infos, section_header_short_infos in sections:
-            section_text = self._generate_section_text_with_heading(
-                section_items, section_header_short_infos, dl_doc
-            )
-            sections_with_text.append((
-                section_text,
-                section_items,
-                section_header_infos,
-                section_header_short_infos
-            ))
-
-        # 3단계: 섹션들을 max_tokens 기준으로 병합
-        result_chunks = []
-        merged_texts = []
-        merged_items = []
-        merged_header_infos = []
-        merged_header_short_infos = []
-
-        for section_text, section_items, section_header_infos, section_header_short_infos in sections_with_text:
-            # 병합 가능한지 테스트
-            test_text = "\n".join(merged_texts + [section_text])
-            test_tokens = self._count_tokens(test_text)
-
-            # max_tokens 이하이거나 첫 섹션이면 병합
-            if test_tokens <= self.max_tokens or len(merged_texts) == 0:
-                merged_texts.append(section_text)
-                merged_items.extend(section_items)
-                merged_header_infos.extend(section_header_infos)
-                merged_header_short_infos.extend(section_header_short_infos)
-            else:
-                # max_tokens 초과하면 현재까지 chunk 생성
-                chunk_text = "\n".join(merged_texts)
-                used_headers = self._extract_used_headers(merged_header_short_infos)
-                result_chunks.append(DocChunk(
+            return DocChunk(
                     text=chunk_text,
                     meta=DocMeta(
                         doc_items=merged_items,
@@ -586,27 +509,134 @@ class HybridChunker(BaseChunker):
                         captions=None,
                         origin=doc_chunk.meta.origin,
                     )
-                ))
+                )
+
+        # ================================================================
+        # 1단계: 섹션 헤더 기준으로 분할
+        # ================================================================
+
+        sections = []  # [(items, header_infos, header_short_infos), ...]
+        cur_items, cur_h_infos, cur_h_short = [], [], []
+
+        for i, item in enumerate(items):
+            h_info = header_info_list[i] if i < len(header_info_list) else {}
+            h_short = header_short_info_list[i] if i < len(header_short_info_list) else {}
+
+            # 섹션 헤더를 만나면
+            if self._is_section_header(item):
+                # 이전 섹션이 있으면 저장
+                if cur_items:
+                    sections.append((cur_items, cur_h_infos, cur_h_short))
+
+                # 새로운 섹션 시작
+                cur_items = [item]
+                cur_h_infos = [h_info]
+                cur_h_short = [h_short]
+            else:
+                # 섹션 헤더가 아니면 현재 섹션에 추가
+                cur_items.append(item)
+                cur_h_infos.append(h_info)
+                cur_h_short.append(h_short)
+
+        # 마지막 섹션 저장
+        if cur_items:
+            sections.append((cur_items, cur_h_infos, cur_h_short))
+
+        # ================================================================
+        # 2단계: 각 섹션의 텍스트에 heading 붙이기
+        # ================================================================
+
+        sections_with_text = []
+        for items, header_infos, header_short_infos in sections:
+            text = self._generate_section_text_with_heading(
+                items, header_short_infos, dl_doc
+            )
+            sections_with_text.append((
+                text,
+                items,
+                header_infos,
+                header_short_infos
+            ))
+
+        # ================================================================
+        # 3단계: 단독 타이틀(1줄만) → 다음 섹션으로 병합
+        # ================================================================
+
+        for i in range(len(sections_with_text) - 2, -1, -1):
+            text, items, h_infos, h_short = sections_with_text[i]
+
+            # 아이템이 하나인 섹션 헤더만 검사
+            if len(items) != 1 or not self._is_section_header(items[0]):
+                continue
+
+            # 문단이 이미 구성된 것은 제외 (문자 수가 30자 이상이면 문단을 구성했다고 간주)
+            item_text = "".join(getattr(it, "text", "") for it in items)
+            if len(item_text) > 30:
+                continue
+
+            # 현재 섹션헤더 레벨이 다음 섹션헤더 레벨보다 더 높은 경우에만 병합 (높은 레벨이 더 작은 숫자)
+            n_text, n_items, n_h_infos, n_h_short = sections_with_text[i + 1]
+            current_level = get_header_level(h_infos, first=False)
+            next_level = get_header_level(n_h_infos, first=True)
+            if 0 <= next_level < current_level:
+                continue
+
+            # 다음 섹션과 병합
+            sections_with_text[i] = (text + '\n' + n_text, items + n_items, h_infos + n_h_infos, h_short + n_h_short)
+            sections_with_text.pop(i + 1)
+
+        # ================================================================
+        # 4단계: 토큰 기준 병합
+        # ================================================================
+
+        result_chunks = []
+        merged_texts, merged_items = [], []
+        merged_header_infos, merged_header_short_infos = [], []
+
+        for text, items, header_infos, header_short_infos in sections_with_text:
+
+            b_new_chunk = False
+
+            #----------------------------------
+            # 병합 가능 여부 판단
+
+            # 병합 가능 토큰 수 계산
+            test_tokens = self._count_tokens("\n".join(merged_texts + [text]))
+
+            # 현재 섹션헤더 레벨과 병합된 섹션헤더 레벨
+            section_level = get_header_level(header_infos, first=True)
+            merged_level = get_header_level(merged_header_infos, first=False)
+
+            # 토큰 수 초과 시 새로운 청크 생성
+            if test_tokens > self.max_tokens and len(merged_texts) > 0:
+                b_new_chunk = True
+            # 현재 섹션헤더 레벨이 더 높으면 새로운 청크 생성
+            elif 0 <= section_level < merged_level:
+                b_new_chunk = True
+            #----------------------------------
+
+            # 새로운 청크 생성
+            if b_new_chunk:
+                cur_chunk = get_current_chunk(doc_chunk, merged_texts, merged_header_short_infos, merged_items)
+                if cur_chunk:
+                    result_chunks.append(cur_chunk)
 
                 # 새로운 병합 시작
-                merged_texts = [section_text]
-                merged_items = section_items
-                merged_header_infos = section_header_infos
-                merged_header_short_infos = section_header_short_infos
+                merged_texts = [text]
+                merged_items = items
+                merged_header_infos = header_infos
+                merged_header_short_infos = header_short_infos
+            else:
+                # 현재 섹션 병합
+                merged_texts.append(text)
+                merged_items.extend(items)
+                merged_header_infos.extend(header_infos)
+                merged_header_short_infos.extend(header_short_infos)
 
         # 마지막 병합된 items 처리
-        if merged_texts:
-            chunk_text = "\n".join(merged_texts)
-            used_headers = self._extract_used_headers(merged_header_short_infos)
-            result_chunks.append(DocChunk(
-                text=chunk_text,
-                meta=DocMeta(
-                    doc_items=merged_items,
-                    headings=used_headers,
-                    captions=None,
-                    origin=doc_chunk.meta.origin,
-                )
-            ))
+        cur_chunk = get_current_chunk(doc_chunk, merged_texts, merged_header_short_infos, merged_items)
+        if cur_chunk:
+            result_chunks.append(cur_chunk)
 
         return result_chunks
 
