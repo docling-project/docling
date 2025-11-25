@@ -21,13 +21,14 @@ from docling.document_converter import DocumentConverter
 def main():
     input_paths = [
         # Path("README.md"),
-        # Path("/workspaces/삼증리서치_리포트반출_일부/hd한국조선해양/original/2025042414165512K_01.docx"),
-        # Path("/workspaces/삼증리서치_리포트반출_일부/비상장기업/original/2025042510145245K_01.docx"),
+        Path("/workspaces/삼증리서치_리포트반출_일부/hd한국조선해양/original/2025042414165512K_01.docx"),
+        Path("/workspaces/삼증리서치_리포트반출_일부/비상장기업/original/2025042510145245K_01.docx"),
         # BOK HWPX
         # Path("/workspaces/test_data/25.09 주요 상품 라인업(상품지원담당)(사내한).pptx"),
         Path("/workspaces/jayoo/test_doc/1.1_환율의구조.docx"),
         Path("/workspaces/jayoo/test_doc/docx/롯데손해보험 데이터경영팀 MLOps 운영자 매뉴얼.docx"),
-        Path("/workspaces/삼증리서치_리포트반출_일부/포스코퓨처엠/original/2025042415214444K_01.docx")
+        Path("/workspaces/삼증리서치_리포트반출_일부/포스코퓨처엠/original/2025042415214444K_01.docx"),
+        Path("/workspaces/docx_header_real/doc_parser/sample_files/건조주의보 및 강풍대비 특보 대처 방안.docx")
         # Path("/workspaces/test_data/259_그룹.pptx"),
         # Path("/workspaces/hwpx/★(통화정책국)의결문(안) 및 참고자료(1810)_의결문제외.hwp"),
         # Path("/workspaces/test_data/25.09 주요 상품 라인업(상품지원담당)(사내한).pdf"),
@@ -78,7 +79,7 @@ def main():
     conv_results = doc_converter.convert_all(input_paths)
 
     for res in conv_results:
-        out_path = Path("/workspaces/docx_csv/doc_parser/scratch")
+        out_path = Path("/workspaces/sds_docx/doc_parser/scratch")
         print(
             f"Document {res.input.file.name} converted."
             f"\nSaved markdown output to: {out_path!s}"
