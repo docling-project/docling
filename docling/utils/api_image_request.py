@@ -23,14 +23,16 @@ def api_image_request(
     **params,
 ) -> Tuple[str, Optional[int], VlmStopReason]:
     img_io = BytesIO()
-    image = image.copy()
+    image = (
+        image.copy()
+    )  # Fix for inconsistent PIL image width/height to actual byte data
     image = image.convert("RGBA")
     good_image = True
     try:
         image.save(img_io, "PNG")
-    except:
+    except Exception as e:
         good_image = False
-        _log.error("Error, corrupter PNG of size: {}".format(image.size))
+        _log.error(f"Error, corrupter PNG of size: {image.size}: {e}")
 
     if good_image:
         try:
@@ -42,7 +44,9 @@ def api_image_request(
                     "content": [
                         {
                             "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{image_base64}"},
+                            "image_url": {
+                                "url": f"data:image/png;base64,{image_base64}"
+                            },
                         },
                         {
                             "type": "text",
@@ -79,12 +83,12 @@ def api_image_request(
                 else VlmStopReason.END_OF_SEQUENCE
             )
 
-            return generated_text, num_tokens, 
+            return generated_text, num_tokens, stop_reason
         except Exception as e:
             _log.error(f"Error, could not process request: {e}")
-            return "", 0, "bad request"
+            return "", 0, VlmStopReason.UNSPECIFIED
     else:
-        return "", 0, "bad image"
+        return "", 0, VlmStopReason.UNSPECIFIED
 
 
 def api_image_request_streaming(

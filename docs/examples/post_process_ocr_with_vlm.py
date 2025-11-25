@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Optional, Union
 
+import numpy as np
 from docling_core.types.doc import (
     DoclingDocument,
     ImageRefMode,
@@ -16,9 +17,9 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import (
     ContentLayer,
     DocItem,
+    FormItem,
     GraphCell,
     KeyValueItem,
-    FormItem,
     PictureItem,
     RichTableCell,
     TableCell,
@@ -26,7 +27,6 @@ from docling_core.types.doc.document import (
 )
 from PIL import Image, ImageFilter
 from PIL.ImageOps import crop
-import numpy as np
 from pydantic import BaseModel, ConfigDict
 from tqdm import tqdm
 
@@ -63,15 +63,16 @@ SHOW_EMPTY_CROPS = False
 SHOW_NONEMPTY_CROPS = False
 PRINT_RESULT_MARKDOWN = False
 
+
 def is_empty_fast_with_lines_pil(
     pil_img: Image.Image,
     # downscale_max_side: int = 64,
     downscale_max_side: int = 48,
-    grad_threshold: float = 15.0,   # how strong a gradient must be to count as edge
-    min_line_coverage: float = 0.6, # line must cover 60% of height/width
+    grad_threshold: float = 15.0,  # how strong a gradient must be to count as edge
+    min_line_coverage: float = 0.6,  # line must cover 60% of height/width
     # max_allowed_lines: int = 4,     # allow up to this many strong lines
-    max_allowed_lines: int = 10,     # allow up to this many strong lines
-    edge_fraction_threshold: float = 0.0035
+    max_allowed_lines: int = 10,  # allow up to this many strong lines
+    edge_fraction_threshold: float = 0.0035,
 ):
     """
     Fast 'empty' detector using only PIL + NumPy.
@@ -108,16 +109,18 @@ def is_empty_fast_with_lines_pil(
     gray = gray.filter(ImageFilter.BoxBlur(1))
 
     # 4) Convert to NumPy
-    arr = np.asarray(gray, dtype=np.float32)  # shape (h, w) in PIL, but note: PIL size is (w, h)
+    arr = np.asarray(
+        gray, dtype=np.float32
+    )  # shape (h, w) in PIL, but note: PIL size is (w, h)
     H, W = arr.shape
-    total_pixels = H * W
+    # total_pixels = H * W
 
     # 5) Compute simple gradients (forward differences)
     gx = np.zeros_like(arr)
     gy = np.zeros_like(arr)
 
-    gx[:, :-1] = arr[:, 1:] - arr[:, :-1]   # horizontal differences
-    gy[:-1, :] = arr[1:, :] - arr[:-1, :]   # vertical differences
+    gx[:, :-1] = arr[:, 1:] - arr[:, :-1]  # horizontal differences
+    gy[:-1, :] = arr[1:, :] - arr[:-1, :]  # vertical differences
 
     mag = np.hypot(gx, gy)  # gradient magnitude
 
@@ -141,11 +144,15 @@ def is_empty_fast_with_lines_pil(
 
     # If we have more long lines than allowed => non-empty
     if num_lines > max_allowed_lines:
-        return False, float(edge_fraction), {
-            "reason": "too_many_lines",
-            "num_lines": int(num_lines),
-            "edge_fraction": float(edge_fraction),
-        }
+        return (
+            False,
+            float(edge_fraction),
+            {
+                "reason": "too_many_lines",
+                "num_lines": int(num_lines),
+                "edge_fraction": float(edge_fraction),
+            },
+        )
 
     # 8) Mask out those lines and recompute remaining edges
     line_mask = np.zeros_like(edges, dtype=bool)
@@ -162,26 +169,26 @@ def is_empty_fast_with_lines_pil(
     debug = {
         "original_edge_fraction": float(edge_fraction),
         "remaining_edge_fraction": float(remaining_edge_fraction),
-        "num_vert_lines": int(len(vert_line_cols)),
-        "num_horiz_lines": int(len(horiz_line_rows)),
+        "num_vert_lines": len(vert_line_cols),
+        "num_horiz_lines": len(horiz_line_rows),
     }
     return is_empty, float(remaining_edge_fraction), debug
 
 
 def remove_break_lines(text: str) -> str:
     # Replace any newline types with a single space
-    cleaned = re.sub(r'[\r\n]+', ' ', text)
+    cleaned = re.sub(r"[\r\n]+", " ", text)
     # Collapse multiple spaces into one
-    cleaned = re.sub(r'\s+', ' ', cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
 
 
 def safe_crop(img: Image.Image, bbox):
     left, top, right, bottom = bbox
     # Clamp to image boundaries
-    left   = max(0, min(left,   img.width))
-    top    = max(0, min(top,    img.height))
-    right  = max(0, min(right,  img.width))
+    left = max(0, min(left, img.width))
+    top = max(0, min(top, img.height))
+    right = max(0, min(right, img.width))
     bottom = max(0, min(bottom, img.height))
     return img.crop((left, top, right, bottom))
 
@@ -191,7 +198,7 @@ def no_long_repeats(s: str, threshold: int) -> bool:
     Returns False if the string `s` contains more than `threshold`
     identical characters in a row, otherwise True.
     """
-    pattern = r'(.)\1{' + str(threshold) + ',}'
+    pattern = r"(.)\1{" + str(threshold) + ",}"
     return re.search(pattern, s) is None
 
 
@@ -303,14 +310,16 @@ class PostOcrApiEnrichmentModel(
                     ].image.pil_image.crop(expanded_bbox.as_tuple())
 
                     # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
-                    is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
+                    is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(
+                        cropped_image
+                    )
                     if is_empty:
                         if SHOW_EMPTY_CROPS:
                             try:
                                 cropped_image.show()
                             except Exception as e:
-                                print("Error with image: {}".format(e))
-                        print("!!! DETECTED EMPTY FORM ITEM IMAGE CROP !!! {}".format(rem_frac))
+                                print(f"Error with image: {e}")
+                        print(f"!!! DETECTED EMPTY FORM ITEM IMAGE CROP !!! {rem_frac}")
                         print(debug)
                     else:
                         result.append(
@@ -364,14 +373,18 @@ class PostOcrApiEnrichmentModel(
                                 ].image.pil_image.crop(expanded_bbox.as_tuple())
 
                                 # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
-                                is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
+                                is_empty, rem_frac, debug = (
+                                    is_empty_fast_with_lines_pil(cropped_image)
+                                )
                                 if is_empty:
                                     if SHOW_EMPTY_CROPS:
                                         try:
                                             cropped_image.show()
                                         except Exception as e:
-                                            print("Error with image: {}".format(e))
-                                    print("!!! DETECTED EMPTY TABLE CELL IMAGE CROP !!! {}".format(rem_frac))
+                                            print(f"Error with image: {e}")
+                                    print(
+                                        f"!!! DETECTED EMPTY TABLE CELL IMAGE CROP !!! {rem_frac}"
+                                    )
                                     print(debug)
                                 else:
                                     if SHOW_NONEMPTY_CROPS:
@@ -414,22 +427,24 @@ class PostOcrApiEnrichmentModel(
                         ].image.pil_image.crop(expanded_bbox.as_tuple())
                         # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
 
-                        is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(cropped_image)
+                        is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(
+                            cropped_image
+                        )
                         if is_empty:
                             if SHOW_EMPTY_CROPS:
                                 try:
                                     cropped_image.show()
                                 except Exception as e:
-                                    print("Error with image: {}".format(e))
-                            print("!!! DETECTED EMPTY TEXT IMAGE CROP !!! {}".format(rem_frac))
+                                    print(f"Error with image: {e}")
+                            print(f"!!! DETECTED EMPTY TEXT IMAGE CROP !!! {rem_frac}")
                             print(debug)
                         else:
                             multiple_crops.append(cropped_image)
                             print("")
-                            print("cropped image size: {}".format(cropped_image.size))
+                            print(f"cropped image size: {cropped_image.size}")
                             print(type(element))
                             if hasattr(element, "text"):
-                                print("OLD TEXT: {}".format(element.text))
+                                print(f"OLD TEXT: {element.text}")
                 else:
                     print("Not a text element")
             if len(multiple_crops) > 0:
