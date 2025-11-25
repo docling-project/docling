@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import GroupItem
+from docling_core.types.doc import GroupItem, ListGroup
 
 from docling.backend.docx.drawingml.utils import get_libreoffice_cmd
 from docling.backend.msword_backend import MsWordDocumentBackend
@@ -236,4 +236,51 @@ def test_add_header_footer(documents):
     assert len(footers[0].children) == 1, "First page footer should have 1 paragraph"
     assert len(footers[1].children) == 4, (
         "Second page footer should have 3 paragraphs and 1 picture"
+    )
+
+
+def test_list_items_after_numbered_heading(documents):
+    """Test that list items appear correctly after numbered headings.
+
+    This test verifies the fix for the issue where list items immediately
+    following headings (especially numbered headings) were not being processed.
+
+    The fix includes:
+    1. Clearing list history after headings (_update_history with None)
+    2. Resetting level tracking when heading resets hierarchy
+    3. Resetting level_at_new_list when heading is added
+    4. Adding fallback case for different numid after headings
+    """
+    name = "list_after_num_headers.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    # Verify document structure: numbered heading should have list children
+    heading_with_list_found = False
+
+    for item, _ in doc.iterate_items():
+        if isinstance(item, SectionHeaderItem):
+            # Check if this is the numbered heading "1 ĐỐI TƯỢNG ÁP DỤNG"
+            if "ĐỐI TƯỢNG ÁP DỤNG" in item.text and item.level == 3:
+                heading_with_list_found = True
+
+                # The heading should have a list group as child
+                assert len(item.children) > 0, f"Heading '{item.text}' has no children"
+
+                # Get the first child
+                first_child_ref = item.children[0]
+                if hasattr(first_child_ref, "get"):
+                    first_child = first_child_ref.get()
+
+                    # Verify it's a ListGroup
+                    assert isinstance(first_child, ListGroup), (
+                        f"First child of heading should be ListGroup, got {type(first_child)}"
+                    )
+
+                    # Verify the list has items
+                    assert len(first_child.children) >= 2, (
+                        f"List group should have at least 2 items, found {len(first_child.children)}"
+                    )
+
+    assert heading_with_list_found, (
+        "Could not find the test heading '1 ĐỐI TƯỢNG ÁP DỤNG' with level 3"
     )
