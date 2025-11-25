@@ -558,12 +558,6 @@ class HybridChunker(BaseChunker):
                 header_short_infos
             ))
 
-            print(f'header text: {text}')
-            item_text = "".join(getattr(it, "text", "") for it in items)
-            print(f'item text: {item_text[:30]}')
-            print(f'header_short_infos: {header_short_infos}')
-            print('\n')
-
         # ================================================================
         # 3단계: 단독 타이틀(1줄만) → 다음 섹션으로 병합
         # ================================================================
