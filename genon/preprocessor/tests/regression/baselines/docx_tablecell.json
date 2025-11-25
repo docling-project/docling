@@ -2,10 +2,10 @@
   "num_vectors": 1,
   "vectors": [
     {
-      "text": "Hello world1\nHello2\nSome text before\n<table><tbody><tr><th>Tab1</th><th>Tab2</th><th>Tab3</th></tr><tr><td>A</td><td>B</td><td>C</td></tr><tr><td>D</td><td>E</td><td>F</td></tr></tbody></table>\nSome text after",
-      "n_char": 209,
-      "n_word": 10,
-      "n_line": 5,
+      "text": "Hello world1\nHello world1\nHello2\nHello2\nSome text before\n<table><tbody><tr><th>Tab1</th><th>Tab2</th><th>Tab3</th></tr><tr><td>A</td><td>B</td><td>C</td></tr><tr><td>D</td><td>E</td><td>F</td></tr></tbody></table>\nSome text after",
+      "n_char": 229,
+      "n_word": 13,
+      "n_line": 7,
       "e_page": 1,
       "i_page": 1,
       "i_chunk_on_page": 0,
@@ -13,17 +13,17 @@
       "i_chunk_on_doc": 0,
       "n_chunk_of_doc": 1,
       "n_page": 1,
-      "reg_date": "2025-10-02T05:35:24Z",
-      "chunk_bboxes": "[{\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/0\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/1\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/2\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/3\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0035629453681710215, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"table\", \"ref\": \"#/tables/0\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/4\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/5\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/6\"}]",
+      "reg_date": "2025-11-25T01:51:55Z",
+      "chunk_bboxes": "[{\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/0\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/1\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/2\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"list_item\", \"ref\": \"#/texts/3\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/4\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/5\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/6\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0035629453681710215, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"table\", \"ref\": \"#/tables/0\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/7\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/8\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/9\"}, {\"page\": 1, \"bbox\": {\"l\": 0.0, \"t\": 0.0, \"r\": 0.0016806722689075631, \"b\": 0.0011876484560570072, \"coord_origin\": \"TOPLEFT\"}, \"type\": \"paragraph\", \"ref\": \"#/texts/10\"}]",
       "media_files": "[]",
       "title": "",
       "created_date": 0
     }
   ],
   "label_distribution": {
+    "paragraph": 9,
     "list_item": 2,
-    "paragraph": 5,
     "table": 1
   },
-  "total_characters": 209
+  "total_characters": 229
 }
