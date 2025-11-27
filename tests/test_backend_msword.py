@@ -250,37 +250,68 @@ def test_list_items_after_numbered_heading(documents):
     2. Resetting level tracking when heading resets hierarchy
     3. Resetting level_at_new_list when heading is added
     4. Adding fallback case for different numid after headings
+
+    Tests both bullet lists and enumerated (numbered) lists after headings.
     """
     name = "list_after_num_headers.docx"
     doc = next(item[1] for item in documents if item[0].name == name)
 
-    # Verify document structure: numbered heading should have list children
-    heading_with_list_found = False
+    # Test 1: Bullet list after numbered heading "1 ĐỐI TƯỢNG ÁP DỤNG"
+    bullet_list_found = False
+    enumerated_list_found = False
 
     for item, _ in doc.iterate_items():
         if isinstance(item, SectionHeaderItem):
-            # Check if this is the numbered heading "1 ĐỐI TƯỢNG ÁP DỤNG"
+            # Check bullet list after heading "1 ĐỐI TƯỢNG ÁP DỤNG"
             if "ĐỐI TƯỢNG ÁP DỤNG" in item.text and item.level == 3:
-                heading_with_list_found = True
+                bullet_list_found = True
 
-                # The heading should have a list group as child
                 assert len(item.children) > 0, f"Heading '{item.text}' has no children"
 
-                # Get the first child
                 first_child_ref = item.children[0]
                 if hasattr(first_child_ref, "get"):
                     first_child = first_child_ref.get()
 
-                    # Verify it's a ListGroup
                     assert isinstance(first_child, ListGroup), (
                         f"First child of heading should be ListGroup, got {type(first_child)}"
                     )
 
-                    # Verify the list has items
                     assert len(first_child.children) >= 2, (
                         f"List group should have at least 2 items, found {len(first_child.children)}"
                     )
 
-    assert heading_with_list_found, (
+            # Test 2: Enumerated list after heading "2 Sub Title 1"
+            elif "Sub Title 1" in item.text and item.level == 3:
+                enumerated_list_found = True
+
+                assert len(item.children) > 0, f"Heading '{item.text}' has no children"
+
+                first_child_ref = item.children[0]
+                if hasattr(first_child_ref, "get"):
+                    first_child = first_child_ref.get()
+
+                    assert isinstance(first_child, ListGroup), (
+                        f"First child should be ListGroup, got {type(first_child)}"
+                    )
+
+                    assert len(first_child.children) >= 3, (
+                        f"List should have at least 3 items, found {len(first_child.children)}"
+                    )
+
+                    # Verify first item is enumerated
+                    first_list_item_ref = first_child.children[0]
+                    if hasattr(first_list_item_ref, "get"):
+                        first_list_item = first_list_item_ref.get()
+                        assert hasattr(first_list_item, "enumerated"), (
+                            "List item should have enumerated attribute"
+                        )
+                        assert first_list_item.enumerated is True, (
+                            "List item should be enumerated (numbered)"
+                        )
+
+    assert bullet_list_found, (
         "Could not find the test heading '1 ĐỐI TƯỢNG ÁP DỤNG' with level 3"
+    )
+    assert enumerated_list_found, (
+        "Could not find the test heading '2 Sub Title 1' with enumerated list"
     )
