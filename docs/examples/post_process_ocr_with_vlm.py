@@ -66,12 +66,10 @@ PRINT_RESULT_MARKDOWN = False
 
 def is_empty_fast_with_lines_pil(
     pil_img: Image.Image,
-    # downscale_max_side: int = 64,
-    downscale_max_side: int = 48,
+    downscale_max_side: int = 48,  # 64
     grad_threshold: float = 15.0,  # how strong a gradient must be to count as edge
     min_line_coverage: float = 0.6,  # line must cover 60% of height/width
-    # max_allowed_lines: int = 4,     # allow up to this many strong lines
-    max_allowed_lines: int = 10,  # allow up to this many strong lines
+    max_allowed_lines: int = 10,  # allow up to this many strong lines (default 4)
     edge_fraction_threshold: float = 0.0035,
 ):
     """
@@ -113,7 +111,6 @@ def is_empty_fast_with_lines_pil(
         gray, dtype=np.float32
     )  # shape (h, w) in PIL, but note: PIL size is (w, h)
     H, W = arr.shape
-    # total_pixels = H * W
 
     # 5) Compute simple gradients (forward differences)
     gx = np.zeros_like(arr)
@@ -309,7 +306,6 @@ class PostOcrApiEnrichmentModel(
                         page_ix
                     ].image.pil_image.crop(expanded_bbox.as_tuple())
 
-                    # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
                     is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(
                         cropped_image
                     )
@@ -319,8 +315,9 @@ class PostOcrApiEnrichmentModel(
                                 cropped_image.show()
                             except Exception as e:
                                 print(f"Error with image: {e}")
-                        print(f"!!! DETECTED EMPTY FORM ITEM IMAGE CROP !!! {rem_frac}")
-                        print(debug)
+                        print(
+                            f"Detected empty form item image crop: {rem_frac} - {debug}"
+                        )
                     else:
                         result.append(
                             PostOcrEnrichmentElement(item=c, image=[cropped_image])
@@ -340,20 +337,9 @@ class PostOcrApiEnrichmentModel(
                                 new_size=conv_res.document.pages[page_ix].image.size,
                             )
 
-                            """
                             expanded_bbox = bbox.expand_by_scale(
-                                x_scale=self.expansion_factor,
-                                y_scale=self.expansion_factor,
-                            ).to_top_left_origin(
-                                page_height=conv_res.document.pages[
-                                    page_ix
-                                ].image.size.height
-                            )
-                            """
-
-                            expanded_bbox = bbox.expand_by_scale(
-                                x_scale=0,
-                                y_scale=0,
+                                x_scale=self.table_cell_expansion_factor,
+                                y_scale=self.table_cell_expansion_factor,
                             ).to_top_left_origin(
                                 page_height=conv_res.document.pages[
                                     page_ix
@@ -372,7 +358,6 @@ class PostOcrApiEnrichmentModel(
                                     page_ix
                                 ].image.pil_image.crop(expanded_bbox.as_tuple())
 
-                                # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
                                 is_empty, rem_frac, debug = (
                                     is_empty_fast_with_lines_pil(cropped_image)
                                 )
@@ -383,9 +368,8 @@ class PostOcrApiEnrichmentModel(
                                         except Exception as e:
                                             print(f"Error with image: {e}")
                                     print(
-                                        f"!!! DETECTED EMPTY TABLE CELL IMAGE CROP !!! {rem_frac}"
+                                        f"Detected empty table cell image crop: {rem_frac} - {debug}"
                                     )
-                                    print(debug)
                                 else:
                                     if SHOW_NONEMPTY_CROPS:
                                         cropped_image.show()
@@ -425,7 +409,6 @@ class PostOcrApiEnrichmentModel(
                         cropped_image = conv_res.document.pages[
                             page_ix
                         ].image.pil_image.crop(expanded_bbox.as_tuple())
-                        # cropped_image = safe_crop(conv_res.document.pages[page_ix].image.pil_image, expanded_bbox.as_tuple())
 
                         is_empty, rem_frac, debug = is_empty_fast_with_lines_pil(
                             cropped_image
@@ -436,15 +419,11 @@ class PostOcrApiEnrichmentModel(
                                     cropped_image.show()
                                 except Exception as e:
                                     print(f"Error with image: {e}")
-                            print(f"!!! DETECTED EMPTY TEXT IMAGE CROP !!! {rem_frac}")
-                            print(debug)
+                            print(f"Detected empty text crop: {rem_frac} - {debug}")
                         else:
                             multiple_crops.append(cropped_image)
-                            print("")
-                            print(f"cropped image size: {cropped_image.size}")
-                            print(type(element))
                             if hasattr(element, "text"):
-                                print(f"OLD TEXT: {element.text}")
+                                print(f"\nOLD TEXT: {element.text}")
                 else:
                     print("Not a text element")
             if len(multiple_crops) > 0:
@@ -471,7 +450,7 @@ class PostOcrApiEnrichmentModel(
         self.options = options
         self.concurrency = 2
         self.expansion_factor = 0.05
-        # self.expansion_factor = 0.0
+        self.table_cell_expansion_factor = 0.0  # do not modify table cell size
         self.elements_batch_size = 4
         self._accelerator_options = accelerator_options
         self._artifacts_path = (
@@ -563,7 +542,7 @@ class PostOcrApiEnrichmentModel(
             if no_long_repeats(output, 50):
                 if VERBOSE:
                     if isinstance(item, (TextItem)):
-                        print(f"OLD TEXT: {item.text}")
+                        print(f"\nOLD TEXT: {item.text}")
 
                 # Re-populate text
                 if isinstance(item, (TextItem, GraphCell)):
@@ -642,7 +621,6 @@ def post_process_json(in_json: Path, out_final_json: Path):
         )
     )
 
-    # try:
     doc_converter = DocumentConverter(
         format_options={
             InputFormat.JSON_DOCLING: FormatOption(
@@ -660,8 +638,6 @@ def post_process_json(in_json: Path, out_final_json: Path):
         md = result.document.export_to_markdown()
         print("*** MARKDOWN ***")
         print(md)
-    # except:
-    #     print("ERROR IN OCR for: {}".format(in_json))
 
 
 def process_pdf(pdf_path: Path, scratch_dir: Path, out_dir: Path):
@@ -670,6 +646,7 @@ def process_pdf(pdf_path: Path, scratch_dir: Path, out_dir: Path):
     inter_json.parent.mkdir(parents=True, exist_ok=True)
     final_json.parent.mkdir(parents=True, exist_ok=True)
     if final_json.exists() and final_json.stat().st_size > 0:
+        print(f"Result already found here: '{final_json}', aborting...")
         return  # already done
     convert_pdf(pdf_path, inter_json)
     post_process_json(inter_json, final_json)
@@ -708,7 +685,7 @@ def run_jsons(in_path: Path, out_dir: Path):
         jsons = sorted(in_path.glob("*.json"))
         if not jsons:
             raise SystemExit("Folder mode expects one or more .json files")
-        # TODO: Look for ocr_documents.txt, in case found, respect only the jsons
+        # Look for ocr_documents.txt, in case found, respect only the jsons
         filtered_jsons = filter_jsons_by_ocr_list(jsons, in_path)
         for j in tqdm(filtered_jsons):
             print("")
@@ -740,6 +717,8 @@ def main():
 
     in_path = Path(args.in_path).expanduser().resolve()
     out_dir = Path(args.out_dir).expanduser().resolve()
+    print(f"in_path: {in_path}")
+    print(f"out_dir: {out_dir}")
     scratch_dir = out_dir / "temp"
 
     if not in_path.exists():
