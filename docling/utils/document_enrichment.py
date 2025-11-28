@@ -36,6 +36,23 @@ class DocumentEnrichmentUtils:
         if enrichment_options.do_toc_enrichment or enrichment_options.extract_metadata:
             self._initialize_prompt_manager()
 
+        # 맨 앞의 괄호 블록( [], (), <> )과 나머지 텍스트를 분리하는 정규식
+        self.BRACKET_TITLE_PATTERN = re.compile(
+            r"""
+            ^\s*
+            (                                                # group 1: 괄호 블록 전체
+                \[(?=[^\]]*(?:별지|별표))[^\]]*\]            # [ ... ] 내부에 '별지|별표'
+                |
+                \((?=[^)]*(?:별지|별표))[^)]*\)              # ( ... )
+                |
+                <(?=[^>]*(?:별지|별표))[^>]*>                # < ... >
+            )
+            \s*
+            (.*)$                                            # group 2: 괄호 뒤 전체 제목
+            """,
+            re.VERBOSE,
+        )
+
     def _initialize_prompt_manager(self):
         """프롬프트 매니저 초기화"""
         custom_prompts = self._build_custom_prompts()
@@ -761,7 +778,7 @@ class DocumentEnrichmentUtils:
 
         candidate_matches:
             [
-            (toc_idx, [(text_idx, score), ...]),
+            (toc_idx, [(text_idx, score, text), ...]),
             ...
             ]
 
@@ -778,16 +795,10 @@ class DocumentEnrichmentUtils:
         edges = []
         for toc_idx, text_list in candidate_matches:
             for text_info in text_list:
-                if text_info is None:
-                    text_idx = -1
-                    score = 0.0
-                else:
-                    text_idx = text_info[0]
-                    score = text_info[1]
                 edges.append({
                     "toc_idx": toc_idx,
-                    "text_idx": text_idx,
-                    "score":  score,
+                    "text_idx": text_info[0],
+                    "score":  text_info[1],
                 })
 
         if not edges:
@@ -853,24 +864,8 @@ class DocumentEnrichmentUtils:
 
         매칭 안 되면 None 반환
         """
-        # 맨 앞의 괄호 블록( [], (), <> )과 나머지 텍스트를 분리하는 정규식
-        BRACKET_TITLE_PATTERN = re.compile(
-            r"""
-            ^\s*
-            (                                                # group 1: 괄호 블록 전체
-                \[(?=[^\]]*(?:별지|별표))[^\]]*\]            # [ ... ] 내부에 '별지|별표'
-                |
-                \((?=[^)]*(?:별지|별표))[^)]*\)              # ( ... )
-                |
-                <(?=[^>]*(?:별지|별표))[^>]*>                # < ... >
-            )
-            \s*
-            (.*)$                                            # group 2: 괄호 뒤 전체 제목
-            """,
-            re.VERBOSE,
-        )
 
-        m = BRACKET_TITLE_PATTERN.match(text)
+        m = self.BRACKET_TITLE_PATTERN.match(text)
         if not m:
             return None
 
@@ -894,14 +889,13 @@ class DocumentEnrichmentUtils:
             text_items_reversed[i] = (idx, new_text)
 
         # 1. TOC 항목별로 매칭 시도
-        # _log.debug(f"--- TOC Matching Start (Threshold: {threshold}) ---")
         match_results = []
         for i_toc in range(toc_range[0], toc_range[1]):
             toc_item = toc_items[i_toc]
             toc_full = toc_item['full_text']
             toc_title = toc_item['title']
             if len(toc_full) < 2:
-                match_results.append((i_toc, None))
+                match_results.append((i_toc, []))
                 continue
 
             toc_comp_list = [toc_title.lower()]
