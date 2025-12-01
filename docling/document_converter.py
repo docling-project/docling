@@ -205,6 +205,7 @@ class DocumentConverter:
                     )
                     # Convert to ImageFormatOption while preserving pipeline and backend options
                     normalized_format_options[format] = ImageFormatOption(
+                        pipeline_cls=option.pipeline_cls,
                         pipeline_options=option.pipeline_options,
                         backend_options=option.backend_options,
                     )
