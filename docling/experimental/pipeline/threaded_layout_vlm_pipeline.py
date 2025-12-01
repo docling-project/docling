@@ -362,6 +362,17 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 )
             conv_res.document = self._turn_dt_into_doc(conv_res)
 
+            # Generate page images in the output
+            if self.pipeline_options.generate_page_images:
+                scale = self.pipeline_options.images_scale
+                for page in conv_res.pages:
+                    page_image = page.get_image(scale=scale)
+                    assert page_image is not None
+                    page_no = page.page_no + 1
+                    conv_res.document.pages[page_no].image = ImageRef.from_pil(
+                        page_image, dpi=int(72 * scale)
+                    )
+
             # Generate images of the requested element types
             if self.pipeline_options.generate_picture_images:
                 # Create mapping from page_no to Page object since pages may be non-continuous
@@ -374,23 +385,27 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         isinstance(element, PictureItem)
                         and self.pipeline_options.generate_picture_images
                     ):
-                        page_no = element.prov[0].page_no
-                        page = page_map.get(page_no)
-                        if page is None:
+                        # element.prov[0].page_no is 1-based, convert to 0-based for page_map lookup
+                        page_no_1based = element.prov[0].page_no
+                        page_no_0based = page_no_1based - 1
+                        conv_page: Optional[Page] = page_map.get(page_no_0based)
+                        if conv_page is None:
                             _log.warning(
-                                f"Page {page_no} not found in conversion result for picture element. Skipping image generation."
+                                f"Page {page_no_1based} (0-based: {page_no_0based}) not found in conversion result for picture element. Skipping image generation."
                             )
                             continue
-                        assert page.size is not None
-                        assert page.image is not None
+                        assert conv_page.size is not None
+                        assert conv_page.image is not None
 
                         crop_bbox = (
                             element.prov[0]
                             .bbox.scaled(scale=scale)
-                            .to_top_left_origin(page_height=page.size.height * scale)
+                            .to_top_left_origin(
+                                page_height=conv_page.size.height * scale
+                            )
                         )
 
-                        cropped_im = page.image.crop(crop_bbox.as_tuple())
+                        cropped_im = conv_page.image.crop(crop_bbox.as_tuple())
                         element.image = ImageRef.from_pil(
                             cropped_im, dpi=int(72 * scale)
                         )
