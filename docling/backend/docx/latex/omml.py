@@ -381,7 +381,8 @@ class oMath2Latex(Tag2Method):
         bo = ""
         for stag, t, e in self.process_children_list(elm):
             if stag == "naryPr":
-                bo = get_val(t.chr, store=CHR_BO)
+                # if <m:naryPr> contains no <m:chr>, the n-ary represents an integral
+                bo = get_val(t.chr, default="\\int", store=CHR_BO)
             else:
                 res.append(t)
         return bo + BLANK.join(res)

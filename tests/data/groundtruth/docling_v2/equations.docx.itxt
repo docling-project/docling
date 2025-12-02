@@ -38,3 +38,16 @@ item-0 at level 0: unspecified: group _root_
   item-37 at level 1: text: 
   item-38 at level 1: text: And that is an equation by itself. Cheers!
   item-39 at level 1: text: 
+  item-40 at level 1: text: Large operators and integrals ar ... sented with n-ary objects in OMML XML:
+  item-41 at level 1: text: 
+  item-42 at level 1: formula: \sum_{0}^{2}x
+  item-43 at level 1: formula: \bigcup_{n=1}^{m}\left(X_{n} \cap Y_{n}\right)
+  item-44 at level 1: formula: \prod_{k=1}^{n}A_{k}
+  item-45 at level 1: formula: \bigwedge_{}^{}x
+  item-46 at level 1: formula: \int_{}^{}(2x+1)dx
+  item-47 at level 1: formula: \iint_{0}^{1}xdx
+  item-48 at level 1: formula: \iiint_{}^{}ydy
+  item-49 at level 1: formula: \oint_{}^{}\frac{dy}{dx}
+  item-50 at level 1: formula: \oiint_{0}^{2 \pi }idt
+  item-51 at level 1: formula: \oiiint_{C}^{}\frac{1}{z}dz
+  item-52 at level 1: text: 

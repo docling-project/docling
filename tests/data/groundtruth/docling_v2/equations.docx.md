@@ -27,3 +27,25 @@ This is a word document and this is an inline equation:  $A= \pi r^{2}$ . If ins
 $$e^{x}=1+\frac{x}{1!}+\frac{x^{2}}{2!}+\frac{x^{3}}{3!}+ \text{ \textellipsis } , - \infty  < x <  \infty$$
 
 And that is an equation by itself. Cheers!
+
+Large operators and integrals are represented with n-ary objects in OMML XML:
+
+$$\sum_{0}^{2}x$$
+
+$$\bigcup_{n=1}^{m}\left(X_{n} \cap Y_{n}\right)$$
+
+$$\prod_{k=1}^{n}A_{k}$$
+
+$$\bigwedge_{}^{}x$$
+
+$$\int_{}^{}(2x+1)dx$$
+
+$$\iint_{0}^{1}xdx$$
+
+$$\iiint_{}^{}ydy$$
+
+$$\oint_{}^{}\frac{dy}{dx}$$
+
+$$\oiint_{0}^{2 \pi }idt$$
+
+$$\oiiint_{C}^{}\frac{1}{z}dz$$
