@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import difflib
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from copy import deepcopy
 from difflib import SequenceMatcher
 
@@ -35,6 +35,23 @@ class DocumentEnrichmentUtils:
         # 개별 기능이 하나라도 활성화되어 있으면 프롬프트 매니저 초기화
         if enrichment_options.do_toc_enrichment or enrichment_options.extract_metadata:
             self._initialize_prompt_manager()
+
+        # 맨 앞의 괄호 블록( [], (), <> )과 나머지 텍스트를 분리하는 정규식
+        self.BRACKET_TITLE_PATTERN = re.compile(
+            r"""
+            ^\s*
+            (                                                # group 1: 괄호 블록 전체
+                \[(?=[^\]]*(?:별지|별표))[^\]]*\]            # [ ... ] 내부에 '별지|별표'
+                |
+                \((?=[^)]*(?:별지|별표))[^)]*\)              # ( ... )
+                |
+                <(?=[^>]*(?:별지|별표))[^>]*>                # < ... >
+            )
+            \s*
+            (.*)$                                            # group 2: 괄호 뒤 전체 제목
+            """,
+            re.VERBOSE,
+        )
 
     def _initialize_prompt_manager(self):
         """프롬프트 매니저 초기화"""
@@ -341,14 +358,14 @@ class DocumentEnrichmentUtils:
 
             # toc_content = self.combine_windowed_toc(pieces)
 
-            # print(f"--- Combined TOC ---\n{toc_content}\n")
+            _log.debug(f"--- TOC ---\n{toc_content}")
 
             if toc_content:
                 # 모든 SectionHeaderItem을 TextItem으로 변환
                 self._convert_section_headers_to_text(document)
 
                 toc_content = self.extract_content(toc_content)
-                # print(f"--- only TOC ---\n{toc_content}\n")
+                _log.debug(f"--- only TOC ---\n{toc_content}")
 
                 # 목차를 기반으로 SectionHeader 적용
                 matched_count = self._apply_toc_to_law_document(document, toc_content)
@@ -750,7 +767,166 @@ class DocumentEnrichmentUtils:
 
         return matched_count
 
-    def _apply_toc_to_law_document(self, document, toc_content: str, threshold: float = 0.5):
+    def _select_best_toc_text_matching(
+        self,
+        candidate_matches: List[Tuple[int, List[Any]]]
+    ) -> List[Dict[str, Any]]:
+        """
+        TOC 항목과 텍스트 항목 간의 후보 매칭 결과에서
+        TOC 순서 및 텍스트 순서를 보존하면서
+        총 score 합이 최대인 조합을 선택. DP 알고리즘 사용.
+
+        candidate_matches:
+            [
+            (toc_idx, [(text_idx, score, text), ...]),
+            ...
+            ]
+
+        반환:
+            [
+            {"toc_idx": int, "text_idx": int, "score": float},
+            ...
+            ]
+            - toc_idx 오름차순 & text_idx 오름차순
+            - 총 score 합이 최대인 조합
+        """
+
+        # 1) (toc_idx, text_idx, score) 로 평탄화
+        edges = []
+        for toc_idx, text_list in candidate_matches:
+            for text_info in text_list:
+                edges.append({
+                    "toc_idx": toc_idx,
+                    "text_idx": text_info[0],
+                    "score":  text_info[1],
+                })
+
+        if not edges:
+            return []
+
+        # 2) TOC 순서, Text 순서 기준으로 정렬
+        edges.sort(key=lambda x: (x["toc_idx"], x["text_idx"]))
+
+        n = len(edges)
+
+        # dp[i]  : i번째 edge로 끝나는 최대 점수
+        # prev[i]: 그 직전 edge의 인덱스 (경로 복원용)
+        dp = [0.0] * n
+        prev = [-1] * n
+
+        for i in range(n):
+            dp[i] = edges[i]["score"]  # 자기 자신만 선택했을 때
+            prev[i] = -1
+
+            for j in range(i):
+                # 순서 보존 조건:
+                #   toc_j < toc_i AND text_j < text_i
+                if (edges[j]["toc_idx"] < edges[i]["toc_idx"] and
+                    edges[j]["text_idx"] < edges[i]["text_idx"]):
+
+                    # j를 거쳐서 i로 오는 경우가 더 점수가 크면 갱신
+                    if dp[j] + edges[i]["score"] > dp[i]:
+                        dp[i] = dp[j] + edges[i]["score"]
+                        prev[i] = j
+
+        # 3) 최적 끝점 찾기
+        best_end = max(range(n), key=lambda i: dp[i])
+
+        # 4) prev[]를 이용해 경로 역추적
+        sequence_indices = []
+        cur = best_end
+        while cur != -1:
+            sequence_indices.append(cur)
+            cur = prev[cur]
+
+        sequence_indices.reverse()  # 앞에서부터 순서대로
+
+        # 5) 결과 변환 (정렬은 이미 보장되어 있음)
+        result = [
+            {
+                "toc_idx": edges[i]["toc_idx"],
+                "text_idx": edges[i]["text_idx"],
+                "score": edges[i]["score"],
+            }
+            for i in sequence_indices
+        ]
+        return result
+
+    def _split_bracket_title(self, text: str) -> Optional[Tuple[str, str]]:
+        """
+        제목에서 맨 앞의 괄호 블록과 나머지 제목을 분리합니다.
+
+        예:
+            "[별표 1] 제목"              -> ("[별표 1]", "제목")
+            "[별지 제3호 서식] 각서"      -> ("[별지 제3호 서식]", "각서")
+            "<별표 3> 평가기준"          -> ("<별표 3>", "평가기준")
+            "(별지 제4호 서식) 신청서"    -> ("(별지 제4호 서식)", "신청서")
+
+        매칭 안 되면 None 반환
+        """
+
+        m = self.BRACKET_TITLE_PATTERN.match(text)
+        if not m:
+            return None
+
+        bracket_part = m.group(1).strip()
+        title_part = m.group(2).strip()
+        return bracket_part, title_part
+
+    def _match_toc_to_document(self, text_items, toc_items: List[Dict[str, Any]], toc_range=None, threshold: float = 0.7):
+        """
+        목차 항목들을 문서의 텍스트 항목들과 매칭합니다.
+        """
+
+        if toc_range is None:
+            toc_range = (0, len(toc_items))
+
+        # 후보 텍스트 전처리
+        text_items_reversed = text_items[::-1]
+        for i, (idx, text) in enumerate(text_items_reversed):
+            #  여러 칸 공백을 단일 공백으로 치환하고 소문자 변환
+            new_text = re.sub(r" {2,}", " ", text.lower())
+            text_items_reversed[i] = (idx, new_text)
+
+        # 1. TOC 항목별로 매칭 시도
+        match_results = []
+        for i_toc in range(toc_range[0], toc_range[1]):
+            toc_item = toc_items[i_toc]
+            toc_full = toc_item['full_text']
+            toc_title = toc_item['title']
+            if len(toc_full) < 2:
+                match_results.append((i_toc, []))
+                continue
+
+            toc_comp_list = [toc_title.lower()]
+            split_result = self._split_bracket_title(toc_title)
+            if split_result is not None:
+                for part in split_result:
+                    if len(part) > 0 and part not in toc_comp_list:
+                        toc_comp_list.append(part.lower())
+
+            # 후보 텍스트에 대해 유사도 평가 (단, 이미 변환된 인덱스는 제외)
+            scored_candidates = []
+            for idx, text in text_items_reversed:
+
+                similarity = 0
+                for toc_text in toc_comp_list:
+                    sim = difflib.SequenceMatcher(None, toc_text, text[:len(toc_text)]).ratio()
+                    similarity = max(similarity, sim)
+
+                if similarity >= threshold:
+                    scored_candidates.append((idx, similarity, text))
+
+            # 유사도 기준으로 정렬 → top n개 추출
+            scored_candidates.sort(key=lambda x: x[1], reverse=True)
+            top_matches = scored_candidates[:5]
+            match_results.append((i_toc, top_matches))
+
+        # 2. 최적 매칭 선택. toc 순서와 text 순서가 최대한 보존되면서, 유사도가 높은 조합 선택 (다이나믹 프로그래밍 활용)
+        best_matches = self._select_best_toc_text_matching(match_results)
+        return best_matches
+
+    def _apply_toc_to_law_document(self, document, toc_content: str, threshold: float = 0.7):
         """규정문서의 목차(TOC)를 적용합니다.
 
         Args:
@@ -791,55 +967,44 @@ class DocumentEnrichmentUtils:
                         matched_count += 1
                         _log.info(f"문서 제목 설정: {title_clean}")
 
-        # SectionHeader 매칭 (뒤에서부터)
-        for toc_item in toc_items:
-            toc_full = toc_item['full_text']
-            toc_title = toc_item['title']
+        # SectionHeader 매칭
+        best_matches = self._match_toc_to_document(
+            text_items=text_items,
+            toc_items=toc_items,
+            threshold=threshold
+        )
+
+        _log.debug(f"--- Best Matches ---")
+        for match_idx, match in enumerate(best_matches):
+            toc_idx = match['toc_idx']
+            text_idx = match['text_idx']
+            toc_item = toc_items[toc_idx]
             target_level = toc_item['level']
-            if len(toc_full) < 2:
+
+            if text_idx == -1:
                 continue
 
-            # 1. 후보 텍스트에 대해 유사도 평가 (단, 이미 변환된 인덱스는 제외)
-            scored_candidates = []
-            for idx, text in text_items_reversed:
-                if idx in converted_indices:
-                    continue
+            original_item = document.texts[text_idx]
+            section_matched.append(text_idx)
+            section_header = SectionHeaderItem(
+                self_ref=original_item.self_ref,
+                parent=original_item.parent,
+                children=original_item.children,
+                content_layer=original_item.content_layer,
+                prov=original_item.prov,
+                # orig=original_item.orig,
+                orig=toc_item['title'], # 짧은 제목을 orig에 저장
+                text=original_item.text,
+                formatting=original_item.formatting,
+                hyperlink=getattr(original_item, 'hyperlink', None),
+                level=target_level
+            )
+            document.texts[text_idx] = section_header
+            converted_indices.add(text_idx)
+            matched_count += 1
 
-                sim_full = difflib.SequenceMatcher(None, toc_full.lower(), text.lower()[:len(toc_full)]).ratio()
-                sim_title = difflib.SequenceMatcher(None, toc_title.lower(), text.lower()[:len(toc_title)]).ratio()
-                similarity = max(sim_full, sim_title)
-                source = "full_text" if sim_full >= sim_title else "title"
-
-                if similarity >= threshold:
-                    scored_candidates.append((
-                        idx, similarity, text, source, sim_full, sim_title
-                    ))
-
-            # 2. 유사도 기준으로 정렬 → top n개 추출
-            scored_candidates.sort(key=lambda x: x[1], reverse=True)
-            top_matches = scored_candidates[:5]
-
-            # 3. 매칭 가능한 가장 첫 번째 후보 선택
-            if top_matches:
-                best_match_idx, best_similarity, best_match_text, best_match_source, sim_full, sim_title = top_matches[0]
-                original_item = document.texts[best_match_idx]
-                section_matched.append(best_match_idx)
-                section_header = SectionHeaderItem(
-                    self_ref=original_item.self_ref,
-                    parent=original_item.parent,
-                    children=original_item.children,
-                    content_layer=original_item.content_layer,
-                    prov=original_item.prov,
-                    # orig=original_item.orig,
-                    orig=toc_title, # 짧은 제목을 orig에 저장
-                    text=original_item.text,
-                    formatting=original_item.formatting,
-                    hyperlink=getattr(original_item, 'hyperlink', None),
-                    level=target_level
-                )
-                document.texts[best_match_idx] = section_header
-                converted_indices.add(best_match_idx)
-                matched_count += 1
+            _log.debug(f"[{match_idx}] {toc_item['full_text']}")
+            _log.debug(f"  text_idx: {text_idx}, Sim: {match['score']:.4f}, {original_item.text}")
 
         return matched_count
 
