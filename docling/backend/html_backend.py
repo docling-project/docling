@@ -460,9 +460,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if rich_table_cell:
                     # Parse table cell sub-tree for Rich Cells content:
                     table_level = self.level
+                    table_parents = self.parents.copy()
+
                     provs_in_cell = self._walk(html_cell, doc)
-                    # After walking sub-tree in cell, restore previously set level
+                    # After walking sub-tree in cell, restore previously set level and parents
                     self.level = table_level
+                    self.parents = table_parents
 
                     group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
                     rich_table_cell, ref_for_rich_cell = (
