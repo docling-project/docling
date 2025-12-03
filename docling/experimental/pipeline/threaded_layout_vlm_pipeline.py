@@ -28,7 +28,6 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InferenceFramework,
     InlineVlmOptions,
 )
-from docling.datamodel.settings import settings
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
 )
@@ -68,11 +67,15 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
     def _init_models(self) -> None:
         """Initialize layout and VLM models."""
-        art_path = self._resolve_artifacts_path()
+        base_artifacts_path = self.artifacts_path
+        layout_artifacts_path = self._resolve_model_artifacts_path(
+            base_artifacts_path,
+            self.pipeline_options.layout_options.model_spec.model_repo_folder,
+        )
 
         # Layout model
         self.layout_model = LayoutModel(
-            artifacts_path=art_path,
+            artifacts_path=layout_artifacts_path,
             accelerator_options=self.pipeline_options.accelerator_options,
             options=self.pipeline_options.layout_options,
         )
@@ -147,17 +150,20 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 vlm_options=vlm_options,
             )
         elif isinstance(base_vlm_options, InlineVlmOptions):
+            vlm_artifacts_path = self._resolve_model_artifacts_path(
+                base_artifacts_path, vlm_options.repo_cache_folder
+            )
             if vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
                 self.vlm_model = HuggingFaceTransformersVlmModel(
                     enabled=True,
-                    artifacts_path=art_path,
+                    artifacts_path=vlm_artifacts_path,
                     accelerator_options=self.pipeline_options.accelerator_options,
                     vlm_options=vlm_options,
                 )
             elif vlm_options.inference_framework == InferenceFramework.MLX:
                 self.vlm_model = HuggingFaceMlxModel(
                     enabled=True,
-                    artifacts_path=art_path,
+                    artifacts_path=vlm_artifacts_path,
                     accelerator_options=self.pipeline_options.accelerator_options,
                     vlm_options=vlm_options,
                 )
@@ -166,7 +172,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
 
                 self.vlm_model = VllmVlmModel(
                     enabled=True,
-                    artifacts_path=art_path,
+                    artifacts_path=vlm_artifacts_path,
                     accelerator_options=self.pipeline_options.accelerator_options,
                     vlm_options=vlm_options,
                 )
@@ -177,19 +183,20 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         else:
             raise ValueError(f"Unsupported VLM options type: {type(base_vlm_options)}")
 
-    def _resolve_artifacts_path(self) -> Optional[Path]:
-        """Resolve artifacts path from options or settings."""
-        if self.pipeline_options.artifacts_path:
-            p = Path(self.pipeline_options.artifacts_path).expanduser()
-        elif settings.artifacts_path:
-            p = Path(settings.artifacts_path).expanduser()
-        else:
+    def _resolve_model_artifacts_path(
+        self, base_path: Optional[Path], model_slug: str
+    ) -> Optional[Path]:
+        """Resolve the artifacts path for a specific model using its slug."""
+        if base_path is None:
             return None
-        if not p.is_dir():
-            raise RuntimeError(
-                f"{p} does not exist or is not a directory containing the required models"
-            )
-        return p
+
+        candidate = base_path / model_slug
+        if candidate.is_dir():
+            return candidate
+
+        raise RuntimeError(
+            f"Expected artifacts_path {base_path} to contain model directory {model_slug}"
+        )
 
     def _create_run_ctx(self) -> RunContext:
         """Create pipeline stages and wire them together."""

@@ -6,6 +6,7 @@ import pytest
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
@@ -13,9 +14,11 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     TableFormerMode,
+    VlmPipelineOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.legacy_standard_pdf_pipeline import LegacyStandardPdfPipeline
+from docling.pipeline.vlm_pipeline import VlmPipeline
 
 
 @pytest.fixture
@@ -190,6 +193,23 @@ def test_parser_backends(test_doc_path):
         doc_result: ConversionResult = converter.convert(test_doc_path)
 
         assert doc_result.status == ConversionStatus.SUCCESS
+
+
+def test_image_pipeline_preserves_custom_pipeline_cls():
+    with pytest.warns(DeprecationWarning):
+        converter = DocumentConverter(
+            format_options={
+                InputFormat.IMAGE: PdfFormatOption(
+                    pipeline_cls=VlmPipeline,
+                    pipeline_options=VlmPipelineOptions(),
+                )
+            }
+        )
+
+    image_format_option = converter.format_to_options[InputFormat.IMAGE]
+
+    assert image_format_option.pipeline_cls is VlmPipeline
+    assert image_format_option.backend is ImageDocumentBackend
 
 
 def test_confidence(test_doc_path):
