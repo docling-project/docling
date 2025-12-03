@@ -3,6 +3,7 @@ from pathlib import Path, PurePath
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
+from bs4 import BeautifulSoup
 from docling_core.types.doc import PictureItem
 from docling_core.types.doc.document import ContentLayer
 from pydantic import AnyUrl, ValidationError
@@ -523,3 +524,38 @@ def test_is_rich_table_cell(html_paths):
         assert num_cells == len(gt_cells[idx_t]), (
             f"Cell number does not match in table {idx_t}"
         )
+
+
+data_fix_par = [
+    (
+        "<p>Text<h2>Heading</h2>More text</p>",
+        "<p>Text</p><h2>Heading</h2><p>More text</p>",
+    ),
+    (
+        "<html><body><p>Some text<h2>A heading</h2>More text</p></body></html>",
+        "<html><body><p>Some text</p><h2>A heading</h2><p>More text</p></body></html>",
+    ),
+    (
+        "<p>Some text<h2>A heading</h2><i>Italics</i></p>",
+        "<p>Some text</p><h2>A heading</h2><p><i>Italics</i></p>",
+    ),
+    (
+        "<p>Some text<p>Another paragraph</p>More text</p>",
+        "<p>Some text</p><p>Another paragraph</p><p>More text</p>",
+    ),
+    (
+        "<p><table><tr><th>Name</th><th>Age</th></tr><tr><td>Alice</td><td>29</td></tr>"
+        "<tr><td>Bob</td><td>34</td></tr></table></p>",
+        "<table><tr><th>Name</th><th>Age</th></tr><tr><td>Alice</td><td>29</td></tr>"
+        "<tr><td>Bob</td><td>34</td></tr></table>",
+    ),
+]
+
+
+@pytest.mark.parametrize("html,expected", data_fix_par)
+def test_fix_invalid_paragraph_structure(html, expected):
+    """Test the function _fix_invalid_paragraph_structure."""
+
+    soup = BeautifulSoup(html, "html.parser")
+    HTMLDocumentBackend._fix_invalid_paragraph_structure(soup)
+    assert str(soup) == expected

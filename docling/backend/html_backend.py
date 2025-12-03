@@ -67,6 +67,43 @@ _BLOCK_TAGS: Final = {
     "ul",
 }
 
+# Block-level elements that should not appear inside <p>
+_PARA_BREAKERS = {
+    "address",
+    "article",
+    "aside",
+    "blockquote",
+    "div",
+    "dl",
+    "fieldset",
+    "figcaption",
+    "figure",
+    "footer",
+    "form",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "header",
+    "hr",
+    "main",
+    "nav",
+    "ol",
+    "ul",
+    "li",
+    "p",  # <p> inside <p> also forces closing
+    "pre",
+    "section",
+    "table",
+    "thead",
+    "tbody",
+    "tfoot",
+    "tr",
+    "td",
+}
+
 _CODE_TAG_SET: Final = {"code", "kbd", "samp"}
 
 _FORMAT_TAG_MAP: Final = {
@@ -199,7 +236,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         options: HTMLBackendOptions = HTMLBackendOptions(),
     ):
         super().__init__(in_doc, path_or_stream, options)
-        self.soup: Optional[Tag] = None
+        self.soup: Optional[BeautifulSoup] = None
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
         self.base_path: Optional[str] = str(options.source_uri)
 
@@ -276,6 +313,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         # remove any hidden tag
         for tag in self.soup(hidden=True):
             tag.decompose()
+        # fix flow content that is not permitted inside <p>
+        HTMLDocumentBackend._fix_invalid_paragraph_structure(self.soup)
 
         content = self.soup.body or self.soup
         # normalize <br> tags
@@ -300,6 +339,81 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.ctx = _Context()
         self._walk(content, doc)
         return doc
+
+    @staticmethod
+    def _fix_invalid_paragraph_structure(soup: BeautifulSoup) -> None:
+        """Rewrite <p> elements that contain block-level breakers.
+
+        This function emulates browser logic when other block-level elements
+        are found inside a <p> element.
+        When a <p> is open and a block-level breaker (e.g., h1-h6, div, table)
+        appears, automatically close the <p>, emit it, then emit the breaker,
+        and if needed open a new <p> for trailing text.
+
+        Args:
+            soup: The HTML document. The DOM may be rewritten.
+        """
+
+        def _start_para():
+            nonlocal current_p
+            if current_p is None:
+                current_p = soup.new_tag("p")
+                new_nodes.append(current_p)
+
+        def _flush_para_if_empty():
+            nonlocal current_p
+            if current_p is not None and not current_p.get_text(strip=True):
+                # remove empty paragraph placeholder
+                if current_p in new_nodes:
+                    new_nodes.remove(current_p)
+            current_p = None
+
+        paragraphs = soup.select(f"p:has({','.join(tag for tag in _PARA_BREAKERS)})")
+
+        for p in paragraphs:
+            parent = p.parent
+            if parent is None:
+                continue
+
+            new_nodes = []
+            current_p = None
+
+            for node in list(p.contents):
+                if isinstance(node, NavigableString):
+                    text = str(node)
+                    node.extract()
+                    if text.strip():
+                        _start_para()
+                        if current_p is not None:
+                            current_p.append(NavigableString(text))
+                    # skip whitespace-only text
+                    continue
+
+                if isinstance(node, Tag):
+                    node.extract()
+
+                    if node.name in _PARA_BREAKERS:
+                        _flush_para_if_empty()
+                        new_nodes.append(node)
+                        continue
+                    else:
+                        _start_para()
+                        if current_p is not None:
+                            current_p.append(node)
+                        continue
+
+            _flush_para_if_empty()
+
+            siblings = list(parent.children)
+            try:
+                idx = siblings.index(p)
+            except ValueError:
+                # p might have been removed
+                continue
+
+            p.extract()
+            for n in reversed(new_nodes):
+                parent.insert(idx, n)
 
     @staticmethod
     def _is_remote_url(value: str) -> bool:
@@ -528,15 +642,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         added_refs: list[RefItem] = []
         buffer: AnnotatedTextList = AnnotatedTextList()
 
-        def flush_buffer():
+        def _flush_buffer() -> None:
             if not buffer:
-                return added_refs
+                return
             annotated_text_list: AnnotatedTextList = buffer.simplify_text_elements()
             parts = annotated_text_list.split_by_newline()
             buffer.clear()
 
             if not "".join([el.text for el in annotated_text_list]):
-                return added_refs
+                return
 
             for annotated_text_list in parts:
                 with self._use_inline_group(annotated_text_list, doc):
@@ -569,12 +683,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(node, Tag):
                 name = node.name.lower()
                 if name == "img":
-                    flush_buffer()
+                    _flush_buffer()
                     im_ref3 = self._emit_image(node, doc)
                     if im_ref3:
                         added_refs.append(im_ref3)
                 elif name in _FORMAT_TAG_MAP:
-                    flush_buffer()
+                    _flush_buffer()
                     with self._use_format([name]):
                         wk = self._walk(node, doc)
                         added_refs.extend(wk)
@@ -583,11 +697,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         wk2 = self._walk(node, doc)
                         added_refs.extend(wk2)
                 elif name in _BLOCK_TAGS:
-                    flush_buffer()
+                    _flush_buffer()
                     blk = self._handle_block(node, doc)
                     added_refs.extend(blk)
                 elif node.find(_BLOCK_TAGS):
-                    flush_buffer()
+                    _flush_buffer()
                     wk3 = self._walk(node, doc)
                     added_refs.extend(wk3)
                 else:
@@ -600,7 +714,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 node, PreformattedString
             ):
                 if str(node).strip("\n\r") == "":
-                    flush_buffer()
+                    _flush_buffer()
                 else:
                     buffer.extend(
                         self._extract_text_and_hyperlink_recursively(
@@ -608,7 +722,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         )
                     )
 
-        flush_buffer()
+        _flush_buffer()
         return added_refs
 
     @staticmethod
