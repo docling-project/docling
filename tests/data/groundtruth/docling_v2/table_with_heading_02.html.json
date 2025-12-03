@@ -4,7 +4,7 @@
   "name": "table_with_heading_02",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 6886186974114054036,
+    "binary_hash": 5824324295334010827,
     "filename": "table_with_heading_02.html"
   },
   "furniture": {
@@ -86,10 +86,11 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "title",
+      "label": "section_header",
       "prov": [],
       "orig": "A",
-      "text": "A"
+      "text": "A",
+      "level": 1
     },
     {
       "self_ref": "#/texts/3",
