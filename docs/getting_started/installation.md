@@ -56,6 +56,7 @@ The following table summarizes the extras available in the `docling` package. Th
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
 | `rapidocr` | Installs the [RapidOCR](https://github.com/RapidAI/RapidOCR) OCR engine with [onnxruntime](https://github.com/microsoft/onnxruntime/) backend. |
+| `deepseekocr` | Installs the [DeepSeek-OCR](https://github.com/deepseek-ai/DeepSeek-OCR) VLM-based OCR engine. Supports CUDA (NVIDIA GPU) and MPS (Apple Silicon M1/M2/M3/M4). MPS requires PyTorch 2.7.0+. |
 
 
 ### OCR engines
@@ -72,6 +73,7 @@ the following engines.
 | OcrMac | System dependency. See description below. | `OcrMacOptions` |
 | [RapidOCR](https://github.com/RapidAI/RapidOCR) | `rapidocr` extra can or via `pip install rapidocr onnxruntime` | `RapidOcrOptions` |
 | [OnnxTR](https://github.com/felixdittrich92/OnnxTR) | Can be installed via the plugin system `pip install "docling-ocr-onnxtr[cpu]"`. Please take a look at [docling-OCR-OnnxTR](https://github.com/felixdittrich92/docling-OCR-OnnxTR).| `OnnxtrOcrOptions` |
+| [DeepSeek-OCR](https://github.com/deepseek-ai/DeepSeek-OCR) | `deepseekocr` extra or via `pip install transformers torch`. Supports CUDA (NVIDIA) and MPS (Apple Silicon M1/M2/M3/M4 with PyTorch 2.7.0+). | `DeepSeekOcrOptions` |
 
 The Docling `DocumentConverter` allows to choose the OCR engine with the `ocr_options` settings. For example
 

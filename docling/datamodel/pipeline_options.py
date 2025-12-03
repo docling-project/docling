@@ -203,6 +203,69 @@ class OcrMacOptions(OcrOptions):
     )
 
 
+class DeepSeekOcrOptions(OcrOptions):
+    """Options for the DeepSeek OCR engine.
+
+    DeepSeek-OCR is a Vision-Language Model (VLM) based OCR engine that uses
+    transformer models for document understanding and text extraction.
+    See: https://github.com/deepseek-ai/DeepSeek-OCR
+
+    Device Support:
+        - CUDA (NVIDIA GPU): Optimal performance with flash_attention_2 and bfloat16.
+          Uses the official 'deepseek-ai/DeepSeek-OCR' model.
+        - MPS (Apple Silicon M1/M2/M3/M4): Supported via MPS-compatible model fork.
+          Requires PyTorch 2.7.0+ for the aten::_upsample_bicubic2d_aa operator.
+          Automatically switches to 'Dogacel/DeepSeek-OCR-Metal-MPS' model with
+          float16 precision and eager attention.
+        - CPU: Not supported. Use EasyOcrOptions, TesseractOcrOptions, or
+          RapidOcrOptions for CPU-only environments.
+
+    Example:
+        >>> from docling.datamodel.pipeline_options import DeepSeekOcrOptions
+        >>> # Basic usage - auto-detects CUDA or MPS
+        >>> options = DeepSeekOcrOptions()
+        >>>
+        >>> # Custom prompt for specific OCR tasks
+        >>> options = DeepSeekOcrOptions(prompt="<image>\\nConvert to markdown.")
+    """
+
+    kind: ClassVar[Literal["deepseekocr"]] = "deepseekocr"
+
+    # DeepSeek-OCR is multilingual by default, no specific language configuration needed
+    lang: List[str] = []
+
+    # Model configuration
+    # Default is the official CUDA model; MPS users will auto-switch to MPS-compatible fork
+    repo_id: str = "deepseek-ai/DeepSeek-OCR"
+
+    # Prompt for OCR extraction
+    prompt: str = "<image>\nFree OCR."
+
+    # Image processing parameters
+    base_size: int = 1024
+    image_size: int = 640
+    crop_mode: bool = True
+
+    # Generation parameters
+    max_new_tokens: int = 4096
+    temperature: float = 0.0
+    do_sample: bool = False
+
+    # Trust remote code for loading the model
+    trust_remote_code: bool = True
+
+    # Attention implementation:
+    # - "flash_attention_2": Default for CUDA, optimal performance
+    # - "eager": Required for MPS (auto-selected), also works on CUDA
+    # - "sdpa": NOT supported by DeepSeek-OCR
+    attn_implementation: Optional[str] = None
+
+    model_config = ConfigDict(
+        extra="forbid",
+        protected_namespaces=(),
+    )
+
+
 class PictureDescriptionBaseOptions(BaseOptions):
     batch_size: int = 8
     scale: float = 2
@@ -273,6 +336,7 @@ class OcrEngine(str, Enum):
     TESSERACT = "tesseract"
     OCRMAC = "ocrmac"
     RAPIDOCR = "rapidocr"
+    DEEPSEEKOCR = "deepseekocr"
 
 
 class PipelineOptions(BaseOptions):
