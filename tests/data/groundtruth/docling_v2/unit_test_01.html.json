@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "unit_test_01",
   "origin": {
     "mimetype": "text/html",

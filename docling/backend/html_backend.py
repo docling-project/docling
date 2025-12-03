@@ -459,13 +459,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 rich_table_cell = self._is_rich_table_cell(html_cell)
                 if rich_table_cell:
                     # Parse table cell sub-tree for Rich Cells content:
-                    table_level = self.level
-                    table_parents = self.parents.copy()
-
-                    provs_in_cell = self._walk(html_cell, doc)
-                    # After walking sub-tree in cell, restore previously set level and parents
-                    self.level = table_level
-                    self.parents = table_parents
+                    with self._use_table_cell_context():
+                        provs_in_cell = self._walk(html_cell, doc)
 
                     group_name = f"rich_cell_group_{len(doc.tables)}_{col_idx}_{start_row_span + row_idx}"
                     rich_table_cell, ref_for_rich_cell = (
@@ -831,6 +826,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[self.level + 1] = None
             self.level -= 1
             self.content_layer = current_layer
+
+    @contextmanager
+    def _use_table_cell_context(self):
+        """Preserve the hierarchy level and parents during table cell processing.
+
+        While the context manager is active, the hierarchy level and parents can be modified.
+        When exiting, the original level and parents are restored.
+        """
+        original_level = self.level
+        original_parents = self.parents.copy()
+        try:
+            yield
+        finally:
+            self.level = original_level
+            self.parents = original_parents
 
     def _handle_heading(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_ref = []

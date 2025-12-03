@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.8.0",
-  "name": "table_02",
+  "name": "table_with_heading_01",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 13259165361873975426,
-    "filename": "table_02.html"
+    "binary_hash": 5578561753677933781,
+    "filename": "table_with_heading_01.html"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -19,116 +19,43 @@
     "children": [
       {
         "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/tables/0"
+      },
+      {
+        "$ref": "#/texts/1"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [
-    {
-      "self_ref": "#/groups/0",
-      "parent": {
-        "$ref": "#/tables/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/2"
-        },
-        {
-          "$ref": "#/texts/3"
-        },
-        {
-          "$ref": "#/texts/4"
-        }
-      ],
-      "content_layer": "body",
-      "name": "rich_cell_group_1_0_1",
-      "label": "unspecified"
-    }
-  ],
+  "groups": [],
   "texts": [
     {
       "self_ref": "#/texts/0",
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/1"
-        },
-        {
-          "$ref": "#/tables/0"
-        },
-        {
-          "$ref": "#/texts/5"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
-      "label": "title",
+      "label": "text",
       "prov": [],
-      "orig": "Header",
-      "text": "Header"
+      "orig": "Before tha table",
+      "text": "Before tha table"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is the first paragraph.",
-      "text": "This is the first paragraph."
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "First Paragraph",
-      "text": "First Paragraph"
-    },
-    {
-      "self_ref": "#/texts/3",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Second Paragraph",
-      "text": "Second Paragraph"
-    },
-    {
-      "self_ref": "#/texts/4",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Third Paragraph",
-      "text": "Third Paragraph"
-    },
-    {
-      "self_ref": "#/texts/5",
-      "parent": {
-        "$ref": "#/texts/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "After table",
-      "text": "After table"
+      "orig": "After the table",
+      "text": "After the table"
     }
   ],
   "pictures": [],
@@ -136,13 +63,9 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "$ref": "#/texts/0"
+        "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/groups/0"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "table",
       "prov": [],
@@ -184,14 +107,11 @@
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "First Paragraph\nSecond Paragraph\nThird Paragraph",
+            "text": "1...",
             "column_header": false,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/0"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -246,7 +166,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "First Paragraph\nSecond Paragraph\nThird Paragraph",
+              "text": "1...",
               "column_header": false,
               "row_header": false,
               "row_section": false,
