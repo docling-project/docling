@@ -86,6 +86,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
             def build_prompt(
                 self,
+                page: Optional[SegmentedPage],
                 *,
                 _internal_page: Optional[Page] = None,
             ) -> str:
@@ -119,6 +120,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         if tag_name == DocumentToken.TABLE:
                             print("Found a table!")
                             tag_name = "otsl"
+
+                        if tag_name == "section_header_level_1":
+                            tag_name = "section_header"
 
                         # Convert bbox to tuple and get location tokens
                         bbox_tuple = cluster.bbox.as_tuple()
