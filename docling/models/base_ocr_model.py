@@ -154,14 +154,19 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         page.parsed_page.textline_cells = final_cells
         page.parsed_page.has_lines = len(final_cells) > 0
 
-        # When force_full_page_ocr is used, word/char-level cells from PDF
-        # are also unreliable. Clear them so downstream components (e.g., table
+        # When force_full_page_ocr is used, PDF-extracted word/char cells are
+        # unreliable. Filter out cells where from_ocr=False, keeping any OCR-
+        # generated cells. This ensures downstream components (e.g., table
         # structure model) fall back to OCR-extracted textline cells.
         if self.options.force_full_page_ocr:
-            page.parsed_page.word_cells = []
-            page.parsed_page.char_cells = []
-            page.parsed_page.has_words = False
-            page.parsed_page.has_chars = False
+            page.parsed_page.word_cells = [
+                c for c in page.parsed_page.word_cells if c.from_ocr
+            ]
+            page.parsed_page.char_cells = [
+                c for c in page.parsed_page.char_cells if c.from_ocr
+            ]
+            page.parsed_page.has_words = len(page.parsed_page.word_cells) > 0
+            page.parsed_page.has_chars = len(page.parsed_page.char_cells) > 0
 
     def _combine_cells(
         self, existing_cells: List[TextCell], ocr_cells: List[TextCell]
