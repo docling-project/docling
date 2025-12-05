@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Optional, Union
 import pypdfium2 as pdfium
 from docling_core.types.doc import BoundingBox, CoordOrigin
 from docling_core.types.doc.page import SegmentedPdfPage, TextCell
-from docling_parse.pdf_parser import DoclingPdfParser, PdfDocument
+from docling_parse.pdf_parser import DoclingPdfParser, PdfDocument, PdfTableOfContents
 from PIL import Image
 from pypdfium2 import PdfPage
 
@@ -224,6 +224,9 @@ class DoclingParseV4DocumentBackend(PdfDocumentBackend):
             _log.error(f"Inconsistent number of pages: {len_1}!={len_2}")
 
         return len_2
+
+    def get_table_of_contents(self) -> Optional[PdfTableOfContents]:
+        return self.dp_doc.get_table_of_contents()
 
     def load_page(
         self, page_no: int, create_words: bool = True, create_textlines: bool = True
