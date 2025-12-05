@@ -113,7 +113,7 @@ def demo_threaded_layout_vlm_pipeline(
         # Queue configuration
         queue_max_size=10,
         # Image processing
-        images_scale=2.0,
+        images_scale=vlm_options.scale,
         generate_page_images=True,
         enable_remote_services=use_api_vlm,
     )
@@ -142,7 +142,7 @@ def demo_threaded_layout_vlm_pipeline(
     )
 
     result_layout_aware.document.save_as_html(
-        out_dir_layout_aware / f"{doc_filename}.html"
+        out_dir_layout_aware / f"{doc_filename}.html", split_page_view=True
     )
     for page in result_layout_aware.pages:
         _log.info("Page %s of VLM response:", page.page_no)
