@@ -40,6 +40,7 @@ from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import OperationNotAllowed
+from docling.utils.http_client import request_with_retry
 
 _log = logging.getLogger(__name__)
 
@@ -1256,9 +1257,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     "Fetching remote resources is only allowed when set explicitly. "
                     "Set options.enable_remote_fetch=True."
                 )
-            response = requests.get(src_loc, stream=True)
-            response.raise_for_status()
-            return response.content
+            with request_with_retry("GET", src_loc, stream=True) as response:
+                response.raise_for_status()
+                return response.content
         elif src_loc.startswith("data:"):
             data = re.sub(r"^data:image/.+;base64,", "", src_loc)
             return base64.b64decode(data)
