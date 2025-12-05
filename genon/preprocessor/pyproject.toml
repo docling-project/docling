@@ -52,7 +52,7 @@ dependencies = [
     "unstructured==0.18.15",
     "opencv-python==4.11.0.86",
     "numpy==2.3.4",
-    "minio>=7.2.20",
+    "minio==7.2.20",
 ]
 
 [dependency-groups]
