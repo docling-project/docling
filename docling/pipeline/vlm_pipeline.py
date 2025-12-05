@@ -114,6 +114,9 @@ class VlmPipeline(PaginatedPipeline):
 
     def initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
         with TimeRecorder(conv_res, "page_init"):
+            images_scale = self.pipeline_options.images_scale
+            if images_scale is not None:
+                page._default_image_scale = images_scale
             page._backend = conv_res.input._backend.load_page(page.page_no)  # type: ignore
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()
