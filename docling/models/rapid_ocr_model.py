@@ -24,7 +24,7 @@ _log = logging.getLogger(__name__)
 
 _ModelPathEngines = Literal["onnxruntime", "torch"]
 _ModelPathTypes = Literal[
-    "det_model_path", "cls_model_path", "rec_model_path", "rec_keys_path"
+    "det_model_path", "cls_model_path", "rec_model_path", "rec_keys_path", "font_path"
 ]
 
 
@@ -58,6 +58,10 @@ class RapidOcrModel(BaseOcrModel):
                 "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v2.0.7/paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
                 "path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
             },
+            "font_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/resources/fonts/FZYTK.TTF",
+                "path": "fonts/FZYTK.TTF",
+            },
         },
         "torch": {
             "det_model_path": {
@@ -75,6 +79,10 @@ class RapidOcrModel(BaseOcrModel):
             "rec_keys_path": {
                 "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
                 "path": "paddle/PP-OCRv4/rec/ch_PP-OCRv4_rec_infer/ppocr_keys_v1.txt",
+            },
+            "font_path": {
+                "url": "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/resources/fonts/FZYTK.TTF",
+                "path": "fonts/FZYTK.TTF",
             },
         },
     }
@@ -125,6 +133,7 @@ class RapidOcrModel(BaseOcrModel):
             cls_model_path = self.options.cls_model_path
             rec_model_path = self.options.rec_model_path
             rec_keys_path = self.options.rec_keys_path
+            font_path = self.options.font_path
             if artifacts_path is not None:
                 det_model_path = (
                     det_model_path
@@ -150,12 +159,19 @@ class RapidOcrModel(BaseOcrModel):
                     / self._model_repo_folder
                     / self._default_models[backend_enum.value]["rec_keys_path"]["path"]
                 )
+                font_path = (
+                    font_path
+                    or artifacts_path
+                    / self._model_repo_folder
+                    / self._default_models[backend_enum.value]["font_path"]["path"]
+                )
 
             for model_path in (
                 rec_keys_path,
                 cls_model_path,
                 rec_model_path,
                 rec_keys_path,
+                font_path,
             ):
                 if model_path is None:
                     continue
