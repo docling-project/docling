@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Collection, Iterable
 
 import requests
 from requests import Response, Session
@@ -20,7 +20,7 @@ def _build_retry(
     *,
     total: int = 5,
     backoff_factor: float = 0.2,
-    status_forcelist: Iterable[int] = _DEFAULT_STATUS_FORCELIST,
+    status_forcelist: Collection[int] = _DEFAULT_STATUS_FORCELIST,
     allowed_methods: Iterable[str] | None = _DEFAULT_ALLOWED_METHODS,
 ) -> Retry:
     return Retry(
@@ -39,7 +39,7 @@ def create_retry_session(
     *,
     total: int = 5,
     backoff_factor: float = 0.2,
-    status_forcelist: Iterable[int] = _DEFAULT_STATUS_FORCELIST,
+    status_forcelist: Collection[int] = _DEFAULT_STATUS_FORCELIST,
     allowed_methods: Iterable[str] | None = _DEFAULT_ALLOWED_METHODS,
 ) -> Session:
     """Return a requests Session configured with retry/backoff handling."""
