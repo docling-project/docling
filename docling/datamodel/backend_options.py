@@ -82,6 +82,24 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "cells) as TextItem instead of TableItem."
         ),
     )
+    merge_headless_columns_in_pages: bool = Field(
+        False,
+        description=(
+            "Whether to merge two distinct contiguos tables if in one the header "
+            "is missing. This options works when the system detects to distinct tables."
+        ),
+    )
+    merge_headless_columns_str: str = Field(
+        "",
+        description=("string used to replace the missing header, default empty string"),
+    )
+    remove_singleton_text: bool = Field(
+        False,
+        description=(
+            "Whether to remove singleton cells (1x1 tables with empty neighboring "
+            "cells)"
+        ),
+    )
 
 
 BackendOptions = Annotated[

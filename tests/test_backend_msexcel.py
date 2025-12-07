@@ -312,3 +312,122 @@ def test_bytesio_stream():
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+
+
+def test_table_with_missing_header_tail():
+    """Test that Excel tables with missing tail headers are parsed correctly.
+
+    This test verifies that the option MsExcelBackendOptions(merge_headless_columns_in_pages=True) is working correctly,
+    i.e., with the current parser a single table with missing headers at the tail is parsed as two tables, the option
+    merges up to two tables if they are contiguos. This test verified that xlsx_06_table_with_missing_headers_tail
+    is parsed correctly
+    """
+    # Get a test Excel file
+    path = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_06_table_with_missing_headers_tail"
+    )
+
+    # Create converter with merge_headless_columns_in_pages=True
+    options = MsExcelBackendOptions(merge_headless_columns_in_pages=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    # With merge_headless_columns_in_pages=True, the two tables should be merged into one
+    tables = list(doc.tables)
+
+    assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
+
+    # Verify the table dimensions
+    table = tables[0]
+    assert table.data.num_rows == 4, (
+        f"Table should have 4 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 6, (
+        f"Table should have 6 rows, got {table.data.num_cols}"
+    )
+
+
+def test_table_with_missing_header_middle():
+    """
+    Test that Excel tables with missing headers in the middle are parsed correctly.
+
+    This test verifies that the option MsExcelBackendOptions(merge_headless_columns_in_pages=True) does not impact
+    correct parsing.
+    This test verified that xlsx_07_table_with_missing_header_middle
+    is parsed correctly when the option is enabled
+    """
+    # Get a test Excel file
+    path = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_07_table_with_missing_header_middle"
+    )
+
+    # Create converter with merge_headless_columns_in_pages=True
+    options = MsExcelBackendOptions(merge_headless_columns_in_pages=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    # With merge_headless_columns_in_pages=True, the two tables should be merged into one
+    tables = list(doc.tables)
+
+    assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
+
+    # Verify the table dimensions
+    table = tables[0]
+    assert table.data.num_rows == 4, (
+        f"Table should have 4 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 7, (
+        f"Table should have 7 rows, got {table.data.num_cols}"
+    )
+
+
+def test_table_remove_singleton():
+    """Test that singleton cells with non-numeric content are removed.
+
+    When remove_singleton_text option is enabled, 1x1 tables containing non-numeric
+    text should be removed. This test verifies that
+    xlsx_05_table_with_title.xlsx is correctly parsed with this option.
+    """
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_05_table_with_title"
+    )
+
+    # Create converter with treat_singleton_as_text=True
+    options = MsExcelBackendOptions(remove_singleton_text=True)
+    format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+    converter = DocumentConverter(
+        allowed_formats=[InputFormat.XLSX], format_options=format_options
+    )
+
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    # With treat_singleton_as_text=True, the singleton title cell should be a TextItem
+    texts = list(doc.texts)
+    tables = list(doc.tables)
+
+    assert len(texts) == 0, f"Should have 0 text item (the title), got {len(texts)}"
+    assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
+
+    # Verify table dimensions
+    table = tables[0]
+    assert table.data.num_rows == 7, (
+        f"Table should have 7 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 2, (
+        f"Table should have 2 columns, got {table.data.num_cols}"
+    )

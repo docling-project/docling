@@ -1,5 +1,6 @@
 import logging
 from io import BytesIO
+from operator import attrgetter
 from pathlib import Path
 from typing import Annotated, Any, Optional, Union, cast
 
@@ -287,6 +288,70 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 isinstance(self.options, MsExcelBackendOptions)
                 and self.options.treat_singleton_as_text
             )
+
+            remove_singleton_text = (
+                isinstance(self.options, MsExcelBackendOptions)
+                and self.options.remove_singleton_text
+            )
+
+            merge_headless_columns = (
+                isinstance(self.options, MsExcelBackendOptions)
+                and self.options.merge_headless_columns_in_pages
+            )
+
+            header_str = (
+                isinstance(self.options, MsExcelBackendOptions)
+                and self.options.merge_headless_columns_str
+            )
+
+            if remove_singleton_text and not (treat_singleton_as_text):
+                tables[:] = [
+                    excel_table
+                    for excel_table in tables
+                    if not (
+                        excel_table.num_cols == 1
+                        and excel_table.num_rows == 1
+                        and excel_table.data
+                    )
+                ]
+
+            if merge_headless_columns and len(tables) == 2:
+                _origin_col = tables[0].anchor[0]
+                _origin_row = tables[0].anchor[1]
+                # Sanity check: Are the missing headers anchors consistent?
+                assert (
+                    _origin_col + tables[0].num_rows == tables[1].anchor[0]
+                    and _origin_row + 1 == tables[1].anchor[1]
+                ), (
+                    f"Merging failed detected wrong table anchors, {tables[0].anchor}, {tables[1].anchor}"
+                )
+
+                # Add missing headers
+                for _col_idx in range(tables[1].num_cols):
+                    tables[0].data.append(
+                        ExcelCell(
+                            row=0,
+                            col=tables[0].num_cols + _col_idx,
+                            text=header_str,
+                            row_span=1,
+                            col_span=1,
+                        )
+                    )
+
+                for _data in tables[1].data:
+                    tables[0].data.append(
+                        ExcelCell(
+                            row=_data.row + 1,
+                            col=tables[0].num_cols + _data.col,
+                            text=_data.text,
+                            row_span=_data.row_span,
+                            col_span=_data.col_span,
+                        )
+                    )
+
+                tables[0].num_cols += tables[1].num_cols
+                tables.pop(1)
+                tables[0].data.sort(key=attrgetter("row", "col"))
 
             for excel_table in tables:
                 origin_col = excel_table.anchor[0]
