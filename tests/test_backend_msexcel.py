@@ -48,8 +48,18 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
             excel_path.parent.parent / "groundtruth" / "docling_v2" / excel_path.name
         )
 
-        conv_result: ConversionResult = converter.convert(excel_path)
+        if excel_path.stem == "xlsx_06_table_with_missing_headers_tail":
+            options = MsExcelBackendOptions(merge_headless_columns_in_pages=True)
+            format_options = {
+                InputFormat.XLSX: ExcelFormatOption(backend_options=options)
+            }
+            converter = DocumentConverter(
+                allowed_formats=[InputFormat.XLSX], format_options=format_options
+            )
+        else:
+            converter = get_converter()
 
+        conv_result: ConversionResult = converter.convert(excel_path)
         doc: DoclingDocument = conv_result.document
 
         assert doc, f"Failed to convert document from file {gt_path}"
@@ -350,7 +360,7 @@ def test_table_with_missing_header_tail():
         f"Table should have 4 rows, got {table.data.num_rows}"
     )
     assert table.data.num_cols == 6, (
-        f"Table should have 6 rows, got {table.data.num_cols}"
+        f"Table should have 6 cols, got {table.data.num_cols}"
     )
 
 
@@ -391,7 +401,7 @@ def test_table_with_missing_header_middle():
         f"Table should have 4 rows, got {table.data.num_rows}"
     )
     assert table.data.num_cols == 7, (
-        f"Table should have 7 rows, got {table.data.num_cols}"
+        f"Table should have 7 cols, got {table.data.num_cols}"
     )
 
 
