@@ -7,6 +7,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
     PictureItem,
+    ProvenanceItem,
 )
 from docling_core.types.doc.document import (  # TODO: move import to docling_core.types.doc
     PictureDescriptionData,
@@ -64,8 +65,8 @@ class PictureDescriptionBaseModel(
             assert isinstance(el.item, PictureItem)
             describe_image = True
             # Don't describe the image if it's smaller than the threshold
-            if len(el.item.prov) > 0:
-                prov = el.item.prov[0]  # PictureItems have at most a single provenance
+            if el.item.prov and isinstance(prov := el.item.prov[0], ProvenanceItem):
+                # PictureItems have at most a single provenance
                 page = doc.pages.get(prov.page_no)
                 if page is not None:
                     page_area = page.size.width * page.size.height
