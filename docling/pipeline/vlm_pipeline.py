@@ -182,21 +182,23 @@ class VlmPipeline(PaginatedPipeline):
             if self.pipeline_options.generate_picture_images:
                 scale = self.pipeline_options.images_scale
                 for element, _level in conv_res.document.iterate_items():
-                    if not isinstance(element, DocItem) or len(element.prov) == 0:
+                    if (
+                        not isinstance(element, DocItem)
+                        or not element.prov
+                        or not isinstance(prov := element.prov[0], ProvenanceItem)
+                    ):
                         continue
                     if (
                         isinstance(element, PictureItem)
                         and self.pipeline_options.generate_picture_images
                     ):
-                        page_ix = element.prov[0].page_no - 1
+                        page_ix = prov.page_no - 1
                         page = conv_res.pages[page_ix]
                         assert page.size is not None
                         assert page.image is not None
 
-                        crop_bbox = (
-                            element.prov[0]
-                            .bbox.scaled(scale=scale)
-                            .to_top_left_origin(page_height=page.size.height * scale)
+                        crop_bbox = prov.bbox.scaled(scale=scale).to_top_left_origin(
+                            page_height=page.size.height * scale
                         )
 
                         cropped_im = page.image.crop(crop_bbox.as_tuple())
@@ -233,12 +235,14 @@ class VlmPipeline(PaginatedPipeline):
             if self.force_backend_text:
                 scale = self.pipeline_options.images_scale
                 for element, _level in conv_res.document.iterate_items():
-                    if not isinstance(element, TextItem) or len(element.prov) == 0:
+                    if (
+                        not isinstance(element, TextItem)
+                        or not element.prov
+                        or not isinstance(prov := element.prov[0], ProvenanceItem)
+                    ):
                         continue
-                    crop_bbox = (
-                        element.prov[0]
-                        .bbox.scaled(scale=scale)
-                        .to_top_left_origin(page_height=page.size.height * scale)
+                    crop_bbox = prov.bbox.scaled(scale=scale).to_top_left_origin(
+                        page_height=page.size.height * scale
                     )
                     txt = self.extract_text_from_backend(page, crop_bbox)
                     element.text = txt

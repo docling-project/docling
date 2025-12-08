@@ -1035,7 +1035,11 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
+<<<<<<< HEAD
     { name = "docling-core", extras = ["chunking"], specifier = ">=2.58.0,<3.0.0" },
+=======
+    { name = "docling-core", extras = ["chunking"], git = "ssh://git@github.com/docling-project/docling-core.git?rev=c56a6915bea7712fd1a5b0b2923f80926d55b261" },
+>>>>>>> ac4edab3 (refactor(provenance): account for provenance as union of ProvenanceItem and ProvenanceTrack)
     { name = "docling-ibm-models", specifier = ">=3.9.1,<4" },
     { name = "docling-parse", specifier = ">=4.7.0,<5.0.0" },
     { name = "easyocr", marker = "extra == 'easyocr'", specifier = ">=1.7,<2.0" },
@@ -1119,8 +1123,8 @@ examples = [
 
 [[package]]
 name = "docling-core"
-version = "2.60.2"
-source = { registry = "https://pypi.org/simple" }
+version = "2.57.0"
+source = { git = "ssh://git@github.com/docling-project/docling-core.git?rev=c56a6915bea7712fd1a5b0b2923f80926d55b261#c56a6915bea7712fd1a5b0b2923f80926d55b261" }
 dependencies = [
     { name = "jsonref" },
     { name = "jsonschema" },
@@ -1133,10 +1137,10 @@ dependencies = [
     { name = "typer" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7d/e6/7ed57bc580f136db0a7457305ec63366f22c999b674ef5f7c0abe452d79f/docling_core-2.60.2.tar.gz", hash = "sha256:7a99e1671e796e39d0c735b7ae3833766a97ad287e15d434dfa417917e3b0e6d", size = 231978, upload-time = "2026-01-23T12:29:18.506Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/5f/d39dd904b602f3a4072f1a7c38636702c32ed36d49aaafb21ea059face28/docling_core-2.60.2-py3-none-any.whl", hash = "sha256:63aee783f06240455c12c30e9af383b80d7ade80c896f81d68a4aff6cde2e2a1", size = 222319, upload-time = "2026-01-23T12:29:17.109Z" },
-]
+# sdist = { url = "https://files.pythonhosted.org/packages/08/fa/541931a448ddc9609a3e21ca176baf28bd0a89cbbd7be23380637a87d427/docling_core-2.57.0.tar.gz", hash = "sha256:24b71172e8bc4fbe2b4213b29f51878114f4c13f25fc0bc9920168505c76c1a3", size = 230768, upload-time = "2025-12-18T14:18:14.928Z" }
+# wheels = [
+#     { url = "https://files.pythonhosted.org/packages/24/1c/03cc087b360b7815c5472f5cfaaf9b09fa6d0397c05c120a7c623654bf21/docling_core-2.57.0-py3-none-any.whl", hash = "sha256:398768b4d275ad2e11703ad9446fd0315a9a5fc8d09bc45ed207302d844d6ed5", size = 223002, upload-time = "2025-12-18T14:18:13.558Z" },
+# ]
 
 [package.optional-dependencies]
 chunking = [

@@ -26,7 +26,13 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, cast
 
 import numpy as np
-from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
+from docling_core.types.doc import (
+    DocItem,
+    ImageRef,
+    PictureItem,
+    ProvenanceItem,
+    TableItem,
+)
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -776,7 +782,11 @@ class StandardPdfPipeline(ConvertPipeline):
                 ):
                     scale = self.pipeline_options.images_scale
                     for element, _level in conv_res.document.iterate_items():
-                        if not isinstance(element, DocItem) or len(element.prov) == 0:
+                        if (
+                            not isinstance(element, DocItem)
+                            or not element.prov
+                            or not isinstance(prov := element.prov[0], ProvenanceItem)
+                        ):
                             continue
                         if (
                             isinstance(element, PictureItem)
@@ -785,6 +795,10 @@ class StandardPdfPipeline(ConvertPipeline):
                             isinstance(element, TableItem)
                             and self.pipeline_options.generate_table_images
                         ):
+                            if not element.prov or not isinstance(
+                                element.prov[0], ProvenanceItem
+                            ):
+                                continue
                             page_ix = element.prov[0].page_no
                             page = next(
                                 (p for p in conv_res.pages if p.page_no == page_ix),
@@ -794,13 +808,9 @@ class StandardPdfPipeline(ConvertPipeline):
                             assert page.size is not None
                             assert page.image is not None
 
-                            crop_bbox = (
-                                element.prov[0]
-                                .bbox.scaled(scale=scale)
-                                .to_top_left_origin(
-                                    page_height=page.size.height * scale
-                                )
-                            )
+                            crop_bbox = prov.bbox.scaled(
+                                scale=scale
+                            ).to_top_left_origin(page_height=page.size.height * scale)
 
                             cropped_im = page.image.crop(crop_bbox.as_tuple())
                             element.image = ImageRef.from_pil(
