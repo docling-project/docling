@@ -25,6 +25,7 @@ from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.table import CT_Tc
 from docx.oxml.xmlchemy import BaseOxmlElement
+from docx.styles.style import ParagraphStyle
 from docx.table import Table, _Cell
 from docx.text.hyperlink import Hyperlink
 from docx.text.paragraph import Paragraph
@@ -511,15 +512,17 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if paragraph.style is None:
             return "Normal", None
 
-        label = paragraph.style.style_id
-        name = paragraph.style.name
-        base_style_label = None
-        base_style_name = None
-        if base_style := getattr(paragraph.style, "base_style", None):
+        label: str = paragraph.style.style_id
+        name: str = paragraph.style.name or ""
+        base_style_label: Optional[str] = None
+        base_style_name: Optional[str] = None
+        if isinstance(
+            base_style := getattr(paragraph.style, "base_style", None), ParagraphStyle
+        ):
             base_style_label = base_style.style_id
             base_style_name = base_style.name
 
-        if label is None:
+        if not label:
             return "Normal", None
 
         if ":" in label:
