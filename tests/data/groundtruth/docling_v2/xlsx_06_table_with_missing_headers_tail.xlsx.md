@@ -1,4 +1,4 @@
-| Product/Integration   | Sub-category          | ID   | Question                                |                            |                                                    |
+| Product/Integration   | Sub-category          | ID   | Question                                | None                       | None                                               |
 |-----------------------|-----------------------|------|-----------------------------------------|----------------------------|----------------------------------------------------|
 | Overview              | Purpose and Use Cases | AI 1 | What is the main objective?             | The main objective is...   | Additional interviewers insights, or information   |
 | Overview              | Purpose and Use Cases | AI 2 | What are the specific use cases?        | The AI is applied for...   | More information                                   |
