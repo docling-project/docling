@@ -197,9 +197,9 @@ plugins:
             extensions:
               - griffe_pydantic:
                   schema: true
-          preload_modules:
-            - docling
-            - docling_core
+            preload_modules:
+              - docling
+              - docling_core
 
 extra_css:
   - stylesheets/extra.css
