@@ -302,11 +302,47 @@ class OcrEngine(str, Enum):
 class PipelineOptions(BaseOptions):
     """Base pipeline options."""
 
-    document_timeout: Optional[float] = None
-    accelerator_options: AcceleratorOptions = AcceleratorOptions()
-    enable_remote_services: bool = False
-    allow_external_plugins: bool = False
-    artifacts_path: Optional[Union[Path, str]] = None
+    document_timeout: Annotated[
+        Optional[float],
+        Field(
+            description="Maximum allowed processing time for a document before timing out. If None, no timeout is enforced.",
+            examples=[10.0, 20.0],
+        ),
+    ] = None
+
+    accelerator_options: Annotated[
+        AcceleratorOptions,
+        Field(
+            description="Configuration options for hardware acceleration (e.g., GPU or optimized execution settings).",
+            examples=[
+                {"device": "cpu"}
+            ],  # Adjust if AcceleratorOptions has known structure
+        ),
+    ] = AcceleratorOptions()
+
+    enable_remote_services: Annotated[
+        bool,
+        Field(
+            description="Enable calling external APIs or cloud services during pipeline execution.",
+            examples=[False],
+        ),
+    ] = False
+
+    allow_external_plugins: Annotated[
+        bool,
+        Field(
+            description="Allow loading external third-party plugins or modules. Disabled by default for safety.",
+            examples=[False],
+        ),
+    ] = False
+
+    artifacts_path: Annotated[
+        Optional[Union[Path, str]],
+        Field(
+            description="Filesystem path where pipeline artifacts should be stored. If None, artifacts may not be saved or a default location may be used.",
+            examples=["./artifacts", "/tmp/docling_outputs"],
+        ),
+    ] = None
 
 
 class ConvertPipelineOptions(PipelineOptions):
