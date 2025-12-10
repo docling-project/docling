@@ -201,6 +201,7 @@ def export_documents(
     conv_results: Iterable[ConversionResult],
     output_dir: Path,
     export_json: bool,
+    export_yml: bool,
     export_html: bool,
     export_html_split_page: bool,
     show_layout: bool,
@@ -222,6 +223,14 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.json"
                 _log.info(f"writing JSON output to {fname}")
                 conv_res.document.save_as_json(
+                    filename=fname, image_mode=image_export_mode
+                )
+
+            # Export YAML format:
+            if export_yml:
+                fname = output_dir / f"{doc_filename}.yml"
+                _log.info(f"writing YAML output to {fname}")
+                conv_res.document.save_as_yaml(
                     filename=fname, image_mode=image_export_mode
                 )
 
@@ -602,6 +611,7 @@ def convert(  # noqa: C901
             to_formats = [OutputFormat.MARKDOWN]
 
         export_json = OutputFormat.JSON in to_formats
+        export_yml = OutputFormat.YAML in to_formats
         export_html = OutputFormat.HTML in to_formats
         export_html_split_page = OutputFormat.HTML_SPLIT_PAGE in to_formats
         export_md = OutputFormat.MARKDOWN in to_formats
@@ -873,6 +883,7 @@ def convert(  # noqa: C901
             conv_results,
             output_dir=output,
             export_json=export_json,
+            export_yml=export_yml,
             export_html=export_html,
             export_html_split_page=export_html_split_page,
             show_layout=show_layout,
