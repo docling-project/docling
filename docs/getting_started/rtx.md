@@ -1,6 +1,9 @@
-# RTX GPU Acceleration
+# ⚡ RTX GPU Acceleration
 
-TBA. Docling+RTX artwork
+<div style="text-align: center">
+    <img loading="lazy" alt="Docling on RTX" src="../../assets/docling_rtx.png" width="400px" />
+</div>
+
 
 Whether you're an AI enthusiast, researcher, or developer working with document processing, this guide will help you unlock the full potential of your NVIDIA RTX GPU with Docling.
 
