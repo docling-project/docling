@@ -27,6 +27,7 @@
 # %%
 
 import io
+import sys
 import time
 from pathlib import Path
 from typing import Annotated, Literal
@@ -107,6 +108,10 @@ def run(
 
     ocr_options = RapidOcrOptions()
     if "cuda" in device:
+        ocr_options = RapidOcrOptions(backend="torch")
+
+    # On Python 3.14 we only have torch
+    if sys.version_info >= (3, 14):
         ocr_options = RapidOcrOptions(backend="torch")
 
     if pipeline == "standard":
