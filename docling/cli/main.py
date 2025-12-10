@@ -228,7 +228,7 @@ def export_documents(
 
             # Export YAML format:
             if export_yml:
-                fname = output_dir / f"{doc_filename}.yml"
+                fname = output_dir / f"{doc_filename}.yaml"
                 _log.info(f"writing YAML output to {fname}")
                 conv_res.document.save_as_yaml(
                     filename=fname, image_mode=image_export_mode
