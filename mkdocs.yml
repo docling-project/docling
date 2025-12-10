@@ -57,6 +57,7 @@ nav:
     - Getting started : 
       - Installation: getting_started/installation.md
       - Quickstart: getting_started/quickstart.md
+      - ⚡ RTX GPU: getting_started/rtx.md
     - Usage:
       - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
