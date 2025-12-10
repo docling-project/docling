@@ -10,7 +10,7 @@ from pydantic import (
     ConfigDict,
     Field,
 )
-from typing_extensions import deprecated
+from typing_extensions import Annotated, deprecated
 
 from docling.datamodel import asr_model_specs, vlm_model_specs
 
@@ -79,11 +79,29 @@ class TableStructureOptions(BaseTableStructureOptions):
 class OcrOptions(BaseOptions):
     """OCR options."""
 
-    lang: List[str]
-    force_full_page_ocr: bool = False  # If enabled a full page OCR is always applied
-    bitmap_area_threshold: float = (
-        0.05  # percentage of the area for a bitmap to processed with OCR
-    )
+    lang: Annotated[
+        List[str],
+        Field(
+            description="List of OCR languages to use, in ISO codes (e.g., 'deu', 'eng').",
+            examples=[["deu", "eng"]],
+        ),
+    ]
+
+    force_full_page_ocr: Annotated[
+        bool,
+        Field(
+            description="If enabled, a full-page OCR is always applied.",
+            examples=[False],
+        ),
+    ] = False
+
+    bitmap_area_threshold: Annotated[
+        float,
+        Field(
+            description="Percentage of the page area for a bitmap to be processed with OCR.",
+            examples=[0.05, 0.1],
+        ),
+    ] = 0.05
 
 
 class OcrAutoOptions(OcrOptions):
