@@ -108,7 +108,13 @@ class OcrAutoOptions(OcrOptions):
     """Options for pick OCR engine automatically."""
 
     kind: ClassVar[Literal["auto"]] = "auto"
-    lang: List[str] = []
+    lang: Annotated[
+        List[str],
+        Field(
+            description="Default value is an empty list, i.e. no language selected",
+            examples=["eng", "deu"],
+        ),
+    ] = []
 
 
 class RapidOcrOptions(OcrOptions):
