@@ -838,7 +838,7 @@ class DocumentProcessor:
         '''
         initialize Document Converter
         '''
-        self.ocr_endpoint = "http://192.168.73.170:30880/ocr"
+        self.ocr_endpoint = "http://192.168.81.170:48080/ocr"
         ocr_options = PaddleOcrOptions(
             force_full_page_ocr=False,
             lang=['korean'],
