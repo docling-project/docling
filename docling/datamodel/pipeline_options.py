@@ -82,7 +82,7 @@ class OcrOptions(BaseOptions):
     lang: Annotated[
         List[str],
         Field(
-            description="List of OCR languages to use, in ISO codes (e.g., 'deu', 'eng').",
+            description="List of OCR languages to use. The format must match the values of the OCR engine of choice.",
             examples=[["deu", "eng"]],
         ),
     ]
@@ -111,8 +111,7 @@ class OcrAutoOptions(OcrOptions):
     lang: Annotated[
         List[str],
         Field(
-            description="Default value is an empty list, i.e. no language selected",
-            examples=["eng", "deu"],
+            description="The automatic OCR engine will use the default values of the engine. Please specify the engine explicitly to change the language selection.",
         ),
     ] = []
 
@@ -314,9 +313,6 @@ class PipelineOptions(BaseOptions):
         AcceleratorOptions,
         Field(
             description="Configuration options for hardware acceleration (e.g., GPU or optimized execution settings).",
-            examples=[
-                {"device": "cpu"}
-            ],  # Adjust if AcceleratorOptions has known structure
         ),
     ] = AcceleratorOptions()
 
@@ -339,7 +335,7 @@ class PipelineOptions(BaseOptions):
     artifacts_path: Annotated[
         Optional[Union[Path, str]],
         Field(
-            description="Filesystem path where pipeline artifacts should be stored. If None, artifacts may not be saved or a default location may be used.",
+            description="Filesystem path where pipeline artifacts should be stored. If None, artifacts will be fetched. You can use the utility `docling-tools models download` to pre-fetch the model artifacts.",
             examples=["./artifacts", "/tmp/docling_outputs"],
         ),
     ] = None
