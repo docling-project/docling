@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, ClassVar, Dict, List, Literal, Optional, Union
 
 from pydantic import (
     AnyUrl,
@@ -10,7 +10,7 @@ from pydantic import (
     ConfigDict,
     Field,
 )
-from typing_extensions import Annotated, deprecated
+from typing_extensions import deprecated
 
 from docling.datamodel import asr_model_specs, vlm_model_specs
 
