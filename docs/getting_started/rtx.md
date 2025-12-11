@@ -15,7 +15,7 @@ TBA. Performance improvement figure.
 
 Before setting up GPU acceleration, ensure you have:
 
-- An NVIDIA RTX GPU (RTX 40/50 series or newer)
+- An NVIDIA RTX GPU (RTX 40/50 series)
 - Windows 10/11 or Linux operating system
 
 ## Installation Steps
@@ -167,7 +167,7 @@ llama-server.exe `
 ```
 
 !!! note "Performance Comparison"
-    vLLM delivers approximately **4x better performance** compared to llama-server. For Windows users seeking maximum performance, consider running vLLM via WSL2 (Windows Subsystem for Linux). See [vLLM on RTX 5090 guide](https://github.com/BoltzmannEntropy/vLLM-5090) for detailed WSL2 setup instructions.
+    vLLM delivers approximately **4x better performance** compared to llama-server. For Windows users seeking maximum performance, consider running vLLM via WSL2 (Windows Subsystem for Linux). See [vLLM on RTX 5090 via Docker](https://github.com/BoltzmannEntropy/vLLM-5090) for detailed WSL2 setup instructions.
 
 ### Configure Docling for VLM Server
 
