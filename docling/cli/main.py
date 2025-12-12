@@ -1,6 +1,7 @@
 import importlib
 import logging
 import platform
+import datetime
 import re
 import sys
 import tempfile
@@ -22,6 +23,7 @@ from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
+from docling.utils.profiling import ProfilingItem
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
@@ -208,6 +210,8 @@ def export_documents(
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
+    export_timings: bool,
+    export_raw_timings: bool,
     image_export_mode: ImageRefMode,
 ):
     success_count = 0
@@ -291,6 +295,43 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.doctags"
                 _log.info(f"writing Doc Tags output to {fname}")
                 conv_res.document.save_as_doctags(filename=fname)
+
+            # Export profiling timings
+            if export_timings:
+                table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
+                metric_columns = ["Stage", "count", "total", "mean", "median", "min", "max", "0.1 percentile", "0.9 percentile"]
+                for col in metric_columns:
+                    table.add_column(col, style="bold")
+                for stage_key, item in conv_res.timings.items():
+                    # TODO(L) More cleaner way.
+                    # col_dict = {
+                    #     metric : fun(metric, key, item)
+                    # }
+                    col_dict = {
+                        "Stage"           : stage_key,
+                        "count"           : item.count, 
+                        "total"           : item.total(),
+                        "mean"            : item.avg(), 
+                        "median"          : item.std(),
+                        "min"             : item.percentile(0.0),
+                        "max"             : item.percentile(1.0),
+                        "0.1 percentile"  : item.percentile(0.1),
+                        "0.9 percentile"  : item.percentile(0.9), 
+                    }
+                    row_values = [str(col_dict[col]) for col in metric_columns]
+                    table.add_row(*row_values)
+                
+                console.print(table)
+
+                if export_raw_timings:
+                    TimingsT = TypeAdapter(dict[str, ProfilingItem])
+                    now = datetime.datetime.now()
+                    timings_file = Path(output_dir / f"result-timings-{now:%Y-%m-%d_%H-%M-%S}.json")
+                    with timings_file.open("wb") as fp:
+                        r = TimingsT.dump_json(conv_res.timings, indent=2)
+                        fp.write(r)
+                # breakpoint()
+                # print(conv_res.timings)
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
@@ -532,6 +573,20 @@ def convert(  # noqa: C901
             help=f"Number of pages processed in one batch. Default: {settings.perf.page_batch_size}",
         ),
     ] = settings.perf.page_batch_size,
+    profile: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, it summarizes profiling details for all conversion stages.",
+        ),
+    ] = False,
+    save_profile: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, it saves the profiling summaries to json.",
+        ),
+    ] = False,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -555,6 +610,9 @@ def convert(  # noqa: C901
     if headers is not None:
         headers_t = TypeAdapter(Dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
+
+    if profile:
+        settings.debug.profile_pipeline_timings = True
 
     with tempfile.TemporaryDirectory() as tempdir:
         input_doc_paths: List[Path] = []
@@ -890,6 +948,8 @@ def convert(  # noqa: C901
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,
+            export_timings=profile,
+            export_raw_timings=save_profile,
             image_export_mode=image_export_mode,
         )
 
