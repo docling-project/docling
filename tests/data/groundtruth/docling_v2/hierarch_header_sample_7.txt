@@ -1,0 +1,8 @@
+  MULTISCALE SURROGATE MODELING AND UNCERTAINTY QUANTIFICATION FOR PERIODIC COMPOSITE STRUCTURES
+  Charles Mylonas'l,Bemetz Valentin, Eleni Chatzi
+  1 Introduction
+  2 Computational Methodology
+    2.1 Asymptotic Expansion Homogenization
+  3.1 Dimensionality reduction with PCA for the homogenized stiffness tensor
+  3.3 Conclusion
+    REFERENCES

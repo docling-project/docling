@@ -401,6 +401,10 @@ class PyPdfiumDocumentBackend(PdfDocumentBackend):
     def is_valid(self) -> bool:
         return self.page_count() > 0
 
+    def get_table_of_contents(self) -> list[dict]:
+        with pypdfium2_lock:
+            return list(self._pdoc.get_toc())
+
     def unload(self):
         super().unload()
         with pypdfium2_lock:
