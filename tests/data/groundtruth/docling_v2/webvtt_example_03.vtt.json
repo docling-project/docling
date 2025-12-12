@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "webvtt_example_03",
   "origin": {
     "mimetype": "text/vtt",
@@ -18,1218 +18,348 @@
     "self_ref": "#/body",
     "children": [
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/0"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/texts/2"
       },
       {
-        "$ref": "#/groups/5"
+        "$ref": "#/texts/3"
       },
       {
-        "$ref": "#/groups/7"
+        "$ref": "#/texts/4"
       },
       {
-        "$ref": "#/groups/9"
+        "$ref": "#/texts/5"
       },
       {
-        "$ref": "#/groups/11"
+        "$ref": "#/texts/6"
       },
       {
-        "$ref": "#/groups/13"
+        "$ref": "#/texts/7"
       },
       {
-        "$ref": "#/groups/15"
+        "$ref": "#/texts/8"
       },
       {
-        "$ref": "#/groups/17"
+        "$ref": "#/texts/9"
       },
       {
-        "$ref": "#/groups/19"
+        "$ref": "#/texts/10"
       },
       {
-        "$ref": "#/groups/21"
+        "$ref": "#/texts/11"
       },
       {
-        "$ref": "#/groups/23"
+        "$ref": "#/texts/12"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [
-    {
-      "self_ref": "#/groups/0",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/0"
-        },
-        {
-          "$ref": "#/texts/1"
-        },
-        {
-          "$ref": "#/groups/1"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/1",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/2"
-        },
-        {
-          "$ref": "#/texts/3"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/4"
-        },
-        {
-          "$ref": "#/texts/5"
-        },
-        {
-          "$ref": "#/groups/3"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/3",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/6"
-        },
-        {
-          "$ref": "#/texts/7"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/4",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/8"
-        },
-        {
-          "$ref": "#/texts/9"
-        },
-        {
-          "$ref": "#/texts/10"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/5",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/11"
-        },
-        {
-          "$ref": "#/texts/12"
-        },
-        {
-          "$ref": "#/groups/6"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/13"
-        },
-        {
-          "$ref": "#/texts/14"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/7",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/15"
-        },
-        {
-          "$ref": "#/texts/16"
-        },
-        {
-          "$ref": "#/groups/8"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/8",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/17"
-        },
-        {
-          "$ref": "#/texts/18"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/9",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/19"
-        },
-        {
-          "$ref": "#/texts/20"
-        },
-        {
-          "$ref": "#/groups/10"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/10",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/21"
-        },
-        {
-          "$ref": "#/texts/22"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/11",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/23"
-        },
-        {
-          "$ref": "#/texts/24"
-        },
-        {
-          "$ref": "#/groups/12"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/12",
-      "parent": {
-        "$ref": "#/groups/11"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/25"
-        },
-        {
-          "$ref": "#/texts/26"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/13",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/27"
-        },
-        {
-          "$ref": "#/texts/28"
-        },
-        {
-          "$ref": "#/groups/14"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/14",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/29"
-        },
-        {
-          "$ref": "#/texts/30"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/15",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/31"
-        },
-        {
-          "$ref": "#/texts/32"
-        },
-        {
-          "$ref": "#/groups/16"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/16",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/33"
-        },
-        {
-          "$ref": "#/texts/34"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/17",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/35"
-        },
-        {
-          "$ref": "#/texts/36"
-        },
-        {
-          "$ref": "#/groups/18"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/18",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/37"
-        },
-        {
-          "$ref": "#/texts/38"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/19",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/39"
-        },
-        {
-          "$ref": "#/texts/40"
-        },
-        {
-          "$ref": "#/groups/20"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/20",
-      "parent": {
-        "$ref": "#/groups/19"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/41"
-        },
-        {
-          "$ref": "#/texts/42"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/21",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/43"
-        },
-        {
-          "$ref": "#/texts/44"
-        },
-        {
-          "$ref": "#/groups/22"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/22",
-      "parent": {
-        "$ref": "#/groups/21"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/45"
-        },
-        {
-          "$ref": "#/texts/46"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/23",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/47"
-        },
-        {
-          "$ref": "#/texts/48"
-        },
-        {
-          "$ref": "#/groups/24"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/24",
-      "parent": {
-        "$ref": "#/groups/23"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/49"
-        },
-        {
-          "$ref": "#/texts/50"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    }
-  ],
+  "groups": [],
   "texts": [
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-0"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00:04.963"
+          },
+          "end_time": {
+            "raw": "00:00:08.571"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-0",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "OK, I think now we should be recording",
+      "text": "OK, I think now we should be recording"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "00:00:04.963 --> 00:00:08.571",
-      "text": "00:00:04.963 --> 00:00:08.571"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00:08.571"
+          },
+          "end_time": {
+            "raw": "00:00:09.403"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-1",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "properly.",
+      "text": "properly."
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "Speaker A: ",
-      "text": "Speaker A: "
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00:10.683"
+          },
+          "end_time": {
+            "raw": "00:00:11.563"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/16-0"
+        }
+      ],
+      "orig": "Good.",
+      "text": "Good."
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "OK, I think now we should be recording",
-      "text": "OK, I think now we should be recording",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00:13.363"
+          },
+          "end_time": {
+            "raw": "00:00:13.803"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/17-0",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "Yeah.",
+      "text": "Yeah."
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-1",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-1"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00:49.603"
+          },
+          "end_time": {
+            "raw": "00:00:53.363"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/78-0",
+          "voice": "Speaker B"
+        }
+      ],
+      "orig": "I was also thinking.",
+      "text": "I was also thinking."
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "00:00:08.571 --> 00:00:09.403",
-      "text": "00:00:08.571 --> 00:00:09.403"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00:54.963"
+          },
+          "end_time": {
+            "raw": "00:01:02.072"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-0",
+          "voice": "Speaker B"
+        }
+      ],
+      "orig": "Would be maybe good to create items,",
+      "text": "Would be maybe good to create items,"
     },
     {
       "self_ref": "#/texts/6",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "Speaker A: ",
-      "text": "Speaker A: "
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:02.072"
+          },
+          "end_time": {
+            "raw": "00:01:06.811"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-1",
+          "voice": "Speaker B"
+        }
+      ],
+      "orig": "some metadata, some options that can be specific.",
+      "text": "some metadata, some options that can be specific."
     },
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "properly.",
-      "text": "properly.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:10.243"
+          },
+          "end_time": {
+            "raw": "00:01:13.014"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-0",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "Yeah, I mean I think you went even more than",
+      "text": "Yeah, I mean I think you went even more than"
     },
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/16-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/16-0"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:10.563"
+          },
+          "end_time": {
+            "raw": "00:01:12.643"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/119-0",
+          "voice": "Speaker B"
+        }
+      ],
+      "orig": "But we preserved the atoms.",
+      "text": "But we preserved the atoms."
     },
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "00:00:10.683 --> 00:00:11.563",
-      "text": "00:00:10.683 --> 00:00:11.563"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:13.014"
+          },
+          "end_time": {
+            "raw": "00:01:15.907"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-1",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "than me. I just opened the format.",
+      "text": "than me. I just opened the format."
     },
     {
       "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "Good.",
-      "text": "Good.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:50.222"
+          },
+          "end_time": {
+            "raw": "00:01:51.643"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/197-1",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "give it a try, yeah.",
+      "text": "give it a try, yeah."
     },
     {
       "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/17-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/17-0"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:52.043"
+          },
+          "end_time": {
+            "raw": "00:01:55.043"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/200-0",
+          "voice": "Speaker B"
+        }
+      ],
+      "orig": "Okay, talk to you later.",
+      "text": "Okay, talk to you later."
     },
     {
       "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "00:00:13.363 --> 00:00:13.803",
-      "text": "00:00:13.363 --> 00:00:13.803"
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker A: ",
-      "text": "Speaker A: "
-    },
-    {
-      "self_ref": "#/texts/14",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Yeah.",
-      "text": "Yeah.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/15",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/78-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/78-0"
-    },
-    {
-      "self_ref": "#/texts/16",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:00:49.603 --> 00:00:53.363",
-      "text": "00:00:49.603 --> 00:00:53.363"
-    },
-    {
-      "self_ref": "#/texts/17",
-      "parent": {
-        "$ref": "#/groups/8"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker B: ",
-      "text": "Speaker B: "
-    },
-    {
-      "self_ref": "#/texts/18",
-      "parent": {
-        "$ref": "#/groups/8"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "I was also thinking.",
-      "text": "I was also thinking.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-0"
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:00:54.963 --> 00:01:02.072",
-      "text": "00:00:54.963 --> 00:01:02.072"
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker B: ",
-      "text": "Speaker B: "
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Would be maybe good to create items,",
-      "text": "Would be maybe good to create items,",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/groups/11"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-1",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-1"
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/groups/11"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:01:02.072 --> 00:01:06.811",
-      "text": "00:01:02.072 --> 00:01:06.811"
-    },
-    {
-      "self_ref": "#/texts/25",
-      "parent": {
-        "$ref": "#/groups/12"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker B: ",
-      "text": "Speaker B: "
-    },
-    {
-      "self_ref": "#/texts/26",
-      "parent": {
-        "$ref": "#/groups/12"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "some metadata, some options that can be specific.",
-      "text": "some metadata, some options that can be specific.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/27",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-0"
-    },
-    {
-      "self_ref": "#/texts/28",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:01:10.243 --> 00:01:13.014",
-      "text": "00:01:10.243 --> 00:01:13.014"
-    },
-    {
-      "self_ref": "#/texts/29",
-      "parent": {
-        "$ref": "#/groups/14"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker A: ",
-      "text": "Speaker A: "
-    },
-    {
-      "self_ref": "#/texts/30",
-      "parent": {
-        "$ref": "#/groups/14"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Yeah, I mean I think you went even more than",
-      "text": "Yeah, I mean I think you went even more than",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/31",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/119-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/119-0"
-    },
-    {
-      "self_ref": "#/texts/32",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:01:10.563 --> 00:01:12.643",
-      "text": "00:01:10.563 --> 00:01:12.643"
-    },
-    {
-      "self_ref": "#/texts/33",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker B: ",
-      "text": "Speaker B: "
-    },
-    {
-      "self_ref": "#/texts/34",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "But we preserved the atoms.",
-      "text": "But we preserved the atoms.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/35",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-1",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-1"
-    },
-    {
-      "self_ref": "#/texts/36",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:01:13.014 --> 00:01:15.907",
-      "text": "00:01:13.014 --> 00:01:15.907"
-    },
-    {
-      "self_ref": "#/texts/37",
-      "parent": {
-        "$ref": "#/groups/18"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker A: ",
-      "text": "Speaker A: "
-    },
-    {
-      "self_ref": "#/texts/38",
-      "parent": {
-        "$ref": "#/groups/18"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "than me. I just opened the format.",
-      "text": "than me. I just opened the format.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/39",
-      "parent": {
-        "$ref": "#/groups/19"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/197-1",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/197-1"
-    },
-    {
-      "self_ref": "#/texts/40",
-      "parent": {
-        "$ref": "#/groups/19"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:01:50.222 --> 00:01:51.643",
-      "text": "00:01:50.222 --> 00:01:51.643"
-    },
-    {
-      "self_ref": "#/texts/41",
-      "parent": {
-        "$ref": "#/groups/20"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker A: ",
-      "text": "Speaker A: "
-    },
-    {
-      "self_ref": "#/texts/42",
-      "parent": {
-        "$ref": "#/groups/20"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "give it a try, yeah.",
-      "text": "give it a try, yeah.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/43",
-      "parent": {
-        "$ref": "#/groups/21"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/200-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/200-0"
-    },
-    {
-      "self_ref": "#/texts/44",
-      "parent": {
-        "$ref": "#/groups/21"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:01:52.043 --> 00:01:55.043",
-      "text": "00:01:52.043 --> 00:01:55.043"
-    },
-    {
-      "self_ref": "#/texts/45",
-      "parent": {
-        "$ref": "#/groups/22"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker B: ",
-      "text": "Speaker B: "
-    },
-    {
-      "self_ref": "#/texts/46",
-      "parent": {
-        "$ref": "#/groups/22"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Okay, talk to you later.",
-      "text": "Okay, talk to you later.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/47",
-      "parent": {
-        "$ref": "#/groups/23"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/202-0",
-      "text": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/202-0"
-    },
-    {
-      "self_ref": "#/texts/48",
-      "parent": {
-        "$ref": "#/groups/23"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:01:54.603 --> 00:01:55.283",
-      "text": "00:01:54.603 --> 00:01:55.283"
-    },
-    {
-      "self_ref": "#/texts/49",
-      "parent": {
-        "$ref": "#/groups/24"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Speaker A: ",
-      "text": "Speaker A: "
-    },
-    {
-      "self_ref": "#/texts/50",
-      "parent": {
-        "$ref": "#/groups/24"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:54.603"
+          },
+          "end_time": {
+            "raw": "00:01:55.283"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/202-0",
+          "voice": "Speaker A"
+        }
+      ],
       "orig": "See you.",
-      "text": "See you.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "See you."
     }
   ],
   "pictures": [],

@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "webvtt_example_02",
   "origin": {
     "mimetype": "text/vtt",
-    "binary_hash": 5029965721282070624,
+    "binary_hash": 8584853280299071027,
     "filename": "webvtt_example_02.vtt"
   },
   "furniture": {
@@ -18,16 +18,19 @@
     "self_ref": "#/body",
     "children": [
       {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
         "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/5"
       },
       {
-        "$ref": "#/groups/4"
-      },
-      {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/1"
       }
     ],
     "content_layer": "body",
@@ -42,69 +45,21 @@
       },
       "children": [
         {
-          "$ref": "#/texts/0"
-        },
-        {
-          "$ref": "#/groups/1"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/1",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/1"
-        },
-        {
           "$ref": "#/texts/2"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
+        },
         {
           "$ref": "#/texts/3"
         },
         {
-          "$ref": "#/groups/3"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/3",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [
-        {
           "$ref": "#/texts/4"
-        },
-        {
-          "$ref": "#/texts/5"
         }
       ],
       "content_layer": "body",
-      "name": "WebVTT cue voice span",
+      "name": "WebVTT cue span",
       "label": "inline"
     },
     {
-      "self_ref": "#/groups/4",
+      "self_ref": "#/groups/1",
       "parent": {
         "$ref": "#/body"
       },
@@ -113,23 +68,6 @@
           "$ref": "#/texts/6"
         },
         {
-          "$ref": "#/groups/5"
-        },
-        {
-          "$ref": "#/texts/9"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/5",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [
-        {
           "$ref": "#/texts/7"
         },
         {
@@ -137,41 +75,7 @@
         }
       ],
       "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/10"
-        },
-        {
-          "$ref": "#/groups/7"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/7",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/11"
-        },
-        {
-          "$ref": "#/texts/12"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
+      "name": "WebVTT cue span",
       "label": "inline"
     }
   ],
@@ -179,141 +83,113 @@
     {
       "self_ref": "#/texts/0",
       "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00.000"
+          },
+          "end_time": {
+            "raw": "00:02.000"
+          },
+          "voice": "Esme"
+        }
+      ],
+      "orig": "It’s a blue apple tree!",
+      "text": "It’s a blue apple tree!"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:02.000"
+          },
+          "end_time": {
+            "raw": "00:04.000"
+          },
+          "voice": "Mary"
+        }
+      ],
+      "orig": "No way!",
+      "text": "No way!"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
         "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "00:00.000 --> 00:02.000",
-      "text": "00:00.000 --> 00:02.000"
-    },
-    {
-      "self_ref": "#/texts/1",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Esme (first, loud): ",
-      "text": "Esme (first, loud): "
-    },
-    {
-      "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "It’s a blue apple tree!",
-      "text": "It’s a blue apple tree!",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:04.000"
+          },
+          "end_time": {
+            "raw": "00:06.000"
+          },
+          "voice": "Esme"
+        }
+      ],
+      "orig": "Hee!",
+      "text": "Hee!"
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "00:02.000 --> 00:04.000",
-      "text": "00:02.000 --> 00:04.000"
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:04.000"
+          },
+          "end_time": {
+            "raw": "00:06.000"
+          },
+          "voice": "Esme"
+        }
+      ],
+      "orig": " ",
+      "text": " "
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "Mary: ",
-      "text": "Mary: "
-    },
-    {
-      "self_ref": "#/texts/5",
-      "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "No way!",
-      "text": "No way!",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:04.000 --> 00:06.000",
-      "text": "00:04.000 --> 00:06.000"
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Esme: ",
-      "text": "Esme: "
-    },
-    {
-      "self_ref": "#/texts/8",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Hee!",
-      "text": "Hee!",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/9",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:04.000"
+          },
+          "end_time": {
+            "raw": "00:06.000"
+          },
+          "voice": "Esme",
+          "classes": [
+            "i"
+          ]
+        }
+      ],
       "orig": "laughter",
       "text": "laughter",
       "formatting": {
@@ -325,47 +201,103 @@
       }
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "00:06.000 --> 00:08.000",
-      "text": "00:06.000 --> 00:08.000"
-    },
-    {
-      "self_ref": "#/texts/11",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Mary (loud): ",
-      "text": "Mary (loud): "
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:06.000"
+          },
+          "end_time": {
+            "raw": "00:08.000"
+          },
+          "voice": "Mary"
+        }
+      ],
       "orig": "That’s awesome!",
-      "text": "That’s awesome!",
+      "text": "That’s awesome!"
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:08.000"
+          },
+          "end_time": {
+            "raw": "00:10.000"
+          }
+        }
+      ],
+      "orig": "Sur les ",
+      "text": "Sur les "
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:08.000"
+          },
+          "end_time": {
+            "raw": "00:10.000"
+          },
+          "languages": [
+            "en"
+          ],
+          "classes": [
+            "i.foreignphrase",
+            "lang"
+          ]
+        }
+      ],
+      "orig": "playground",
+      "text": "playground",
       "formatting": {
         "bold": false,
-        "italic": false,
+        "italic": true,
         "underline": false,
         "strikethrough": false,
         "script": "baseline"
       }
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:08.000"
+          },
+          "end_time": {
+            "raw": "00:10.000"
+          }
+        }
+      ],
+      "orig": ", ici à Montpellier",
+      "text": ", ici à Montpellier"
     }
   ],
   "pictures": [],
