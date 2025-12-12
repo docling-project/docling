@@ -468,7 +468,9 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         _log.debug("find_table_bounds")
 
         table_max_row = self._find_table_bottom(sheet, start_row, start_col, max_row)
-        table_max_col = self._find_table_right(sheet, start_row, start_col, max_col)
+        table_max_col = self._find_table_right(
+            sheet, start_row, start_col, max_col, table_max_row
+        )
 
         # Collect the data within the bounds
         data = []
@@ -556,7 +558,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
                 None,
             )
-
             if cell.value is None and not merged_range:
                 break  # Stop if the cell is empty and not merged
 
@@ -569,7 +570,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return table_max_row
 
     def _find_table_right(
-        self, sheet: Worksheet, start_row: int, start_col: int, max_col: int
+        self,
+        sheet: Worksheet,
+        start_row: int,
+        start_col: int,
+        max_col: int,
+        table_max_row: int,
     ) -> int:
         """Find the right boundary of a table.
 
@@ -578,6 +584,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             start_row: The starting row of the table.
             start_col: The starting column of the table.
             max_col: The actual max column of the table.
+            table_max_row: The row index representing the bottom boundary of the table.
 
         Returns:
             The column index representing the right boundary of the table."
@@ -600,8 +607,12 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 None,
             )
 
+            # Stop conditions
             if cell.value is None and not merged_range:
-                break  # Stop if the cell is empty and not merged
+                if self._is_column_empty(
+                    sheet, start_row + 2, table_max_row + 1, rj + 1
+                ):
+                    break
 
             # Expand table_max_col to include the merged range if applicable
             if merged_range:
@@ -684,3 +695,18 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE
             else ContentLayer.INVISIBLE
         )
+
+    @staticmethod
+    def _is_column_empty(
+        sheet: Worksheet, start_row: int, end_row: int, col: int
+    ) -> bool:
+        for (value,) in sheet.iter_rows(
+            min_row=start_row,
+            max_row=end_row,
+            min_col=col,
+            max_col=col,
+            values_only=True,
+        ):
+            if value not in (None, ""):
+                return False  # Found a non-empty value expand right boundary
+        return True  # All value were empty
