@@ -85,10 +85,18 @@ class _ConversationItem(BaseModel):
             return NotImplemented
         return self.start_time == other.start_time
 
-    def to_string(self) -> str:
-        """Format the conversation entry as a string"""
+    def to_string(self, include_time_metadata: bool = True) -> str:
+        """Format the conversation entry as a string
+
+        Args:
+            include_time_metadata: If True, include timing information in the output
+        """
         result = ""
-        if (self.start_time is not None) and (self.end_time is not None):
+        if (
+            include_time_metadata
+            and (self.start_time is not None)
+            and (self.end_time is not None)
+        ):
             result += f"[time: {self.start_time}-{self.end_time}] "
 
         if self.speaker is not None:
@@ -154,6 +162,7 @@ class _NativeWhisperModel:
             self.verbose = asr_options.verbose
             self.timestamps = asr_options.timestamps
             self.word_timestamps = asr_options.word_timestamps
+            self.include_time_metadata = asr_options.include_time_metadata
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         # Access the file path from the backend, similar to how other pipelines handle it
@@ -191,7 +200,10 @@ class _NativeWhisperModel:
 
             for citem in conversation:
                 conv_res.document.add_text(
-                    label=DocItemLabel.TEXT, text=citem.to_string()
+                    label=DocItemLabel.TEXT,
+                    text=citem.to_string(
+                        include_time_metadata=self.include_time_metadata
+                    ),
                 )
 
             return conv_res
@@ -281,6 +293,7 @@ class _MlxWhisperModel:
             self.no_speech_threshold = asr_options.no_speech_threshold
             self.logprob_threshold = asr_options.logprob_threshold
             self.compression_ratio_threshold = asr_options.compression_ratio_threshold
+            self.include_time_metadata = asr_options.include_time_metadata
 
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         audio_path: Path = Path(conv_res.input.file).resolve()
@@ -300,7 +313,10 @@ class _MlxWhisperModel:
 
             for citem in conversation:
                 conv_res.document.add_text(
-                    label=DocItemLabel.TEXT, text=citem.to_string()
+                    label=DocItemLabel.TEXT,
+                    text=citem.to_string(
+                        include_time_metadata=self.include_time_metadata
+                    ),
                 )
 
             conv_res.status = ConversionStatus.SUCCESS

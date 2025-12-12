@@ -402,3 +402,86 @@ def test_mlx_run_success_and_failure(tmp_path):
         model2.mlx_whisper.transcribe.side_effect = RuntimeError("fail")
         out2 = model2.run(conv_res2)
         assert out2.status.name == "FAILURE"
+
+
+def test_asr_pipeline_without_time_metadata(test_audio_path):
+    """Test ASR pipeline with time metadata disabled."""
+    # Create pipeline with include_time_metadata=False
+    pipeline_options = AsrPipelineOptions()
+    # Create a copy of the model options to avoid mutating the shared instance
+    pipeline_options.asr_options = asr_model_specs.WHISPER_TINY.model_copy(deep=True)
+    pipeline_options.asr_options.include_time_metadata = False
+
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.AUDIO: AudioFormatOption(
+                pipeline_cls=AsrPipeline,
+                pipeline_options=pipeline_options,
+            )
+        }
+    )
+
+    # Convert the audio file
+    doc_result: ConversionResult = converter.convert(test_audio_path)
+
+    # Verify conversion was successful
+    assert doc_result.status == ConversionStatus.SUCCESS
+
+    # Verify we have text content
+    texts = doc_result.document.texts
+    assert len(texts) > 0
+
+    # Verify timestamps are NOT in the text
+    for text_item in texts:
+        assert "[time:" not in text_item.text, (
+            f"Time metadata found in text when it should be disabled: {text_item.text}"
+        )
+        # But the text itself should still be present
+        assert text_item.text.strip() != "", "Text content should not be empty"
+
+
+def test_asr_pipeline_with_time_metadata_default(test_audio_path):
+    """Test ASR pipeline with default settings (time metadata enabled)."""
+    # Use default settings (include_time_metadata should be True by default)
+    converter = get_asr_converter()
+
+    # Convert the audio file
+    doc_result: ConversionResult = converter.convert(test_audio_path)
+
+    # Verify conversion was successful
+    assert doc_result.status == ConversionStatus.SUCCESS
+
+    # Verify we have text content
+    texts = doc_result.document.texts
+    assert len(texts) > 0
+
+    # Verify timestamps ARE in the text (default behavior)
+    has_time_metadata = any("[time:" in text_item.text for text_item in texts)
+    assert has_time_metadata, "Time metadata should be present by default"
+
+
+def test_conversation_item_to_string_with_and_without_time():
+    """Unit test for _ConversationItem.to_string() with include_time_metadata parameter."""
+    from docling.pipeline.asr_pipeline import _ConversationItem
+
+    item = _ConversationItem(
+        text="Hello world", start_time=0.5, end_time=2.5, speaker="Alice"
+    )
+
+    # With time metadata (default)
+    result_with_time = item.to_string(include_time_metadata=True)
+    assert "[time: 0.5-2.5]" in result_with_time
+    assert "[speaker:Alice]" in result_with_time
+    assert "Hello world" in result_with_time
+
+    # Without time metadata
+    result_without_time = item.to_string(include_time_metadata=False)
+    assert "[time:" not in result_without_time
+    assert (
+        "[speaker:Alice]" in result_without_time
+    )  # Speaker info should still be present
+    assert "Hello world" in result_without_time
+
+    # Test backward compatibility (default True when not specified)
+    result_default = item.to_string()
+    assert "[time: 0.5-2.5]" in result_default
