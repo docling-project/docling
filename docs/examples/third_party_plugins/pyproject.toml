@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "docling-plugin-api-usage-example"
+version = "0.1.0"
+description = "Example Docling third-party plugin: picture description via OpenAI-compatible API with token usage."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Docling Examples", email = "examples@docling.dev" }
+]
+dependencies = [
+  "docling>=0.1.0",  # pin to a compatible version for your environment
+  "pydantic>=2.0.0",
+  "Pillow>=10.0.0",
+  "requests>=2.31.0",
+]
+
+[project.entry-points."docling"]
+api_usage_plugin = "api_usage.api_usage_plugin"
+
+[tool.setuptools]
+packages = ["api_usage"]
