@@ -1,0 +1,371 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.8.0",
+  "name": "webvtt_example_04",
+  "origin": {
+    "mimetype": "text/vtt",
+    "binary_hash": 5389775195091554844,
+    "filename": "webvtt_example_04.vtt"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/groups/0"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/6"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        }
+      ],
+      "content_layer": "body",
+      "name": "WebVTT cue span",
+      "label": "inline"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:03:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:00.000"
+          },
+          "identifier": "agcvs-08234"
+        }
+      ],
+      "orig": "Last night the chef surprised us with a culinary adventure.",
+      "text": "Last night the chef surprised us with a culinary adventure."
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234"
+        }
+      ],
+      "orig": "The waiter offered a ",
+      "text": "The waiter offered a "
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234",
+          "classes": [
+            "i"
+          ]
+        }
+      ],
+      "orig": "steaming bowl of ",
+      "text": "steaming bowl of ",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234",
+          "languages": [
+            "es-ES"
+          ],
+          "classes": [
+            "i",
+            "lang"
+          ]
+        }
+      ],
+      "orig": "paella",
+      "text": "paella",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234"
+        }
+      ],
+      "orig": " that instantly transported the diners to a sunny Mediterranean coast. The dessert’s ",
+      "text": " that instantly transported the diners to a sunny Mediterranean coast. The dessert’s "
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234",
+          "classes": [
+            "i",
+            "b.loud"
+          ]
+        }
+      ],
+      "orig": "unexpected",
+      "text": "unexpected",
+      "formatting": {
+        "bold": true,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234",
+          "classes": [
+            "i",
+            "b.loud"
+          ]
+        }
+      ],
+      "orig": " ",
+      "text": " ",
+      "formatting": {
+        "bold": true,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234",
+          "languages": [
+            "it"
+          ],
+          "classes": [
+            "i",
+            "b.loud",
+            "u",
+            "lang"
+          ]
+        }
+      ],
+      "orig": "arcobaleno",
+      "text": "arcobaleno",
+      "formatting": {
+        "bold": true,
+        "italic": true,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234",
+          "classes": [
+            "i",
+            "b.loud"
+          ]
+        }
+      ],
+      "orig": " of flavors",
+      "text": " of flavors",
+      "formatting": {
+        "bold": true,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234"
+        }
+      ],
+      "orig": " left everyone in awe.",
+      "text": " left everyone in awe."
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {}
+}

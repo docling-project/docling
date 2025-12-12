@@ -10,6 +10,8 @@ from docling_core.types.doc import (
     DoclingDocument,
     FormulaItem,
     PictureItem,
+    ProvenanceItem,
+    ProvenanceTrack,
     TableItem,
     TextItem,
 )
@@ -237,7 +239,30 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
             true_prov = true_item.prov[0]
             pred_prov = pred_item.prov[0]
 
-            assert true_prov.page_no == pred_prov.page_no, "Page provenance mistmatch"
+            assert type(pred_prov) is type(true_prov), "Provenance type mismatch"
+            if isinstance(pred_prov, ProvenanceItem):
+                assert true_prov.page_no == pred_prov.page_no, (
+                    "Page provenance mistmatch"
+                )
+            elif isinstance(pred_prov, ProvenanceTrack):
+                assert true_prov.start_time._seconds == pred_prov.start_time._seconds, (
+                    "ProvenanceTrack start time mismatch"
+                )
+                assert true_prov.end_time._seconds == pred_prov.end_time._seconds, (
+                    "ProvenanceTrack end time mismatch"
+                )
+                assert true_prov.languages == pred_prov.languages, (
+                    "ProvenanceTrack languages mismatch"
+                )
+                assert true_prov.classes == pred_prov.classes, (
+                    "ProvenanceTrack classes mismatch"
+                )
+                assert true_prov.identifier == pred_prov.identifier, (
+                    "ProvenanceTrack identifier mismatch"
+                )
+                assert true_prov.voice == pred_prov.voice, (
+                    "ProvenanceTrack voice mismatch"
+                )
 
             # TODO: add bbox check with tolerance
 
