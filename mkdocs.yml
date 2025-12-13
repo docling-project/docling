@@ -194,11 +194,11 @@ plugins:
       handlers:
         python:
           options:
+            docstring_style: google
             extensions:
               - griffe_pydantic:
                   schema: true
             preload_modules:
-              - docling
               - docling_core
 
 extra_css:
