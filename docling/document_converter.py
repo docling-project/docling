@@ -284,11 +284,10 @@ class DocumentConverter:
         page_range: PageRange = DEFAULT_PAGE_RANGE,
     ) -> ConversionResult:
         """
-        Converts a single document fetched from a file path, URL (as str),
-        or DocumentStream.
+        Converts a single document fetched from a file path, URL (as str), or DocumentStream.
 
-        Note: If the document content is given as a string (html or
-        md content), use the convert_string method.
+        Note: If the document content is given as a string (html or md content),
+        use the convert_string method.
 
         Args:
             source: Source of input document given as file path, URL,
@@ -305,6 +304,7 @@ class DocumentConverter:
         Returns:
             Contains the output DoclingDocument in the document attribute,
                 and metadata about the conversion process.
+
         Raises:
             ConversionError: An error occurred during conversion.
         """
@@ -329,8 +329,7 @@ class DocumentConverter:
         page_range: PageRange = DEFAULT_PAGE_RANGE,
     ) -> Iterator[ConversionResult]:
         """
-        Converts multiple documents fetched from file paths, URLs,
-        or DocumentStreams.
+        Converts multiple documents fetched from file paths, URLs, or DocumentStreams.
 
         Args:
             source: Source of input documents given as an iterable of
@@ -344,7 +343,9 @@ class DocumentConverter:
             page_range: Range of pages to convert.
 
         Returns:
-            An iterator of ConversionResults.
+            Each containing the output DoclingDocument in the document attribute,
+                and metadata about the conversion process.
+
         Raises:
             ConversionError: An error occurred during conversion.
         """
@@ -388,8 +389,7 @@ class DocumentConverter:
         name: Optional[str] = None,
     ) -> ConversionResult:
         """
-        Converts a document given as a string to a Docling Document using
-        the specified format.
+        Converts a document given as a string to a Docling Document using the specified format.
 
         Only Markdown (InputFormat.MD) and HTML (InputFormat.HTML) formats
         are supported. The content is wrapped in a DocumentStream and passed
