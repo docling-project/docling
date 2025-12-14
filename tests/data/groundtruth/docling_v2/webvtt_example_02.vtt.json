@@ -96,7 +96,10 @@
           "end_time": {
             "raw": "00:02.000"
           },
-          "voice": "Esme"
+          "voice": "Esme",
+          "classes": [
+            "v.first.loud"
+          ]
         }
       ],
       "orig": "It’s a blue apple tree!",
@@ -161,8 +164,7 @@
           },
           "end_time": {
             "raw": "00:06.000"
-          },
-          "voice": "Esme"
+          }
         }
       ],
       "orig": " ",
@@ -183,11 +185,7 @@
           },
           "end_time": {
             "raw": "00:06.000"
-          },
-          "voice": "Esme",
-          "classes": [
-            "i"
-          ]
+          }
         }
       ],
       "orig": "laughter",
@@ -216,7 +214,10 @@
           "end_time": {
             "raw": "00:08.000"
           },
-          "voice": "Mary"
+          "voice": "Mary",
+          "classes": [
+            "v.loud"
+          ]
         }
       ],
       "orig": "That’s awesome!",
@@ -263,8 +264,7 @@
             "en"
           ],
           "classes": [
-            "i.foreignphrase",
-            "lang"
+            "i.foreignphrase"
           ]
         }
       ],

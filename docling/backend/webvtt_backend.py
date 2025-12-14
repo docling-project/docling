@@ -38,7 +38,7 @@ class AnnotatedText:
     text: str
     voice: Optional[str] = None
     formatting: Optional[Formatting] = None
-    classes: dict[Literal["b", "u", "i", "lang", "v"], set[str]] = field(
+    classes: dict[Literal["b", "u", "i", "lang", "v"], list[str]] = field(
         default_factory=dict
     )
     lang: set[str] = field(default_factory=set)
@@ -105,6 +105,20 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.VTT}
 
+    @staticmethod
+    def _add_classes(
+        item: AnnotatedText,
+        key: Literal["b", "u", "i", "lang", "v"],
+        classes: list[str],
+    ) -> None:
+        if not classes:
+            return
+
+        bucket = item.classes.setdefault(key, [])
+        for cls in classes:
+            if cls not in bucket:
+                bucket.append(cls)
+
     @override
     def convert(self) -> DoclingDocument:
         _log.debug("Starting WebVTT conversion...")
@@ -120,144 +134,113 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
 
         vtt: WebVTTFile = WebVTTFile.parse(self.content)
         cue_text: list[AnnotatedPar] = []
-        parent_idx: int = -1
+        parents: list[AnnotatedText] = []
 
-        def _extract_component_text(
+        def _extract_components(
             payload: list[WebVTTCueComponentWithTerminator],
         ) -> None:
-            nonlocal cue_text, parent_idx
+            nonlocal cue_text, parents
             if not cue_text:
                 cue_text.append(AnnotatedPar(items=[]))
             par = cue_text[-1]
             for comp in payload:
-                if not par.items:
-                    par.items.append(AnnotatedText(text=""))
-                    parent_idx = 0
-                parent_item: AnnotatedText = par.items[parent_idx]
-                current_item: AnnotatedText
-                if parent_item.text:
-                    current_item = parent_item.copy_meta("")
-                    par.items.append(current_item)
+                item: AnnotatedText = (
+                    parents[-1].copy_meta("") if parents else AnnotatedText(text="")
+                )
+                component: WebVTTCueComponent = comp.component
+                if isinstance(component, WebVTTCueTextSpan):
+                    item.text = component.text
+                    par.items.append(item)
                 else:
-                    current_item = parent_item
-                if isinstance(comp.component, WebVTTCueTextSpan):
-                    current_item.text += comp.component.text
-                elif isinstance(comp.component, WebVTTCueBoldSpan):
-                    if not current_item.formatting:
-                        current_item.formatting = Formatting(bold=True)
-                    else:
-                        current_item.formatting.bold = True
-                    current_item.classes.setdefault("b", set()).update(
-                        comp.component.start_tag.classes
-                    )
-                    current_parent = parent_idx
-                    parent_idx = len(par.items) - 1
-                    _extract_component_text(comp.component.internal_text.components)
-                    parent_idx = current_parent
-                elif isinstance(comp.component, WebVTTCueItalicSpan):
-                    if not current_item.formatting:
-                        current_item.formatting = Formatting(italic=True)
-                    else:
-                        current_item.formatting.italic = True
-                    current_item.classes.setdefault("i", set()).update(
-                        comp.component.start_tag.classes
-                    )
-                    current_parent = parent_idx
-                    parent_idx = len(par.items) - 1
-                    _extract_component_text(comp.component.internal_text.components)
-                    parent_idx = current_parent
-                elif isinstance(comp.component, WebVTTCueUnderlineSpan):
-                    if not current_item.formatting:
-                        current_item.formatting = Formatting(underline=True)
-                    else:
-                        current_item.formatting.underline = True
-                    current_item.classes.setdefault("u", set()).update(
-                        comp.component.start_tag.classes
-                    )
-                    current_parent = parent_idx
-                    parent_idx = len(par.items) - 1
-                    _extract_component_text(comp.component.internal_text.components)
-                    parent_idx = current_parent
-                elif isinstance(comp.component, WebVTTCueLanguageSpan):
-                    current_item.lang.add(comp.component.start_tag.annotation)
-                    current_item.classes.setdefault("lang", set()).update(
-                        comp.component.start_tag.classes
-                    )
-                    current_parent = parent_idx
-                    parent_idx = len(par.items) - 1
-                    _extract_component_text(comp.component.internal_text.components)
-                    parent_idx = current_parent
-                elif isinstance(comp.component, WebVTTCueVoiceSpan):
-                    # voice spans cannot be embedded -> overwrite with the last annotation
-                    current_item.voice = comp.component.start_tag.annotation
-                    current_parent = parent_idx
-                    parent_idx = len(par.items) - 1
-                    _extract_component_text(comp.component.internal_text.components)
-                    parent_idx = current_parent
+                    # configure metadata based on span type
+                    if isinstance(component, WebVTTCueBoldSpan):
+                        item.formatting = item.formatting or Formatting()
+                        item.formatting.bold = True
+                        self._add_classes(item, "b", component.start_tag.classes)
+
+                    elif isinstance(component, WebVTTCueItalicSpan):
+                        item.formatting = item.formatting or Formatting()
+                        item.formatting.italic = True
+                        self._add_classes(item, "i", component.start_tag.classes)
+
+                    elif isinstance(component, WebVTTCueUnderlineSpan):
+                        item.formatting = item.formatting or Formatting()
+                        item.formatting.underline = True
+                        self._add_classes(item, "u", component.start_tag.classes)
+
+                    elif isinstance(component, WebVTTCueLanguageSpan):
+                        item.lang.add(component.start_tag.annotation)
+                        self._add_classes(item, "lang", component.start_tag.classes)
+
+                    elif isinstance(component, WebVTTCueVoiceSpan):
+                        # voice spans cannot be embedded
+                        item.voice = component.start_tag.annotation
+                        self._add_classes(item, "v", component.start_tag.classes)
+
+                    parents.append(item)
+                    _extract_components(component.internal_text.components)
+                    parents.pop()
+
                 if comp.terminator is not None:
                     cue_text.append(AnnotatedPar(items=[]))
                     par = cue_text[-1]
 
+        def _add_text_item(
+            text: str,
+            formatting: Optional[Formatting],
+            item: AnnotatedText,
+            parent=None,
+        ):
+            languages = list(item.lang) if item.lang else None
+            classes = (
+                [".".join([k, *v]) for k, v in item.classes.items()]
+                if item.classes
+                else None
+            )
+
+            track = ProvenanceTrack(
+                start_time=block.timings.start,
+                end_time=block.timings.end,
+                identifier=identifier,
+                languages=languages,
+                classes=classes,
+                voice=item.voice or None,
+            )
+
+            doc.add_text(
+                label=DocItemLabel.TEXT,
+                text=text,
+                content_layer=ContentLayer.BODY,
+                prov=track,
+                formatting=formatting,
+                parent=parent,
+            )
+
         for block in vtt.cue_blocks:
             cue_text = []
-            parent_idx = -1
+            parents = []
             identifier = str(block.identifier) if block.identifier else None
-            _extract_component_text(block.payload)
+            _extract_components(block.payload)
             for par in cue_text:
                 if not par.items:
                     continue
-                elif len(par.items) == 1:
-                    lang: Optional[list[str]] = (
-                        list(par.items[0].lang) if par.items[0].lang else None
-                    )
-                    classes: Optional[list[str]] = None
-                    if par.items[0].classes:
-                        classes = [
-                            ".".join([key, *value])
-                            for key, value in par.items[0].classes.items()
-                        ]
-                    track: ProvenanceTrack = ProvenanceTrack(
-                        start_time=block.timings.start,
-                        end_time=block.timings.end,
-                        identifier=identifier,
-                        languages=lang,
-                        classes=classes,
-                        voice=par.items[0].voice if par.items[0].voice else None,
-                    )
-                    doc.add_text(
-                        label=DocItemLabel.TEXT,
-                        text=par.items[0].text,
-                        content_layer=ContentLayer.BODY,
-                        prov=track,
-                        formatting=par.items[0].formatting,
+                if len(par.items) == 1:
+                    item = par.items[0]
+                    _add_text_item(
+                        text=item.text,
+                        formatting=item.formatting,
+                        item=item,
                     )
                 else:
                     group = doc.add_inline_group(
                         "WebVTT cue span", content_layer=ContentLayer.BODY
                     )
                     for item in par.items:
-                        lang = list(item.lang) if item.lang else None
-                        classes = None
-                        if item.classes:
-                            classes = [
-                                ".".join([key, *value])
-                                for key, value in item.classes.items()
-                            ]
-                        track = ProvenanceTrack(
-                            start_time=block.timings.start,
-                            end_time=block.timings.end,
-                            identifier=identifier,
-                            languages=lang,
-                            classes=classes,
-                            voice=item.voice if item.voice else None,
-                        )
-                        doc.add_text(
-                            label=DocItemLabel.TEXT,
+                        _add_text_item(
                             text=item.text,
-                            content_layer=ContentLayer.BODY,
-                            prov=track,
-                            parent=group,
                             formatting=item.formatting,
+                            item=item,
+                            parent=group,
                         )
 
         return doc

@@ -22,6 +22,9 @@
       },
       {
         "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/groups/1"
       }
     ],
     "content_layer": "body",
@@ -46,7 +49,18 @@
         },
         {
           "$ref": "#/texts/4"
-        },
+        }
+      ],
+      "content_layer": "body",
+      "name": "WebVTT cue span",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
         {
           "$ref": "#/texts/5"
         },
@@ -61,6 +75,9 @@
         },
         {
           "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
@@ -129,10 +146,7 @@
           "end_time": {
             "raw": "04:06:58.239"
           },
-          "identifier": "agcvs-08234",
-          "classes": [
-            "i"
-          ]
+          "identifier": "agcvs-08234"
         }
       ],
       "orig": "steaming bowl of ",
@@ -164,10 +178,6 @@
           "identifier": "agcvs-08234",
           "languages": [
             "es-ES"
-          ],
-          "classes": [
-            "i",
-            "lang"
           ]
         }
       ],
@@ -200,13 +210,35 @@
           "identifier": "agcvs-08234"
         }
       ],
-      "orig": " that instantly transported the diners to a sunny Mediterranean coast. The dessert’s ",
-      "text": " that instantly transported the diners to a sunny Mediterranean coast. The dessert’s "
+      "orig": " that instantly transported the diners to a sunny Mediterranean coast.",
+      "text": " that instantly transported the diners to a sunny Mediterranean coast."
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "04:06:00.000"
+          },
+          "end_time": {
+            "raw": "04:06:58.239"
+          },
+          "identifier": "agcvs-08234"
+        }
+      ],
+      "orig": "The dessert’s ",
+      "text": "The dessert’s "
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -221,7 +253,6 @@
           },
           "identifier": "agcvs-08234",
           "classes": [
-            "i",
             "b.loud"
           ]
         }
@@ -237,9 +268,9 @@
       }
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -252,17 +283,13 @@
           "end_time": {
             "raw": "04:06:58.239"
           },
-          "identifier": "agcvs-08234",
-          "classes": [
-            "i",
-            "b.loud"
-          ]
+          "identifier": "agcvs-08234"
         }
       ],
       "orig": " ",
       "text": " ",
       "formatting": {
-        "bold": true,
+        "bold": false,
         "italic": true,
         "underline": false,
         "strikethrough": false,
@@ -270,9 +297,9 @@
       }
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -288,19 +315,13 @@
           "identifier": "agcvs-08234",
           "languages": [
             "it"
-          ],
-          "classes": [
-            "i",
-            "b.loud",
-            "u",
-            "lang"
           ]
         }
       ],
       "orig": "arcobaleno",
       "text": "arcobaleno",
       "formatting": {
-        "bold": true,
+        "bold": false,
         "italic": true,
         "underline": true,
         "strikethrough": false,
@@ -308,9 +329,9 @@
       }
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -323,17 +344,13 @@
           "end_time": {
             "raw": "04:06:58.239"
           },
-          "identifier": "agcvs-08234",
-          "classes": [
-            "i",
-            "b.loud"
-          ]
+          "identifier": "agcvs-08234"
         }
       ],
       "orig": " of flavors",
       "text": " of flavors",
       "formatting": {
-        "bold": true,
+        "bold": false,
         "italic": true,
         "underline": false,
         "strikethrough": false,
@@ -341,9 +358,9 @@
       }
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
