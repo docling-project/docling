@@ -55,6 +55,18 @@
       },
       {
         "$ref": "#/texts/12"
+      },
+      {
+        "$ref": "#/texts/13"
+      },
+      {
+        "$ref": "#/texts/14"
+      },
+      {
+        "$ref": "#/texts/15"
+      },
+      {
+        "$ref": "#/texts/16"
       }
     ],
     "content_layer": "body",
@@ -83,11 +95,34 @@
           "voice": "Speaker A"
         }
       ],
-      "orig": "OK, I think now we should be recording",
-      "text": "OK, I think now we should be recording"
+      "orig": "OK,",
+      "text": "OK,"
     },
     {
       "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:00:04.963"
+          },
+          "end_time": {
+            "raw": "00:00:08.571"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-0",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "I think now we should be recording",
+      "text": "I think now we should be recording"
+    },
+    {
+      "self_ref": "#/texts/2",
       "parent": {
         "$ref": "#/body"
       },
@@ -110,7 +145,7 @@
       "text": "properly."
     },
     {
-      "self_ref": "#/texts/2",
+      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -132,7 +167,7 @@
       "text": "Good."
     },
     {
-      "self_ref": "#/texts/3",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/body"
       },
@@ -155,7 +190,7 @@
       "text": "Yeah."
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/body"
       },
@@ -178,7 +213,7 @@
       "text": "I was also thinking."
     },
     {
-      "self_ref": "#/texts/5",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/body"
       },
@@ -201,7 +236,7 @@
       "text": "Would be maybe good to create items,"
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/body"
       },
@@ -220,11 +255,34 @@
           "voice": "Speaker B"
         }
       ],
-      "orig": "some metadata, some options that can be specific.",
-      "text": "some metadata, some options that can be specific."
+      "orig": "some metadata,",
+      "text": "some metadata,"
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:02.072"
+          },
+          "end_time": {
+            "raw": "00:01:06.811"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-1",
+          "voice": "Speaker B"
+        }
+      ],
+      "orig": "some options that can be specific.",
+      "text": "some options that can be specific."
+    },
+    {
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/body"
       },
@@ -243,11 +301,34 @@
           "voice": "Speaker A"
         }
       ],
-      "orig": "Yeah, I mean I think you went even more than",
-      "text": "Yeah, I mean I think you went even more than"
+      "orig": "Yeah,",
+      "text": "Yeah,"
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:10.243"
+          },
+          "end_time": {
+            "raw": "00:01:13.014"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-0",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "I mean I think you went even more than",
+      "text": "I mean I think you went even more than"
+    },
+    {
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/body"
       },
@@ -270,7 +351,7 @@
       "text": "But we preserved the atoms."
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/12",
       "parent": {
         "$ref": "#/body"
       },
@@ -289,11 +370,34 @@
           "voice": "Speaker A"
         }
       ],
-      "orig": "than me. I just opened the format.",
-      "text": "than me. I just opened the format."
+      "orig": "than me.",
+      "text": "than me."
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "start_time": {
+            "raw": "00:01:13.014"
+          },
+          "end_time": {
+            "raw": "00:01:15.907"
+          },
+          "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-1",
+          "voice": "Speaker A"
+        }
+      ],
+      "orig": "I just opened the format.",
+      "text": "I just opened the format."
+    },
+    {
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/body"
       },
@@ -316,7 +420,7 @@
       "text": "give it a try, yeah."
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/15",
       "parent": {
         "$ref": "#/body"
       },
@@ -339,7 +443,7 @@
       "text": "Okay, talk to you later."
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/body"
       },
