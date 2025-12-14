@@ -3,10 +3,15 @@ import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union
 
-from docling_core.types.doc import DoclingDocument, DocumentOrigin
-from docling_core.types.doc.labels import DocItemLabel
+from docling_core.types.doc import (
+    ContentLayer,
+    DocItemLabel,
+    DoclingDocument,
+    DocumentOrigin,
+    ProvenanceTrack,
+)
 from pydantic import BaseModel, Field
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
@@ -173,8 +178,16 @@ class _NativeWhisperModel:
             )
 
             for citem in conversation:
+                prov: ProvenanceTrack = ProvenanceTrack(
+                    start_time=citem.start_time,
+                    end_time=citem.end_time,
+                    voice=citem.speaker,
+                )
                 conv_res.document.add_text(
-                    label=DocItemLabel.TEXT, text=citem.to_string()
+                    label=DocItemLabel.TEXT,
+                    text=citem.text,
+                    prov=prov,
+                    content_layer=ContentLayer.BODY,
                 )
 
             return conv_res
@@ -282,8 +295,16 @@ class _MlxWhisperModel:
             )
 
             for citem in conversation:
+                prov: ProvenanceTrack = ProvenanceTrack(
+                    start_time=citem.start_time,
+                    end_time=citem.end_time,
+                    voice=citem.speaker,
+                )
                 conv_res.document.add_text(
-                    label=DocItemLabel.TEXT, text=citem.to_string()
+                    label=DocItemLabel.TEXT,
+                    text=citem.text,
+                    prov=prov,
+                    content_layer=ContentLayer.BODY,
                 )
 
             conv_res.status = ConversionStatus.SUCCESS
