@@ -199,8 +199,8 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
             )
 
             track = ProvenanceTrack(
-                start_time=block.timings.start,
-                end_time=block.timings.end,
+                start_time=block.timings.start.seconds,
+                end_time=block.timings.end.seconds,
                 identifier=identifier,
                 languages=languages,
                 classes=classes,
