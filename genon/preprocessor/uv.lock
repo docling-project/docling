@@ -1132,7 +1132,7 @@ requires-dist = [
     { name = "langchain-core", specifier = ">=1.0.0" },
     { name = "markdown", specifier = "==3.8.2" },
     { name = "markdown2", specifier = ">=2.5.4" },
-    { name = "minio", specifier = ">=7.2.20" },
+    { name = "minio", specifier = "==7.2.20" },
     { name = "numpy", specifier = "==2.3.4" },
     { name = "numpy", specifier = ">=2.3.4" },
     { name = "opencv-python", specifier = "==4.11.0.86" },

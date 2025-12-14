@@ -1345,7 +1345,9 @@ class DocumentProcessor:
 
         vectors = []
         for chunk_idx, chunk in enumerate(chunks):
-            page = chunk.metadata.get('page', 0)
+            page = chunk.metadata.get('page', 1)
+            if ext not in ['.hwpx', '.docx']:
+                page += 1
             text = chunk.page_content
 
             if page != current_page:
