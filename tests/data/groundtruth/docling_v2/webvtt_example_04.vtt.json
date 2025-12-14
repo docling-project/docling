@@ -96,12 +96,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:03:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:00.000"
-          },
+          "start_time": 14580.0,
+          "end_time": 14760.0,
           "identifier": "agcvs-08234"
         }
       ],
@@ -118,12 +114,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234"
         }
       ],
@@ -140,12 +132,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234"
         }
       ],
@@ -169,12 +157,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234",
           "languages": [
             "es-ES"
@@ -201,12 +185,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234"
         }
       ],
@@ -223,12 +203,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234"
         }
       ],
@@ -245,12 +221,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234",
           "classes": [
             "b.loud"
@@ -277,12 +249,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234"
         }
       ],
@@ -306,12 +274,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234",
           "languages": [
             "it"
@@ -338,12 +302,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234"
         }
       ],
@@ -367,12 +327,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "04:06:00.000"
-          },
-          "end_time": {
-            "raw": "04:06:58.239"
-          },
+          "start_time": 14760.0,
+          "end_time": 14818.239,
           "identifier": "agcvs-08234"
         }
       ],

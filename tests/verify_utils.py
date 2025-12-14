@@ -245,10 +245,10 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
                     "Page provenance mistmatch"
                 )
             elif isinstance(pred_prov, ProvenanceTrack):
-                assert true_prov.start_time._seconds == pred_prov.start_time._seconds, (
+                assert true_prov.start_time == pred_prov.start_time, (
                     "ProvenanceTrack start time mismatch"
                 )
-                assert true_prov.end_time._seconds == pred_prov.end_time._seconds, (
+                assert true_prov.end_time == pred_prov.end_time, (
                     "ProvenanceTrack end time mismatch"
                 )
                 assert true_prov.languages == pred_prov.languages, (

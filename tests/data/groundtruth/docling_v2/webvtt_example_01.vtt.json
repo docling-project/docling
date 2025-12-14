@@ -73,12 +73,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:11.000"
-          },
-          "end_time": {
-            "raw": "00:13.000"
-          },
+          "start_time": 11.0,
+          "end_time": 13.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -95,12 +91,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:13.000"
-          },
-          "end_time": {
-            "raw": "00:16.000"
-          },
+          "start_time": 13.0,
+          "end_time": 16.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -117,12 +109,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:16.000"
-          },
-          "end_time": {
-            "raw": "00:18.000"
-          },
+          "start_time": 16.0,
+          "end_time": 18.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -139,12 +127,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:18.000"
-          },
-          "end_time": {
-            "raw": "00:20.000"
-          },
+          "start_time": 18.0,
+          "end_time": 20.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -161,12 +145,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:20.000"
-          },
-          "end_time": {
-            "raw": "00:22.000"
-          },
+          "start_time": 20.0,
+          "end_time": 22.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -183,12 +163,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:22.000"
-          },
-          "end_time": {
-            "raw": "00:24.000"
-          },
+          "start_time": 22.0,
+          "end_time": 24.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -205,12 +181,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:24.000"
-          },
-          "end_time": {
-            "raw": "00:26.000"
-          },
+          "start_time": 24.0,
+          "end_time": 26.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -227,12 +199,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:27.000"
-          },
-          "end_time": {
-            "raw": "00:30.000"
-          },
+          "start_time": 27.0,
+          "end_time": 30.0,
           "voice": "Roger Bingham"
         }
       ],
@@ -249,12 +217,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:30.000"
-          },
-          "end_time": {
-            "raw": "00:31.500"
-          },
+          "start_time": 30.0,
+          "end_time": 31.5,
           "voice": "Roger Bingham"
         }
       ],
@@ -271,12 +235,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:30.500"
-          },
-          "end_time": {
-            "raw": "00:32.500"
-          },
+          "start_time": 30.5,
+          "end_time": 32.5,
           "voice": "Neil deGrasse Tyson"
         }
       ],
@@ -293,12 +253,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:32.000"
-          },
-          "end_time": {
-            "raw": "00:35.500"
-          },
+          "start_time": 32.0,
+          "end_time": 35.5,
           "voice": "Roger Bingham"
         }
       ],
@@ -315,12 +271,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:32.500"
-          },
-          "end_time": {
-            "raw": "00:33.500"
-          },
+          "start_time": 32.5,
+          "end_time": 33.5,
           "voice": "Neil deGrasse Tyson"
         }
       ],
@@ -344,12 +296,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:35.500"
-          },
-          "end_time": {
-            "raw": "00:38.000"
-          },
+          "start_time": 35.5,
+          "end_time": 38.0,
           "voice": "Roger Bingham"
         }
       ],

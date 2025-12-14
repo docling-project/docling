@@ -85,12 +85,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00:04.963"
-          },
-          "end_time": {
-            "raw": "00:00:08.571"
-          },
+          "start_time": 4.963,
+          "end_time": 8.571,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-0",
           "voice": "Speaker A"
         }
@@ -108,12 +104,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00:04.963"
-          },
-          "end_time": {
-            "raw": "00:00:08.571"
-          },
+          "start_time": 4.963,
+          "end_time": 8.571,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-0",
           "voice": "Speaker A"
         }
@@ -131,12 +123,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00:08.571"
-          },
-          "end_time": {
-            "raw": "00:00:09.403"
-          },
+          "start_time": 8.571,
+          "end_time": 9.403,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-1",
           "voice": "Speaker A"
         }
@@ -154,12 +142,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00:10.683"
-          },
-          "end_time": {
-            "raw": "00:00:11.563"
-          },
+          "start_time": 10.683,
+          "end_time": 11.563,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/16-0"
         }
       ],
@@ -176,12 +160,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00:13.363"
-          },
-          "end_time": {
-            "raw": "00:00:13.803"
-          },
+          "start_time": 13.363,
+          "end_time": 13.803,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/17-0",
           "voice": "Speaker A"
         }
@@ -199,12 +179,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00:49.603"
-          },
-          "end_time": {
-            "raw": "00:00:53.363"
-          },
+          "start_time": 49.603,
+          "end_time": 53.363,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/78-0",
           "voice": "Speaker B"
         }
@@ -222,12 +198,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00:54.963"
-          },
-          "end_time": {
-            "raw": "00:01:02.072"
-          },
+          "start_time": 54.963,
+          "end_time": 62.072,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-0",
           "voice": "Speaker B"
         }
@@ -245,12 +217,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:02.072"
-          },
-          "end_time": {
-            "raw": "00:01:06.811"
-          },
+          "start_time": 62.072,
+          "end_time": 66.811,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-1",
           "voice": "Speaker B"
         }
@@ -268,12 +236,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:02.072"
-          },
-          "end_time": {
-            "raw": "00:01:06.811"
-          },
+          "start_time": 62.072,
+          "end_time": 66.811,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-1",
           "voice": "Speaker B"
         }
@@ -291,12 +255,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:10.243"
-          },
-          "end_time": {
-            "raw": "00:01:13.014"
-          },
+          "start_time": 70.243,
+          "end_time": 73.014,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-0",
           "voice": "Speaker A"
         }
@@ -314,12 +274,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:10.243"
-          },
-          "end_time": {
-            "raw": "00:01:13.014"
-          },
+          "start_time": 70.243,
+          "end_time": 73.014,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-0",
           "voice": "Speaker A"
         }
@@ -337,12 +293,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:10.563"
-          },
-          "end_time": {
-            "raw": "00:01:12.643"
-          },
+          "start_time": 70.563,
+          "end_time": 72.643,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/119-0",
           "voice": "Speaker B"
         }
@@ -360,12 +312,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:13.014"
-          },
-          "end_time": {
-            "raw": "00:01:15.907"
-          },
+          "start_time": 73.014,
+          "end_time": 75.907,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-1",
           "voice": "Speaker A"
         }
@@ -383,12 +331,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:13.014"
-          },
-          "end_time": {
-            "raw": "00:01:15.907"
-          },
+          "start_time": 73.014,
+          "end_time": 75.907,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-1",
           "voice": "Speaker A"
         }
@@ -406,12 +350,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:50.222"
-          },
-          "end_time": {
-            "raw": "00:01:51.643"
-          },
+          "start_time": 110.222,
+          "end_time": 111.643,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/197-1",
           "voice": "Speaker A"
         }
@@ -429,12 +369,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:52.043"
-          },
-          "end_time": {
-            "raw": "00:01:55.043"
-          },
+          "start_time": 112.043,
+          "end_time": 115.043,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/200-0",
           "voice": "Speaker B"
         }
@@ -452,12 +388,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:01:54.603"
-          },
-          "end_time": {
-            "raw": "00:01:55.283"
-          },
+          "start_time": 114.603,
+          "end_time": 115.283,
           "identifier": "62357a1d-d250-41d5-a1cf-6cc0eeceffcc/202-0",
           "voice": "Speaker A"
         }

@@ -90,12 +90,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:00.000"
-          },
-          "end_time": {
-            "raw": "00:02.000"
-          },
+          "start_time": 0.0,
+          "end_time": 2.0,
           "voice": "Esme",
           "classes": [
             "v.first.loud"
@@ -115,12 +111,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:02.000"
-          },
-          "end_time": {
-            "raw": "00:04.000"
-          },
+          "start_time": 2.0,
+          "end_time": 4.0,
           "voice": "Mary"
         }
       ],
@@ -137,12 +129,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:04.000"
-          },
-          "end_time": {
-            "raw": "00:06.000"
-          },
+          "start_time": 4.0,
+          "end_time": 6.0,
           "voice": "Esme"
         }
       ],
@@ -159,12 +147,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:04.000"
-          },
-          "end_time": {
-            "raw": "00:06.000"
-          }
+          "start_time": 4.0,
+          "end_time": 6.0
         }
       ],
       "orig": " ",
@@ -180,12 +164,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:04.000"
-          },
-          "end_time": {
-            "raw": "00:06.000"
-          }
+          "start_time": 4.0,
+          "end_time": 6.0
         }
       ],
       "orig": "laughter",
@@ -208,12 +188,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:06.000"
-          },
-          "end_time": {
-            "raw": "00:08.000"
-          },
+          "start_time": 6.0,
+          "end_time": 8.0,
           "voice": "Mary",
           "classes": [
             "v.loud"
@@ -233,12 +209,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:08.000"
-          },
-          "end_time": {
-            "raw": "00:10.000"
-          }
+          "start_time": 8.0,
+          "end_time": 10.0
         }
       ],
       "orig": "Sur les ",
@@ -254,12 +226,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:08.000"
-          },
-          "end_time": {
-            "raw": "00:10.000"
-          },
+          "start_time": 8.0,
+          "end_time": 10.0,
           "languages": [
             "en"
           ],
@@ -288,12 +256,8 @@
       "label": "text",
       "prov": [
         {
-          "start_time": {
-            "raw": "00:08.000"
-          },
-          "end_time": {
-            "raw": "00:10.000"
-          }
+          "start_time": 8.0,
+          "end_time": 10.0
         }
       ],
       "orig": ", ici à Montpellier",
