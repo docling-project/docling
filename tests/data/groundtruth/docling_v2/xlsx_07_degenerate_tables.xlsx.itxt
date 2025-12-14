@@ -1,0 +1,14 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group sheet: missing_header_head
+    item-2 at level 2: table with [4x6]
+  item-3 at level 1: section: group sheet: Attached_top
+    item-4 at level 2: table with [5x6]
+  item-5 at level 1: section: group sheet: Attached_bottom
+    item-6 at level 2: table with [5x6]
+  item-7 at level 1: section: group sheet: Attached_right
+    item-8 at level 2: table with [4x7]
+  item-9 at level 1: section: group sheet: Attached_left
+    item-10 at level 2: table with [4x7]
+  item-11 at level 1: section: group sheet: Diagonal
+    item-12 at level 2: table with [4x6]
+    item-13 at level 2: table with [3x3]

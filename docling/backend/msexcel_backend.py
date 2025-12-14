@@ -406,7 +406,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return DataRegion(min_row, max_row, min_col, max_col)
 
     def _find_data_tables(self, sheet: Worksheet) -> list[ExcelTable]:
-        """Find all compact rectangular data tables in an Excel worksheet.
+        """Find all rectangular data tables in an Excel worksheet. Two non-empty cells forms a data table if they are adjancent.
 
         Args:
             sheet: The Excel worksheet to be parsed.
@@ -437,7 +437,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
 
                 # If the cell starts a new table, find its bounds
                 table_bounds, visited_cells = self._find_table_bounds(
-                    sheet, ri, rj, bounds.max_row, bounds.max_col
+                    sheet, ri, rj, bounds
                 )
 
                 visited.update(visited_cells)  # Mark these cells as visited
@@ -450,25 +450,47 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         sheet: Worksheet,
         start_row: int,
         start_col: int,
-        max_row: int,
-        max_col: int,
+        bounds: DataRegion,
     ) -> tuple[ExcelTable, set[tuple[int, int]]]:
-        """Determine the bounds of a compact rectangular table.
+        """Determine the bounds of a rectangular table. Two non-empty cells forms a data table if they are adjancent.
 
         Args:
             sheet: The Excel worksheet to be parsed.
             start_row: The row number of the starting cell.
             start_col: The column number of the starting cell.
-            max_row: Maximum row boundary from true data bounds.
-            max_col: Maximum column boundary from true data bounds.
+            bounds: boundary from true data bounds.
 
         Returns:
             A tuple with an Excel table and a set of cell coordinates.
         """
         _log.debug("find_table_bounds")
 
+        max_row = bounds.max_row
+        max_col = bounds.max_col
+
         table_max_row = self._find_table_bottom(sheet, start_row, start_col, max_row)
         table_max_col = self._find_table_right(sheet, start_row, start_col, max_col)
+
+        # Expand table on the left, bounds indexing starts with + 1
+        for rj in range(start_col, bounds.min_col - 1, -1):
+            if self._is_column_empty(sheet, start_row + 2, table_max_row + 1, rj):
+                break
+            else:
+                start_col = rj - 1
+
+        # Expand table on the right
+        for rj in range(table_max_col + 1, max_col):
+            if self._is_column_empty(sheet, start_row + 2, table_max_row + 1, rj + 1):
+                break
+            else:
+                table_max_col = rj
+
+        # Expand the table on the bottom
+        for ri in range(table_max_row + 1, max_row):
+            if self._is_row_empty(sheet, ri + 1, start_col + 1, table_max_col + 1):
+                break
+            else:
+                table_max_row = ri
 
         # Collect the data within the bounds
         data = []
@@ -556,7 +578,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
                 None,
             )
-
             if cell.value is None and not merged_range:
                 break  # Stop if the cell is empty and not merged
 
@@ -684,3 +705,31 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE
             else ContentLayer.INVISIBLE
         )
+
+    @staticmethod
+    def _is_column_empty(
+        sheet: Worksheet, start_row: int, end_row: int, col: int
+    ) -> bool:
+        for (value,) in sheet.iter_rows(
+            min_row=start_row,
+            max_row=end_row,
+            min_col=col,
+            max_col=col,
+            values_only=True,
+        ):
+            if value not in (None, ""):
+                return False  # Found a non-empty value
+        return True  # All cells were empty
+
+    @staticmethod
+    def _is_row_empty(sheet: Worksheet, row: int, start_col: int, end_col: int) -> bool:
+        for (value,) in sheet.iter_cols(
+            min_row=row,
+            max_row=row,
+            min_col=start_col,
+            max_col=end_col,
+            values_only=True,
+        ):
+            if value not in (None, ""):
+                return False  # Found a non-empty value
+        return True  # All cells were empty

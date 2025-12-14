@@ -1,16 +1,14 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "xlsx_05_table_with_title",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "binary_hash": 18126553641942797758,
-    "filename": "xlsx_05_table_with_title.xlsx",
-    "uri": null
+    "filename": "xlsx_05_table_with_title.xlsx"
   },
   "furniture": {
     "self_ref": "#/furniture",
-    "parent": null,
     "children": [],
     "content_layer": "furniture",
     "name": "_root_",
@@ -18,10 +16,9 @@
   },
   "body": {
     "self_ref": "#/body",
-    "parent": null,
     "children": [
       {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       }
     ],
     "content_layer": "body",
@@ -32,14 +29,14 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "cref": "#/body"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "cref": "#/tables/0"
+          "$ref": "#/tables/0"
         },
         {
-          "cref": "#/tables/1"
+          "$ref": "#/tables/1"
         }
       ],
       "content_layer": "body",
@@ -53,7 +50,7 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -77,11 +74,9 @@
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -100,7 +95,6 @@
         "grid": [
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -121,7 +115,7 @@
     {
       "self_ref": "#/tables/1",
       "parent": {
-        "cref": "#/groups/0"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -145,11 +139,9 @@
       "captions": [],
       "references": [],
       "footnotes": [],
-      "image": null,
       "data": {
         "table_cells": [
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -163,7 +155,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
@@ -177,7 +168,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -191,7 +181,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
@@ -205,7 +194,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -219,7 +207,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
@@ -233,7 +220,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -247,7 +233,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
@@ -261,7 +246,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -275,7 +259,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
@@ -289,7 +272,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -303,7 +285,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
@@ -317,7 +298,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 6,
@@ -331,7 +311,6 @@
             "fillable": false
           },
           {
-            "bbox": null,
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 6,
@@ -350,7 +329,6 @@
         "grid": [
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -364,7 +342,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
@@ -380,7 +357,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -394,7 +370,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
@@ -410,7 +385,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -424,7 +398,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -440,7 +413,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -454,7 +426,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
@@ -470,7 +441,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -484,7 +454,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -500,7 +469,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -514,7 +482,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
@@ -530,7 +497,6 @@
           ],
           [
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 6,
@@ -544,7 +510,6 @@
               "fillable": false
             },
             {
-              "bbox": null,
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 6,
@@ -569,9 +534,8 @@
     "1": {
       "size": {
         "width": 2.0,
-        "height": 7.0
+        "height": 9.0
       },
-      "image": null,
       "page_no": 1
     }
   }
