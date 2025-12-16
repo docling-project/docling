@@ -176,19 +176,13 @@ def _get_default_option(format: InputFormat) -> FormatOption:
 
 
 class DocumentConverter:
-    """
-    Convert documents of various input formats to Docling Documents.
-
-    Args:
-        allowed_formats: Optional list of allowed input formats.
-            By default, every format is allowed.
-        format_options: Optional dictionary of format-specific options.
+    """Convert documents of various input formats to `DoclingDocument` instances.
 
     Attributes:
         allowed_formats: Allowed input formats.
         format_to_options: Mapping of formats to their options.
-        initialized_pipelines: Cache of initialized pipelines keyed
-            by (pipeline class, options hash).
+        initialized_pipelines: Cache of initialized pipelines keyed by
+          (pipeline class, options hash).
     """
 
     _default_download_filename = "file"
@@ -198,6 +192,13 @@ class DocumentConverter:
         allowed_formats: Optional[list[InputFormat]] = None,
         format_options: Optional[dict[InputFormat, FormatOption]] = None,
     ):
+        """Initializes the converter based on format preferences.
+
+        Args:
+            allowed_formats: List of allowed input formats. By default, every format is
+              allowed.
+            format_options: Dictionary of format-specific options.
+        """
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
@@ -252,14 +253,14 @@ class DocumentConverter:
         ).hexdigest()
 
     def initialize_pipeline(self, format: InputFormat):
-        """Initializes the conversion pipeline for the selected format.
+        """Initialize the conversion pipeline for the selected format.
 
         Args:
             format: The input format for which to initialize the pipeline.
 
         Raises:
             ConversionError: If no pipeline could be initialized for the
-                given format.
+              given format.
             RuntimeError: If artifacts_path is set in
                 docling.datamodel.settings.settings when required by
                 the pipeline, but points to a non-directory file.
@@ -342,9 +343,8 @@ class DocumentConverter:
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
 
-        Returns:
-            Each containing the output DoclingDocument in the document attribute,
-                and metadata about the conversion process.
+        Yields: The conversion results, each containing a `DoclingDocument` in the
+          `document` attribute and metadata about the conversion process.
 
         Raises:
             ConversionError: An error occurred during conversion.
