@@ -134,21 +134,11 @@ def run(
     elif pipeline == "vlm":
         settings.perf.page_batch_size = batch_size
         pipeline_cls = VlmPipeline
-        vlm_options = ApiVlmOptions(
-            url="http://localhost:8000/v1/chat/completions",
-            params=dict(
-                model=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.repo_id,
-                max_tokens=4096,
-                skip_special_tokens=True,
-            ),
-            prompt=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.prompt,
-            timeout=90,
-            scale=1.0,
-            temperature=0.0,
-            concurrency=batch_size,
-            stop_strings=["</doctag>", "<|end_of_text|>"],
-            response_format=ResponseFormat.DOCTAGS,
-        )
+
+        vlm_options = vlm_model_specs.GRANITEDOCLING_VLLM_API
+        vlm_options.concurrency = batch_size
+        vlm_options.scale = 1.0  # avoid rescaling image inputs
+
         pipeline_options = VlmPipelineOptions(
             vlm_options=vlm_options,
             enable_remote_services=True,  # required when using a remote inference service.
