@@ -310,7 +310,8 @@ class DocumentConverter:
             raises_on_error: Whether to raise an error on the first
                 conversion failure. If False, errors are captured in the
                 ConversionResult objects.
-            max_num_pages: Maximum number of pages to convert.
+            max_num_pages: Maximum number of pages accepted per document.
+                Documents exceeding this number will not be converted.
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
 
@@ -351,8 +352,9 @@ class DocumentConverter:
             raises_on_error: Whether to raise an error on the
                 first conversion failure.
             max_num_pages: Maximum number of pages to convert.
-            max_file_size: Maximum file size to convert.
-            page_range: Range of pages to convert.
+            max_file_size: Maximum number of pages accepted per document.
+                Documents exceeding this number will be skipped.
+            page_range: Range of pages to convert in each document.
 
         Yields: The conversion results, each containing a `DoclingDocument` in
             the `document` attribute and metadata about the conversion process.
