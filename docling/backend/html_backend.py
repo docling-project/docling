@@ -236,6 +236,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         options: HTMLBackendOptions = HTMLBackendOptions(),
     ):
         super().__init__(in_doc, path_or_stream, options)
+        self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
         self.base_path: Optional[str] = str(options.source_uri)
@@ -299,7 +300,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         assert self.soup is not None
         # set the title as furniture, since it is part of the document metadata
         title = self.soup.title
-        if title:
+        if title and self.options.add_title:
             title_text = title.get_text(separator=" ", strip=True)
             title_clean = HTMLDocumentBackend._clean_unicode(title_text)
             doc.add_title(
@@ -333,7 +334,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             header = clean_headers[0]
         # Set starting content layer
         self.content_layer = (
-            ContentLayer.BODY if header is None else ContentLayer.FURNITURE
+            ContentLayer.BODY
+            if (not self.options.infer_furniture) or (header is None)
+            else ContentLayer.FURNITURE
         )
         # reset context
         self.ctx = _Context()

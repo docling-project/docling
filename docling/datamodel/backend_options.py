@@ -42,6 +42,12 @@ class HTMLBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the HTML document."
         ),
     )
+    add_title: bool = Field(
+        True, description="Add the HTML title tag as furniture in the DoclingDocument."
+    )
+    infer_furniture: bool = Field(
+        True, description="Infer all the content before the first header as furniture."
+    )
 
 
 class MarkdownBackendOptions(BaseBackendOptions):
