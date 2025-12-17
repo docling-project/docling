@@ -12,6 +12,8 @@ import marko
 import marko.element
 import marko.inline
 from docling_core.types.doc import (
+    ContentLayer,
+    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -607,6 +609,21 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     options=html_options,
                 )
                 doc = html_backend_obj.convert()
+
+                for item, _ in doc.iterate_items(
+                    included_content_layers={ContentLayer.FURNITURE},
+                    traverse_pictures=True,
+                ):
+                    # Reset the content layer since the HTMLBackend will set everything before the first header as furniture.
+                    if item.content_layer == ContentLayer.FURNITURE:
+                        item.content_layer = ContentLayer.BODY
+
+                        if (
+                            isinstance(item, DocItem)
+                            and item.label == DocItemLabel.TITLE
+                        ):
+                            doc.delete_items(node_items=[item])
+
         else:
             raise RuntimeError(
                 f"Cannot convert md with {self.document_hash} because the backend failed to init."
