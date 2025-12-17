@@ -195,7 +195,7 @@ class DocumentConverter:
         allowed_formats: Allowed input formats.
         format_to_options: Mapping of formats to their options.
         initialized_pipelines: Cache of initialized pipelines keyed by
-          (pipeline class, options hash).
+            (pipeline class, options hash).
     """
 
     _default_download_filename = "file"
@@ -209,7 +209,7 @@ class DocumentConverter:
 
         Args:
             allowed_formats: List of allowed input formats. By default, every
-              format is allowed.
+                format is allowed.
             format_options: Dictionary of format-specific options.
         """
         self.allowed_formats: list[InputFormat] = (
@@ -273,13 +273,13 @@ class DocumentConverter:
 
         Raises:
             ConversionError: If no pipeline could be initialized for the
-              given format.
+                given format.
             RuntimeError: If artifacts_path is set in
-              `docling.datamodel.settings.settings` when required by
-              the pipeline, but points to a non-directory file.
+                `docling.datamodel.settings.settings` when required by
+                the pipeline, but points to a non-directory file.
             FileNotFoundError: If local model files are not found
-              (see the [advanced guide](../usage/advanced_options.md)
-              on how to set up offline usage).
+                (see the [advanced guide](../usage/advanced_options.md)
+                on how to set up offline usage).
         """
         pipeline = self._get_pipeline(doc_format=format)
         if pipeline is None:
@@ -304,12 +304,12 @@ class DocumentConverter:
 
         Args:
             source: Source of input document given as file path, URL,
-              or DocumentStream.
+                or DocumentStream.
             headers: Optional headers given as a dictionary of string
-              key-value pairs, in case of URL input source.
+                key-value pairs, in case of URL input source.
             raises_on_error: Whether to raise an error on the first
-              conversion failure. If False, errors are captured in the
-              ConversionResult objects.
+                conversion failure. If False, errors are captured in the
+                ConversionResult objects.
             max_num_pages: Maximum number of pages to convert.
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
@@ -345,17 +345,17 @@ class DocumentConverter:
 
         Args:
             source: Source of input documents given as an iterable of
-              file paths, URLs or DocumentStreams.
+                file paths, URLs or DocumentStreams.
             headers: Optional headers given as a (single) dictionary
-              of string key-value pairs, in case of URL input source.
+                of string key-value pairs, in case of URL input source.
             raises_on_error: Whether to raise an error on the
-              first conversion failure.
+                first conversion failure.
             max_num_pages: Maximum number of pages to convert.
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
 
         Yields: The conversion results, each containing a `DoclingDocument` in
-          the `document` attribute and metadata about the conversion process.
+            the `document` attribute and metadata about the conversion process.
 
         Raises:
             ConversionError: An error occurred during conversion.
@@ -409,13 +409,13 @@ class DocumentConverter:
             content: The document content as a string.
             format: The format of the input content.
             name: The filename to associate with the document. If not
-              provided, a timestamp-based name is generated.
-              The appropriate file extension (.md or .html) is appended
-              if missing.
+                provided, a timestamp-based name is generated.
+                The appropriate file extension (.md or .html) is appended
+                if missing.
 
         Returns:
             Contains the output `DoclingDocument` in the `document` attribute,
-              and metadata about the conversion process.
+                and metadata about the conversion process.
 
         Raises:
             ValueError: If the format is not `InputFormat.MD` or `InputFormat.HTML`.
