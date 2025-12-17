@@ -610,19 +610,22 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
                 doc = html_backend_obj.convert()
 
+                items_to_remove: list[NodeItem] = []
                 for item, _ in doc.iterate_items(
                     included_content_layers={ContentLayer.FURNITURE},
-                    traverse_pictures=True,
                 ):
                     # Reset the content layer since the HTMLBackend will set everything before the first header as furniture.
                     if item.content_layer == ContentLayer.FURNITURE:
                         item.content_layer = ContentLayer.BODY
 
+                        # The HTMLBackend is also inserting a hidden title field which we want to remove.
                         if (
                             isinstance(item, DocItem)
                             and item.label == DocItemLabel.TITLE
                         ):
-                            doc.delete_items(node_items=[item])
+                            items_to_remove.append(item)
+
+                doc.delete_items(node_items=items_to_remove)
 
         else:
             raise RuntimeError(
