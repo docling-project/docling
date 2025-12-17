@@ -595,6 +595,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     enable_remote_fetch=md_options.enable_remote_fetch,
                     fetch_images=md_options.fetch_images,
                     source_uri=md_options.source_uri,
+                    infer_furniture=False,
+                    add_title=False,
                 )
                 in_doc = InputDocument(
                     path_or_stream=stream,
@@ -609,24 +611,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     options=html_options,
                 )
                 doc = html_backend_obj.convert()
-
-                items_to_remove: list[NodeItem] = []
-                for item, _ in doc.iterate_items(
-                    included_content_layers={ContentLayer.FURNITURE},
-                ):
-                    # Reset the content layer since the HTMLBackend will set everything before the first header as furniture.
-                    if item.content_layer == ContentLayer.FURNITURE:
-                        item.content_layer = ContentLayer.BODY
-
-                        # The HTMLBackend is also inserting a hidden title field which we want to remove.
-                        if (
-                            isinstance(item, DocItem)
-                            and item.label == DocItemLabel.TITLE
-                        ):
-                            items_to_remove.append(item)
-
-                doc.delete_items(node_items=items_to_remove)
-
         else:
             raise RuntimeError(
                 f"Cannot convert md with {self.document_hash} because the backend failed to init."
