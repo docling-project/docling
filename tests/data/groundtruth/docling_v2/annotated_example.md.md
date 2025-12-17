@@ -1,3 +1,7 @@
+text[[217, 146, 785, 191]] order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz.
+
+sub\_title[[217, 209, 520, 225]]
+
 ### 5.1 Hyper Parameter Optimization
 
 text[[217, 230, 785, 321]] We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a ( 2x ) speed up in the inference runtime over HTML.
