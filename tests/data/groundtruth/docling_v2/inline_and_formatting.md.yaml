@@ -890,4 +890,4 @@ texts:
   prov: []
   self_ref: '#/texts/48'
   text: Table Heading
-version: 1.7.0
+version: 1.8.0
