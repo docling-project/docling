@@ -316,8 +316,9 @@ class DocumentConverter:
             page_range: Range of pages to convert.
 
         Returns:
-            Contains the output `DoclingDocument` in the `document` attribute,
-            and metadata about the conversion process.
+            Contains the output
+                [`DoclingDocument`](../../concepts/docling_document/) in the
+                `document` attribute, and metadata about the conversion process.
 
         Raises:
             ConversionError: An error occurred during conversion.
@@ -356,8 +357,10 @@ class DocumentConverter:
                 Documents exceeding this number will be skipped.
             page_range: Range of pages to convert in each document.
 
-        Yields: The conversion results, each containing a `DoclingDocument` in
-            the `document` attribute and metadata about the conversion process.
+        Yields:
+            The conversion results, each containing a
+                [`DoclingDocument`](../../concepts/docling_document/) in the
+                `document` attribute and metadata about the conversion process.
 
         Raises:
             ConversionError: An error occurred during conversion.
@@ -416,11 +419,12 @@ class DocumentConverter:
                 if missing.
 
         Returns:
-            Contains the output `DoclingDocument` in the `document` attribute,
-                and metadata about the conversion process.
+            Contains the output
+                [`DoclingDocument`](../../concepts/docling_document/) in the
+                `document` attribute, and metadata about the conversion process.
 
         Raises:
-            ValueError: If the format is not `InputFormat.MD` or `InputFormat.HTML`.
+            ValueError: If format is not `InputFormat.MD` or `InputFormat.HTML`.
             ConversionError: An error occurred during conversion.
         """
         name = name or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
