@@ -62,6 +62,14 @@ class MarkdownBackendOptions(BaseBackendOptions):
             "will use it to resolve relative paths in the markdown document."
         ),
     )
+    parse_annotations: bool = Field(
+        False,
+        description=(
+            "Whether to parse label and location annotations in the format "
+            "label[[x1, y1, x2, y2]]. When enabled, extracts bounding box "
+            "information and creates proper provenance for DocItems."
+        ),
+    )
 
 
 class PdfBackendOptions(BaseBackendOptions):
