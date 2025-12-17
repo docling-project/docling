@@ -27,7 +27,7 @@ class PagePreprocessingModel(BasePageModel):
         self.options = options
 
         # Pre-compiled regex patterns for efficiency
-        self.GLYPH_RE = re.compile(r"GLYPH<[0-9A-Fa-f]+>")
+        self.GLYPH_RE = re.compile(r"GLYPH<[^>]+>")  # anything between < and >
         self.SLASH_G_RE = re.compile(r"(?:/G\d+){2,}")
         self.FRAG_RE = re.compile(r"\b[A-Za-z](?:/[a-z]{1,3}\.[a-z]{1,3}){2,}\b")
         self.SLASH_NUMBER_GARBAGE_RE = re.compile(
@@ -76,6 +76,7 @@ class PagePreprocessingModel(BasePageModel):
         text_scores = []
         for c in page.cells:
             score = self.rate_text_quality(c.text)
+            c.confidence = score
             text_scores.append(score)
 
         with warnings.catch_warnings():

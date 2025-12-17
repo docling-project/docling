@@ -84,6 +84,7 @@ class OcrOptions(BaseOptions):
     bitmap_area_threshold: float = (
         0.05  # percentage of the area for a bitmap to processed with OCR
     )
+    force_low_confidence_ocr: bool = False  # If enabled low confidence programmatic cells are processed with OCR
 
 
 class OcrAutoOptions(OcrOptions):

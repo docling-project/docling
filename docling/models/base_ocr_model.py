@@ -90,11 +90,23 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             bitmap_rects = page._backend.get_bitmap_rects()
         else:
             bitmap_rects = []
+
+        force_ocr_on_low_confidence_cells = False
+
+        if self.options.force_low_confidence_ocr:
+            for cell in page.cells:
+                if cell.confidence == 0.0:
+                    force_ocr_on_low_confidence_cells = True
+                    break
+
         coverage, ocr_rects = find_ocr_rects(page.size, bitmap_rects)
 
         # return full-page rectangle if page is dominantly covered with bitmaps
-        if self.options.force_full_page_ocr or coverage > max(
-            BITMAP_COVERAGE_TRESHOLD, self.options.bitmap_area_threshold
+        if (
+            self.options.force_full_page_ocr
+            or coverage
+            > max(BITMAP_COVERAGE_TRESHOLD, self.options.bitmap_area_threshold)
+            or force_ocr_on_low_confidence_cells
         ):
             return [
                 BoundingBox(
@@ -145,6 +157,13 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # Get existing cells from the read-only property
         existing_cells = page.cells
 
+        force_ocr_on_low_confidence_cells = False
+        if self.options.force_low_confidence_ocr:
+            existing_cells_length = len(existing_cells)
+            existing_cells = [cell for cell in existing_cells if cell.confidence != 0.0]
+            if len(existing_cells) < existing_cells_length:
+                force_ocr_on_low_confidence_cells = True
+
         # Combine existing and OCR cells with overlap filtering
         final_cells = self._combine_cells(existing_cells, ocr_cells)
 
@@ -158,7 +177,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         # unreliable. Filter out cells where from_ocr=False, keeping any OCR-
         # generated cells. This ensures downstream components (e.g., table
         # structure model) fall back to OCR-extracted textline cells.
-        if self.options.force_full_page_ocr:
+        if self.options.force_full_page_ocr or force_ocr_on_low_confidence_cells:
             page.parsed_page.word_cells = [
                 c for c in page.parsed_page.word_cells if c.from_ocr
             ]
