@@ -274,7 +274,7 @@ class DocumentConverter:
         Raises:
             ConversionError: If no pipeline could be initialized for the
                 given format.
-            RuntimeError: If artifacts_path is set in
+            RuntimeError: If `artifacts_path` is set in
                 `docling.datamodel.settings.settings` when required by
                 the pipeline, but points to a non-directory file.
             FileNotFoundError: If local model files are not found
