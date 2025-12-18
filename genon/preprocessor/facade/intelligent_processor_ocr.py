@@ -890,8 +890,8 @@ class DocumentProcessor:
             toc_api_provider="custom",
 
             # Mistral-Small-3.1-24B-Instruct-2503, 운영망
-            toc_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
-            metadata_api_base_url="https://genos.mnc.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            toc_api_base_url="https://genos.genon.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
+            metadata_api_base_url="https://genos.genon.ai:3443/api/gateway/rep/serving/502/v1/chat/completions",
             toc_api_key="022653a3743849e299f19f19d323490b",
             metadata_api_key="022653a3743849e299f19f19d323490b",
 
