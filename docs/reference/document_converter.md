@@ -26,7 +26,11 @@ This is an automatic generated API reference of the main components of Docling.
         filters: ["!^_[^_]"]
         heading_level: 2
         inherited_members: true
-        merge_init_into_class: false
+        docstring_options:
+            ignore_init_summary: true
+        show_docstring_attributes: false
+        show_attribute_values: false
+        merge_init_into_class: true
         separate_signature: true
         show_root_heading: true
         show_root_full_path: false
