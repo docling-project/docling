@@ -1,7 +1,6 @@
 body:
   children:
   - $ref: '#/texts/0'
-  - $ref: '#/texts/1'
   - $ref: '#/groups/0'
   content_layer: body
   label: unspecified
@@ -16,7 +15,7 @@ furniture:
   self_ref: '#/furniture'
 groups:
 - children:
-  - $ref: '#/texts/2'
+  - $ref: '#/texts/1'
   content_layer: body
   label: section
   name: header-1
@@ -24,22 +23,22 @@ groups:
     $ref: '#/body'
   self_ref: '#/groups/0'
 - children:
-  - $ref: '#/texts/3'
+  - $ref: '#/texts/2'
+  - $ref: '#/texts/4'
   - $ref: '#/texts/5'
-  - $ref: '#/texts/6'
+  content_layer: body
+  label: list
+  name: list
+  parent:
+    $ref: '#/texts/1'
+  self_ref: '#/groups/1'
+- children:
+  - $ref: '#/texts/3'
   content_layer: body
   label: list
   name: list
   parent:
     $ref: '#/texts/2'
-  self_ref: '#/groups/1'
-- children:
-  - $ref: '#/texts/4'
-  content_layer: body
-  label: list
-  name: list
-  parent:
-    $ref: '#/texts/3'
   self_ref: '#/groups/2'
 key_value_items: []
 name: mixed_without_h1
@@ -53,26 +52,17 @@ schema_name: DoclingDocument
 tables: []
 texts:
 - children: []
-  content_layer: furniture
-  label: title
-  orig: mixed_without_h1
-  parent:
-    $ref: '#/body'
-  prov: []
-  self_ref: '#/texts/0'
-  text: mixed_without_h1
-- children: []
-  content_layer: furniture
+  content_layer: body
   label: text
   orig: Content before first heading
   parent:
     $ref: '#/body'
   prov: []
-  self_ref: '#/texts/1'
+  self_ref: '#/texts/0'
   text: Content before first heading
 - children:
   - $ref: '#/groups/1'
-  - $ref: '#/texts/7'
+  - $ref: '#/texts/6'
   content_layer: body
   label: section_header
   level: 1
@@ -80,7 +70,7 @@ texts:
   parent:
     $ref: '#/groups/0'
   prov: []
-  self_ref: '#/texts/2'
+  self_ref: '#/texts/1'
   text: Some heading
 - children:
   - $ref: '#/groups/2'
@@ -92,7 +82,7 @@ texts:
   parent:
     $ref: '#/groups/1'
   prov: []
-  self_ref: '#/texts/3'
+  self_ref: '#/texts/2'
   text: A. first
 - children: []
   content_layer: body
@@ -103,7 +93,7 @@ texts:
   parent:
     $ref: '#/groups/2'
   prov: []
-  self_ref: '#/texts/4'
+  self_ref: '#/texts/3'
   text: subitem
 - children: []
   content_layer: body
@@ -114,7 +104,7 @@ texts:
   parent:
     $ref: '#/groups/1'
   prov: []
-  self_ref: '#/texts/5'
+  self_ref: '#/texts/4'
   text: B. second
 - children: []
   content_layer: body
@@ -125,15 +115,15 @@ texts:
   parent:
     $ref: '#/groups/1'
   prov: []
-  self_ref: '#/texts/6'
+  self_ref: '#/texts/5'
   text: 2 . strange
 - children: []
   content_layer: body
   label: text
   orig: The end!
   parent:
-    $ref: '#/texts/2'
+    $ref: '#/texts/1'
   prov: []
-  self_ref: '#/texts/7'
+  self_ref: '#/texts/6'
   text: The end!
-version: 1.7.0
+version: 1.8.0

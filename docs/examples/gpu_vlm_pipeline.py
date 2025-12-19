@@ -62,21 +62,8 @@ def main():
     # input_doc_path = data_folder / "pdf" / "2305.03393v1.pdf"  # 14 pages
     input_doc_path = data_folder / "pdf" / "redp5110_sampled.pdf"  # 18 pages
 
-    vlm_options = ApiVlmOptions(
-        url="http://localhost:8000/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
-        params=dict(
-            model=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.repo_id,
-            max_tokens=4096,
-            skip_special_tokens=True,
-        ),
-        prompt=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.prompt,
-        timeout=90,
-        scale=2.0,
-        temperature=0.0,
-        concurrency=BATCH_SIZE,
-        stop_strings=["</doctag>", "<|end_of_text|>"],
-        response_format=ResponseFormat.DOCTAGS,
-    )
+    vlm_options = vlm_model_specs.GRANITEDOCLING_VLLM_API
+    vlm_options.concurrency = BATCH_SIZE
 
     pipeline_options = VlmPipelineOptions(
         vlm_options=vlm_options,

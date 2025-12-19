@@ -1,3 +1,5 @@
+Content before first heading
+
 ## Some heading
 
 - A. first

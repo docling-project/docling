@@ -75,6 +75,7 @@ class InputFormat(str, Enum):
 class OutputFormat(str, Enum):
     MARKDOWN = "md"
     JSON = "json"
+    YAML = "yaml"
     HTML = "html"
     HTML_SPLIT_PAGE = "html_split_page"
     TEXT = "text"

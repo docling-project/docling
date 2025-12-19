@@ -1,20 +1,17 @@
 import json
 import os
-import warnings
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 from docling_core.types.doc import (
+    CodeItem,
     DocItem,
     DoclingDocument,
+    FormulaItem,
     PictureItem,
     TableItem,
     TextItem,
-)
-from docling_core.types.doc.base import (
-    BoundingBox,
-    PydanticSerCtxKey,
 )
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
@@ -71,7 +68,7 @@ def verify_text(gt: str, pred: str, fuzzy: bool, fuzzy_threshold: float = 0.4):
 
 
 def verify_cells(
-    doc_pred_pages: List[_TestPagesMeta], doc_true_pages: List[_TestPagesMeta]
+    doc_pred_pages: list[_TestPagesMeta], doc_true_pages: list[_TestPagesMeta]
 ):
     assert len(doc_pred_pages) == len(doc_true_pages), (
         "pred- and true-doc do not have the same number of pages"
@@ -247,18 +244,14 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
         # Validate text content
         if isinstance(true_item, TextItem):
             assert isinstance(pred_item, TextItem), (
-                "Test item is not a TextItem as the expected one "
-                f"{true_item=} "
-                f"{pred_item=} "
+                f"Test item should be a TextItem {true_item=} {pred_item=} "
             )
 
             assert verify_text(true_item.text, pred_item.text, fuzzy=fuzzy)
 
         # Validate table content
         if isinstance(true_item, TableItem):
-            assert isinstance(pred_item, TableItem), (
-                "Test item is not a TableItem as the expected one"
-            )
+            assert isinstance(pred_item, TableItem), "Test item should be a TableItem"
             assert verify_table_v2(true_item, pred_item, fuzzy=fuzzy), (
                 "Tables not matching"
             )
@@ -266,7 +259,7 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
         # Validate picture content
         if isinstance(true_item, PictureItem):
             assert isinstance(pred_item, PictureItem), (
-                "Test item is not a PictureItem as the expected one"
+                "Test item should be a PictureItem"
             )
 
             true_image = true_item.get_image(doc=doc_true)
@@ -275,8 +268,18 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
                 assert verify_picture_image_v2(true_image, pred_image), (
                     "Picture image mismatch"
                 )
+        # TODO: check picture annotations
 
-            # TODO: check picture annotations
+        # Validate code content
+        if isinstance(true_item, CodeItem):
+            assert isinstance(pred_item, CodeItem), "Test item should be a CodeItem"
+            assert true_item.code_language == pred_item.code_language
+
+        # Validate formula content
+        if isinstance(true_item, FormulaItem):
+            assert isinstance(pred_item, FormulaItem), (
+                "Test item should be a FormulaItem"
+            )
 
     return True
 
@@ -366,14 +369,14 @@ def verify_conversion_result_v2(
     verify_doctags: bool = True,
     indent: int = 2,
 ):
-    PageMetaList = TypeAdapter(List[_TestPagesMeta])
+    PageMetaList = TypeAdapter(list[_TestPagesMeta])
 
     assert doc_result.status == ConversionStatus.SUCCESS, (
         f"Doc {input_path} did not convert successfully."
     )
 
-    doc_pred_pages: List[Page] = doc_result.pages
-    doc_pred_pages_meta: List[_TestPagesMeta] = [
+    doc_pred_pages: list[Page] = doc_result.pages
+    doc_pred_pages_meta: list[_TestPagesMeta] = [
         _TestPagesMeta.from_page(page) for page in doc_pred_pages
     ]
     doc_pred: DoclingDocument = doc_result.document

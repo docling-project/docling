@@ -196,7 +196,7 @@ class RapidOcrModel(BaseOcrModel):
                 # Recognition model settings
                 "Rec.model_path": rec_model_path,
                 "Rec.font_path": self.options.rec_font_path,
-                "Rec.keys_path": rec_keys_path,
+                "Rec.rec_keys_path": rec_keys_path,
                 "Rec.use_cuda": use_cuda,
                 "Rec.use_dml": use_dml,
                 "Rec.intra_op_num_threads": intra_op_num_threads,

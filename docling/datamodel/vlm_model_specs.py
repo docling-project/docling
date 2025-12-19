@@ -38,10 +38,6 @@ GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
 
 GRANITEDOCLING_VLLM = GRANITEDOCLING_TRANSFORMERS.model_copy()
 GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
-GRANITEDOCLING_VLLM.revision = (
-    "untied"  # change back to "main" with next vllm relase after 0.10.2
-)
-
 
 GRANITEDOCLING_MLX = InlineVlmOptions(
     repo_id="ibm-granite/granite-docling-258M-mlx",
@@ -54,6 +50,26 @@ GRANITEDOCLING_MLX = InlineVlmOptions(
     max_new_tokens=8192,
     stop_strings=["</doctag>", "<|end_of_text|>"],
 )
+
+GRANITEDOCLING_VLLM_API = ApiVlmOptions(
+    url="http://localhost:8000/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
+    params=dict(
+        model=GRANITEDOCLING_TRANSFORMERS.repo_id,
+        max_tokens=4096,
+        skip_special_tokens=True,
+    ),
+    prompt=GRANITEDOCLING_TRANSFORMERS.prompt,
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    stop_strings=["</doctag>", "<|end_of_text|>"],
+    response_format=ResponseFormat.DOCTAGS,
+)
+
+GRANITEDOCLING_OLLAMA = GRANITEDOCLING_VLLM_API.model_copy()
+GRANITEDOCLING_OLLAMA.url = AnyUrl("http://localhost:11434/v1/chat/completions")
+GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
 
 # SmolDocling
 SMOLDOCLING_MLX = InlineVlmOptions(
