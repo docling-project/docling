@@ -17,6 +17,7 @@ class AcceleratorDevice(str, Enum):
     CPU = "cpu"
     CUDA = "cuda"
     MPS = "mps"
+    XPU = "xpu"
 
 
 class AcceleratorOptions(BaseSettings):
@@ -30,13 +31,13 @@ class AcceleratorOptions(BaseSettings):
 
     @field_validator("device")
     def validate_device(cls, value):
-        # "auto", "cpu", "cuda", "mps", or "cuda:N"
+        # "auto", "cpu", "cuda", "mps", "xpu", or "cuda:N"
         if value in {d.value for d in AcceleratorDevice} or re.match(
             r"^cuda(:\d+)?$", value
         ):
             return value
         raise ValueError(
-            "Invalid device option. Use 'auto', 'cpu', 'mps', 'cuda', or 'cuda:N'."
+            "Invalid device option. Use 'auto', 'cpu', 'mps', 'xpu', 'cuda', or 'cuda:N'."
         )
 
     @model_validator(mode="before")
