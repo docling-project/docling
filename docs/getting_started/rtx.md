@@ -1,7 +1,7 @@
 # ⚡ RTX GPU Acceleration
 
 <div style="text-align: center">
-    <img loading="lazy" alt="Docling on RTX" src="../../assets/docling_rtx.png" width="400px" />
+    <img loading="lazy" alt="Docling on RTX" src="../../assets/nvidia_logo_green.svg" width="200px" />
 </div>
 
 
@@ -9,7 +9,7 @@ Whether you're an AI enthusiast, researcher, or developer working with document 
 
 By leveraging GPU acceleration, you can achieve up to **6x speedup** compared to CPU-only processing. This dramatic performance improvement makes GPU acceleration especially valuable for processing large batches of documents, handling high-throughput document conversion workflows, or experimenting with advanced document understanding models.
 
-TBA. Performance improvement figure.
+<!-- TBA. Performance improvement figure. -->
 
 ## Prerequisites
 
@@ -173,29 +173,21 @@ llama-server.exe `
 
 Once your inference server is running, configure Docling to use it:
 
-TODO: simplify the setup with a pre-configured config.
-
 ```python
 from docling.datamodel.pipeline_options import VlmPipelineOptions
 from docling.datamodel.settings import settings
 
+BATCH_SIZE = 64
+
 # Configure VLM options
-vlm_options = VlmPipelineOptions(
-    enable_remote_services=True,
-    vlm_options={
-        "url": "http://localhost:8000/v1/chat/completions",
-        "params": {
-            "model": "ibm-granite/granite-docling-258M",
-            "max_tokens": 4096,
-        },
-        "concurrency": 64,  # Adjust based on GPU memory
-        "prompt": "Convert this page to docling.",
-        "timeout": 90,
-    }
-)
+vlm_options = vlm_model_specs.GRANITEDOCLING_VLLM_API
+vlm_options.concurrency = BATCH_SIZE
+
+# when running with llama.cpp (llama-server), use the different model name.
+# vlm_options.params["model"] = "ibm-granite_granite-docling-258M-GGUF_granite-docling-258M-BF16.gguf"
 
 # Set page batch size to match or exceed concurrency
-settings.perf.page_batch_size = 64
+settings.perf.page_batch_size = BATCH_SIZE
 
 # Create converter with VLM pipeline
 converter = DocumentConverter(
