@@ -1351,6 +1351,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Row index {row_idx} with {len(row.cells)} populated cells")
             col_idx = 0
             while col_idx < num_cols:
+                # Handle merged cells: row may have fewer cells than num_cols
+                if col_idx >= len(row.cells):
+                    break
                 cell: _Cell = row.cells[col_idx]
                 _log.debug(
                     f" col {col_idx} grid_span {cell.grid_span} grid_cols_before {row.grid_cols_before}"
