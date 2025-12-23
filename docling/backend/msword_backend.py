@@ -97,6 +97,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.listIter = 0
         # Track list counters per numId and ilvl
         self.list_counters: dict[tuple[int, int], int] = {}
+        self._numbering_root: Optional[BaseOxmlElement] = None
+        self._numbering_cache: dict[int, Optional[dict[str, Any]]] = {}
         # Set starting content layer
         self.content_layer = ContentLayer.BODY
 
@@ -368,24 +370,281 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         else:
             return [input_string]
 
+    def _extract_num_pr(
+        self, element: Optional[BaseOxmlElement]
+    ) -> tuple[Optional[int], Optional[int]]:
+        if element is None:
+            return None, None
+        namespaces = element.nsmap or {}
+        if "w" not in namespaces:
+            namespaces = {**MsWordDocumentBackend._BLIP_NAMESPACES, **namespaces}
+        numPr = element.find(".//w:numPr", namespaces=namespaces)
+        if numPr is None:
+            return None, None
+        numId_elem = numPr.find("w:numId", namespaces=namespaces)
+        ilvl_elem = numPr.find("w:ilvl", namespaces=namespaces)
+        numId = numId_elem.get(self.XML_KEY) if numId_elem is not None else None
+        ilvl = ilvl_elem.get(self.XML_KEY) if ilvl_elem is not None else None
+        numId_int = self._str_to_int(numId, None)
+        ilvl_int = self._str_to_int(ilvl, None)
+        if numId_int is not None and ilvl_int is None:
+            ilvl_int = 0
+        return numId_int, ilvl_int
+
+    def _get_numId_and_ilvl_from_style(
+        self, style: Optional[ParagraphStyle]
+    ) -> tuple[Optional[int], Optional[int]]:
+        seen: set[int] = set()
+        current = style
+        while isinstance(current, ParagraphStyle) and id(current) not in seen:
+            seen.add(id(current))
+            numid, ilevel = self._extract_num_pr(getattr(current, "element", None))
+            if numid is not None:
+                return numid, ilevel
+            current = getattr(current, "base_style", None)
+        return None, None
+
     def _get_numId_and_ilvl(
         self, paragraph: Paragraph
     ) -> tuple[Optional[int], Optional[int]]:
-        # Access the XML element of the paragraph
-        numPr = paragraph._element.find(
-            ".//w:numPr", namespaces=paragraph._element.nsmap
+        numid, ilevel = self._extract_num_pr(paragraph._element)
+        if numid is None:
+            numid, ilevel = self._get_numId_and_ilvl_from_style(paragraph.style)
+        return numid, ilevel  # If the paragraph is not part of a list
+
+    def _get_numbering_root(self) -> Optional[BaseOxmlElement]:
+        if self._numbering_root is not None:
+            return self._numbering_root
+        if not hasattr(self.docx_obj, "part") or not hasattr(
+            self.docx_obj.part, "package"
+        ):
+            return None
+        for part in self.docx_obj.part.package.parts:
+            if "numbering" in part.partname:
+                self._numbering_root = part.element
+                break
+        return self._numbering_root
+
+    def _get_numbering_def(self, numId: int) -> Optional[dict[str, Any]]:
+        if numId in self._numbering_cache:
+            return self._numbering_cache[numId]
+        numbering_root = self._get_numbering_root()
+        if numbering_root is None:
+            self._numbering_cache[numId] = None
+            return None
+
+        namespaces = {
+            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        }
+        ilvl_key = (
+            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ilvl"
         )
 
-        if numPr is not None:
-            # Get the numId element and extract the value
-            numId_elem = numPr.find("w:numId", namespaces=paragraph._element.nsmap)
-            ilvl_elem = numPr.find("w:ilvl", namespaces=paragraph._element.nsmap)
-            numId = numId_elem.get(self.XML_KEY) if numId_elem is not None else None
-            ilvl = ilvl_elem.get(self.XML_KEY) if ilvl_elem is not None else None
+        num_xpath = f".//w:num[@w:numId='{numId}']"
+        num_element = numbering_root.find(num_xpath, namespaces=namespaces)
+        if num_element is None:
+            self._numbering_cache[numId] = None
+            return None
 
-            return self._str_to_int(numId, None), self._str_to_int(ilvl, None)
+        abstract_num_id_elem = num_element.find(
+            ".//w:abstractNumId", namespaces=namespaces
+        )
+        if abstract_num_id_elem is None:
+            self._numbering_cache[numId] = None
+            return None
+        abstract_num_id = abstract_num_id_elem.get(self.XML_KEY)
+        if abstract_num_id is None:
+            self._numbering_cache[numId] = None
+            return None
 
-        return None, None  # If the paragraph is not part of a list
+        abstract_num_xpath = (
+            f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
+        )
+        abstract_num_element = numbering_root.find(
+            abstract_num_xpath, namespaces=namespaces
+        )
+        if abstract_num_element is None:
+            self._numbering_cache[numId] = None
+            return None
+
+        levels: dict[int, dict[str, Any]] = {}
+        for lvl_element in abstract_num_element.findall("w:lvl", namespaces=namespaces):
+            ilvl_val = lvl_element.get(ilvl_key)
+            ilvl = self._str_to_int(ilvl_val, None)
+            if ilvl is None:
+                continue
+            start_elem = lvl_element.find("w:start", namespaces=namespaces)
+            start_val = (
+                self._str_to_int(start_elem.get(self.XML_KEY), 1)
+                if start_elem is not None
+                else 1
+            )
+            num_fmt_elem = lvl_element.find("w:numFmt", namespaces=namespaces)
+            num_fmt_val = (
+                num_fmt_elem.get(self.XML_KEY) if num_fmt_elem is not None else "decimal"
+            )
+            lvl_text_elem = lvl_element.find("w:lvlText", namespaces=namespaces)
+            lvl_text_val = (
+                lvl_text_elem.get(self.XML_KEY)
+                if lvl_text_elem is not None
+                else f"%{ilvl + 1}"
+            )
+            levels[ilvl] = {
+                "start": start_val or 1,
+                "num_fmt": num_fmt_val or "decimal",
+                "lvl_text": lvl_text_val or f"%{ilvl + 1}",
+            }
+
+        overrides: dict[int, dict[str, Any]] = {}
+        for lvl_override in num_element.findall("w:lvlOverride", namespaces=namespaces):
+            ilvl_val = lvl_override.get(ilvl_key)
+            ilvl = self._str_to_int(ilvl_val, None)
+            if ilvl is None:
+                continue
+            override: dict[str, Any] = {}
+            start_override = lvl_override.find(
+                "w:startOverride", namespaces=namespaces
+            )
+            if start_override is not None:
+                override_start = self._str_to_int(
+                    start_override.get(self.XML_KEY), None
+                )
+                if override_start is not None:
+                    override["start"] = override_start
+            lvl_override_def = lvl_override.find("w:lvl", namespaces=namespaces)
+            if lvl_override_def is not None:
+                num_fmt_elem = lvl_override_def.find(
+                    "w:numFmt", namespaces=namespaces
+                )
+                if num_fmt_elem is not None and num_fmt_elem.get(self.XML_KEY):
+                    override["num_fmt"] = num_fmt_elem.get(self.XML_KEY)
+                lvl_text_elem = lvl_override_def.find(
+                    "w:lvlText", namespaces=namespaces
+                )
+                if lvl_text_elem is not None and lvl_text_elem.get(self.XML_KEY):
+                    override["lvl_text"] = lvl_text_elem.get(self.XML_KEY)
+            overrides[ilvl] = override
+
+        num_def = {"levels": levels, "overrides": overrides}
+        self._numbering_cache[numId] = num_def
+        return num_def
+
+    def _get_numbering_level(self, numId: int, ilvl: int) -> Optional[dict[str, Any]]:
+        num_def = self._get_numbering_def(numId)
+        if not num_def:
+            return None
+        level_def = num_def["levels"].get(ilvl)
+        if not level_def:
+            return None
+        override = num_def["overrides"].get(ilvl, {})
+        merged = level_def.copy()
+        merged.update(override)
+        return merged
+
+    def _get_level_start(self, numId: int, ilvl: int) -> int:
+        level_def = self._get_numbering_level(numId, ilvl)
+        if level_def and level_def.get("start") is not None:
+            return int(level_def["start"])
+        return 1
+
+    def _get_level_numfmt(self, numId: int, ilvl: int) -> str:
+        level_def = self._get_numbering_level(numId, ilvl)
+        if level_def and level_def.get("num_fmt"):
+            return str(level_def["num_fmt"])
+        return "decimal"
+
+    def _format_roman(self, num: int) -> str:
+        if num <= 0:
+            return str(num)
+        values = [
+            (1000, "M"),
+            (900, "CM"),
+            (500, "D"),
+            (400, "CD"),
+            (100, "C"),
+            (90, "XC"),
+            (50, "L"),
+            (40, "XL"),
+            (10, "X"),
+            (9, "IX"),
+            (5, "V"),
+            (4, "IV"),
+            (1, "I"),
+        ]
+        result = []
+        remaining = num
+        for value, symbol in values:
+            while remaining >= value:
+                result.append(symbol)
+                remaining -= value
+        return "".join(result)
+
+    def _format_letters(self, num: int, upper: bool) -> str:
+        if num <= 0:
+            return str(num)
+        result = ""
+        remaining = num
+        while remaining > 0:
+            remaining -= 1
+            remaining, rem = divmod(remaining, 26)
+            result = chr(ord("A") + rem) + result
+        return result if upper else result.lower()
+
+    def _format_number(self, num: int, num_fmt: Optional[str]) -> str:
+        if not num_fmt or num_fmt == "decimal":
+            return str(num)
+        if num_fmt == "decimalZero":
+            return f"{num:02d}"
+        if num_fmt == "upperRoman":
+            return self._format_roman(num).upper()
+        if num_fmt == "lowerRoman":
+            return self._format_roman(num).lower()
+        if num_fmt == "upperLetter":
+            return self._format_letters(num, upper=True)
+        if num_fmt == "lowerLetter":
+            return self._format_letters(num, upper=False)
+        return str(num)
+
+    def _increment_numbering_counter(self, numId: int, ilvl: int) -> int:
+        # Ensure higher levels are initialized for multi-level formats.
+        for lvl in range(ilvl):
+            key = (numId, lvl)
+            if key not in self.list_counters or self.list_counters[key] == 0:
+                self.list_counters[key] = self._get_level_start(numId, lvl)
+        key = (numId, ilvl)
+        start_val = self._get_level_start(numId, ilvl)
+        if key not in self.list_counters or self.list_counters[key] == 0:
+            self.list_counters[key] = start_val
+        else:
+            self.list_counters[key] += 1
+        for k in list(self.list_counters.keys()):
+            if k[0] == numId and k[1] > ilvl:
+                self.list_counters[k] = 0
+        return self.list_counters[key]
+
+    def _render_level_text(self, numId: int, lvl_text: str) -> str:
+        def replace(match: re.Match) -> str:
+            level_num = self._str_to_int(match.group(1), None)
+            if level_num is None:
+                return match.group(0)
+            ilvl = level_num - 1
+            counter = self.list_counters.get((numId, ilvl), 0)
+            if counter == 0:
+                counter = self._get_level_start(numId, ilvl)
+            num_fmt = self._get_level_numfmt(numId, ilvl)
+            return self._format_number(counter, num_fmt)
+
+        return re.sub(r"%(\d+)", replace, lvl_text)
+
+    def _next_numbering_marker(self, numId: int, ilvl: int) -> str:
+        level_def = self._get_numbering_level(numId, ilvl)
+        if not level_def:
+            counter = self._increment_numbering_counter(numId, ilvl)
+            return f"{counter}."
+        self._increment_numbering_counter(numId, ilvl)
+        lvl_text = level_def.get("lvl_text") or f"%{ilvl + 1}"
+        marker = self._render_level_text(numId, lvl_text)
+        return marker or f"{self.list_counters.get((numId, ilvl), 1)}."
 
     def _get_list_counter(self, numid: int, ilvl: int) -> int:
         """Get and increment the counter for a specific numId and ilvl combination."""
@@ -405,74 +664,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _is_numbered_list(self, numId: int, ilvl: int) -> bool:
         """Check if a list is numbered based on its numFmt value."""
         try:
-            # Access the numbering part of the document
-            if not hasattr(self.docx_obj, "part") or not hasattr(
-                self.docx_obj.part, "package"
-            ):
+            level_def = self._get_numbering_level(numId, ilvl)
+            if not level_def:
                 return False
-
-            numbering_part = None
-            # Find the numbering part
-            for part in self.docx_obj.part.package.parts:
-                if "numbering" in part.partname:
-                    numbering_part = part
-                    break
-
-            if numbering_part is None:
-                return False
-
-            # Parse the numbering XML
-            numbering_root = numbering_part.element
-            namespaces = {
-                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            }
-
-            # Find the numbering definition with the given numId
-            num_xpath = f".//w:num[@w:numId='{numId}']"
-            num_element = numbering_root.find(num_xpath, namespaces=namespaces)
-
-            if num_element is None:
-                return False
-
-            # Get the abstractNumId from the num element
-            abstract_num_id_elem = num_element.find(
-                ".//w:abstractNumId", namespaces=namespaces
-            )
-            if abstract_num_id_elem is None:
-                return False
-
-            abstract_num_id = abstract_num_id_elem.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-            )
-            if abstract_num_id is None:
-                return False
-
-            # Find the abstract numbering definition
-            abstract_num_xpath = (
-                f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
-            )
-            abstract_num_element = numbering_root.find(
-                abstract_num_xpath, namespaces=namespaces
-            )
-
-            if abstract_num_element is None:
-                return False
-
-            # Find the level definition for the given ilvl
-            lvl_xpath = f".//w:lvl[@w:ilvl='{ilvl}']"
-            lvl_element = abstract_num_element.find(lvl_xpath, namespaces=namespaces)
-
-            if lvl_element is None:
-                return False
-
-            # Get the numFmt element
-            num_fmt_element = lvl_element.find(".//w:numFmt", namespaces=namespaces)
-            if num_fmt_element is None:
-                return False
-
-            num_fmt = num_fmt_element.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-            )
+            num_fmt = level_def.get("num_fmt")
 
             # Numbered formats include: decimal, lowerRoman, upperRoman, lowerLetter, upperLetter
             # Bullet formats include: bullet
@@ -953,14 +1148,23 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            style_element = getattr(paragraph.style, "element", None)
-            if style_element is not None:
-                is_numbered_style = (
-                    "<w:numPr>" in style_element.xml or "<w:numPr>" in element.xml
-                )
-            else:
-                is_numbered_style = False
-            h1 = self._add_heading(doc, p_level, text, is_numbered_style)
+            is_numbered_style = numid is not None and ilevel is not None
+            numbering_marker = None
+            if is_numbered_style:
+                level_def = self._get_numbering_level(numid, ilevel)
+                if level_def and self._is_numbered_list(numid, ilevel):
+                    numbering_marker = self._next_numbering_marker(numid, ilevel)
+                elif level_def:
+                    num_fmt = str(level_def.get("num_fmt") or "")
+                    if num_fmt == "bullet":
+                        is_numbered_style = False
+            h1 = self._add_heading(
+                doc,
+                p_level,
+                text,
+                is_numbered_style=is_numbered_style,
+                numbering_marker=numbering_marker,
+            )
             elem_ref.extend(h1)
 
         elif len(equations) > 0:
@@ -1074,6 +1278,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         curr_level: Optional[int],
         text: str,
         is_numbered_style: bool = False,
+        numbering_marker: Optional[str] = None,
     ) -> list[RefItem]:
         elem_ref: list[RefItem] = []
         level = self._get_level()
@@ -1103,7 +1308,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             parent_level = self.level - 1
             add_level = 1
 
-        if is_numbered_style:
+        if numbering_marker:
+            text = f"{numbering_marker} {text}"
+        elif is_numbered_style:
             if add_level in self.numbered_headers:
                 self.numbered_headers[add_level] += 1
             else:
@@ -1221,8 +1428,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                enum_marker = self._next_numbering_marker(numid, ilevel)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
@@ -1248,8 +1454,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                enum_marker = self._next_numbering_marker(numid, ilevel)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
@@ -1271,8 +1476,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # TODO: Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                enum_marker = self._next_numbering_marker(numid, ilevel)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
@@ -1286,8 +1490,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         elif self._prev_numid() == numid or prev_indent == ilevel:
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
-                counter = self._get_list_counter(numid, ilevel)
-                enum_marker = str(counter) + "."
+                enum_marker = self._next_numbering_marker(numid, ilevel)
             else:
                 enum_marker = ""
             self._add_formatted_list_item(
