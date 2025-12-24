@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
-  "name": "sample_sales_data",
+  "version": "1.8.0",
+  "name": "xlsx_02_sample_sales_data",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     "binary_hash": 14806485565397602516,
-    "filename": "sample_sales_data.xlsm"
+    "filename": "xlsx_02_sample_sales_data.xlsm"
   },
   "furniture": {
     "self_ref": "#/furniture",
