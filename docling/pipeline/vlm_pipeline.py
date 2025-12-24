@@ -145,9 +145,9 @@ class VlmPipeline(PaginatedPipeline):
             ):
                 conv_res.document = self._turn_dt_into_doc(conv_res)
 
-            elif (
-                self.pipeline_options.vlm_options.response_format
-                == ResponseFormat.MARKDOWN
+            elif self.pipeline_options.vlm_options.response_format in (
+                ResponseFormat.MARKDOWN,
+                ResponseFormat.ANNOTATED_MARKDOWN,
             ):
                 conv_res.document = self._turn_md_into_doc(conv_res)
 
@@ -257,6 +257,12 @@ class VlmPipeline(PaginatedPipeline):
 
         page_docs = []
 
+        # Check if we should parse annotations
+        parse_annotations = (
+            self.pipeline_options.vlm_options.response_format
+            == ResponseFormat.ANNOTATED_MARKDOWN
+        )
+
         for pg_idx, page in enumerate(conv_res.pages):
             predicted_text = ""
             if page.predictions.vlm_response:
@@ -265,15 +271,22 @@ class VlmPipeline(PaginatedPipeline):
             predicted_text = _extract_markdown_code(text=predicted_text)
 
             response_bytes = BytesIO(predicted_text.encode("utf8"))
+
+            from docling.datamodel.backend_options import MarkdownBackendOptions
+
+            md_options = MarkdownBackendOptions(parse_annotations=parse_annotations)
+
             out_doc = InputDocument(
                 path_or_stream=response_bytes,
                 filename=conv_res.input.file.name,
                 format=InputFormat.MD,
                 backend=MarkdownDocumentBackend,
+                backend_options=md_options,
             )
             backend = MarkdownDocumentBackend(
                 in_doc=out_doc,
                 path_or_stream=response_bytes,
+                options=md_options,
             )
             page_doc = backend.convert()
 

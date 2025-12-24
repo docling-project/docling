@@ -47,6 +47,7 @@ class BaseVlmOptions(BaseModel):
 class ResponseFormat(str, Enum):
     DOCTAGS = "doctags"
     MARKDOWN = "markdown"
+    ANNOTATED_MARKDOWN = "annotated_markdown"
     HTML = "html"
     OTSL = "otsl"
     PLAINTEXT = "plaintext"
