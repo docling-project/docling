@@ -436,9 +436,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         namespaces = {
             "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
         }
-        ilvl_key = (
-            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ilvl"
-        )
+        ilvl_key = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ilvl"
 
         num_xpath = f".//w:num[@w:numId='{numId}']"
         num_element = numbering_root.find(num_xpath, namespaces=namespaces)
@@ -457,9 +455,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._numbering_cache[numId] = None
             return None
 
-        abstract_num_xpath = (
-            f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
-        )
+        abstract_num_xpath = f".//w:abstractNum[@w:abstractNumId='{abstract_num_id}']"
         abstract_num_element = numbering_root.find(
             abstract_num_xpath, namespaces=namespaces
         )
@@ -481,7 +477,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             num_fmt_elem = lvl_element.find("w:numFmt", namespaces=namespaces)
             num_fmt_val = (
-                num_fmt_elem.get(self.XML_KEY) if num_fmt_elem is not None else "decimal"
+                num_fmt_elem.get(self.XML_KEY)
+                if num_fmt_elem is not None
+                else "decimal"
             )
             lvl_text_elem = lvl_element.find("w:lvlText", namespaces=namespaces)
             lvl_text_val = (
@@ -502,9 +500,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if ilvl is None:
                 continue
             override: dict[str, Any] = {}
-            start_override = lvl_override.find(
-                "w:startOverride", namespaces=namespaces
-            )
+            start_override = lvl_override.find("w:startOverride", namespaces=namespaces)
             if start_override is not None:
                 override_start = self._str_to_int(
                     start_override.get(self.XML_KEY), None
@@ -513,9 +509,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     override["start"] = override_start
             lvl_override_def = lvl_override.find("w:lvl", namespaces=namespaces)
             if lvl_override_def is not None:
-                num_fmt_elem = lvl_override_def.find(
-                    "w:numFmt", namespaces=namespaces
-                )
+                num_fmt_elem = lvl_override_def.find("w:numFmt", namespaces=namespaces)
                 if num_fmt_elem is not None and num_fmt_elem.get(self.XML_KEY):
                     override["num_fmt"] = num_fmt_elem.get(self.XML_KEY)
                 lvl_text_elem = lvl_override_def.find(
@@ -1148,9 +1142,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self.parents[0] = te
             elem_ref.append(te.get_ref())
         elif "Heading" in p_style_id:
-            is_numbered_style = numid is not None and ilevel is not None
             numbering_marker = None
-            if is_numbered_style:
+            if numid is not None and ilevel is not None:
+                is_numbered_style = True
                 level_def = self._get_numbering_level(numid, ilevel)
                 if level_def and self._is_numbered_list(numid, ilevel):
                     numbering_marker = self._next_numbering_marker(numid, ilevel)
@@ -1158,6 +1152,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     num_fmt = str(level_def.get("num_fmt") or "")
                     if num_fmt == "bullet":
                         is_numbered_style = False
+            else:
+                is_numbered_style = False
             h1 = self._add_heading(
                 doc,
                 p_level,
