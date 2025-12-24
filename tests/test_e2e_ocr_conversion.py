@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 from typing import List, Tuple
@@ -10,6 +11,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    DeepSeekOcrOptions,
     EasyOcrOptions,
     OcrMacOptions,
     OcrOptions,
@@ -36,13 +38,15 @@ def get_pdf_paths():
     return pdf_files
 
 
-def get_converter(ocr_options: OcrOptions):
+def get_converter(
+    ocr_options: OcrOptions, device: AcceleratorDevice = AcceleratorDevice.CPU
+):
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
     pipeline_options.do_table_structure = True
     pipeline_options.table_structure_options.do_cell_matching = True
     pipeline_options.ocr_options = ocr_options
-    pipeline_options.accelerator_options.device = AcceleratorDevice.CPU
+    pipeline_options.accelerator_options.device = device
 
     converter = DocumentConverter(
         format_options={
@@ -97,11 +101,66 @@ def test_e2e_conversions():
         engines.append((OcrMacOptions(), True))
         engines.append((OcrMacOptions(force_full_page_ocr=True), True))
 
+    # DeepSeek OCR - requires GPU (CUDA or MPS) and transformers
+    # Automatically runs when a compatible GPU is available
+    deepseecocr_engines: List[Tuple[OcrOptions, bool, AcceleratorDevice]] = []
+    try:
+        import torch
+
+        # Check for CUDA (preferred) or MPS (Apple Silicon fallback)
+        if torch.cuda.is_available():
+            deepseecocr_engines.append(
+                (DeepSeekOcrOptions(), False, AcceleratorDevice.CUDA)
+            )
+            deepseecocr_engines.append(
+                (
+                    DeepSeekOcrOptions(force_full_page_ocr=True),
+                    False,
+                    AcceleratorDevice.CUDA,
+                )
+            )
+        elif torch.backends.mps.is_built() and torch.backends.mps.is_available():
+            # MPS requires PyTorch 2.7.0+ for DeepSeek-OCR
+            # The model will auto-switch to MPS-compatible version
+            deepseecocr_engines.append(
+                (DeepSeekOcrOptions(), False, AcceleratorDevice.MPS)
+            )
+            deepseecocr_engines.append(
+                (
+                    DeepSeekOcrOptions(force_full_page_ocr=True),
+                    False,
+                    AcceleratorDevice.MPS,
+                )
+            )
+    except ImportError:
+        pass  # Skip if torch is not available
+
+    # Run CPU-based OCR engines
     for ocr_options, supports_rotation in engines:
         print(
             f"Converting with ocr_engine: {ocr_options.kind}, language: {ocr_options.lang}"
         )
-        converter = get_converter(ocr_options=ocr_options)
+        converter = get_converter(ocr_options=ocr_options, device=AcceleratorDevice.CPU)
+        for pdf_path in pdf_paths:
+            if not supports_rotation and "rotated" in pdf_path.name:
+                continue
+            print(f"converting {pdf_path}")
+
+            doc_result: ConversionResult = converter.convert(pdf_path)
+
+            verify_conversion_result_v2(
+                input_path=pdf_path,
+                doc_result=doc_result,
+                generate=GENERATE_V2,
+                fuzzy=True,
+            )
+
+    # Run GPU-based DeepSeek-OCR tests (requires CUDA or MPS)
+    for ocr_options, supports_rotation, device in deepseecocr_engines:
+        print(
+            f"Converting with ocr_engine: {ocr_options.kind}, device: {device}, language: {ocr_options.lang}"
+        )
+        converter = get_converter(ocr_options=ocr_options, device=device)
         for pdf_path in pdf_paths:
             if not supports_rotation and "rotated" in pdf_path.name:
                 continue
