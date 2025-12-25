@@ -1,66 +1,14 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: section: group WebVTT cue block
-    item-2 at level 2: text: 00:11.000 --> 00:13.000
-    item-3 at level 2: inline: group WebVTT cue voice span
-      item-4 at level 3: text: Roger Bingham: 
-      item-5 at level 3: text: We are in New York City
-  item-6 at level 1: section: group WebVTT cue block
-    item-7 at level 2: text: 00:13.000 --> 00:16.000
-    item-8 at level 2: inline: group WebVTT cue voice span
-      item-9 at level 3: text: Roger Bingham: 
-      item-10 at level 3: text: We’re actually at the Lucern Hotel, just down the street
-  item-11 at level 1: section: group WebVTT cue block
-    item-12 at level 2: text: 00:16.000 --> 00:18.000
-    item-13 at level 2: inline: group WebVTT cue voice span
-      item-14 at level 3: text: Roger Bingham: 
-      item-15 at level 3: text: from the American Museum of Natural History
-  item-16 at level 1: section: group WebVTT cue block
-    item-17 at level 2: text: 00:18.000 --> 00:20.000
-    item-18 at level 2: inline: group WebVTT cue voice span
-      item-19 at level 3: text: Roger Bingham: 
-      item-20 at level 3: text: And with me is Neil deGrasse Tyson
-  item-21 at level 1: section: group WebVTT cue block
-    item-22 at level 2: text: 00:20.000 --> 00:22.000
-    item-23 at level 2: inline: group WebVTT cue voice span
-      item-24 at level 3: text: Roger Bingham: 
-      item-25 at level 3: text: Astrophysicist, Director of the Hayden Planetarium
-  item-26 at level 1: section: group WebVTT cue block
-    item-27 at level 2: text: 00:22.000 --> 00:24.000
-    item-28 at level 2: inline: group WebVTT cue voice span
-      item-29 at level 3: text: Roger Bingham: 
-      item-30 at level 3: text: at the AMNH.
-  item-31 at level 1: section: group WebVTT cue block
-    item-32 at level 2: text: 00:24.000 --> 00:26.000
-    item-33 at level 2: inline: group WebVTT cue voice span
-      item-34 at level 3: text: Roger Bingham: 
-      item-35 at level 3: text: Thank you for walking down here.
-  item-36 at level 1: section: group WebVTT cue block
-    item-37 at level 2: text: 00:27.000 --> 00:30.000
-    item-38 at level 2: inline: group WebVTT cue voice span
-      item-39 at level 3: text: Roger Bingham: 
-      item-40 at level 3: text: And I want to do a follow-up on the last conversation we did.
-  item-41 at level 1: section: group WebVTT cue block
-    item-42 at level 2: text: 00:30.000 --> 00:31.500
-    item-43 at level 2: inline: group WebVTT cue voice span
-      item-44 at level 3: text: Roger Bingham: 
-      item-45 at level 3: text: When we e-mailed—
-  item-46 at level 1: section: group WebVTT cue block
-    item-47 at level 2: text: 00:30.500 --> 00:32.500
-    item-48 at level 2: inline: group WebVTT cue voice span
-      item-49 at level 3: text: Neil deGrasse Tyson: 
-      item-50 at level 3: text: Didn’t we talk about enough in that conversation?
-  item-51 at level 1: section: group WebVTT cue block
-    item-52 at level 2: text: 00:32.000 --> 00:35.500
-    item-53 at level 2: inline: group WebVTT cue voice span
-      item-54 at level 3: text: Roger Bingham: 
-      item-55 at level 3: text: No! No no no no; 'cos 'cos obviously 'cos
-  item-56 at level 1: section: group WebVTT cue block
-    item-57 at level 2: text: 00:32.500 --> 00:33.500
-    item-58 at level 2: inline: group WebVTT cue voice span
-      item-59 at level 3: text: Neil deGrasse Tyson: 
-      item-60 at level 3: text: Laughs
-  item-61 at level 1: section: group WebVTT cue block
-    item-62 at level 2: text: 00:35.500 --> 00:38.000
-    item-63 at level 2: inline: group WebVTT cue voice span
-      item-64 at level 3: text: Roger Bingham: 
-      item-65 at level 3: text: You know I’m so excited my glasses are falling off here.
+  item-1 at level 1: text: We are in New York City
+  item-2 at level 1: text: We’re actually at the Lucern Hotel, just down the street
+  item-3 at level 1: text: from the American Museum of Natural History
+  item-4 at level 1: text: And with me is Neil deGrasse Tyson
+  item-5 at level 1: text: Astrophysicist, Director of the Hayden Planetarium
+  item-6 at level 1: text: at the AMNH.
+  item-7 at level 1: text: Thank you for walking down here.
+  item-8 at level 1: text: And I want to do a follow-up on the last conversation we did.
+  item-9 at level 1: text: When we e-mailed—
+  item-10 at level 1: text: Didn’t we talk about enough in that conversation?
+  item-11 at level 1: text: No! No no no no; 'cos 'cos obviously 'cos
+  item-12 at level 1: text: Laughs
+  item-13 at level 1: text: You know I’m so excited my glasses are falling off here.
