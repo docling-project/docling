@@ -53,7 +53,7 @@
 <picture><loc_26><loc_44><loc_197><loc_151></picture>
 <text><loc_66><loc_170><loc_94><loc_174>Chapter 1.</text>
 <section_header_level_1><loc_409><loc_59><loc_427><loc_82>1</section_header_level_1>
-<section_header_level_1><loc_112><loc_161><loc_449><loc_196>Securing and protecting IBM DB2 data</section_header_level_1>
+<section_header_level_2><loc_112><loc_161><loc_449><loc_196>Securing and protecting IBM DB2 data</section_header_level_2>
 <text><loc_112><loc_220><loc_447><loc_271>Recent news headlines are filled with reports of data breaches and cyber-attacks impacting global businesses of all sizes. The Identity Theft Resource Center 1  reports that almost 5000 data breaches have occurred since 2005, exposing over 600 million records of data. The financial cost of these data breaches is skyrocketing. Studies from the Ponemon Institute 2 revealed that the average cost of a data breach increased in 2013 by 15% globally and resulted in a brand equity loss of $9.4 million per attack. The average cost that is incurred for each lost record containing sensitive information increased more than 9% to $145 per record.</text>
 <text><loc_112><loc_280><loc_431><loc_308>Businesses must make a serious effort to secure their data and recognize that securing information assets is a cost of doing business. In many parts of the world and in many industries, securing the data is required by law and subject to audits. Data security is no longer an option; it is a requirement.</text>
 <text><loc_112><loc_316><loc_447><loc_329>This chapter describes how you can secure and protect data in DB2 for i. The following topics are covered in this chapter:</text>
@@ -66,7 +66,7 @@
 <page_footer><loc_53><loc_477><loc_210><loc_482>' Copyright IBM Corp. 2014. All rights reserved.</page_footer>
 <page_footer><loc_443><loc_477><loc_447><loc_482>1</page_footer>
 <page_break>
-<section_header_level_1><loc_53><loc_47><loc_218><loc_56>1.1  Security fundamentals</section_header_level_1>
+<section_header_level_2><loc_53><loc_47><loc_218><loc_56>1.1  Security fundamentals</section_header_level_2>
 <text><loc_112><loc_67><loc_445><loc_81>Before reviewing database security techniques, there are two fundamental steps in securing information assets that must be described:</text>
 <unordered_list><list_item><loc_112><loc_86><loc_447><loc_114>/SM590000 First, and most important, is the definition of a company's security policy . Without a security policy, there is no definition of what are acceptable practices for using, accessing, and storing information by who, what, when, where, and how. A security policy should minimally address three things: confidentiality, integrity, and availability.</list_item>
 </unordered_list>
@@ -75,14 +75,14 @@
 <unordered_list><list_item><loc_112><loc_186><loc_447><loc_237>/SM590000 The second fundamental in securing data assets is the use of resource security . If implemented properly, resource security prevents data breaches from both internal and external intrusions. Resource security controls are closely tied to the part of the security policy that defines who should have access to what information resources. A hacker might be good enough to get through your company firewalls and sift his way through to your system, but if they do not have explicit access to your database, the hacker cannot compromise your information assets.</list_item>
 </unordered_list>
 <text><loc_112><loc_245><loc_437><loc_259>With your eyes now open to the importance of securing information assets, the rest of this chapter reviews the methods that are available for securing database resources on IBM i.</text>
-<section_header_level_1><loc_53><loc_277><loc_264><loc_286>1.2  Current state of IBM i security</section_header_level_1>
+<section_header_level_2><loc_53><loc_277><loc_264><loc_286>1.2  Current state of IBM i security</section_header_level_2>
 <text><loc_112><loc_297><loc_447><loc_326>Because of the inherently secure nature of IBM i, many clients rely on the default system settings to protect their business data that is stored in DB2 for i. In most cases, this means no data protection because the default setting for the Create default public authority (QCRTAUT) system value is *CHANGE.</text>
 <text><loc_112><loc_334><loc_447><loc_370>Even more disturbing is that many IBM i clients remain in this state, despite the news headlines and the significant costs that are involved with databases being compromised. This default security configuration makes it quite challenging to implement basic security policies. A tighter implementation is required if you really want to protect one of your company's most valuable assets, which is the data.</text>
 <text><loc_112><loc_378><loc_447><loc_429>Traditionally, IBM i applications have employed menu-based security to counteract this default configuration that gives all users access to the data. The theory is that data is protected by the menu options controlling what database operations that the user can perform. This approach is ineffective, even if the user profile is restricted from running interactive commands. The reason is that in today's connected world there are a multitude of interfaces into the system, from web browsers to PC clients, that bypass application menus. If there are no object-level controls, users of these newer interfaces have an open door to your data.</text>
 <page_footer><loc_53><loc_477><loc_268><loc_482>2 Row and Column Access Control Support in IBM DB2 for i</page_footer>
 <page_break>
 <text><loc_112><loc_45><loc_445><loc_96>Many businesses are trying to limit data access to a need-to-know basis. This security goal means that users should be given access only to the minimum set of data that is required to perform their job. Often, users with object-level access are given access to row and column values that are beyond what their business task requires because that object-level security provides an all-or-nothing solution. For example, object-level controls allow a manager to access data about all employees. Most security policies limit a manager to accessing data only for the employees that they manage.</text>
-<section_header_level_1><loc_53><loc_109><loc_246><loc_117>1.3.1  Existing row and column control</section_header_level_1>
+<section_header_level_2><loc_53><loc_109><loc_246><loc_117>1.3.1  Existing row and column control</section_header_level_2>
 <text><loc_112><loc_126><loc_442><loc_162>Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure 1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.</text>
 <text><loc_112><loc_170><loc_447><loc_199>Using SQL views to limit access to a subset of the data in a table also has its own set of challenges. First, there is the complexity of managing all of the SQL view objects that are used for securing data access. Second, scaling a view-based security solution can be difficult as the amount of data grows and the number of users increases.</text>
 <text><loc_112><loc_207><loc_447><loc_228>Even if you are willing to live with these performance and management issues, a user with *ALLOBJ access still can directly access all of the data in the underlying DB2 table and easily bypass the security controls that are built into an SQL view.</text>
@@ -117,7 +117,7 @@
 <page_break>
 <text><loc_112><loc_45><loc_432><loc_59>The SQL CREATE PERMISSION statement that is shown in Figure 3-1 is used to define and initially enable or disable the row access rules.</text>
 <picture><loc_111><loc_68><loc_447><loc_260><caption><loc_112><loc_261><loc_279><loc_267>Figure 3-1   CREATE PERMISSION SQL statement</caption></picture>
-<section_header_level_1><loc_112><loc_278><loc_176><loc_285>Column mask</section_header_level_1>
+<section_header_level_2><loc_112><loc_278><loc_176><loc_285>Column mask</section_header_level_2>
 <text><loc_112><loc_287><loc_443><loc_316>A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.</text>
 <page_footer><loc_282><loc_477><loc_447><loc_482>Chapter 3. Row and Column Access Control 15</page_footer>
 <page_break>
@@ -187,7 +187,7 @@
 <page_footer><loc_81><loc_477><loc_277><loc_482>Row and Column Access Control Support in IBM DB2 for i</page_footer>
 <page_break>
 <text><loc_235><loc_18><loc_338><loc_32>Back cover</text>
-<section_header_level_1><loc_22><loc_46><loc_365><loc_89>Row and Column Access Control Support in IBM DB2 for i</section_header_level_1>
+<section_header_level_2><loc_22><loc_46><loc_365><loc_89>Row and Column Access Control Support in IBM DB2 for i</section_header_level_2>
 <text><loc_22><loc_153><loc_104><loc_168>Implement roles and separation of duties</text>
 <text><loc_22><loc_179><loc_98><loc_204>Leverage row permissions on the database</text>
 <text><loc_22><loc_215><loc_99><loc_239>Protect columns by defining column masks</text>
@@ -196,7 +196,7 @@
 <picture><loc_396><loc_16><loc_463><loc_34></picture>
 <picture><loc_387><loc_50><loc_484><loc_120></picture>
 <text><loc_382><loc_156><loc_457><loc_191>INTERNATIONAL TECHNICAL SUPPORT ORGANIZATION</text>
-<section_header_level_1><loc_382><loc_222><loc_480><loc_244>BUILDING TECHNICAL INFORMATION BASED ON PRACTICAL EXPERIENCE</section_header_level_1>
+<section_header_level_2><loc_382><loc_222><loc_480><loc_244>BUILDING TECHNICAL INFORMATION BASED ON PRACTICAL EXPERIENCE</section_header_level_2>
 <text><loc_382><loc_252><loc_480><loc_342>IBM Redbooks are developed by the IBM International Technical Support Organization. Experts from IBM, Customers and Partners from around the world create timely technical information based on realistic scenarios. Specific recommendations are provided to help you implement IT solutions more effectively in your environment.</text>
 <text><loc_382><loc_365><loc_466><loc_380>For more information: ibm.com /redbooks</text>
 <page_footer><loc_140><loc_399><loc_189><loc_404>REDP-5110-00</page_footer>

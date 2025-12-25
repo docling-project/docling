@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Union
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -11,7 +12,7 @@ from docling_core.types.doc import (
     RichTableCell,
     TableData,
 )
-from docling_core.types.doc.document import ContentLayer
+from docling_core.types.doc.document import ContentLayer, SectionHeaderItem
 from docling_ibm_models.list_item_normalizer.list_marker_processor import (
     ListItemMarkerProcessor,
 )
@@ -26,24 +27,62 @@ from docling.datamodel.base_models import (
     Cluster,
     ContainerElement,
     FigureElement,
+    PageElement,
     Table,
     TextElement,
 )
 from docling.datamodel.document import ConversionResult
+from docling.models.header_hierarchy.hierarchy_builder import (
+    HierarchyBuilder,
+    PDFHeaderHierarchyOptions,
+)
+from docling.models.header_hierarchy.metadata_hierarchy import HierarchyBuilderMetadata
+from docling.models.header_hierarchy.types.hierarchical_header import HierarchicalHeader
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 
 class ReadingOrderOptions(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
+    header_hierachy_options: PDFHeaderHierarchyOptions = PDFHeaderHierarchyOptions()
 
     model_names: str = ""  # e.g. "language;term;reference"
+
+
+class MainHeaderInFormException(Exception):
+    def __init__(self, element: BasePageElement):
+        super().__init__(
+            f"Following heading was about to be created as a sub-header, but it is actually is a super-header of with respect to the latest heading: {element}"
+        )
 
 
 class ReadingOrderModel:
     def __init__(self, options: ReadingOrderOptions):
         self.options = options
         self.ro_model = ReadingOrderPredictor()
+        self.hierachy_builder = HierarchyBuilder(
+            options=options.header_hierachy_options
+        )
         self.list_item_processor = ListItemMarkerProcessor()
+        self._header_stack: list[SectionHeaderItem] = []
+        self._hierarchical_header_root: HierarchicalHeader = HierarchicalHeader()
+        self._cid_to_header: dict[str, SectionHeaderItem] = {}
+
+    @property
+    def _current_parent(self):
+        if self._header_stack:
+            return self._header_stack[-1]
+        else:
+            return None
+
+    @property
+    def _current_heading_level(self):
+        return len(self._header_stack) + 1
+
+    @staticmethod
+    def _page_element_cref(
+        element: BasePageElement,
+    ) -> str:
+        return f"#/{element.page_no}/{element.cluster.id}"
 
     def _assembled_to_readingorder_elements(
         self, conv_res: ConversionResult
@@ -59,7 +98,7 @@ class ReadingOrderModel:
             elements.append(
                 ReadingOrderPageElement(
                     cid=len(elements),
-                    ref=RefItem(cref=f"#/{element.page_no}/{element.cluster.id}"),
+                    ref=RefItem(cref=self._page_element_cref(element)),
                     text=text,
                     page_no=element.page_no,
                     page_size=page_no_to_pages[element.page_no].size,
@@ -99,7 +138,27 @@ class ReadingOrderModel:
                 l_item = doc.add_list_item(parent=doc_item, text=c_text, prov=c_prov)
                 self.list_item_processor.process_list_item(l_item)
             elif c_label == DocItemLabel.SECTION_HEADER:
-                doc.add_heading(parent=doc_item, text=c_text, prov=c_prov)
+                # check if the header in this form is part of the recognised header
+                # hierarchy and if so make sure it wasn't supposed to be a level
+                # higher or lower than the currently active parent.
+                child_cref = self._page_element_cref(element)
+                try:
+                    parent_cid = self._hierarchical_header_root.get_parent_cid_of(
+                        child_cref
+                    )
+                    if (
+                        parent_cid is not None
+                        and self._cid_to_header[parent_cid] != self._current_parent
+                    ):
+                        raise MainHeaderInFormException(element)
+                except KeyError:
+                    pass
+                doc.add_heading(
+                    parent=doc_item,
+                    text=c_text,
+                    prov=c_prov,
+                    level=self._current_heading_level,
+                )
             else:
                 doc.add_text(parent=doc_item, label=c_label, text=c_text, prov=c_prov)
 
@@ -178,7 +237,9 @@ class ReadingOrderModel:
                         charspan=(0, len(cap_text)),
                         bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
                     )
-                    code_item = out_doc.add_code(text=cap_text, prov=prov)
+                    code_item = out_doc.add_code(
+                        text=cap_text, prov=prov, parent=self._current_parent
+                    )
 
                     if rel.cid in el_to_captions_mapping.keys():
                         for caption_cid in el_to_captions_mapping[rel.cid]:
@@ -236,7 +297,10 @@ class ReadingOrderModel:
                 )
 
                 tbl = out_doc.add_table(
-                    data=tbl_data, prov=prov, label=element.cluster.label
+                    data=tbl_data,
+                    prov=prov,
+                    label=element.cluster.label,
+                    parent=self._current_parent,
                 )
 
                 if rel.cid in el_to_captions_mapping.keys():
@@ -290,7 +354,7 @@ class ReadingOrderModel:
                     charspan=(0, len(cap_text)),
                     bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
                 )
-                pic = out_doc.add_picture(prov=prov)
+                pic = out_doc.add_picture(prov=prov, parent=self._current_parent)
 
                 if rel.cid in el_to_captions_mapping.keys():
                     for caption_cid in el_to_captions_mapping[rel.cid]:
@@ -320,7 +384,9 @@ class ReadingOrderModel:
                 elif label == DocItemLabel.KEY_VALUE_REGION:
                     group_label = GroupLabel.KEY_VALUE_AREA
 
-                container_el = out_doc.add_group(label=group_label)
+                container_el = out_doc.add_group(
+                    label=group_label, parent=self._current_parent
+                )
 
                 self._add_child_elements(element, container_el, out_doc)
 
@@ -339,6 +405,37 @@ class ReadingOrderModel:
         )
         return new_item
 
+    def _handle_header_element(
+        self, element, out_doc, cap_text: str, prov: ProvenanceItem
+    ):
+        this_cid = self._page_element_cref(element)
+        try:
+            parent_cid = self._hierarchical_header_root.get_parent_cid_of(this_cid)
+            parent = None
+            if parent_cid is not None:
+                parent = self._cid_to_header[parent_cid]
+                self._header_stack = self._header_stack[
+                    : self._header_stack.index(parent) + 1
+                ]
+            else:
+                self._header_stack = []
+            new_item = out_doc.add_heading(
+                text=cap_text,
+                prov=prov,
+                parent=parent,
+                level=self._current_heading_level,
+            )
+            self._cid_to_header[this_cid] = new_item
+            self._header_stack.append(new_item)
+        except KeyError:
+            # Handle headings that are not part of the metadata TOC:
+            level = self._current_heading_level
+            # level = level if level == 1 else level + 1
+            new_item = out_doc.add_heading(
+                text=cap_text, prov=prov, parent=self._current_parent, level=level
+            )
+        return new_item
+
     def _handle_text_element(self, element, out_doc, current_list, page_height):
         cap_text = element.text
 
@@ -350,7 +447,9 @@ class ReadingOrderModel:
         label = element.label
         if label == DocItemLabel.LIST_ITEM:
             if current_list is None:
-                current_list = out_doc.add_group(label=GroupLabel.LIST, name="list")
+                current_list = out_doc.add_group(
+                    label=GroupLabel.LIST, name="list", parent=self._current_parent
+                )
 
             # TODO: Infer if this is a numbered or a bullet list item
             new_item = out_doc.add_list_item(
@@ -361,12 +460,16 @@ class ReadingOrderModel:
         elif label == DocItemLabel.SECTION_HEADER:
             current_list = None
 
-            new_item = out_doc.add_heading(text=cap_text, prov=prov)
+            new_item = self._handle_header_element(element, out_doc, cap_text, prov)
         elif label == DocItemLabel.FORMULA:
             current_list = None
 
             new_item = out_doc.add_text(
-                label=DocItemLabel.FORMULA, text="", orig=cap_text, prov=prov
+                label=DocItemLabel.FORMULA,
+                text="",
+                orig=cap_text,
+                prov=prov,
+                parent=self._current_parent,
             )
         else:
             current_list = None
@@ -380,6 +483,7 @@ class ReadingOrderModel:
                 text=cap_text,
                 prov=prov,
                 content_layer=content_layer,
+                parent=self._current_parent,
             )
         return new_item, current_list
 
@@ -402,8 +506,15 @@ class ReadingOrderModel:
         new_item.orig += f" {merged_elem.text}"  # TODO: This is incomplete, we don't have the `orig` field of the merged element.
         new_item.prov.append(prov)
 
+    def _reset(self):
+        self._header_stack = []
+        self._cid_to_header = {}
+
     def __call__(self, conv_res: ConversionResult) -> DoclingDocument:
         with TimeRecorder(conv_res, "reading_order", scope=ProfilingScope.DOCUMENT):
+            # reset those as well since Reading order model is instantiated with the StandardPdfPipeline
+            self._reset()
+
             page_elements = self._assembled_to_readingorder_elements(conv_res)
 
             # Apply reading order
@@ -416,6 +527,11 @@ class ReadingOrderModel:
             el_to_footnotes_mapping = self.ro_model.predict_to_footnotes(
                 sorted_elements=sorted_elements
             )
+
+            self._hierarchical_header_root = self.hierachy_builder(
+                conv_res=conv_res, sorted_elements=sorted_elements
+            )
+
             el_merges_mapping = self.ro_model.predict_merges(
                 sorted_elements=sorted_elements
             )
