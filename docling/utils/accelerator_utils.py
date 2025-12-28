@@ -22,6 +22,7 @@ def decide_device(
 
     has_cuda = torch.backends.cuda.is_built() and torch.cuda.is_available()
     has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
+    has_xpu = torch.xpu.is_available()
 
     if supported_devices is not None:
         if has_cuda and AcceleratorDevice.CUDA not in supported_devices:
@@ -34,12 +35,19 @@ def decide_device(
                 f"Removing MPS from available devices because it is not in {supported_devices=}"
             )
             has_mps = False
+        if has_xpu and AcceleratorDevice.XPU not in supported_devices:
+            _log.info(
+                f"Removing XPU from available devices because it is not in {supported_devices=}"
+            )
+            has_xpu = False
 
     if accelerator_device == AcceleratorDevice.AUTO.value:  # Handle 'auto'
         if has_cuda:
             device = "cuda:0"
         elif has_mps:
             device = "mps"
+        elif has_xpu:
+            device = "xpu"
 
     elif accelerator_device.startswith("cuda"):
         if has_cuda:
@@ -70,6 +78,12 @@ def decide_device(
             device = "mps"
         else:
             _log.warning("MPS is not available in the system. Fall back to 'CPU'")
+
+    elif accelerator_device == AcceleratorDevice.XPU.value:
+        if has_xpu:
+            device = "xpu"
+        else:
+            _log.warning("XPU is not available in the system. Fall back to 'CPU'")
 
     elif accelerator_device == AcceleratorDevice.CPU.value:
         device = "cpu"

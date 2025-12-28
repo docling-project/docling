@@ -39,6 +39,7 @@ class InlineAsrOptions(BaseAsrOptions):
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
         AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
     ]
 
     @property

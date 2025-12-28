@@ -97,7 +97,11 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         if self.enabled:
             self.device = decide_device(
                 accelerator_options.device,
-                supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
+                supported_devices=[
+                    AcceleratorDevice.CPU,
+                    AcceleratorDevice.CUDA,
+                    AcceleratorDevice.XPU,
+                ],
             )
 
             if artifacts_path is None:

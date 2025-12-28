@@ -105,6 +105,7 @@ pipeline_options = VlmPipelineOptions(
             AcceleratorDevice.CPU,
             AcceleratorDevice.CUDA,
             AcceleratorDevice.MPS,
+            AcceleratorDevice.XPU,
         ],
         scale=2.0,
         temperature=0.0,

@@ -93,6 +93,7 @@ class InlineVlmOptions(BaseVlmOptions):
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
         AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
     ]
 
     stop_strings: List[str] = []
