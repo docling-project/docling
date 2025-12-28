@@ -4,8 +4,9 @@ from itertools import islice
 from pathlib import Path
 from typing import List, Union
 
-import requests
 from tqdm import tqdm
+
+from docling.utils.http_client import request_with_retry
 
 
 def chunkify(iterator, chunk_size):
@@ -46,7 +47,7 @@ def create_hash(string: str):
 
 def download_url_with_progress(url: str, progress: bool = False) -> BytesIO:
     buf = BytesIO()
-    with requests.get(url, stream=True, allow_redirects=True) as response:
+    with request_with_retry("GET", url, stream=True, allow_redirects=True) as response:
         total_size = int(response.headers.get("content-length", 0))
         progress_bar = tqdm(
             total=total_size,
