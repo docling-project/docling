@@ -1,6 +1,6 @@
 from io import BytesIO
 from pathlib import Path, PurePath
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 from docling_core.types.doc import PictureItem
@@ -279,7 +279,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     assert num_pic == 1, "No embedded picture was found in the converted file"
 
     # fetching image remotely
-    mock_resp = Mock()
+    mock_resp = MagicMock()
     mock_resp.status_code = 200
     mock_resp.content = img_bytes
     mock_resp.__enter__.return_value = mock_resp
