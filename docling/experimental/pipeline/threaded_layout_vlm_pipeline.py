@@ -19,6 +19,8 @@ from PIL import Image as PILImage
 if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
 
+import random
+
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, Page
@@ -91,6 +93,10 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 base_prompt = self.prompt
                 augmented_prompt = base_prompt
 
+                # Only augment convert to docling base prompts
+                if base_prompt != "Convert this page to docling.":
+                    return base_prompt
+
                 # In this layout-aware pipeline, _internal_page is always provided
                 if _internal_page is None:
                     return base_prompt
@@ -111,6 +117,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                             label=cluster.label
                         )
 
+                        if tag_name == DocumentToken.TABLE:
+                            print("Found a table!")
+                            tag_name = "otsl"
+
+                        if tag_name == "section_header_level_1":
+                            tag_name = "section_header"
+
                         # Convert bbox to tuple and get location tokens
                         bbox_tuple = cluster.bbox.as_tuple()
                         location_tokens = DocumentToken.get_location(
@@ -124,13 +137,17 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         layout_elements.append(xml_element)
 
                     if layout_elements:
+                        # Shuffle elements
+                        random.shuffle(layout_elements)
+
                         # Join elements with newlines and wrap in layout tags
                         layout_xml = (
                             "<layout>" + "\n".join(layout_elements) + "</layout>"
                         )
                         layout_injection = f"{layout_xml}"
 
-                        augmented_prompt = base_prompt + layout_injection
+                        augmented_prompt = layout_injection
+                        print(f"final prompt is {augmented_prompt}")
 
                     _log.debug(
                         "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
