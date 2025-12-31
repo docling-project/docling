@@ -14,7 +14,6 @@ from docling_core.types.doc import (
 from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 from pydantic import BaseModel
-from transformers import AutoModelForImageTextToText, AutoProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -104,6 +103,8 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
                 artifacts_path = self.download_models()
             else:
                 artifacts_path = artifacts_path / self._model_repo_folder
+
+            from transformers import AutoModelForImageTextToText, AutoProcessor
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,

@@ -410,7 +410,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
     )
     # If True, text from backend will be used instead of generated text
 
-    table_structure_options: BaseTableStructureOptions = TableStructureOptions()
+    table_structure_options: TableStructureOptions = TableStructureOptions()
     ocr_options: OcrOptions = OcrAutoOptions()
     layout_options: BaseLayoutOptions = LayoutOptions()
 
