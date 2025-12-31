@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Optional, Type, Union
 
 from PIL import Image
-from transformers import AutoModelForImageTextToText
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
@@ -56,7 +55,11 @@ class PictureDescriptionVlmModel(
 
             try:
                 import torch
-                from transformers import AutoModelForVision2Seq, AutoProcessor
+                from transformers import (
+                    AutoModelForImageTextToText,
+                    AutoModelForVision2Seq,
+                    AutoProcessor,
+                )
             except ImportError:
                 raise ImportError(
                     "transformers >=4.46 is not installed. Please install Docling with the required extras `pip install docling[vlm]`."

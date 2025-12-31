@@ -3,7 +3,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
 from pydantic import AnyUrl, BaseModel, ConfigDict
-from transformers import StoppingCriteria
+
+try:
+    from transformers import StoppingCriteria
+except ImportError:
+    StoppingCriteria = Any  # type: ignore
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -96,7 +100,7 @@ class InlineVlmOptions(BaseVlmOptions):
     ]
 
     stop_strings: List[str] = []
-    custom_stopping_criteria: List[Union[StoppingCriteria, GenerationStopper]] = []
+    custom_stopping_criteria: List[Union["StoppingCriteria", GenerationStopper]] = []
     extra_generation_config: Dict[str, Any] = {}
     extra_processor_kwargs: Dict[str, Any] = {}
 
