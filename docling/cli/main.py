@@ -18,6 +18,7 @@ from docling_core.transforms.serializer.html import (
     HTMLOutputStyle,
     HTMLParams,
 )
+from docling_core.transforms.serializer.markdown import ImageAltTextMode
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
@@ -227,6 +228,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    image_alt_mode: ImageAltTextMode = ImageAltTextMode.STATIC,
 ):
     success_count = 0
     failure_count = 0
@@ -301,7 +303,9 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
                 conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname,
+                    image_mode=image_export_mode,
+                    image_alt_mode=image_alt_mode,
                 )
 
             # Export Document Tags format:
@@ -412,6 +416,13 @@ def convert(  # noqa: C901
             help="Image export mode for the document (only in case of JSON, Markdown or HTML). With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
+    image_alt_mode: Annotated[
+        ImageAltTextMode,
+        typer.Option(
+            ...,
+            help="Alt text mode for markdown images. With `static`, the alt text is always 'Image'. With `caption`, image captions are used as alt text. With `description`, AI-generated descriptions from picture enrichment are used as alt text.",
+        ),
+    ] = ImageAltTextMode.STATIC,
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
@@ -962,6 +973,7 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            image_alt_mode=image_alt_mode,
         )
 
         end_time = time.time() - start_time
