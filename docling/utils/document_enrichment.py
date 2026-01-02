@@ -170,7 +170,7 @@ class DocumentEnrichmentUtils:
             return 0
 
         try:
-            _log.info("TOC 추출 시작...")
+            _log.info("TOC 추출 시작... (apply_toc_enrichment)")
 
             # 원시 텍스트 추출
             raw_text = self._extract_raw_text_for_toc(document)
@@ -326,7 +326,7 @@ class DocumentEnrichmentUtils:
             return 0
 
         try:
-            _log.info("TOC 추출 시작...")
+            _log.info("TOC 추출 시작... (apply_law_toc_enrichment)")
 
             # 원시 텍스트 추출
             raw_text = self._extract_raw_text_for_toc(document)
@@ -943,7 +943,7 @@ class DocumentEnrichmentUtils:
             (i, item.text.strip())
             for i, item in enumerate(document.texts)
             if (isinstance(item, TextItem) or isinstance(item, ListItem))
-            and (item.label == DocItemLabel.TEXT or item.label == DocItemLabel.LIST_ITEM or item.label == DocItemLabel.PAGE_HEADER)
+            and (item.label in [DocItemLabel.TEXT, DocItemLabel.LIST_ITEM, DocItemLabel.PAGE_HEADER, DocItemLabel.PARAGRAPH])
             and len(item.text.strip()) >= 2
         ]
         text_items_reversed = text_items[::-1]
