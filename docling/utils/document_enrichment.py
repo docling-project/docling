@@ -942,8 +942,8 @@ class DocumentEnrichmentUtils:
         text_items = [
             (i, item.text.strip())
             for i, item in enumerate(document.texts)
-            if (isinstance(item, TextItem) or isinstance(item, ListItem))
-            and (item.label in [DocItemLabel.TEXT, DocItemLabel.LIST_ITEM, DocItemLabel.PAGE_HEADER, DocItemLabel.PARAGRAPH])
+            if isinstance(item, (TextItem, ListItem))
+            and item.label in [DocItemLabel.TEXT, DocItemLabel.LIST_ITEM, DocItemLabel.PAGE_HEADER, DocItemLabel.PARAGRAPH]
             and len(item.text.strip()) >= 2
         ]
         text_items_reversed = text_items[::-1]
