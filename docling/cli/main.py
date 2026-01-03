@@ -100,7 +100,12 @@ from docling.document_converter import (
     PowerpointFormatOption,
     WordFormatOption,
 )
-from docling.models.factories import get_ocr_factory
+from docling.models.factories import (
+    get_layout_factory,
+    get_ocr_factory,
+    get_table_structure_factory,
+)
+from docling.models.factories.base_factory import BaseFactory
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
@@ -182,18 +187,27 @@ def version_callback(value: bool):
 def show_external_plugins_callback(value: bool):
     if value:
         ocr_factory_all = get_ocr_factory(allow_external_plugins=True)
-        table = rich.table.Table(title="Available OCR engines")
-        table.add_column("Name", justify="right")
-        table.add_column("Plugin")
-        table.add_column("Package")
-        for meta in ocr_factory_all.registered_meta.values():
-            if not meta.module.startswith("docling."):
-                table.add_row(
-                    f"[bold]{meta.kind}[/bold]",
-                    meta.plugin_name,
-                    meta.module.split(".")[0],
-                )
-        rich.print(table)
+        layout_factory_all = get_layout_factory(allow_external_plugins=True)
+        table_factory_all = get_table_structure_factory(allow_external_plugins=True)
+
+        def print_external_plugins(factory: BaseFactory, factory_name: str):
+            table = rich.table.Table(title=f"Available {factory_name} engines")
+            table.add_column("Name", justify="right")
+            table.add_column("Plugin")
+            table.add_column("Package")
+            for meta in factory.registered_meta.values():
+                if not meta.module.startswith("docling."):
+                    table.add_row(
+                        f"[bold]{meta.kind}[/bold]",
+                        meta.plugin_name,
+                        meta.module.split(".")[0],
+                    )
+            rich.print(table)
+
+        print_external_plugins(ocr_factory_all, "OCR")
+        print_external_plugins(layout_factory_all, "layout")
+        print_external_plugins(table_factory_all, "table")
+
         raise typer.Exit()
 
 
