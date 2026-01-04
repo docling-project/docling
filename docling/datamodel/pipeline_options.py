@@ -233,6 +233,9 @@ class PictureDescriptionBaseOptions(BaseOptions):
     picture_area_threshold: float = (
         0.05  # percentage of the area for a picture to processed with the models
     )
+    classification_allow: Optional[List[str]] = None
+    classification_deny: Optional[List[str]] = None
+    classification_min_confidence: float = 0.0
 
 
 class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):

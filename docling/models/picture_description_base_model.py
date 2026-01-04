@@ -6,6 +6,7 @@ from typing import List, Optional, Type, Union
 from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
+    PictureClassificationData,
     PictureItem,
 )
 from docling_core.types.doc.document import (  # TODO: move import to docling_core.types.doc
@@ -73,6 +74,13 @@ class PictureDescriptionBaseModel(
                         area_fraction = prov.bbox.area() / page_area
                         if area_fraction < self.options.picture_area_threshold:
                             describe_image = False
+            if describe_image and not _passes_classification(
+                el.item.annotations,
+                self.options.classification_allow,
+                self.options.classification_deny,
+                self.options.classification_min_confidence,
+            ):
+                describe_image = False
             if describe_image:
                 elements.append(el.item)
                 images.append(el.image)
@@ -84,6 +92,35 @@ class PictureDescriptionBaseModel(
                 PictureDescriptionData(text=output, provenance=self.provenance)
             )
             yield item
+
+
+def _passes_classification(
+    annotations: Iterable[object],
+    allow: Optional[List[str]],
+    deny: Optional[List[str]],
+    min_confidence: float,
+) -> bool:
+    if not allow and not deny:
+        return True
+    predicted = None
+    for annotation in annotations:
+        if isinstance(annotation, PictureClassificationData):
+            predicted = annotation.predicted_classes
+            break
+    if not predicted:
+        return allow is None
+    if deny:
+        deny_set = set(deny)
+        for entry in predicted:
+            if entry.confidence >= min_confidence and entry.class_name in deny_set:
+                return False
+    if allow:
+        allow_set = set(allow)
+        return any(
+            entry.confidence >= min_confidence and entry.class_name in allow_set
+            for entry in predicted
+        )
+    return True
 
     @classmethod
     @abstractmethod
