@@ -252,3 +252,48 @@ def test_handle_pictures(documents):
     assert doc.pictures[2].parent == doc.pictures[3].parent
     assert isinstance(doc.pictures[4].parent.resolve(doc), SectionHeaderItem)
     assert doc.pictures[4].parent == doc.pictures[5].parent
+
+
+def test_comments_extraction(documents):
+    """Test the function _add_comments for extracting Word document comments."""
+
+    name = "word_comments.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    # Find comment groups
+    comment_groups: list[GroupItem] = []
+    for group in doc.groups:
+        if not isinstance(group, GroupItem):
+            continue
+        if group.name.startswith("comment-"):
+            comment_groups.append(group)
+
+    assert len(comment_groups) == 3, "Expected 3 comments in the document"
+
+    # Collect all comment text content
+    comment_texts = []
+    for text_item in doc.texts:
+        if hasattr(text_item, "content_layer") and text_item.content_layer == "notes":
+            comment_texts.append(text_item.text)
+
+    # Check that author info is included
+    assert any("John Reviewer" in text for text in comment_texts), (
+        "Expected 'John Reviewer' author in comments"
+    )
+    assert any("Jane Editor" in text for text in comment_texts), (
+        "Expected 'Jane Editor' author in comments"
+    )
+
+    # Check that comment text is included
+    assert any("sample reviewer comment" in text for text in comment_texts), (
+        "Expected comment text content"
+    )
+    assert any(
+        "Another comment by a different reviewer" in text for text in comment_texts
+    ), "Expected second comment text content"
+
+    # Check content layer is NOTES
+    for group in comment_groups:
+        assert group.content_layer == "notes", (
+            "Comments should be in NOTES content layer"
+        )

@@ -153,6 +153,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             assert self.docx_obj is not None
             doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
             self._add_header_footer(self.docx_obj, doc)
+            self._add_comments(self.docx_obj, doc)
 
             return doc
         else:
@@ -1658,6 +1659,68 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     content_layer=self.content_layer,
                 )
                 self._walk_linear(ftr._element, doc)
+
+        self.content_layer = current_layer
+        self.parents[0] = base_parent
+
+    def _add_comments(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
+        """Add document comments (reviewer annotations).
+
+        Comments are added in the NOTES content layer and grouped under
+        COMMENT_SECTION groups. Each comment includes author, timestamp,
+        and text content as metadata.
+
+        Args:
+            docx_obj: A docx Document object to be parsed.
+            doc: A DoclingDocument object to add the comments from docx_obj.
+        """
+        # Check if document has any comments
+        if not hasattr(docx_obj, "comments") or len(docx_obj.comments) == 0:
+            return
+
+        current_layer = self.content_layer
+        base_parent = self.parents[0]
+        self.content_layer = ContentLayer.NOTES
+
+        for comment in docx_obj.comments:
+            # Create a group for this comment
+            comment_group = doc.add_group(
+                label=GroupLabel.COMMENT_SECTION,
+                name=f"comment-{comment.comment_id}",
+                content_layer=self.content_layer,
+            )
+            self.parents[0] = comment_group
+
+            # Build comment text with metadata prefix
+            # Format: "[Author (initials), timestamp]: comment text"
+            metadata_parts = []
+            if comment.author:
+                author_str = comment.author
+                if comment.initials:
+                    author_str += f" ({comment.initials})"
+                metadata_parts.append(author_str)
+            if comment.timestamp:
+                metadata_parts.append(comment.timestamp.isoformat())
+
+            metadata_prefix = ", ".join(metadata_parts)
+            comment_text = comment.text.strip() if comment.text else ""
+
+            if metadata_prefix and comment_text:
+                full_text = f"[{metadata_prefix}]: {comment_text}"
+            elif metadata_prefix:
+                full_text = f"[{metadata_prefix}]"
+            elif comment_text:
+                full_text = comment_text
+            else:
+                # Skip empty comments
+                continue
+
+            doc.add_text(
+                label=DocItemLabel.PARAGRAPH,
+                parent=comment_group,
+                text=full_text,
+                content_layer=self.content_layer,
+            )
 
         self.content_layer = current_layer
         self.parents[0] = base_parent
