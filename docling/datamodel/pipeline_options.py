@@ -530,6 +530,7 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         TableStructureOptions: Table extraction configuration
         DocumentConverter: Main conversion interface
     """
+
     do_table_structure: bool = True  # True: perform table structure extraction
     do_ocr: bool = True  # True: perform OCR, replace programmatic PDF text
     do_code_enrichment: bool = False  # True: perform code OCR
