@@ -1,7 +1,7 @@
+import datetime
 import importlib
 import logging
 import platform
-import datetime
 import re
 import sys
 import tempfile
@@ -23,7 +23,6 @@ from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
 from pydantic import TypeAdapter
 from rich.console import Console
-from docling.utils.profiling import ProfilingItem
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
@@ -110,6 +109,7 @@ from docling.models.factories import (
 from docling.models.factories.base_factory import BaseFactory
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
+from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -313,7 +313,17 @@ def export_documents(
             # Export profiling timings
             if export_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
-                metric_columns = ["Stage", "count", "total", "mean", "median", "min", "max", "0.1 percentile", "0.9 percentile"]
+                metric_columns = [
+                    "Stage",
+                    "count",
+                    "total",
+                    "mean",
+                    "median",
+                    "min",
+                    "max",
+                    "0.1 percentile",
+                    "0.9 percentile",
+                ]
                 for col in metric_columns:
                     table.add_column(col, style="bold")
                 for stage_key, item in conv_res.timings.items():
@@ -322,25 +332,27 @@ def export_documents(
                     #     metric : fun(metric, key, item)
                     # }
                     col_dict = {
-                        "Stage"           : stage_key,
-                        "count"           : item.count, 
-                        "total"           : item.total(),
-                        "mean"            : item.avg(), 
-                        "median"          : item.std(),
-                        "min"             : item.percentile(0.0),
-                        "max"             : item.percentile(1.0),
-                        "0.1 percentile"  : item.percentile(0.1),
-                        "0.9 percentile"  : item.percentile(0.9), 
+                        "Stage": stage_key,
+                        "count": item.count,
+                        "total": item.total(),
+                        "mean": item.avg(),
+                        "median": item.std(),
+                        "min": item.percentile(0.0),
+                        "max": item.percentile(1.0),
+                        "0.1 percentile": item.percentile(0.1),
+                        "0.9 percentile": item.percentile(0.9),
                     }
                     row_values = [str(col_dict[col]) for col in metric_columns]
                     table.add_row(*row_values)
-                
+
                 console.print(table)
 
                 if export_raw_timings:
                     TimingsT = TypeAdapter(dict[str, ProfilingItem])
                     now = datetime.datetime.now()
-                    timings_file = Path(output_dir / f"result-timings-{now:%Y-%m-%d_%H-%M-%S}.json")
+                    timings_file = Path(
+                        output_dir / f"result-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
+                    )
                     with timings_file.open("wb") as fp:
                         r = TimingsT.dump_json(conv_res.timings, indent=2)
                         fp.write(r)

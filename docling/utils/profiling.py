@@ -24,7 +24,7 @@ class ProfilingItem(BaseModel):
     start_timestamps: List[datetime] = []
 
     def total(self) -> float:
-        return np.sum(self.times) # type: ignore
+        return np.sum(self.times)  # type: ignore
 
     def avg(self) -> float:
         return np.average(self.times)  # type: ignore
