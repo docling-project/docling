@@ -37,7 +37,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
 )
 from docling.datamodel.settings import settings
-from docling.models.api_vlm_model import ApiVlmModel
+from docling.models.vlm_models_api.api_vlm_model import ApiVlmModel
 from docling.models.vlm_models_inline.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
 )

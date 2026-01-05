@@ -32,9 +32,9 @@ from docling.datamodel.settings import settings
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
 )
-from docling.models.api_vlm_model import ApiVlmModel
 from docling.models.base_model import BaseVlmPageModel
 from docling.models.layout_model import LayoutModel
+from docling.models.vlm_models_api.api_vlm_model import ApiVlmModel
 from docling.models.vlm_models_inline.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
 )
