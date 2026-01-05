@@ -1,3 +1,36 @@
+## [v2.66.0](https://github.com/docling-project/docling/releases/tag/v2.66.0) - 2025-12-24
+
+### Feature
+
+* Add preset for using granite-docling via vllm and other apis ([#2792](https://github.com/docling-project/docling/issues/2792)) ([`241d19e`](https://github.com/docling-project/docling/commit/241d19ed6f1b6d4327df250497ff8d8dd2686b5d))
+
+### Fix
+
+* **docx:** Handle tables with merged cells causing IndexError ([#2813](https://github.com/docling-project/docling/issues/2813)) ([`faff935`](https://github.com/docling-project/docling/commit/faff935b0e9f7a6f450b3bbc0329a05ac1b00ff2))
+* **markdown:** Allow text before headers also in mixed markdown and html ([#2801](https://github.com/docling-project/docling/issues/2801)) ([`595115d`](https://github.com/docling-project/docling/commit/595115d89259687548a96ea2f120bba572d69091))
+
+### Documentation
+
+* **RTX:** Guidelines for best performance on RTX GPUs ([#2765](https://github.com/docling-project/docling/issues/2765)) ([`be085c0`](https://github.com/docling-project/docling/commit/be085c0e39dd5c51572b883d0f795c5a7abefd5d))
+* Add docstrings to DocumentConverter #2748 ([#2782](https://github.com/docling-project/docling/issues/2782)) ([`cc5e3ce`](https://github.com/docling-project/docling/commit/cc5e3cee740fd41e27c0cc6b4a3db71308539986))
+* **style:** Fix link visibility in dark mode ([#2804](https://github.com/docling-project/docling/issues/2804)) ([`150fe90`](https://github.com/docling-project/docling/commit/150fe90728b1719b6a59e2ed058ec026d573d04b))
+
+## [v2.65.0](https://github.com/docling-project/docling/releases/tag/v2.65.0) - 2025-12-15
+
+### Feature
+
+* Add YAML output format to CLI ([#2768](https://github.com/docling-project/docling/issues/2768)) ([`da7678a`](https://github.com/docling-project/docling/commit/da7678a754b62df5cf0a9a1efe98c288bda20bd7))
+
+### Fix
+
+* **rapidocr:** Use correct parameter name for rec_keys_path ([#2762](https://github.com/docling-project/docling/issues/2762)) ([`1d78418`](https://github.com/docling-project/docling/commit/1d78418cefb5b90691481fa92c35e8b4909b6de5))
+* **docx:** Handle missing value in paragraph style name ([#2761](https://github.com/docling-project/docling/issues/2761)) ([`a97d950`](https://github.com/docling-project/docling/commit/a97d950d74335fbc14d124edda67fa0fa272f11d))
+
+### Documentation
+
+* Add Pydantic field documentation for PipelineOptions ([#2771](https://github.com/docling-project/docling/issues/2771)) ([`7c24b01`](https://github.com/docling-project/docling/commit/7c24b014f6cee6978f1bd1c98cc0478aed96b4a1))
+* **gpu:** Add benchmarks of standard pipeline with OCR ([#2764](https://github.com/docling-project/docling/issues/2764)) ([`d03439c`](https://github.com/docling-project/docling/commit/d03439ccc54bab43bf4b5c79bb21a1491caeb728))
+
 ## [v2.64.1](https://github.com/docling-project/docling/releases/tag/v2.64.1) - 2025-12-09
 
 ### Fix

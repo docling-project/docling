@@ -1427,7 +1427,7 @@ wheels = [
 
 [[package]]
 name = "docling"
-version = "2.64.1"
+version = "2.66.0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate", version = "1.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },

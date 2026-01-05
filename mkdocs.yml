@@ -57,6 +57,7 @@ nav:
     - Getting started : 
       - Installation: getting_started/installation.md
       - Quickstart: getting_started/quickstart.md
+      - ⚡ RTX GPU: getting_started/rtx.md
     - Usage:
       - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
@@ -191,13 +192,15 @@ plugins:
   - mkdocs-jupyter
   - mkdocstrings:
       default_handler: python
-      options:
-        extensions:
-          - griffe_pydantic:
-              schema: true
-        preload_modules:
-          - docling
-          - docling_core
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            extensions:
+              - griffe_pydantic:
+                  schema: true
+            preload_modules:
+              - docling_core
 
 extra_css:
   - stylesheets/extra.css

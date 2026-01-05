@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, ClassVar, Dict, List, Literal, Optional, Union
 
 from pydantic import (
     AnyUrl,
@@ -79,18 +79,41 @@ class TableStructureOptions(BaseTableStructureOptions):
 class OcrOptions(BaseOptions):
     """OCR options."""
 
-    lang: List[str]
-    force_full_page_ocr: bool = False  # If enabled a full page OCR is always applied
-    bitmap_area_threshold: float = (
-        0.05  # percentage of the area for a bitmap to processed with OCR
-    )
+    lang: Annotated[
+        List[str],
+        Field(
+            description="List of OCR languages to use. The format must match the values of the OCR engine of choice.",
+            examples=[["deu", "eng"]],
+        ),
+    ]
+
+    force_full_page_ocr: Annotated[
+        bool,
+        Field(
+            description="If enabled, a full-page OCR is always applied.",
+            examples=[False],
+        ),
+    ] = False
+
+    bitmap_area_threshold: Annotated[
+        float,
+        Field(
+            description="Percentage of the page area for a bitmap to be processed with OCR.",
+            examples=[0.05, 0.1],
+        ),
+    ] = 0.05
 
 
 class OcrAutoOptions(OcrOptions):
     """Options for pick OCR engine automatically."""
 
     kind: ClassVar[Literal["auto"]] = "auto"
-    lang: List[str] = []
+    lang: Annotated[
+        List[str],
+        Field(
+            description="The automatic OCR engine will use the default values of the engine. Please specify the engine explicitly to change the language selection.",
+        ),
+    ] = []
 
 
 class RapidOcrOptions(OcrOptions):
@@ -278,11 +301,44 @@ class OcrEngine(str, Enum):
 class PipelineOptions(BaseOptions):
     """Base pipeline options."""
 
-    document_timeout: Optional[float] = None
-    accelerator_options: AcceleratorOptions = AcceleratorOptions()
-    enable_remote_services: bool = False
-    allow_external_plugins: bool = False
-    artifacts_path: Optional[Union[Path, str]] = None
+    document_timeout: Annotated[
+        Optional[float],
+        Field(
+            description="Maximum allowed processing time for a document before timing out. If None, no timeout is enforced.",
+            examples=[10.0, 20.0],
+        ),
+    ] = None
+
+    accelerator_options: Annotated[
+        AcceleratorOptions,
+        Field(
+            description="Configuration options for hardware acceleration (e.g., GPU or optimized execution settings).",
+        ),
+    ] = AcceleratorOptions()
+
+    enable_remote_services: Annotated[
+        bool,
+        Field(
+            description="Enable calling external APIs or cloud services during pipeline execution.",
+            examples=[False],
+        ),
+    ] = False
+
+    allow_external_plugins: Annotated[
+        bool,
+        Field(
+            description="Allow loading external third-party plugins or modules. Disabled by default for safety.",
+            examples=[False],
+        ),
+    ] = False
+
+    artifacts_path: Annotated[
+        Optional[Union[Path, str]],
+        Field(
+            description="Filesystem path where pipeline artifacts should be stored. If None, artifacts will be fetched. You can use the utility `docling-tools models download` to pre-fetch the model artifacts.",
+            examples=["./artifacts", "/tmp/docling_outputs"],
+        ),
+    ] = None
 
 
 class ConvertPipelineOptions(PipelineOptions):
