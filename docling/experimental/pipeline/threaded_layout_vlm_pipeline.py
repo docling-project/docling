@@ -142,9 +142,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         layout_xml = (
                             "<layout>\n" + "\n".join(layout_elements) + "</layout>"
                         )
-                        layout_injection = f"{layout_xml}"
-
-                        augmented_prompt += layout_injection
+                        augmented_prompt += f"\n{layout_xml}"
 
                     _log.debug(
                         "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
