@@ -224,8 +224,8 @@ def export_documents(
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
+    print_timings: bool,
     export_timings: bool,
-    export_raw_timings: bool,
     image_export_mode: ImageRefMode,
 ):
     success_count = 0
@@ -310,8 +310,8 @@ def export_documents(
                 _log.info(f"writing Doc Tags output to {fname}")
                 conv_res.document.save_as_doctags(filename=fname)
 
-            # Export profiling timings
-            if export_timings:
+            # Print profiling timings
+            if print_timings:
                 table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
                 metric_columns = [
                     "Stage",
@@ -343,15 +343,16 @@ def export_documents(
 
                 console.print(table)
 
-                if export_raw_timings:
-                    TimingsT = TypeAdapter(dict[str, ProfilingItem])
-                    now = datetime.datetime.now()
-                    timings_file = Path(
-                        output_dir / f"result-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
-                    )
-                    with timings_file.open("wb") as fp:
-                        r = TimingsT.dump_json(conv_res.timings, indent=2)
-                        fp.write(r)
+            # Export profiling timings
+            if export_timings:
+                TimingsT = TypeAdapter(dict[str, ProfilingItem])
+                now = datetime.datetime.now()
+                timings_file = Path(
+                    output_dir / f"result-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
+                )
+                with timings_file.open("wb") as fp:
+                    r = TimingsT.dump_json(conv_res.timings, indent=2)
+                    fp.write(r)
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
@@ -593,14 +594,14 @@ def convert(  # noqa: C901
             help=f"Number of pages processed in one batch. Default: {settings.perf.page_batch_size}",
         ),
     ] = settings.perf.page_batch_size,
-    profile: Annotated[
+    profiling: Annotated[
         bool,
         typer.Option(
             ...,
             help="If enabled, it summarizes profiling details for all conversion stages.",
         ),
     ] = False,
-    save_profile: Annotated[
+    save_profiling: Annotated[
         bool,
         typer.Option(
             ...,
@@ -631,7 +632,7 @@ def convert(  # noqa: C901
         headers_t = TypeAdapter(Dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
 
-    if profile:
+    if profiling or save_profiling:
         settings.debug.profile_pipeline_timings = True
 
     with tempfile.TemporaryDirectory() as tempdir:
@@ -968,8 +969,8 @@ def convert(  # noqa: C901
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,
-            export_timings=profile,
-            export_raw_timings=save_profile,
+            print_timings=profiling,
+            export_timings=save_profiling,
             image_export_mode=image_export_mode,
         )
 
