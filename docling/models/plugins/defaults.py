@@ -19,8 +19,12 @@ def ocr_engines():
 
 
 def picture_description():
-    from docling.models.picture_description_api_model import PictureDescriptionApiModel
-    from docling.models.picture_description_vlm_model import PictureDescriptionVlmModel
+    from docling.models.picture_description.picture_description_api_model import (
+        PictureDescriptionApiModel,
+    )
+    from docling.models.picture_description.picture_description_vlm_model import (
+        PictureDescriptionVlmModel,
+    )
 
     return {
         "picture_description": [
