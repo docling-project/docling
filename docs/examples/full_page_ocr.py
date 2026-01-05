@@ -31,6 +31,7 @@ from pathlib import Path
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
+    TableStructureOptions,
     TesseractCliOcrOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -43,7 +44,9 @@ def main():
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
     pipeline_options.do_table_structure = True
-    pipeline_options.table_structure_options.do_cell_matching = True
+    pipeline_options.table_structure_options = TableStructureOptions(
+        do_cell_matching=True
+    )
 
     # Any of the OCR options can be used: EasyOcrOptions, TesseractOcrOptions,
     # TesseractCliOcrOptions, OcrMacOptions (macOS only), RapidOcrOptions
