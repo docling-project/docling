@@ -405,50 +405,50 @@ class VlmExtractionPipelineOptions(PipelineOptions):
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """
     Configuration options for PDF document processing pipeline.
-    
+
     Controls the behavior of document extraction including table structure recognition,
     OCR processing, image generation, and formula extraction. These options determine
     which processing steps are applied and how resources are allocated.
-    
+
     Attributes:
         do_table_structure: Enable table structure extraction. Identifies table boundaries,
             extracts cell content, and reconstructs table structure with rows/columns.
             Default: True.
-            
+
         do_ocr: Enable Optical Character Recognition for scanned or image-based PDFs.
             Replaces or supplements programmatic text extraction with OCR-detected text.
-            Required for scanned documents with no embedded text layer. Note: OCR 
+            Required for scanned documents with no embedded text layer. Note: OCR
             significantly increases processing time. Default: True.
-            
+
         do_code_enrichment: Enable specialized OCR for code blocks. Applies code-specific
             recognition to improve accuracy of programming language snippets, terminal
             output, and structured code. Default: False.
-            
+
         do_formula_enrichment: Enable mathematical formula extraction with LaTeX output.
-            Detects mathematical expressions and converts them to LaTeX format. 
+            Detects mathematical expressions and converts them to LaTeX format.
             Default: False.
-            
+
         generate_page_images: Generate rendered page images during extraction. Creates
             PNG representations of each page for preview, validation, or image-based
             ML tasks. Inherited from PaginatedPipelineOptions. Default: False.
-            
+
         generate_picture_images: Extract embedded images from the PDF. Saves individual
             images (figures, photos, diagrams) found in the document as separate files.
             Inherited from PaginatedPipelineOptions. Default: False.
-            
+
         images_scale: Scaling factor for generated images. Higher values produce higher
             resolution but increase processing time and storage. Recommended values:
             1.0 (standard), 2.0 (high resolution), 0.5 (lower resolution preview).
             Inherited from PaginatedPipelineOptions. Default: 1.0.
-            
+
         ocr_options: Configuration for OCR engine. Specifies which OCR engine to use
             (Tesseract, EasyOCR, RapidOCR, etc.) and engine-specific settings.
             Only applicable when do_ocr=True. Default: None (auto-selects engine).
-            
+
         table_structure_options: Configuration for table structure extraction. Controls
             table detection accuracy, cell matching behavior, and table formatting.
             Only applicable when do_table_structure=True. Default: None (uses defaults).
-    
+
     Notes:
         - Enabling multiple features (OCR, table structure, formulas) increases processing
           time significantly. Enable only necessary features for your use case.
@@ -458,94 +458,118 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
           installation before enabling do_ocr=True.
         - RapidOCR has known issues with read-only filesystems (e.g., Databricks).
           Consider Tesseract or alternative backends for distributed systems.
-    
+
     Examples:
         Basic digital PDF extraction (no OCR)::
-        
+
             from docling.document_converter import DocumentConverter, PdfFormatOption
             from docling.datamodel.pipeline_options import PdfPipelineOptions
             from docling.datamodel.base_models import InputFormat
-            
+
             # Fast extraction for digital PDFs
             options = PdfPipelineOptions()
             options.do_ocr = False
             options.do_table_structure = True
-            
+
             converter = DocumentConverter(
                 format_options={
                     InputFormat.PDF: PdfFormatOption(pipeline_options=options)
                 }
             )
             result = converter.convert("document.pdf")
-        
+
         Scanned PDF with OCR::
-        
+
             from docling.datamodel.pipeline_options import TesseractOcrOptions
-            
+
             options = PdfPipelineOptions()
             options.do_ocr = True
             options.ocr_options = TesseractOcrOptions()
             options.generate_page_images = True
             options.images_scale = 2.0
-            
+
             converter = DocumentConverter(
                 format_options={
                     InputFormat.PDF: PdfFormatOption(pipeline_options=options)
                 }
             )
-        
+
         Scientific paper with tables and formulas::
-        
+
             options = PdfPipelineOptions()
             options.do_ocr = False  # Digital PDF
             options.do_table_structure = True
             options.do_formula_enrichment = True
             options.table_structure_options = TableStructureOptions()
             options.table_structure_options.mode = TableFormerMode.ACCURATE
-            
+
             converter = DocumentConverter(
                 format_options={
                     InputFormat.PDF: PdfFormatOption(pipeline_options=options)
                 }
             )
-        
+
         Databricks-compatible configuration::
-        
+
             # Avoid RapidOCR filesystem issues in distributed environments
             options = PdfPipelineOptions()
             options.do_ocr = False  # Disabled for read-only site-packages
             options.do_table_structure = True
             options.generate_page_images = True
             options.generate_picture_images = True
-            
+
             converter = DocumentConverter(
                 format_options={
                     InputFormat.PDF: PdfFormatOption(pipeline_options=options)
                 }
             )
-    
+
     See Also:
         PaginatedPipelineOptions: Base class with image generation options
         OcrOptions: OCR engine configuration base class
         TableStructureOptions: Table extraction configuration
         DocumentConverter: Main conversion interface
     """
-
     do_table_structure: bool = True  # True: perform table structure extraction
     do_ocr: bool = True  # True: perform OCR, replace programmatic PDF text
     do_code_enrichment: bool = False  # True: perform code OCR
     do_formula_enrichment: bool = False  # True: perform formula OCR, return Latex code
+    force_backend_text: bool = (
+        False  # (To be used with vlms, or other generative models)
+    )
+    # If True, text from backend will be used instead of generated text
 
-    ocr_options: Union[
-        OcrAutoOptions,
-        EasyOcrOptions,
-        TesseractOcrOptions,
-        TesseractCliOcrOptions,
-        OcrMacOptions,
-        RapidOcrOptions,
-        None,
-    ] = None
-    table_structure_options: Optional[TableStructureOptions] = None
+    table_structure_options: BaseTableStructureOptions = TableStructureOptions()
+    ocr_options: OcrOptions = OcrAutoOptions()
+    layout_options: BaseLayoutOptions = LayoutOptions()
+
+    images_scale: float = 1.0
+    generate_page_images: bool = False
+    generate_picture_images: bool = False
+    generate_table_images: bool = Field(
+        default=False,
+        deprecated=(
+            "Field `generate_table_images` is deprecated. "
+            "To obtain table images, set `PdfPipelineOptions.generate_page_images = True` "
+            "before conversion and then use the `TableItem.get_image` function."
+        ),
+    )
+
+    generate_parsed_pages: bool = False
+
+    ### Arguments for threaded PDF pipeline with batching and backpressure control
+
+    # Batch sizes for different stages
+    ocr_batch_size: int = 4
+    layout_batch_size: int = 4
+    table_batch_size: int = 4
+
+    # Timing control
+    batch_polling_interval_seconds: float = 0.5
+
+    # Backpressure and queue control
+    queue_max_size: int = 100
+
 
 class ProcessingPipeline(str, Enum):
     LEGACY = "legacy"
