@@ -343,15 +343,12 @@ def export_documents(
 
                 console.print(table)
 
-                if export_raw_timings:
-                    TimingsT = TypeAdapter(dict[str, ProfilingItem])
-                    now = datetime.datetime.now()
-                    timings_file = Path(
-                        output_dir / f"result-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
-                    )
-                    with timings_file.open("wb") as fp:
-                        r = TimingsT.dump_json(conv_res.timings, indent=2)
-                        fp.write(r)
+            if export_raw_timings:
+                TimingsT = TypeAdapter(dict[str, ProfilingItem])
+                timings_file = Path(output_dir / f"{doc_filename}-timings.json")
+                with timings_file.open("wb") as fp:
+                    r = TimingsT.dump_json(conv_res.timings, indent=2)
+                    fp.write(r)
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
