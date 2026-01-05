@@ -348,7 +348,7 @@ def export_documents(
                 TimingsT = TypeAdapter(dict[str, ProfilingItem])
                 now = datetime.datetime.now()
                 timings_file = Path(
-                    output_dir / f"result-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
+                    output_dir / f"{doc_filename}-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
                 )
                 with timings_file.open("wb") as fp:
                     r = TimingsT.dump_json(conv_res.timings, indent=2)
