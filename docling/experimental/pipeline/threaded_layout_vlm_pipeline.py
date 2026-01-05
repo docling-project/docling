@@ -117,10 +117,11 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                             label=cluster.label
                         )
 
+                        # Replace TABLE by otsl for consistency with doctags
                         if tag_name == DocumentToken.TABLE:
-                            print("Found a table!")
                             tag_name = "otsl"
 
+                        # Remove section level details
                         if tag_name == "section_header_level_1":
                             tag_name = "section_header"
 
@@ -137,17 +138,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         layout_elements.append(xml_element)
 
                     if layout_elements:
-                        # Shuffle elements
-                        random.shuffle(layout_elements)
-
                         # Join elements with newlines and wrap in layout tags
                         layout_xml = (
-                            "<layout>" + "\n".join(layout_elements) + "</layout>"
+                            "<layout>\n" + "\n".join(layout_elements) + "</layout>"
                         )
                         layout_injection = f"{layout_xml}"
 
-                        augmented_prompt = layout_injection
-                        print(f"final prompt is {augmented_prompt}")
+                        augmented_prompt += layout_injection
 
                     _log.debug(
                         "Enhanced Prompt with Layout Info: %s\n", augmented_prompt
