@@ -49,7 +49,7 @@ def layout_engines():
 
 
 def table_structure_engines():
-    from docling.models.table_structure_model import TableStructureModel
+    from docling.models.table_structure.table_structure_model import TableStructureModel
 
     return {
         "table_structure_engines": [

@@ -23,7 +23,7 @@ from docling.models.ocr.rapid_ocr_model import RapidOcrModel
 from docling.models.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
 )
-from docling.models.table_structure_model import TableStructureModel
+from docling.models.table_structure.table_structure_model import TableStructureModel
 from docling.models.utils.hf_model_download import download_hf_model
 
 _log = logging.getLogger(__name__)
