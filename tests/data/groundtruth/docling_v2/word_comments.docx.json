@@ -187,10 +187,10 @@
       },
       "children": [],
       "content_layer": "notes",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
-      "orig": "[John Reviewer (JR), 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph.",
-      "text": "[John Reviewer (JR), 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph."
+      "orig": "[John Reviewer author: JR, time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph.",
+      "text": "[John Reviewer author: JR, time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph."
     },
     {
       "self_ref": "#/texts/6",
@@ -199,10 +199,10 @@
       },
       "children": [],
       "content_layer": "notes",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
-      "orig": "[Jane Editor (JE), 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer.",
-      "text": "[Jane Editor (JE), 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer."
+      "orig": "[Jane Editor author: JE, time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer.",
+      "text": "[Jane Editor author: JE, time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer."
     },
     {
       "self_ref": "#/texts/7",
@@ -211,10 +211,10 @@
       },
       "children": [],
       "content_layer": "notes",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
-      "orig": "[2026-01-04T05:48:07+00:00]: Anonymous feedback on this paragraph.",
-      "text": "[2026-01-04T05:48:07+00:00]: Anonymous feedback on this paragraph."
+      "orig": "[time: 2026-01-04T05:48:07+00:00]: Anonymous feedback on this paragraph.",
+      "text": "[time: 2026-01-04T05:48:07+00:00]: Anonymous feedback on this paragraph."
     }
   ],
   "pictures": [],

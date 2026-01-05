@@ -1697,10 +1697,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if comment.author:
                 author_str = comment.author
                 if comment.initials:
-                    author_str += f" ({comment.initials})"
+                    author_str += f" author: {comment.initials}"
                 metadata_parts.append(author_str)
             if comment.timestamp:
-                metadata_parts.append(comment.timestamp.isoformat())
+                metadata_parts.append(f"time: {comment.timestamp.isoformat()}")
 
             metadata_prefix = ", ".join(metadata_parts)
             comment_text = comment.text.strip() if comment.text else ""
@@ -1716,7 +1716,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 continue
 
             doc.add_text(
-                label=DocItemLabel.PARAGRAPH,
+                label=DocItemLabel.TEXT,
                 parent=comment_group,
                 text=full_text,
                 content_layer=self.content_layer,

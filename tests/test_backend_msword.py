@@ -276,12 +276,12 @@ def test_comments_extraction(documents):
         if hasattr(text_item, "content_layer") and text_item.content_layer == "notes":
             comment_texts.append(text_item.text)
 
-    # Check that author info is included
-    assert any("John Reviewer" in text for text in comment_texts), (
-        "Expected 'John Reviewer' author in comments"
+    # Check that author info is included with new format
+    assert any("John Reviewer author: JR" in text for text in comment_texts), (
+        "Expected 'John Reviewer author: JR' in comments"
     )
-    assert any("Jane Editor" in text for text in comment_texts), (
-        "Expected 'Jane Editor' author in comments"
+    assert any("Jane Editor author: JE" in text for text in comment_texts), (
+        "Expected 'Jane Editor author: JE' in comments"
     )
 
     # Check that comment text is included
