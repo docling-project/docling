@@ -37,11 +37,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
 )
 from docling.datamodel.settings import settings
-from docling.models.vlm_models_api.api_vlm_model import ApiVlmModel
-from docling.models.vlm_models_inline.hf_transformers_model import (
+from docling.models.vlm_models.api_vlm_model import ApiVlmModel
+from docling.models.vlm_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
 )
-from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
+from docling.models.vlm_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
@@ -93,7 +93,7 @@ class VlmPipeline(PaginatedPipeline):
                     ),
                 ]
             elif vlm_options.inference_framework == InferenceFramework.VLLM:
-                from docling.models.vlm_models_inline.vllm_model import VllmVlmModel
+                from docling.models.vlm_models.vllm_model import VllmVlmModel
 
                 self.build_pipe = [
                     VllmVlmModel(
