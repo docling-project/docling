@@ -1,10 +1,10 @@
 def ocr_engines():
-    from docling.models.auto_ocr_model import OcrAutoModel
-    from docling.models.easyocr_model import EasyOcrModel
-    from docling.models.ocr_mac_model import OcrMacModel
-    from docling.models.rapid_ocr_model import RapidOcrModel
-    from docling.models.tesseract_ocr_cli_model import TesseractOcrCliModel
-    from docling.models.tesseract_ocr_model import TesseractOcrModel
+    from docling.models.ocr.auto_ocr_model import OcrAutoModel
+    from docling.models.ocr.easyocr_model import EasyOcrModel
+    from docling.models.ocr.ocr_mac_model import OcrMacModel
+    from docling.models.ocr.rapid_ocr_model import RapidOcrModel
+    from docling.models.ocr.tesseract_ocr_cli_model import TesseractOcrCliModel
+    from docling.models.ocr.tesseract_ocr_model import TesseractOcrModel
 
     return {
         "ocr_engines": [
