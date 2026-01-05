@@ -4,10 +4,7 @@ import sys
 from abc import abstractmethod
 from typing import List
 
-try:
-    from transformers import StoppingCriteria
-except ImportError:
-    StoppingCriteria = object  # type: ignore
+from transformers import StoppingCriteria
 
 _log = logging.getLogger(__name__)
 
