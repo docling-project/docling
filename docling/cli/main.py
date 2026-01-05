@@ -327,16 +327,12 @@ def export_documents(
                 for col in metric_columns:
                     table.add_column(col, style="bold")
                 for stage_key, item in conv_res.timings.items():
-                    # TODO(L) More cleaner way.
-                    # col_dict = {
-                    #     metric : fun(metric, key, item)
-                    # }
                     col_dict = {
                         "Stage": stage_key,
                         "count": item.count,
                         "total": item.total(),
                         "mean": item.avg(),
-                        "median": item.std(),
+                        "median": item.percentile(0.5),
                         "min": item.percentile(0.0),
                         "max": item.percentile(1.0),
                         "0.1 percentile": item.percentile(0.1),
@@ -356,8 +352,6 @@ def export_documents(
                     with timings_file.open("wb") as fp:
                         r = TimingsT.dump_json(conv_res.timings, indent=2)
                         fp.write(r)
-                # breakpoint()
-                # print(conv_res.timings)
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
