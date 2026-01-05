@@ -19,8 +19,6 @@ from PIL import Image as PILImage
 if TYPE_CHECKING:
     from docling_core.types.doc.page import SegmentedPage
 
-import random
-
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, Page
