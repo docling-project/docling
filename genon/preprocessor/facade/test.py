@@ -5,6 +5,9 @@ import asyncio
 import json
 import time
 
+import sys
+sys.path.insert(0, "../../../") # 현재 doc_parser의 docling 폴더 참조
+
 # 테스트할 전처리기 임포트
 # from attachment_processor import DocumentProcessor # 첨부용
 # from basic_processor import DocumentProcessor # 기본형
@@ -33,8 +36,6 @@ async def process_document():
     kwargs = {}
     kwargs['org_filename'] = os.path.basename(file_path)
     vectors = await doc_processor(mock_request, file_path, **kwargs)
-    # WMF 변환 여부는 include_wmf 파라미터 전달: 현재 한글만 지원
-    # vectors = await doc_processor(mock_request, file_path, save_images=True, include_wmf=False)
     return vectors
 
 begin = time.time()

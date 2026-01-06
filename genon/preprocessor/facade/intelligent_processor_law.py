@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import logging
+import math, bisect
 from pathlib import Path
 
 from collections import defaultdict
@@ -85,6 +87,7 @@ except ImportError:
         "`pip install 'docling-core[chunking]'`"
     )
 
+_log = logging.getLogger(__name__)
 # from genos_utils import upload_files
 
 # ============================================
@@ -95,13 +98,30 @@ except ImportError:
 
 """Chunker implementation leveraging the document structure."""
 
+class GenosBucketChunker(BaseChunker):
+    """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커 (v2)"""
 
-class HierarchicalChunker(BaseChunker):
-    """문서 구조와 헤더 계층을 유지하면서 아이템을 순차적으로 처리하는 청커"""
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    merge_list_items: bool = False
+    tokenizer: Union[PreTrainedTokenizerBase, str] = "sentence-transformers/all-MiniLM-L6-v2"
+    max_tokens: int = 1024
+    merge_peers: bool = True
 
-    def chunk(self, dl_doc: DLDocument, **kwargs: Any) -> Iterator[BaseChunk]:
+    # _inner_chunker: BaseChunker = None
+    _tokenizer: PreTrainedTokenizerBase = None
+    merge_list_items: bool = True
+
+    @model_validator(mode="after")
+    def _initialize_components(self) -> Self:
+        # 토크나이저 초기화
+        self._tokenizer = (
+            self.tokenizer
+            if isinstance(self.tokenizer, PreTrainedTokenizerBase)
+            else AutoTokenizer.from_pretrained(self.tokenizer)
+        )
+        return self
+
+    def preprocess(self, dl_doc: DLDocument, **kwargs: Any) -> Iterator[BaseChunk]:
         """문서의 모든 아이템을 헤더 정보와 함께 청크로 생성
 
         Args:
@@ -225,33 +245,6 @@ class HierarchicalChunker(BaseChunker):
         chunk._header_info_list = all_header_info
         chunk._header_short_info_list = all_header_short_info  # 짧은 헤더 정보도 저장
         yield chunk
-
-class HybridChunker(BaseChunker):
-    """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커 (v2)"""
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    tokenizer: Union[PreTrainedTokenizerBase, str] = "sentence-transformers/all-MiniLM-L6-v2"
-    max_tokens: int = 1024
-    merge_peers: bool = True
-
-    _inner_chunker: BaseChunker = None
-    _tokenizer: PreTrainedTokenizerBase = None
-
-    @model_validator(mode="after")
-    def _initialize_components(self) -> Self:
-        # 토크나이저 초기화
-        self._tokenizer = (
-            self.tokenizer
-            if isinstance(self.tokenizer, PreTrainedTokenizerBase)
-            else AutoTokenizer.from_pretrained(self.tokenizer)
-        )
-
-        # HierarchicalChunker 초기화
-        if self._inner_chunker is None:
-            self._inner_chunker = HierarchicalChunker()
-
-        return self
 
     def _count_tokens(self, text: str) -> int:
         """텍스트의 토큰 수 계산 (안전한 분할 처리)"""
@@ -511,6 +504,70 @@ class HybridChunker(BaseChunker):
                     )
                 )
 
+        def get_text_from_item(item: DocItem) -> str:
+            """DocItem에서 텍스트 추출"""
+            if isinstance(item, TableItem):
+                return self._extract_table_text(item, dl_doc)
+            elif hasattr(item, 'text') and item.text:
+                return item.text
+            elif isinstance(item, PictureItem):
+                text = ""
+                for annotation in item.annotations:
+                    if hasattr(annotation, 'text'):
+                        text += annotation.text
+                return text
+            return ""
+
+        def split_items_evenly_by_tokens(items, item_token_counts, max_tokens):
+
+            n = len(items)
+            total = sum(item_token_counts)
+            if n == 0:
+                return []
+            if total <= max_tokens:
+                return [(0, n)]   # ✅ 항상 (a,b)
+
+            k = math.ceil(total / max_tokens)
+            target = total / k
+
+            P = [0]
+            for c in item_token_counts:
+                P.append(P[-1] + c)
+
+            cuts = [0]
+            used = {0}
+            for t in range(1, k):
+                goal = t * target
+                j = bisect.bisect_left(P, goal)
+
+                cand = []
+                if 0 < j < len(P): cand.append(j)
+                if 0 <= j-1 < len(P): cand.append(j-1)
+
+                best = None
+                best_dist = float("inf")
+                for x in cand:
+                    if x in used:
+                        continue
+                    if x <= cuts[-1]:
+                        continue
+                    if x >= len(P)-1:  # n
+                        continue
+                    dist = abs(P[x] - goal)
+                    if dist < best_dist:
+                        best_dist = dist
+                        best = x
+
+                if best is None:
+                    best = min(max(cuts[-1] + 1, 1), len(P)-2)
+
+                cuts.append(best)
+                used.add(best)
+
+            cuts.append(n)
+
+            return [(a, b) for a, b in zip(cuts[:-1], cuts[1:])]
+
         # ================================================================
         # 1단계: 섹션 헤더 기준으로 분할
         # ================================================================
@@ -557,6 +614,36 @@ class HybridChunker(BaseChunker):
                 header_infos,
                 header_short_infos
             ))
+
+        # ================================================================
+        # 2.5단계: 너무 긴 청크는 분할
+        # ================================================================
+        if self.max_tokens > 0:
+            for i in range(len(sections_with_text)):
+                text, items, h_infos, h_short = sections_with_text[i]
+                token_count = self._count_tokens(text)
+                if token_count < self.max_tokens:
+                    continue
+
+                # 너무 긴 섹션은 분할
+                # 각 아이템 별 token 수 계산
+                item_token_counts = [self._count_tokens(
+                    get_text_from_item(item)
+                ) for item in items]
+                item_groups = split_items_evenly_by_tokens(items, item_token_counts, self.max_tokens)
+
+                # item_groups를 섹션으로 다시 구성
+                new_sections = []
+                for (a, b) in item_groups:
+                    new_text = self._generate_section_text_with_heading(
+                        items[a:b], h_short[a:b], dl_doc
+                    )
+                    new_sections.append((new_text, items[a:b], h_infos[a:b], h_short[a:b]))
+
+                # 원래 섹션을 새로 분할된 섹션들로 교체
+                sections_with_text.pop(i)
+                for new_section in reversed(new_sections):
+                    sections_with_text.insert(i, new_section)
 
         # ================================================================
         # 3단계: 단독 타이틀(1줄만) → 다음 섹션으로 병합
@@ -649,7 +736,7 @@ class HybridChunker(BaseChunker):
         Yields:
             토큰 제한에 맞게 분할된 청크들
         """
-        doc_chunks = list(self._inner_chunker.chunk(dl_doc=dl_doc, **kwargs))
+        doc_chunks = list(self.preprocess(dl_doc=dl_doc, **kwargs))
 
         if not doc_chunks:
             return iter([])
@@ -942,8 +1029,8 @@ class DocumentProcessor:
         return self.load_documents_with_docling(file_path, **kwargs)
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
-        chunker: HybridChunker = HybridChunker(
-            max_tokens=1000,
+        chunker: GenosBucketChunker = GenosBucketChunker(
+            max_tokens=0,
             merge_peers=True
         )
 
@@ -1298,9 +1385,45 @@ class DocumentProcessor:
 
         return document
 
+    def setup_logging(self, level_num: int):
+        """
+            5"DEBUG", 4"INFO", 3"WARNING", 2"ERROR", 1"CRITICAL", 0"NOLOG" 중 하나를 받아서 로깅 레벨을 설정하는 메서드
+        """
+        def get_level_name(level_num: int) -> str:
+            level_map = {
+                5: "DEBUG",
+                4: "INFO",
+                3: "WARNING",
+                2: "ERROR",
+                1: "CRITICAL",
+                0: "NOLOG"
+            }
+            return level_map.get(level_num, "INFO")
+        level_name = get_level_name(level_num)
+        print(f"Setting log level to: {level_name}")
+
+        if level_name == "NOLOG" or not hasattr(logging, level_name):
+            logging.disable(logging.CRITICAL)  # 🔥 모든 로그 비활성화
+            return
+
+        level = getattr(logging, level_name.upper())
+
+        # 🔥 root logger 설정 (핸들러는 main에서만 설정)
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            handlers=[logging.StreamHandler()]   # 콘솔 출력
+        )
+
+        # root logger level 적용
+        logging.getLogger().setLevel(level)
+
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
-        # kwargs['save_images'] = True    # 이미지 처리
-        # kwargs['include_wmf'] = True   # wmf 처리
+        self.setup_logging(kwargs.get('log_level', 4))
+
+        _log.info(f"file_path: {file_path}")
+        _log.info(f"kwargs: {kwargs}")
+
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
         if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
