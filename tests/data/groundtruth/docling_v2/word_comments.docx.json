@@ -189,8 +189,8 @@
       "content_layer": "notes",
       "label": "text",
       "prov": [],
-      "orig": "[John Reviewer author: JR, time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph.",
-      "text": "[John Reviewer author: JR, time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph."
+      "orig": "[author: John Reviewer (JR), time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph.",
+      "text": "[author: John Reviewer (JR), time: 2026-01-04T05:48:07+00:00]: This is a sample reviewer comment on the first paragraph."
     },
     {
       "self_ref": "#/texts/6",
@@ -201,8 +201,8 @@
       "content_layer": "notes",
       "label": "text",
       "prov": [],
-      "orig": "[Jane Editor author: JE, time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer.",
-      "text": "[Jane Editor author: JE, time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer."
+      "orig": "[author: Jane Editor (JE), time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer.",
+      "text": "[author: Jane Editor (JE), time: 2026-01-04T05:48:07+00:00]: Another comment by a different reviewer."
     },
     {
       "self_ref": "#/texts/7",

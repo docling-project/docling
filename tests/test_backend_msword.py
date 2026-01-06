@@ -277,11 +277,11 @@ def test_comments_extraction(documents):
             comment_texts.append(text_item.text)
 
     # Check that author info is included with new format
-    assert any("John Reviewer author: JR" in text for text in comment_texts), (
-        "Expected 'John Reviewer author: JR' in comments"
+    assert any("author: John Reviewer (JR)" in text for text in comment_texts), (
+        "Expected 'author: John Reviewer (JR)' in comments"
     )
-    assert any("Jane Editor author: JE" in text for text in comment_texts), (
-        "Expected 'Jane Editor author: JE' in comments"
+    assert any("author: Jane Editor (JE)" in text for text in comment_texts), (
+        "Expected 'author: Jane Editor (JE)' in comments"
     )
 
     # Check that comment text is included

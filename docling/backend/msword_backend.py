@@ -1670,6 +1670,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         COMMENT_SECTION groups. Each comment includes author, timestamp,
         and text content as metadata.
 
+        The comment text format is:
+            [author: Name (initials), time: ISO-timestamp]: comment text
+
+        Examples:
+            [author: Jane Editor (JE), time: 2026-01-04T05:48:07+00:00]: Review this.
+            [author: John Doe]: Simple comment without timestamp.
+
         Args:
             docx_obj: A docx Document object to be parsed.
             doc: A DoclingDocument object to add the comments from docx_obj.
@@ -1691,13 +1698,11 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             )
             self.parents[0] = comment_group
 
-            # Build comment text with metadata prefix
-            # Format: "[Author (initials), timestamp]: comment text"
             metadata_parts = []
             if comment.author:
-                author_str = comment.author
+                author_str = f"author: {comment.author}"
                 if comment.initials:
-                    author_str += f" author: {comment.initials}"
+                    author_str += f" ({comment.initials})"
                 metadata_parts.append(author_str)
             if comment.timestamp:
                 metadata_parts.append(f"time: {comment.timestamp.isoformat()}")
