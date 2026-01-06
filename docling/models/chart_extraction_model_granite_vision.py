@@ -1,40 +1,47 @@
+import logging
 import re
 from collections.abc import Iterable
+from io import StringIO
 from pathlib import Path
 from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from docling_core.types.doc import (
-    CodeItem,
     DocItemLabel,
     DoclingDocument,
     NodeItem,
-    TextItem,
+    PictureItem,
+    PictureMeta,
+    TableCell,
+    TableData,
+    TabularChartMetaField,
 )
 from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 from pydantic import BaseModel
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
+# from transformers import AutoProcessor, AutoModelForVision2Seq
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import download_hf_model
 from docling.utils.accelerator_utils import decide_device
 
+_log = logging.getLogger(__name__)
+
 
 class ChartExtractionModelOptions(BaseModel):
-
     kind: Literal["chart_extraction"] = "chart_extraction"
 
 
-class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):    
-
+class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
     def __init__(
         self,
         enabled: bool,
         artifacts_path: Optional[Path],
-        options: CodeFormulaModelOptions,
+        options: ChartExtractionModelOptions,
         accelerator_options: AcceleratorOptions,
     ):
         """
@@ -74,7 +81,10 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 artifacts_path, device_map=self.device
             )
             """
-            self._model = AutoModelForVision2Seq.from_pretrained(artifacts_path, device_map=self.device)
+            # self._model = AutoModelForVision2Seq.from_pretrained(
+            self._model = AutoModelForImageTextToText.from_pretrained(
+                artifacts_path, device_map=self.device
+            )
             self._model.eval()
 
     @staticmethod
@@ -90,7 +100,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             force=force,
             progress=progress,
         )
-    
+
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """
         Determines if a given element in a document can be processed by the model.
@@ -107,14 +117,12 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         bool
             True if the element can be processed, False otherwise.
         """
-        # FIXME: check also that the picture is classified as a bar-, pie- or line-chart 
-        return self.enabled and \
-            isinstance(element, PictureItem)
+        # FIXME: check also that the picture is classified as a bar-, pie- or line-chart
+        return self.enabled and isinstance(element, PictureItem)
 
     def _get_prompt(self, label: str) -> str:
         return "Convert the information in this chart into a data table in CSV format."
 
-    
     def __call__(
         self,
         doc: DoclingDocument,
@@ -150,18 +158,21 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
         # Create a batch of conversations
         conversations = []
-        for img_path in img_paths:
-            print(f"image-path: {img_path}")
-            conversations.append([
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image", "url": img_path},
-                        {"type": "text", "text": "Convert the information in this chart into a data table in CSV format.\
-                        "},
-                    ],
-                },
-            ])
+        for image in images:
+            conversations.append(
+                [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "image": image},  # <-- PIL Image here
+                            {
+                                "type": "text",
+                                "text": "Convert the information in this chart into a data table in CSV format.",
+                            },
+                        ],
+                    },
+                ]
+            )
 
         # Process batch in a single call
         inputs = self._processor.apply_chat_template(
@@ -171,71 +182,73 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             return_dict=True,
             return_tensors="pt",
             padding=True,
-            padding_side='left',
-        ).to(device)
+            padding_side="left",
+        ).to(self.device)
 
         # autoregressively complete prompt for batch
-        output_ids = self._model.generate(**inputs, max_new_tokens=self._model_max_length)
+        output_ids = self._model.generate(
+            **inputs, max_new_tokens=self._model_max_length
+        )
 
         output_texts = self._processor.batch_decode(
             output_ids, skip_special_tokens=False
         )
 
-        chart_data: list[Optional[TabularChartMetaField]] = self._post_process(outputs=output_texts)
-        
-        for item, tabular_chart in zip(elements, chart_data):
+        chart_data: list[Optional[TabularChartMetaField]] = self._post_process(
+            outputs=output_texts
+        )
 
-            if tabular_chart is not None and isinstance(item, PictureItem):
-                
-                if item.meta:
-                    item.meta.tabular_chart=tabular_chart
+        for item, tabular_chart in zip(elements, chart_data):
+            if (tabular_chart is not None) and isinstance(item, PictureItem):
+                if (item.meta is not None) and isinstance(item.meta, PictureMeta):
+                    item.meta.tabular_chart = tabular_chart
                 else:
                     meta = PictureMeta(tabular_chart=tabular_chart)
                     item.meta = meta
-                    
-            yield item    
 
-    def _post_process(self, outputs: list[str]) -> list[Optional[TabularChartMetaField]]:
+            yield item
 
+    def _post_process(
+        self, outputs: list[str]
+    ) -> list[Optional[TabularChartMetaField]]:
         chart_data: list[TabularChartMetaField] = []
-        
-        for text in texts:
 
+        for i, text in enumerate(outputs):
             # Post-process to extract DataFrame
             try:
-                df = self._extract_csv_to_dataframe(text)
-                
+                dataframe = self._extract_csv_to_dataframe(text)
+
                 # In convert_batch_images, after extracting DataFrame:
-                table_data = self._dataframe_to_tabledata(df)
-                
+                table_data = self._dataframe_to_tabledata(dataframe)
+
                 chart_data.append(TabularChartMetaField(data=table_data))
-                
+
                 # table = TableItem(data=table_data)
                 # print(table.export_to_markdown())
-                
+
             except Exception as e:
                 _log.error(f"Failed to extract DataFrame for image {i}: {e}")
                 chart_data.append(None)
-        
+
         return chart_data
 
     def _extract_csv_to_dataframe(self, decoded_text: str) -> pd.DataFrame:
         """
         Extract CSV content from decoded text and convert to DataFrame.
-        
+
         Handles:
         - Chat format with <|assistant|> tags
         - Nested code blocks (```csv ``` inside ```)
         - Various CSV formatting issues
-        
+
         Args:
             decoded_text: The decoded output from the model
-        
+
         Returns:
             pandas DataFrame containing the CSV data
         """
         # Extract the assistant's response
-        assistant_match = re.search(r'<\|assistant\|>\s*(.*)', decoded_text, re.DOTALL)
+        assistant_match = re.search(r"<\|assistant\|>\s*(.*)", decoded_text, re.DOTALL)
         if not assistant_match:
             raise ValueError("Could not find assistant response in decoded text")
 
@@ -243,18 +256,18 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
         # Remove code block markers - handle both ``` and ````
         # First remove outer code blocks
-        csv_content = re.sub(r'^```+(?:csv)?\s*', '', assistant_response)
-        csv_content = re.sub(r'```+\s*$', '', csv_content)
+        csv_content = re.sub(r"^```+(?:csv)?\s*", "", assistant_response)
+        csv_content = re.sub(r"```+\s*$", "", csv_content)
 
         # Clean up any remaining code block markers
         csv_content = csv_content.strip()
-        csv_content = re.sub(r'^```+(?:csv)?\s*', '', csv_content)
-        csv_content = re.sub(r'```+\s*$', '', csv_content)
+        csv_content = re.sub(r"^```+(?:csv)?\s*", "", csv_content)
+        csv_content = re.sub(r"```+\s*$", "", csv_content)
 
         # Convert to DataFrame
         try:
-            df = pd.read_csv(StringIO(csv_content), header=None)
-            return df
+            dataframe = pd.read_csv(StringIO(csv_content), header=None)
+            return dataframe
         except Exception as e:
             print(f"Error parsing CSV: {e}")
             print(f"CSV content:\n{csv_content}")
@@ -276,7 +289,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
         Automatically infers if the first row is a header by checking if all
         values in the first row are non-numeric.
-        
+
         Args:
             df: The pandas DataFrame to convert
 
@@ -289,7 +302,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         first_row_is_header = False
         if len(df) > 0:
             first_row = df.iloc[0]
-            first_row_is_header = all(not is_numeric(val) for val in first_row)
+            first_row_is_header = all(not self._is_numeric(val) for val in first_row)
 
         # Add header row cells if inferred
         if first_row_is_header:
@@ -305,7 +318,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                     column_header=True,
                     row_header=False,
                     row_section=False,
-                    fillable=False
+                    fillable=False,
                 )
                 table_cells.append(cell)
 
@@ -319,30 +332,26 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 else:
                     text = str(value)
 
-            # Check if the value is numeric - non-numeric cells are row headers
-            is_row_header = not is_numeric(value)
+                # Check if the value is numeric - non-numeric cells are row headers
+                is_row_header = not self._is_numeric(value)
 
-            cell = TableCell(
-                text=text,
-                start_row_offset_idx=row_idx + row_offset,
-                end_row_offset_idx=row_idx + row_offset + 1,
-                start_col_offset_idx=col_idx,
-                end_col_offset_idx=col_idx + 1,
-                row_span=1,
-                col_span=1,
-                column_header=False,
-                row_header=is_row_header,
-                row_section=False,
-                fillable=False
-            )
-            table_cells.append(cell)
+                cell = TableCell(
+                    text=text,
+                    start_row_offset_idx=row_idx + row_offset,
+                    end_row_offset_idx=row_idx + row_offset + 1,
+                    start_col_offset_idx=col_idx,
+                    end_col_offset_idx=col_idx + 1,
+                    row_span=1,
+                    col_span=1,
+                    column_header=False,
+                    row_header=is_row_header,
+                    row_section=False,
+                    fillable=False,
+                )
+                table_cells.append(cell)
 
         # Calculate total rows (header + data rows)
         num_rows = len(df) + (1 if first_row_is_header else 0)
         num_cols = len(df.columns)
 
-        return TableData(
-            table_cells=table_cells,
-            num_rows=num_rows,
-            num_cols=num_cols
-        )    
+        return TableData(table_cells=table_cells, num_rows=num_rows, num_cols=num_cols)
