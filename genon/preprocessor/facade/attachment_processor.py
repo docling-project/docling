@@ -17,7 +17,11 @@ import threading
 import uuid
 import warnings
 from datetime import datetime
+import logging
 from fastapi import Request
+
+_log = logging.getLogger(__name__)
+
 from glob import glob
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
@@ -72,6 +76,11 @@ from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 # from utils import assert_cancelled
 # from genos_utils import upload_files, merge_overlapping_bboxes
 
+try:
+    from genos_utils import upload_files
+except ImportError:
+    upload_files = None
+
 # import platform
 from pathlib import Path
 import os
@@ -86,7 +95,7 @@ for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
     lg = logging.getLogger(n)
     lg.setLevel(logging.CRITICAL)
     lg.propagate = False
-    logging.getLogger().setLevel(logging.WARNING)        
+    logging.getLogger().setLevel(logging.WARNING)
 # pdf 변환 대상 확장자
 CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
 
@@ -1047,10 +1056,11 @@ class DocxProcessor:
             vectors.append(vector)
 
             chunk_index_on_page += 1
-            # file_list = self.get_media_files(chunk.meta.doc_items)
-            # upload_tasks.append(asyncio.create_task(
-            #     upload_files(file_list, request=request)
-            # ))
+            if upload_files:
+                file_list = self.get_media_files(chunk.meta.doc_items)
+                upload_tasks.append(asyncio.create_task(
+                    upload_files(file_list, request=request)
+                ))
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
@@ -1156,10 +1166,11 @@ class HwpxProcessor:
             vectors.append(vector)
 
             chunk_index_on_page += 1
-            # file_list = self.get_media_files(chunk.meta.doc_items)
-            # upload_tasks.append(asyncio.create_task(
-            #     upload_files(file_list, request=request)
-            # ))
+            if upload_files:
+                file_list = self.get_media_files(chunk.meta.doc_items)
+                upload_tasks.append(asyncio.create_task(
+                    upload_files(file_list, request=request)
+                ))
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
@@ -1228,7 +1239,7 @@ class DocumentProcessor:
             convert_to_pdf(file_path)
             # 한국어 OCR 지원을 위한 언어 설정
             return UnstructuredImageLoader(
-                file_path, 
+                file_path,
                 languages=["kor", "eng"],  # 한국어 + 영어 OCR
             )
         elif ext in ['.txt', '.json', '.md']:
@@ -1243,7 +1254,7 @@ class DocumentProcessor:
     def get_real_file_type(self, file_path: str) -> str:
         """파일 확장자가 아닌 실제 내용으로 파일 타입 판단"""
         with open(file_path, 'rb') as f:
-            header = f.read(8) 
+            header = f.read(8)
         if header.startswith(b'%PDF-'):
             return 'pdf'
         elif header.startswith(b'\x89PNG'):
@@ -1290,18 +1301,21 @@ class DocumentProcessor:
     def load_documents(self, file_path: str, **kwargs: dict) -> list[Document]:
         loader = self.get_loader(file_path)
         documents = loader.load()
-        
+
         # 이미지 파일의 경우 텍스트 추출 안되었을 시 기본 텍스트 제공
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ['.jpg', '.jpeg', '.png']:
             # documents가 없거나, 있어도 모든 page_content가 비어있는 경우
             if not documents or not any(doc.page_content.strip() for doc in documents):
                 documents = [Document(page_content=".", metadata={'source': file_path, 'page': 0})]
-        
+
         return documents
 
     def split_documents(self, documents, **kwargs: dict) -> list[Document]:
-        text_splitter = RecursiveCharacterTextSplitter(**kwargs)
+        chunk_size = kwargs.get('chunk_size', 1000)
+        chunk_overlap = kwargs.get('chunk_overlap', 100)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size,
+                                                       chunk_overlap=chunk_overlap,)
         chunks = text_splitter.split_documents(documents)
         chunks = [chunk for chunk in chunks if chunk.page_content]
         if not chunks:
@@ -1385,7 +1399,45 @@ class DocumentProcessor:
 
         return vectors
 
+    def setup_logging(self, level_num: int):
+        """
+            5"DEBUG", 4"INFO", 3"WARNING", 2"ERROR", 1"CRITICAL", 0"NOLOG" 중 하나를 받아서 로깅 레벨을 설정하는 메서드
+        """
+        def get_level_name(level_num: int) -> str:
+            level_map = {
+                5: "DEBUG",
+                4: "INFO",
+                3: "WARNING",
+                2: "ERROR",
+                1: "CRITICAL",
+                0: "NOLOG"
+            }
+            return level_map.get(level_num, "INFO")
+        level_name = get_level_name(level_num)
+        print(f"Setting log level to: {level_name}")
+
+        if level_name == "NOLOG" or not hasattr(logging, level_name):
+            logging.disable(logging.CRITICAL)  # 🔥 모든 로그 비활성화
+            return
+
+        level = getattr(logging, level_name.upper())
+
+        # 🔥 root logger 설정 (핸들러는 main에서만 설정)
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            handlers=[logging.StreamHandler()]   # 콘솔 출력
+        )
+
+        # root logger level 적용
+        logging.getLogger().setLevel(level)
+
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+        self.setup_logging(kwargs.get('log_level', 4))
+
+        _log.info(f"file_path: {file_path}")
+        _log.info(f"kwargs: {kwargs}")
+
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ('.wav', '.mp3', '.m4a'):
             # Generate a temporal path saving audio chunks: the audio file is supposed to be splited to several chunks due to limitted length by the model
@@ -1440,7 +1492,7 @@ class DocumentProcessor:
 
         elif ext == '.docx':
             return await self.docx_processor(request, file_path, **kwargs)
-        
+
         else:
             documents: list[Document] = self.load_documents(file_path, **kwargs)
             # await assert_cancelled(request)

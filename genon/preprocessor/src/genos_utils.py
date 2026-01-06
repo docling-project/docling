@@ -69,9 +69,13 @@ async def upload_files(file_list: list[dict], request: Request, concurrency: int
         업로드된 파일의 object_name 리스트
     """
 
-    doc_id = request.headers.get('x-genos-doc-id')
-    minio_form = request.headers.get('x-genos-minio-form')
-    is_temp_doc = request.headers.get('x-genos-is-temp-doc') == 'true'
+    try:
+        doc_id = request.headers.get('x-genos-doc-id')
+        minio_form = request.headers.get('x-genos-minio-form')
+        is_temp_doc = request.headers.get('x-genos-is-temp-doc') == 'true'
+    except Exception as e:
+        print(f"Error reading headers for upload_files: {e}")
+        return
 
     # 보고서 생성 임시 문서 전처리 대응
     if minio_form is None or doc_id is None:
@@ -107,7 +111,7 @@ async def upload_files(file_list: list[dict], request: Request, concurrency: int
 
         tasks = [_upload_single(item['path'], item['name']) for item in file_list]
         results = await asyncio.gather(*tasks)
-        print(f"\n\n{results=}\n\n", flush=True)
+        # print(f"\n\n{results=}\n\n", flush=True)
     return results
 
 
