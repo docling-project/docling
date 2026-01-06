@@ -119,7 +119,7 @@ Chapter 1.
 
 ## 1
 
-## Securing and protecting IBM DB2 data
+### Securing and protecting IBM DB2 data
 
 Recent news headlines are filled with reports of data breaches and cyber-attacks impacting global businesses of all sizes. The Identity Theft Resource Center 1  reports that almost 5000 data breaches have occurred since 2005, exposing over 600 million records of data. The financial cost of these data breaches is skyrocketing. Studies from the Ponemon Institute 2 revealed that the average cost of a data breach increased in 2013 by 15% globally and resulted in a brand equity loss of $9.4 million per attack. The average cost that is incurred for each lost record containing sensitive information increased more than 9% to $145 per record.
 
@@ -135,7 +135,7 @@ This chapter describes how you can secure and protect data in DB2 for i. The fol
 
 2 http://www.ponemon.org /
 
-## 1.1  Security fundamentals
+### 1.1  Security fundamentals
 
 Before reviewing database security techniques, there are two fundamental steps in securing information assets that must be described:
 
@@ -149,7 +149,7 @@ A security policy is what defines whether the system and its settings are secure
 
 With your eyes now open to the importance of securing information assets, the rest of this chapter reviews the methods that are available for securing database resources on IBM i.
 
-## 1.2  Current state of IBM i security
+### 1.2  Current state of IBM i security
 
 Because of the inherently secure nature of IBM i, many clients rely on the default system settings to protect their business data that is stored in DB2 for i. In most cases, this means no data protection because the default setting for the Create default public authority (QCRTAUT) system value is *CHANGE.
 
@@ -159,7 +159,7 @@ Traditionally, IBM i applications have employed menu-based security to counterac
 
 Many businesses are trying to limit data access to a need-to-know basis. This security goal means that users should be given access only to the minimum set of data that is required to perform their job. Often, users with object-level access are given access to row and column values that are beyond what their business task requires because that object-level security provides an all-or-nothing solution. For example, object-level controls allow a manager to access data about all employees. Most security policies limit a manager to accessing data only for the employees that they manage.
 
-## 1.3.1  Existing row and column control
+### 1.3.1  Existing row and column control
 
 Some IBM i clients have tried augmenting the all-or-nothing object-level security with SQL views (or logical files) and application logic, as shown in Figure 1-2. However, application-based logic is easy to bypass with all of the different data access interfaces that are provided by the IBM i operating system, such as Open Database Connectivity (ODBC) and System i Navigator.
 
@@ -244,7 +244,7 @@ Figure 3-1   CREATE PERMISSION SQL statement
 
 <!-- image -->
 
-## Column mask
+### Column mask
 
 A column mask is a database object that manifests a column value access control rule for a specific column in a specific table. It uses a CASE expression that describes what you see when you access the column. For example, a teller can see only the last four digits of a tax identification number.
 
@@ -366,7 +366,7 @@ THEN C . CUSTOMER_TAX_ID WHEN QSYS2 . VERIFY_GROUP_FOR_USER ( SESSION_USER , 'TE
 
 Back cover
 
-## Row and Column Access Control Support in IBM DB2 for i
+### Row and Column Access Control Support in IBM DB2 for i
 
 Implement roles and separation of duties
 
@@ -384,7 +384,7 @@ This paper is intended for database engineers, data-centric application develope
 
 INTERNATIONAL TECHNICAL SUPPORT ORGANIZATION
 
-## BUILDING TECHNICAL INFORMATION BASED ON PRACTICAL EXPERIENCE
+### BUILDING TECHNICAL INFORMATION BASED ON PRACTICAL EXPERIENCE
 
 IBM Redbooks are developed by the IBM International Technical Support Organization. Experts from IBM, Customers and Partners from around the world create timely technical information based on realistic scenarios. Specific recommendations are provided to help you implement IT solutions more effectively in your environment.
 

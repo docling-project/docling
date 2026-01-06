@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "2305.03393v1-pg9",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 3463920545297462180,
+    "binary_hash": 8355768219132440452,
     "filename": "2305.03393v1-pg9.pdf"
   },
   "furniture": {
@@ -30,19 +30,7 @@
         "$ref": "#/texts/3"
       },
       {
-        "$ref": "#/texts/4"
-      },
-      {
-        "$ref": "#/tables/0"
-      },
-      {
         "$ref": "#/texts/6"
-      },
-      {
-        "$ref": "#/texts/7"
-      },
-      {
-        "$ref": "#/texts/8"
       }
     ],
     "content_layer": "body",
@@ -137,7 +125,14 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/tables/0"
+        }
+      ],
       "content_layer": "body",
       "label": "section_header",
       "prov": [
@@ -163,7 +158,7 @@
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/texts/3"
       },
       "children": [],
       "content_layer": "body",
@@ -219,7 +214,14 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        }
+      ],
       "content_layer": "body",
       "label": "section_header",
       "prov": [
@@ -245,7 +247,7 @@
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/texts/6"
       },
       "children": [],
       "content_layer": "body",
@@ -272,7 +274,7 @@
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/texts/6"
       },
       "children": [],
       "content_layer": "body",
@@ -302,7 +304,7 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/texts/3"
       },
       "children": [
         {
