@@ -12,6 +12,8 @@ from typing import Optional, Iterable, Any, List, Dict, Tuple
 
 from fastapi import Request
 
+_log = logging.getLogger(__name__)
+
 # docling imports
 
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
@@ -87,8 +89,10 @@ except ImportError:
         "`pip install 'docling-core[chunking]'`"
     )
 
-_log = logging.getLogger(__name__)
-# from genos_utils import upload_files
+try:
+    from genos_utils import upload_files
+except ImportError:
+    upload_files = None
 
 # ============================================
 #
@@ -1173,10 +1177,11 @@ class DocumentProcessor:
             vectors.append(vector)
 
             chunk_index_on_page += 1
-            # file_list = self.get_media_files(chunk.meta.doc_items)
-            # upload_tasks.append(asyncio.create_task(
-            #     upload_files(file_list, request=request)
-            # ))
+            if upload_files:
+                file_list = self.get_media_files(chunk.meta.doc_items)
+                upload_tasks.append(asyncio.create_task(
+                    upload_files(file_list, request=request)
+                ))
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)

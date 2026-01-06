@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import json
 import os
+import logging
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 from typing import Optional, Iterable, Any, List, Dict, Tuple
 
 from fastapi import Request
+
+_log = logging.getLogger(__name__)
+
 import shutil
 import subprocess
 import tempfile
@@ -112,7 +116,10 @@ except ImportError:
         "`pip install 'docling-core[chunking]'`"
     )
 
-# from genos_utils import upload_files
+try:
+    from genos_utils import upload_files
+except ImportError:
+    upload_files = None
 
 # ============================================
 #
@@ -1290,10 +1297,11 @@ class DocumentProcessor:
             vectors.append(vector)
 
             chunk_index_on_page += 1
-            # file_list = self.get_media_files(chunk.meta.doc_items)
-            # upload_tasks.append(asyncio.create_task(
-            #     upload_files(file_list, request=request)
-            # ))
+            if upload_files:
+                file_list = self.get_media_files(chunk.meta.doc_items)
+                upload_tasks.append(asyncio.create_task(
+                    upload_files(file_list, request=request)
+                ))
 
         if upload_tasks:
             await asyncio.gather(*upload_tasks)
@@ -1312,7 +1320,45 @@ class DocumentProcessor:
                 temp_list.append({"path": path, "name": name})
         return temp_list
 
+    def setup_logging(self, level_num: int):
+        """
+            5"DEBUG", 4"INFO", 3"WARNING", 2"ERROR", 1"CRITICAL", 0"NOLOG" 중 하나를 받아서 로깅 레벨을 설정하는 메서드
+        """
+        def get_level_name(level_num: int) -> str:
+            level_map = {
+                5: "DEBUG",
+                4: "INFO",
+                3: "WARNING",
+                2: "ERROR",
+                1: "CRITICAL",
+                0: "NOLOG"
+            }
+            return level_map.get(level_num, "INFO")
+        level_name = get_level_name(level_num)
+        print(f"Setting log level to: {level_name}")
+
+        if level_name == "NOLOG" or not hasattr(logging, level_name):
+            logging.disable(logging.CRITICAL)  # 🔥 모든 로그 비활성화
+            return
+
+        level = getattr(logging, level_name.upper())
+
+        # 🔥 root logger 설정 (핸들러는 main에서만 설정)
+        logging.basicConfig(
+            level=level,
+            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            handlers=[logging.StreamHandler()]   # 콘솔 출력
+        )
+
+        # root logger level 적용
+        logging.getLogger().setLevel(level)
+
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
+        self.setup_logging(kwargs.get('log_level', 4))
+
+        _log.info(f"file_path: {file_path}")
+        _log.info(f"kwargs: {kwargs}")
+
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
         ext = Path(file_path).suffix.lower()
