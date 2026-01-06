@@ -10,6 +10,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
     PictureItem,
+    ProvenanceItem,
 )
 from PIL.Image import Image
 from typing_extensions import TypeVar
@@ -199,6 +200,8 @@ class BaseItemAndImageEnrichmentModel(
                 return None
 
         # Crop the image form the page
+        if not isinstance(element.prov[0], ProvenanceItem):
+            return None
         element_prov = element.prov[0]
         bbox = element_prov.bbox
         width = bbox.r - bbox.l
