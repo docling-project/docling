@@ -144,8 +144,12 @@ class ConvertPipeline(BasePipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: ConvertPipelineOptions
 
+        # We need picture classification to do chart_extraction
+        if pipeline_options.do_chart_extraction:
+            pipeline_options.do_picture_classification = True
+        
         # ------ Common enrichment models working on all backends
-
+        
         # Picture description model
         if (
             picture_description_model := self._get_picture_description_model(
@@ -166,6 +170,13 @@ class ConvertPipeline(BasePipeline):
             ),
             # Document Picture description
             picture_description_model,
+            # Document Chart Extraction
+            ChartExtractionModel(
+                enabled=pipeline_options.do_chart_extraction,
+                artifacts_path=self.artifacts_path,
+                options=ChartExtractionModelOptions(),
+                accelerator_options=pipeline_options.accelerator_options,
+            ),
         ]
 
     def _get_picture_description_model(
