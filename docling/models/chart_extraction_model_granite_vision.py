@@ -11,6 +11,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     NodeItem,
+    PictureClassificationMetaField,
     PictureItem,
     PictureMeta,
     TableCell,
@@ -117,8 +118,24 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         bool
             True if the element can be processed, False otherwise.
         """
-        # FIXME: check also that the picture is classified as a bar-, pie- or line-chart
-        return self.enabled and isinstance(element, PictureItem)
+        if self.enabled and isinstance(element, PictureItem):
+            if element.meta is not None and isinstance(element.meta, PictureMeta):
+                if element.meta.classification is not None and isinstance(
+                    element.meta.classification, PictureClassificationMetaField
+                ):
+                    main_pred = element.meta.classification.get_main_prediction()
+
+                    # FIXME: would be nice to not have to hard-code this (?maybe make a constant of this class?)
+                    if main_pred.class_name in ["bar_chart", "pie_chart", "line_chart"]:
+                        return True
+
+                else:
+                    return False
+            else:
+                return False
+
+        else:
+            return False
 
     def _get_prompt(self, label: str) -> str:
         return "Convert the information in this chart into a data table in CSV format."
@@ -194,11 +211,17 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             output_ids, skip_special_tokens=False
         )
 
+        for _ in output_texts:
+            print(_)
+
         chart_data: list[Optional[TabularChartMetaField]] = self._post_process(
             outputs=output_texts
         )
 
         for item, tabular_chart in zip(elements, chart_data):
+            print(item)
+            print(tabular_chart)
+
             if (tabular_chart is not None) and isinstance(item, PictureItem):
                 if (item.meta is not None) and isinstance(item.meta, PictureMeta):
                     item.meta.tabular_chart = tabular_chart
@@ -221,7 +244,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 # In convert_batch_images, after extracting DataFrame:
                 table_data = self._dataframe_to_tabledata(dataframe)
 
-                chart_data.append(TabularChartMetaField(data=table_data))
+                chart_data.append(TabularChartMetaField(chart_data=table_data))
 
                 # table = TableItem(data=table_data)
                 # print(table.export_to_markdown())

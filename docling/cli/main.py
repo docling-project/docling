@@ -450,6 +450,13 @@ def convert(  # noqa: C901
         bool,
         typer.Option(..., help="Enable the picture description model in the pipeline."),
     ] = False,
+    enrich_chart_extraction: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="Enable chart extraction to convert bar, pie, and line charts to tabular format.",
+        ),
+    ] = False,
     artifacts_path: Annotated[
         Optional[Path],
         typer.Option(..., help="If provided, the location of the model artifacts."),
@@ -668,6 +675,7 @@ def convert(  # noqa: C901
                 do_formula_enrichment=enrich_formula,
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
+                do_chart_extraction=enrich_chart_extraction,
                 document_timeout=document_timeout,
             )
             if isinstance(
@@ -717,6 +725,7 @@ def convert(  # noqa: C901
             simple_format_option = ConvertPipelineOptions(
                 do_picture_description=enrich_picture_description,
                 do_picture_classification=enrich_picture_classes,
+                do_chart_extraction=enrich_chart_extraction,
             )
             if artifacts_path is not None:
                 simple_format_option.artifacts_path = artifacts_path
