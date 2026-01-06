@@ -86,7 +86,7 @@ for n in ("fontTools", "fontTools.ttLib", "fontTools.ttLib.ttFont"):
     lg = logging.getLogger(n)
     lg.setLevel(logging.CRITICAL)
     lg.propagate = False
-    logging.getLogger().setLevel(logging.WARNING)        
+    logging.getLogger().setLevel(logging.WARNING)
 # pdf 변환 대상 확장자
 CONVERTIBLE_EXTENSIONS = ['.hwp', '.txt', '.json', '.md', '.ppt', '.pptx', '.docx']
 
@@ -1228,7 +1228,7 @@ class DocumentProcessor:
             convert_to_pdf(file_path)
             # 한국어 OCR 지원을 위한 언어 설정
             return UnstructuredImageLoader(
-                file_path, 
+                file_path,
                 languages=["kor", "eng"],  # 한국어 + 영어 OCR
             )
         elif ext in ['.txt', '.json', '.md']:
@@ -1243,7 +1243,7 @@ class DocumentProcessor:
     def get_real_file_type(self, file_path: str) -> str:
         """파일 확장자가 아닌 실제 내용으로 파일 타입 판단"""
         with open(file_path, 'rb') as f:
-            header = f.read(8) 
+            header = f.read(8)
         if header.startswith(b'%PDF-'):
             return 'pdf'
         elif header.startswith(b'\x89PNG'):
@@ -1290,18 +1290,21 @@ class DocumentProcessor:
     def load_documents(self, file_path: str, **kwargs: dict) -> list[Document]:
         loader = self.get_loader(file_path)
         documents = loader.load()
-        
+
         # 이미지 파일의 경우 텍스트 추출 안되었을 시 기본 텍스트 제공
         ext = os.path.splitext(file_path)[-1].lower()
         if ext in ['.jpg', '.jpeg', '.png']:
             # documents가 없거나, 있어도 모든 page_content가 비어있는 경우
             if not documents or not any(doc.page_content.strip() for doc in documents):
                 documents = [Document(page_content=".", metadata={'source': file_path, 'page': 0})]
-        
+
         return documents
 
     def split_documents(self, documents, **kwargs: dict) -> list[Document]:
-        text_splitter = RecursiveCharacterTextSplitter(**kwargs)
+        chunk_size = kwargs.get('chunk_size', 1000)
+        chunk_overlap = kwargs.get('chunk_overlap', 100)
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size,
+                                                       chunk_overlap=chunk_overlap,)
         chunks = text_splitter.split_documents(documents)
         chunks = [chunk for chunk in chunks if chunk.page_content]
         if not chunks:
@@ -1440,7 +1443,7 @@ class DocumentProcessor:
 
         elif ext == '.docx':
             return await self.docx_processor(request, file_path, **kwargs)
-        
+
         else:
             documents: list[Document] = self.load_documents(file_path, **kwargs)
             # await assert_cancelled(request)
