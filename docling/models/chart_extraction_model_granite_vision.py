@@ -38,6 +38,8 @@ class ChartExtractionModelOptions(BaseModel):
 
 
 class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
+    SUPPORTED_CHART_TYPES = ["bar_chart", "pie_chart", "line_chart"]
+
     def __init__(
         self,
         enabled: bool,
@@ -70,8 +72,6 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
             if artifacts_path is None:
                 artifacts_path = self.download_models()
-            else:
-                artifacts_path = artifacts_path / self._model_repo_folder
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
@@ -118,24 +118,22 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         bool
             True if the element can be processed, False otherwise.
         """
-        if self.enabled and isinstance(element, PictureItem):
-            if element.meta is not None and isinstance(element.meta, PictureMeta):
-                if element.meta.classification is not None and isinstance(
-                    element.meta.classification, PictureClassificationMetaField
-                ):
-                    main_pred = element.meta.classification.get_main_prediction()
-
-                    # FIXME: would be nice to not have to hard-code this (?maybe make a constant of this class?)
-                    if main_pred.class_name in ["bar_chart", "pie_chart", "line_chart"]:
-                        return True
-
-                else:
-                    return False
-            else:
-                return False
-
-        else:
+        if not self.enabled:
             return False
+
+        if not isinstance(element, PictureItem):
+            return False
+
+        if element.meta is None or not isinstance(element.meta, PictureMeta):
+            return False
+
+        if element.meta.classification is None or not isinstance(
+            element.meta.classification, PictureClassificationMetaField
+        ):
+            return False
+
+        main_pred = element.meta.classification.get_main_prediction()
+        return main_pred.class_name in self.SUPPORTED_CHART_TYPES
 
     def _get_prompt(self, label: str) -> str:
         return "Convert the information in this chart into a data table in CSV format."
@@ -234,7 +232,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
     def _post_process(
         self, outputs: list[str]
     ) -> list[Optional[TabularChartMetaField]]:
-        chart_data: list[TabularChartMetaField] = []
+        chart_data: list[Optional[TabularChartMetaField]] = []
 
         for i, text in enumerate(outputs):
             # Post-process to extract DataFrame
@@ -360,8 +358,8 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
                 cell = TableCell(
                     text=text,
-                    start_row_offset_idx=row_idx + row_offset,
-                    end_row_offset_idx=row_idx + row_offset + 1,
+                    start_row_offset_idx=int(row_idx) + row_offset,
+                    end_row_offset_idx=int(row_idx) + row_offset + 1,
                     start_col_offset_idx=col_idx,
                     end_col_offset_idx=col_idx + 1,
                     row_span=1,
