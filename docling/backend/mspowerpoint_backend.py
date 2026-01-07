@@ -17,6 +17,7 @@ from docling_core.types.doc import (
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
+from lxml import etree
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
@@ -121,6 +122,349 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return prov
 
+    def _lvl_of_paragraph(self, paragraph) -> int:
+        """
+        Determine paragraph level (0..8). Default is 0.
+
+        Args:
+            paragraph: The paragraph XML element.
+
+        Returns:
+            int: The paragraph level (0-8).
+        """
+        pPr = paragraph.find("a:pPr", namespaces=self.namespaces)
+        if pPr is not None and "lvl" in pPr.attrib:
+            try:
+                return int(pPr.get("lvl"))
+            except ValueError:
+                pass
+        return 0
+
+    def _bullet_from_pPr(self, pPr) -> tuple[bool | None, str | None, str | None]:
+        """
+        Parse bullet/numbering from a:<pPr> (or a:lvlXpPr) element.
+
+        Args:
+            pPr: The paragraph properties XML element.
+
+        Returns:
+            tuple: (is_list, kind, detail)
+                - is_list: True/False/None indicating if this is a list item
+                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
+                - detail: Character or numbering type string, or None
+        """
+        if pPr is None:
+            return (None, None, None)
+
+        # Explicitly no bullet
+        if pPr.find("a:buNone", namespaces=self.namespaces) is not None:
+            return (False, "buNone", None)
+
+        # Bullet character
+        buChar = pPr.find("a:buChar", namespaces=self.namespaces)
+        if buChar is not None:
+            return (True, "buChar", buChar.get("char"))
+
+        # Auto numbering
+        buAuto = pPr.find("a:buAutoNum", namespaces=self.namespaces)
+        if buAuto is not None:
+            return (True, "buAutoNum", buAuto.get("type"))
+
+        # Picture bullet
+        buBlip = pPr.find("a:buBlip", namespaces=self.namespaces)
+        if buBlip is not None:
+            return (True, "buBlip", "image")
+
+        return (None, None, None)
+
+    def _find_lvl_pPr_in_lstStyle(self, lstStyle, lvl: int):
+        """
+        Find a:lvl{lvl+1}pPr node in a:lstStyle for a given level.
+        a:lvl1pPr -> lvl=0, a:lvl2pPr -> lvl=1, ...
+
+        Args:
+            lstStyle: The list style XML element.
+            lvl: The paragraph level (0-8).
+
+        Returns:
+            The matching a:lvl{lvl+1}pPr XML element, or None if not found.
+        """
+        if lstStyle is None:
+            return None
+        tag = f"a:lvl{lvl + 1}pPr"
+        return lstStyle.find(tag, namespaces=self.namespaces)
+
+    def _bullet_from_txBody_lstStyle(
+        self, txBody, lvl: int
+    ) -> tuple[bool | None, str | None, str | None, object | None]:
+        """
+        Look for a:lstStyle/a:lvl{lvl+1}pPr under a txBody and parse bullet from it.
+
+        Args:
+            txBody: The text body XML element.
+            lvl: The paragraph level (0-8).
+
+        Returns:
+            tuple: (is_list, kind, detail, xml_node)
+                - is_list: True/False/None indicating if this is a list item
+                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
+                - detail: Character or numbering type string, or None
+                - xml_node: The XML element where the marker was found, or None
+        """
+        if txBody is None:
+            return (None, None, None, None)
+        lstStyle = txBody.find("a:lstStyle", namespaces=self.namespaces)
+        lvl_pPr = self._find_lvl_pPr_in_lstStyle(lstStyle, lvl)
+        is_list, kind, detail = self._bullet_from_pPr(lvl_pPr)
+        return (is_list, kind, detail, lvl_pPr)
+
+    def _master_style_node(
+        self, slide_master, placeholder_type
+    ) -> etree._Element | None:
+        """
+        Decide which master txStyles bucket to use based on placeholder type.
+        Most content placeholders (BODY/OBJECT) use bodyStyle.
+
+        Args:
+            slide_master: The slide master object.
+            placeholder_type: The placeholder type.
+
+        Returns:
+            The matching style node from the master txStyles, or None if not found.
+        """
+        txStyles = slide_master._element.find(
+            ".//p:txStyles", namespaces=self.namespaces
+        )
+        if txStyles is None:
+            return None
+
+        if placeholder_type in (PP_PLACEHOLDER.BODY, PP_PLACEHOLDER.OBJECT):
+            return txStyles.find("p:bodyStyle", namespaces=self.namespaces)
+
+        if placeholder_type == PP_PLACEHOLDER.TITLE:
+            return txStyles.find("p:titleStyle", namespaces=self.namespaces)
+
+        return txStyles.find("p:otherStyle", namespaces=self.namespaces)
+
+    def _bullet_from_master_txStyles(
+        self, slide_master, placeholder_type, lvl: int
+    ) -> tuple[bool | None, str | None, str | None, object | None]:
+        """
+        Parse bullet/numbering from slideMaster's p:txStyles (titleStyle/bodyStyle/otherStyle).
+
+        Args:
+            slide_master: The slide master object.
+            placeholder_type: The placeholder type.
+            lvl: The paragraph level (0-8).
+
+        Returns:
+            tuple: (is_list, kind, detail, xml_node)
+                - is_list: True/False/None indicating if this is a list item
+                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
+                - detail: Character or numbering type string, or None
+                - xml_node: The XML element where the marker was found, or None
+        """
+        style = self._master_style_node(slide_master, placeholder_type)
+        if style is None:
+            return (None, None, None, None)
+
+        lvl_pPr = style.find(f".//a:lvl{lvl + 1}pPr", namespaces=self.namespaces)
+        is_list, kind, detail = self._bullet_from_pPr(lvl_pPr)
+        return (is_list, kind, detail, lvl_pPr)
+
+    def _get_slide_master(self, shape) -> object:
+        """
+        Get the slide master associated with a shape.
+
+        Args:
+            shape: The shape object.
+
+        Returns:
+            The slide master object associated with the shape.
+        """
+        return shape.part.slide.slide_layout.slide_master
+
+    def is_list_item(self, paragraph) -> tuple[bool, str]:
+        """
+        Check if the paragraph is a list item.
+        Compatible interface with mspowerpoint_backend.py's existing is_list_item function.
+        bullet_type
+        Args:
+            paragraph: The paragraph object to check.
+
+        Returns:
+            tuple: (is_list, bullet_type)
+                - is_list: True/False indicating if the paragraph is a list item
+                - bullet_type: "Bullet" | "Numbered" | "None" indicating the list type
+        """
+        p = paragraph._element
+
+        # Try to get shape from paragraph if possible
+        shape = None
+        try:
+            # This path works for python-pptx paragraphs
+            # First get the text_frame (paragraph's parent)
+            text_frame = paragraph._parent
+            # Then get the shape (text_frame's parent)
+            shape = text_frame._parent
+        except AttributeError:
+            pass
+
+        if shape is not None:
+            marker_info = self.effective_list_marker(shape, paragraph)
+
+            # Check if it's definitely a list item
+            if marker_info["is_list"] is True or marker_info["kind"] in (
+                "buChar",
+                "buAutoNum",
+                "buBlip",
+            ):
+                if marker_info["kind"] == "buChar":
+                    return (True, "Bullet")
+                elif marker_info["kind"] == "buAutoNum":
+                    return (True, "Numbered")
+                else:
+                    return (True, "None")
+
+            # Check if it's definitely not a list item
+            if marker_info["is_list"] is False:
+                return (False, "None")
+
+            # Fallback to paragraph level check
+            if paragraph.level > 0:
+                return (True, "None")
+
+            return (False, "None")
+
+        # Fallback to simpler check if shape is not available
+        if p.find(".//a:buChar", namespaces={"a": self.namespaces["a"]}) is not None:
+            return (True, "Bullet")
+        elif (
+            p.find(".//a:buAutoNum", namespaces={"a": self.namespaces["a"]}) is not None
+        ):
+            return (True, "Numbered")
+        elif paragraph.level > 0:
+            # Most likely a sub-list
+            return (True, "None")
+        else:
+            return (False, "None")
+
+    def effective_list_marker(self, shape, paragraph) -> dict:
+        """
+        Return dictionary describing the effective list marker for a paragraph.
+
+        Args:
+            shape: The shape object containing the paragraph.
+            paragraph: The paragraph object to check.
+
+        Returns:
+            dict: Dictionary with information about the list marker:
+                - is_list: True/False/None indicating if this is a list item
+                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
+                - detail: Character or numbering type string, e.g., '•' or 'arabicPeriod'
+                - source: Source of the marker style: 'paragraph' | 'shape.lstStyle' | 'layout.lstStyle' | 'master.txStyles' | 'unknown'
+                - level: Paragraph level (0-8)
+                - xml_node: The XML element where the marker was found, or None
+        """
+        p = paragraph._element
+        lvl = self._lvl_of_paragraph(p)
+
+        # 1) Direct paragraph properties
+        pPr = p.find("a:pPr", namespaces=self.namespaces)
+        is_list, kind, detail = self._bullet_from_pPr(pPr)
+        if is_list is not None:
+            return {
+                "is_list": is_list,
+                "kind": kind,
+                "detail": detail,
+                "source": "paragraph",
+                "level": lvl,
+                "xml_node": pPr,
+            }
+
+        # 2) Shape-level lstStyle (txBody/a:lstStyle)
+        txBody = shape._element.find(".//p:txBody", namespaces=self.namespaces)
+        is_list, kind, detail, xml_node = self._bullet_from_txBody_lstStyle(txBody, lvl)
+        if is_list is not None:
+            return {
+                "is_list": is_list,
+                "kind": kind,
+                "detail": detail,
+                "source": "shape.lstStyle",
+                "level": lvl,
+                "xml_node": xml_node,
+            }
+
+        # 3) Layout placeholder lstStyle (if this is a placeholder)
+        layout_result = None
+        if shape.is_placeholder:
+            idx = shape.placeholder_format.idx
+            layout = shape.part.slide.slide_layout
+            layout_ph = None
+            try:
+                layout_ph = layout.placeholders.get(idx)
+            except Exception:
+                layout_ph = None
+
+            if layout_ph is not None:
+                layout_tx = layout_ph._element.find(
+                    ".//p:txBody", namespaces=self.namespaces
+                )
+                is_list, kind, detail, xml_node = self._bullet_from_txBody_lstStyle(
+                    layout_tx, lvl
+                )
+
+                # Only use layout result if is_list is explicitly True/False
+                if is_list is not None:
+                    layout_result = {
+                        "is_list": is_list,
+                        "kind": kind,
+                        "detail": detail,
+                        "source": "layout.lstStyle",
+                        "level": lvl,
+                        "xml_node": xml_node,
+                    }
+
+                # 4) Master txStyles (this is where your "With foo" inherits from)
+                ph_type = shape.placeholder_format.type
+                master = self._get_slide_master(shape)
+                is_list, kind, detail, xml_node = self._bullet_from_master_txStyles(
+                    master, ph_type, lvl
+                )
+
+                # Check if master has marker information
+                if kind in ("buChar", "buAutoNum", "buBlip"):
+                    return {
+                        "is_list": True,
+                        "kind": kind,
+                        "detail": detail,
+                        "source": "master.txStyles",
+                        "level": lvl,
+                        "xml_node": xml_node,
+                    }
+                elif is_list is not None:
+                    return {
+                        "is_list": is_list,
+                        "kind": kind,
+                        "detail": detail,
+                        "source": "master.txStyles",
+                        "level": lvl,
+                        "xml_node": xml_node,
+                    }
+
+            # If layout has explicit is_list value but master didn't override it, use layout
+            if layout_result is not None:
+                return layout_result
+
+        return {
+            "is_list": None,
+            "kind": None,
+            "detail": None,
+            "source": "unknown",
+            "level": lvl,
+            "xml_node": None,
+        }
+
     def handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
     ):
@@ -130,28 +474,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         doc_label = DocItemLabel.LIST_ITEM
         prov = self.generate_prov(shape, slide_ind, shape.text.strip(), slide_size)
 
-        def is_list_item(paragraph):
-            """Check if the paragraph is a list item."""
-            p = paragraph._element
-            if (
-                p.find(".//a:buChar", namespaces={"a": self.namespaces["a"]})
-                is not None
-            ):
-                return (True, "Bullet")
-            elif (
-                p.find(".//a:buAutoNum", namespaces={"a": self.namespaces["a"]})
-                is not None
-            ):
-                return (True, "Numbered")
-            elif paragraph.level > 0:
-                # Most likely a sub-list
-                return (True, "None")
-            else:
-                return (False, "None")
-
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
-            is_a_list, bullet_type = is_list_item(paragraph)
+            is_a_list, bullet_type = self.is_list_item(paragraph)
             p = paragraph._element
 
             # Convert line breaks to spaces and accumulate text
@@ -186,6 +511,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     prov=prov,
                 )
             else:  # is paragraph not a list item
+                if is_list_group_created:
+                    is_list_group_created = False
+                    new_list = None
+                    enum_list_item_value = 0
                 # Assign proper label to the text, depending if it's a Title or Section Header
                 # For other types of text, assign - PARAGRAPH
                 doc_label = DocItemLabel.PARAGRAPH
