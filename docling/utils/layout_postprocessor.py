@@ -2,7 +2,6 @@ import bisect
 import logging
 import sys
 from collections import defaultdict
-from typing import Dict, List, Set, Tuple
 
 from docling_core.types.doc import DocItemLabel, Size
 from docling_core.types.doc.page import TextCell
@@ -39,7 +38,7 @@ class UnionFind:
             self.parent[root_y] = root_x
             self.rank[root_x] += 1
 
-    def get_groups(self) -> Dict[int, List[int]]:
+    def get_groups(self) -> dict[int, list[int]]:
         """Returns groups as {root: [elements]}."""
         groups = defaultdict(list)
         for elem in self.parent:
@@ -50,13 +49,13 @@ class UnionFind:
 class SpatialClusterIndex:
     """Efficient spatial indexing for clusters using R-tree and interval trees."""
 
-    def __init__(self, clusters: List[Cluster]):
+    def __init__(self, clusters: list[Cluster]):
         p = index.Property()
         p.dimension = 2
         self.spatial_index = index.Index(properties=p)
         self.x_intervals = IntervalTree()
         self.y_intervals = IntervalTree()
-        self.clusters_by_id: Dict[int, Cluster] = {}
+        self.clusters_by_id: dict[int, Cluster] = {}
 
         for cluster in clusters:
             self.add_cluster(cluster)
@@ -72,7 +71,7 @@ class SpatialClusterIndex:
         self.spatial_index.delete(cluster.id, cluster.bbox.as_tuple())
         del self.clusters_by_id[cluster.id]
 
-    def find_candidates(self, bbox: BoundingBox) -> Set[int]:
+    def find_candidates(self, bbox: BoundingBox) -> set[int]:
         """Find potential overlapping cluster IDs using all indexes."""
         spatial = set(self.spatial_index.intersection(bbox.as_tuple()))
         x_candidates = self.x_intervals.find_containing(
@@ -123,13 +122,13 @@ class IntervalTree:
     """Memory-efficient interval tree for 1D overlap queries."""
 
     def __init__(self):
-        self.intervals: List[Interval] = []  # Sorted by min_val
+        self.intervals: list[Interval] = []  # Sorted by min_val
 
     def insert(self, min_val: float, max_val: float, id: int):
         interval = Interval(min_val, max_val, id)
         bisect.insort(self.intervals, interval)
 
-    def find_containing(self, point: float) -> Set[int]:
+    def find_containing(self, point: float) -> set[int]:
         """Find all intervals containing the point."""
         pos = bisect.bisect_left(self.intervals, point)
         result = set()
@@ -196,7 +195,7 @@ class LayoutPostprocessor:
     }
 
     def __init__(
-        self, page: Page, clusters: List[Cluster], options: LayoutOptions
+        self, page: Page, clusters: list[Cluster], options: LayoutOptions
     ) -> None:
         """Initialize processor with page and clusters."""
 
@@ -219,7 +218,7 @@ class LayoutPostprocessor:
             [c for c in self.special_clusters if c.label in self.WRAPPER_TYPES]
         )
 
-    def postprocess(self) -> Tuple[List[Cluster], List[TextCell]]:
+    def postprocess(self) -> tuple[list[Cluster], list[TextCell]]:
         """Main processing pipeline."""
         self.regular_clusters = self._process_regular_clusters()
         self.special_clusters = self._process_special_clusters()
@@ -239,19 +238,22 @@ class LayoutPostprocessor:
         final_clusters = self._sort_clusters(
             self.regular_clusters + self.special_clusters, mode="id"
         )
-        for cluster in final_clusters:
-            cluster.cells = self._sort_cells(cluster.cells)
-            # Also sort cells in children if any
-            for child in cluster.children:
-                child.cells = self._sort_cells(child.cells)
 
-        assert self.page.parsed_page is not None
-        self.page.parsed_page.textline_cells = self.cells
-        self.page.parsed_page.has_lines = len(self.cells) > 0
+        # Conditionally process cells if not skipping cell assignment
+        if not self.options.skip_cell_assignment:
+            for cluster in final_clusters:
+                cluster.cells = self._sort_cells(cluster.cells)
+                # Also sort cells in children if any
+                for child in cluster.children:
+                    child.cells = self._sort_cells(child.cells)
+
+            assert self.page.parsed_page is not None
+            self.page.parsed_page.textline_cells = self.cells
+            self.page.parsed_page.has_lines = len(self.cells) > 0
 
         return final_clusters, self.cells
 
-    def _process_regular_clusters(self) -> List[Cluster]:
+    def _process_regular_clusters(self) -> list[Cluster]:
         """Process regular clusters with iterative refinement."""
         clusters = [
             c
@@ -264,30 +266,38 @@ class LayoutPostprocessor:
             if cluster.label in self.LABEL_REMAPPING:
                 cluster.label = self.LABEL_REMAPPING[cluster.label]
 
-        # Initial cell assignment
-        clusters = self._assign_cells_to_clusters(clusters)
+        # Conditionally assign cells to clusters
+        if not self.options.skip_cell_assignment:
+            # Initial cell assignment
+            clusters = self._assign_cells_to_clusters(clusters)
 
-        # Remove clusters with no cells
-        clusters = [cluster for cluster in clusters if cluster.cells]
+            # Remove clusters with no cells (if keep_empty_clusters is False),
+            # but always keep clusters with label DocItemLabel.FORMULA
+            if not self.options.keep_empty_clusters:
+                clusters = [
+                    cluster
+                    for cluster in clusters
+                    if cluster.cells or cluster.label == DocItemLabel.FORMULA
+                ]
 
-        # Handle orphaned cells
-        unassigned = self._find_unassigned_cells(clusters)
-        if unassigned and self.options.create_orphan_clusters:
-            next_id = max((c.id for c in self.all_clusters), default=0) + 1
-            orphan_clusters = []
-            for i, cell in enumerate(unassigned):
-                conf = cell.confidence
+            # Handle orphaned cells
+            unassigned = self._find_unassigned_cells(clusters)
+            if unassigned and self.options.create_orphan_clusters:
+                next_id = max((c.id for c in self.all_clusters), default=0) + 1
+                orphan_clusters = []
+                for i, cell in enumerate(unassigned):
+                    conf = cell.confidence
 
-                orphan_clusters.append(
-                    Cluster(
-                        id=next_id + i,
-                        label=DocItemLabel.TEXT,
-                        bbox=cell.to_bounding_box(),
-                        confidence=conf,
-                        cells=[cell],
+                    orphan_clusters.append(
+                        Cluster(
+                            id=next_id + i,
+                            label=DocItemLabel.TEXT,
+                            bbox=cell.to_bounding_box(),
+                            confidence=conf,
+                            cells=[cell],
+                        )
                     )
-                )
-            clusters.extend(orphan_clusters)
+                clusters.extend(orphan_clusters)
 
         # Iterative refinement
         prev_count = len(clusters) + 1
@@ -296,11 +306,11 @@ class LayoutPostprocessor:
                 break
             prev_count = len(clusters)
             clusters = self._adjust_cluster_bboxes(clusters)
-            clusters = self._remove_overlapping_clusters(clusters, "regular", containment_threshold=0.1) # 20251105, shkim, 문단간 overlap 방지
+            clusters = self._remove_overlapping_clusters(clusters, "regular")
 
         return clusters
 
-    def _process_special_clusters(self) -> List[Cluster]:
+    def _process_special_clusters(self) -> list[Cluster]:
         special_clusters = [
             c
             for c in self.special_clusters
@@ -344,12 +354,15 @@ class LayoutPostprocessor:
                         b=max(c.bbox.b for c in contained),
                     )
 
-                # Collect all cells from children
-                all_cells = []
-                for child in contained:
-                    all_cells.extend(child.cells)
-                special.cells = self._deduplicate_cells(all_cells)
-                special.cells = self._sort_cells(special.cells)
+                # Conditionally collect cells from children
+                if not self.options.skip_cell_assignment:
+                    all_cells = []
+                    for child in contained:
+                        all_cells.extend(child.cells)
+                    special.cells = self._deduplicate_cells(all_cells)
+                    special.cells = self._sort_cells(special.cells)
+                else:
+                    special.cells = []
 
         picture_clusters = [
             c for c in special_clusters if c.label == DocItemLabel.PICTURE
@@ -367,7 +380,7 @@ class LayoutPostprocessor:
 
         return picture_clusters + wrapper_clusters
 
-    def _handle_cross_type_overlaps(self, special_clusters) -> List[Cluster]:
+    def _handle_cross_type_overlaps(self, special_clusters) -> list[Cluster]:
         """Handle overlaps between regular and wrapper clusters before child assignment.
 
         In particular, KEY_VALUE_REGION proposals that are almost identical to a TABLE
@@ -440,7 +453,7 @@ class LayoutPostprocessor:
 
     def _select_best_cluster_from_group(
         self,
-        group_clusters: List[Cluster],
+        group_clusters: list[Cluster],
         params: dict,
     ) -> Cluster:
         """Select best cluster from a group of overlapping clusters based on all rules."""
@@ -473,11 +486,11 @@ class LayoutPostprocessor:
 
     def _remove_overlapping_clusters(
         self,
-        clusters: List[Cluster],
+        clusters: list[Cluster],
         cluster_type: str,
         overlap_threshold: float = 0.8,
         containment_threshold: float = 0.8,
-    ) -> List[Cluster]:
+    ) -> list[Cluster]:
         if not clusters:
             return []
 
@@ -530,7 +543,7 @@ class LayoutPostprocessor:
 
     def _select_best_cluster(
         self,
-        clusters: List[Cluster],
+        clusters: list[Cluster],
         area_threshold: float,
         conf_threshold: float,
     ) -> Cluster:
@@ -558,7 +571,7 @@ class LayoutPostprocessor:
 
         return current_best if current_best else clusters[0]
 
-    def _deduplicate_cells(self, cells: List[TextCell]) -> List[TextCell]:
+    def _deduplicate_cells(self, cells: list[TextCell]) -> list[TextCell]:
         """Ensure each cell appears only once, maintaining order of first appearance."""
         seen_ids = set()
         unique_cells = []
@@ -569,8 +582,8 @@ class LayoutPostprocessor:
         return unique_cells
 
     def _assign_cells_to_clusters(
-        self, clusters: List[Cluster], min_overlap: float = 0.2
-    ) -> List[Cluster]:
+        self, clusters: list[Cluster], min_overlap: float = 0.2
+    ) -> list[Cluster]:
         """Assign cells to best overlapping cluster."""
         for cluster in clusters:
             cluster.cells = []
@@ -602,7 +615,7 @@ class LayoutPostprocessor:
 
         return clusters
 
-    def _find_unassigned_cells(self, clusters: List[Cluster]) -> List[TextCell]:
+    def _find_unassigned_cells(self, clusters: list[Cluster]) -> list[TextCell]:
         """Find cells not assigned to any cluster."""
         assigned = {cell.index for cluster in clusters for cell in cluster.cells}
         return [
@@ -611,7 +624,7 @@ class LayoutPostprocessor:
             if cell.index not in assigned and cell.text.strip()
         ]
 
-    def _adjust_cluster_bboxes(self, clusters: List[Cluster]) -> List[Cluster]:
+    def _adjust_cluster_bboxes(self, clusters: list[Cluster]) -> list[Cluster]:
         """Adjust cluster bounding boxes to contain their cells."""
         for cluster in clusters:
             if not cluster.cells:
@@ -637,13 +650,13 @@ class LayoutPostprocessor:
 
         return clusters
 
-    def _sort_cells(self, cells: List[TextCell]) -> List[TextCell]:
+    def _sort_cells(self, cells: list[TextCell]) -> list[TextCell]:
         """Sort cells in native reading order."""
         return sorted(cells, key=lambda c: (c.index))
 
     def _sort_clusters(
-        self, clusters: List[Cluster], mode: str = "id"
-    ) -> List[Cluster]:
+        self, clusters: list[Cluster], mode: str = "id"
+    ) -> list[Cluster]:
         """Sort clusters in reading order (top-to-bottom, left-to-right)."""
         if mode == "id":  # sort in the order the cells are printed in the PDF.
             return sorted(

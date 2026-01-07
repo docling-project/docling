@@ -305,7 +305,17 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
     )
 
 
-class LayoutOptions(BaseModel):
+class BaseLayoutOptions(BaseOptions):
+    """Base options for layout models."""
+
+    keep_empty_clusters: bool = (
+        False  # Whether to keep clusters that contain no text cells
+    )
+    skip_cell_assignment: bool = (
+        False  # Skip cell-to-cluster assignment for VLM-only processing
+    )
+
+class LayoutOptions(BaseLayoutOptions):
     """Options for layout processing."""
 
     create_orphan_clusters: bool = True  # Whether to create clusters for orphaned cells
