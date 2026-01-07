@@ -176,14 +176,38 @@ def _get_default_option(format: InputFormat) -> FormatOption:
 
 
 class DocumentConverter:
+    """Convert documents of various input formats to Docling documents.
+
+    `DocumentConverter` is the main entry point for converting documents in Docling.
+    It handles various input formats (PDF, DOCX, PPTX, images, HTML, Markdown, etc.)
+    and provides both single-document and batch conversion capabilities.
+
+    The conversion methods return a `ConversionResult` instance for each document,
+    which wraps a `DoclingDocument` object if the conversion was successful, along
+    with metadata about the conversion process.
+
+    Attributes:
+        allowed_formats: Allowed input formats.
+        format_to_options: Mapping of formats to their options.
+        initialized_pipelines: Cache of initialized pipelines keyed by
+            (pipeline class, options hash).
+    """
+
     _default_download_filename = "file"
 
     def __init__(
         self,
         allowed_formats: Optional[list[InputFormat]] = None,
         format_options: Optional[dict[InputFormat, FormatOption]] = None,
-    ):
-        self.allowed_formats = (
+    ) -> None:
+        """Initialize the converter based on format preferences.
+
+        Args:
+            allowed_formats: List of allowed input formats. By default, any
+                format supported by Docling is allowed.
+            format_options: Dictionary of format-specific options.
+        """
+        self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
         )
 
@@ -237,7 +261,19 @@ class DocumentConverter:
         ).hexdigest()
 
     def initialize_pipeline(self, format: InputFormat):
-        """Initialize the conversion pipeline for the selected format."""
+        """Initialize the conversion pipeline for the selected format.
+
+        Args:
+            format: The input format for which to initialize the pipeline.
+
+        Raises:
+            ConversionError: If no pipeline could be initialized for the
+                given format.
+            RuntimeError: If `artifacts_path` is set in
+                `docling.datamodel.settings.settings` when required by
+                the pipeline, but points to a non-directory file.
+            FileNotFoundError: If local model files are not found.
+        """
         pipeline = self._get_pipeline(doc_format=format)
         if pipeline is None:
             raise ConversionError(
@@ -254,6 +290,30 @@ class DocumentConverter:
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
     ) -> ConversionResult:
+        """Convert one document fetched from a file path, URL, or DocumentStream.
+
+        Note: If the document content is given as a string (Markdown or HTML
+        content), use the `convert_string` method.
+
+        Args:
+            source: Source of input document given as file path, URL, or
+                DocumentStream.
+            headers: Optional headers given as a dictionary of string key-value pairs,
+                in case of URL input source.
+            raises_on_error: Whether to raise an error on the first conversion failure.
+                If False, errors are captured in the ConversionResult objects.
+            max_num_pages: Maximum number of pages accepted per document.
+                Documents exceeding this number will not be converted.
+            max_file_size: Maximum file size to convert.
+            page_range: Range of pages to convert.
+
+        Returns:
+            The conversion result, which contains a `DoclingDocument` in the `document`
+                attribute, and metadata about the conversion process.
+
+        Raises:
+            ConversionError: An error occurred during conversion.
+        """
         all_res = self.convert_all(
             source=[source],
             raises_on_error=raises_on_error,
@@ -269,11 +329,31 @@ class DocumentConverter:
         self,
         source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
         headers: Optional[dict[str, str]] = None,
-        raises_on_error: bool = True,  # True: raises on first conversion error; False: does not raise on conv error
+        raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
     ) -> Iterator[ConversionResult]:
+        """Convert multiple documents from file paths, URLs, or DocumentStreams.
+
+        Args:
+            source: Source of input documents given as an iterable of file paths, URLs,
+                or DocumentStreams.
+            headers: Optional headers given as a (single) dictionary of string
+                key-value pairs, in case of URL input source.
+            raises_on_error: Whether to raise an error on the first conversion failure.
+            max_num_pages: Maximum number of pages to convert.
+            max_file_size: Maximum number of pages accepted per document. Documents
+                exceeding this number will be skipped.
+            page_range: Range of pages to convert in each document.
+
+        Yields:
+            The conversion results, each containing a `DoclingDocument` in the
+                `document` attribute and metadata about the conversion process.
+
+        Raises:
+            ConversionError: An error occurred during conversion.
+        """
         limits = DocumentLimits(
             max_num_pages=max_num_pages,
             max_file_size=max_file_size,
@@ -296,14 +376,16 @@ class DocumentConverter:
                     error_messages = [err.error_message for err in conv_res.errors]
                     error_details = f" Errors: {'; '.join(error_messages)}"
                 raise ConversionError(
-                    f"Conversion failed for: {conv_res.input.file} with status: {conv_res.status}.{error_details}"
+                    f"Conversion failed for: {conv_res.input.file} with status: "
+                    f"{conv_res.status}.{error_details}"
                 )
             else:
                 yield conv_res
 
         if not had_result and raises_on_error:
             raise ConversionError(
-                "Conversion failed because the provided file has no recognizable format or it wasn't in the list of allowed formats."
+                "Conversion failed because the provided file has no recognizable "
+                "format or it wasn't in the list of allowed formats."
             )
 
     @validate_call(config=ConfigDict(strict=True))
@@ -313,6 +395,27 @@ class DocumentConverter:
         format: InputFormat,
         name: Optional[str] = None,
     ) -> ConversionResult:
+        """Convert a document given as a string using the specified format.
+
+        Only Markdown (`InputFormat.MD`) and HTML (`InputFormat.HTML`) formats
+        are supported. The content is wrapped in a `DocumentStream` and passed
+        to the main conversion pipeline.
+
+        Args:
+            content: The document content as a string.
+            format: The format of the input content.
+            name: The filename to associate with the document. If not provided, a
+                timestamp-based name is generated. The appropriate file extension (`md`
+                or `html`) is appended if missing.
+
+        Returns:
+            The conversion result, which contains a `DoclingDocument` in the `document`
+                attribute, and metadata about the conversion process.
+
+        Raises:
+            ValueError: If format is neither `InputFormat.MD` nor `InputFormat.HTML`.
+            ConversionError: An error occurred during conversion.
+        """
         name = name or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
         if format == InputFormat.MD:

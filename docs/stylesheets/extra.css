@@ -60,10 +60,10 @@
 
 /* Links */
 [data-md-color-scheme="slate"] a {
-    color: rgba(233, 219, 189, 0.90) !important;
+    color: rgba(88, 166, 255, 0.90) !important;
 }
 [data-md-color-scheme="slate"] a:hover {
-    color: rgba(233, 219, 189, 0.90) !important;
+    color: rgba(121, 192, 255, 0.90) !important;
 }
 
 /* Code blocks */
