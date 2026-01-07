@@ -12,6 +12,8 @@ from pydantic import (
 )
 from typing_extensions import deprecated
 
+from docling_core.types.doc import PictureClassificationLabel
+
 from docling.datamodel import asr_model_specs, vlm_model_specs
 
 # Import the following for backwards compatibility
@@ -233,8 +235,8 @@ class PictureDescriptionBaseOptions(BaseOptions):
     picture_area_threshold: float = (
         0.05  # percentage of the area for a picture to processed with the models
     )
-    classification_allow: Optional[List[str]] = None
-    classification_deny: Optional[List[str]] = None
+    classification_allow: Optional[List[PictureClassificationLabel]] = None
+    classification_deny: Optional[List[PictureClassificationLabel]] = None
     classification_min_confidence: float = 0.0
 
 

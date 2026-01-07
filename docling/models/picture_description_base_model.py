@@ -3,16 +3,16 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import List, Optional, Type, Union
 
+from PIL import Image
+
 from docling_core.types.doc import (
+    DescriptionMetaField,
     DoclingDocument,
     NodeItem,
-    PictureClassificationData,
+    PictureClassificationLabel,
     PictureItem,
+    PictureMeta,
 )
-from docling_core.types.doc.document import (  # TODO: move import to docling_core.types.doc
-    PictureDescriptionData,
-)
-from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
@@ -75,7 +75,7 @@ class PictureDescriptionBaseModel(
                         if area_fraction < self.options.picture_area_threshold:
                             describe_image = False
             if describe_image and not _passes_classification(
-                el.item.annotations,
+                el.item.meta,
                 self.options.classification_allow,
                 self.options.classification_deny,
                 self.options.classification_min_confidence,
@@ -88,41 +88,55 @@ class PictureDescriptionBaseModel(
         outputs = self._annotate_images(images)
 
         for item, output in zip(elements, outputs):
-            item.annotations.append(
-                PictureDescriptionData(text=output, provenance=self.provenance)
+            if item.meta is None:
+                item.meta = PictureMeta()
+            item.meta.description = DescriptionMetaField(
+                text=output,
+                created_by=self.provenance,
             )
             yield item
-
-
-def _passes_classification(
-    annotations: Iterable[object],
-    allow: Optional[List[str]],
-    deny: Optional[List[str]],
-    min_confidence: float,
-) -> bool:
-    if not allow and not deny:
-        return True
-    predicted = None
-    for annotation in annotations:
-        if isinstance(annotation, PictureClassificationData):
-            predicted = annotation.predicted_classes
-            break
-    if not predicted:
-        return allow is None
-    if deny:
-        deny_set = set(deny)
-        for entry in predicted:
-            if entry.confidence >= min_confidence and entry.class_name in deny_set:
-                return False
-    if allow:
-        allow_set = set(allow)
-        return any(
-            entry.confidence >= min_confidence and entry.class_name in allow_set
-            for entry in predicted
-        )
-    return True
 
     @classmethod
     @abstractmethod
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
         pass
+
+
+def _passes_classification(
+    meta: Optional[PictureMeta],
+    allow: Optional[List[PictureClassificationLabel]],
+    deny: Optional[List[PictureClassificationLabel]],
+    min_confidence: float,
+) -> bool:
+    if not allow and not deny:
+        return True
+    predicted = None
+    if meta and meta.classification:
+        predicted = meta.classification.predictions
+    if not predicted:
+        return allow is None
+    if deny:
+        deny_set = {_label_value(label) for label in deny}
+        for entry in predicted:
+            if _meets_confidence(entry.confidence, min_confidence) and (
+                entry.class_name in deny_set
+            ):
+                return False
+    if allow:
+        allow_set = {_label_value(label) for label in allow}
+        return any(
+            _meets_confidence(entry.confidence, min_confidence)
+            and entry.class_name in allow_set
+            for entry in predicted
+        )
+    return True
+
+
+def _label_value(label: Union[PictureClassificationLabel, str]) -> str:
+    return label.value if isinstance(label, PictureClassificationLabel) else str(label)
+
+
+def _meets_confidence(confidence: Optional[float], min_confidence: float) -> bool:
+    return min_confidence <= 0 or (
+        confidence is not None and confidence >= min_confidence
+    )
