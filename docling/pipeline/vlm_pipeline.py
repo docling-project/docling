@@ -24,7 +24,10 @@ from docling_core.types.doc.document import DocTagsDocument
 from lxml import etree
 from PIL import Image as PILImage
 
-from docling.backend.abstract_backend import AbstractDocumentBackend
+from docling.backend.abstract_backend import (
+    AbstractDocumentBackend,
+    DeclarativeDocumentBackend,
+)
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -46,7 +49,7 @@ from docling.models.vlm_models_inline.hf_transformers_model import (
 )
 from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
-from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown_multipage
+from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -149,16 +152,26 @@ class VlmPipeline(PaginatedPipeline):
             ):
                 conv_res.document = self._turn_dt_into_doc(conv_res)
 
-            elif self.pipeline_options.vlm_options.response_format in (
-                ResponseFormat.MARKDOWN,
-                ResponseFormat.DEEPSEEKOCR_MARKDOWN,
+            elif (
+                self.pipeline_options.vlm_options.response_format
+                == ResponseFormat.DEEPSEEKOCR_MARKDOWN
             ):
-                conv_res.document = self._turn_md_into_doc(conv_res)
+                conv_res.document = self._parse_deepseekocr_markdown(conv_res)
+
+            elif (
+                self.pipeline_options.vlm_options.response_format
+                == ResponseFormat.MARKDOWN
+            ):
+                conv_res.document = self._convert_text_with_backend(
+                    conv_res, InputFormat.MD, MarkdownDocumentBackend
+                )
 
             elif (
                 self.pipeline_options.vlm_options.response_format == ResponseFormat.HTML
             ):
-                conv_res.document = self._turn_html_into_doc(conv_res)
+                conv_res.document = self._convert_text_with_backend(
+                    conv_res, InputFormat.HTML, HTMLDocumentBackend
+                )
 
             else:
                 raise RuntimeError(
@@ -248,93 +261,66 @@ class VlmPipeline(PaginatedPipeline):
         - figure_caption: Titles or descriptions for figures/images
         - header / footer: Content at top or bottom margins of pages
         """
-        # Prepare page contents for the utility function
-        page_contents = []
-        for page in conv_res.pages:
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
             predicted_text = ""
             if page.predictions.vlm_response:
                 predicted_text = page.predictions.vlm_response.text
-            page_contents.append((predicted_text, page.image))
 
-        # Use the standalone utility function
-        return parse_deepseekocr_markdown_multipage(
-            page_contents=page_contents,
-            filename=conv_res.input.file.name or "file",
-        )
-
-    def _turn_md_into_doc(self, conv_res):
-        def _extract_markdown_code(text):
-            """
-            Extracts text from markdown code blocks (enclosed in triple backticks).
-            If no code blocks are found, returns the original text.
-
-            Args:
-                text (str): Input text that may contain markdown code blocks
-
-            Returns:
-                str: Extracted code if code blocks exist, otherwise original text
-            """
-            # Regex pattern to match content between triple backticks
-            # This handles multiline content and optional language specifier
-            pattern = r"^```(?:\w*\n)?(.*?)```(\n)*$"
-
-            # Search with DOTALL flag to match across multiple lines
-            mtch = re.search(pattern, text, re.DOTALL)
-
-            if mtch:
-                # Return only the content of the first capturing group
-                return mtch.group(1)
-            else:
-                # No code blocks found, return original text
-                return text
-
-        page_docs = []
-
-        # Check if we should parse DeepSeek OCR format
-        if (
-            self.pipeline_options.vlm_options.response_format
-            == ResponseFormat.DEEPSEEKOCR_MARKDOWN
-        ):
-            # Use specialized DeepSeek OCR markdown parser
-            return self._parse_deepseekocr_markdown(conv_res)
-
-        for pg_idx, page in enumerate(conv_res.pages):
-            predicted_text = ""
-            if page.predictions.vlm_response:
-                predicted_text = page.predictions.vlm_response.text + "\n\n"
-
-            predicted_text = _extract_markdown_code(text=predicted_text)
-
-            response_bytes = BytesIO(predicted_text.encode("utf8"))
-            out_doc = InputDocument(
-                path_or_stream=response_bytes,
-                filename=conv_res.input.file.name,
-                format=InputFormat.MD,
-                backend=MarkdownDocumentBackend,
+            # Parse single page using the utility function
+            page_doc = parse_deepseekocr_markdown(
+                content=predicted_text,
+                page_image=page.image,
+                page_no=pg_idx + 1,
+                filename=conv_res.input.file.name or "file",
             )
-            backend = MarkdownDocumentBackend(
-                in_doc=out_doc,
-                path_or_stream=response_bytes,
-            )
-            page_doc = backend.convert()
+            page_docs.append(page_doc)
 
-            # Modify provenance in place for all items in the page document
-            for item, level in page_doc.iterate_items(
-                with_groups=True,
-                traverse_pictures=True,
-                included_content_layers=set(ContentLayer),
-            ):
-                if isinstance(item, DocItem):
-                    item.prov = [
-                        ProvenanceItem(
-                            page_no=pg_idx + 1,
-                            bbox=BoundingBox(
-                                t=0.0, b=0.0, l=0.0, r=0.0
-                            ),  # FIXME: would be nice not to have to "fake" it
-                            charspan=[0, 0],
-                        )
-                    ]
+        # Add page metadata and concatenate
+        return self._add_page_metadata_and_concatenate(page_docs, conv_res)
 
+    def _extract_code_block(self, text: str) -> str:
+        """
+        Extracts text from markdown code blocks (enclosed in triple backticks).
+        If no code blocks are found, returns the original text.
+
+        Args:
+            text (str): Input text that may contain markdown code blocks
+
+        Returns:
+            str: Extracted code if code blocks exist, otherwise original text
+        """
+        # Regex pattern to match content between triple backticks
+        # This handles multiline content and optional language specifier
+        pattern = r"^```(?:\w*\n)?(.*?)```(\n)*$"
+
+        # Search with DOTALL flag to match across multiple lines
+        mtch = re.search(pattern, text, re.DOTALL)
+
+        if mtch:
+            # Return only the content of the first capturing group
+            return mtch.group(1)
+        else:
+            # No code blocks found, return original text
+            return text
+
+    def _add_page_metadata_and_concatenate(
+        self,
+        page_docs: List[DoclingDocument],
+        conv_res: ConversionResult,
+    ) -> DoclingDocument:
+        """
+        Add page metadata to page documents and concatenate them.
+
+        Args:
+            page_docs: List of page documents to process
+            conv_res: Conversion result containing page information
+
+        Returns:
+            DoclingDocument: Concatenated document with page metadata
+        """
+        for pg_idx, (page_doc, page) in enumerate(zip(page_docs, conv_res.pages)):
             # Add page metadata to the page document before concatenation
             if page.image is not None:
                 pg_width = page.image.width
@@ -350,98 +336,72 @@ class VlmPipeline(PaginatedPipeline):
                 if page.image
                 else None,
             )
-
-            page_docs.append(page_doc)
-
-        final_doc = DoclingDocument.concatenate(docs=page_docs)
-        return final_doc
-
-    def _turn_html_into_doc(self, conv_res):
-        def _extract_html_code(text):
-            """
-            Extracts text from markdown code blocks (enclosed in triple backticks).
-            If no code blocks are found, returns the original text.
-
-            Args:
-                text (str): Input text that may contain markdown code blocks
-
-            Returns:
-                str: Extracted code if code blocks exist, otherwise original text
-            """
-            # Regex pattern to match content between triple backticks
-            # This handles multiline content and optional language specifier
-            pattern = r"^```(?:\w*\n)?(.*?)```(\n)*$"
-
-            # Search with DOTALL flag to match across multiple lines
-            mtch = re.search(pattern, text, re.DOTALL)
-
-            if mtch:
-                # Return only the content of the first capturing group
-                return mtch.group(1)
-            else:
-                # No code blocks found, return original text
-                return text
-
-        page_docs = []
-
-        for pg_idx, page in enumerate(conv_res.pages):
-            predicted_text = ""
-            if page.predictions.vlm_response:
-                predicted_text = page.predictions.vlm_response.text + "\n\n"
-
-            predicted_text = _extract_html_code(text=predicted_text)
-
-            response_bytes = BytesIO(predicted_text.encode("utf8"))
-            out_doc = InputDocument(
-                path_or_stream=response_bytes,
-                filename=conv_res.input.file.name,
-                format=InputFormat.HTML,
-                backend=HTMLDocumentBackend,
-            )
-            backend = HTMLDocumentBackend(
-                in_doc=out_doc,
-                path_or_stream=response_bytes,
-            )
-            page_doc = backend.convert()
-
-            # Modify provenance in place for all items in the page document
-            for item, level in page_doc.iterate_items(
-                with_groups=True,
-                traverse_pictures=True,
-                included_content_layers=set(ContentLayer),
-            ):
-                if isinstance(item, DocItem):
-                    item.prov = [
-                        ProvenanceItem(
-                            page_no=pg_idx + 1,
-                            bbox=BoundingBox(
-                                t=0.0, b=0.0, l=0.0, r=0.0
-                            ),  # FIXME: would be nice not to have to "fake" it
-                            charspan=[0, 0],
-                        )
-                    ]
-
-            # Add page metadata to the page document before concatenation
-            if page.image is not None:
-                pg_width = page.image.width
-                pg_height = page.image.height
-            else:
-                pg_width = 1
-                pg_height = 1
-
-            page_doc.add_page(
-                page_no=pg_idx + 1,
-                size=Size(width=pg_width, height=pg_height),
-                image=ImageRef.from_pil(image=page.image, dpi=72)
-                if page.image
-                else None,
-            )
-
-            page_docs.append(page_doc)
 
         # Concatenate all page documents to preserve hierarchy
-        final_doc = DoclingDocument.concatenate(docs=page_docs)
-        return final_doc
+        return DoclingDocument.concatenate(docs=page_docs)
+
+    def _convert_text_with_backend(
+        self,
+        conv_res: ConversionResult,
+        input_format: InputFormat,
+        backend_class: type[DeclarativeDocumentBackend],
+    ) -> DoclingDocument:
+        """
+        Convert text-based formats (Markdown, HTML) into DoclingDocument using a backend.
+
+        Args:
+            conv_res: The conversion result containing pages with VLM predictions
+            input_format: The format type (MD or HTML)
+            backend_class: The backend class to use for conversion
+
+        Returns:
+            DoclingDocument: The assembled document
+        """
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text + "\n\n"
+
+            # Extract content from code blocks if present
+            predicted_text = self._extract_code_block(text=predicted_text)
+
+            # Convert text to document using specified backend
+            response_bytes = BytesIO(predicted_text.encode("utf8"))
+            out_doc = InputDocument(
+                path_or_stream=response_bytes,
+                filename=conv_res.input.file.name,
+                format=input_format,
+                backend=backend_class,
+            )
+            backend = backend_class(
+                in_doc=out_doc,
+                path_or_stream=response_bytes,
+            )
+            page_doc = backend.convert()
+
+            # Modify provenance in place for all items in the page document
+            for item, level in page_doc.iterate_items(
+                with_groups=True,
+                traverse_pictures=True,
+                included_content_layers=set(ContentLayer),
+            ):
+                if isinstance(item, DocItem):
+                    item.prov = [
+                        ProvenanceItem(
+                            page_no=pg_idx + 1,
+                            bbox=BoundingBox(
+                                t=0.0, b=0.0, l=0.0, r=0.0
+                            ),  # FIXME: would be nice not to have to "fake" it
+                            charspan=[0, 0],
+                        )
+                    ]
+
+            page_docs.append(page_doc)
+
+        # Add page metadata and concatenate
+        return self._add_page_metadata_and_concatenate(page_docs, conv_res)
 
     @classmethod
     def get_default_options(cls) -> VlmPipelineOptions:

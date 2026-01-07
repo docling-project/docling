@@ -357,35 +357,3 @@ def parse_deepseekocr_markdown(
         )
 
     return page_doc
-
-
-def parse_deepseekocr_markdown_multipage(
-    page_contents: list[tuple[str, Optional[PILImage.Image]]],
-    filename: str = "file",
-) -> DoclingDocument:
-    """Parse DeepSeek OCR markdown from multiple pages.
-
-    Args:
-        page_contents: List of tuples (content_string, page_image) for each page
-        filename: Source filename (default: "file")
-
-    Returns:
-        DoclingDocument with all pages concatenated
-    """
-    page_docs = []
-
-    for pg_idx, (content, page_image) in enumerate(page_contents):
-        page_doc = parse_deepseekocr_markdown(
-            content=content,
-            page_image=page_image,
-            page_no=pg_idx + 1,
-            filename=filename,
-        )
-        page_docs.append(page_doc)
-
-    # Return the first page document (or concatenate if multiple pages)
-    if len(page_docs) == 1:
-        return page_docs[0]
-    else:
-        final_doc = DoclingDocument.concatenate(docs=page_docs)
-        return final_doc
