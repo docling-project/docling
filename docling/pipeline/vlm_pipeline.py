@@ -46,7 +46,7 @@ from docling.models.vlm_models_inline.hf_transformers_model import (
 )
 from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
-from docling.utils.deepseekocr_utils import parse_annotated_markdown_multipage
+from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown_multipage
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ class VlmPipeline(PaginatedPipeline):
 
             elif self.pipeline_options.vlm_options.response_format in (
                 ResponseFormat.MARKDOWN,
-                ResponseFormat.ANNOTATED_MARKDOWN,
+                ResponseFormat.DEEPSEEKOCR_MARKDOWN,
             ):
                 conv_res.document = self._turn_md_into_doc(conv_res)
 
@@ -233,8 +233,10 @@ class VlmPipeline(PaginatedPipeline):
 
         return conv_res.document
 
-    def _parse_annotated_markdown(self, conv_res: ConversionResult) -> DoclingDocument:
-        """Parse annotated markdown with label[[x1, y1, x2, y2]] format.
+    def _parse_deepseekocr_markdown(
+        self, conv_res: ConversionResult
+    ) -> DoclingDocument:
+        """Parse DeepSeek OCR markdown with label[[x1, y1, x2, y2]] format.
 
         Labels supported:
         - text: Standard body text
@@ -255,7 +257,7 @@ class VlmPipeline(PaginatedPipeline):
             page_contents.append((predicted_text, page.image))
 
         # Use the standalone utility function
-        return parse_annotated_markdown_multipage(
+        return parse_deepseekocr_markdown_multipage(
             page_contents=page_contents,
             filename=conv_res.input.file.name or "file",
         )
@@ -288,13 +290,13 @@ class VlmPipeline(PaginatedPipeline):
 
         page_docs = []
 
-        # Check if we should parse annotations
+        # Check if we should parse DeepSeek OCR format
         if (
             self.pipeline_options.vlm_options.response_format
-            == ResponseFormat.ANNOTATED_MARKDOWN
+            == ResponseFormat.DEEPSEEKOCR_MARKDOWN
         ):
-            # Use specialized annotated markdown parser
-            return self._parse_annotated_markdown(conv_res)
+            # Use specialized DeepSeek OCR markdown parser
+            return self._parse_deepseekocr_markdown(conv_res)
 
         for pg_idx, page in enumerate(conv_res.pages):
             predicted_text = ""

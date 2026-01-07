@@ -1,15 +1,14 @@
-"""Test annotated markdown parsing in VLM pipeline."""
+"""Test DeepSeek OCR markdown parsing in VLM pipeline."""
 
 from pathlib import Path
 
-from docling_core.types.doc import BoundingBox, DocItem, DocItemLabel, DoclingDocument
+from docling_core.types.doc import DocItem, DocItemLabel, DoclingDocument
 
-from docling.backend.noop_backend import NoOpBackend
 from docling.datamodel.base_models import InputFormat
 
 
 def mock_parsing(content: str) -> DoclingDocument:
-    # Create a mock conversion result with the annotated markdown as VLM response
+    # Create a mock conversion result with the DeepSeek OCR markdown as VLM response
     from PIL import Image as PILImage
 
     from docling.datamodel.base_models import Page, PagePredictions, VlmPrediction
@@ -29,7 +28,7 @@ def mock_parsing(content: str) -> DoclingDocument:
         input=in_doc,
     )
 
-    # Create a page with the annotated markdown as VLM response
+    # Create a page with the DeepSeek OCR markdown as VLM response
     page = Page(page_no=1)
     page._image_cache[1.0] = PILImage.new("RGB", (800, 1000), color="white")
     page.predictions = PagePredictions()
@@ -41,18 +40,18 @@ def mock_parsing(content: str) -> DoclingDocument:
     # We just need to test the parsing logic, not the full pipeline
     from docling.pipeline.vlm_pipeline import VlmPipeline
 
-    # Parse the annotated markdown by calling the method directly
-    doc = VlmPipeline._parse_annotated_markdown(None, conv_res)
+    # Parse the DeepSeek OCR markdown by calling the method directly
+    doc = VlmPipeline._parse_deepseekocr_markdown(None, conv_res)
 
     return doc
 
 
-def test_parse_annotated_markdown_simple():
-    """Test that annotated markdown files can be parsed."""
+def test_parse_deepseekocr_markdown_simple():
+    """Test that DeepSeek OCR markdown files can be parsed."""
     # Test with first file
     test_file = Path("tests/data/md_deepseek/annotated_simple.md")
 
-    # Read the annotated markdown content
+    # Read the DeepSeek OCR markdown content
     with open(test_file, encoding="utf-8") as f:
         annotated_content = f.read()
 
@@ -116,7 +115,7 @@ def test_parse_annotated_markdown_simple():
         print(f"  - Heading levels: {heading_levels}")
 
 
-def test_parse_annotated_markdown_example():
+def test_parse_deepseekocr_markdown_example():
     # Test with first file
     test_file = Path("tests/data/md_deepseek/annotated_example.md")
 
@@ -133,5 +132,5 @@ def test_parse_annotated_markdown_example():
 
 
 if __name__ == "__main__":
-    test_parse_annotated_markdown_simple()
-    test_parse_annotated_markdown_example()
+    test_parse_deepseekocr_markdown_simple()
+    test_parse_deepseekocr_markdown_example()

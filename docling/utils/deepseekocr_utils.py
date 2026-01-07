@@ -219,13 +219,13 @@ def process_annotation_item(
         page_doc.add_text(label=doc_label, text=content, prov=prov)
 
 
-def parse_annotated_markdown(
+def parse_deepseekocr_markdown(
     content: str,
     page_image: Optional[PILImage.Image] = None,
     page_no: int = 1,
     filename: str = "file",
 ) -> DoclingDocument:
-    """Parse annotated markdown with label[[x1, y1, x2, y2]] format.
+    """Parse DeepSeek OCR markdown with label[[x1, y1, x2, y2]] format.
 
     This function parses markdown content that has been annotated with bounding box
     coordinates for different document elements.
@@ -359,11 +359,11 @@ def parse_annotated_markdown(
     return page_doc
 
 
-def parse_annotated_markdown_multipage(
+def parse_deepseekocr_markdown_multipage(
     page_contents: list[tuple[str, Optional[PILImage.Image]]],
     filename: str = "file",
 ) -> DoclingDocument:
-    """Parse annotated markdown from multiple pages.
+    """Parse DeepSeek OCR markdown from multiple pages.
 
     Args:
         page_contents: List of tuples (content_string, page_image) for each page
@@ -375,7 +375,7 @@ def parse_annotated_markdown_multipage(
     page_docs = []
 
     for pg_idx, (content, page_image) in enumerate(page_contents):
-        page_doc = parse_annotated_markdown(
+        page_doc = parse_deepseekocr_markdown(
             content=content,
             page_image=page_image,
             page_no=pg_idx + 1,
