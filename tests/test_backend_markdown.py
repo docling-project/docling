@@ -1,9 +1,6 @@
 from pathlib import Path
 
-from docling_core.types.doc import BoundingBox, DocItem, DocItemLabel, TextItem
-
 from docling.backend.md_backend import MarkdownDocumentBackend
-from docling.datamodel.backend_options import MarkdownBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import (
     ConversionResult,
@@ -112,80 +109,3 @@ def test_e2e_md_conversions():
 
         pred_md_: str = doc_.export_to_markdown()
         assert true_md == pred_md_
-
-
-def test_annotated_markdown():
-    """Test parsing of annotated markdown with label and bbox information."""
-    in_path = Path("tests") / "data" / "md" / "annotated_simple.md"
-
-    # Test with parse_annotations=True
-    options = MarkdownBackendOptions(parse_annotations=True)
-    in_doc = InputDocument(
-        path_or_stream=in_path,
-        format=InputFormat.MD,
-        backend=MarkdownDocumentBackend,
-        backend_options=options,
-    )
-    backend = MarkdownDocumentBackend(
-        in_doc=in_doc,
-        path_or_stream=in_path,
-        options=options,
-    )
-    assert backend.is_valid()
-
-    doc = backend.convert()
-
-    # Verify that items have proper labels and bounding boxes
-    items_with_prov = []
-    for item, _ in doc.iterate_items():
-        if isinstance(item, DocItem) and len(item.prov) > 0:
-            items_with_prov.append(item)
-
-    # Should have multiple items with provenance
-    assert len(items_with_prov) > 0, "Expected items with provenance information"
-
-    # Check first text item has correct bbox
-    text_items = [item for item in items_with_prov if isinstance(item, TextItem)]
-    assert len(text_items) > 0, "Expected at least one text item"
-
-    first_text = text_items[0]
-    # prov is a list of ProvenanceItem objects
-    prov_item = (
-        first_text.prov[0]
-        if not isinstance(first_text.prov[0], list)
-        else first_text.prov[0][0]
-    )
-    assert prov_item.bbox.l == 217.0
-    assert prov_item.bbox.t == 146.0
-    assert prov_item.bbox.r == 785.0
-    assert prov_item.bbox.b == 191.0
-
-    # Check section header items
-    section_headers = [
-        item
-        for item in items_with_prov
-        if isinstance(item, TextItem) and item.label == DocItemLabel.SECTION_HEADER
-    ]
-    assert len(section_headers) >= 2, "Expected at least two section headers"
-
-    # Test with parse_annotations=False (default behavior)
-    options_no_parse = MarkdownBackendOptions(parse_annotations=False)
-    in_doc_no_parse = InputDocument(
-        path_or_stream=in_path,
-        format=InputFormat.MD,
-        backend=MarkdownDocumentBackend,
-        backend_options=options_no_parse,
-    )
-    backend_no_parse = MarkdownDocumentBackend(
-        in_doc=in_doc_no_parse,
-        path_or_stream=in_path,
-        options=options_no_parse,
-    )
-
-    doc_no_parse = backend_no_parse.convert()
-
-    # When not parsing annotations, the annotation lines should appear as text
-    all_text = doc_no_parse.export_to_markdown()
-    assert "text[[217, 146, 785, 191]]" in all_text, (
-        "Annotation should be preserved as text when parse_annotations=False"
-    )

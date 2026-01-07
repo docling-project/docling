@@ -12,6 +12,8 @@ import marko
 import marko.element
 import marko.inline
 from docling_core.types.doc import (
+    ContentLayer,
+    DocItem,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -593,6 +595,8 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     enable_remote_fetch=md_options.enable_remote_fetch,
                     fetch_images=md_options.fetch_images,
                     source_uri=md_options.source_uri,
+                    infer_furniture=False,
+                    add_title=False,
                 )
                 in_doc = InputDocument(
                     path_or_stream=stream,
