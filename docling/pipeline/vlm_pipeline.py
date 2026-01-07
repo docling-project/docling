@@ -12,6 +12,8 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
+    TableCell,
+    TableData,
     TextItem,
 )
 from docling_core.types.doc.base import (
@@ -19,6 +21,7 @@ from docling_core.types.doc.base import (
     Size,
 )
 from docling_core.types.doc.document import DocTagsDocument
+from lxml import etree
 from PIL import Image as PILImage
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
@@ -229,7 +232,103 @@ class VlmPipeline(PaginatedPipeline):
 
         return conv_res.document
 
-    def _parse_annotated_markdown(self, conv_res: ConversionResult) -> DoclingDocument:
+    @staticmethod
+    def _parse_table_html_static(html_content: str) -> TableData:
+        """Parse HTML table content and create TableData structure.
+
+        Args:
+            html_content: HTML string containing <table> element
+
+        Returns:
+            TableData with parsed table structure
+        """
+
+        # Extract table HTML if wrapped in other content
+        table_match = re.search(
+            r"<table[^>]*>.*?</table>", html_content, re.DOTALL | re.IGNORECASE
+        )
+        if not table_match:
+            # No table found, return empty table
+            return TableData(num_rows=0, num_cols=0, table_cells=[])
+
+        table_html = table_match.group(0)
+
+        try:
+            # Parse HTML with lxml
+            parser = etree.HTMLParser()
+            tree = etree.fromstring(table_html, parser)
+
+            # Find all rows
+            rows = tree.xpath(".//tr")
+            if not rows:
+                return TableData(num_rows=0, num_cols=0, table_cells=[])
+
+            # Calculate grid dimensions
+            num_rows = len(rows)
+            num_cols = 0
+
+            # First pass: determine number of columns
+            for row in rows:
+                cells = row.xpath("./td | ./th")
+                col_count = 0
+                for cell in cells:
+                    colspan = int(cell.get("colspan", "1"))
+                    col_count += colspan
+                num_cols = max(num_cols, col_count)
+
+            # Create grid to track cell positions
+            grid: list[list[Union[None | str]]] = [
+                [None for _ in range(num_cols)] for _ in range(num_rows)
+            ]
+            table_data = TableData(num_rows=num_rows, num_cols=num_cols, table_cells=[])
+
+            # Second pass: populate cells
+            for row_idx, row in enumerate(rows):
+                cells = row.xpath("./td | ./th")
+                col_idx = 0
+
+                for cell in cells:
+                    # Find next available column
+                    while col_idx < num_cols and grid[row_idx][col_idx] is not None:
+                        col_idx += 1
+
+                    if col_idx >= num_cols:
+                        break
+
+                    # Get cell properties
+                    text = "".join(cell.itertext()).strip()
+                    colspan = int(cell.get("colspan", "1"))
+                    rowspan = int(cell.get("rowspan", "1"))
+                    is_header = cell.tag.lower() == "th"
+
+                    # Mark grid cells as occupied
+                    for r in range(row_idx, min(row_idx + rowspan, num_rows)):
+                        for c in range(col_idx, min(col_idx + colspan, num_cols)):
+                            grid[r][c] = text
+
+                    # Create table cell
+                    table_cell = TableCell(
+                        text=text,
+                        row_span=rowspan,
+                        col_span=colspan,
+                        start_row_offset_idx=row_idx,
+                        end_row_offset_idx=row_idx + rowspan,
+                        start_col_offset_idx=col_idx,
+                        end_col_offset_idx=col_idx + colspan,
+                        column_header=is_header and row_idx == 0,
+                        row_header=is_header and col_idx == 0,
+                    )
+                    table_data.table_cells.append(table_cell)
+
+                    col_idx += colspan
+
+            return table_data
+
+        except Exception as e:
+            _log.warning(f"Failed to parse table HTML: {e}")
+            return TableData(num_rows=0, num_cols=0, table_cells=[])
+
+    def _parse_annotated_markdown(self, conv_res: ConversionResult) -> DoclingDocument:  # noqa: C901
         """Parse annotated markdown with label[[x1, y1, x2, y2]] format.
 
         Labels supported:
@@ -302,8 +401,13 @@ class VlmPipeline(PaginatedPipeline):
             lines = predicted_text.split("\n")
             annotations = []
             i = 0
+            visited_lines = set()
 
             while i < len(lines):
+                if i in visited_lines:
+                    i += 1
+                    continue
+
                 line = lines[i].strip()
                 match = re.match(annotation_pattern, line)
                 if match:
@@ -323,19 +427,38 @@ class VlmPipeline(PaginatedPipeline):
                             # Get the content (next non-empty line)
                             i += 1
                             content_lines = []
-                            while i < len(lines):
-                                content_line = lines[i].strip()
-                                if content_line:
-                                    if re.match(annotation_pattern, content_line):
+
+                            # Special handling for table: extract only <table>...</table>
+                            if label_str == "table":
+                                # Collect all lines until we find the complete table
+                                table_started = False
+                                ii = i
+                                while ii < len(lines):
+                                    line = lines[ii]
+                                    if "<table" in line.lower():
+                                        table_started = True
+                                    if table_started:
+                                        visited_lines.add(ii)
+                                        content_lines.append(line.rstrip())
+                                    if table_started and "</table>" in line.lower():
                                         break
-                                    content_lines.append(lines[i].rstrip())
-                                    i += 1
-                                    if label_str not in ["table", "figure"]:
-                                        break
-                                else:
-                                    i += 1
-                                    if content_lines:
-                                        break
+                                    ii += 1
+                            else:
+                                # Original logic for other labels
+                                while i < len(lines):
+                                    content_line = lines[i].strip()
+                                    if content_line:
+                                        if re.match(annotation_pattern, content_line):
+                                            break
+                                        visited_lines.add(i)
+                                        content_lines.append(lines[i].rstrip())
+                                        i += 1
+                                        if label_str not in ["figure"]:
+                                            break
+                                    else:
+                                        i += 1
+                                        if content_lines:
+                                            break
 
                             content = "\n".join(content_lines)
                             annotations.append((label_str, content, prov))
@@ -348,7 +471,8 @@ class VlmPipeline(PaginatedPipeline):
             for idx, (label_str, content, prov) in enumerate(annotations):
                 doc_label = label_map.get(label_str, DocItemLabel.TEXT)
 
-                # Check if next annotation is a caption for this table/figure
+                # Check if NEXT annotation is a caption for this table/figure
+                # (caption appears AFTER table in the file: table[[...]] then table_caption[[...]])
                 caption_item = None
                 if label_str in ["table", "figure"] and idx + 1 < len(annotations):
                     next_label, next_content, next_prov = annotations[idx + 1]
@@ -376,7 +500,8 @@ class VlmPipeline(PaginatedPipeline):
                 if label_str == "figure":
                     page_doc.add_picture(caption=caption_item, prov=prov)
                 elif label_str == "table":
-                    table_data = TableData(num_rows=0, num_cols=0, table_cells=[])
+                    # Parse table HTML content if present
+                    table_data = VlmPipeline._parse_table_html_static(content)
                     page_doc.add_table(data=table_data, caption=caption_item, prov=prov)
                 elif label_str == "title":
                     page_doc.add_title(text=content, prov=prov)
