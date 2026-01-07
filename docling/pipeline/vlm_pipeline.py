@@ -229,6 +229,185 @@ class VlmPipeline(PaginatedPipeline):
 
         return conv_res.document
 
+    def _parse_annotated_markdown(self, conv_res: ConversionResult) -> DoclingDocument:
+        """Parse annotated markdown with label[[x1, y1, x2, y2]] format.
+
+        Labels supported:
+        - text: Standard body text
+        - title: Main document or section titles
+        - sub_title: Secondary headings or sub-headers
+        - table: Tabular data
+        - table_caption: Descriptive text for tables
+        - figure: Image-based elements or diagrams
+        - figure_caption: Titles or descriptions for figures/images
+        - header / footer: Content at top or bottom margins of pages
+        """
+        from docling_core.types.doc import (
+            DocItemLabel,
+            DocumentOrigin,
+            TableData,
+        )
+
+        # Label mapping
+        label_map = {
+            "text": DocItemLabel.TEXT,
+            "title": DocItemLabel.TITLE,
+            "sub_title": DocItemLabel.SECTION_HEADER,
+            "table": DocItemLabel.TABLE,
+            "table_caption": DocItemLabel.CAPTION,
+            "figure": DocItemLabel.PICTURE,
+            "figure_caption": DocItemLabel.CAPTION,
+            "header": DocItemLabel.PAGE_HEADER,
+            "footer": DocItemLabel.PAGE_FOOTER,
+        }
+
+        # Pattern to match: label[[x1, y1, x2, y2]]
+        annotation_pattern = r"^(\w+)\[\[([0-9., ]+)\]\]\s*$"
+
+        page_docs = []
+
+        for pg_idx, page in enumerate(conv_res.pages):
+            # Create a new document for this page
+            origin = DocumentOrigin(
+                filename=conv_res.input.file.name or "file",
+                mimetype="text/markdown",
+                binary_hash=0,
+            )
+            page_doc = DoclingDocument(
+                name=conv_res.input.file.stem or "file", origin=origin
+            )
+
+            # Get page dimensions
+            if page.image is not None:
+                pg_width = page.image.width
+                pg_height = page.image.height
+            else:
+                pg_width = 1
+                pg_height = 1
+
+            # Add page metadata
+            page_doc.add_page(
+                page_no=pg_idx + 1,
+                size=Size(width=pg_width, height=pg_height),
+                image=ImageRef.from_pil(image=page.image, dpi=72)
+                if page.image
+                else None,
+            )
+
+            predicted_text = ""
+            if page.predictions.vlm_response:
+                predicted_text = page.predictions.vlm_response.text
+
+            # Split into lines and parse - collect all annotations first
+            lines = predicted_text.split("\n")
+            annotations = []
+            i = 0
+
+            while i < len(lines):
+                line = lines[i].strip()
+                match = re.match(annotation_pattern, line)
+                if match:
+                    label_str = match.group(1)
+                    coords_str = match.group(2)
+
+                    try:
+                        coords = [float(x.strip()) for x in coords_str.split(",")]
+                        if len(coords) == 4:
+                            bbox = BoundingBox(
+                                l=coords[0], t=coords[1], r=coords[2], b=coords[3]
+                            )
+                            prov = ProvenanceItem(
+                                page_no=pg_idx + 1, bbox=bbox, charspan=[0, 0]
+                            )
+
+                            # Get the content (next non-empty line)
+                            i += 1
+                            content_lines = []
+                            while i < len(lines):
+                                content_line = lines[i].strip()
+                                if content_line:
+                                    if re.match(annotation_pattern, content_line):
+                                        break
+                                    content_lines.append(lines[i].rstrip())
+                                    i += 1
+                                    if label_str not in ["table", "figure"]:
+                                        break
+                                else:
+                                    i += 1
+                                    if content_lines:
+                                        break
+
+                            content = "\n".join(content_lines)
+                            annotations.append((label_str, content, prov))
+                            continue
+                    except (ValueError, IndexError):
+                        pass
+                i += 1
+
+            # Process annotations and link captions that appear AFTER tables/figures
+            for idx, (label_str, content, prov) in enumerate(annotations):
+                doc_label = label_map.get(label_str, DocItemLabel.TEXT)
+
+                # Check if next annotation is a caption for this table/figure
+                caption_item = None
+                if label_str in ["table", "figure"] and idx + 1 < len(annotations):
+                    next_label, next_content, next_prov = annotations[idx + 1]
+                    if (label_str == "table" and next_label == "table_caption") or (
+                        label_str == "figure" and next_label == "figure_caption"
+                    ):
+                        # Create caption item
+                        caption_label = label_map.get(next_label, DocItemLabel.CAPTION)
+                        caption_item = page_doc.add_text(
+                            label=caption_label,
+                            text=next_content,
+                            prov=next_prov,
+                        )
+
+                # Skip if this is a caption that was already processed
+                if label_str in ["figure_caption", "table_caption"]:
+                    if idx > 0:
+                        prev_label = annotations[idx - 1][0]
+                        if (label_str == "table_caption" and prev_label == "table") or (
+                            label_str == "figure_caption" and prev_label == "figure"
+                        ):
+                            continue
+
+                # Add the item
+                if label_str == "figure":
+                    page_doc.add_picture(caption=caption_item, prov=prov)
+                elif label_str == "table":
+                    table_data = TableData(num_rows=0, num_cols=0, table_cells=[])
+                    page_doc.add_table(data=table_data, caption=caption_item, prov=prov)
+                elif label_str == "title":
+                    page_doc.add_title(text=content, prov=prov)
+                elif label_str == "sub_title":
+                    heading_level = 1
+                    clean_content = content
+                    if content.startswith("#"):
+                        hash_count = 0
+                        for char in content:
+                            if char == "#":
+                                hash_count += 1
+                            else:
+                                break
+                        if hash_count > 1:
+                            heading_level = hash_count - 1
+                        clean_content = content[hash_count:].strip()
+                    page_doc.add_heading(
+                        text=clean_content, level=heading_level, prov=prov
+                    )
+                else:
+                    page_doc.add_text(label=doc_label, text=content, prov=prov)
+
+            page_docs.append(page_doc)
+
+        # Return the first page document (or concatenate if multiple pages)
+        if len(page_docs) == 1:
+            return page_docs[0]
+        else:
+            final_doc = DoclingDocument.concatenate(docs=page_docs)
+            return final_doc
+
     def _turn_md_into_doc(self, conv_res):
         def _extract_markdown_code(text):
             """
@@ -258,10 +437,12 @@ class VlmPipeline(PaginatedPipeline):
         page_docs = []
 
         # Check if we should parse annotations
-        parse_annotations = (
+        if (
             self.pipeline_options.vlm_options.response_format
             == ResponseFormat.ANNOTATED_MARKDOWN
-        )
+        ):
+            # Use specialized annotated markdown parser
+            return self._parse_annotated_markdown(conv_res)
 
         for pg_idx, page in enumerate(conv_res.pages):
             predicted_text = ""
@@ -271,22 +452,15 @@ class VlmPipeline(PaginatedPipeline):
             predicted_text = _extract_markdown_code(text=predicted_text)
 
             response_bytes = BytesIO(predicted_text.encode("utf8"))
-
-            from docling.datamodel.backend_options import MarkdownBackendOptions
-
-            md_options = MarkdownBackendOptions(parse_annotations=parse_annotations)
-
             out_doc = InputDocument(
                 path_or_stream=response_bytes,
                 filename=conv_res.input.file.name,
                 format=InputFormat.MD,
                 backend=MarkdownDocumentBackend,
-                backend_options=md_options,
             )
             backend = MarkdownDocumentBackend(
                 in_doc=out_doc,
                 path_or_stream=response_bytes,
-                options=md_options,
             )
             page_doc = backend.convert()
 

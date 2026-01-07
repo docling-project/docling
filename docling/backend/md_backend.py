@@ -6,19 +6,17 @@ from enum import Enum
 from html import unescape
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union, cast
+from typing import Literal, Optional, Union, cast
 
 import marko
 import marko.element
 import marko.inline
 from docling_core.types.doc import (
-    BoundingBox,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
     ListItem,
     NodeItem,
-    ProvenanceItem,
     TableCell,
     TableData,
     TextItem,
@@ -73,55 +71,6 @@ _CreationPayload = Annotated[
 
 
 class MarkdownDocumentBackend(DeclarativeDocumentBackend):
-    def _parse_annotation(
-        self, text: str
-    ) -> Tuple[str, Optional[str], Optional[List[float]]]:
-        """Parse annotated markdown format: label[[x1, y1, x2, y2]]
-
-        Returns:
-            Tuple of (clean_text, label, bbox_coords)
-            - clean_text: text without annotation
-            - label: the label string (e.g., 'text', 'sub_title', 'table')
-            - bbox_coords: list of [x1, y1, x2, y2] coordinates or None
-        """
-        # Pattern to match: label[[x1, y1, x2, y2]] at start of line
-        # This annotation appears on its own line before the actual content
-        pattern = r"^(\w+)\[\[([0-9, ]+)\]\]$"
-        match = re.match(pattern, text.strip())
-
-        if match:
-            label = match.group(1)
-            coords_str = match.group(2)
-            try:
-                coords = [float(x.strip()) for x in coords_str.split(",")]
-                if len(coords) == 4:
-                    return "", label, coords
-            except ValueError:
-                pass
-
-        return text, None, None
-
-    def _label_to_doc_item_label(self, label: str) -> DocItemLabel:
-        """Map annotation label strings to DocItemLabel enum values."""
-        label_mapping: Dict[str, DocItemLabel] = {
-            "text": DocItemLabel.TEXT,
-            "title": DocItemLabel.TITLE,
-            "sub_title": DocItemLabel.SECTION_HEADER,
-            "section_header": DocItemLabel.SECTION_HEADER,
-            "table": DocItemLabel.TABLE,
-            "table_caption": DocItemLabel.CAPTION,
-            "caption": DocItemLabel.CAPTION,
-            "figure": DocItemLabel.PICTURE,
-            "picture": DocItemLabel.PICTURE,
-            "list_item": DocItemLabel.LIST_ITEM,
-            "code": DocItemLabel.CODE,
-            "formula": DocItemLabel.FORMULA,
-            "footnote": DocItemLabel.FOOTNOTE,
-            "page_header": DocItemLabel.PAGE_HEADER,
-            "page_footer": DocItemLabel.PAGE_FOOTER,
-        }
-        return label_mapping.get(label.lower(), DocItemLabel.TEXT)
-
     def _shorten_underscore_sequences(self, markdown_text: str, max_length: int = 10):
         # This regex will match any sequence of underscores
         pattern = r"_+"
@@ -164,10 +113,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         self.in_table = False
         self.md_table_buffer: list[str] = []
         self._html_blocks: int = 0
-
-        # Store annotation data when parse_annotations is enabled
-        self.parse_annotations = options.parse_annotations
-        self.pending_annotation: Optional[Tuple[str, List[float]]] = None
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -277,7 +222,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         level: int,
         formatting: Optional[Formatting] = None,
         hyperlink: Optional[Union[AnyUrl, Path]] = None,
-        prov: Optional[ProvenanceItem] = None,
     ):
         if level == 1:
             item = doc.add_title(
@@ -285,7 +229,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 parent=parent_item,
                 formatting=formatting,
                 hyperlink=hyperlink,
-                prov=prov,
             )
         else:
             item = doc.add_heading(
@@ -294,7 +237,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 parent=parent_item,
                 formatting=formatting,
                 hyperlink=hyperlink,
-                prov=prov,
             )
         return item
 
@@ -339,34 +281,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 )
             else:
                 creation_stack.append(_HeadingCreationPayload(level=element.level))
-
-        elif isinstance(element, marko.block.Paragraph):
-            # Check if this paragraph starts with an annotation
-            if self.parse_annotations and len(element.children) > 0:
-                first_child = element.children[0]
-                if isinstance(
-                    first_child, (marko.inline.RawText, marko.inline.Literal)
-                ):
-                    first_text = (
-                        first_child.children.strip()
-                        if isinstance(first_child.children, str)
-                        else ""
-                    )
-                    clean_text, label, bbox_coords = self._parse_annotation(first_text)
-                    if label and bbox_coords:
-                        # This paragraph starts with an annotation
-                        # Store it for the NEXT text element (not in this paragraph)
-                        self.pending_annotation = (label, bbox_coords)
-                        _log.debug(
-                            f" - Paragraph starts with annotation: label={label}, bbox={bbox_coords}"
-                        )
-                        # Mark first child as visited so it won't be processed
-                        visited.add(first_child)
-                        # If there's a LineBreak after annotation, skip it too
-                        if len(element.children) > 1 and isinstance(
-                            element.children[1], marko.inline.LineBreak
-                        ):
-                            visited.add(element.children[1])
 
         elif isinstance(element, marko.block.List):
             has_non_empty_list_items = False
@@ -455,25 +369,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.children.strip() if isinstance(element.children, str) else ""
             )
             snippet_text = unescape(snippet_text)
-
-            # Check for annotations if enabled
-            if self.parse_annotations and snippet_text:
-                clean_text, label, bbox_coords = self._parse_annotation(snippet_text)
-                if label and bbox_coords:
-                    # Store annotation for next content line
-                    self.pending_annotation = (label, bbox_coords)
-                    _log.debug(
-                        f" - Parsed annotation: label={label}, bbox={bbox_coords}"
-                    )
-                    # Skip this annotation line - don't process it as content
-                    return
-                elif clean_text != snippet_text:
-                    snippet_text = clean_text
-
-            # Skip if snippet is empty after annotation processing
-            if not snippet_text:
-                return
-
             # Detect start of the table:
             if "|" in snippet_text or self.in_table:
                 # most likely part of the markdown table
@@ -514,23 +409,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                             # not keeping as parent_item as logic for correctly tracking
                             # that not implemented yet (section components not captured
                             # as heading children in marko)
-                            # Check if we have a pending annotation for heading
-                            prov: Optional[ProvenanceItem] = None
-                            if self.parse_annotations and self.pending_annotation:
-                                label_str, bbox_coords = self.pending_annotation
-                                # Create provenance with bbox
-                                prov = ProvenanceItem(
-                                    page_no=1,  # Default to page 1, will be updated by vlm_pipeline
-                                    bbox=BoundingBox(
-                                        l=bbox_coords[0],
-                                        t=bbox_coords[1],
-                                        r=bbox_coords[2],
-                                        b=bbox_coords[3],
-                                    ),
-                                    charspan=[0, len(snippet_text)],
-                                )
-                                self.pending_annotation = None  # Clear after use
-
                             self._create_heading_item(
                                 doc=doc,
                                 parent_item=parent_item,
@@ -538,35 +416,14 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                                 level=to_create.level,
                                 formatting=formatting,
                                 hyperlink=hyperlink,
-                                prov=prov,
                             )
                 else:
-                    # Check if we have a pending annotation
-                    item_label = DocItemLabel.TEXT
-                    prov = None
-                    if self.parse_annotations and self.pending_annotation:
-                        label_str, bbox_coords = self.pending_annotation
-                        item_label = self._label_to_doc_item_label(label_str)
-                        # Create provenance with bbox
-                        prov = ProvenanceItem(
-                            page_no=1,  # Default to page 1, will be updated by vlm_pipeline
-                            bbox=BoundingBox(
-                                l=bbox_coords[0],
-                                t=bbox_coords[1],
-                                r=bbox_coords[2],
-                                b=bbox_coords[3],
-                            ),
-                            charspan=[0, len(snippet_text)],
-                        )
-                        self.pending_annotation = None  # Clear after use
-
                     doc.add_text(
-                        label=item_label,
+                        label=DocItemLabel.TEXT,
                         parent=parent_item,
                         text=snippet_text,
                         formatting=formatting,
                         hyperlink=hyperlink,
-                        prov=prov,
                     )
 
         elif isinstance(element, marko.inline.CodeSpan):
@@ -736,8 +593,6 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                     enable_remote_fetch=md_options.enable_remote_fetch,
                     fetch_images=md_options.fetch_images,
                     source_uri=md_options.source_uri,
-                    infer_furniture=False,
-                    add_title=False,
                 )
                 in_doc = InputDocument(
                     path_or_stream=stream,
