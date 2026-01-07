@@ -328,7 +328,116 @@ class VlmPipeline(PaginatedPipeline):
             _log.warning(f"Failed to parse table HTML: {e}")
             return TableData(num_rows=0, num_cols=0, table_cells=[])
 
-    def _parse_annotated_markdown(self, conv_res: ConversionResult) -> DoclingDocument:  # noqa: C901
+    @staticmethod
+    def _collect_annotation_content(
+        lines: list[str],
+        i: int,
+        label_str: str,
+        annotation_pattern: str,
+        visited_lines: set[int],
+    ) -> tuple[str, int]:
+        """Collect content for an annotation.
+
+        Args:
+            lines: All lines from the document
+            i: Current line index (after annotation line)
+            label_str: The annotation label (e.g., 'table', 'text')
+            annotation_pattern: Regex pattern to match annotations
+            visited_lines: Set of already visited line indices
+
+        Returns:
+            Tuple of (content string, next line index)
+        """
+        content_lines = []
+
+        # Special handling for table: extract only <table>...</table>
+        if label_str == "table":
+            table_started = False
+            ii = i
+            while ii < len(lines):
+                line = lines[ii]
+                if "<table" in line.lower():
+                    table_started = True
+                if table_started:
+                    visited_lines.add(ii)
+                    content_lines.append(line.rstrip())
+                if table_started and "</table>" in line.lower():
+                    break
+                ii += 1
+        else:
+            # Original logic for other labels
+            while i < len(lines):
+                content_line = lines[i].strip()
+                if content_line:
+                    if re.match(annotation_pattern, content_line):
+                        break
+                    visited_lines.add(i)
+                    content_lines.append(lines[i].rstrip())
+                    i += 1
+                    if label_str not in ["figure"]:
+                        break
+                else:
+                    i += 1
+                    if content_lines:
+                        break
+
+        return "\n".join(content_lines), i
+
+    @staticmethod
+    def _process_annotation_item(
+        label_str: str,
+        content: str,
+        prov: ProvenanceItem,
+        caption_item,
+        page_doc: DoclingDocument,
+        label_map: dict,
+    ) -> None:
+        """Process and add a single annotation item to the document.
+
+        Args:
+            label_str: The annotation label
+            content: The content text
+            prov: Provenance information
+            caption_item: Optional caption item to link
+            page_doc: Document to add item to
+            label_map: Mapping of label strings to DocItemLabel
+        """
+        from docling_core.types.doc import DocItemLabel
+
+        doc_label = label_map.get(label_str, DocItemLabel.TEXT)
+
+        if label_str == "figure":
+            page_doc.add_picture(caption=caption_item, prov=prov)
+        elif label_str == "table":
+            table_data = VlmPipeline._parse_table_html_static(content)
+            page_doc.add_table(data=table_data, caption=caption_item, prov=prov)
+        elif label_str == "title":
+            page_doc.add_title(text=content, prov=prov)
+        elif label_str == "sub_title":
+            heading_level = 1
+            clean_content = content
+            if content.startswith("#"):
+                hash_count = sum(
+                    1
+                    for char in content
+                    if char == "#"
+                    and content.index(char) < len(content)
+                    and content[content.index(char)] == "#"
+                )
+                hash_count = 0
+                for char in content:
+                    if char == "#":
+                        hash_count += 1
+                    else:
+                        break
+                if hash_count > 1:
+                    heading_level = hash_count - 1
+                clean_content = content[hash_count:].strip()
+            page_doc.add_heading(text=clean_content, level=heading_level, prov=prov)
+        else:
+            page_doc.add_text(label=doc_label, text=content, prov=prov)
+
+    def _parse_annotated_markdown(self, conv_res: ConversionResult) -> DoclingDocument:
         """Parse annotated markdown with label[[x1, y1, x2, y2]] format.
 
         Labels supported:
@@ -401,7 +510,7 @@ class VlmPipeline(PaginatedPipeline):
             lines = predicted_text.split("\n")
             annotations = []
             i = 0
-            visited_lines = set()
+            visited_lines: set[int] = set()
 
             while i < len(lines):
                 if i in visited_lines:
@@ -426,41 +535,9 @@ class VlmPipeline(PaginatedPipeline):
 
                             # Get the content (next non-empty line)
                             i += 1
-                            content_lines = []
-
-                            # Special handling for table: extract only <table>...</table>
-                            if label_str == "table":
-                                # Collect all lines until we find the complete table
-                                table_started = False
-                                ii = i
-                                while ii < len(lines):
-                                    line = lines[ii]
-                                    if "<table" in line.lower():
-                                        table_started = True
-                                    if table_started:
-                                        visited_lines.add(ii)
-                                        content_lines.append(line.rstrip())
-                                    if table_started and "</table>" in line.lower():
-                                        break
-                                    ii += 1
-                            else:
-                                # Original logic for other labels
-                                while i < len(lines):
-                                    content_line = lines[i].strip()
-                                    if content_line:
-                                        if re.match(annotation_pattern, content_line):
-                                            break
-                                        visited_lines.add(i)
-                                        content_lines.append(lines[i].rstrip())
-                                        i += 1
-                                        if label_str not in ["figure"]:
-                                            break
-                                    else:
-                                        i += 1
-                                        if content_lines:
-                                            break
-
-                            content = "\n".join(content_lines)
+                            content, i = VlmPipeline._collect_annotation_content(
+                                lines, i, label_str, annotation_pattern, visited_lines
+                            )
                             annotations.append((label_str, content, prov))
                             continue
                     except (ValueError, IndexError):
@@ -469,8 +546,6 @@ class VlmPipeline(PaginatedPipeline):
 
             # Process annotations and link captions that appear AFTER tables/figures
             for idx, (label_str, content, prov) in enumerate(annotations):
-                doc_label = label_map.get(label_str, DocItemLabel.TEXT)
-
                 # Check if NEXT annotation is a caption for this table/figure
                 # (caption appears AFTER table in the file: table[[...]] then table_caption[[...]])
                 caption_item = None
@@ -497,32 +572,9 @@ class VlmPipeline(PaginatedPipeline):
                             continue
 
                 # Add the item
-                if label_str == "figure":
-                    page_doc.add_picture(caption=caption_item, prov=prov)
-                elif label_str == "table":
-                    # Parse table HTML content if present
-                    table_data = VlmPipeline._parse_table_html_static(content)
-                    page_doc.add_table(data=table_data, caption=caption_item, prov=prov)
-                elif label_str == "title":
-                    page_doc.add_title(text=content, prov=prov)
-                elif label_str == "sub_title":
-                    heading_level = 1
-                    clean_content = content
-                    if content.startswith("#"):
-                        hash_count = 0
-                        for char in content:
-                            if char == "#":
-                                hash_count += 1
-                            else:
-                                break
-                        if hash_count > 1:
-                            heading_level = hash_count - 1
-                        clean_content = content[hash_count:].strip()
-                    page_doc.add_heading(
-                        text=clean_content, level=heading_level, prov=prov
-                    )
-                else:
-                    page_doc.add_text(label=doc_label, text=content, prov=prov)
+                VlmPipeline._process_annotation_item(
+                    label_str, content, prov, caption_item, page_doc, label_map
+                )
 
             page_docs.append(page_doc)
 
