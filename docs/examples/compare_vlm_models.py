@@ -141,7 +141,11 @@ if __name__ == "__main__":
         response_format=ResponseFormat.MARKDOWN,
         inference_framework=InferenceFramework.TRANSFORMERS,
         transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-        supported_devices=[AcceleratorDevice.CUDA, AcceleratorDevice.CPU],
+        supported_devices=[
+            AcceleratorDevice.CUDA,
+            AcceleratorDevice.CPU,
+            AcceleratorDevice.XPU,
+        ],
         scale=2.0,
         temperature=0.0,
     )
@@ -154,7 +158,11 @@ if __name__ == "__main__":
         inference_framework=InferenceFramework.TRANSFORMERS,
         transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
         transformers_prompt_style=TransformersPromptStyle.RAW,
-        supported_devices=[AcceleratorDevice.CUDA, AcceleratorDevice.CPU],
+        supported_devices=[
+            AcceleratorDevice.CUDA,
+            AcceleratorDevice.CPU,
+            AcceleratorDevice.XPU,
+        ],
         scale=2.0,
         temperature=0.0,
     )

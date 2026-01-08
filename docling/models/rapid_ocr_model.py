@@ -181,7 +181,7 @@ class RapidOcrModel(BaseOcrModel):
             params = {
                 # Global settings (these are still correct)
                 "Global.text_score": self.options.text_score,
-                "Global.font_path": self.options.font_path,
+                "Global.font_path": font_path,
                 # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
                 "Det.model_path": det_model_path,
@@ -195,7 +195,7 @@ class RapidOcrModel(BaseOcrModel):
                 "Cls.intra_op_num_threads": intra_op_num_threads,
                 # Recognition model settings
                 "Rec.model_path": rec_model_path,
-                "Rec.font_path": self.options.rec_font_path,
+                "Rec.font_path": font_path,
                 "Rec.rec_keys_path": rec_keys_path,
                 "Rec.use_cuda": use_cuda,
                 "Rec.use_dml": use_dml,
