@@ -1,7 +1,7 @@
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -140,7 +140,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 pass
         return 0
 
-    def _bullet_from_pPr(self, pPr) -> tuple[bool | None, str | None, str | None]:
+    def _bullet_from_pPr(
+        self, pPr
+    ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
         """
         Parse bullet/numbering from a:<pPr> (or a:lvlXpPr) element.
 
@@ -196,7 +198,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
     def _bullet_from_txBody_lstStyle(
         self, txBody, lvl: int
-    ) -> tuple[bool | None, str | None, str | None, object | None]:
+    ) -> tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
         """
         Look for a:lstStyle/a:lvl{lvl+1}pPr under a txBody and parse bullet from it.
 
@@ -220,7 +222,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
     def _master_style_node(
         self, slide_master, placeholder_type
-    ) -> etree._Element | None:
+    ) -> Optional[etree._Element]:
         """
         Decide which master txStyles bucket to use based on placeholder type.
         Most content placeholders (BODY/OBJECT) use bodyStyle.
@@ -248,7 +250,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
     def _bullet_from_master_txStyles(
         self, slide_master, placeholder_type, lvl: int
-    ) -> tuple[bool | None, str | None, str | None, object | None]:
+    ) -> tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
         """
         Parse bullet/numbering from slideMaster's p:txStyles (titleStyle/bodyStyle/otherStyle).
 
