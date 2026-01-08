@@ -7,6 +7,7 @@ Here some of our picks to get you started:
 - [🦙 LlamaIndex](./llamaindex.md)
 - [🌾 Haystack](./haystack.md)
 - [🇨 Crew AI](./crewai.md)
+- [🧠 Semantica](./semantica.md)
 
 👈 ... and there is much more: explore all integrations using the navigation menu on the side
 
