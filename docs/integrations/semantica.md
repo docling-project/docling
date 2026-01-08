@@ -1,3 +1,5 @@
+# 🧠 Semantica
+
 Docling is integrated into [Semantica](https://github.com/Hawksight-AI/semantica) as a high-fidelity document parsing engine.
 
 ## What is Semantica?
