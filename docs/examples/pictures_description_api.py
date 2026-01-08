@@ -176,7 +176,7 @@ def main():
             print(
                 f"Picture {element.self_ref}\n"
                 f"Caption: {element.caption_text(doc=result.document)}\n"
-                f"Annotations: {element.annotations}"
+                f"Meta: {element.meta}"
             )
 
 

@@ -201,7 +201,7 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
                 predictions=predictions,
             )
 
-            if item.meta is not None and isinstance(item.meta, PictureMeta):
+            if item.meta is not None:
                 item.meta.classification = classification_data
             else:
                 item.meta = PictureMeta(classification=classification_data)

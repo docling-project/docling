@@ -25,10 +25,11 @@ from typing import Any
 from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
-    PictureClassificationClass,
-    PictureClassificationData,
+    PictureClassificationMetaField,
     PictureItem,
+    PictureMeta,
 )
+from docling_core.types.doc.document import PictureClassificationPrediction
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -60,14 +61,21 @@ class ExamplePictureClassifierEnrichmentModel(BaseEnrichmentModel):
             # uncomment this to interactively visualize the image
             # element.get_image(doc).show()  # may block; avoid in headless runs
 
-            element.annotations.append(
-                PictureClassificationData(
-                    provenance="example_classifier-0.0.1",
-                    predicted_classes=[
-                        PictureClassificationClass(class_name="dummy", confidence=0.42)
-                    ],
-                )
+            # Populate the new meta.classification field
+            classification_data = PictureClassificationMetaField(
+                predictions=[
+                    PictureClassificationPrediction(
+                        created_by="example_classifier-0.0.1",
+                        class_name="dummy",
+                        confidence=0.42,
+                    )
+                ],
             )
+
+            if element.meta is not None:
+                element.meta.classification = classification_data
+            else:
+                element.meta = PictureMeta(classification=classification_data)
 
             yield element
 
@@ -111,7 +119,7 @@ def main():
     for element, _level in result.document.iterate_items():
         if isinstance(element, PictureItem):
             print(
-                f"The model populated the `data` portion of picture {element.self_ref}:\n{element.annotations}"
+                f"The model populated the `meta` portion of picture {element.self_ref}:\n{element.meta}"
             )
 
 
