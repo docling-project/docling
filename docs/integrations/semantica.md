@@ -1,58 +1,75 @@
 # 🧠 Semantica
 
-Docling is integrated into [Semantica](https://github.com/Hawksight-AI/semantica) as a high-fidelity document parsing engine.
+Docling is available as a native integration in [Semantica](https://github.com/Hawksight-AI/semantica), an open-source framework for building **semantic layers** and **knowledge graphs** from unstructured data.
 
-## What is Semantica?
+By combining Docling's high-fidelity structural parsing with Semantica's knowledge engineering, you can transform complex documents into AI-ready, structured knowledge for GraphRAG, AI agents, and multi-agent systems.
 
-Semantica is an open-source framework for building **Semantic Layers and Knowledge Engineering** systems. It transforms unstructured data into AI-ready knowledge graphs that power:
+- 📖 [Semantica Documentation](https://hawksight-ai.github.io/semantica/)
+- 💻 [Semantica GitHub](https://github.com/Hawksight-AI/semantica)
+- 🧑🏽‍🍳 [Earnings Call Analysis Example](https://github.com/Hawksight-AI/semantica/blob/main/cookbook/use_cases/finance/03_Earnings_Call_Analysis.ipynb)
+- 📦 [Semantica PyPI](https://pypi.org/project/semantica/)
 
-- **GraphRAG**: Knowledge Graph-Powered Retrieval-Augmented Generation.
-- **AI Agents**: Providing structured semantic memory for autonomous agents.
-- **Multi-Agent Systems**: Enabling consistent shared knowledge across agent swarms.
+## Why Semantica + Docling?
 
-By bridging the gap between raw data and AI engineering, Semantica enables developers to build more reliable and context-aware AI applications.
+While Docling excels at extracting structural elements (like tables and nested headers), Semantica bridges the **semantic gap** by converting that structure into a queryable knowledge base.
 
-## Installation
-
-To use Docling with Semantica, install the `semantica` package (version 0.1.1 or higher) and `docling`:
-
-```bash
-pip install "semantica>=0.1.1" docling
-```
+| Feature | Docling | Semantica |
+|:---|:---|:---|
+| **Parsing** | 💎 High-fidelity layout & table extraction | Native `DoclingParser` integration |
+| **Structuring** | Markdown, JSON, HTML export | Knowledge Graph & RDF Triplet construction |
+| **Refining** | - | Entity normalization & deduplication |
+| **Intelligence** | - | Automated ontology generation & GraphRAG |
 
 ## Components
 
 ### Docling Parser
+The `DoclingParser` is a specialized module within Semantica that uses Docling's `DocumentConverter` to extract high-fidelity Markdown and structured tables. It serves as the entry point for turning raw documents into semantic data.
 
-Semantica provides a dedicated `DoclingParser` that leverages Docling's advanced PDF understanding, layout analysis, and table extraction capabilities. It seamlessly converts various document formats into Semantica's unified internal representation for downstream RAG and agentic workflows.
+- 💻 [Docling Parser Implementation](https://github.com/Hawksight-AI/semantica/blob/main/semantica/parse/docling_parser.py)
 
-## Usage
+### Knowledge Graph Builder
+Semantica uses the output from the `DoclingParser` to extract entities and relations, which are then stored in a property graph (Neo4j, FalkorDB) or a triplet store (RDF).
 
-You can use the `DoclingParser` to extract high-fidelity Markdown and structured tables from your documents:
+## Installation
+
+Install Semantica with Docling support:
+
+```bash
+pip install "semantica[all]" docling
+```
+
+## Usage: The Semantic Pipeline
+
+The following example demonstrates the full pipeline: parsing a document with Docling, normalizing the text, and extracting semantic triplets for a Knowledge Graph.
 
 ```python
 from semantica.parse import DoclingParser
+from semantica.normalize import TextNormalizer
+from semantica.split import TextSplitter
+from semantica.semantic_extract import TripletExtractor
 
-# Initialize the parser
-parser = DoclingParser()
+# 1. Structural Parsing with Docling
+# Docling handles the complex layout and table extraction
+parser = DoclingParser(enable_ocr=True)
+result = parser.parse("earnings_call.pdf")
 
-# Parse a document (PDF, DOCX, etc.)
-result = parser.parse("path/to/document.pdf")
+# 2. Semantic Normalization
+# Standardizes text (Unicode, whitespace) to improve LLM extraction accuracy
+normalizer = TextNormalizer()
+clean_text = normalizer.normalize(result["full_text"])
 
-# Access the extracted content
-print(f"Markdown Content:\n{result.markdown[:500]}...")
-print(f"Tables found: {len(result.tables)}")
+# 3. Knowledge Extraction
+# Semantica extracts semantic triplets (Subject-Predicate-Object) from the parsed structure
+extractor = TripletExtractor()
+triplets = extractor.extract_triplets(clean_text)
 
-# Or extract tables directly as DataFrames
-tables = parser.extract_tables("path/to/document.pdf")
-for i, df in enumerate(tables):
-    print(f"Table {i+1}:\n{df.head()}")
+for triplet in triplets[:3]:
+    print(f"Extracted: {triplet.subject} --({triplet.predicate})--> {triplet.object}")
 ```
 
-- 💻 [Semantica GitHub][github]
-- 📖 [Semantica Docs][docs]
-- 📦 [Semantica PyPI][pypi]
+!!! tip "Real-World Finance Use Case"
+    For a complete end-to-end example showing how to build a Knowledge Graph from Finance Earnings Calls using Docling and Semantica, see the [Earnings Call Analysis notebook](https://github.com/Hawksight-AI/semantica/blob/main/cookbook/use_cases/finance/03_Earnings_Call_Analysis.ipynb).
 
-[github]: https://github.com/Hawksight-AI/semantica
-[docs]: https://semantica.ai/docs
-[pypi]: https://pypi.org/project/semantica/
+---
+
+*Transform chaotic data into intelligent knowledge with Semantica and Docling.*
