@@ -8,8 +8,11 @@ from docling_core.types.doc import (
     NodeItem,
     PictureClassificationClass,
     PictureClassificationData,
+    PictureClassificationMetaField,
     PictureItem,
+    PictureMeta,
 )
+from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
 from pydantic import BaseModel
 
@@ -169,17 +172,38 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
         outputs = self.document_picture_classifier.predict(images)
 
         for item, output in zip(elements, outputs):
+            predicted_classes = [
+                PictureClassificationClass(
+                    class_name=pred[0],
+                    confidence=pred[1],
+                )
+                for pred in output
+            ]
+
+            # FIXME: annotations is deprecated, remove once all consumers use meta.classification
             item.annotations.append(
                 PictureClassificationData(
                     provenance="DocumentPictureClassifier",
-                    predicted_classes=[
-                        PictureClassificationClass(
-                            class_name=pred[0],
-                            confidence=pred[1],
-                        )
-                        for pred in output
-                    ],
+                    predicted_classes=predicted_classes,
                 )
             )
+
+            # Store classification in the new meta field
+            predictions = [
+                PictureClassificationPrediction(
+                    class_name=pred.class_name,
+                    confidence=pred.confidence,
+                    created_by="DocumentPictureClassifier",
+                )
+                for pred in predicted_classes
+            ]
+            classification_data = PictureClassificationMetaField(
+                predictions=predictions,
+            )
+
+            if item.meta is not None and isinstance(item.meta, PictureMeta):
+                item.meta.classification = classification_data
+            else:
+                item.meta = PictureMeta(classification=classification_data)
 
             yield item
