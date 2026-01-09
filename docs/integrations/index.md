@@ -5,6 +5,7 @@ Here some of our picks to get you started:
 - [🦜️🔗 LangChain](./langchain.md)
 - [༄ Langflow](./langflow.md)
 - [🦙 LlamaIndex](./llamaindex.md)
+- [🧠 Semantica](./semantica.md)
 - [🌾 Haystack](./haystack.md)
 - [🇨 Crew AI](./crewai.md)
 

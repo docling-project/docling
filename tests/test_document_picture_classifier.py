@@ -1,6 +1,10 @@
+import warnings
 from pathlib import Path
 
-from docling_core.types.doc import PictureClassificationData
+from docling_core.types.doc import (
+    PictureClassificationData,
+    PictureClassificationMetaField,
+)
 
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult
@@ -46,34 +50,99 @@ def test_picture_classifier():
 
     assert len(results) == 2
 
+    # Test first picture (bar chart)
     res = results[0]
-    assert len(res.annotations) == 1
-    assert isinstance(res.annotations[0], PictureClassificationData)
-    classification_data = res.annotations[0]
-    assert classification_data.provenance == "DocumentPictureClassifier"
-    assert len(classification_data.predicted_classes) == 16, (
-        "Number of predicted classes is not equal to 16"
-    )
-    confidences = [pred.confidence for pred in classification_data.predicted_classes]
-    assert confidences == sorted(confidences, reverse=True), (
-        "Predictions are not sorted in descending order of confidence"
-    )
-    assert classification_data.predicted_classes[0].class_name == "bar_chart", (
-        "The prediction is wrong for the bar chart image."
-    )
 
-    res = results[1]
-    assert len(res.annotations) == 1
-    assert isinstance(res.annotations[0], PictureClassificationData)
-    classification_data = res.annotations[0]
-    assert classification_data.provenance == "DocumentPictureClassifier"
-    assert len(classification_data.predicted_classes) == 16, (
-        "Number of predicted classes is not equal to 16"
-    )
-    confidences = [pred.confidence for pred in classification_data.predicted_classes]
-    assert confidences == sorted(confidences, reverse=True), (
-        "Predictions are not sorted in descending order of confidence"
-    )
-    assert classification_data.predicted_classes[0].class_name == "map", (
-        "The prediction is wrong for the bar chart image."
-    )
+    # Test old format (.annotations) - expect DeprecationWarning
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        assert len(res.annotations) == 1
+        # Verify that a DeprecationWarning was raised
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "annotations" in str(w[0].message).lower()
+
+    # Now silence the deprecation warnings for the rest of the test
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", category=DeprecationWarning, message=".*annotations.*"
+        )
+
+        assert isinstance(res.annotations[0], PictureClassificationData)
+        classification_data = res.annotations[0]
+        assert classification_data.provenance == "DocumentPictureClassifier"
+        assert len(classification_data.predicted_classes) == 16, (
+            "Number of predicted classes is not equal to 16"
+        )
+        confidences = [
+            pred.confidence for pred in classification_data.predicted_classes
+        ]
+        assert confidences == sorted(confidences, reverse=True), (
+            "Predictions are not sorted in descending order of confidence"
+        )
+        assert classification_data.predicted_classes[0].class_name == "bar_chart", (
+            "The prediction is wrong for the bar chart image."
+        )
+
+        # Test new format (.meta.classification)
+        assert res.meta is not None, "Picture meta should not be None"
+        assert res.meta.classification is not None, (
+            "Classification meta should not be None"
+        )
+        assert isinstance(res.meta.classification, PictureClassificationMetaField)
+        meta_classification = res.meta.classification
+        assert len(meta_classification.predictions) == 16, (
+            "Number of predictions in meta is not equal to 16"
+        )
+        meta_confidences = [pred.confidence for pred in meta_classification.predictions]
+        assert meta_confidences == sorted(meta_confidences, reverse=True), (
+            "Meta predictions are not sorted in descending order of confidence"
+        )
+        assert meta_classification.predictions[0].class_name == "bar_chart", (
+            "The meta prediction is wrong for the bar chart image."
+        )
+        assert (
+            meta_classification.predictions[0].created_by == "DocumentPictureClassifier"
+        ), "The created_by field should be DocumentPictureClassifier"
+
+        # Test second picture (map)
+        res = results[1]
+
+        # Test old format (.annotations)
+        assert len(res.annotations) == 1
+        assert isinstance(res.annotations[0], PictureClassificationData)
+        classification_data = res.annotations[0]
+        assert classification_data.provenance == "DocumentPictureClassifier"
+        assert len(classification_data.predicted_classes) == 16, (
+            "Number of predicted classes is not equal to 16"
+        )
+        confidences = [
+            pred.confidence for pred in classification_data.predicted_classes
+        ]
+        assert confidences == sorted(confidences, reverse=True), (
+            "Predictions are not sorted in descending order of confidence"
+        )
+        assert classification_data.predicted_classes[0].class_name == "map", (
+            "The prediction is wrong for the map image."
+        )
+
+        # Test new format (.meta.classification)
+        assert res.meta is not None, "Picture meta should not be None"
+        assert res.meta.classification is not None, (
+            "Classification meta should not be None"
+        )
+        assert isinstance(res.meta.classification, PictureClassificationMetaField)
+        meta_classification = res.meta.classification
+        assert len(meta_classification.predictions) == 16, (
+            "Number of predictions in meta is not equal to 16"
+        )
+        meta_confidences = [pred.confidence for pred in meta_classification.predictions]
+        assert meta_confidences == sorted(meta_confidences, reverse=True), (
+            "Meta predictions are not sorted in descending order of confidence"
+        )
+        assert meta_classification.predictions[0].class_name == "map", (
+            "The meta prediction is wrong for the map image."
+        )
+        assert (
+            meta_classification.predictions[0].created_by == "DocumentPictureClassifier"
+        ), "The created_by field should be DocumentPictureClassifier"

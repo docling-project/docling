@@ -1,6 +1,6 @@
 [project]
 name = "docling"
-version = "2.66.0"  # DO NOT EDIT, updated automatically
+version = "2.67.0"  # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -96,7 +96,7 @@ ocrmac = ['ocrmac (>=1.0.0,<2.0.0) ; sys_platform == "darwin"']
 vlm = [
   'transformers (>=4.46.0,<5.0.0)',
   'accelerate (>=1.2.1,<2.0.0)',
-  'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and python_version < "3.14" and sys_platform == "darwin" and platform_machine == "arm64"',
+  'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
   'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and python_version < "3.14" and sys_platform == "linux" and platform_machine == "x86_64"',
   "qwen-vl-utils>=0.0.11",
 ]
@@ -107,8 +107,8 @@ rapidocr = [
   # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
 ]
 asr = [
-    'mlx-whisper>=0.4.3 ; python_version >= "3.10" and python_version < "3.14" and sys_platform == "darwin" and platform_machine == "arm64"',
-    'openai-whisper>=20250625 ; python_version < "3.14"',
+    'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
+    'openai-whisper>=20250625',
 ]
 
 [dependency-groups]

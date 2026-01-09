@@ -146,7 +146,7 @@ def main():
 
     for pic in doc.pictures[:5]:
         print(pic.self_ref)
-        pprint(pic.annotations)
+        pprint(pic.meta)
 
 
 if __name__ == "__main__":

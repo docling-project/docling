@@ -1,3 +1,19 @@
+## [v2.67.0](https://github.com/docling-project/docling/releases/tag/v2.67.0) - 2026-01-09
+
+### Feature
+
+* Enrichment annotations in the new meta format ([#2859](https://github.com/docling-project/docling/issues/2859)) ([`aab3ff5`](https://github.com/docling-project/docling/commit/aab3ff5d82fc54864657c0c2ff8e0aa21461f23f))
+* Add XPU device support for Intel GPUs ([#2809](https://github.com/docling-project/docling/issues/2809)) ([`2b83fdd`](https://github.com/docling-project/docling/commit/2b83fdd0deeec0f1ad016cc78ea42d3144a86cad))
+* Add option to report timings details ([#2772](https://github.com/docling-project/docling/issues/2772)) ([`cbc6537`](https://github.com/docling-project/docling/commit/cbc6537ee856349cef9b1ed453310e269667534c))
+
+### Fix
+
+* Lock new deps and update python 3.14 warnings ([#2844](https://github.com/docling-project/docling/issues/2844)) ([`d9295df`](https://github.com/docling-project/docling/commit/d9295df30202e251c9e282a4d0ce61653c7268b6))
+* Correct type hint for table_structure_options usage ([#2823](https://github.com/docling-project/docling/issues/2823)) ([`a0530a2`](https://github.com/docling-project/docling/commit/a0530a271e5411bae96cfcb8a6ae23b3431a7462))
+* Transformers models lazy-loaded ([#2826](https://github.com/docling-project/docling/issues/2826)) ([`3ef4525`](https://github.com/docling-project/docling/commit/3ef45258b7de6f5efe13b1f5ba392d72e2854349))
+* Font download by passing font_path to RapidOcr ([#2822](https://github.com/docling-project/docling/issues/2822)) ([`ffafe58`](https://github.com/docling-project/docling/commit/ffafe58ad25e0ebdca44a41f8df9f691c9a393bf))
+* **cli:** Add Layout and Table models to --show-external-plugins ([#2832](https://github.com/docling-project/docling/issues/2832)) ([`ed57089`](https://github.com/docling-project/docling/commit/ed5708907fcd29e56b114ce7062c4c2693c67b6b))
+
 ## [v2.66.0](https://github.com/docling-project/docling/releases/tag/v2.66.0) - 2025-12-24
 
 ### Feature

@@ -833,15 +833,10 @@ def convert(  # noqa: C901
 
                         pipeline_options.vlm_options = SMOLDOCLING_MLX
                     except ImportError:
-                        if sys.version_info < (3, 14):
-                            _log.warning(
-                                "To run SmolDocling faster, please install mlx-vlm:\n"
-                                "pip install mlx-vlm"
-                            )
-                        else:
-                            _log.warning(
-                                "You can run SmolDocling faster with MLX support, but it is unfortunately not yet available on Python 3.14."
-                            )
+                        _log.warning(
+                            "To run SmolDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
 
             elif vlm_model == VlmModelType.GRANITEDOCLING:
                 pipeline_options.vlm_options = GRANITEDOCLING_TRANSFORMERS
@@ -851,15 +846,10 @@ def convert(  # noqa: C901
 
                         pipeline_options.vlm_options = GRANITEDOCLING_MLX
                     except ImportError:
-                        if sys.version_info < (3, 14):
-                            _log.warning(
-                                "To run GraniteDocling faster, please install mlx-vlm:\n"
-                                "pip install mlx-vlm"
-                            )
-                        else:
-                            _log.warning(
-                                "You can run GraniteDocling faster with MLX support, but it is unfortunately not yet available on Python 3.14."
-                            )
+                        _log.warning(
+                            "To run GraniteDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
 
             elif vlm_model == VlmModelType.SMOLDOCLING_VLLM:
                 pipeline_options.vlm_options = SMOLDOCLING_VLLM

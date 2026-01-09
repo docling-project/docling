@@ -237,3 +237,18 @@ def test_add_header_footer(documents):
     assert len(footers[1].children) == 4, (
         "Second page footer should have 3 paragraphs and 1 picture"
     )
+
+
+def test_handle_pictures(documents):
+    """Test the function _handle_pictures."""
+
+    name = "docx_grouped_images.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    assert len(doc.pictures) == 6
+    assert isinstance(doc.pictures[0].parent.resolve(doc), GroupItem)
+    assert doc.pictures[0].parent == doc.pictures[1].parent
+    assert isinstance(doc.pictures[2].parent.resolve(doc), GroupItem)
+    assert doc.pictures[2].parent == doc.pictures[3].parent
+    assert isinstance(doc.pictures[4].parent.resolve(doc), SectionHeaderItem)
+    assert doc.pictures[4].parent == doc.pictures[5].parent

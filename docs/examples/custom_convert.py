@@ -43,6 +43,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
+    TableStructureOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
@@ -65,7 +66,7 @@ def main():
     # pipeline_options = PdfPipelineOptions()
     # pipeline_options.do_ocr = False
     # pipeline_options.do_table_structure = True
-    # pipeline_options.table_structure_options.do_cell_matching = False
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=False)
 
     # doc_converter = DocumentConverter(
     #     format_options={
@@ -80,7 +81,7 @@ def main():
     # pipeline_options = PdfPipelineOptions()
     # pipeline_options.do_ocr = True
     # pipeline_options.do_table_structure = True
-    # pipeline_options.table_structure_options.do_cell_matching = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
 
     # doc_converter = DocumentConverter(
     #     format_options={
@@ -95,7 +96,7 @@ def main():
     # pipeline_options = PdfPipelineOptions()
     # pipeline_options.do_ocr = False
     # pipeline_options.do_table_structure = True
-    # pipeline_options.table_structure_options.do_cell_matching = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
 
     # doc_converter = DocumentConverter(
     #     format_options={
@@ -110,7 +111,9 @@ def main():
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_ocr = True
     pipeline_options.do_table_structure = True
-    pipeline_options.table_structure_options.do_cell_matching = True
+    pipeline_options.table_structure_options = TableStructureOptions(
+        do_cell_matching=True
+    )
     pipeline_options.ocr_options.lang = ["es"]
     pipeline_options.accelerator_options = AcceleratorOptions(
         num_threads=4, device=AcceleratorDevice.AUTO
@@ -128,7 +131,7 @@ def main():
     # pipeline_options.do_ocr = True
     # pipeline_options.ocr_options.use_gpu = False  # <-- set this.
     # pipeline_options.do_table_structure = True
-    # pipeline_options.table_structure_options.do_cell_matching = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
 
     # doc_converter = DocumentConverter(
     #     format_options={
@@ -141,7 +144,7 @@ def main():
     # pipeline_options = PdfPipelineOptions()
     # pipeline_options.do_ocr = True
     # pipeline_options.do_table_structure = True
-    # pipeline_options.table_structure_options.do_cell_matching = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
     # pipeline_options.ocr_options = TesseractOcrOptions()
 
     # doc_converter = DocumentConverter(
@@ -155,7 +158,7 @@ def main():
     # pipeline_options = PdfPipelineOptions()
     # pipeline_options.do_ocr = True
     # pipeline_options.do_table_structure = True
-    # pipeline_options.table_structure_options.do_cell_matching = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
     # pipeline_options.ocr_options = TesseractCliOcrOptions()
 
     # doc_converter = DocumentConverter(
@@ -169,7 +172,7 @@ def main():
     # pipeline_options = PdfPipelineOptions()
     # pipeline_options.do_ocr = True
     # pipeline_options.do_table_structure = True
-    # pipeline_options.table_structure_options.do_cell_matching = True
+    # pipeline_options.table_structure_options = TableStructureOptions(do_cell_matching=True)
     # pipeline_options.ocr_options = OcrMacOptions()
 
     # doc_converter = DocumentConverter(
