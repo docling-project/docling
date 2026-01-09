@@ -3,12 +3,11 @@ import re
 from collections.abc import Iterable
 from io import StringIO
 from pathlib import Path
-from typing import List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional
 
 import numpy as np
 import pandas as pd
 from docling_core.types.doc import (
-    DocItemLabel,
     DoclingDocument,
     NodeItem,
     PictureClassificationMetaField,
@@ -18,12 +17,10 @@ from docling_core.types.doc import (
     TableData,
     TabularChartMetaField,
 )
-from docling_core.types.doc.labels import CodeLanguageLabel
 from PIL import Image
 from pydantic import BaseModel
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
-# from transformers import AutoProcessor, AutoModelForVision2Seq
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
@@ -77,12 +74,6 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 artifacts_path,
             )
             self._model_max_length = self._processor.tokenizer.model_max_length
-            """
-            self._model = AutoModelForImageTextToText.from_pretrained(
-                artifacts_path, device_map=self.device
-            )
-            """
-            # self._model = AutoModelForVision2Seq.from_pretrained(
             self._model = AutoModelForImageTextToText.from_pretrained(
                 artifacts_path, device_map=self.device
             )
@@ -135,9 +126,6 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         main_pred = element.meta.classification.get_main_prediction()
         return main_pred.class_name in self.SUPPORTED_CHART_TYPES
 
-    def _get_prompt(self, label: str) -> str:
-        return "Convert the information in this chart into a data table in CSV format."
-
     def __call__(
         self,
         doc: DoclingDocument,
@@ -163,12 +151,10 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 yield element.item
             return
 
-        labels: List[str] = []
-        images: List[Union[Image.Image, np.ndarray]] = []
+        images: List[Image.Image] = []
         elements: List[PictureItem] = []
         for el in element_batch:
             elements.append(el.item)  # type: ignore[arg-type]
-            labels.append(el.item.label)  # type: ignore[attr-defined]
             images.append(el.image)
 
         # Create a batch of conversations
@@ -209,17 +195,11 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             output_ids, skip_special_tokens=False
         )
 
-        for _ in output_texts:
-            print(_)
-
         chart_data: list[Optional[TabularChartMetaField]] = self._post_process(
             outputs=output_texts
         )
 
         for item, tabular_chart in zip(elements, chart_data):
-            print(item)
-            print(tabular_chart)
-
             if (tabular_chart is not None) and isinstance(item, PictureItem):
                 if (item.meta is not None) and isinstance(item.meta, PictureMeta):
                     item.meta.tabular_chart = tabular_chart
@@ -243,9 +223,6 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 table_data = self._dataframe_to_tabledata(dataframe)
 
                 chart_data.append(TabularChartMetaField(chart_data=table_data))
-
-                # table = TableItem(data=table_data)
-                # print(table.export_to_markdown())
 
             except Exception as e:
                 _log.error(f"Failed to extract DataFrame for image {i}: {e}")
@@ -290,8 +267,8 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             dataframe = pd.read_csv(StringIO(csv_content), header=None)
             return dataframe
         except Exception as e:
-            print(f"Error parsing CSV: {e}")
-            print(f"CSV content:\n{csv_content}")
+            _log.error(f"Error parsing CSV: {e}")
+            _log.error(f"CSV content:\n{csv_content}")
             raise
 
     def _is_numeric(self, value) -> bool:
