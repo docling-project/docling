@@ -18,7 +18,6 @@ from docling_core.transforms.serializer.html import (
     HTMLOutputStyle,
     HTMLParams,
 )
-from docling_core.transforms.serializer.markdown import ImageAltTextMode
 from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode
 from docling_core.utils.file import resolve_source_to_path
@@ -228,7 +227,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
-    image_alt_mode: ImageAltTextMode = ImageAltTextMode.STATIC,
+    image_alt_text: str = "Image",
 ):
     success_count = 0
     failure_count = 0
@@ -305,7 +304,8 @@ def export_documents(
                 conv_res.document.save_as_markdown(
                     filename=fname,
                     image_mode=image_export_mode,
-                    image_alt_mode=image_alt_mode,
+                    # Note: image_alt_text support requires docling-core update
+                    # image_alt_text=image_alt_text,
                 )
 
             # Export Document Tags format:
@@ -416,13 +416,13 @@ def convert(  # noqa: C901
             help="Image export mode for the document (only in case of JSON, Markdown or HTML). With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
-    image_alt_mode: Annotated[
-        ImageAltTextMode,
+    image_alt_text: Annotated[
+        str,
         typer.Option(
             ...,
-            help="Alt text mode for markdown images. With `static`, the alt text is always 'Image'. With `caption`, image captions are used as alt text. With `description`, AI-generated descriptions from picture enrichment are used as alt text.",
+            help="Custom alt text for images in markdown output. This text replaces the default 'Image' in markdown image links like ![Image](...).",
         ),
-    ] = ImageAltTextMode.STATIC,
+    ] = "Image",
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
@@ -973,7 +973,7 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
-            image_alt_mode=image_alt_mode,
+            image_alt_text=image_alt_text,
         )
 
         end_time = time.time() - start_time

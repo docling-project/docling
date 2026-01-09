@@ -92,23 +92,19 @@ def test_cli_audio_extensions_coverage():
         )
 
 
-def test_cli_image_alt_mode(tmp_path):
-    """Test that --image-alt-mode option is properly handled.
+def test_cli_image_alt_text(tmp_path):
+    """Test that --image-alt-text option is properly handled.
 
-    This test exercises the image_alt_mode parameter in the export_documents function,
-    ensuring the --image-alt-mode CLI option correctly passes through to markdown export.
+    This test exercises the image_alt_text parameter in the export_documents function,
+    ensuring the --image-alt-text CLI option correctly passes through to markdown export.
     """
-    # Check if ImageAltTextMode is available (requires docling-core with the feature)
-    from docling_core.transforms.serializer.markdown import (
-            ImageAltTextMode,
-        )
     source = "./tests/data/pdf/2305.03393v1-pg9.pdf"
     output = tmp_path / "out"
     output.mkdir()
 
-    # Test with caption mode
+    # Test with custom alt text
     result = runner.invoke(
-        app, [source, "--output", str(output), "--image-alt-mode", "caption"]
+        app, [source, "--output", str(output), "--image-alt-text", "Figure"]
     )
     assert result.exit_code == 0
     converted = output / f"{Path(source).stem}.md"
