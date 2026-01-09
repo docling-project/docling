@@ -48,7 +48,7 @@ def mock_parsing(content: str, filename: str) -> DoclingDocument:
     return doc
 
 
-def test_e2e_deepseekocr_conversions():
+def test_e2e_deepseekocr_parsing():
     """Test DeepSeek OCR markdown parsing for all test files."""
     md_paths = get_md_deepseek_paths()
 
@@ -82,4 +82,4 @@ def test_e2e_deepseekocr_conversions():
 
 
 if __name__ == "__main__":
-    test_e2e_deepseekocr_conversions()
+    test_e2e_deepseekocr_parsing()
