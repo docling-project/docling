@@ -164,7 +164,7 @@ def collect_annotation_content(
                 visited_lines.add(i)
                 content_lines.append(lines[i].rstrip())
                 i += 1
-                if label_str not in ["figure"]:
+                if label_str not in ["figure", "image"]:
                     break
             else:
                 i += 1
@@ -194,7 +194,8 @@ def process_annotation_item(
     """
     doc_label = label_map.get(label_str, DocItemLabel.TEXT)
 
-    if label_str == "figure":
+    if label_str in ["figure", "image"]:
+        print("INSERTING PICTURE!")
         page_doc.add_picture(caption=caption_item, prov=prov)
     elif label_str == "table":
         table_data = parse_table_html(content)
@@ -267,6 +268,8 @@ def parse_deepseekocr_markdown(
         "table_caption": DocItemLabel.CAPTION,
         "figure": DocItemLabel.PICTURE,
         "figure_caption": DocItemLabel.CAPTION,
+        "image": DocItemLabel.PICTURE,
+        "image_caption": DocItemLabel.CAPTION,
         "header": DocItemLabel.PAGE_HEADER,
         "footer": DocItemLabel.PAGE_FOOTER,
     }
@@ -335,13 +338,15 @@ def parse_deepseekocr_markdown(
 
     # Process annotations and link captions that appear AFTER tables/figures
     for idx, (label_str, content_text, prov) in enumerate(annotations):
-        # Check if NEXT annotation is a caption for this table/figure
+        # Check if NEXT annotation is a caption for this table/figure/image
         # (caption appears AFTER table in the file: table[[...]] then table_caption[[...]])
         caption_item = None
-        if label_str in ["table", "figure"] and idx + 1 < len(annotations):
+        if label_str in ["table", "figure", "image"] and idx + 1 < len(annotations):
             next_label, next_content, next_prov = annotations[idx + 1]
-            if (label_str == "table" and next_label == "table_caption") or (
-                label_str == "figure" and next_label == "figure_caption"
+            if (
+                (label_str == "table" and next_label == "table_caption")
+                or (label_str == "figure" and next_label == "figure_caption")
+                or (label_str == "image" and next_label == "image_caption")
             ):
                 # Create caption item
                 caption_label = label_map.get(next_label, DocItemLabel.CAPTION)
@@ -352,11 +357,13 @@ def parse_deepseekocr_markdown(
                 )
 
         # Skip if this is a caption that was already processed
-        if label_str in ["figure_caption", "table_caption"]:
+        if label_str in ["figure_caption", "table_caption", "image_caption"]:
             if idx > 0:
                 prev_label = annotations[idx - 1][0]
-                if (label_str == "table_caption" and prev_label == "table") or (
-                    label_str == "figure_caption" and prev_label == "figure"
+                if (
+                    (label_str == "table_caption" and prev_label == "table")
+                    or (label_str == "figure_caption" and prev_label == "figure")
+                    or (label_str == "image_caption" and prev_label == "image")
                 ):
                     continue
 
