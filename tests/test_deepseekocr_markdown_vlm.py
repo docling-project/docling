@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from docling_core.types.doc import DocItem, DocItemLabel, DoclingDocument
+from docling_core.types.doc import DoclingDocument, Size
 
 from docling.datamodel.base_models import InputFormat
 
@@ -42,6 +42,7 @@ def mock_parsing(content: str) -> DoclingDocument:
     # Parse the DeepSeek OCR markdown using the utility function
     doc = parse_deepseekocr_markdown(
         content=content,
+        original_page_size=Size(width=612, height=792),
         page_image=page.image,
         page_no=1,
         filename="test.md",

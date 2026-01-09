@@ -6,7 +6,7 @@ from typing import Optional, Union
 
 from docling_core.types.doc import (
     BoundingBox,
-    DocItem,
+    CoordOrigin,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
@@ -195,7 +195,6 @@ def process_annotation_item(
     doc_label = label_map.get(label_str, DocItemLabel.TEXT)
 
     if label_str in ["figure", "image"]:
-        print("INSERTING PICTURE!")
         page_doc.add_picture(caption=caption_item, prov=prov)
     elif label_str == "table":
         table_data = parse_table_html(content)
@@ -231,9 +230,10 @@ def process_annotation_item(
 
 def parse_deepseekocr_markdown(
     content: str,
-    page_image: Optional[PILImage.Image] = None,
-    page_no: int = 1,
+    original_page_size: Size,
+    page_no: int,
     filename: str = "file",
+    page_image: Optional[PILImage.Image] = None,
 ) -> DoclingDocument:
     """Parse DeepSeek OCR markdown with label[[x1, y1, x2, y2]] format.
 
@@ -285,19 +285,27 @@ def parse_deepseekocr_markdown(
     )
     page_doc = DoclingDocument(name=filename.rsplit(".", 1)[0], origin=origin)
 
-    # Get page dimensions
+    # Get page dimensions - use original page size if provided, otherwise image size
+    pg_width = original_page_size.width
+    pg_height = original_page_size.height
+
+    # Calculate scale factor for bbox conversion
+    # VLM produces bboxes in unit of 1000
+    scale_x = pg_width / 1000
+    scale_y = pg_height / 1000
+
+    # Calculate DPI for the image
+    image_dpi = 72
     if page_image is not None:
-        pg_width = page_image.width
-        pg_height = page_image.height
-    else:
-        pg_width = 1
-        pg_height = 1
+        image_dpi = int(72 * page_image.width / pg_width)
 
     # Add page metadata
     page_doc.add_page(
         page_no=page_no,
         size=Size(width=pg_width, height=pg_height),
-        image=ImageRef.from_pil(image=page_image, dpi=72) if page_image else None,
+        image=ImageRef.from_pil(image=page_image, dpi=image_dpi)
+        if page_image
+        else None,
     )
 
     # Split into lines and parse - collect all annotations first
@@ -320,8 +328,13 @@ def parse_deepseekocr_markdown(
             try:
                 coords = [float(x.strip()) for x in coords_str.split(",")]
                 if len(coords) == 4:
+                    # Scale bounding box from image coordinates to original page coordinates
                     bbox = BoundingBox(
-                        l=coords[0], t=coords[1], r=coords[2], b=coords[3]
+                        l=coords[0] * scale_x,
+                        t=coords[1] * scale_y,
+                        r=coords[2] * scale_x,
+                        b=coords[3] * scale_y,
+                        coord_origin=CoordOrigin.TOPLEFT,
                     )
                     prov = ProvenanceItem(page_no=page_no, bbox=bbox, charspan=[0, 0])
 

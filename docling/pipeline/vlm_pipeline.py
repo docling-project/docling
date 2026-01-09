@@ -268,12 +268,16 @@ class VlmPipeline(PaginatedPipeline):
             if page.predictions.vlm_response:
                 predicted_text = page.predictions.vlm_response.text
 
+            assert page.size is not None
+
             # Parse single page using the utility function
+            # Pass vlm_options.scale to convert bboxes from scaled image coords to original PDF coords
             page_doc = parse_deepseekocr_markdown(
                 content=predicted_text,
-                page_image=page.image,
+                original_page_size=page.size,
                 page_no=pg_idx + 1,
                 filename=conv_res.input.file.name or "file",
+                page_image=page.image,
             )
             page_docs.append(page_doc)
 
