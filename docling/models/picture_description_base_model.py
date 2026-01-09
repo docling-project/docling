@@ -3,8 +3,6 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import List, Optional, Type, Union
 
-from PIL import Image
-
 from docling_core.types.doc import (
     DescriptionMetaField,
     DoclingDocument,
@@ -13,6 +11,8 @@ from docling_core.types.doc import (
     PictureItem,
     PictureMeta,
 )
+from docling_core.types.doc.document import PictureDescriptionData
+from PIL import Image
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
@@ -88,12 +88,19 @@ class PictureDescriptionBaseModel(
         outputs = self._annotate_images(images)
 
         for item, output in zip(elements, outputs):
+            # FIXME: annotations is deprecated, remove once all consumers use meta.classification
+            item.annotations.append(
+                PictureDescriptionData(text=output, provenance=self.provenance)
+            )
+
+            # Store classification in the new meta field
             if item.meta is None:
                 item.meta = PictureMeta()
             item.meta.description = DescriptionMetaField(
                 text=output,
                 created_by=self.provenance,
             )
+
             yield item
 
     @classmethod

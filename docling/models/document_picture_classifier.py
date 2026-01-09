@@ -3,16 +3,18 @@ from pathlib import Path
 from typing import List, Literal, Optional, Union
 
 import numpy as np
-from PIL import Image
-from pydantic import BaseModel
-
 from docling_core.types.doc import (
     DoclingDocument,
     NodeItem,
+    PictureClassificationClass,
+    PictureClassificationData,
     PictureClassificationMetaField,
     PictureItem,
     PictureMeta,
 )
+from docling_core.types.doc.document import PictureClassificationPrediction
+from PIL import Image
+from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
@@ -153,7 +155,7 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
         -------
         Iterable[NodeItem]
             An iterable of NodeItem objects after processing. The field
-            'meta.classification' is added containing the classification for each picture.
+            'data.classification' is added containing the classification for each picture.
         """
         if not self.enabled:
             for element in element_batch:
@@ -170,17 +172,38 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
         outputs = self.document_picture_classifier.predict(images)
 
         for item, output in zip(elements, outputs):
-            if item.meta is None:
-                item.meta = PictureMeta()
-            item.meta.classification = PictureClassificationMetaField(
-                predictions=[
-                    {
-                        "class_name": pred[0],
-                        "confidence": pred[1],
-                        "created_by": "DocumentPictureClassifier",
-                    }
-                    for pred in output
-                ],
+            predicted_classes = [
+                PictureClassificationClass(
+                    class_name=pred[0],
+                    confidence=pred[1],
+                )
+                for pred in output
+            ]
+
+            # FIXME: annotations is deprecated, remove once all consumers use meta.classification
+            item.annotations.append(
+                PictureClassificationData(
+                    provenance="DocumentPictureClassifier",
+                    predicted_classes=predicted_classes,
+                )
             )
+
+            # Store classification in the new meta field
+            predictions = [
+                PictureClassificationPrediction(
+                    class_name=pred.class_name,
+                    confidence=pred.confidence,
+                    created_by="DocumentPictureClassifier",
+                )
+                for pred in predicted_classes
+            ]
+            classification_data = PictureClassificationMetaField(
+                predictions=predictions,
+            )
+
+            if item.meta is not None:
+                item.meta.classification = classification_data
+            else:
+                item.meta = PictureMeta(classification=classification_data)
 
             yield item

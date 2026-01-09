@@ -1,5 +1,5 @@
 # %% [markdown]
-# Run conversion with an explicit accelerator configuration (CPU/MPS/CUDA).
+# Run conversion with an explicit accelerator configuration (CPU/MPS/CUDA/XPU).
 #
 # What this example does
 # - Shows how to select the accelerator device and thread count.
@@ -7,13 +7,13 @@
 #
 # How to run
 # - From the repo root: `python docs/examples/run_with_accelerator.py`.
-# - Toggle the commented `AcceleratorOptions` examples to try AUTO/MPS/CUDA.
+# - Toggle the commented `AcceleratorOptions` examples to try AUTO/MPS/CUDA/XPU.
 #
 # Notes
 # - EasyOCR does not support `cuda:N` device selection (defaults to `cuda:0`).
 # - `settings.debug.profile_pipeline_timings = True` prints profiling details.
-# - `AcceleratorDevice.MPS` is macOS-only; `CUDA` requires a compatible GPU and
-#   CUDA-enabled PyTorch build. CPU mode works everywhere.
+# - `AcceleratorDevice.MPS` is macOS-only; `CUDA` and `XPU` require a compatible GPU and
+#   CUDA/XPU-enabled PyTorch build. CPU mode works everywhere.
 
 # %%
 
@@ -23,6 +23,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
+    TableStructureOptions,
 )
 from docling.datamodel.settings import settings
 from docling.document_converter import DocumentConverter, PdfFormatOption
@@ -43,6 +44,9 @@ def main():
     #     num_threads=8, device=AcceleratorDevice.MPS
     # )
     # accelerator_options = AcceleratorOptions(
+    #     num_threads=8, device=AcceleratorDevice.XPU
+    # )
+    # accelerator_options = AcceleratorOptions(
     #     num_threads=8, device=AcceleratorDevice.CUDA
     # )
 
@@ -53,7 +57,9 @@ def main():
     pipeline_options.accelerator_options = accelerator_options
     pipeline_options.do_ocr = True
     pipeline_options.do_table_structure = True
-    pipeline_options.table_structure_options.do_cell_matching = True
+    pipeline_options.table_structure_options = TableStructureOptions(
+        do_cell_matching=True
+    )
 
     converter = DocumentConverter(
         format_options={
