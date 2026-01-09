@@ -19,6 +19,7 @@ class LayoutModelConfig(BaseModel):
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
         AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
     ]
 
     @property

@@ -1,3 +1,4 @@
+import datetime
 import importlib
 import logging
 import platform
@@ -108,6 +109,7 @@ from docling.models.factories import (
 from docling.models.factories.base_factory import BaseFactory
 from docling.pipeline.asr_pipeline import AsrPipeline
 from docling.pipeline.vlm_pipeline import VlmPipeline
+from docling.utils.profiling import ProfilingItem
 
 warnings.filterwarnings(action="ignore", category=UserWarning, module="pydantic|torch")
 warnings.filterwarnings(action="ignore", category=FutureWarning, module="easyocr")
@@ -222,6 +224,8 @@ def export_documents(
     export_md: bool,
     export_txt: bool,
     export_doctags: bool,
+    print_timings: bool,
+    export_timings: bool,
     image_export_mode: ImageRefMode,
 ):
     success_count = 0
@@ -305,6 +309,50 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.doctags"
                 _log.info(f"writing Doc Tags output to {fname}")
                 conv_res.document.save_as_doctags(filename=fname)
+
+            # Print profiling timings
+            if print_timings:
+                table = rich.table.Table(title=f"Profiling Summary, {doc_filename}")
+                metric_columns = [
+                    "Stage",
+                    "count",
+                    "total",
+                    "mean",
+                    "median",
+                    "min",
+                    "max",
+                    "0.1 percentile",
+                    "0.9 percentile",
+                ]
+                for col in metric_columns:
+                    table.add_column(col, style="bold")
+                for stage_key, item in conv_res.timings.items():
+                    col_dict = {
+                        "Stage": stage_key,
+                        "count": item.count,
+                        "total": item.total(),
+                        "mean": item.avg(),
+                        "median": item.percentile(0.5),
+                        "min": item.percentile(0.0),
+                        "max": item.percentile(1.0),
+                        "0.1 percentile": item.percentile(0.1),
+                        "0.9 percentile": item.percentile(0.9),
+                    }
+                    row_values = [str(col_dict[col]) for col in metric_columns]
+                    table.add_row(*row_values)
+
+                console.print(table)
+
+            # Export profiling timings
+            if export_timings:
+                TimingsT = TypeAdapter(dict[str, ProfilingItem])
+                now = datetime.datetime.now()
+                timings_file = Path(
+                    output_dir / f"{doc_filename}-timings-{now:%Y-%m-%d_%H-%M-%S}.json"
+                )
+                with timings_file.open("wb") as fp:
+                    r = TimingsT.dump_json(conv_res.timings, indent=2)
+                    fp.write(r)
 
         else:
             _log.warning(f"Document {conv_res.input.file} failed to convert.")
@@ -553,6 +601,20 @@ def convert(  # noqa: C901
             help=f"Number of pages processed in one batch. Default: {settings.perf.page_batch_size}",
         ),
     ] = settings.perf.page_batch_size,
+    profiling: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, it summarizes profiling details for all conversion stages.",
+        ),
+    ] = False,
+    save_profiling: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, it saves the profiling summaries to json.",
+        ),
+    ] = False,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -576,6 +638,9 @@ def convert(  # noqa: C901
     if headers is not None:
         headers_t = TypeAdapter(Dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
+
+    if profiling or save_profiling:
+        settings.debug.profile_pipeline_timings = True
 
     with tempfile.TemporaryDirectory() as tempdir:
         input_doc_paths: List[Path] = []
@@ -777,15 +842,10 @@ def convert(  # noqa: C901
 
                         pipeline_options.vlm_options = SMOLDOCLING_MLX
                     except ImportError:
-                        if sys.version_info < (3, 14):
-                            _log.warning(
-                                "To run SmolDocling faster, please install mlx-vlm:\n"
-                                "pip install mlx-vlm"
-                            )
-                        else:
-                            _log.warning(
-                                "You can run SmolDocling faster with MLX support, but it is unfortunately not yet available on Python 3.14."
-                            )
+                        _log.warning(
+                            "To run SmolDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
 
             elif vlm_model == VlmModelType.GRANITEDOCLING:
                 pipeline_options.vlm_options = GRANITEDOCLING_TRANSFORMERS
@@ -795,15 +855,10 @@ def convert(  # noqa: C901
 
                         pipeline_options.vlm_options = GRANITEDOCLING_MLX
                     except ImportError:
-                        if sys.version_info < (3, 14):
-                            _log.warning(
-                                "To run GraniteDocling faster, please install mlx-vlm:\n"
-                                "pip install mlx-vlm"
-                            )
-                        else:
-                            _log.warning(
-                                "You can run GraniteDocling faster with MLX support, but it is unfortunately not yet available on Python 3.14."
-                            )
+                        _log.warning(
+                            "To run GraniteDocling faster, please install mlx-vlm:\n"
+                            "pip install mlx-vlm"
+                        )
 
             elif vlm_model == VlmModelType.SMOLDOCLING_VLLM:
                 pipeline_options.vlm_options = SMOLDOCLING_VLLM
@@ -913,6 +968,8 @@ def convert(  # noqa: C901
             export_md=export_md,
             export_txt=export_txt,
             export_doctags=export_doctags,
+            print_timings=profiling,
+            export_timings=save_profiling,
             image_export_mode=image_export_mode,
         )
 
