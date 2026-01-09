@@ -15,9 +15,9 @@ from docling.datamodel.pipeline_options import (
     RapidOcrOptions,
 )
 from docling.models.base_ocr_model import BaseOcrModel
-from docling.models.ocr.easyocr_model import EasyOcrModel
-from docling.models.ocr.ocr_mac_model import OcrMacModel
-from docling.models.ocr.rapid_ocr_model import RapidOcrModel
+from docling.models.stages.ocr.easyocr_model import EasyOcrModel
+from docling.models.stages.ocr.ocr_mac_model import OcrMacModel
+from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 
 _log = logging.getLogger(__name__)
 

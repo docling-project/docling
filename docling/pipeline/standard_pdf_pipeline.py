@@ -40,18 +40,27 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
 from docling.datamodel.settings import settings
-from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
     get_table_structure_factory,
 )
-from docling.models.page_assemble_model import PageAssembleModel, PageAssembleOptions
-from docling.models.page_preprocessing_model import (
+from docling.models.stages.code_formula.code_formula_model import (
+    CodeFormulaModel,
+    CodeFormulaModelOptions,
+)
+from docling.models.stages.page_assemble.page_assemble_model import (
+    PageAssembleModel,
+    PageAssembleOptions,
+)
+from docling.models.stages.page_preprocessing.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
 )
-from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
+from docling.models.stages.reading_order.readingorder_model import (
+    ReadingOrderModel,
+    ReadingOrderOptions,
+)
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify

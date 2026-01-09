@@ -28,12 +28,12 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
-from docling.models.document_picture_classifier import (
+from docling.models.factories import get_picture_description_factory
+from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
     DocumentPictureClassifierOptions,
 )
-from docling.models.factories import get_picture_description_factory
-from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
