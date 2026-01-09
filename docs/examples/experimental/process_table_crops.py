@@ -16,7 +16,8 @@ from docling.models.factories import get_layout_factory
 
 
 def main() -> None:
-    sample_image = "tests/data/2305.03393v1-table_crop.png"
+    # Go up 3 levels to escape 'docs' and reach the repo root
+    sample_image = Path(__file__).resolve().parents[3] / "tests" / "data" / "2305.03393v1-table_crop.png"
 
     pipeline_options = ThreadedPdfPipelineOptions(
         layout_options=TableCropsLayoutOptions(),
