@@ -24,7 +24,7 @@ from PIL import Image as PILImage
 _log = logging.getLogger(__name__)
 
 
-def parse_table_html(html_content: str) -> TableData:
+def _parse_table_html(html_content: str) -> TableData:
     """Parse HTML table content and create TableData structure.
 
     Args:
@@ -119,7 +119,7 @@ def parse_table_html(html_content: str) -> TableData:
         return TableData(num_rows=0, num_cols=0, table_cells=[])
 
 
-def collect_annotation_content(
+def _collect_annotation_content(
     lines: list[str],
     i: int,
     label_str: str,
@@ -174,7 +174,7 @@ def collect_annotation_content(
     return "\n".join(content_lines), i
 
 
-def process_annotation_item(
+def _process_annotation_item(
     label_str: str,
     content: str,
     prov: ProvenanceItem,
@@ -197,7 +197,7 @@ def process_annotation_item(
     if label_str in ["figure", "image"]:
         page_doc.add_picture(caption=caption_item, prov=prov)
     elif label_str == "table":
-        table_data = parse_table_html(content)
+        table_data = _parse_table_html(content)
         page_doc.add_table(data=table_data, caption=caption_item, prov=prov)
     elif label_str == "title":
         clean_content = content
@@ -340,7 +340,7 @@ def parse_deepseekocr_markdown(
 
                     # Get the content (next non-empty line)
                     i += 1
-                    content_text, i = collect_annotation_content(
+                    content_text, i = _collect_annotation_content(
                         lines, i, label_str, annotation_pattern, visited_lines
                     )
                     annotations.append((label_str, content_text, prov))
@@ -381,7 +381,7 @@ def parse_deepseekocr_markdown(
                     continue
 
         # Add the item
-        process_annotation_item(
+        _process_annotation_item(
             label_str, content_text, prov, caption_item, page_doc, label_map
         )
 

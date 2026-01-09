@@ -133,9 +133,7 @@ def test_e2e_deepseekocr_conversion():
     doc = conv_result.document
 
     # Check number of pages
-    assert len(doc.pages) == len(ref_doc.pages), (
-        f"Number of pages mismatch: {len(doc.pages)} vs {len(ref_doc.pages)}"
-    )
+    assert len(doc.pages) == 9, f"Number of pages mismatch: {len(doc.pages)}"
 
     # Compare features of the first page (excluding bbox which can vary)
     # Check that we have similar structure
