@@ -200,7 +200,16 @@ def process_annotation_item(
         table_data = parse_table_html(content)
         page_doc.add_table(data=table_data, caption=caption_item, prov=prov)
     elif label_str == "title":
-        page_doc.add_title(text=content, prov=prov)
+        clean_content = content
+        if content.startswith("#"):
+            hash_count = 0
+            for char in content:
+                if char == "#":
+                    hash_count += 1
+                else:
+                    break
+            clean_content = content[hash_count:].strip()
+        page_doc.add_title(text=clean_content, prov=prov)
     elif label_str == "sub_title":
         heading_level = 1
         clean_content = content
