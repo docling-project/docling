@@ -390,7 +390,10 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 page_numbers = [it.page_no for it in good]
                 _log.error(
                     "Stage preprocess failed for run %d, pages %s: %s",
-                    rid, page_numbers, exc
+                    rid,
+                    page_numbers,
+                    exc,
+                    exc_info=False,  # Put to True if you want detailed exception info
                 )
                 for it in good:
                     it.is_failed = True
