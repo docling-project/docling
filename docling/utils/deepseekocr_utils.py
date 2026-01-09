@@ -262,8 +262,8 @@ def parse_deepseekocr_markdown(
         "footer": DocItemLabel.PAGE_FOOTER,
     }
 
-    # Pattern to match: label[[x1, y1, x2, y2]]
-    annotation_pattern = r"^(\w+)\[\[([0-9., ]+)\]\]\s*$"
+    # Pattern to match: <|ref|>label<|/ref|><|det|>[[x1, y1, x2, y2]]<|/det|> or label[[x1, y1, x2, y2]]
+    annotation_pattern = r"^(?:<\|ref\|>)?(\w+)(?:<\|/ref\|>)?(?:<\|det\|>)?\[\[([0-9., ]+)\]\](?:<\|/det\|>)?\s*$"
 
     # Create a new document
     origin = DocumentOrigin(

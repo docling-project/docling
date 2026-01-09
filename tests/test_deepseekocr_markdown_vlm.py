@@ -36,12 +36,16 @@ def mock_parsing(content: str) -> DoclingDocument:
 
     conv_res.pages = [page]
 
-    # Call the parser method directly without initializing the full pipeline
-    # We just need to test the parsing logic, not the full pipeline
-    from docling.pipeline.vlm_pipeline import VlmPipeline
+    # Call the utility function directly to parse the content
+    from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 
-    # Parse the DeepSeek OCR markdown by calling the method directly
-    doc = VlmPipeline._parse_deepseekocr_markdown(None, conv_res)
+    # Parse the DeepSeek OCR markdown using the utility function
+    doc = parse_deepseekocr_markdown(
+        content=content,
+        page_image=page.image,
+        page_no=1,
+        filename="test.md",
+    )
 
     return doc
 
