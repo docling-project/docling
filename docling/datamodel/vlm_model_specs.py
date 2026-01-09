@@ -317,6 +317,22 @@ DOLPHIN_TRANSFORMERS = InlineVlmOptions(
     temperature=0.0,
 )
 
+# DeepSeek-OCR
+DEEPSEEKOCR_OLLAMA = ApiVlmOptions(
+    url="http://localhost:11434/v1/chat/completions",
+    params=dict(
+        model="deepseek-ocr:3b",
+        max_tokens=4096,
+        skip_special_tokens=True,
+    ),
+    prompt="<|grounding|>Convert the document to markdown. ",
+    timeout=90,
+    scale=2.0,
+    temperature=0.0,
+    concurrency=4,
+    response_format=ResponseFormat.DEEPSEEKOCR_MARKDOWN,
+)
+
 # NuExtract
 NU_EXTRACT_2B_TRANSFORMERS = InlineVlmOptions(
     repo_id="numind/NuExtract-2.0-2B",
@@ -346,3 +362,4 @@ class VlmModelType(str, Enum):
     GOT_OCR_2 = "got_ocr_2"
     GRANITEDOCLING = "granite_docling"
     GRANITEDOCLING_VLLM = "granite_docling_vllm"
+    DEEPSEEKOCR_OLLAMA = "deepseekocr_ollama"
