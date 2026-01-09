@@ -962,6 +962,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 is_numbered_style = False
             h1 = self._add_heading(doc, p_level, text, is_numbered_style)
             elem_ref.extend(h1)
+            # Clear list history after heading to allow new lists to start properly
+            self._update_history(p_style_id, p_level, None, None)
 
         elif len(equations) > 0:
             if (paragraph.text is None or len(paragraph.text.strip()) == 0) and len(
@@ -1094,6 +1096,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 for key in range(len(self.parents)):
                     if key >= curr_level:
                         self.parents[key] = None
+                # Reset level tracking when heading resets hierarchy
+                self.level = curr_level
 
             current_level = curr_level
             parent_level = curr_level - 1
@@ -1134,6 +1138,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             level=add_level,
         )
         self.parents[current_level] = hd
+        # Reset list tracking when a heading is added
+        self.level_at_new_list = None
         elem_ref.append(hd.get_ref())
         return elem_ref
 
@@ -1203,9 +1209,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         level = self._get_level()
         prev_indent = self._prev_indent()
-        if self._prev_numid() is None or (
-            self._prev_numid() == numid and self.level_at_new_list is None
-        ):  # Open new list
+        if self._prev_numid() is None:  # Open new list
             self.level_at_new_list = level
 
             # Reset counters for the new numbering sequence
@@ -1283,7 +1287,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 self.level_at_new_list + ilevel,
             )
 
-        elif self._prev_numid() == numid or prev_indent == ilevel:
+        elif self._prev_numid() == numid and isinstance(
+            self.parents.get(level - 1), ListGroup
+        ):
+            # Continue existing list - only if parent is actually a ListGroup
             # Set marker and enumerated arguments if this is an enumeration element.
             if is_numbered:
                 counter = self._get_list_counter(numid, ilevel)
@@ -1293,8 +1300,33 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             self._add_formatted_list_item(
                 doc, elements, enum_marker, is_numbered, level - 1
             )
-        else:
-            _log.warning("List item not matching any insert condition.")
+        elif self._prev_numid() != numid or not isinstance(
+            self.parents.get(level - 1), ListGroup
+        ):
+            # New list sequence: Different numid OR parent is not a ListGroup
+            # This can happen after a heading with a different list or when lists are interrupted
+            self.level_at_new_list = level
+
+            # Reset counters for the new numbering sequence
+            self._reset_list_counters_for_new_sequence(numid)
+
+            list_gr = doc.add_list_group(
+                name="list",
+                parent=self.parents[level - 1],
+                content_layer=self.content_layer,
+            )
+            self.parents[level] = list_gr
+            elem_ref.append(list_gr.get_ref())
+
+            # Set marker and enumerated arguments if this is an enumeration element.
+            if is_numbered:
+                counter = self._get_list_counter(numid, ilevel)
+                enum_marker = str(counter) + "."
+            else:
+                enum_marker = ""
+            self._add_formatted_list_item(
+                doc, elements, enum_marker, is_numbered, level
+            )
         return elem_ref
 
     @staticmethod
