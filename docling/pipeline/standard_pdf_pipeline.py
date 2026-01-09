@@ -387,12 +387,12 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                         )
                     )
             except Exception as exc:
-                page_numbers = [it.page_no for it in items]
+                page_numbers = [it.page_no for it in good]
                 _log.error(
                     "Stage preprocess failed for run %d, pages %s: %s",
                     rid, page_numbers, exc
                 )
-                for it in items:
+                for it in good:
                     it.is_failed = True
                     it.error = exc
                 result.extend(items)
