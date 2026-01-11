@@ -252,6 +252,7 @@ class ConversionAssets(BaseModel):
     confidence: ConfidenceReport = Field(default_factory=ConfidenceReport)
 
     document: DoclingDocument = _EMPTY_DOCLING_DOC
+    metadata: Dict[str, Any] = {}
 
     @property
     @deprecated("Use document instead.")

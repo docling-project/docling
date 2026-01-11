@@ -38,6 +38,7 @@ class SimplePipeline(ConvertPipeline):
         # a DoclingDocument straight.
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             conv_res.document = conv_res.input._backend.convert()
+            conv_res.metadata = conv_res.input._backend.extract_metadata()
         return conv_res
 
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
