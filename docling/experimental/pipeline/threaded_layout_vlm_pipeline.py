@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -73,7 +74,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         # Layout model
         self.layout_model = LayoutModel(
             artifacts_path=art_path,
-            accelerator_options=self.pipeline_options.accelerator_options,
+            accelerator_options=AcceleratorOptions(device="cpu"),
             options=self.pipeline_options.layout_options,
         )
 
