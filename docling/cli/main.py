@@ -25,8 +25,6 @@ from pydantic import TypeAdapter
 from rich.console import Console
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -77,6 +75,7 @@ from docling.datamodel.pipeline_options import (
     TesseractCliOcrOptions,
     TesseractOcrOptions,
     VlmPipelineOptions,
+    normalize_pdf_backend,
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import VlmModelType
@@ -461,7 +460,7 @@ def convert(  # noqa: C901
     ] = None,
     pdf_backend: Annotated[
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
-    ] = PdfBackend.DLPARSE_V4,
+    ] = PdfBackend.DOCLING_PARSE,
     pdf_password: Annotated[
         Optional[str], typer.Option(..., help="Password for protected PDF documents")
     ] = None,
@@ -740,15 +739,12 @@ def convert(  # noqa: C901
                 )
                 pipeline_options.images_scale = 2
 
+            # Normalize deprecated backend values
+            pdf_backend = normalize_pdf_backend(pdf_backend)
+
             backend: Type[PdfDocumentBackend]
-            if pdf_backend == PdfBackend.DLPARSE_V1:
-                backend = DoclingParseDocumentBackend
-                pdf_backend_options = None
-            elif pdf_backend == PdfBackend.DLPARSE_V2:
-                backend = DoclingParseV2DocumentBackend
-                pdf_backend_options = None
-            elif pdf_backend == PdfBackend.DLPARSE_V4:
-                backend = DoclingParseV4DocumentBackend  # type: ignore
+            if pdf_backend == PdfBackend.DOCLING_PARSE:
+                backend = DoclingParseDocumentBackend  # type: ignore
             elif pdf_backend == PdfBackend.PYPDFIUM2:
                 backend = PyPdfiumDocumentBackend  # type: ignore
             else:

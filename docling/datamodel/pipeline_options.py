@@ -278,9 +278,44 @@ class PdfBackend(str, Enum):
     """Enum of valid PDF backends."""
 
     PYPDFIUM2 = "pypdfium2"
-    DLPARSE_V1 = "dlparse_v1"
-    DLPARSE_V2 = "dlparse_v2"
-    DLPARSE_V4 = "dlparse_v4"
+    DOCLING_PARSE = "docling_parse"
+
+    # Deprecated - these map to DOCLING_PARSE
+    DLPARSE_V1 = "dlparse_v1"  # deprecated
+    DLPARSE_V2 = "dlparse_v2"  # deprecated
+    DLPARSE_V4 = "dlparse_v4"  # deprecated
+
+
+def normalize_pdf_backend(backend: PdfBackend) -> PdfBackend:
+    """Normalize deprecated backend enum values to current ones.
+
+    Args:
+        backend: The PDF backend enum value to normalize.
+
+    Returns:
+        The normalized backend enum value.
+
+    Raises:
+        DeprecationWarning: If a deprecated backend value is used.
+    """
+    import warnings
+
+    deprecated_mapping = {
+        PdfBackend.DLPARSE_V1: PdfBackend.DOCLING_PARSE,
+        PdfBackend.DLPARSE_V2: PdfBackend.DOCLING_PARSE,
+        PdfBackend.DLPARSE_V4: PdfBackend.DOCLING_PARSE,
+    }
+
+    if backend in deprecated_mapping:
+        warnings.warn(
+            f"PdfBackend.{backend.name} is deprecated and will be removed in a future version. "
+            f"Use PdfBackend.DOCLING_PARSE instead.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return deprecated_mapping[backend]
+
+    return backend
 
 
 # Define an enum for the ocr engines
