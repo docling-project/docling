@@ -351,6 +351,10 @@ class ConvertPipelineOptions(PipelineOptions):
         smolvlm_picture_description
     )
 
+    do_chart_extraction: bool = (
+        False  # True: extract data in tabular format from bar-, pie and line-charts
+    )
+
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
     images_scale: float = 1.0
