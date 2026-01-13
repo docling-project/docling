@@ -4,7 +4,7 @@ from typing import Iterable
 
 import pytest
 
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.pypdfium2_backend import (
     PyPdfiumDocumentBackend,
 )
@@ -45,10 +45,10 @@ def converter_opts_gen() -> Iterable[TestOption]:
     yield TestOption(
         options=PdfFormatOption(
             pipeline_options=pipeline_options,
-            backend=DoclingParseV4DocumentBackend,
+            backend=DoclingParseDocumentBackend,
             backend_options=backend_options,
         ),
-        name="DoclingParseV4",
+        name="DoclingParse",
     )
 
 

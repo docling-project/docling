@@ -4,8 +4,6 @@ from pathlib import Path
 import pytest
 
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
-from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
@@ -175,8 +173,6 @@ def test_parser_backends(test_doc_path):
     pipeline_options.do_table_structure = False
 
     for backend_t in [
-        DoclingParseV4DocumentBackend,
-        DoclingParseV2DocumentBackend,
         DoclingParseDocumentBackend,
         PyPdfiumDocumentBackend,
     ]:
