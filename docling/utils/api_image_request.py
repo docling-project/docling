@@ -2,14 +2,14 @@ import base64
 import json
 import logging
 from io import BytesIO
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
-import requests
 from PIL import Image
 from pydantic import AnyUrl
 
 from docling.datamodel.base_models import OpenAiApiResponse, VlmStopReason
 from docling.models.utils.generation_utils import GenerationStopper
+from docling.utils.http_client import request_with_retry
 
 _log = logging.getLogger(__name__)
 
@@ -63,7 +63,8 @@ def api_image_request(
 
             headers = headers or {}
 
-            r = requests.post(
+            r = request_with_retry(
+                "POST",
                 str(url),
                 headers=headers,
                 json=payload,
@@ -142,8 +143,13 @@ def api_image_request_streaming(
         hdrs["X-Temperature"] = str(params["temperature"])
 
     # Stream the HTTP response
-    with requests.post(
-        str(url), headers=hdrs, json=payload, timeout=timeout, stream=True
+    with request_with_retry(
+        "POST",
+        str(url),
+        headers=hdrs,
+        json=payload,
+        timeout=timeout,
+        stream=True,
     ) as r:
         if not r.ok:
             _log.error(
