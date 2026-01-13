@@ -1,0 +1,13 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section: group header-0
+    item-2 at level 2: section: group header-1
+      item-3 at level 3: section_header: 1 Introduction
+  item-4 at level 1: text: This section provides context and background information.
+  item-5 at level 1: section: group header-0
+    item-6 at level 2: section: group header-1
+      item-7 at level 3: section_header: 2 Solution Overview
+  item-8 at level 1: text: The system architecture consists of the following components.
+  item-9 at level 1: section: group header-0
+    item-10 at level 2: section: group header-1
+      item-11 at level 3: section_header: 3 Requirements
+  item-12 at level 1: text: The functional requirements are listed below.

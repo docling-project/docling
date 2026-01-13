@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "textbox",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -36,142 +36,85 @@
         "$ref": "#/texts/7"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/8"
       },
       {
         "$ref": "#/texts/9"
       },
       {
-        "$ref": "#/texts/10"
+        "$ref": "#/groups/2"
       },
       {
         "$ref": "#/texts/11"
       },
       {
-        "$ref": "#/texts/12"
-      },
-      {
         "$ref": "#/groups/3"
-      },
-      {
-        "$ref": "#/texts/14"
       },
       {
         "$ref": "#/texts/15"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/texts/16"
       },
       {
-        "$ref": "#/groups/6"
+        "$ref": "#/texts/17"
+      },
+      {
+        "$ref": "#/texts/18"
       },
       {
         "$ref": "#/texts/19"
       },
       {
-        "$ref": "#/texts/20"
+        "$ref": "#/groups/5"
       },
       {
-        "$ref": "#/texts/21"
-      },
-      {
-        "$ref": "#/texts/22"
-      },
-      {
-        "$ref": "#/texts/23"
+        "$ref": "#/texts/25"
       },
       {
         "$ref": "#/groups/7"
       },
       {
-        "$ref": "#/groups/9"
+        "$ref": "#/texts/27"
+      },
+      {
+        "$ref": "#/texts/28"
       },
       {
         "$ref": "#/texts/29"
       },
       {
-        "$ref": "#/groups/10"
+        "$ref": "#/texts/30"
       },
       {
         "$ref": "#/texts/31"
       },
       {
-        "$ref": "#/texts/32"
-      },
-      {
-        "$ref": "#/texts/33"
-      },
-      {
-        "$ref": "#/texts/34"
-      },
-      {
-        "$ref": "#/texts/35"
+        "$ref": "#/groups/8"
       },
       {
         "$ref": "#/texts/36"
       },
       {
-        "$ref": "#/texts/37"
+        "$ref": "#/groups/10"
       },
       {
         "$ref": "#/groups/11"
       },
       {
+        "$ref": "#/groups/12"
+      },
+      {
         "$ref": "#/texts/42"
-      },
-      {
-        "$ref": "#/texts/43"
-      },
-      {
-        "$ref": "#/texts/44"
       },
       {
         "$ref": "#/groups/13"
       },
       {
-        "$ref": "#/texts/47"
-      },
-      {
         "$ref": "#/groups/14"
       },
       {
-        "$ref": "#/texts/50"
-      },
-      {
-        "$ref": "#/texts/51"
-      },
-      {
-        "$ref": "#/groups/15"
-      },
-      {
-        "$ref": "#/texts/53"
-      },
-      {
-        "$ref": "#/groups/16"
-      },
-      {
-        "$ref": "#/texts/55"
-      },
-      {
-        "$ref": "#/texts/56"
-      },
-      {
-        "$ref": "#/groups/17"
-      },
-      {
-        "$ref": "#/texts/60"
-      },
-      {
-        "$ref": "#/groups/18"
-      },
-      {
-        "$ref": "#/texts/62"
-      },
-      {
-        "$ref": "#/texts/63"
-      },
-      {
-        "$ref": "#/texts/64"
+        "$ref": "#/texts/47"
       }
     ],
     "content_layer": "body",
@@ -220,7 +163,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/8"
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
@@ -234,7 +177,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/13"
+          "$ref": "#/groups/4"
+        },
+        {
+          "$ref": "#/texts/14"
         }
       ],
       "content_layer": "body",
@@ -244,31 +190,14 @@
     {
       "self_ref": "#/groups/4",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/3"
       },
       "children": [
         {
-          "$ref": "#/groups/5"
+          "$ref": "#/texts/12"
         },
         {
-          "$ref": "#/texts/18"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/5",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/16"
-        },
-        {
-          "$ref": "#/texts/17"
+          "$ref": "#/texts/13"
         }
       ],
       "content_layer": "body",
@@ -276,11 +205,41 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/6",
+      "self_ref": "#/groups/5",
       "parent": {
         "$ref": "#/body"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/20"
+        },
+        {
+          "$ref": "#/texts/21"
+        },
+        {
+          "$ref": "#/groups/6"
+        },
+        {
+          "$ref": "#/texts/24"
+        }
+      ],
+      "content_layer": "body",
+      "name": "textbox",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/22"
+        },
+        {
+          "$ref": "#/texts/23"
+        }
+      ],
       "content_layer": "body",
       "name": "list",
       "label": "list"
@@ -292,16 +251,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/24"
-        },
-        {
-          "$ref": "#/texts/25"
-        },
-        {
-          "$ref": "#/groups/8"
-        },
-        {
-          "$ref": "#/texts/28"
+          "$ref": "#/texts/26"
         }
       ],
       "content_layer": "body",
@@ -311,29 +261,39 @@
     {
       "self_ref": "#/groups/8",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/26"
+          "$ref": "#/groups/9"
         },
         {
-          "$ref": "#/texts/27"
+          "$ref": "#/texts/35"
         }
       ],
       "content_layer": "body",
-      "name": "list",
-      "label": "list"
+      "name": "textbox",
+      "label": "section"
     },
     {
       "self_ref": "#/groups/9",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/8"
       },
-      "children": [],
+      "children": [
+        {
+          "$ref": "#/texts/32"
+        },
+        {
+          "$ref": "#/texts/33"
+        },
+        {
+          "$ref": "#/texts/34"
+        }
+      ],
       "content_layer": "body",
-      "name": "list",
-      "label": "list"
+      "name": "group",
+      "label": "inline"
     },
     {
       "self_ref": "#/groups/10",
@@ -342,7 +302,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/30"
+          "$ref": "#/texts/37"
+        },
+        {
+          "$ref": "#/texts/38"
         }
       ],
       "content_layer": "body",
@@ -356,10 +319,10 @@
       },
       "children": [
         {
-          "$ref": "#/groups/12"
+          "$ref": "#/texts/39"
         },
         {
-          "$ref": "#/texts/41"
+          "$ref": "#/texts/40"
         }
       ],
       "content_layer": "body",
@@ -369,22 +332,16 @@
     {
       "self_ref": "#/groups/12",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/38"
-        },
-        {
-          "$ref": "#/texts/39"
-        },
-        {
-          "$ref": "#/texts/40"
+          "$ref": "#/texts/41"
         }
       ],
       "content_layer": "body",
-      "name": "group",
-      "label": "inline"
+      "name": "textbox",
+      "label": "section"
     },
     {
       "self_ref": "#/groups/13",
@@ -393,10 +350,13 @@
       },
       "children": [
         {
-          "$ref": "#/texts/45"
+          "$ref": "#/texts/43"
         },
         {
-          "$ref": "#/texts/46"
+          "$ref": "#/texts/44"
+        },
+        {
+          "$ref": "#/texts/45"
         }
       ],
       "content_layer": "body",
@@ -410,72 +370,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/48"
-        },
-        {
-          "$ref": "#/texts/49"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/15",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/52"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/16",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/54"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/17",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/57"
-        },
-        {
-          "$ref": "#/texts/58"
-        },
-        {
-          "$ref": "#/texts/59"
-        }
-      ],
-      "content_layer": "body",
-      "name": "textbox",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/18",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/61"
+          "$ref": "#/texts/46"
         }
       ],
       "content_layer": "body",
@@ -613,21 +508,14 @@
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "If a caregiver suspects that within one week, a fifth of the class (for classes with more than 15 students) or more than three students (for classes with 15 or fewer students)\nshow the same suggested reportable symptoms",
-      "text": "If a caregiver suspects that within one week, a fifth of the class (for classes with more than 15 students) or more than three students (for classes with 15 or fewer students)\nshow the same suggested reportable symptoms",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/9",
@@ -644,43 +532,7 @@
     {
       "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/11",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -697,9 +549,63 @@
       }
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "A report must be submitted within 24 hours via the Ministry of Education’s Campus Safety and Disaster Prevention Information Network.",
+      "text": "A report must be submitted within 24 hours via the Ministry of Education’s Campus Safety and Disaster Prevention Information Network.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [],
+      "orig": "A report must also be submitted within 48 hours through Chiayi County’s School Suspected Infectious Disease Reporting System.",
+      "text": "A report must also be submitted within 48 hours through Chiayi County’s School Suspected Infectious Disease Reporting System.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      },
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -723,49 +629,31 @@
     {
       "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [],
-      "orig": "A report must be submitted within 24 hours via the Ministry of Education’s Campus Safety and Disaster Prevention Information Network.",
-      "text": "A report must be submitted within 24 hours via the Ministry of Education’s Campus Safety and Disaster Prevention Information Network.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      },
-      "enumerated": false,
-      "marker": ""
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [],
-      "orig": "A report must also be submitted within 48 hours through Chiayi County’s School Suspected Infectious Disease Reporting System.",
-      "text": "A report must also be submitted within 48 hours through Chiayi County’s School Suspected Infectious Disease Reporting System.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      },
-      "enumerated": false,
-      "marker": ""
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -789,55 +677,7 @@
     {
       "self_ref": "#/texts/20",
       "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -854,9 +694,9 @@
       }
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/21",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -873,9 +713,9 @@
       }
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/22",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -894,9 +734,9 @@
       "marker": "1."
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/23",
       "parent": {
-        "$ref": "#/groups/8"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -915,9 +755,64 @@
       "marker": "2."
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/25",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/groups/7"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Department of Education:\nCollaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.",
+      "text": "Department of Education:\nCollaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/27",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -941,21 +836,14 @@
     {
       "self_ref": "#/texts/30",
       "parent": {
-        "$ref": "#/groups/10"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Department of Education:\nCollaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.",
-      "text": "Department of Education:\nCollaborate with the Health Bureau in conducting epidemiological investigations and assist Health Bureau personnel in implementing necessary epidemic prevention measures at all school levels.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/31",
@@ -972,43 +860,64 @@
     {
       "self_ref": "#/texts/32",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "The Health Bureau will handle",
+      "text": "The Health Bureau will handle",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/33",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "reporting and specimen collection",
+      "text": "reporting and specimen collection",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/34",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/9"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": ".",
+      "text": ".",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/35",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/8"
       },
       "children": [],
       "content_layer": "body",
@@ -1032,7 +941,26 @@
     {
       "self_ref": "#/texts/37",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/10"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Whether the epidemic has eased.",
+      "text": "Whether the epidemic has eased.",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/38",
+      "parent": {
+        "$ref": "#/groups/10"
       },
       "children": [],
       "content_layer": "body",
@@ -1042,35 +970,16 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/38",
-      "parent": {
-        "$ref": "#/groups/12"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "The Health Bureau will handle",
-      "text": "The Health Bureau will handle",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
       "self_ref": "#/texts/39",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "reporting and specimen collection",
-      "text": "reporting and specimen collection",
+      "orig": "Whether the test results are positive for a legally designated infectious disease.",
+      "text": "Whether the test results are positive for a legally designated infectious disease.",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -1082,14 +991,14 @@
     {
       "self_ref": "#/texts/40",
       "parent": {
-        "$ref": "#/groups/12"
+        "$ref": "#/groups/11"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".",
-      "text": ".",
+      "orig": "No",
+      "text": "No",
       "formatting": {
         "bold": false,
         "italic": false,
@@ -1101,14 +1010,21 @@
     {
       "self_ref": "#/texts/41",
       "parent": {
-        "$ref": "#/groups/11"
+        "$ref": "#/groups/12"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "Yes",
+      "text": "Yes",
+      "formatting": {
+        "bold": false,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/42",
@@ -1125,19 +1041,26 @@
     {
       "self_ref": "#/texts/43",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "Case closed.",
+      "text": "Case closed.",
+      "formatting": {
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/44",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/13"
       },
       "children": [],
       "content_layer": "body",
@@ -1155,216 +1078,6 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Whether the epidemic has eased.",
-      "text": "Whether the epidemic has eased.",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/46",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/47",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/48",
-      "parent": {
-        "$ref": "#/groups/14"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Whether the test results are positive for a legally designated infectious disease.",
-      "text": "Whether the test results are positive for a legally designated infectious disease.",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/49",
-      "parent": {
-        "$ref": "#/groups/14"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "No",
-      "text": "No",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/50",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/51",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/52",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/53",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/54",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Yes",
-      "text": "Yes",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/55",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/56",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/57",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Case closed.",
-      "text": "Case closed.",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/58",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/59",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
       "orig": "The Health Bureau will carry out subsequent related epidemic prevention measures and follow-up, and will request assistance from the Centers for Disease Control if necessary.",
       "text": "The Health Bureau will carry out subsequent related epidemic prevention measures and follow-up, and will request assistance from the Centers for Disease Control if necessary.",
       "formatting": {
@@ -1376,21 +1089,9 @@
       }
     },
     {
-      "self_ref": "#/texts/60",
+      "self_ref": "#/texts/46",
       "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/61",
-      "parent": {
-        "$ref": "#/groups/18"
+        "$ref": "#/groups/14"
       },
       "children": [],
       "content_layer": "body",
@@ -1407,31 +1108,7 @@
       }
     },
     {
-      "self_ref": "#/texts/62",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/63",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/64",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/body"
       },

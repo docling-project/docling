@@ -13,78 +13,57 @@ item-0 at level 0: unspecified: group _root_
 ＊ Sore throat
   item-9 at level 1: text: 
   item-10 at level 1: text: 
-  item-11 at level 1: section: group textbox
-    item-12 at level 2: text: If a caregiver suspects that wit ... the same suggested reportable symptoms
-  item-13 at level 1: text: 
-  item-14 at level 1: text: 
+  item-11 at level 1: text: 
+  item-12 at level 1: text: 
+  item-13 at level 1: section: group textbox
+    item-14 at level 2: text: Yes
   item-15 at level 1: text: 
-  item-16 at level 1: text: 
-  item-17 at level 1: section: group textbox
-    item-18 at level 2: text: Yes
-  item-19 at level 1: text: 
-  item-20 at level 1: text: 
-  item-21 at level 1: section: group textbox
-    item-22 at level 2: list: group list
-      item-23 at level 3: list_item: A report must be submitted withi ... saster Prevention Information Network.
-      item-24 at level 3: list_item: A report must also be submitted  ... d Infectious Disease Reporting System.
-    item-25 at level 2: text: 
-  item-26 at level 1: list: group list
-  item-27 at level 1: text: 
-  item-28 at level 1: text: 
-  item-29 at level 1: text: 
-  item-30 at level 1: text: 
-  item-31 at level 1: text: 
-  item-32 at level 1: section: group textbox
-    item-33 at level 2: text: Health Bureau:
-    item-34 at level 2: text: Upon receiving a report from the ... rt to the Centers for Disease Control.
-    item-35 at level 2: list: group list
-      item-36 at level 3: list_item: If necessary, provide health edu ... vidual to undergo specimen collection.
-      item-37 at level 3: list_item: Implement appropriate epidemic p ...  the Communicable Disease Control Act.
-    item-38 at level 2: text: 
-  item-39 at level 1: list: group list
+  item-16 at level 1: section: group textbox
+    item-17 at level 2: list: group list
+      item-18 at level 3: list_item: A report must be submitted withi ... saster Prevention Information Network.
+      item-19 at level 3: list_item: A report must also be submitted  ... d Infectious Disease Reporting System.
+    item-20 at level 2: text: 
+  item-21 at level 1: text: 
+  item-22 at level 1: text: 
+  item-23 at level 1: text: 
+  item-24 at level 1: text: 
+  item-25 at level 1: text: 
+  item-26 at level 1: section: group textbox
+    item-27 at level 2: text: Health Bureau:
+    item-28 at level 2: text: Upon receiving a report from the ... rt to the Centers for Disease Control.
+    item-29 at level 2: list: group list
+      item-30 at level 3: list_item: If necessary, provide health edu ... vidual to undergo specimen collection.
+      item-31 at level 3: list_item: Implement appropriate epidemic p ...  the Communicable Disease Control Act.
+    item-32 at level 2: text: 
+  item-33 at level 1: text: 
+  item-34 at level 1: section: group textbox
+    item-35 at level 2: text: Department of Education:
+Collabo ... vention measures at all school levels.
+  item-36 at level 1: text: 
+  item-37 at level 1: text: 
+  item-38 at level 1: text: 
+  item-39 at level 1: text: 
   item-40 at level 1: text: 
   item-41 at level 1: section: group textbox
-    item-42 at level 2: text: Department of Education:
-Collabo ... vention measures at all school levels.
-  item-43 at level 1: text: 
-  item-44 at level 1: text: 
-  item-45 at level 1: text: 
-  item-46 at level 1: text: 
+    item-42 at level 2: inline: group group
+      item-43 at level 3: text: The Health Bureau will handle
+      item-44 at level 3: text: reporting and specimen collection
+      item-45 at level 3: text: .
+    item-46 at level 2: text: 
   item-47 at level 1: text: 
-  item-48 at level 1: text: 
-  item-49 at level 1: text: 
-  item-50 at level 1: section: group textbox
-    item-51 at level 2: inline: group group
-      item-52 at level 3: text: The Health Bureau will handle
-      item-53 at level 3: text: reporting and specimen collection
-      item-54 at level 3: text: .
-    item-55 at level 2: text: 
+  item-48 at level 1: section: group textbox
+    item-49 at level 2: text: Whether the epidemic has eased.
+    item-50 at level 2: text: 
+  item-51 at level 1: section: group textbox
+    item-52 at level 2: text: Whether the test results are pos ... legally designated infectious disease.
+    item-53 at level 2: text: No
+  item-54 at level 1: section: group textbox
+    item-55 at level 2: text: Yes
   item-56 at level 1: text: 
-  item-57 at level 1: text: 
-  item-58 at level 1: text: 
-  item-59 at level 1: section: group textbox
-    item-60 at level 2: text: Whether the epidemic has eased.
-    item-61 at level 2: text: 
-  item-62 at level 1: text: 
-  item-63 at level 1: section: group textbox
-    item-64 at level 2: text: Whether the test results are pos ... legally designated infectious disease.
-    item-65 at level 2: text: No
-  item-66 at level 1: text: 
-  item-67 at level 1: text: 
-  item-68 at level 1: section: group textbox
-    item-69 at level 2: text: Yes
-  item-70 at level 1: text: 
-  item-71 at level 1: section: group textbox
-    item-72 at level 2: text: Yes
-  item-73 at level 1: text: 
-  item-74 at level 1: text: 
-  item-75 at level 1: section: group textbox
-    item-76 at level 2: text: Case closed.
-    item-77 at level 2: text: 
-    item-78 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
-  item-79 at level 1: text: 
-  item-80 at level 1: section: group textbox
-    item-81 at level 2: text: No
-  item-82 at level 1: text: 
-  item-83 at level 1: text: 
-  item-84 at level 1: text: 
+  item-57 at level 1: section: group textbox
+    item-58 at level 2: text: Case closed.
+    item-59 at level 2: text: 
+    item-60 at level 2: text: The Health Bureau will carry out ... ters for Disease Control if necessary.
+  item-61 at level 1: section: group textbox
+    item-62 at level 2: text: No
+  item-63 at level 1: text: 
