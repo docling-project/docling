@@ -386,7 +386,7 @@ class VlmExtractionPipelineOptions(PipelineOptions):
 
 class PdfPipelineOptions(PaginatedPipelineOptions):
     """Configuration options for PDF document processing pipeline.
-    
+
     See Also:
         examples/pipeline_options_advanced.py: Comprehensive configuration examples
     """
