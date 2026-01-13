@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict, List
 
 from docling_core.types.doc import (
     DocItemLabel,
@@ -9,6 +8,7 @@ from docling_core.types.doc import (
     NodeItem,
     ProvenanceItem,
     RefItem,
+    RichTableCell,
     TableData,
 )
 from docling_core.types.doc.document import ContentLayer
@@ -47,8 +47,8 @@ class ReadingOrderModel:
 
     def _assembled_to_readingorder_elements(
         self, conv_res: ConversionResult
-    ) -> List[ReadingOrderPageElement]:
-        elements: List[ReadingOrderPageElement] = []
+    ) -> list[ReadingOrderPageElement]:
+        elements: list[ReadingOrderPageElement] = []
         page_no_to_pages = {p.page_no: p for p in conv_res.pages}
 
         for element in conv_res.assembled.elements:
@@ -103,13 +103,29 @@ class ReadingOrderModel:
             else:
                 doc.add_text(parent=doc_item, label=c_label, text=c_text, prov=c_prov)
 
-    def _readingorder_elements_to_docling_doc(  # noqa: C901
+    def _create_rich_cell_group(
+        self, element: BasePageElement, doc: DoclingDocument, table_item: NodeItem
+    ) -> RefItem:
+        """Create a group containing all child elements for a rich table cell."""
+        group_name = f"rich_cell_group_{len(doc.tables)}_0_0"
+        group_element = doc.add_group(
+            label=GroupLabel.UNSPECIFIED,
+            name=group_name,
+            parent=table_item,
+        )
+
+        # Add all child elements to the group
+        self._add_child_elements(element, group_element, doc)
+
+        return group_element.get_ref()
+
+    def _readingorder_elements_to_docling_doc(
         self,
         conv_res: ConversionResult,
-        ro_elements: List[ReadingOrderPageElement],
-        el_to_captions_mapping: Dict[int, List[int]],
-        el_to_footnotes_mapping: Dict[int, List[int]],
-        el_merges_mapping: Dict[int, List[int]],
+        ro_elements: list[ReadingOrderPageElement],
+        el_to_captions_mapping: dict[int, list[int]],
+        el_to_footnotes_mapping: dict[int, list[int]],
+        el_merges_mapping: dict[int, list[int]],
     ) -> DoclingDocument:
         id_to_elem = {
             RefItem(cref=f"#/{elem.page_no}/{elem.cluster.id}").cref: elem
@@ -197,11 +213,21 @@ class ReadingOrderModel:
                             )
 
             elif isinstance(element, Table):
-                tbl_data = TableData(
-                    num_rows=element.num_rows,
-                    num_cols=element.num_cols,
-                    table_cells=element.table_cells,
-                )
+                # Check if table has no structure prediction
+                if element.num_rows == 0 and element.num_cols == 0:
+                    # Only create 1x1 table if there are children to put in it
+                    if element.cluster.children:
+                        # Create minimal 1x1 table with rich cell containing all children
+                        tbl_data = TableData(num_rows=1, num_cols=1, table_cells=[])
+                    else:
+                        # Create empty table with no structure
+                        tbl_data = TableData(num_rows=0, num_cols=0, table_cells=[])
+                else:
+                    tbl_data = TableData(
+                        num_rows=element.num_rows,
+                        num_cols=element.num_cols,
+                        table_cells=element.table_cells,
+                    )
 
                 prov = ProvenanceItem(
                     page_no=element.page_no + 1,
@@ -230,6 +256,30 @@ class ReadingOrderModel:
                         )
 
                         tbl.footnotes.append(new_footnote_item.get_ref())
+
+                # Handle case where table has no structure prediction but has children
+                if (
+                    element.num_rows == 0
+                    and element.num_cols == 0
+                    and element.cluster.children
+                ):
+                    # Create rich cell containing all child elements
+                    rich_cell_ref = self._create_rich_cell_group(element, out_doc, tbl)
+
+                    # Create rich table cell spanning the entire 1x1 table
+                    rich_cell = RichTableCell(
+                        text="",  # Empty text since content is in the group
+                        row_span=1,
+                        col_span=1,
+                        start_row_offset_idx=0,
+                        end_row_offset_idx=1,
+                        start_col_offset_idx=0,
+                        end_col_offset_idx=1,
+                        column_header=False,
+                        row_header=False,
+                        ref=rich_cell_ref,
+                    )
+                    out_doc.add_table_cell(table_item=tbl, cell=rich_cell)
 
                 # TODO: Consider adding children of Table.
 

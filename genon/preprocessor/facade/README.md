@@ -2,7 +2,7 @@
 
 ## 📋 개요
 
-GenOS DI(Document Intelligence)는 다양한 형식의 문서를 벡터 데이터베이스에 저장하기 위해 전처리하는 시스템입니다. 
+GenOS DI(Document Intelligence)는 다양한 형식의 문서를 벡터 데이터베이스에 저장하기 위해 전처리하는 시스템입니다.
 각 문서 타입과 요구사항에 따라 **지능형(Intelligent)** 또는 **기본형(Basic)** 처리 방식을 동적으로 선택할 수 있습니다.
 
 ## 🏗️ 시스템 구조
@@ -97,7 +97,7 @@ processor = create_hybrid_processor()
 ### Enrichment 옵션 (PDF/HWPX) - 지능형 모드
 ```python
 # 기본값이 이미 설정되어 있음
-processor.set_enrichment_options('pdf', 
+processor.set_enrichment_options('pdf',
     enabled=True,                      # 기본값: True
     do_toc_enrichment=True,           # 기본값: True
     extract_metadata=True,             # 기본값: True
@@ -110,7 +110,7 @@ processor.set_enrichment_options('pdf',
 
 # API 설정 (필요시 변경)
 processor.set_enrichment_options('pdf',
-    toc_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
+    toc_api_base_url="http://llmops-gateway-api-service:8080/serving/364/1073/v1/chat/completions",
     toc_api_key="your_api_key"
 )
 
@@ -200,8 +200,8 @@ processor.set_processor_option('pdf', 'chunking.max_tokens', 1536)
         "toc_temperature": 0.0,
         "toc_top_p": 0,
         "toc_api_provider": "custom",
-        "toc_api_base_url": "http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
-        "metadata_api_base_url": "http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
+        "toc_api_base_url": "http://llmops-gateway-api-service:8080/serving/364/1073/v1/chat/completions",
+        "metadata_api_base_url": "http://llmops-gateway-api-service:8080/serving/364/1073/v1/chat/completions",
         "toc_api_key": "a2ffe48f40ab4cf9a0699deac1c0cb76",
         "metadata_api_key": "a2ffe48f40ab4cf9a0699deac1c0cb76",
         "toc_model": "/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5"
@@ -328,26 +328,26 @@ processor.save_config('project_config.json')
 graph TD
     A[문서 입력] --> B{확장자 확인}
     B --> C{처리 모드}
-    
+
     C -->|지능형 + PDF/HWPX| D[Docling Processor]
     C -->|기본형 + 문서| E[LangChain Processor]
     C -->|오디오| F[Audio Processor]
     C -->|테이블| G[Tabular Processor]
-    
+
     D --> H[Enrichment<br/>기본값 적용]
     H --> I[고급 청킹<br/>max_tokens: 2000]
-    
+
     E --> J[텍스트 추출]
     J --> K[기본 청킹<br/>chunk_size: 1000]
-    
+
     F --> L[Whisper 전사<br/>ko, 30초 단위]
     G --> M[데이터프레임 변환]
-    
+
     I --> N[벡터 메타데이터]
     K --> N
     L --> N
     M --> N
-    
+
     N --> O[Weaviate 저장]
 ```
 

@@ -1069,7 +1069,7 @@ class DocxProcessor:
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
         artifacts_dir, reference_path = self.get_paths(file_path)
-        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
         chunks: list[DocChunk] = self.split_documents(document, **kwargs)
 
@@ -1179,7 +1179,7 @@ class HwpxProcessor:
     async def __call__(self, request: Request, file_path: str, **kwargs: dict):
         document: DoclingDocument = self.load_documents(file_path, **kwargs)
         artifacts_dir, reference_path = self.get_paths(file_path)
-        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
         chunks: list[DocChunk] = self.split_documents(document, **kwargs)
 

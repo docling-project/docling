@@ -484,7 +484,7 @@ class HybridChunker(BaseChunker):
         # 모든 헤더 정보를 종합하여 사용되는 헤더들 추출
         all_headers = []
         seen_headers = set()
-        
+
         for header_info in header_info_list:
             if header_info:  # dict가 비어있지 않은 경우
                 for level in sorted(header_info.keys()):
@@ -1223,7 +1223,7 @@ class DocumentProcessor:
         else:
             reference_path = artifacts_dir.parent
 
-        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
         document = self.enrichment(document, **kwargs)
 

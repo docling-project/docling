@@ -81,7 +81,8 @@
     "page_footer": 21,
     "list_item": 35,
     "checkbox_unselected": 7,
-    "table": 7
+    "table": 7,
+    "title": 1
   },
   "total_characters": 16613
 }

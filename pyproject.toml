@@ -44,9 +44,9 @@ authors = [
 requires-python = '>=3.9,<4.0'
 dependencies = [
     'pydantic (>=2.0.0,<3.0.0)',
-    'docling-core[chunking] (>=2.42.0,<3.0.0)',
+    "docling-core[chunking]==2.58",
     'docling-parse (>=4.0.0,<5.0.0)',
-    "docling-ibm-models>=3.6.0,<4",
+    "docling-ibm-models==3.10.3",
     'filetype (>=1.2.0,<2.0.0)',
     'pypdfium2 (>=4.30.0,<5.0.0)',
     'pydantic-settings (>=2.3.0,<3.0.0)',
@@ -70,7 +70,12 @@ dependencies = [
     'scipy (>=1.6.0,<2.0.0)',
     # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
     # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
-
+    "tree-sitter-javascript>=0.23.1",
+    "tree-sitter-python>=0.23.6",
+    "tree-sitter-typescript>=0.23.2",
+    "tree-sitter-c>=0.23.6",
+    "tree-sitter>=0.23.2",
+    "tree-sitter-java>=0.23.5",
 ]
 
 [project.urls]

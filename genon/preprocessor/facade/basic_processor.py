@@ -1085,10 +1085,12 @@ class DocumentProcessor:
             # metadata_api_key="9e32423947fd4a5da07a28962fe88487",
 
             # Gemma-3 27B docling, 운영망
-            toc_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
-            metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/364/799/v1/chat/completions",
-            toc_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
-            metadata_api_key="a2ffe48f40ab4cf9a0699deac1c0cb76",
+            # toc_api_base_url="http://llmops-gateway-api-service:8080/serving/364/1073/v1/chat/completions",
+            # metadata_api_base_url="http://llmops-gateway-api-service:8080/serving/364/1073/v1/chat/completions",
+            toc_api_base_url="https://genos.genon.ai:3443/api/gateway/rep/serving/364/v1/chat/completions",
+            metadata_api_base_url="https://genos.genon.ai:3443/api/gateway/rep/serving/364/v1/chat/completions",
+            toc_api_key="f8f89bb0251b4af8945a240c0783dc9d",
+            metadata_api_key="f8f89bb0251b4af8945a240c0783dc9d",
 
             toc_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
             metadata_model="/model/snapshots/9eb2daaa8597bf192a8b0e73f848f3a102794df5",
@@ -1230,7 +1232,7 @@ class DocumentProcessor:
         else:
             reference_path = artifacts_dir.parent
 
-        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
         document = self.enrichment(document, **kwargs)
 

@@ -1374,7 +1374,7 @@ class DocumentProcessor:
         else:
             reference_path = artifacts_dir.parent
 
-        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
         document = self.enrichment(document, **kwargs)
 

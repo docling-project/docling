@@ -522,9 +522,8 @@ class GenosBucketChunker(BaseChunker):
                 return text
             return ""
 
-        def split_items_evenly_by_tokens(items, item_token_counts, max_tokens):
-
-            n = len(items)
+        def split_items_evenly_by_tokens(item_token_counts, max_tokens):
+            n = len(item_token_counts)
             total = sum(item_token_counts)
             if n == 0:
                 return []
@@ -571,6 +570,87 @@ class GenosBucketChunker(BaseChunker):
             cuts.append(n)
 
             return [(a, b) for a, b in zip(cuts[:-1], cuts[1:])]
+
+        def adjust_captions(items_group):
+
+            b_modified = False
+            for idx, group in enumerate(items_group):
+                if group is None:
+                    continue
+                item = group[0][0]
+                ref_idx_list = []
+                if hasattr(item, 'captions') and item.captions:
+                    for cap in item.captions:
+                        cap_ref = cap.cref
+                        cap_idx = -1
+                        for j, it in enumerate(items_group):
+                            if it is None:
+                                continue
+                            if getattr(it[0][0], 'self_ref', None) == cap_ref:
+                                cap_idx = j
+                                break
+                        if cap_idx != -1:
+                            ref_idx_list.append(cap_idx)
+                if ref_idx_list:
+                    ref_idx_list = sorted(ref_idx_list)
+
+                if not ref_idx_list:
+                    continue
+
+                # caption 아이템들을 부모 아이템 바로 뒤로 이동
+                for cap_idx in ref_idx_list:
+                    for g in items_group[cap_idx]:
+                        items_group[idx].append(g)
+                    items_group[cap_idx] = None  # 나중에 None 제거
+                    b_modified = True
+
+            if b_modified:
+                items_group = [it for it in items_group if it is not None]
+
+            return items_group
+
+        def adjust_pictures_in_tables(items_group):
+            # picture in table 처리
+
+            b_modified = False
+            for idx, group in enumerate(items_group):
+                if group is None:
+                    continue
+                item = group[0][0]
+                pic_idx_list = []
+                if isinstance(item, TableItem):
+                    table_bbox = item.prov[0].bbox
+                    table_page_no = item.prov[0].page_no
+
+                    for j in range(len(items_group)):
+                        if items_group[j] is None:
+                            continue
+                        pic_item = items_group[j][0][0]
+                        if isinstance(pic_item, PictureItem):
+                            # table 안의 picture인지 확인. iou 사용
+                            pic_bbox = pic_item.prov[0].bbox
+                            pic_page_no = pic_item.prov[0].page_no
+                            if pic_page_no != table_page_no:
+                                continue
+                            ios = pic_bbox.intersection_over_self(table_bbox)
+                            if ios > 0.5:  # picture가 50% 이상 table 안에 포함되면 table 안의 picture로 간주
+                                pic_idx_list.append(j)
+                    if pic_idx_list:
+                        pic_idx_list = sorted(pic_idx_list)
+
+                if not pic_idx_list:
+                    continue
+
+                for pic_idx in pic_idx_list:
+                    for g in items_group[pic_idx]:
+                        items_group[idx].append(g)
+                    items_group[pic_idx] = None  # 나중에 None 제거
+                    b_modified = True
+
+            if b_modified:
+                items_group = [it for it in items_group if it is not None]
+
+            return items_group
 
         # ================================================================
         # 1단계: 섹션 헤더 기준으로 분할
@@ -629,20 +709,41 @@ class GenosBucketChunker(BaseChunker):
                 if token_count < self.max_tokens:
                     continue
 
+                # caption 및 table 내 그림은 같은 섹션에 있도록 조정
+                items_group=[[(item, info, short)] for item, info, short in zip(items, h_infos, h_short)]
+                items_group = adjust_captions(items_group)
+                items_group = adjust_pictures_in_tables(items_group)
+
                 # 너무 긴 섹션은 분할
                 # 각 아이템 별 token 수 계산
-                item_token_counts = [self._count_tokens(
-                    get_text_from_item(item)
-                ) for item in items]
-                item_groups = split_items_evenly_by_tokens(items, item_token_counts, self.max_tokens)
+                item_token_counts = []
+                for group in items_group:
+                    cur_count = 0
+                    for g in group:
+                        cur_count += self._count_tokens(get_text_from_item(g[0]))
+                    item_token_counts.append(cur_count)
+
+                # 아이템 그룹들을 토큰 기준으로 균등 분할
+                split_info = split_items_evenly_by_tokens(item_token_counts, self.max_tokens)
 
                 # item_groups를 섹션으로 다시 구성
                 new_sections = []
-                for (a, b) in item_groups:
+                for (a, b) in split_info:
+
+                    # 각 그룹에서 items, h_infos, h_short로 분리
+                    group_items = []
+                    group_h_infos = []
+                    group_h_short = []
+                    for idx in range(a, b):
+                        for g in items_group[idx]:
+                            group_items.append(g[0])
+                            group_h_infos.append(g[1])
+                            group_h_short.append(g[2])
+
                     new_text = self._generate_section_text_with_heading(
-                        items[a:b], h_short[a:b], dl_doc
+                        group_items, group_h_short, dl_doc
                     )
-                    new_sections.append((new_text, items[a:b], h_infos[a:b], h_short[a:b]))
+                    new_sections.append((new_text, group_items, group_h_infos, group_h_short))
 
                 # 원래 섹션을 새로 분할된 섹션들로 교체
                 sections_with_text.pop(i)
@@ -1446,7 +1547,7 @@ class DocumentProcessor:
         else:
             reference_path = artifacts_dir.parent
 
-        document = document._with_pictures_refs(image_dir=artifacts_dir, reference_path=reference_path)
+        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
 
         document = self.enrichment(document, **kwargs)
 
