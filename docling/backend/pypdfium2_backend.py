@@ -260,9 +260,9 @@ class PyPdfiumPageBackend(PdfPageBackend):
             rotation = self._ppage.get_rotation()
             for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
                 if hasattr(obj, "get_bounds"):
-                    pos = obj.get_bounds()   # pypdfium2 >= 5.x
+                    pos = obj.get_bounds()  # pypdfium2 >= 5.x
                 else:
-                    pos = obj.get_pos()      # pypdfium2 <= 4.x
+                    pos = obj.get_pos()  # pypdfium2 <= 4.x
                 if rotation == 90:
                     pos = (
                         pos[1],
