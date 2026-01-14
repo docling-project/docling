@@ -104,6 +104,7 @@ _log = logging.getLogger(__name__)
 # pypdfium2 5.x renamed PdfObject.get_pos() -> get_bounds()
 _PYPDFIUM2_MAJOR_VERSION = int(version("pypdfium2").split(".")[0])
 
+
 class PyPdfiumPageBackend(PdfPageBackend):
     def __init__(
         self, pdfium_doc: pdfium.PdfDocument, document_hash: str, page_no: int
