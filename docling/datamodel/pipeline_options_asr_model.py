@@ -29,6 +29,7 @@ class InlineAsrOptions(BaseAsrOptions):
 
     verbose: bool = False
     timestamps: bool = True
+    include_time_metadata: bool = True  # Include timing metadata in output
 
     temperature: float = 0.0
     max_new_tokens: int = 256
