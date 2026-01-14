@@ -1,9 +1,9 @@
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
 
@@ -11,16 +11,60 @@ _log = logging.getLogger(__name__)
 
 
 class LayoutModelConfig(BaseModel):
-    name: str
-    repo_id: str
-    revision: str
-    model_path: str
-    supported_devices: list[AcceleratorDevice] = [
-        AcceleratorDevice.CPU,
-        AcceleratorDevice.CUDA,
-        AcceleratorDevice.MPS,
-        AcceleratorDevice.XPU,
+    """Configuration for document layout analysis models from HuggingFace."""
+
+    name: Annotated[
+        str,
+        Field(
+            description=(
+                "Human-readable name identifier for the layout model. Used for logging, debugging, and model selection."
+            ),
+            examples=["docling_layout_heron", "docling_layout_egret_large"],
+        ),
     ]
+    repo_id: Annotated[
+        str,
+        Field(
+            description=(
+                "HuggingFace repository ID where the model is hosted. Used to download model weights and configuration "
+                "files from HuggingFace Hub."
+            ),
+            examples=[
+                "docling-project/docling-layout-heron",
+                "docling-project/docling-layout-egret-large",
+            ],
+        ),
+    ]
+    revision: Annotated[
+        str,
+        Field(
+            description=(
+                "Git revision (branch, tag, or commit hash) of the model repository to use. Allows pinning to specific "
+                "model versions for reproducibility."
+            ),
+            examples=["main", "v1.0.0"],
+        ),
+    ]
+    model_path: Annotated[
+        str,
+        Field(
+            description=(
+                "Relative path within the repository to model artifacts. Empty string indicates artifacts are in the "
+                "repository root. Used for repositories with multiple models or nested structures."
+            ),
+        ),
+    ]
+    supported_devices: list[AcceleratorDevice] = Field(
+        default=[
+            AcceleratorDevice.CPU,
+            AcceleratorDevice.CUDA,
+            AcceleratorDevice.MPS,
+            AcceleratorDevice.XPU,
+        ],
+        description=(
+            "List of hardware accelerators supported by this model. The model can only run on devices in this list."
+        ),
+    )
 
     @property
     def model_repo_folder(self) -> str:
