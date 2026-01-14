@@ -4,7 +4,7 @@ import re
 from enum import Enum
 from typing import Any, Union
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _log = logging.getLogger(__name__)
@@ -21,13 +21,38 @@ class AcceleratorDevice(str, Enum):
 
 
 class AcceleratorOptions(BaseSettings):
+    """Hardware acceleration configuration for model inference.
+
+    Can be configured via environment variables with DOCLING_ prefix.
+    """
+
     model_config = SettingsConfigDict(
         env_prefix="DOCLING_", env_nested_delimiter="_", populate_by_name=True
     )
-
-    num_threads: int = 4
-    device: Union[str, AcceleratorDevice] = "auto"
-    cuda_use_flash_attention2: bool = False
+    num_threads: int = Field(
+        default=4,
+        description=(
+            "Number of CPU threads to use for model inference. Higher values can improve throughput on multi-core "
+            "systems but may increase memory usage. Can be set via DOCLING_NUM_THREADS or OMP_NUM_THREADS environment "
+            "variables. Recommended: number of physical CPU cores."
+        ),
+    )
+    device: Union[str, AcceleratorDevice] = Field(
+        default="auto",
+        description=(
+            "Hardware device for model inference. Options: `auto` (automatic detection), `cpu` (CPU only), "
+            "`cuda` (NVIDIA GPU), `cuda:N` (specific GPU), `mps` (Apple Silicon), `xpu` (Intel GPU). "
+            "Auto mode selects the best available device. Can be set via DOCLING_DEVICE environment variable."
+        ),
+    )
+    cuda_use_flash_attention2: bool = Field(
+        default=False,
+        description=(
+            "Enable Flash Attention 2 optimization for CUDA devices. Provides significant speedup and memory "
+            "reduction for transformer models on compatible NVIDIA GPUs (Ampere or newer). Requires flash-attn "
+            "package installation. Can be set via DOCLING_CUDA_USE_FLASH_ATTENTION2 environment variable."
+        ),
+    )
 
     @field_validator("device")
     def validate_device(cls, value):
@@ -37,7 +62,7 @@ class AcceleratorOptions(BaseSettings):
         ):
             return value
         raise ValueError(
-            "Invalid device option. Use 'auto', 'cpu', 'mps', 'xpu', 'cuda', or 'cuda:N'."
+            "Invalid device option. Use `auto`, `cpu`, `mps`, `xpu`, `cuda`, or `cuda:N`."
         )
 
     @model_validator(mode="before")
