@@ -4,6 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, ClassVar, Dict, List, Literal, Optional, Union
 
+from docling_core.types.doc import PictureClassificationLabel
 from pydantic import (
     AnyUrl,
     BaseModel,
@@ -11,8 +12,6 @@ from pydantic import (
     Field,
 )
 from typing_extensions import deprecated
-
-from docling_core.types.doc import PictureClassificationLabel
 
 from docling.datamodel import asr_model_specs, vlm_model_specs
 

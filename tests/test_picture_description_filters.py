@@ -36,9 +36,7 @@ def test_deny_without_predictions_passes():
 
 
 def test_deny_blocks_matching_prediction():
-    meta = _meta_with_predictions(
-        [{"class_name": "bar_chart", "confidence": 0.9}]
-    )
+    meta = _meta_with_predictions([{"class_name": "bar_chart", "confidence": 0.9}])
     assert not _passes_classification(
         meta,
         None,
@@ -48,9 +46,7 @@ def test_deny_blocks_matching_prediction():
 
 
 def test_allow_accepts_matching_prediction():
-    meta = _meta_with_predictions(
-        [{"class_name": "bar_chart", "confidence": 0.9}]
-    )
+    meta = _meta_with_predictions([{"class_name": "bar_chart", "confidence": 0.9}])
     assert _passes_classification(
         meta,
         [PictureClassificationLabel.BAR_CHART],
@@ -60,9 +56,7 @@ def test_allow_accepts_matching_prediction():
 
 
 def test_allow_respects_min_confidence():
-    meta = _meta_with_predictions(
-        [{"class_name": "bar_chart", "confidence": 0.1}]
-    )
+    meta = _meta_with_predictions([{"class_name": "bar_chart", "confidence": 0.1}])
     assert not _passes_classification(
         meta,
         [PictureClassificationLabel.BAR_CHART],
