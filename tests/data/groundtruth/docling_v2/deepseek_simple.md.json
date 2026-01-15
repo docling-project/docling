@@ -1,0 +1,202 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.8.0",
+  "name": "deepseek_simple",
+  "origin": {
+    "mimetype": "text/markdown",
+    "binary_hash": 0,
+    "filename": "deepseek_simple.md"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/texts/0"
+      },
+      {
+        "$ref": "#/texts/1"
+      },
+      {
+        "$ref": "#/texts/2"
+      },
+      {
+        "$ref": "#/texts/3"
+      },
+      {
+        "$ref": "#/texts/4"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 132.8,
+            "t": 165.53,
+            "r": 318.24,
+            "b": 178.2,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "orig": "5.1 Hyper Parameter Optimization",
+      "text": "5.1 Hyper Parameter Optimization",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 132.8,
+            "t": 182.16,
+            "r": 480.42,
+            "b": 254.23,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "orig": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a \\(2x\\) speed up in the inference runtime over HTML.",
+      "text": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a \\(2x\\) speed up in the inference runtime over HTML."
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 132.8,
+            "t": 503.71,
+            "r": 264.38,
+            "b": 516.38,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "orig": "5.2 Quantitative Results",
+      "text": "5.2 Quantitative Results",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 132.8,
+            "t": 519.55,
+            "r": 480.42,
+            "b": 615.38,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "orig": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables- 1M (about 1M samples). Performance results are presented in Table. 2 It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables.",
+      "text": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables- 1M (about 1M samples). Performance results are presented in Table. 2 It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on difficult financial tables (FinTabNet) that contain sparse and large tables."
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 132.8,
+            "t": 616.18,
+            "r": 480.42,
+            "b": 663.7,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            0
+          ]
+        }
+      ],
+      "orig": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables- 1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation.",
+      "text": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables- 1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation."
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 612.0,
+        "height": 792.0
+      },
+      "image": {
+        "mimetype": "image/png",
+        "dpi": 72,
+        "size": {
+          "width": 612.0,
+          "height": 792.0
+        },
+        "uri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAmQAAAMYCAIAAADq5GzlAAALVElEQVR4nO3VQQEAIBCAMLV/5zOBUmD7EoA9MwsAeDufBgCYJQA0swSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsACGYJAMEsASCYJQAEswSAYJYAEMwSAIJZAkAwSwAIZgkAwSwBIJglAASzBIBglgAQzBIAglkCQDBLAAhmCQDBLAEgmCUABLMEgGCWABDMEgCCWQJAMEsAWH8Xm+MJLUfh9HsAAAAASUVORK5CYII="
+      },
+      "page_no": 1
+    }
+  }
+}
