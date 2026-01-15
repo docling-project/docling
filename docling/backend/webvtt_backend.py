@@ -216,6 +216,8 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                 parent=parent,
             )
 
+        if vtt.title:
+            doc.add_title(vtt.title, content_layer=ContentLayer.BODY)
         for block in vtt.cue_blocks:
             cue_text = []
             parents = []
