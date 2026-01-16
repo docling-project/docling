@@ -181,7 +181,17 @@ class DocumentPictureClassifier(
         for i, el in enumerate(element_batch):
             assert isinstance(el.item, PictureItem)
             elements.append(el.item)
-            images.append(el.image)
+
+            raw_image = el.image
+            if isinstance(raw_image, Image.Image):
+                raw_image = raw_image.convert("RGB")
+            elif isinstance(raw_image, np.ndarray):
+                raw_image = Image.fromarray(raw_image).convert("RGB")
+            else:
+                raise TypeError(
+                    "Supported input formats are PIL.Image.Image or numpy.ndarray."
+                )
+            images.append(raw_image)
 
         inputs = self._processor(images=images, return_tensors="pt")
         # move inputs to the same device as the model
