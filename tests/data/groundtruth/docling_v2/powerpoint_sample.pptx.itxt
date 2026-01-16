@@ -6,30 +6,31 @@ item-0 at level 0: unspecified: group _root_
   item-5 at level 1: chapter: group slide-1
     item-6 at level 2: title: Second slide title
     item-7 at level 2: paragraph: Let’s introduce a list
-    item-8 at level 2: paragraph: With foo
-    item-9 at level 2: paragraph: Bar
-    item-10 at level 2: paragraph: And baz things
-    item-11 at level 2: paragraph: A rectangle shape with this text inside.
-  item-12 at level 1: chapter: group slide-2
-    item-13 at level 2: list: group list
-      item-14 at level 3: list_item: List item4
-      item-15 at level 3: list_item: List item5
-      item-16 at level 3: list_item: List item6
-    item-17 at level 2: list: group list
-      item-18 at level 3: list_item: I1
-      item-19 at level 3: list_item: I2
-      item-20 at level 3: list_item: I3
-      item-21 at level 3: list_item: I4
-    item-22 at level 2: paragraph: Some info:
-    item-23 at level 2: list: group list
-      item-24 at level 3: list_item: Item A
-      item-25 at level 3: list_item: Item B
-    item-26 at level 2: paragraph: Maybe a list?
-    item-27 at level 2: list: group list
-      item-28 at level 3: list_item: List1
-      item-29 at level 3: list_item: List2
-      item-30 at level 3: list_item: List3
-    item-31 at level 2: list: group list
-      item-32 at level 3: list_item: l1 
-      item-33 at level 3: list_item: l2
-      item-34 at level 3: list_item: l3
+    item-8 at level 2: list: group list
+      item-9 at level 3: list_item: With foo
+      item-10 at level 3: list_item: Bar
+      item-11 at level 3: list_item: And baz things
+    item-12 at level 2: paragraph: A rectangle shape with this text inside.
+  item-13 at level 1: chapter: group slide-2
+    item-14 at level 2: list: group list
+      item-15 at level 3: list_item: List item4
+      item-16 at level 3: list_item: List item5
+      item-17 at level 3: list_item: List item6
+    item-18 at level 2: list: group list
+      item-19 at level 3: list_item: I1
+      item-20 at level 3: list_item: I2
+      item-21 at level 3: list_item: I3
+      item-22 at level 3: list_item: I4
+    item-23 at level 2: paragraph: Some info:
+    item-24 at level 2: list: group list
+      item-25 at level 3: list_item: Item A
+      item-26 at level 3: list_item: Item B
+    item-27 at level 2: paragraph: Maybe a list?
+    item-28 at level 2: list: group list
+      item-29 at level 3: list_item: List1
+      item-30 at level 3: list_item: List2
+      item-31 at level 3: list_item: List3
+    item-32 at level 2: list: group list
+      item-33 at level 3: list_item: l1 
+      item-34 at level 3: list_item: l2
+      item-35 at level 3: list_item: l3

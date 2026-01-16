@@ -17,11 +17,9 @@ With footnote
 
 Let’s introduce a list
 
-With foo
-
-Bar
-
-And baz things
+- With foo
+- Bar
+- And baz things
 
 A rectangle shape with this text inside.
 
