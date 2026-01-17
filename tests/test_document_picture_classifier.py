@@ -122,9 +122,9 @@ def test_picture_classifier():
         assert confidences == sorted(confidences, reverse=True), (
             "Predictions are not sorted in descending order of confidence"
         )
-        assert classification_data.predicted_classes[0].class_name == "map", (
-            "The prediction is wrong for the map image."
-        )
+        assert (
+            classification_data.predicted_classes[0].class_name == "geographical_map"
+        ), "The prediction is wrong for the map image."
 
         # Test new format (.meta.classification)
         assert res.meta is not None, "Picture meta should not be None"
@@ -140,7 +140,7 @@ def test_picture_classifier():
         assert meta_confidences == sorted(meta_confidences, reverse=True), (
             "Meta predictions are not sorted in descending order of confidence"
         )
-        assert meta_classification.predictions[0].class_name == "map", (
+        assert meta_classification.predictions[0].class_name == "geographical_map", (
             "The meta prediction is wrong for the map image."
         )
         assert (
