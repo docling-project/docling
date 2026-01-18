@@ -582,9 +582,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(c, Hyperlink):
                 text = c.text
                 hyperlink = Path(c.address)
+                # Safe access to runs
                 format = (
-                    self._get_format_from_run(c.runs[0])
-                    if c.runs and len(c.runs) > 0
+                    self._get_format_from_run(c.runs[0]) 
+                    if c.runs and len(c.runs) > 0 
                     else None
                 )
             elif isinstance(c, Run):
