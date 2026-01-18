@@ -453,163 +453,109 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         max_row: int,
         max_col: int,
     ) -> tuple[ExcelTable, set[tuple[int, int]]]:
-        """Determine the bounds of a compact rectangular table.
-
-        Args:
-            sheet: The Excel worksheet to be parsed.
-            start_row: The row number of the starting cell.
-            start_col: The column number of the starting cell.
-            max_row: Maximum row boundary from true data bounds.
-            max_col: Maximum column boundary from true data bounds.
-
-        Returns:
-            A tuple with an Excel table and a set of cell coordinates.
         """
-        _log.debug("find_table_bounds")
+        Determine table bounds and extract data as a 'Visual Grid'.
+        
+        Strategy:
+        1. Expand bounds (Region Growing).
+        2. Force every cell to be 1x1 (ignores row_span/col_span).
+        3. Fill merge bodies with empty strings. 
+        This prevents the Markdown exporter from duplicating text.
 
-        table_max_row = self._find_table_bottom(sheet, start_row, start_col, max_row)
-        table_max_col = self._find_table_right(sheet, start_row, start_col, max_col)
+        Args: 
+            doc: The DoclingDocument to be updated.
+            sheet: The Excel worksheet to be parsed.
+        
+        Returns:
+            The updated DoclingDocument. 
+        """
+        # STEP 1: Reduce Gap Tolerance to prevent merging distinct tables
+        # If your tables are separated by 1 empty row, use 0 to keep them separate.
+        GAP_TOLERANCE = 3
 
-        # Collect the data within the bounds
+        # --- Phase 1: Expansion (Same as before) ---
+        current_max_row = start_row
+        current_max_col = start_col
+        
+        changed = True
+        while changed:
+            changed = False
+            
+            # Expand RIGHT
+            for gap in range(1, GAP_TOLERANCE + 2):
+                check_col = current_max_col + gap
+                if check_col > max_col: break
+                
+                has_data = False
+                for r in range(start_row, current_max_row + 1):
+                    cell = sheet.cell(row=r + 1, column=check_col + 1)
+                    is_merged = any(cell.coordinate in mr for mr in sheet.merged_cells.ranges)
+                    if cell.value is not None or is_merged:
+                        has_data = True
+                        break
+                if has_data:
+                    current_max_col = check_col
+                    changed = True
+                    break 
+
+            # Expand DOWN
+            for gap in range(1, GAP_TOLERANCE + 2):
+                check_row = current_max_row + gap
+                if check_row > max_row: break
+                
+                has_data = False
+                for c in range(start_col, current_max_col + 1):
+                    cell = sheet.cell(row=check_row + 1, column=c + 1)
+                    is_merged = any(cell.coordinate in mr for mr in sheet.merged_cells.ranges)
+                    if cell.value is not None or is_merged:
+                        has_data = True
+                        break
+                if has_data:
+                    current_max_row = check_row
+                    changed = True
+                    break
+
         data = []
         visited_cells: set[tuple[int, int]] = set()
-        for ri, row in enumerate(
-            sheet.iter_rows(
-                min_row=start_row + 1,  # start_row is 0-based but iter_rows is 1-based
-                max_row=table_max_row + 1,
-                min_col=start_col + 1,
-                max_col=table_max_col + 1,
-                values_only=False,
-            ),
-            start_row,
-        ):
-            for rj, cell in enumerate(row, start_col):
-                # Check if the cell belongs to a merged range
-                row_span = 1
-                col_span = 1
-
+        
+        for ri in range(start_row, current_max_row + 1):
+            for rj in range(start_col, current_max_col + 1):
+                
+                cell = sheet.cell(row=ri + 1, column=rj + 1)
+                
+                # Default: The text is simply the value
+                cell_text = str(cell.value) if cell.value is not None else ""
+                
+                # SPECIAL HANDLING FOR MERGES
+                # Instead of creating spans, we manually handle the content
                 for merged_range in sheet.merged_cells.ranges:
-                    if (
-                        merged_range.min_row <= ri + 1
-                        and ri + 1 <= merged_range.max_row
-                        and merged_range.min_col <= rj + 1
-                        and rj + 1 <= merged_range.max_col
-                    ):
-                        row_span = merged_range.max_row - merged_range.min_row + 1
-                        col_span = merged_range.max_col - merged_range.min_col + 1
+                    if cell.coordinate in merged_range:
+                        # If it is the body (hidden part), force it to be empty
+                        # This prevents "None" or junk from appearing
+                        if not (ri + 1 == merged_range.min_row and rj + 1 == merged_range.min_col):
+                            cell_text = "" 
                         break
 
-                if (ri, rj) not in visited_cells:
-                    data.append(
-                        ExcelCell(
-                            row=ri - start_row,
-                            col=rj - start_col,
-                            text=str(cell.value),
-                            row_span=row_span,
-                            col_span=col_span,
-                        )
-                    )
+                # ALWAYS add the cell as 1x1. Never use row_span > 1.
+                data.append(ExcelCell(
+                    row=ri - start_row,
+                    col=rj - start_col,
+                    text=cell_text,
+                    row_span=1,  # Force 1x1
+                    col_span=1   # Force 1x1
+                ))
 
-                    # Mark all cells in the span as visited
-                    for span_row in range(ri, ri + row_span):
-                        for span_col in range(rj, rj + col_span):
-                            visited_cells.add((span_row, span_col))
+                visited_cells.add((ri, rj))
 
         return (
             ExcelTable(
                 anchor=(start_col, start_row),
-                num_rows=table_max_row + 1 - start_row,
-                num_cols=table_max_col + 1 - start_col,
+                num_rows=current_max_row + 1 - start_row,
+                num_cols=current_max_col + 1 - start_col,
                 data=data,
             ),
             visited_cells,
         )
-
-    def _find_table_bottom(
-        self, sheet: Worksheet, start_row: int, start_col: int, max_row: int
-    ) -> int:
-        """Find the bottom boundary of a table.
-
-        Args:
-            sheet: The Excel worksheet to be parsed.
-            start_row: The starting row of the table.
-            start_col: The starting column of the table.
-            max_row: Maximum row boundary from true data bounds.
-
-        Returns:
-            The row index representing the bottom boundary of the table.
-        """
-        table_max_row: int = start_row
-
-        for ri, (cell,) in enumerate(
-            sheet.iter_rows(
-                min_row=start_row + 2,
-                max_row=max_row,
-                min_col=start_col + 1,
-                max_col=start_col + 1,
-                values_only=False,
-            ),
-            start_row + 1,
-        ):
-            # Check if the cell is part of a merged range
-            merged_range = next(
-                (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
-                None,
-            )
-
-            if cell.value is None and not merged_range:
-                break  # Stop if the cell is empty and not merged
-
-            # Expand table_max_row to include the merged range if applicable
-            if merged_range:
-                table_max_row = max(table_max_row, merged_range.max_row - 1)
-            else:
-                table_max_row = ri
-
-        return table_max_row
-
-    def _find_table_right(
-        self, sheet: Worksheet, start_row: int, start_col: int, max_col: int
-    ) -> int:
-        """Find the right boundary of a table.
-
-        Args:
-            sheet: The Excel worksheet to be parsed.
-            start_row: The starting row of the table.
-            start_col: The starting column of the table.
-            max_col: The actual max column of the table.
-
-        Returns:
-            The column index representing the right boundary of the table."
-        """
-        table_max_col: int = start_col
-
-        for rj, (cell,) in enumerate(
-            sheet.iter_cols(
-                min_row=start_row + 1,
-                max_row=start_row + 1,
-                min_col=start_col + 2,
-                max_col=max_col,
-                values_only=False,
-            ),
-            start_col + 1,
-        ):
-            # Check if the cell is part of a merged range
-            merged_range = next(
-                (mr for mr in sheet.merged_cells.ranges if cell.coordinate in mr),
-                None,
-            )
-
-            if cell.value is None and not merged_range:
-                break  # Stop if the cell is empty and not merged
-
-            # Expand table_max_col to include the merged range if applicable
-            if merged_range:
-                table_max_col = max(table_max_col, merged_range.max_col - 1)
-            else:
-                table_max_col = rj
-
-        return table_max_col
 
     def _find_images_in_sheet(
         self, doc: DoclingDocument, sheet: Worksheet
