@@ -61,7 +61,9 @@ def documents() -> list[tuple[Path, DoclingDocument]]:
 def test_e2e_excel_conversions(documents) -> None:
     for gt_path, doc in documents:
         pred_md: str = doc.export_to_markdown()
-        assert verify_export(pred_md, str(gt_path) + ".md"), "export to md"
+        assert verify_export(pred_md, str(gt_path) + ".md"), (
+            f"export to md failed for file {gt_path.name}"
+        )
 
         pred_itxt: str = doc._export_to_indented_text(
             max_text_len=70, explicit_tables=False
@@ -312,3 +314,97 @@ def test_bytesio_stream():
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+
+
+def test_table_with_missing_header_tail():
+    """
+    Test that Excel tables with missing tail headers are parsed correctly.
+
+    xlsx_06_table_with_missing_headers_tail has a table that posses missing tail headers.
+    """
+    # Get a test Excel file
+    path = next(
+        item
+        for item in get_excel_paths()
+        if item.stem == "xlsx_06_table_with_missing_headers_tail"
+    )
+
+    converter = get_converter()
+
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    tables = list(doc.tables)
+
+    assert len(tables) == 1, f"Should have 1 table, got {len(tables)}"
+
+    # Verify the table dimensions
+    table = tables[0]
+    assert table.data.num_rows == 4, (
+        f"Table should have 4 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 6, (
+        f"Table should have 6 cols, got {table.data.num_cols}"
+    )
+
+
+def test_degenerate_tables():
+    """
+    Test additional table formats that are parsed correctly. In particular tables that have non-rectangular format.
+    """
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_07_degenerate_tables"
+    )
+
+    converter = get_converter()
+    conv_result: ConversionResult = converter.convert(path)
+    doc: DoclingDocument = conv_result.document
+
+    tables = list(doc.tables)
+
+    assert len(tables) == 7, f"Should have 1 table, got {len(tables)}"
+
+    # Verify the first table dimensions
+    table = tables[0]
+    assert table.data.num_rows == 4, (
+        f"Table should have 4 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 6, (
+        f"Table should have 6 cols, got {table.data.num_cols}"
+    )
+
+    # Attached top and bottom dimensions
+    for idx in range(1, 3):
+        table = tables[idx]
+        assert table.data.num_rows == 5, (
+            f"Table should have 5 rows, got {table.data.num_rows}"
+        )
+        assert table.data.num_cols == 6, (
+            f"Table should have 6 cols, got {table.data.num_cols}"
+        )
+
+    # Attached left and right dimensions
+    for idx in range(3, 5):
+        table = tables[idx]
+        assert table.data.num_rows == 4, (
+            f"Table should have 4 rows, got {table.data.num_rows}"
+        )
+        assert table.data.num_cols == 7, (
+            f"Table should have 7 cols, got {table.data.num_cols}"
+        )
+
+    # Diagonal detached tables
+    table = tables[5]
+    assert table.data.num_rows == 4, (
+        f"Table should have 4 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 6, (
+        f"Table should have 6 cols, got {table.data.num_cols}"
+    )
+    table = tables[6]
+    assert table.data.num_rows == 3, (
+        f"Table should have 3 rows, got {table.data.num_rows}"
+    )
+    assert table.data.num_cols == 3, (
+        f"Table should have 3 cols, got {table.data.num_cols}"
+    )
