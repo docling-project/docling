@@ -12,7 +12,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Type, Union
 
-from pydantic import ConfigDict, model_validator, validate_call
+from pydantic import ConfigDict, Field, model_validator, validate_call
 from typing_extensions import Self
 
 from docling.backend.abstract_backend import (
@@ -24,6 +24,7 @@ from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBacke
 from docling.backend.html_backend import HTMLDocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.json.docling_json_backend import DoclingJSONBackend
+from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.md_backend import MarkdownDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.msexcel_backend import MsExcelDocumentBackend
@@ -36,6 +37,7 @@ from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
     HTMLBackendOptions,
+    LatexBackendOptions,
     MarkdownBackendOptions,
     PdfBackendOptions,
 )
@@ -52,7 +54,7 @@ from docling.datamodel.document import (
     InputDocument,
     _DocumentConversionInput,
 )
-from docling.datamodel.pipeline_options import PipelineOptions
+from docling.datamodel.pipeline_options import ConvertPipelineOptions, PipelineOptions
 from docling.datamodel.settings import (
     DEFAULT_PAGE_RANGE,
     DocumentLimits,
@@ -145,6 +147,14 @@ class AudioFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = NoOpBackend
 
 
+class LatexFormatOption(FormatOption):
+    """Format options for LaTeX documents."""
+
+    pipeline_cls: Type = SimplePipeline
+    backend: Type[AbstractDocumentBackend] = LatexDocumentBackend
+    backend_options: Optional[LatexBackendOptions] = None
+
+
 def _get_default_option(format: InputFormat) -> FormatOption:
     format_to_default_options = {
         InputFormat.CSV: CsvFormatOption(),
@@ -168,6 +178,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.VTT: FormatOption(
             pipeline_cls=SimplePipeline, backend=WebVTTDocumentBackend
         ),
+        InputFormat.LATEX: LatexFormatOption(),
     }
     if (options := format_to_default_options.get(format)) is not None:
         return options
