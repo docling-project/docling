@@ -90,6 +90,12 @@ class MsExcelBackendOptions(BaseBackendOptions):
     )
 
 
+class LatexBackendOptions(BaseBackendOptions):
+    """Options specific to the LaTeX backend."""
+
+    kind: Literal["latex"] = Field("latex", exclude=True, repr=False)
+
+
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
@@ -97,6 +103,7 @@ BackendOptions = Annotated[
         MarkdownBackendOptions,
         PdfBackendOptions,
         MsExcelBackendOptions,
+        LatexBackendOptions,
     ],
     Field(discriminator="kind"),
 ]
