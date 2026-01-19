@@ -2,7 +2,7 @@ name: Bug Report
 description: 오류 사항에 대해서 이슈로 등록합니다
 assignees:
   - yspaik
-  - JaeseungYang
+  - inoray
 projects: mindsandcompany/3
 type: bug
 body:
