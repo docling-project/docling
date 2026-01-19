@@ -62,33 +62,42 @@ class RapidOcrModel(BaseOcrModel):
             }
             backend_enum = _ALIASES.get(self.options.backend, EngineType.ONNXRUNTIME)
 
-            self.reader = RapidOCR(
-                params={
-                    # Global settings (these are still correct)
-                    "Global.text_score": self.options.text_score,
-                    # "Global.verbose": self.options.print_verbose,
-                    # Detection model settings
-                    "Det.model_path": self.options.det_model_path,
-                    "Det.use_cuda": use_cuda,
-                    "Det.use_dml": use_dml,
-                    "Det.intra_op_num_threads": intra_op_num_threads,
-                    # Classification model settings
-                    "Cls.model_path": self.options.cls_model_path,
-                    "Cls.use_cuda": use_cuda,
-                    "Cls.use_dml": use_dml,
-                    "Cls.intra_op_num_threads": intra_op_num_threads,
-                    # Recognition model settings
-                    "Rec.model_path": self.options.rec_model_path,
-                    "Rec.font_path": self.options.rec_font_path,
-                    "Rec.keys_path": self.options.rec_keys_path,
-                    "Rec.use_cuda": use_cuda,
-                    "Rec.use_dml": use_dml,
-                    "Rec.intra_op_num_threads": intra_op_num_threads,
-                    "Det.engine_type": backend_enum,
-                    "Cls.engine_type": backend_enum,
-                    "Rec.engine_type": backend_enum,
-                }
-            )
+            # Build params dict, only including model paths when explicitly provided
+            params = {
+                # Global settings
+                "Global.text_score": self.options.text_score,
+                # "Global.verbose": self.options.print_verbose,
+                # Detection model settings
+                "Det.use_cuda": use_cuda,
+                "Det.use_dml": use_dml,
+                "Det.intra_op_num_threads": intra_op_num_threads,
+                "Det.engine_type": backend_enum,
+                # Classification model settings
+                "Cls.use_cuda": use_cuda,
+                "Cls.use_dml": use_dml,
+                "Cls.intra_op_num_threads": intra_op_num_threads,
+                "Cls.engine_type": backend_enum,
+                # Recognition model settings
+                "Rec.use_cuda": use_cuda,
+                "Rec.use_dml": use_dml,
+                "Rec.intra_op_num_threads": intra_op_num_threads,
+                "Rec.engine_type": backend_enum,
+            }
+
+            # Only add model paths if they are explicitly provided
+            # This allows RapidOCR to use its default bundled models when paths are not set
+            if self.options.det_model_path is not None:
+                params["Det.model_path"] = self.options.det_model_path
+            if self.options.cls_model_path is not None:
+                params["Cls.model_path"] = self.options.cls_model_path
+            if self.options.rec_model_path is not None:
+                params["Rec.model_path"] = self.options.rec_model_path
+            if self.options.rec_font_path is not None:
+                params["Rec.font_path"] = self.options.rec_font_path
+            if self.options.rec_keys_path is not None:
+                params["Rec.keys_path"] = self.options.rec_keys_path
+
+            self.reader = RapidOCR(params=params)
 
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
