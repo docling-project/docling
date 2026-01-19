@@ -405,12 +405,12 @@ def test_latex_footnote():
     assert "footnote" in footnote_items[0].text
 
 
-def test_latex_url():
-    """Test URL macro parsing"""
+def test_latex_citet_macro():
+    """Test citet macro (textual citation)"""
     latex_content = b"""
     \\documentclass{article}
     \\begin{document}
-    Visit \\url{https://example.com} for more.
+    According to \\citet{author2020}, this is correct.
     \\end{document}
     """
     in_doc = InputDocument(
@@ -424,7 +424,53 @@ def test_latex_url():
 
     ref_items = [t for t in doc.texts if t.label == DocItemLabel.REFERENCE]
     assert len(ref_items) >= 1
-    assert "example.com" in ref_items[0].text
+    assert "author2020" in ref_items[0].text
+
+
+def test_latex_list_nested():
+    """Test nested lists (itemize within itemize, enumerate within itemize)"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\begin{itemize}
+    \\item Outer item one
+    \\item Outer item two
+      \\begin{itemize}
+      \\item Inner item A
+      \\item Inner item B
+      \\end{itemize}
+    \\item Outer item three
+      \\begin{enumerate}
+      \\item Numbered inner 1
+      \\item Numbered inner 2
+      \\end{enumerate}
+    \\end{itemize}
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    # Check that we have list groups
+    list_groups = [g for g in doc.groups if g.label == GroupLabel.LIST]
+    assert len(list_groups) >= 1  # At least the outer list
+
+    # Check that list items exist
+    # Note: Current implementation merges nested list items into their parent items
+    list_items = [t for t in doc.texts if t.label == DocItemLabel.LIST_ITEM]
+    assert len(list_items) >= 3  # 3 outer items (nested items are merged)
+
+    # Verify some item content - nested items should appear within outer items
+    item_texts = [item.text for item in list_items]
+    assert any("Outer item one" in t for t in item_texts)
+    # Nested items appear in the outer item text
+    assert any("Inner item A" in t or "Inner item B" in t for t in item_texts)
+    assert any("Numbered inner 1" in t or "Numbered inner 2" in t for t in item_texts)
 
 
 def test_latex_label():
@@ -444,18 +490,66 @@ def test_latex_label():
         filename="test.tex",
     )
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
-    doc = backend.convert()
+    backend.convert()
 
     # Labels are stored internally
     assert "sec:intro" in backend.labels
 
 
 def test_latex_includegraphics():
-    """Test includegraphics macro parsing"""
+    """Test includegraphics with actual image file"""
+    import tempfile
+    from pathlib import Path
+
+    from PIL import Image as PILImage
+
+    # Create a temporary directory and test image
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        tex_file = tmpdir_path / "test.tex"
+        img_file = tmpdir_path / "test_image.png"
+
+        # Create a simple test image with known DPI
+        test_img = PILImage.new("RGB", (100, 50), color="red")
+        test_img.save(img_file, dpi=(96, 96))
+
+        latex_content = b"""
+        \\documentclass{article}
+        \\begin{document}
+        \\includegraphics{test_image.png}
+        \\end{document}
+        """
+
+        # Write LaTeX content to file
+        tex_file.write_bytes(latex_content)
+
+        in_doc = InputDocument(
+            path_or_stream=tex_file,
+            format=InputFormat.LATEX,
+            backend=LatexDocumentBackend,
+            filename="test.tex",
+        )
+        backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=tex_file)
+        doc = backend.convert()
+
+        # Verify picture was created
+        assert len(doc.pictures) >= 1
+        picture = doc.pictures[0]
+
+        # Verify image was embedded (not None)
+        assert picture.image is not None
+
+        # Verify caption was created
+        assert len(picture.captions) >= 1
+        assert "test_image.png" in picture.captions[0].resolve(doc).text
+
+
+def test_latex_includegraphics_missing_image():
+    """Test includegraphics gracefully handles missing images"""
     latex_content = b"""
     \\documentclass{article}
     \\begin{document}
-    \\includegraphics{image.png}
+    \\includegraphics{nonexistent_image.png}
     \\end{document}
     """
     in_doc = InputDocument(
@@ -467,7 +561,16 @@ def test_latex_includegraphics():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
+    # Picture should still be created with caption
     assert len(doc.pictures) >= 1
+    picture = doc.pictures[0]
+
+    # Image should be None (couldn't load)
+    assert picture.image is None
+
+    # Caption should still exist
+    assert len(picture.captions) >= 1
+    assert "nonexistent_image.png" in picture.captions[0].resolve(doc).text
 
 
 def test_latex_citations():

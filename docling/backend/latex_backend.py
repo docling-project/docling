@@ -1,5 +1,6 @@
 import logging
 import re
+from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Union
@@ -7,11 +8,15 @@ from typing import List, Optional, Union
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
+    GroupLabel,
+    ImageRef,
     NodeItem,
     TableCell,
     TableData,
     TextItem,
 )
+from docling_core.types.doc.document import Formatting
+from PIL import Image
 from pylatexenc.latexwalker import (
     LatexCharsNode,
     LatexEnvironmentNode,
@@ -152,7 +157,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         flush_text_buffer()
 
-    def _process_macro(
+    def _process_macro(  # noqa: C901
         self,
         node: LatexMacroNode,
         doc: DoclingDocument,
@@ -186,7 +191,20 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         elif node.macroname in ["textbf", "textit", "emph", "texttt", "underline"]:
             text = self._extract_macro_arg(node)
             if text:
-                doc.add_text(parent=parent, label=DocItemLabel.TEXT, text=text)
+                formatting = Formatting()
+                if node.macroname == "textbf":
+                    formatting.bold = True
+                elif node.macroname in ["textit", "emph"]:
+                    formatting.italic = True
+                elif node.macroname == "underline":
+                    formatting.underline = True
+
+                doc.add_text(
+                    parent=parent,
+                    label=DocItemLabel.TEXT,
+                    text=text,
+                    formatting=formatting,
+                )
 
         elif node.macroname in ["cite", "citep", "citet", "ref", "eqref"]:
             ref_arg = self._extract_macro_arg(node)
@@ -221,11 +239,30 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         elif node.macroname == "includegraphics":
             img_path = self._extract_macro_arg(node)
             if img_path:
+                image = None
+                try:
+                    if isinstance(self.path_or_stream, Path):
+                        img_full_path = self.path_or_stream.parent / img_path
+                        if img_full_path.exists():
+                            pil_image = Image.open(img_full_path)
+                            dpi = pil_image.info.get("dpi", (72, 72))
+                            if isinstance(dpi, tuple):
+                                dpi = dpi[0]
+                            image = ImageRef.from_pil(image=pil_image, dpi=int(dpi))
+                            _log.debug(
+                                f"Loaded image {img_path}: {pil_image.size}, DPI={dpi}"
+                            )
+                except Exception as e:
+                    _log.debug(f"Could not load image {img_path}: {e}")
+
+                caption = doc.add_text(
+                    label=DocItemLabel.CAPTION, text=f"Image: {img_path}"
+                )
+
                 doc.add_picture(
                     parent=parent,
-                    caption=doc.add_text(
-                        label=DocItemLabel.CAPTION, text=f"Image: {img_path}"
-                    ),
+                    caption=caption,
+                    image=image,  # Will be None if image couldn't be loaded
                 )
 
         elif node.macroname == "\\":
@@ -319,6 +356,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     ):
         """Process itemize/enumerate environments"""
 
+        list_group = doc.add_group(parent=parent, name="list", label=GroupLabel.LIST)
+
         items = []
         current_item: list = []
 
@@ -340,7 +379,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             item_text = self._nodes_to_text(item_nodes)
             if item_text:
                 doc.add_text(
-                    parent=parent, label=DocItemLabel.LIST_ITEM, text=item_text
+                    parent=list_group, label=DocItemLabel.LIST_ITEM, text=item_text
                 )
 
     def _parse_table(self, node: LatexEnvironmentNode) -> Optional[TableData]:
@@ -431,11 +470,17 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     ):
         """Process bibliography environment"""
 
+        bib_group = doc.add_group(
+            parent=parent, name="bibliography", label=GroupLabel.LIST
+        )
+
         for n in node.nodelist:
             if isinstance(n, LatexMacroNode) and n.macroname == "bibitem":
                 bib_text = self._nodes_to_text([n])
                 if bib_text:
-                    doc.add_text(parent=parent, label=DocItemLabel.TEXT, text=bib_text)
+                    doc.add_text(
+                        parent=bib_group, label=DocItemLabel.LIST_ITEM, text=bib_text
+                    )
 
     def _nodes_to_text(self, nodes) -> str:
         """Convert a list of nodes to plain text"""
