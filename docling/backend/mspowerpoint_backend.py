@@ -19,9 +19,10 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer
 from lxml import etree
 from PIL import Image, UnidentifiedImageError
-from pptx import Presentation
+from pptx import Presentation, presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 from pptx.oxml.text import CT_TextLineBreak
+from typing_extensions import override
 
 from docling.backend.abstract_backend import (
     DeclarativeDocumentBackend,
@@ -34,7 +35,9 @@ _log = logging.getLogger(__name__)
 
 
 class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBackend):
-    def __init__(self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]):
+    def __init__(
+        self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
+    ) -> None:
         super().__init__(in_doc, path_or_stream)
         self.namespaces = {
             "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
@@ -42,10 +45,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
         }
         # Powerpoint file:
-        self.path_or_stream = path_or_stream
+        self.path_or_stream: Union[BytesIO, Path] = path_or_stream
 
-        self.pptx_obj = None
-        self.valid = False
+        self.pptx_obj: Optional[presentation.Presentation] = None
+        self.valid: bool = False
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.pptx_obj = Presentation(self.path_or_stream)
@@ -67,13 +70,16 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         else:
             return 0
 
+    @override
     def is_valid(self) -> bool:
         return self.valid
 
     @classmethod
+    @override
     def supports_pagination(cls) -> bool:
-        return True  # True? if so, how to handle pages...
+        return True
 
+    @override
     def unload(self):
         if isinstance(self.path_or_stream, BytesIO):
             self.path_or_stream.close()
@@ -81,27 +87,30 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         self.path_or_stream = None
 
     @classmethod
+    @override
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.PPTX}
 
+    @override
     def convert(self) -> DoclingDocument:
-        # Parses the PPTX into a structured document model.
-        # origin = DocumentOrigin(filename=self.path_or_stream.name, mimetype=next(iter(FormatToMimeType.get(InputFormat.PPTX))), binary_hash=self.document_hash)
+        """Parse the PPTX into a structured document model.
 
+        Returns:
+            The parsed document.
+        """
         origin = DocumentOrigin(
             filename=self.file.name or "file",
             mimetype="application/vnd.ms-powerpoint",
             binary_hash=self.document_hash,
         )
 
-        doc = DoclingDocument(
-            name=self.file.stem or "file", origin=origin
-        )  # must add origin information
-        doc = self.walk_linear(self.pptx_obj, doc)
+        doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+        if self.pptx_obj:
+            doc = self._walk_linear(self.pptx_obj, doc)
 
         return doc
 
-    def generate_prov(
+    def _generate_prov(
         self, shape, slide_ind, text="", slide_size=Size(width=1, height=1)
     ):
         if shape.left:
@@ -132,10 +141,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             paragraph: Paragraph XML element whose level should be extracted.
 
         Returns:
-            int: Paragraph level in the range (0, 8). Returns 0 when:
-                * NO `a:pPr` element is found,
-                * NO `lvl` attribute exists, or
-                * The `lvl` attribute value is invalid.
+            Paragraph level in the range (0, 8). Returns 0 when no `a:pPr` element is
+                found, no `lvl` attribute exists, or the `lvl` attribute value is
+                invalid.
         """
         pPr = paragraph.find("a:pPr", namespaces=self.namespaces)
         if pPr is not None and "lvl" in pPr.attrib:
@@ -148,26 +156,21 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     def _parse_bullet_from_paragraph_properties(
         self, pPr
     ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
-        """
-        Parse bullet or numbering information from a paragraph properties node.
+        """Parse bullet or numbering information from a paragraph properties node.
 
         This inspects the `a:pPr` or `a:lvlXpPr` element and extracts
         information about the bullet character, automatic numbering, picture
         bullets, or explicit `buNone` markers.
 
         Args:
-            pPr: Paragraph properties XML element (`a:pPr`` or `a:lvlXpPr`).
+            pPr: Paragraph properties XML element (`a:pPr` or `a:lvlXpPr`).
 
         Returns:
-            tuple[Optional[bool], Optional[str], Optional[str]]: A 3-tuple
-            (is_list, kind, detail) where:
-
-                * is_list is True/False/None indicating whether
-                  this is a list item.
-                * kind is one of "buChar", "buAutoNum", "buBlip",
-                  "buNone" or None describing the marker type.
-                * detail is the bullet character, numbering type string, or
-                  None if not applicable.
+            A 3-tuple (`is_list`, `kind`, `detail`) where: `is_list` is True/False/None
+                indicating whether this is a list item; `kind` is one of `buChar`,
+                `buAutoNum`, `buBlip`, `buNone` or None, describing the marker type;
+                `detail` is the bullet character, numbering type string, or None if not
+                applicable.
         """
         if pPr is None:
             return (None, None, None)
@@ -194,18 +197,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         return (None, None, None)
 
     def _find_level_properties_in_list_style(self, lstStyle, lvl: int):
-        """Return the level-specific paragraph properties node from a list style.
+        """Find the level-specific paragraph properties node from a list style.
 
-        This looks for an `a:lvl{lvl+1}pPr` node inside an `a:lstStyle`
-        element, where `a:lvl1pPr` corresponds to level 0,
-        `a:lvl2pPr` to level 1, and so on.
+        This looks for an `a:lvl{lvl+1}pPr` node inside an `a:lstStyle` element, where
+        `a:lvl1pPr` corresponds to level 0, `a:lvl2pPr` to level 1, and so on.
 
         Args:
             lstStyle: List style XML element `a:lstStyle`.
             lvl: Paragraph level in the range (0, 8).
 
         Returns:
-            Matching `a:lvl{lvl+1}pPr` XML element, or None if no matching element is found.
+            Matching `a:lvl{lvl+1}pPr` XML element, or None if no matching element is
+                found.
         """
         if lstStyle is None:
             return None
@@ -217,24 +220,19 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
         """Parse bullet or numbering information from a text body's list style.
 
-        This searches for `a:lstStyle/a:lvl{lvl+1}pPr` under a `txBody`
-        and uses the level-specific paragraph properties to deduce bullet or
-        numbering information.
+        This searches for `a:lstStyle/a:lvl{lvl+1}pPr` under a `txBody` and uses the
+        level-specific paragraph properties to deduce bullet or numbering information.
 
         Args:
             txBody: Text body XML element `p:txBody`.
             lvl: Paragraph level in the range (0, 8).
 
         Returns:
-            tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
-            A 3-tuple (is_list, kind, detail) where:
-
-                * is_list is True/False/None indicating whether
-                  this is a list item.
-                * kind is one of "buChar", "buAutoNum", "buBlip",
-                  "buNone" or None describing the marker type.
-                * detail is the bullet character or numbering type string, or
-                  None if not applicable.
+            A 3-tuple (`is_list`, `kind`, `detail`) where: `is_list` is True/False/None
+                indicating whether this is a list item; `kind` is one of `buChar`,
+                `buAutoNum`, `buBlip`, `buNone` or None, describing the marker type;
+                `detail` is the bullet character, numbering type string, or None if not
+                applicable.
         """
         if txBody is None:
             return (None, None, None)
@@ -246,20 +244,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     def _get_master_text_style_node(
         self, slide_master, placeholder_type
     ) -> Optional[etree._Element]:
-        """Return the appropriate master text style node for a placeholder.
+        """Get the appropriate master text style node for a placeholder.
 
-        Most content placeholders (BODY/OBJECT) use `p:bodyStyle`,
-        while titles use `p:titleStyle`. All other placeholders default to
-        `p:otherStyle`.
+        Most content placeholders (BODY/OBJECT) use `p:bodyStyle`, while titles use
+        `p:titleStyle`. All other placeholders default to `p:otherStyle`.
 
         Args:
             slide_master: Slide master object associated with the current slide.
             placeholder_type: Placeholder type enum from `PP_PLACEHOLDER`.
 
         Returns:
-            Matching style node from master
-            `p:txStyles` (`p:bodyStyle`, `p:titleStyle` or
-            `p:otherStyle`), or None when no styles are defined.
+            Matching style node from master `p:txStyles` (`p:bodyStyle`, `p:titleStyle`
+                or `p:otherStyle`) or None when no styles are defined.
         """
         txStyles = slide_master._element.find(
             ".//p:txStyles", namespaces=self.namespaces
@@ -280,9 +276,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
     ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
         """Parse bullet or numbering information from the slide master text styles.
 
-        This looks up the appropriate style bucket in the slide master's
-        `p:txStyles` (`titleStyle`, `bodyStyle` or `otherStyle`) and
-        extracts bullet or numbering information for the given level.
+        This looks up the appropriate style bucket in the slide master's `p:txStyles`
+        (`titleStyle`, `bodyStyle` or `otherStyle`) and extracts bullet or numbering
+        information for the given level.
 
         Args:
             slide_master: Slide master object associated with the current slide.
@@ -290,15 +286,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             lvl: Paragraph level in the range (0, 8).
 
         Returns:
-            tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
-            A 3-tuple (is_list, kind, detail) where:
-
-                * is_list is True/False/None indicating whether
-                  this is a list item.
-                * kind is one of "buChar", "buAutoNum", "buBlip",
-                  "buNone" or None describing the marker type.
-                * detail is the bullet character or numbering type string, or
-                  None if not applicable.
+            A 3-tuple (`is_list`, `kind`, `detail`) where: `is_list` is True/False/None
+                indicating whether this is a list item; `kind` is one of `buChar`,
+                `buAutoNum`, `buBlip`, `buNone` or None, describing the marker type;
+                `detail` is the bullet character, numbering type string, or None if not
+                applicable.
         """
         style = self._get_master_text_style_node(slide_master, placeholder_type)
         if style is None:
@@ -308,23 +300,20 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
         return (is_list, kind, detail)
 
-    def is_list_item(self, paragraph) -> tuple[bool, str]:
+    def _is_list_item(self, paragraph) -> tuple[bool, str]:
         """Determine whether a paragraph should be treated as a list item.
 
-        The method first tries to resolve list style information via the shape
-        that owns the paragraph. If that is not possible, it falls back to
-        simpler checks based on paragraph properties and level.
+        The method first tries to resolve list style information via the shape that
+        owns the paragraph. If that is not possible, it falls back to simpler checks
+        based on paragraph properties and level.
 
         Args:
             paragraph: `python-pptx` paragraph object to inspect.
 
         Returns:
-            tuple[bool, str]: A 2-tuple (is_list, bullet_type) where:
-
-                * is_list is True if the paragraph is considered a list
-                  item, otherwise False.
-                * bullet_type is one of "Bullet", "Numbered" or
-                  "None" describing the list marker type.
+            A 2-tuple (`is_list`, `bullet_type`) where: `is_list` is True if the
+                paragraph is considered a list item, otherwise False; `bullet_type` is
+                one of `Bullet`, `Numbered` or `None`, describing the list marker type.
         """
         p = paragraph._element
 
@@ -340,7 +329,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             pass
 
         if shape is not None:
-            marker_info = self.effective_list_marker(shape, paragraph)
+            marker_info = self._get_effective_list_marker(shape, paragraph)
 
             # Check if it's definitely a list item
             if marker_info["is_list"] is True or marker_info["kind"] in (
@@ -378,29 +367,25 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         else:
             return (False, "None")
 
-    def effective_list_marker(self, shape, paragraph) -> dict:
+    def _get_effective_list_marker(self, shape, paragraph) -> dict:
         """Return a dictionary describing the effective list marker for a paragraph.
 
         List marker information can come from several sources: direct paragraph
-        properties, shape-level list styles, layout placeholders, or slide
-        master text styles. This helper resolves all of these layers and
-        returns a unified view of the effective marker.
+        properties, shape-level list styles, layout placeholders, or slide master text
+        styles. This helper resolves all of these layers and returns a unified view of
+        the effective marker.
 
         Args:
             shape: Shape object that contains the paragraph.
             paragraph: `python-pptx` paragraph object to inspect.
 
         Returns:
-            dict: Dictionary with information about the list marker, with keys:
-
-                * is_list: True/False/None indicating if this
-                  is a list item.
-                * kind: One of "buChar", "buAutoNum",
-                  "buBlip", "buNone" or None describing the marker
-                  type.
-                * detail: Bullet character or numbering type string, or
-                  None.
-                * level: Paragraph level in the range (0, 8).
+            Information about the list marker in a dictionary, where: `is_list` is
+                True/False/None indicating if this is a list item; `kind` is one of
+                `buChar`, `buAutoNum`, `buBlip`, `buNone` or None, describing the
+                marker type; `detail` is the bullet character or numbering type string,
+                or None if not applicable; `level` is the paragraph level in the range
+                (0, 8).
         """
         p = paragraph._element
         lvl = self._get_paragraph_level(p)
@@ -480,7 +465,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         "level": lvl,
                     }
 
-            # If layout has explicit is_list value but master didn't override it, use layout
+            # If layout has explicit is_list value but master didn't override it, use
+            # layout
             if layout_result is not None:
                 return layout_result
 
@@ -491,18 +477,18 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "level": lvl,
         }
 
-    def handle_text_elements(
+    def _handle_text_elements(
         self, shape, parent_slide, slide_ind, doc: DoclingDocument, slide_size
     ):
         is_list_group_created = False
         enum_list_item_value = 0
         new_list = None
         doc_label = DocItemLabel.LIST_ITEM
-        prov = self.generate_prov(shape, slide_ind, shape.text.strip(), slide_size)
+        prov = self._generate_prov(shape, slide_ind, shape.text.strip(), slide_size)
 
         # Iterate through paragraphs to build up text
         for paragraph in shape.text_frame.paragraphs:
-            is_a_list, bullet_type = self.is_list_item(paragraph)
+            is_a_list, bullet_type = self._is_list_item(paragraph)
             p = paragraph._element
 
             # Convert line breaks to spaces and accumulate text
@@ -564,10 +550,10 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
         return
 
-    def handle_title(self, shape, parent_slide, slide_ind, doc):
+    def _handle_title(self, shape, parent_slide, slide_ind, doc):
         placeholder_type = shape.placeholder_format.type
         txt = shape.text.strip()
-        prov = self.generate_prov(shape, slide_ind, txt)
+        prov = self._generate_prov(shape, slide_ind, txt)
 
         if len(txt.strip()) > 0:
             # title = slide.shapes.title.text if slide.shapes.title else "No title"
@@ -587,7 +573,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 )
         return
 
-    def handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
+    def _handle_pictures(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Open it with PIL
         try:
             # Get the image bytes
@@ -597,7 +583,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             pil_image = Image.open(BytesIO(image_bytes))
 
             # shape has picture
-            prov = self.generate_prov(shape, slide_ind, "", slide_size)
+            prov = self._generate_prov(shape, slide_ind, "", slide_size)
             doc.add_picture(
                 parent=parent_slide,
                 image=ImageRef.from_pil(image=pil_image, dpi=im_dpi),
@@ -608,13 +594,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
         return
 
-    def handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
+    def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
         # Handling tables, images, charts
         if shape.has_table:
             table = shape.table
             table_xml = shape._element
 
-            prov = self.generate_prov(shape, slide_ind, "", slide_size)
+            prov = self._generate_prov(shape, slide_ind, "", slide_size)
 
             num_cols = 0
             num_rows = len(table.rows)
@@ -672,7 +658,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 doc.add_table(parent=parent_slide, data=data, prov=prov)
         return
 
-    def walk_linear(self, pptx_obj, doc) -> DoclingDocument:
+    def _walk_linear(
+        self, pptx_obj: presentation.Presentation, doc: DoclingDocument
+    ) -> DoclingDocument:
         # Units of size in PPTX by default are EMU units (English Metric Units)
         slide_width = pptx_obj.slide_width
         slide_height = pptx_obj.slide_height
@@ -683,7 +671,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             parents[i] = None
 
         # Loop through each slide
-        for slide_num, slide in enumerate(pptx_obj.slides):
+        for _, slide in enumerate(pptx_obj.slides):
             slide_ind = pptx_obj.slides.index(slide)
             parent_slide = doc.add_group(
                 name=f"slide-{slide_ind}", label=GroupLabel.CHAPTER, parent=parents[0]
@@ -696,11 +684,11 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 handle_groups(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.has_table:
                     # Handle Tables
-                    self.handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
+                    self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     if hasattr(shape, "image"):
-                        self.handle_pictures(
+                        self._handle_pictures(
                             shape, parent_slide, slide_ind, doc, slide_size
                         )
                 # If shape doesn't have any text, move on to the next shape
@@ -713,8 +701,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if not shape.has_text_frame:
                     _log.warning("Warning: shape has text but not text_frame")
                     return
-                # Handle other text elements, including lists (bullet lists, numbered lists)
-                self.handle_text_elements(
+                # Handle other text elements, including lists (bullet lists, numbered
+                # lists)
+                self._handle_text_elements(
                     shape, parent_slide, slide_ind, doc, slide_size
                 )
                 return
