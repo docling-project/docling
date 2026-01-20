@@ -1,0 +1,48 @@
+\begin{table}[h]
+    \centering
+    \footnotesize
+    \setlength{\tabcolsep}{1.9pt}
+    \begin{tabular}{@{}c l | c  c | c c c c| c@{}}
+    \toprule
+    & \multirow{2}{*}{\centering \textbf{Benchmark {\tiny (Metric)}}} & {\textbf{DeepSeek}} & {\textbf{DeepSeek}} & \textbf{Qwen2.5} & \textbf{LLaMA-3.1}  & \textbf{Claude-3.5-}  & \textbf{GPT-4o}& \textbf{DeepSeek} \\
+    & & \textbf{V2-0506}& \textbf{V2.5-0905} & \textbf{72B-Inst.} & \textbf{405B-Inst.} & \textbf{Sonnet-1022}  & \textbf{0513} & \textbf{V3} \\
+    \midrule
+    & Architecture &  MoE & MoE & Dense & Dense &-&- & MoE \\
+    & \# Activated Params & 21B & 21B & 72B & 405B& -&-& 37B \\
+    & \# Total Params &  236B & 236B & 72B & 405B &-&-& 671B \\
+    \midrule
+    \multirow{8}{*}{English}&   MMLU {\tiny (EM)}  & 78.2 & 80.6 & 85.3& \textbf{88.6} & \textbf{88.3}&87.2 & \textbf{88.5} \\
+     & MMLU-Redux {\tiny (EM)} &77.9 & 80.3 &  85.6 &86.2& \textbf{88.9}& 88.0 & \textbf{89.1}\\
+    & MMLU-Pro {\tiny (EM)} & 58.5 &  66.2 & 71.6 &73.3 & \textbf{78.0} & 72.6 & 75.9\\
+    & DROP {\tiny (3-shot F1)} &83.0 & 87.8 & 76.7 & 88.7 & 88.3 & 83.7 & \textbf{91.6}\\
+    & IF-Eval {\tiny (Prompt Strict)} &57.7 & 80.6 & 84.1 & 86.0 & \textbf{86.5} & 84.3 & 86.1\\
+    & GPQA-Diamond {\tiny (Pass@1)} & 35.3 & 41.3& 49.0 & 51.1& \textbf{65.0} & 49.9 & 59.1\\
+    & SimpleQA {\tiny (Correct)} & 9.0 & 10.2 & 9.1 & 17.1& 28.4 & \textbf{38.2}& 24.9\\
+     & FRAMES {\tiny (Acc.)} & 66.9 & 65.4 & 69.8 & 70.0 & 72.5 & \textbf{80.5} & 73.3 \\
+     & LongBench v2 {\tiny (Acc.)} & 31.6 & 35.4 & 39.4 & 36.1 & 41.0 & 48.1 &\textbf{48.7} \\
+    \midrule
+    \multirow{5}{*}{Code} & HumanEval-Mul {\tiny (Pass@1)} & 69.3 &77.4 & 77.3 & 77.2 & {81.7} &80.5&\textbf{82.6}\\
+    & LiveCodeBench {\tiny (Pass@1-COT)} &18.8 & 29.2 & 31.1 & 28.4 & 36.3& 33.4& \textbf{40.5} \\
+    & LiveCodeBench {\tiny (Pass@1)} &20.3 & 28.4 & 28.7 & 30.1 & 32.8& 34.2& \textbf{37.6} \\
+    & Codeforces {\tiny (Percentile)} & 17.5 & 35.6 & 24.8 & 25.3 & 20.3 & 23.6 & \textbf{51.6} \\
+    & SWE Verified {\tiny (Resolved)} &-&22.6& 23.8 & 24.5 & \textbf{50.8}&38.8&42.0\\
+    & Aider-Edit {\tiny (Acc.)} & 60.3& 71.6 & 65.4 & 63.9 & \textbf{84.2} &72.9&79.7 \\
+    & Aider-Polyglot {\tiny (Acc.)}  & -& 18.2 & 7.6 & 5.8 & 45.3&16.0&\textbf{49.6} \\
+    \midrule
+    \multirow{3}{*}{Math} & AIME 2024 {\tiny (Pass@1)} & 4.6 & 16.7 & 23.3 & 23.3 & 16.0 & 9.3 & \textbf{39.2} \\
+    & MATH-500 {\tiny (EM)} &  56.3 & 74.7 & 80.0 & 73.8 & 78.3 & 74.6&\textbf{90.2} \\
+    & CNMO 2024 {\tiny (Pass@1)} & 2.8 & 10.8 & 15.9& 6.8& 13.1 & 10.8 &\textbf{43.2} \\
+    \midrule
+    \multirow{3}{*}{Chinese} & CLUEWSC {\tiny (EM)} & 89.9& 90.4 & \textbf{91.4} & 84.7 & 85.4 & 87.9 & 90.9\\
+    & C-Eval {\tiny (EM)} & 78.6& 79.5 & 86.1 & 61.5 & 76.7 & 76.0 & \textbf{86.5}\\
+     & C-SimpleQA {\tiny (Correct)}  & 48.5& 54.1 & 48.4 & 50.4 & 51.3 & 59.3 & \textbf{64.8}\\
+    \bottomrule
+    \end{tabular}
+    \caption{
+        Comparison between \dsviii{} and other representative chat models. 
+        All models are evaluated in a configuration that limits the output length to 8K.
+        Benchmarks containing fewer than 1000 samples are tested multiple times using varying temperature settings to derive robust final results.
+        \dsviii{} stands as the best-performing open-source model, and also exhibits competitive performance against frontier closed-source models. 
+    }
+    \label{tab:chat}
+\end{table}

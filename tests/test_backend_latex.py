@@ -6,7 +6,14 @@ from docling_core.types.doc import DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.document import InputDocument
+from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
+from docling.document_converter import DocumentConverter
+
+from .test_data_gen_flag import GEN_TEST_DATA
+from .verify_utils import verify_document, verify_export
+
+GENERATE = GEN_TEST_DATA
+LATEX_DATA_DIR = Path("./tests/data/latex/")
 
 
 def test_latex_basic_conversion():
@@ -1035,3 +1042,67 @@ def test_latex_citet_macro():
 
     ref_items = [t for t in doc.texts if t.label == DocItemLabel.REFERENCE]
     assert len(ref_items) >= 1
+
+
+# E2E Ground-Truth Tests
+
+
+@pytest.fixture(scope="module")
+def latex_paths() -> list[Path]:
+    """Find all LaTeX files in the test data directory."""
+    directory = Path("./tests/data/latex/")
+    if not directory.exists():
+        return []
+
+    paths = list(directory.glob("*.tex"))
+
+    for subdir in directory.iterdir():
+        if subdir.is_dir():
+            if (subdir / "main.tex").exists():
+                paths.append(subdir / "main.tex")
+            elif (subdir / f"arxiv_{subdir.name}.tex").exists():
+                paths.append(subdir / f"arxiv_{subdir.name}.tex")
+
+    return sorted(paths)
+
+
+def get_latex_converter():
+    """Create a DocumentConverter for LaTeX files."""
+    converter = DocumentConverter(allowed_formats=[InputFormat.LATEX])
+    return converter
+
+
+def test_e2e_latex_conversions(latex_paths):
+    """E2E test for LaTeX conversions with ground-truth comparison."""
+    if not latex_paths:
+        pytest.skip("No LaTeX test files found")
+
+    converter = get_latex_converter()
+
+    for latex_path in latex_paths:
+        if latex_path.parent.resolve() == LATEX_DATA_DIR.resolve():
+            gt_name = latex_path.name
+        else:
+            gt_name = f"{latex_path.parent.name}_{latex_path.name}"
+
+        gt_path = LATEX_DATA_DIR.parent / "groundtruth" / "docling_v2" / gt_name
+
+        conv_result: ConversionResult = converter.convert(latex_path)
+        doc: DoclingDocument = conv_result.document
+
+        pred_md: str = doc.export_to_markdown()
+        assert verify_export(pred_md, str(gt_path) + ".md", generate=GENERATE), (
+            f"Markdown export mismatch for {latex_path}"
+        )
+
+        pred_itxt: str = doc._export_to_indented_text(
+            max_text_len=70, explicit_tables=False
+        )
+        assert verify_export(pred_itxt, str(gt_path) + ".itxt", generate=GENERATE), (
+            f"Indented text export mismatch for {latex_path}"
+        )
+
+        assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
+            f"Document JSON mismatch for {latex_path}"
+        )
+

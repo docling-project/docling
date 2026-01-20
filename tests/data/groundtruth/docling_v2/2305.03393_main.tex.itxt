@@ -1,0 +1,227 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Optimized Table Tokenization for Table Structure Recognition
+  item-2 at level 1: text: M. Lysak, et al.
+  item-3 at level 1: text: IBM Research
+  item-4 at level 1: text: {mly,ahn,nli,cau,taa}@zurich.ibm.com
+  item-5 at level 1: section_header: Abstract
+  item-6 at level 1: paragraph: Extracting tables from documents ... ished in OTSL format to the community.
+  item-7 at level 1: section_header: Introduction
+  item-8 at level 1: paragraph: Tables are ubiquitous in documen ... s with machine-learning based methods.
+  item-9 at level 1: text: Comparison between HTML and OTSL ... ersus a fixed length of rows in OTSL).
+  item-10 at level 1: caption: Image: ./figs/html_v_otsl_intro_v2.pdf
+  item-11 at level 1: picture
+    item-11 at level 2: caption: Image: ./figs/html_v_otsl_intro_v2.pdf
+  item-12 at level 1: paragraph: In modern document understanding systems
+  item-13 at level 1: reference: [IEECloud22,KDD18]
+  item-14 at level 1: text: , table extraction is typically  ...  structure is recognized. As of today,
+  item-15 at level 1: text: table detection
+  item-16 at level 1: text: in documents is a well understoo ... accuracy comparable to human observers
+  item-17 at level 1: reference: [li2019tablebank,pagemodelrnn,DocLayNet,smock2022pubtables,PubLayNet]
+  item-18 at level 1: text: . On the other hand, the problem ... learning algorithms are being explored
+  item-19 at level 1: reference: [chi2019complicated,deng2019chal ... 19res2tim,xue2021tgrnet,GTE,PubTabNet]
+  item-20 at level 1: paragraph: .
+  item-21 at level 1: paragraph: Recently emerging SOTA methods f ... s in various configurations. In Figure
+  item-22 at level 1: reference: [OTSLvHTML_show]
+  item-23 at level 1: text: , we illustrate how HTML is used ... -structure data sets such as PubTabNet
+  item-24 at level 1: reference: [PubTabNet]
+  item-25 at level 1: text: , and FinTabNet
+  item-26 at level 1: reference: [GTE]
+  item-27 at level 1: paragraph: , which were created in a semi-a ... d-truth representation format for TSR.
+  item-28 at level 1: paragraph: While the majority of research i ... bNet and FinTabNet) is usually adopted
+  item-29 at level 1: text: as is
+  item-30 at level 1: text: for the sequence tokenization in ... of-the-art Im2Seq model is TableFormer
+  item-31 at level 1: reference: [TableFormer]
+  item-32 at level 1: paragraph: , we select this model to perform our experiments.
+  item-33 at level 1: paragraph: The main contribution of this pa ... TSL features are illustrated in Figure
+  item-34 at level 1: reference: [OTSLvHTML_show]
+  item-35 at level 1: paragraph: , in comparison to HTML.
+  item-36 at level 1: paragraph: The paper is structured as follows. In section
+  item-37 at level 1: reference: [RW]
+  item-38 at level 1: text: , we give an overview of the lat ... e-structure reconstruction. In section
+  item-39 at level 1: reference: [PS]
+  item-40 at level 1: text: we review the current HTML table ... equently, we introduce OTSL in section
+  item-41 at level 1: reference: [OTSL]
+  item-42 at level 1: text: , which includes the language de ... rror-correction procedures. In section
+  item-43 at level 1: reference: [Results]
+  item-44 at level 1: text: , we apply OTSL on the TableForm ... ges of using OTSL. Finally, in section
+  item-45 at level 1: reference: [Con]
+  item-46 at level 1: paragraph: we conclude our work and outline next potential steps.
+  item-47 at level 1: section_header: RWRelated Work
+  item-48 at level 1: paragraph: Approaches to formalize the logi ... uments date back more than two decades
+  item-49 at level 1: reference: [10.5555/923400]
+  item-50 at level 1: text: . In the recent past, a wide var ... ethods. Object-detection based methods
+  item-51 at level 1: reference: [prasad2020cascadetabnet,schreib ... pdesrt,8978137,smock2022pubtables,GTE]
+  item-52 at level 1: text: rely on table-structure annotati ... aph Neural Network (GNN) based methods
+  item-53 at level 1: reference: [chi2019complicated,lee2022table,xue2019res2tim,xue2021tgrnet]
+  item-54 at level 1: text: , as the name suggests, represen ... column, row, or table cell. Other work
+  item-55 at level 1: reference: [zhang2022split]
+  item-56 at level 1: text: aims at predicting a grid for ea ...  problem as a sequence generation task
+  item-57 at level 1: reference: [deng2019challenges,kayal2022tables,TableFormer,PubTabNet]
+  item-58 at level 1: paragraph: , and therefore need an internal ... ly valid (let alone correct) sequence.
+  item-59 at level 1: paragraph: Within the Im2Seq method, we fin ... y the encoder-dual-decoder model (EDD)
+  item-60 at level 1: reference: [PubTabNet]
+  item-61 at level 1: text: , TableFormer
+  item-62 at level 1: reference: [TableFormer]
+  item-63 at level 1: text: , Tabsplitter
+  item-64 at level 1: reference: [identity_matrix]
+  item-65 at level 1: text: and Ye et. al.
+  item-66 at level 1: reference: [TableMaster]
+  item-67 at level 1: text: . EDD uses two consecutive long  ... ct a table in HTML representation. The
+  item-68 at level 1: text: tag decoder
+  item-69 at level 1: text: predicts a sequence of HTML tags. For each decoded table cell (
+  item-70 at level 1: text: <td>
+  item-71 at level 1: text: ), the attention is passed to the
+  item-72 at level 1: text: cell decoder
+  item-73 at level 1: text: to predict the content with an e ... mventing any need for OCR. TabSplitter
+  item-74 at level 1: reference: [identity_matrix]
+  item-75 at level 1: text: proposes a compact double-matrix ... re sequences based on predictions from
+  item-76 at level 1: reference: [TableMaster]
+  item-77 at level 1: text: . This compact double-matrix rep ... L as an intermediate form. Chi et. al.
+  item-78 at level 1: reference: [deng2019challenges]
+  item-79 at level 1: text: introduce a data set and a basel ... nal LSTMs to predict LaTeX code. Kayal
+  item-80 at level 1: reference: [kayal2022tables]
+  item-81 at level 1: paragraph: introduces Gated ResNet transfor ... eparate OCR module to extract content.
+  item-82 at level 1: paragraph: Im2Seq approaches have shown to  ... r state-of-the-art prediction accuracy
+  item-83 at level 1: reference: [TableFormer]
+  item-84 at level 1: paragraph: . This motivated the authors to  ... l network architectures for this task.
+  item-85 at level 1: section_header: PSProblem Statement
+  item-86 at level 1: paragraph: All known Im2Seq based models fo ... ure. For example, with the HTML tokens
+  item-87 at level 1: text: <table>
+  item-88 at level 1: text: ,
+  item-89 at level 1: text: </table>
+  item-90 at level 1: text: ,
+  item-91 at level 1: text: <tr>
+  item-92 at level 1: text: ,
+  item-93 at level 1: text: </tr>
+  item-94 at level 1: text: ,
+  item-95 at level 1: text: <td>
+  item-96 at level 1: text: and
+  item-97 at level 1: text: </td>
+  item-98 at level 1: text: , one can construct simple table ... ables observed in real-world documents
+  item-99 at level 1: reference: [GTE,PubTabNet]
+  item-100 at level 1: paragraph: , due to a variety of spanning c ... initions in the HTML token vocabulary.
+  item-101 at level 1: text: Frequency of tokens in HTML and OTSL as they appear in PubTabNet.
+  item-102 at level 1: caption: Image: ./figs/html_freq_v4.png
+  item-103 at level 1: picture
+    item-103 at level 2: caption: Image: ./figs/html_freq_v4.png
+  item-104 at level 1: paragraph: Obviously, HTML and other genera ... s represented by at least two tokens (
+  item-105 at level 1: text: <td>
+  item-106 at level 1: text: and
+  item-107 at level 1: text: </td>
+  item-108 at level 1: text: ). Furthermore, when tokenizing  ...  represented, as is depicted in Figure
+  item-109 at level 1: reference: [HTML_TRL]
+  item-110 at level 1: paragraph: . This skewed distribution of to ... or models to learn the HTML structure.
+  item-111 at level 1: paragraph: Additionally, it would be desira ... ces is non-trivial or even impossible.
+  item-112 at level 1: paragraph: In a valid HTML table, the token ... rules, simply to deliver valid output.
+  item-113 at level 1: paragraph: In practice, we observe two majo ... ests itself in either in an increasing
+  item-114 at level 1: text: location drift
+  item-115 at level 1: text: for proposed table-cells in late ... al alignment, as illustrated in Figure
+  item-116 at level 1: reference: [OTSLvHTML_compare]
+  item-117 at level 1: text: . Addressing this with post-proc ... nvalid HTML output, as shown in Figure
+  item-118 at level 1: reference: [OTSLvHTML_ex3]
+  item-119 at level 1: paragraph: , which are nearly impossible to ... ion or matching of table cell content.
+  item-120 at level 1: section_header: OTSLOptimised Table Structure Language
+  item-121 at level 1: paragraph: To mitigate the issues with HTML ...  time in the TableFormer architecture.
+  item-122 at level 1: section_header: Language Definition
+  item-123 at level 1: text: In Figure
+  item-124 at level 1: reference: [OTSL_PROOF]
+  item-125 at level 1: paragraph: , we illustrate how the OTSL is  ...  structure based on an atomic 2D grid.
+  item-126 at level 1: text: OTSL description of table struct ... ding; E - explanation on cell encoding
+  item-127 at level 1: caption: Image: ./figs/otsl_proof_v3.pdf
+  item-128 at level 1: picture
+    item-128 at level 2: caption: Image: ./figs/otsl_proof_v3.pdf
+  item-129 at level 1: paragraph: The OTSL vocabulary is comprised of the following tokens:
+  item-130 at level 1: list: group list
+    item-131 at level 2: list_item: "C" cell - a new table cell that either has or does not have cell content
+    item-132 at level 2: list_item: "L" cell - left-looking cell, me ... he left neighbor cell to create a span
+    item-133 at level 2: list_item: "U" cell - up-looking cell, merg ... e upper neighbor cell to create a span
+    item-134 at level 2: list_item: "X" cell - cross cell, to merge with both left and upper neighbor cells
+    item-135 at level 2: list_item: "NL" - new-line, switch to the next row.
+  item-136 at level 1: paragraph: A notable attribute of OTSL is t ... achieving lossless conversion to HTML.
+  item-137 at level 1: section_header: Language Syntax
+  item-138 at level 1: paragraph: The OTSL representation follows these syntax rules:
+  item-139 at level 1: list: group list
+    item-140 at level 2: list_item: Left-looking cell rule: 
+The lef ... either another "L" cell or a "C" cell.
+    item-141 at level 2: list_item: Up-looking cell rule:
+The upper  ... either another "U" cell or a "C" cell.
+    item-142 at level 2: list_item: Cross cell rule:
+
+The left neigh ... ither another "X" cell or an "L" cell.
+    item-143 at level 2: list_item: First row rule:
+Only "L" cells and "C" cells are allowed in the first row.
+    item-144 at level 2: list_item: First column rule:
+Only "U" cell ... cells are allowed in the first column.
+    item-145 at level 2: list_item: Rectangular rule:
+The table repr ... of tokens, terminated with "NL" token.
+  item-146 at level 1: paragraph: The application of these rules g ... icted sequence is syntactically valid.
+  item-147 at level 1: paragraph: These characteristics can be eas ... n in the HTML based models (see Figure
+  item-148 at level 1: reference: [OTSLvHTML_compare]
+  item-149 at level 1: paragraph: ).
+  item-150 at level 1: section_header: Error-detection and -mitigation
+  item-151 at level 1: paragraph: The design of OTSL allows to val ... idence until OTSL rules are satisfied.
+  item-152 at level 1: section_header: ResultsExperiments
+  item-153 at level 1: paragraph: To evaluate the impact of OTSL o ... based on the TableFormer model (Figure
+  item-154 at level 1: reference: [ED_model_sketch]
+  item-155 at level 1: text: ) with two objectives: Firstly w ... er Parameter Optimization (HPO) on the
+  item-156 at level 1: text: canonical
+  item-157 at level 1: text: PubTabNet data set. Secondly we  ... ble data sets (FinTabNet, PubTables-1M
+  item-158 at level 1: reference: [smock2022pubtables]
+  item-159 at level 1: paragraph: ). The ground truth (GT) from al ... , and will be made publicly available.
+  item-160 at level 1: text: Architecture sketch of the Table ... epresentative for the Im2Seq approach.
+  item-161 at level 1: caption: Image: ./figs/tablemodel_overview_otsl.pdf
+  item-162 at level 1: picture
+    item-162 at level 2: caption: Image: ./figs/tablemodel_overview_otsl.pdf
+  item-163 at level 1: paragraph: We rely on standard metrics such ... core with AMD EPYC 7763 CPU @2.45 GHz.
+  item-164 at level 1: section_header: Hyper Parameter Optimization
+  item-165 at level 1: paragraph: We have chosen the PubTabNet dat ... pans). Results are presented in Table.
+  item-166 at level 1: reference: [tab:HPO]
+  item-167 at level 1: text: . It is evident that with OTSL,  ... parison to HTML. However OTSL yields a
+  item-168 at level 1: text: 2x speed up
+  item-169 at level 1: paragraph: in the inference runtime over HTML.
+  item-170 at level 1: text: HPO performed in OTSL and HTML r ... the same transformer-based TableFormer
+  item-171 at level 1: reference: [TableFormer]
+  item-172 at level 1: text: architecture, trained only on PubTabNet
+  item-173 at level 1: reference: [PubTabNet]
+  item-174 at level 1: text: . Effects of reducing the # of l ... r mAP score than the HTML counterpart.
+  item-175 at level 1: table with [2x1]
+  item-176 at level 1: section_header: Quantitative Results
+  item-177 at level 1: paragraph: We picked the model parameter co ... rmance results are presented in Table.
+  item-178 at level 1: reference: [tab:HTMLvOTSL_precision]
+  item-179 at level 1: paragraph: . It is clearly evident that the ...  that contain sparse and large tables.
+  item-180 at level 1: text: TSR and cell detection results c ... between OTSL and HTML on the PubTabNet
+  item-181 at level 1: reference: [PubTabNet]
+  item-182 at level 1: text: , FinTabNet
+  item-183 at level 1: reference: [GTE]
+  item-184 at level 1: text: and PubTables-1M
+  item-185 at level 1: reference: [smock2022pubtables]
+  item-186 at level 1: text: data sets using TableFormer
+  item-187 at level 1: reference: [TableFormer]
+  item-188 at level 1: text: (with enc=6, dec=6, heads=8).
+  item-189 at level 1: table with [9x7]
+  item-190 at level 1: paragraph: Additionally, the results show t ... f the reduced sequence representation.
+  item-191 at level 1: section_header: Qualitative Results
+  item-192 at level 1: paragraph: To illustrate the qualitative differences between OTSL and HTML, Figure
+  item-193 at level 1: reference: [OTSLvHTML_compare]
+  item-194 at level 1: text: demonstrates less overlap and mo ... te bounding boxes with OTSL. In Figure
+  item-195 at level 1: reference: [OTSLvHTML_ex3]
+  item-196 at level 1: paragraph: , OTSL proves to be more effecti ... ructure prediction and bounding boxes.
+  item-197 at level 1: text: The OTSL model produces more acc ... C). "PMC2807444_006_00.png" PubTabNet.
+  item-198 at level 1: caption: Image: ./figs/HTMLvOTSLv7.pdf
+  item-199 at level 1: picture
+    item-199 at level 2: caption: Image: ./figs/HTMLvOTSLv7.pdf
+  item-200 at level 1: text: Visualization of predicted struc ... es. "PMC5406406_003_01.png" PubTabNet.
+  item-201 at level 1: caption: Image: ./figs/otsl_vs_html_ex3_v2.pdf
+  item-202 at level 1: picture
+    item-202 at level 2: caption: Image: ./figs/otsl_vs_html_ex3_v2.pdf
+  item-203 at level 1: section_header: ConConclusion
+  item-204 at level 1: paragraph: We demonstrated that representin ... e languages, has several key benefits.
+  item-205 at level 1: paragraph: First and foremost, given the sa ... e to models trained on HTML (see Table
+  item-206 at level 1: reference: [tab:HPO]
+  item-207 at level 1: paragraph: ).
+  item-208 at level 1: paragraph: Secondly, OTSL has more inherent ... e table-cell bounding boxes (see Table
+  item-209 at level 1: reference: [tab:HTMLvOTSL_precision]
+  item-210 at level 1: text: ). As shown in Figure
+  item-211 at level 1: reference: [OTSLvHTML_compare]
+  item-212 at level 1: paragraph: , we observe that the OTSL drast ... on-the-fly during sequence generation.
+  item-213 at level 1: text: splncs04
