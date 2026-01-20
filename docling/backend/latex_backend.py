@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import List, Optional, Union
 
+import pypdfium2
 from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
@@ -44,6 +45,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream, options)
         self.latex_text = ""
         self.labels: dict[str, bool] = {}
+        self._custom_macros: dict[str, str] = {}
 
         if isinstance(self.path_or_stream, BytesIO):
             self.latex_text = self.path_or_stream.getvalue().decode("utf-8")
@@ -51,6 +53,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             with open(self.path_or_stream, encoding="utf-8") as f:
                 self.latex_text = f.read()
 
+        self._extract_custom_macros()
         self.latex_text = self._preprocess_latex(self.latex_text)
 
     def is_valid(self) -> bool:
@@ -64,15 +67,37 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.LATEX}
 
+    def _extract_custom_macros(self):
+        """Extract custom macro definitions from LaTeX source"""
+        def_pattern = r"\\def\\(\w+)\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}"
+        for match in re.finditer(def_pattern, self.latex_text):
+            name, value = match.groups()
+            clean_value = re.sub(r"\\xspace\s*$", "", value).replace("~", " ").strip()
+            if clean_value and not clean_value.startswith("\\"):
+                self._custom_macros[name] = clean_value
+
+        newcmd_pattern = r"\\newcommand\{\\(\w+)\}\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}"
+        for match in re.finditer(newcmd_pattern, self.latex_text):
+            name, value = match.groups()
+            clean_value = re.sub(r"\\xspace\s*$", "", value).replace("~", " ").strip()
+            if clean_value and not clean_value.startswith("\\"):
+                self._custom_macros[name] = clean_value
+
+        if self._custom_macros:
+            _log.debug(f"Extracted {len(self._custom_macros)} custom macros")
+
     def _preprocess_latex(self, text: str) -> str:
         """Clean up common LaTeX issues before parsing"""
-
         text = re.sub(r"(?<!\\)%.*$", "", text, flags=re.MULTILINE)
+
+        for name, value in self._custom_macros.items():
+            text = re.sub(rf"\\{name}(?![a-zA-Z])", value, text)
+
         return text
 
     def convert(self) -> DoclingDocument:
         doc = DoclingDocument(name=self.file.stem)
-        walker = LatexWalker(self.latex_text)
+        walker = LatexWalker(self.latex_text, tolerant_parsing=True)
 
         try:
             nodes, pos, len_ = walker.get_latex_nodes()
@@ -82,15 +107,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             return doc
 
         try:
-            doc_node = None
-            if nodes:
-                for node in nodes:
-                    if (
-                        isinstance(node, LatexEnvironmentNode)
-                        and node.envname == "document"
-                    ):
-                        doc_node = node
-                        break
+            doc_node = self._find_document_env(nodes)
 
             if doc_node:
                 self._process_nodes(doc_node.nodelist, doc)
@@ -101,6 +118,27 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             _log.error(f"Error processing LaTeX nodes: {e}")
 
         return doc
+
+    def _find_document_env(self, nodes, depth: int = 0):
+        """Recursively search for document environment"""
+        if nodes is None or depth > 5:
+            return None
+        for node in nodes:
+            if isinstance(node, LatexEnvironmentNode) and node.envname == "document":
+                return node
+            if hasattr(node, "nodelist") and node.nodelist:
+                result = self._find_document_env(node.nodelist, depth + 1)
+                if result:
+                    return result
+            if hasattr(node, "nodeargd") and node.nodeargd:
+                argnlist = getattr(node.nodeargd, "argnlist", None)
+                if argnlist:
+                    for arg in argnlist:
+                        if hasattr(arg, "nodelist") and arg.nodelist:
+                            result = self._find_document_env(arg.nodelist, depth + 1)
+                            if result:
+                                return result
+        return None
 
     def _process_nodes(
         self, nodes, doc: DoclingDocument, parent: Optional[NodeItem] = None
@@ -206,6 +244,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     formatting=formatting,
                 )
 
+        elif node.macroname in ["textsc", "textsf", "textrm", "textnormal", "mbox"]:
+            text = self._extract_macro_arg(node)
+            if text:
+                doc.add_text(parent=parent, label=DocItemLabel.TEXT, text=text)
+
         elif node.macroname in ["cite", "citep", "citet", "ref", "eqref"]:
             ref_arg = self._extract_macro_arg(node)
             if ref_arg:
@@ -244,14 +287,26 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     if isinstance(self.path_or_stream, Path):
                         img_full_path = self.path_or_stream.parent / img_path
                         if img_full_path.exists():
-                            pil_image = Image.open(img_full_path)
-                            dpi = pil_image.info.get("dpi", (72, 72))
-                            if isinstance(dpi, tuple):
-                                dpi = dpi[0]
+                            suffix = img_full_path.suffix.lower()
+                            if suffix == ".pdf":
+                                pdf = pypdfium2.PdfDocument(img_full_path)
+                                page = pdf[0]
+                                pil_image = page.render(scale=2).to_pil()
+                                page.close()
+                                pdf.close()
+                                dpi = 144
+                                _log.debug(
+                                    f"Rendered PDF image {img_path}: {pil_image.size}"
+                                )
+                            else:
+                                pil_image = Image.open(img_full_path)
+                                dpi = pil_image.info.get("dpi", (72, 72))
+                                if isinstance(dpi, tuple):
+                                    dpi = dpi[0]
+                                _log.debug(
+                                    f"Loaded image {img_path}: {pil_image.size}, DPI={dpi}"
+                                )
                             image = ImageRef.from_pil(image=pil_image, dpi=int(dpi))
-                            _log.debug(
-                                f"Loaded image {img_path}: {pil_image.size}, DPI={dpi}"
-                            )
                 except Exception as e:
                     _log.debug(f"Could not load image {img_path}: {e}")
 
@@ -277,8 +332,53 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "bibliographystyle",
             "newcommand",
             "renewcommand",
+            "def",
+            "let",
+            "edef",
+            "gdef",
+            "xdef",
+            "newenvironment",
+            "renewenvironment",
+            "DeclareMathOperator",
+            "DeclareMathSymbol",
+            "setlength",
+            "setcounter",
+            "addtolength",
+            "definecolor",
+            "colorlet",
+            "AtBeginDocument",
+            "AtEndDocument",
+            "newlength",
+            "newcounter",
+            "newif",
+            "providecommand",
+            "DeclareOption",
+            "RequirePackage",
+            "ProvidesPackage",
+            "LoadClass",
+            "makeatletter",
+            "makeatother",
+            "NeedsTeXFormat",
+            "ProvidesClass",
+            "DeclareRobustCommand",
         ]:
             pass
+
+        elif node.macroname in ["input", "include"]:
+            filepath = self._extract_macro_arg(node)
+            if filepath and isinstance(self.path_or_stream, Path):
+                input_path = self.path_or_stream.parent / filepath
+                if not input_path.suffix:
+                    input_path = input_path.with_suffix(".tex")
+                if input_path.exists():
+                    try:
+                        content = input_path.read_text(encoding="utf-8")
+                        sub_walker = LatexWalker(content, tolerant_parsing=True)
+                        sub_nodes, _, _ = sub_walker.get_latex_nodes()
+                        self._process_nodes(sub_nodes, doc, parent)
+                        _log.debug(f"Loaded input file: {input_path}")
+                    except Exception as e:
+                        _log.debug(f"Failed to load input file {filepath}: {e}")
 
         elif node.macroname == "item":
             pass

@@ -1,0 +1,1522 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: UTF8
+  item-2 at level 1: text: gbsn
+  item-3 at level 1: caption: Image: figures/dsv3_performance.pdf
+  item-4 at level 1: picture
+    item-4 at level 2: caption: Image: figures/dsv3_performance.pdf
+  item-5 at level 1: text: Benchmark performance of DeepSeek-V3 and its counterparts.
+  item-6 at level 1: text: 0.9
+  item-7 at level 1: section_header: Introduction
+  item-8 at level 1: paragraph: In recent years, Large Language Models
+  item-9 at level 1: text: (LLMs) have been undergoing rapid iteration and evolution
+  item-10 at level 1: reference: [gpt4o,claude35sonnet,gemini1_5]
+  item-11 at level 1: text: , progressively diminishing the  ... urce models, including DeepSeek series
+  item-12 at level 1: reference: [dsvi,dsvii,dscodervi,dscodervii]
+  item-13 at level 1: text: , LLaMA series
+  item-14 at level 1: reference: [llama,llama2,llama3,llama3_1_405b]
+  item-15 at level 1: text: , Qwen series
+  item-16 at level 1: reference: [qwen,qwen1_5,qwen2_5]
+  item-17 at level 1: text: , and Mistral series
+  item-18 at level 1: reference: [mistral,mixtral8x22b]
+  item-19 at level 1: text: , are also making significant st ... eepSeek-V3, a large Mixture-of-Experts
+  item-20 at level 1: paragraph: (MoE) model with 671B parameters ... hich 37B are activated for each token.
+  item-21 at level 1: paragraph: With a forward-looking perspecti ...  in terms of architecture, DeepSeek-V3
+  item-22 at level 1: text: still adopts Multi-head Latent Attention(MLA)
+  item-23 at level 1: reference: [dsvii]
+  item-24 at level 1: text: for efficient inference and DeepSeekMoE
+  item-25 at level 1: reference: [deepseekmoe]
+  item-26 at level 1: text: for cost-effective training. 
+Th ... res have been validated in DeepSeek-V2
+  item-27 at level 1: reference: [dsvii]
+  item-28 at level 1: text: , demonstrating their capability ... oneers an auxiliary-loss-free strategy
+  item-29 at level 1: reference: [noaux_tc]
+  item-30 at level 1: text: for load balancing, with the aim ...  load balancing.
+Secondly, DeepSeek-V3
+  item-31 at level 1: paragraph: employs a multi-token prediction ...  performance on evaluation benchmarks.
+  item-32 at level 1: paragraph: In order to achieve efficient tr ... mising solution for efficient training
+  item-33 at level 1: reference: [bf16train, fp16train, fp8lm, llm.int8]
+  item-34 at level 1: text: , its evolution being closely ti ...  advancements in hardware capabilities
+  item-35 at level 1: reference: [fp8format, hifp8format, microscaling]
+  item-36 at level 1: text: . 
+In this work, we introduce an ... aking it possible to train DeepSeek-V3
+  item-37 at level 1: paragraph: without using costly tensor para ... , we achieve high training efficiency.
+  item-38 at level 1: paragraph: During pre-training, we train DeepSeek-V3
+  item-39 at level 1: text: on 14.8T high-quality and divers ... g(RL) on the base model of DeepSeek-V3
+  item-40 at level 1: paragraph: , to align it with human prefere ...  model accuracy and generation length.
+  item-41 at level 1: paragraph: We evaluate DeepSeek-V3
+  item-42 at level 1: text: on a comprehensive array of benc ... ve evaluations reveal that DeepSeek-V3
+  item-43 at level 1: paragraph: -Base has emerged as the stronge ... of standard and open-ended benchmarks.
+  item-44 at level 1: table with [4x5]
+  item-45 at level 1: text: Training costs of DeepSeek-V3, a ... ntal price of H800 is $2 per GPU hour.
+  item-46 at level 1: paragraph: Lastly, we emphasize again the economical training costs of DeepSeek-V3
+  item-47 at level 1: text: , summarized in Table
+  item-48 at level 1: reference: [tab:cost]
+  item-49 at level 1: text: , achieved through our optimized ... y the official training of DeepSeek-V3
+  item-50 at level 1: paragraph: , excluding the costs associated ... on architectures, algorithms, or data.
+  item-51 at level 1: paragraph: Our main contribution includes:
+  item-52 at level 1: text: Architecture: Innovative Load Balancing Strategy and Training Objective
+  item-53 at level 1: list: group list
+    item-54 at level 2: list_item: On top of the efficient architec ... rises from encouraging load balancing.
+    item-55 at level 2: list_item: We investigate a Multi-Token Pre ... e decoding for inference acceleration.
+  item-56 at level 1: text: Pre-Training: Towards Ultimate Training Efficiency
+  item-57 at level 1: list: group list
+    item-58 at level 2: list_item: We design an FP8 mixed precision ... ing on an extremely large-scale model.
+    item-59 at level 2: list_item: Through the co-design of algorit ... odel size without additional overhead.
+    item-60 at level 2: list_item: At an economical cost of only 2. ... -training require only 0.1M GPU hours.
+  item-61 at level 1: text: Post-Training: Knowledge Distillation from DeepSeek-R1
+  item-62 at level 1: list: group list
+    item-63 at level 2: list_item: We introduce an innovative metho ... utput style and length of DeepSeek-V3.
+  item-64 at level 1: text: Summary of Core Evaluation Results
+  item-65 at level 1: list: group list
+    item-66 at level 2: list_item: Knowledge:
+ (1) 
+ On educational ... strength in Chinese factual knowledge.
+    item-67 at level 2: list_item: Code, Math, and Reasoning: 
+ (1) ... s across diverse technical benchmarks.
+  item-68 at level 1: paragraph: In the remainder of this paper,  ... detailed exposition of our DeepSeek-V3
+  item-69 at level 1: text: model architecture (Section
+  item-70 at level 1: reference: [sec:arch]
+  item-71 at level 1: text: ). 
+Subsequently, we introduce o ... , as well as some discussions (Section
+  item-72 at level 1: reference: [sec:pre-training]
+  item-73 at level 1: text: ). 
+Thereafter, we discuss our e ...  evaluations, and discussions (Section
+  item-74 at level 1: reference: [sec:alignment]
+  item-75 at level 1: text: ). 
+Lastly, we conclude this wor ... irections for future research (Section
+  item-76 at level 1: reference: [sec:conclusion]
+  item-77 at level 1: paragraph: ).
+  item-78 at level 1: section_header: Architecture
+  item-79 at level 1: paragraph: We first introduce the basic architecture of DeepSeek-V3
+  item-80 at level 1: text: , featured by Multi-head Latent Attention(MLA)
+  item-81 at level 1: reference: [dsvii]
+  item-82 at level 1: text: for efficient inference and DeepSeekMoE
+  item-83 at level 1: reference: [deepseekmoe]
+  item-84 at level 1: text: for economical training.
+Then, w ... adheres to the settings of DeepSeek-V2
+  item-85 at level 1: reference: [dsvii]
+  item-86 at level 1: paragraph: .
+  item-87 at level 1: caption: Image: figures/basic_arch.pdf
+  item-88 at level 1: picture
+    item-88 at level 2: caption: Image: figures/basic_arch.pdf
+  item-89 at level 1: text: Illustration of the basic archit ... ent inference and economical training.
+  item-90 at level 1: section_header: Basic Architecture
+  item-91 at level 1: paragraph: The basic architecture of DeepSeek-V3
+  item-92 at level 1: text: is still within the Transformer
+  item-93 at level 1: reference: [transformer]
+  item-94 at level 1: text: framework. 
+For efficient infere ... iary-loss-free load balancing strategy
+  item-95 at level 1: reference: [noaux_tc]
+  item-96 at level 1: text: for DeepSeekMoE to mitigate the  ... effort to ensure load balance. 
+Figure
+  item-97 at level 1: reference: [fig:basic_arch]
+  item-98 at level 1: text: illustrates the basic architecture of DeepSeek-V3
+  item-99 at level 1: paragraph: , and we will briefly review the ... f MLA and DeepSeekMoE in this section.
+  item-100 at level 1: section_header: Multi-Head Latent Attention
+  item-101 at level 1: paragraph: For attention, DeepSeek-V3
+  item-102 at level 1: text: adopts the MLA architecture. 
+Let
+  item-103 at level 1: formula: d
+  item-104 at level 1: text: denote the embedding dimension,
+  item-105 at level 1: formula: n_h
+  item-106 at level 1: text: denote the number of attention heads,
+  item-107 at level 1: formula: d_h
+  item-108 at level 1: text: denote the dimension per head, and
+  item-109 at level 1: formula: \mathbf{h}_{t} \in \mathbb{R}^{d}
+  item-110 at level 1: text: denote the attention input for the
+  item-111 at level 1: formula: t
+  item-112 at level 1: text: -th token at a given attention l ... Key-Value (KV) cache during inference:
+  item-113 at level 1: formula: \begin{align}
+    \boxed{\color{ ... {UV} \mathbf{c}_{t}^{KV}, 
+\end{align}
+  item-114 at level 1: text: where
+  item-115 at level 1: formula: \mathbf{c}_{t}^{KV} \in \mathbb{R}^{d_c}
+  item-116 at level 1: text: is the compressed latent vector for keys and values;
+  item-117 at level 1: formula: d_c (\ll d_h n_h)
+  item-118 at level 1: text: indicates the KV compression dimension;
+  item-119 at level 1: formula: W^{DKV} \in \mathbb{R}^{d_c \times d}
+  item-120 at level 1: text: denotes the down-projection matrix;
+  item-121 at level 1: formula: W^{UK},W^{UV} \in \mathbb{R}^{d_h n_h \times d_c}
+  item-122 at level 1: text: are the up-projection matrices for keys and values, respectively;
+  item-123 at level 1: formula: W^{KR} \in \mathbb{R}^{d_h^R \times d}
+  item-124 at level 1: text: is the matrix used to produce th ... ies Rotary Positional Embedding (RoPE)
+  item-125 at level 1: reference: [su2024roformer]
+  item-126 at level 1: text: ;
+  item-127 at level 1: formula: \operatorname{RoPE}(\cdot)
+  item-128 at level 1: text: denotes the operation that applies RoPE matrices; 
+and
+  item-129 at level 1: formula: [\cdot;\cdot]
+  item-130 at level 1: text: denotes concatenation.
+Note that ... LA, only the blue-boxed vectors (i.e.,
+  item-131 at level 1: formula: \color{blue} \mathbf{c}_{t}^{KV}
+  item-132 at level 1: text: and
+  item-133 at level 1: formula: \color{blue}\mathbf{k}_{t}^{R}
+  item-134 at level 1: text: ) need to be cached during gener ... to standard Multi-Head Attention (MHA)
+  item-135 at level 1: reference: [transformer]
+  item-136 at level 1: paragraph: .
+  item-137 at level 1: paragraph: For the attention queries, we al ... the activation memory during training:
+  item-138 at level 1: formula: \begin{align}
+    \mathbf{c}_{t} ... }; \mathbf{q}_{t, i}^{R}],
+\end{align}
+  item-139 at level 1: text: where
+  item-140 at level 1: formula: \mathbf{c}_{t}^{Q} \in \mathbb{R}^{d_c^{\prime}}
+  item-141 at level 1: text: is the compressed latent vector for queries;
+  item-142 at level 1: formula: d_c^{\prime} (\ll d_h n_h)
+  item-143 at level 1: text: denotes the query compression dimension;
+  item-144 at level 1: formula: W^{DQ} \in \mathbb{R}^{d_c^{\pri ... athbb{R}^{d_h n_h \times d_c^{\prime}}
+  item-145 at level 1: text: are the down-projection and up-p ... atrices for queries, respectively;
+and
+  item-146 at level 1: formula: W^{QR} \in \mathbb{R}^{d_h^R n_h \times d_c^{\prime}}
+  item-147 at level 1: paragraph: is the matrix to produce the decoupled queries that carry RoPE.
+  item-148 at level 1: paragraph: Ultimately, the attention queries (
+  item-149 at level 1: formula: \mathbf{q}_{t, i}
+  item-150 at level 1: text: ), keys (
+  item-151 at level 1: formula: \mathbf{k}_{j, i}
+  item-152 at level 1: text: ), and values (
+  item-153 at level 1: formula: \mathbf{v}_{j, i}^{C}
+  item-154 at level 1: text: ) are combined to yield the final attention output
+  item-155 at level 1: formula: \mathbf{u}_{t}
+  item-156 at level 1: text: :
+  item-157 at level 1: formula: \begin{align}
+    \mathbf{o}_{t, ... ..;\mathbf{o}_{t, n_{h}}],
+\end{align}
+  item-158 at level 1: text: where
+  item-159 at level 1: formula: W^{O} \in \mathbb{R}^{d \times d_h n_h}
+  item-160 at level 1: paragraph: denotes the output projection matrix.
+  item-161 at level 1: section_header: DeepSeekMoE with Auxiliary-Loss-Free Load Balancing
+  item-162 at level 1: text: Basic Architecture of DeepSeekMoE.
+  item-163 at level 1: text: For Feed-Forward Networks(FFNs), ... 3 employs the DeepSeekMoE architecture
+  item-164 at level 1: reference: [deepseekmoe]
+  item-165 at level 1: text: . 
+Compared with traditional MoE architectures like GShard
+  item-166 at level 1: reference: [gshard]
+  item-167 at level 1: text: , DeepSeekMoE uses finer-grained ... lates some experts as shared ones.
+Let
+  item-168 at level 1: formula: \mathbf{u}_{t}
+  item-169 at level 1: text: denote the FFN input of the
+  item-170 at level 1: formula: t
+  item-171 at level 1: text: -th token, we compute the FFN output
+  item-172 at level 1: formula: \mathbf{h}_{t}^{\prime}
+  item-173 at level 1: text: as follows:
+  item-174 at level 1: formula: \begin{align}
+    \mathbf{h}_{t} ... T} \mathbf{e}_{i} \right),
+\end{align}
+  item-175 at level 1: text: where
+  item-176 at level 1: formula: N_{s}
+  item-177 at level 1: text: and
+  item-178 at level 1: formula: N_r
+  item-179 at level 1: text: denote the numbers of shared experts and routed experts, respectively;
+  item-180 at level 1: formula: \operatorname{FFN}^{(s)}_{i}(\cdot)
+  item-181 at level 1: text: and
+  item-182 at level 1: formula: \operatorname{FFN}^{(r)}_{i}(\cdot)
+  item-183 at level 1: text: denote the
+  item-184 at level 1: formula: i
+  item-185 at level 1: text: -th shared expert and the
+  item-186 at level 1: formula: i
+  item-187 at level 1: text: -th routed expert, respectively;
+  item-188 at level 1: formula: K_{r}
+  item-189 at level 1: text: denotes the number of activated routed experts;
+  item-190 at level 1: formula: g_{i,t}
+  item-191 at level 1: text: is the gating value for the
+  item-192 at level 1: formula: i
+  item-193 at level 1: text: -th expert;
+  item-194 at level 1: formula: s_{i,t}
+  item-195 at level 1: text: is the token-to-expert affinity;
+  item-196 at level 1: formula: \mathbf{e}_{i}
+  item-197 at level 1: text: is the centroid vector of the
+  item-198 at level 1: formula: i
+  item-199 at level 1: text: -th routed expert; 
+and
+  item-200 at level 1: formula: \operatorname{Topk}(\cdot, K)
+  item-201 at level 1: text: denotes the set comprising
+  item-202 at level 1: formula: K
+  item-203 at level 1: text: highest scores among the affinity scores calculated for the
+  item-204 at level 1: formula: t
+  item-205 at level 1: text: -th token and all routed experts ... ifferent from DeepSeek-V2, DeepSeek-V3
+  item-206 at level 1: paragraph: uses the sigmoid function to com ... y scores to produce the gating values.
+  item-207 at level 1: text: Auxiliary-Loss-Free Load Balancing.
+  item-208 at level 1: text: For MoE models, an unbalanced expert load will lead to routing collapse
+  item-209 at level 1: reference: [moe]
+  item-210 at level 1: text: and diminish computational effic ... ons usually rely on the auxiliary loss
+  item-211 at level 1: reference: [switch,gshard]
+  item-212 at level 1: text: to avoid unbalanced load. 
+Howev ... loss will impair the model performance
+  item-213 at level 1: reference: [noaux_tc]
+  item-214 at level 1: text: . 
+To achieve a better trade-off ... iary-loss-free load balancing strategy
+  item-215 at level 1: reference: [noaux_tc]
+  item-216 at level 1: text: to ensure load balance. 
+To be specific, we introduce a bias term
+  item-217 at level 1: formula: b_i
+  item-218 at level 1: text: for each expert and add it to the corresponding affinity scores
+  item-219 at level 1: formula: s_{i,t}
+  item-220 at level 1: text: to determine the top-K routing:
+  item-221 at level 1: formula: \begin{align}
+    g^{\prime}_{i, ... therwise}.
+    \end{cases}
+\end{align}
+  item-222 at level 1: text: Note that the bias term is only  ... rived from the original affinity score
+  item-223 at level 1: formula: s_{i,t}
+  item-224 at level 1: text: .
+During training, we keep monit ... tep, we will decrease the bias term by
+  item-225 at level 1: formula: \gamma
+  item-226 at level 1: text: if its corresponding expert is overloaded, and increase it by
+  item-227 at level 1: formula: \gamma
+  item-228 at level 1: text: if its corresponding expert is underloaded, where
+  item-229 at level 1: formula: \gamma
+  item-230 at level 1: text: is a hyper-parameter called bias ... gh the dynamic adjustment, DeepSeek-V3
+  item-231 at level 1: paragraph: keeps balanced expert load durin ... balance through pure auxiliary losses.
+  item-232 at level 1: text: Complementary Sequence-Wise Auxiliary Loss.
+  item-233 at level 1: text: Although DeepSeek-V3 mainly reli ... plementary sequence-wise balance loss:
+  item-234 at level 1: formula: \begin{align}
+    \mathcal{L}_{\ ... =1}^{T}{s^{\prime}_{i,t}},
+\end{align}
+  item-235 at level 1: text: where the balance factor
+  item-236 at level 1: formula: \alpha
+  item-237 at level 1: text: is a hyper-parameter, which will ... extremely small value for DeepSeek-V3;
+  item-238 at level 1: formula: \mathds{1}(\cdot)
+  item-239 at level 1: text: denotes the indicator function; 
+and
+  item-240 at level 1: formula: T
+  item-241 at level 1: paragraph: denotes the number of tokens in  ...  load on each sequence to be balanced.
+  item-242 at level 1: text: Node-Limited Routing.
+  item-243 at level 1: text: Like the device-limited routing  ... hat each token will be sent to at most
+  item-244 at level 1: formula: M
+  item-245 at level 1: text: nodes, which are selected according to the sum of the highest
+  item-246 at level 1: formula: \frac{K_r}{M}
+  item-247 at level 1: paragraph: affinity scores of the experts d ... ull computation-communication overlap.
+  item-248 at level 1: text: No Token-Dropping.
+  item-249 at level 1: text: Due to the effective load balanc ... inference load balance, so DeepSeek-V3
+  item-250 at level 1: paragraph: also does not drop tokens during inference.
+  item-251 at level 1: caption: Image: figures/nextn.pdf
+  item-252 at level 1: picture
+    item-252 at level 2: caption: Image: figures/nextn.pdf
+  item-253 at level 1: text: Illustration of our Multi-Token  ... rediction of each token at each depth.
+  item-254 at level 1: section_header: Multi-Token Prediction
+  item-255 at level 1: paragraph: Inspired by
+  item-256 at level 1: reference: [meta_mtp]
+  item-257 at level 1: text: , we investigate and set a Multi ... er prediction of future tokens.
+Figure
+  item-258 at level 1: reference: [fig:nextn]
+  item-259 at level 1: text: illustrates our implementation of MTP.
+Different from
+  item-260 at level 1: reference: [meta_mtp]
+  item-261 at level 1: text: , which parallelly predicts
+  item-262 at level 1: formula: D
+  item-263 at level 1: paragraph: additional tokens using independ ... ur MTP implementation in this section.
+  item-264 at level 1: text: MTP Modules.
+  item-265 at level 1: text: To be specific, our MTP implementation uses
+  item-266 at level 1: formula: D
+  item-267 at level 1: text: sequential modules to predict
+  item-268 at level 1: formula: D
+  item-269 at level 1: text: additional tokens. 
+The
+  item-270 at level 1: formula: k
+  item-271 at level 1: text: -th MTP module consists of a shared embedding layer
+  item-272 at level 1: formula: \operatorname{Emb}(\cdot)
+  item-273 at level 1: text: , a shared output head
+  item-274 at level 1: formula: \operatorname{OutHead}(\cdot)
+  item-275 at level 1: text: , a Transformer block
+  item-276 at level 1: formula: \operatorname{TRM}_k(\cdot)
+  item-277 at level 1: text: , and a projection matrix
+  item-278 at level 1: formula: M_k \in \mathbb{R}^{d \times 2d}
+  item-279 at level 1: text: . 
+For the
+  item-280 at level 1: formula: i
+  item-281 at level 1: text: -th input token
+  item-282 at level 1: formula: t_i
+  item-283 at level 1: text: , at the
+  item-284 at level 1: formula: k
+  item-285 at level 1: text: -th prediction depth, we first combine the representation of the
+  item-286 at level 1: formula: i
+  item-287 at level 1: text: -th token at the
+  item-288 at level 1: formula: (k-1)
+  item-289 at level 1: text: -th depth
+  item-290 at level 1: formula: \mathbf{h}_i^{k-1} \in \mathbb{R}^{d}
+  item-291 at level 1: text: and the embedding of the
+  item-292 at level 1: formula: (i+k)
+  item-293 at level 1: text: -th token
+  item-294 at level 1: formula: Emb(t_{i+k}) \in \mathbb{R}^{d}
+  item-295 at level 1: text: with the linear projection:
+  item-296 at level 1: formula: \mathbf{h}_i^{\prime k} = M_k [\ ... MSNorm}(\operatorname{Emb}(t_{i+k}))],
+  item-297 at level 1: text: where
+  item-298 at level 1: formula: [\cdot ; \cdot]
+  item-299 at level 1: text: denotes concatenation. 
+Especially, when
+  item-300 at level 1: formula: k=1
+  item-301 at level 1: text: ,
+  item-302 at level 1: formula: \mathbf{h}_i^{k-1}
+  item-303 at level 1: text: refers to the representation giv ... red with the main model. 
+The combined
+  item-304 at level 1: formula: \mathbf{h}_i^{\prime k}
+  item-305 at level 1: text: serves as the input of the Transformer block at the
+  item-306 at level 1: formula: k
+  item-307 at level 1: text: -th depth to produce the output representation at the current depth
+  item-308 at level 1: formula: \mathbf{h}_{i}^{k}
+  item-309 at level 1: text: :
+  item-310 at level 1: formula: \mathbf{h}_{1:T-k}^{k} = \operat ... TRM}_k(\mathbf{h}_{1:T-k}^{\prime k}),
+  item-311 at level 1: text: where
+  item-312 at level 1: formula: T
+  item-313 at level 1: text: represents the input sequence length and
+  item-314 at level 1: formula: _{i:j}
+  item-315 at level 1: text: denotes the slicing operation (i ... nd right boundaries). 
+Finally, taking
+  item-316 at level 1: formula: \mathbf{h}_{i}^{k}
+  item-317 at level 1: text: as the input, the shared output  ... e the probability distribution for the
+  item-318 at level 1: formula: k
+  item-319 at level 1: text: -th additional prediction token
+  item-320 at level 1: formula: P_{i+1+k}^{k} \in \mathbb{R}^{V}
+  item-321 at level 1: text: , where
+  item-322 at level 1: formula: V
+  item-323 at level 1: text: is the vocabulary size:
+  item-324 at level 1: formula: P_{i+k+1}^{k} = \operatorname{OutHead}(\mathbf{h}_{i}^{k}).
+  item-325 at level 1: text: The output head
+  item-326 at level 1: formula: \operatorname{OutHead}(\cdot)
+  item-327 at level 1: text: linearly maps the representation to logits and subsequently applies the
+  item-328 at level 1: formula: \operatorname{Softmax}(\cdot)
+  item-329 at level 1: text: function to compute the prediction probabilities of the
+  item-330 at level 1: formula: k
+  item-331 at level 1: text: -th additional token. 
+Also, for ... redictions is similar to that of EAGLE
+  item-332 at level 1: reference: [eagle]
+  item-333 at level 1: text: , but its primary objective is speculative decoding
+  item-334 at level 1: reference: [speculative_xhm,speculative_google]
+  item-335 at level 1: paragraph: , whereas we utilize MTP to improve training.
+  item-336 at level 1: text: MTP Training Objective.
+  item-337 at level 1: text: For each prediction depth, we compute a cross-entropy loss
+  item-338 at level 1: formula: \mathcal{L}_{\text{MTP}}^{k}
+  item-339 at level 1: text: :
+  item-340 at level 1: formula: \mathcal{L}_{\text{MTP}}^{k} = \ ... um_{i=2 + k}^{T + 1} \log P_i^k [t_i],
+  item-341 at level 1: text: where
+  item-342 at level 1: formula: T
+  item-343 at level 1: text: denotes the input sequence length,
+  item-344 at level 1: formula: t_i
+  item-345 at level 1: text: denotes the ground-truth token at the
+  item-346 at level 1: formula: i
+  item-347 at level 1: text: -th position, and
+  item-348 at level 1: formula: P_i^k [t_i]
+  item-349 at level 1: text: denotes the corresponding prediction probability of
+  item-350 at level 1: formula: t_i
+  item-351 at level 1: text: , given by the
+  item-352 at level 1: formula: k
+  item-353 at level 1: text: -th MTP module. 
+Finally, we com ...  and multiply it by a weighting factor
+  item-354 at level 1: formula: \lambda
+  item-355 at level 1: text: to obtain the overall MTP loss
+  item-356 at level 1: formula: \mathcal{L}_{\text{MTP}}
+  item-357 at level 1: text: , which serves as an additional training objective for DeepSeek-V3:
+  item-358 at level 1: formula: \mathcal{L}_{\text{MTP}} = \frac ... k=1}^{D} \mathcal{L}_{\text{MTP}}^{k}.
+  item-359 at level 1: text: MTP in Inference.
+  item-360 at level 1: paragraph: Our MTP strategy mainly aims to  ... urther improve the generation latency.
+  item-361 at level 1: section_header: Infrastructures
+  item-362 at level 1: section_header: Compute Clusters
+  item-363 at level 1: paragraph: DeepSeek-V3
+  item-364 at level 1: text: is trained on a cluster equipped ... s. 
+Across different nodes, InfiniBand
+  item-365 at level 1: paragraph: (IB) interconnects are utilized to facilitate communications.
+  item-366 at level 1: section_header: Training Framework
+  item-367 at level 1: paragraph: The training of DeepSeek-V3
+  item-368 at level 1: text: is supported by the HAI-LLM fram ... plies 16-way Pipeline Parallelism (PP)
+  item-369 at level 1: reference: [qi2023zero]
+  item-370 at level 1: text: , 64-way Expert Parallelism (EP)
+  item-371 at level 1: reference: [gshard]
+  item-372 at level 1: text: spanning 8 nodes, and ZeRO-1 Data Parallelism (DP)
+  item-373 at level 1: reference: [zero]
+  item-374 at level 1: paragraph: .
+  item-375 at level 1: paragraph: In order to facilitate efficient training of DeepSeek-V3
+  item-376 at level 1: text: , we implement meticulous engine ... ithout using costly Tensor Parallelism
+  item-377 at level 1: paragraph: (TP).
+  item-378 at level 1: section_header: DualPipe and Computation-Communication Overlap
+  item-379 at level 1: caption: Image: figures/overlap.pdf
+  item-380 at level 1: picture
+    item-380 at level 2: caption: Image: figures/overlap.pdf
+  item-381 at level 1: text: Overlapping strategy for a pair  ...  PP communication can be fully hidden.
+  item-382 at level 1: paragraph: For DeepSeek-V3
+  item-383 at level 1: paragraph: , the communication overhead int ... but also reduces the pipeline bubbles.
+  item-384 at level 1: paragraph: The key idea of DualPipe is to o ... ivide each chunk into four components:
+  item-385 at level 1: text: attention
+  item-386 at level 1: text: ,
+  item-387 at level 1: text: all-to-all dispatch
+  item-388 at level 1: text: ,
+  item-389 at level 1: text: MLP
+  item-390 at level 1: text: , and
+  item-391 at level 1: text: all-to-all combine
+  item-392 at level 1: text: . 
+Specially, for a backward chunk, both
+  item-393 at level 1: text: attention
+  item-394 at level 1: text: and
+  item-395 at level 1: text: MLP
+  item-396 at level 1: text: are further split into two parts,
+  item-397 at level 1: text: backward for input
+  item-398 at level 1: text: and
+  item-399 at level 1: text: backward for weights
+  item-400 at level 1: text: , like in ZeroBubble
+  item-401 at level 1: reference: [zerobubble]
+  item-402 at level 1: text: . 
+In addition, we have a
+  item-403 at level 1: text: PP communication
+  item-404 at level 1: text: component. 
+As illustrated in Figure
+  item-405 at level 1: reference: [fig:transformer-overlap]
+  item-406 at level 1: text: , for a pair of forward and back ... pe scheduling is illustrated in Figure
+  item-407 at level 1: reference: [fig:dualpipe-schedules]
+  item-408 at level 1: paragraph: . 
+It employs a bidirectional pi ... ero all-to-all communication overhead.
+  item-409 at level 1: caption: Image: figures/dualpipe.pdf
+  item-410 at level 1: picture
+    item-410 at level 2: caption: Image: figures/dualpipe.pdf
+  item-411 at level 1: text: Example DualPipe scheduling for  ... rlapped computation and communication.
+  item-412 at level 1: paragraph: In addition, even in more genera ... ibits efficiency advantages. 
+In Table
+  item-413 at level 1: reference: [tab:dualpipe-bubble]
+  item-414 at level 1: text: , we summarize the pipeline bubb ... shown in the table, compared with ZB1P
+  item-415 at level 1: reference: [zerobubble]
+  item-416 at level 1: text: and 1F1B
+  item-417 at level 1: reference: [pipedream]
+  item-418 at level 1: text: , DualPipe significantly reduces ... creasing the peak activation memory by
+  item-419 at level 1: formula: \frac{1}{PP}
+  item-420 at level 1: text: times.
+Although DualPipe require ... uring training. 
+Compared with Chimera
+  item-421 at level 1: reference: [chimera]
+  item-422 at level 1: paragraph: , DualPipe only requires that th ...  as the number of micro-batches grows.
+  item-423 at level 1: table with [5x4]
+  item-424 at level 1: text: Comparison of pipeline bubbles a ... s different pipeline parallel methods.
+  item-425 at level 1: formula: F
+  item-426 at level 1: text: denotes the execution time of a forward chunk,
+  item-427 at level 1: formula: B
+  item-428 at level 1: text: denotes the execution time of a full backward chunk,
+  item-429 at level 1: formula: W
+  item-430 at level 1: text: denotes the execution time of a "backward for weights" chunk, and
+  item-431 at level 1: formula: F\&B
+  item-432 at level 1: text: denotes the execution time of tw ... verlapped forward and backward chunks.
+  item-433 at level 1: section_header: Efficient Implementation of Cross-Node All-to-All Communication
+  item-434 at level 1: paragraph: In order to ensure sufficient co ... his implies that, although DeepSeek-V3
+  item-435 at level 1: text: selects only 8 routed experts in ... er to a maximum of 13 experts (4 nodes
+  item-436 at level 1: formula: \times
+  item-437 at level 1: paragraph: 3.2 experts/node) while preservi ... ilize the bandwidths of IB and NVLink.
+  item-438 at level 1: paragraph: In detail, we employ the warp specialization technique
+  item-439 at level 1: reference: [warp-spec]
+  item-440 at level 1: paragraph: and partition 20 SMs into 10 com ... che and the interference to other SMs.
+  item-441 at level 1: section_header: Extremely Memory Saving with Minimal Overhead
+  item-442 at level 1: paragraph: In order to reduce the memory fo ... g, we employ the following techniques.
+  item-443 at level 1: text: Recomputation of RMSNorm and MLA Up-Projection.
+  item-444 at level 1: paragraph: We recompute all RMSNorm operati ...  requirements for storing activations.
+  item-445 at level 1: text: Exponential Moving Average in CPU.
+  item-446 at level 1: paragraph: During training, we preserve the ... ng additional memory or time overhead.
+  item-447 at level 1: text: Shared Embedding and Output Head for Multi-Token Prediction.
+  item-448 at level 1: paragraph: With the DualPipe strategy, we d ... urther enhances our memory efficiency.
+  item-449 at level 1: section_header: FP8 Training
+  item-450 at level 1: caption: Image: figures/fp8-frameworkv3.pdf
+  item-451 at level 1: picture
+    item-451 at level 2: caption: Image: figures/fp8-frameworkv3.pdf
+  item-452 at level 1: text: The overall mixed precision fram ... ta format. For clarification, only the
+  item-453 at level 1: text: Linear
+  item-454 at level 1: text: operator is illustrated.
+  item-455 at level 1: paragraph: Inspired by recent advances in low-precision training
+  item-456 at level 1: reference: [fp8lm, llm.int8, 8-bit-numerical]
+  item-457 at level 1: text: , we propose a fine-grained mixe ... izing the FP8 data format for training
+  item-458 at level 1: text: . 
+While low-precision training  ... in activations, weights, and gradients
+  item-459 at level 1: reference: [massiveoutlier, understandoutlier, scalefp8train]
+  item-460 at level 1: text: . 
+Although significant progress has been made in inference quantization
+  item-461 at level 1: reference: [xiao2023smoothquant, frantar2022gptq]
+  item-462 at level 1: text: , there are relatively few studi ... arge-scale language model pre-training
+  item-463 at level 1: reference: [scalefp8train]
+  item-464 at level 1: text: . 
+To address this challenge and ... tion strategy: tile-wise grouping with
+  item-465 at level 1: formula: 1\times N_c
+  item-466 at level 1: text: elements or block-wise grouping with
+  item-467 at level 1: formula: N_c\times N_c
+  item-468 at level 1: text: elements. 
+The associated dequan ... amework on two model scales similar to
+  item-469 at level 1: text: -Lite and
+  item-470 at level 1: text: , training for approximately 1 t ... n tokens (see more details in Appendix
+  item-471 at level 1: reference: [app:fp8_cp_bf16]
+  item-472 at level 1: text: ). 
+Notably, compared with the B ... model remains consistently below 0.25%
+  item-473 at level 1: paragraph: , a level well within the acceptable range of training randomness.
+  item-474 at level 1: section_header: Mixed Precision Framework
+  item-475 at level 1: text: Building upon widely adopted techniques in low-precision training
+  item-476 at level 1: reference: [bf16train, fp16train]
+  item-477 at level 1: text: , we propose a mixed precision f ... all framework is illustrated in Figure
+  item-478 at level 1: reference: [fig:fp8_framework]
+  item-479 at level 1: paragraph: .
+  item-480 at level 1: paragraph: Firstly, in order to accelerate  ... n BF16 or FP32. 
+As depicted in Figure
+  item-481 at level 1: reference: [fig:fp8_framework]
+  item-482 at level 1: text: , all three GEMMs associated with the
+  item-483 at level 1: text: Linear
+  item-484 at level 1: text: operator, namely
+  item-485 at level 1: text: Fprop
+  item-486 at level 1: text: (forward pass),
+  item-487 at level 1: text: Dgrad
+  item-488 at level 1: text: (activation backward pass), and
+  item-489 at level 1: text: Wgrad
+  item-490 at level 1: text: (weight backward pass), are exec ... al BF16 method. 
+Additionally, the FP8
+  item-491 at level 1: text: Wgrad
+  item-492 at level 1: paragraph: GEMM allows activations to be st ... nificantly reduces memory consumption.
+  item-493 at level 1: paragraph: Despite the efficiency advantage ... on ensure stable training dynamics for
+  item-494 at level 1: paragraph: .
+To further guarantee numerical ... ks in our distributed training system.
+  item-495 at level 1: caption: Image: figures/fp8-128accumulatorv4.pdf
+  item-496 at level 1: picture
+    item-496 at level 2: caption: Image: figures/fp8-128accumulatorv4.pdf
+  item-497 at level 1: text: (a) We propose a fine-grained qu ... ers; for illustration simplicity, only
+  item-498 at level 1: text: Fprop
+  item-499 at level 1: text: is illustrated. 
+    (b) In conj ... moting to CUDA Cores at an interval of
+  item-500 at level 1: formula: N_C=128
+  item-501 at level 1: text: elements MMA for the high-precision accumulation.
+  item-502 at level 1: section_header: Improved Precision from Quantization and Multiplication
+  item-503 at level 1: paragraph: Based on our mixed precision FP8 ... method and the multiplication process.
+  item-504 at level 1: text: Fine-Grained Quantization.
+  item-505 at level 1: text: In low-precision training framew ... the maximum representable value of FP8
+  item-506 at level 1: reference: [fp16train]
+  item-507 at level 1: text: . 
+This method makes low-precisi ... nular level. 
+As illustrated in Figure
+  item-508 at level 1: reference: [fig:fp8_quantization]
+  item-509 at level 1: text: (a), (1) for activations, we group and scale elements on a
+  item-510 at level 1: text: 1x128
+  item-511 at level 1: text: tile basis (i.e., per token per  ... ghts, we group and scale elements on a
+  item-512 at level 1: text: 128x128
+  item-513 at level 1: text: block basis (i.e., per 128 input ... aller groups of elements. 
+In Appendix
+  item-514 at level 1: reference: [app:fp8_blockwise]
+  item-515 at level 1: paragraph: , we further discuss the trainin ...  the same way as weights quantization.
+  item-516 at level 1: paragraph: One key modification in our meth ... gy, it can be efficiently implemented.
+  item-517 at level 1: paragraph: Notably, our fine-grained quanti ...  with the idea of microscaling formats
+  item-518 at level 1: reference: [rouhani2023microscaling]
+  item-519 at level 1: text: , while the Tensor Cores of NVID ...  with smaller quantization granularity
+  item-520 at level 1: reference: [nvidia_tensor_cores]
+  item-521 at level 1: paragraph: . 
+We hope our design can serve  ... ace with the latest GPU architectures.
+  item-522 at level 1: text: Increasing Accumulation Precision.
+  item-523 at level 1: text: Low-precision GEMM operations of ... ommonly performed in an FP32 precision
+  item-524 at level 1: reference: [bf16train, fp16train]
+  item-525 at level 1: text: .
+However, we observe that the a ... re pronounced when the inner dimension
+  item-526 at level 1: text: K
+  item-527 at level 1: text: is large
+  item-528 at level 1: reference: [switchback]
+  item-529 at level 1: text: , a typical scenario in large-sc ... operations of two random matrices with
+  item-530 at level 1: text: K
+  item-531 at level 1: text: = 4096 for example, in our preli ... default option in a few FP8 frameworks
+  item-532 at level 1: reference: [transformerengine]
+  item-533 at level 1: paragraph: , severely constraining the training accuracy.
+  item-534 at level 1: paragraph: In order to address this issue,  ... ion to CUDA Cores for higher precision
+  item-535 at level 1: reference: [Thakkar_CUTLASS_2023]
+  item-536 at level 1: text: . 
+The process is illustrated in Figure
+  item-537 at level 1: reference: [fig:fp8_quantization]
+  item-538 at level 1: text: (b). 
+To be specific, during MMA ... imited bit width. 
+Once an interval of
+  item-539 at level 1: formula: N_C
+  item-540 at level 1: text: is reached, these partial result ... ling factors along the inner dimension
+  item-541 at level 1: text: K
+  item-542 at level 1: paragraph: . 
+These scaling factors can be  ... minimal additional computational cost.
+  item-543 at level 1: paragraph: It is worth noting that this mod ... res.
+Based on our experiments, setting
+  item-544 at level 1: formula: N_C=128
+  item-545 at level 1: paragraph: elements, equivalent to 4 WGMMAs ... hout introducing substantial overhead.
+  item-546 at level 1: text: Mantissa over Exponents.
+  item-547 at level 1: text: In contrast to the hybrid FP8 format adopted by prior work
+  item-548 at level 1: reference: [transformerengine, fp8lm, hfp8]
+  item-549 at level 1: text: , which uses
+  item-550 at level 1: text: E4M3
+  item-551 at level 1: text: (4-bit exponent and 3-bit mantissa) in
+  item-552 at level 1: text: Fprop
+  item-553 at level 1: text: and
+  item-554 at level 1: text: E5M2
+  item-555 at level 1: text: (5-bit exponent and 2-bit mantissa) in
+  item-556 at level 1: text: Dgrad
+  item-557 at level 1: text: and
+  item-558 at level 1: text: Wgrad
+  item-559 at level 1: text: , we adopt the
+  item-560 at level 1: text: E4M3
+  item-561 at level 1: paragraph: format on all tensors for higher ... e impact of the limited dynamic range.
+  item-562 at level 1: text: Online Quantization.
+  item-563 at level 1: text: Delayed quantization is employed in tensor-wise quantization frameworks
+  item-564 at level 1: reference: [transformerengine, fp8lm]
+  item-565 at level 1: text: , which maintains a history of t ... maximum absolute value online for each
+  item-566 at level 1: text: 1x128
+  item-567 at level 1: text: activation tile or
+  item-568 at level 1: text: 128x128
+  item-569 at level 1: paragraph: weight block. 
+Based on it, we d ...  or weight online into the FP8 format.
+  item-570 at level 1: section_header: Low-Precision Storage and Communication
+  item-571 at level 1: paragraph: In conjunction with our FP8 trai ... r states into lower-precision formats.
+  item-572 at level 1: text: Low-Precision Optimizer States.
+  item-573 at level 1: text: We adopt the BF16 data format in ...  first and second moments in the AdamW
+  item-574 at level 1: reference: [adamW]
+  item-575 at level 1: paragraph: optimizer, without incurring obs ... merical stability throughout training.
+  item-576 at level 1: text: Low-Precision Activation.
+  item-577 at level 1: text: As illustrated in Figure
+  item-578 at level 1: reference: [fig:fp8_framework]
+  item-579 at level 1: text: , the
+  item-580 at level 1: text: Wgrad
+  item-581 at level 1: text: operation is performed in FP8. 
+ ... P8 format for the backward pass of the
+  item-582 at level 1: text: Linear
+  item-583 at level 1: text: operator.
+However, special consi ...  for low-cost high-precision training:
+  item-584 at level 1: text: (1) Inputs of the Linear after the attention operator.
+  item-585 at level 1: text: These activations are also used  ... ve to precision. We adopt a customized
+  item-586 at level 1: text: E5M6
+  item-587 at level 1: text: data format exclusively for thes ...  activations will be converted from an
+  item-588 at level 1: text: 1x128
+  item-589 at level 1: text: quantization tile to an
+  item-590 at level 1: text: 128x1
+  item-591 at level 1: paragraph: tile in the backward pass. To av ... und scaled, i.e., integral power of 2.
+  item-592 at level 1: text: (2) Inputs of the SwiGLU operator in MoE.
+  item-593 at level 1: text: To further reduce the memory cos ... efficiency and computational accuracy.
+  item-594 at level 1: text: Low-Precision Communication.
+  item-595 at level 1: text: Communication bandwidth is a cri ... up-projections into FP8 and then apply
+  item-596 at level 1: text: dispatch
+  item-597 at level 1: text: components, which is compatible with FP8
+  item-598 at level 1: text: Fprop
+  item-599 at level 1: text: in MoE up-projections. Like the inputs of the
+  item-600 at level 1: text: Linear
+  item-601 at level 1: text: after the attention operator, sc ... ns. 
+For both the forward and backward
+  item-602 at level 1: text: combine
+  item-603 at level 1: text: components, we retain them in BF ... itical parts of the training pipeline.
+  item-604 at level 1: section_header: Inference and Deployment
+  item-605 at level 1: paragraph: We deploy DeepSeek-V3
+  item-606 at level 1: text: on the H800 cluster, where GPUs  ... deployment strategy that separates the
+  item-607 at level 1: text: prefilling
+  item-608 at level 1: text: and
+  item-609 at level 1: text: decoding
+  item-610 at level 1: paragraph: stages.
+  item-611 at level 1: section_header: Prefilling
+  item-612 at level 1: paragraph: The minimum deployment unit of t ... consists of 4 nodes with 32 GPUs. 
+The
+  item-613 at level 1: text: attention
+  item-614 at level 1: text: part employs 4-way Tensor Parall ... overhead of TP communication. 
+For the
+  item-615 at level 1: text: MoE
+  item-616 at level 1: text: part, we use 32-way Expert Paral ... ing computational efficiency. 
+For the
+  item-617 at level 1: text: MoE
+  item-618 at level 1: paragraph: all-to-all communication, we use ... allow layers to save TP communication.
+  item-619 at level 1: paragraph: To achieve load balancing among different experts in the
+  item-620 at level 1: text: MoE
+  item-621 at level 1: text: part, we need to ensure that eac ...  we introduce a deployment strategy of
+  item-622 at level 1: text: redundant experts
+  item-623 at level 1: text: , which duplicates high-load exp ... ad. 
+For the deployment of DeepSeek-V3
+  item-624 at level 1: paragraph: , we set 32 redundant experts fo ...  host one additional redundant expert.
+  item-625 at level 1: paragraph: Furthermore, in the prefilling s ... mputational workloads, overlapping the
+  item-626 at level 1: text: attention
+  item-627 at level 1: text: and
+  item-628 at level 1: text: MoE
+  item-629 at level 1: text: of one micro-batch with the
+  item-630 at level 1: text: dispatch
+  item-631 at level 1: text: and
+  item-632 at level 1: text: combine
+  item-633 at level 1: paragraph: of another.
+  item-634 at level 1: paragraph: Finally, we are exploring a
+  item-635 at level 1: text: dynamic redundancy
+  item-636 at level 1: paragraph: strategy for experts, where each ... s routing scheme is almost negligible.
+  item-637 at level 1: section_header: Decoding
+  item-638 at level 1: paragraph: During decoding, we treat the sh ... nsists of 40 nodes with 320 GPUs. 
+The
+  item-639 at level 1: text: attention
+  item-640 at level 1: text: part employs TP4 with SP, combined with DP80, while the
+  item-641 at level 1: text: MoE
+  item-642 at level 1: text: part uses EP320. 
+For the
+  item-643 at level 1: text: MoE
+  item-644 at level 1: text: part, each GPU hosts only one ex ... perts.
+All-to-all communication of the
+  item-645 at level 1: text: dispatch
+  item-646 at level 1: text: and
+  item-647 at level 1: text: combine
+  item-648 at level 1: text: parts is performed via direct po ... . 
+Additionally, we leverage the IBGDA
+  item-649 at level 1: reference: [nvidia_ibgda]
+  item-650 at level 1: paragraph: technology to further minimize l ...  and enhance communication efficiency.
+  item-651 at level 1: paragraph: Similar to prefilling, we period ... one expert. 
+We are also exploring the
+  item-652 at level 1: text: dynamic redundancy
+  item-653 at level 1: text: strategy for decoding. 
+However, ... routing scheme and the fusion with the
+  item-654 at level 1: text: dispatch
+  item-655 at level 1: paragraph: kernel to reduce overhead.
+  item-656 at level 1: paragraph: Additionally, to enhance through ... he decoding stage. 
+Unlike prefilling,
+  item-657 at level 1: text: attention
+  item-658 at level 1: text: consumes a larger portion of tim ... oding stage. Therefore, we overlap the
+  item-659 at level 1: text: attention
+  item-660 at level 1: text: of one micro-batch with the
+  item-661 at level 1: text: dispatch+MoE+combine
+  item-662 at level 1: text: of another.
+In the decoding stag ... ss rather than computation. 
+Since the
+  item-663 at level 1: text: MoE
+  item-664 at level 1: text: part only needs to load the para ... impacting the computation speed of the
+  item-665 at level 1: text: attention
+  item-666 at level 1: text: part, we can allocate only a small portion of SMs to
+  item-667 at level 1: text: dispatch+MoE+combine
+  item-668 at level 1: paragraph: .
+  item-669 at level 1: section_header: Suggestions on Hardware Design
+  item-670 at level 1: paragraph: Based on our implementation of t ... on chip design to AI hardware vendors.
+  item-671 at level 1: section_header: Communication Hardware
+  item-672 at level 1: paragraph: In DeepSeek-V3
+  item-673 at level 1: paragraph: , we implement the overlap betwe ...  cores remain entirely under-utilized.
+  item-674 at level 1: paragraph: Currently, the SMs primarily per ... ng tasks for all-to-all communication:
+  item-675 at level 1: list: group list
+    item-676 at level 2: list_item: Forwarding data between the IB ( ... ithin the same node from a single GPU.
+    item-677 at level 2: list_item: Transporting data between RDMA b ... ory regions) and input/output buffers.
+    item-678 at level 2: list_item: Executing reduce operations for all-to-all combine.
+    item-679 at level 2: list_item: Managing fine-grained memory lay ... perts across the IB and NVLink domain.
+  item-680 at level 1: paragraph: We aspire to see future vendors  ... network co-processor like NVIDIA SHARP
+  item-681 at level 1: reference: [nvsharp]
+  item-682 at level 1: text: . 
+Furthermore, to reduce applic ... n easily accomplish operations such as
+  item-683 at level 1: text: read
+  item-684 at level 1: text: ,
+  item-685 at level 1: text: write
+  item-686 at level 1: text: ,
+  item-687 at level 1: text: multicast
+  item-688 at level 1: text: , and
+  item-689 at level 1: text: reduce
+  item-690 at level 1: paragraph: across the entire IB-NVLink-unif ... n requests based on simple primitives.
+  item-691 at level 1: section_header: Compute Hardware
+  item-692 at level 1: text: Higher FP8 GEMM Accumulation Precision in Tensor Cores.
+  item-693 at level 1: text: In the current Tensor Core imple ... lating the addition results of 128 FP8
+  item-694 at level 1: formula: \times
+  item-695 at level 1: paragraph: FP8 multiplications into registe ...  chips need to adopt higher precision.
+  item-696 at level 1: text: Support for Tile- and Block-Wise Quantization.
+  item-697 at level 1: text: Current GPUs only support per-te ... n the current implementation, when the
+  item-698 at level 1: formula: N_C
+  item-699 at level 1: paragraph: interval is reached, the partial ... ced, avoiding frequent data movements.
+  item-700 at level 1: text: Support for Online Quantization.
+  item-701 at level 1: text: The current implementations stru ...  off-chip memory access by roughly 50%
+  item-702 at level 1: paragraph: .
+  item-703 at level 1: text: Support for Transposed GEMM Operations.
+  item-704 at level 1: text: The current architecture makes i ... ng the forward pass are quantized into
+  item-705 at level 1: text: 1x128
+  item-706 at level 1: text: FP8 tiles and stored. 
+During th ... antized, transposed, re-quantized into
+  item-707 at level 1: text: 128x1
+  item-708 at level 1: paragraph: tiles, and stored in HBM. 
+To re ...  streamline the quantization workflow.
+  item-709 at level 1: section_header: Pre-Training
+  item-710 at level 1: section_header: Data Construction
+  item-711 at level 1: paragraph: Compared with DeepSeek-V2
+  item-712 at level 1: text: , we optimize the pre-training c ... taining corpus diversity. 
+Inspired by
+  item-713 at level 1: reference: [Ding2024FewerTI]
+  item-714 at level 1: text: , we implement the document pack ... y, the training corpus for DeepSeek-V3
+  item-715 at level 1: paragraph: consists of 14.8T high-quality and diverse tokens in our tokenizer.
+  item-716 at level 1: paragraph: In the training process of DeepSeekCoder-V2
+  item-717 at level 1: reference: [dscodervii]
+  item-718 at level 1: text: , we observe that the Fill-in-Mi ... ramework to structure data as follows:
+  item-719 at level 1: formula: \begin{align}
+\texttt{<|fim\_beg ... |eos\_token|>} . \nonumber
+\end{align}
+  item-720 at level 1: paragraph: This structure is applied at the ... .1, consistent with the PSM framework.
+  item-721 at level 1: paragraph: The tokenizer for DeepSeek-V3
+  item-722 at level 1: text: employs Byte-level BPE
+  item-723 at level 1: reference: [shibata1999byte]
+  item-724 at level 1: text: with an extended vocabulary of 1 ...  may introduce the token boundary bias
+  item-725 at level 1: reference: [tokenboundary]
+  item-726 at level 1: paragraph: when the model processes multi-l ... special cases and mitigates this bias.
+  item-727 at level 1: section_header: Hyper-Parameters
+  item-728 at level 1: text: Model Hyper-Parameters.
+  item-729 at level 1: text: We set the number of Transformer ... , we set the number of attention heads
+  item-730 at level 1: formula: n_h
+  item-731 at level 1: text: to 128 and the per-head dimension
+  item-732 at level 1: formula: d_h
+  item-733 at level 1: text: to 128. 
+The KV compression dimension
+  item-734 at level 1: formula: d_c
+  item-735 at level 1: text: is set to 512, and the query compression dimension
+  item-736 at level 1: formula: d_c^{\prime}
+  item-737 at level 1: text: is set to 1536. 
+For the decoupl ... and key, we set the per-head dimension
+  item-738 at level 1: formula: d_h^R
+  item-739 at level 1: text: to 64. 
+We substitute all FFNs e ... des. 
+The multi-token prediction depth
+  item-740 at level 1: formula: D
+  item-741 at level 1: text: is set to 1, i.e., besides the e ... 
+Under this configuration, DeepSeek-V3
+  item-742 at level 1: paragraph: comprises 671B total parameters, ... hich 37B are activated for each token.
+  item-743 at level 1: text: Training Hyper-Parameters.
+  item-744 at level 1: text: We employ the AdamW optimizer
+  item-745 at level 1: reference: [adamW]
+  item-746 at level 1: text: with hyper-parameters set to
+  item-747 at level 1: formula: \beta_1=0.9
+  item-748 at level 1: text: ,
+  item-749 at level 1: formula: \beta_2=0.95
+  item-750 at level 1: text: , and
+  item-751 at level 1: formula: \mathrm{weight\_decay}=0.1
+  item-752 at level 1: text: . 
+We set the maximum sequence l ... e first linearly increase it from 0 to
+  item-753 at level 1: formula: 2.2 \times 10^{-4}
+  item-754 at level 1: text: during the first 2K steps. 
+Then, we keep a constant learning rate of
+  item-755 at level 1: formula: 2.2 \times 10^{-4}
+  item-756 at level 1: text: until the model consumes 10T tra ... e gradually decay the learning rate to
+  item-757 at level 1: formula: 2.2 \times 10^{-5}
+  item-758 at level 1: text: in 4.3T tokens, following a cosi ... s, we keep a constant learning rate of
+  item-759 at level 1: formula: 2.2 \times 10^{-5}
+  item-760 at level 1: text: in the first 333B tokens, and switch to another constant learning rate of
+  item-761 at level 1: formula: 7.3 \times 10^{-6}
+  item-762 at level 1: text: in the remaining 167B tokens. 
+T ... will be sent to at most 4 nodes (i.e.,
+  item-763 at level 1: formula: M=4
+  item-764 at level 1: text: ). 
+For auxiliary-loss-free load balancing, we set the bias update speed
+  item-765 at level 1: formula: \gamma
+  item-766 at level 1: text: to 0.001 for the first 14.3T tok ...  tokens. 
+For the balance loss, we set
+  item-767 at level 1: formula: \alpha
+  item-768 at level 1: text: to 0.0001, just to avoid extreme ...  single sequence. 
+The MTP loss weight
+  item-769 at level 1: formula: \lambda
+  item-770 at level 1: paragraph: is set to 0.3 for the first 10T  ...  to 0.1 for the remaining 4.8T tokens.
+  item-771 at level 1: caption: Image: figures/needle_in_a_haystack.pdf
+  item-772 at level 1: picture
+    item-772 at level 2: caption: Image: figures/needle_in_a_haystack.pdf
+  item-773 at level 1: text: Evaluation results on the Needle ... all context window lengths up to 128K.
+  item-774 at level 1: section_header: Long Context Extension
+  item-775 at level 1: paragraph: We adopt a similar approach to DeepSeek-V2
+  item-776 at level 1: reference: [dsvii]
+  item-777 at level 1: text: to enable long context capabilit ...  the pre-training stage, we apply YaRN
+  item-778 at level 1: reference: [peng2023yarn]
+  item-779 at level 1: text: for context extension and perfor ... xclusively to the decoupled shared key
+  item-780 at level 1: formula: \mathbf{k}^R_t
+  item-781 at level 1: text: .
+The hyper-parameters remain identical across both phases, with the scale
+  item-782 at level 1: formula: s = 40
+  item-783 at level 1: text: ,
+  item-784 at level 1: formula: \alpha = 1
+  item-785 at level 1: text: ,
+  item-786 at level 1: formula: \beta = 32
+  item-787 at level 1: text: , and the scaling factor
+  item-788 at level 1: formula: \sqrt{t} = 0.1 \ln{s} + 1
+  item-789 at level 1: text: .
+In the first phase, the sequen ... earning rate for both phases is set to
+  item-790 at level 1: formula: 7.3 \times 10^{-6}
+  item-791 at level 1: paragraph: , matching the final learning rate from the pre-training stage.
+  item-792 at level 1: paragraph: Through this two-phase extension training, DeepSeek-V3
+  item-793 at level 1: text: is capable of handling inputs up ... aintaining strong performance. 
+Figure
+  item-794 at level 1: reference: [fig:long_context]
+  item-795 at level 1: text: illustrates that DeepSeek-V3
+  item-796 at level 1: paragraph: , following supervised fine-tuni ... oss context window lengths up to 128K.
+  item-797 at level 1: section_header: Evaluations
+  item-798 at level 1: section_header: Evaluation Benchmarks
+  item-799 at level 1: paragraph: The base model of DeepSeek-V3
+  item-800 at level 1: text: is pretrained on a multilingual  ... tegorized and listed as follows, where
+  item-801 at level 1: text: underlined
+  item-802 at level 1: text: benchmarks are in Chinese and
+  item-803 at level 1: text: double-underlined
+  item-804 at level 1: paragraph: benchmarks are multilingual ones:
+  item-805 at level 1: text: Multi-subject multiple-choice
+  item-806 at level 1: text: datasets include MMLU
+  item-807 at level 1: reference: [mmlu]
+  item-808 at level 1: text: , MMLU-Redux
+  item-809 at level 1: reference: [mmlu_redux]
+  item-810 at level 1: text: , MMLU-Pro
+  item-811 at level 1: reference: [mmlu_pro]
+  item-812 at level 1: text: ,
+  item-813 at level 1: text: MMMLU
+  item-814 at level 1: reference: [mmmlu]
+  item-815 at level 1: text: ,
+  item-816 at level 1: text: C-Eval
+  item-817 at level 1: reference: [ceval]
+  item-818 at level 1: text: , and
+  item-819 at level 1: text: CMMLU
+  item-820 at level 1: reference: [cmmlu]
+  item-821 at level 1: paragraph: .
+  item-822 at level 1: text: Language understanding and reasoning
+  item-823 at level 1: text: datasets include HellaSwag
+  item-824 at level 1: reference: [hellaswag]
+  item-825 at level 1: text: , PIQA
+  item-826 at level 1: reference: [piqa]
+  item-827 at level 1: text: , ARC
+  item-828 at level 1: reference: [arc]
+  item-829 at level 1: text: , and BigBench Hard (BBH)
+  item-830 at level 1: reference: [bbh]
+  item-831 at level 1: paragraph: .
+  item-832 at level 1: text: Closed-book question answering
+  item-833 at level 1: text: datasets include TriviaQA
+  item-834 at level 1: reference: [joshi-etal-2017-triviaqa]
+  item-835 at level 1: text: and NaturalQuestions
+  item-836 at level 1: reference: [naturalquestions]
+  item-837 at level 1: paragraph: .
+  item-838 at level 1: text: Reading comprehension
+  item-839 at level 1: text: datasets include RACE
+  item-840 at level 1: reference: [race]
+  item-841 at level 1: text: , DROP
+  item-842 at level 1: reference: [drop]
+  item-843 at level 1: text: ,
+  item-844 at level 1: text: C3
+  item-845 at level 1: reference: [sun2019investigating]
+  item-846 at level 1: text: , and
+  item-847 at level 1: text: CMRC
+  item-848 at level 1: reference: [cui-etal-2019-span]
+  item-849 at level 1: paragraph: .
+  item-850 at level 1: text: Reference disambiguation
+  item-851 at level 1: text: datasets include
+  item-852 at level 1: text: CLUEWSC
+  item-853 at level 1: reference: [clue]
+  item-854 at level 1: text: and WinoGrande
+  item-855 at level 1: reference: [sakaguchi2019winogrande]
+  item-856 at level 1: paragraph: .
+  item-857 at level 1: text: Language modeling
+  item-858 at level 1: text: datasets include Pile
+  item-859 at level 1: reference: [pile]
+  item-860 at level 1: paragraph: .
+  item-861 at level 1: text: Chinese understanding and culture
+  item-862 at level 1: text: datasets include
+  item-863 at level 1: text: CCPM
+  item-864 at level 1: reference: [li2021ccpm]
+  item-865 at level 1: paragraph: .
+  item-866 at level 1: text: Math
+  item-867 at level 1: text: datasets include GSM8K
+  item-868 at level 1: reference: [gsm8k]
+  item-869 at level 1: text: , MATH
+  item-870 at level 1: reference: [hendrycks2021measuring]
+  item-871 at level 1: text: , MGSM
+  item-872 at level 1: reference: [mgsm]
+  item-873 at level 1: text: , and
+  item-874 at level 1: text: CMath
+  item-875 at level 1: reference: [wei2023cmath]
+  item-876 at level 1: paragraph: .
+  item-877 at level 1: text: Code
+  item-878 at level 1: text: datasets include HumanEval
+  item-879 at level 1: reference: [codex]
+  item-880 at level 1: text: , LiveCodeBench-Base (0801-1101)
+  item-881 at level 1: reference: [livecodebench]
+  item-882 at level 1: text: , MBPP
+  item-883 at level 1: reference: [mbpp]
+  item-884 at level 1: text: , and CRUXEval
+  item-885 at level 1: reference: [gu2024cruxeval]
+  item-886 at level 1: paragraph: .
+  item-887 at level 1: text: Standardized exams
+  item-888 at level 1: text: include
+  item-889 at level 1: text: AGIEval
+  item-890 at level 1: reference: [agieval]
+  item-891 at level 1: paragraph: . 
+Note that AGIEval includes both English and Chinese subsets.
+  item-892 at level 1: paragraph: Following our previous work
+  item-893 at level 1: reference: [dsvi,dsvii]
+  item-894 at level 1: text: , we adopt perplexity-based eval ... on for Pile-test and use Bits-Per-Byte
+  item-895 at level 1: paragraph: (BPB) as the metric to guarantee ... ong models using different tokenizers.
+  item-896 at level 1: table with [38x7]
+  item-897 at level 1: text: Comparison among
+  item-898 at level 1: text: -Base and other representative o ... re considered to be at the same level.
+  item-899 at level 1: text: -Base achieves the best performa ... ks, especially on math and code tasks.
+  item-900 at level 1: section_header: Evaluation Results
+  item-901 at level 1: paragraph: In Table
+  item-902 at level 1: reference: [tab:main]
+  item-903 at level 1: text: , we compare the base model of D ... ase models, including DeepSeek-V2-Base
+  item-904 at level 1: reference: [dsvii]
+  item-905 at level 1: text: (our previous release), Qwen2.5 72B Base
+  item-906 at level 1: reference: [qwen2_5]
+  item-907 at level 1: text: , and LLaMA-3.1 405B Base
+  item-908 at level 1: reference: [llama3_1_405b]
+  item-909 at level 1: text: .
+We evaluate all these models w ... omprehensively outperforms DeepSeek-V2
+  item-910 at level 1: paragraph: -Base and Qwen2.5 72B Base, and  ... oming the strongest open-source model.
+  item-911 at level 1: paragraph: From a more detailed perspective, we compare DeepSeek-V3
+  item-912 at level 1: text: -Base with the other open-source ... inese language benchmarks, DeepSeek-V3
+  item-913 at level 1: paragraph: -Base shows competitive or bette ... series, DROP, C-Eval, CMMLU, and CCPM.
+  item-914 at level 1: paragraph: Due to our efficient architectur ... engineering optimizations, DeepSeek-V3
+  item-915 at level 1: text: achieves extremely high training ...  infrastructures, training DeepSeek-V3
+  item-916 at level 1: paragraph: on each trillion tokens requires ... han training 72B or 405B dense models.
+  item-917 at level 1: table with [16x6]
+  item-918 at level 1: text: Ablation results for the MTP str ...  on most of the evaluation benchmarks.
+  item-919 at level 1: section_header: Discussion
+  item-920 at level 1: section_header: Ablation Studies for Multi-Token Prediction
+  item-921 at level 1: paragraph: In Table
+  item-922 at level 1: reference: [tab:ablation_nextn]
+  item-923 at level 1: paragraph: , we show the ablation results f ...  on most of the evaluation benchmarks.
+  item-924 at level 1: section_header: Ablation Studies for the Auxiliary-Loss-Free Balancing Strategy
+  item-925 at level 1: paragraph: In Table
+  item-926 at level 1: reference: [tab:ablation_noaux_tc]
+  item-927 at level 1: text: , we show the ablation results f ... me as DeepSeek-V2-Lite and DeepSeek-V2
+  item-928 at level 1: paragraph: , respectively. 
+On top of these ...  on most of the evaluation benchmarks.
+  item-929 at level 1: table with [16x6]
+  item-930 at level 1: text: Ablation results for the auxilia ...  on most of the evaluation benchmarks.
+  item-931 at level 1: section_header: Batch-Wise Load Balance VS. Sequence-Wise Load Balance
+  item-932 at level 1: paragraph: The key distinction between auxi ... ile test set.
+As illustrated in Figure
+  item-933 at level 1: reference: [fig:expert_load]
+  item-934 at level 1: paragraph: , we observe that the auxiliary- ... t specialization patterns as expected.
+  item-935 at level 1: paragraph: To further investigate the corre ... eve the same validation loss of 2.080.
+  item-936 at level 1: paragraph: In addition, although the batch- ... rt deployment, as described in Section
+  item-937 at level 1: reference: [sec:inference_deployment]
+  item-938 at level 1: paragraph: , to overcome it.
+  item-939 at level 1: caption: Image: figures/relative_expert_load_multi.pdf
+  item-940 at level 1: picture
+    item-940 at level 2: caption: Image: figures/relative_expert_load_multi.pdf
+  item-941 at level 1: text: Expert load of auxiliary-loss-fr ... lts of all layers provided in Appendix
+  item-942 at level 1: reference: [app:detailed_expert_load]
+  item-943 at level 1: text: .
+  item-944 at level 1: section_header: Post-Training
+  item-945 at level 1: section_header: Supervised Fine-Tuning
+  item-946 at level 1: paragraph: We curate our instruction-tuning ... tailored to its specific requirements.
+  item-947 at level 1: text: Reasoning Data.
+  item-948 at level 1: paragraph: For reasoning-related datasets,  ... of regularly formatted reasoning data.
+  item-949 at level 1: paragraph: To establish our methodology, we ... <system prompt, problem, R1 response>.
+  item-950 at level 1: paragraph: The system prompt is meticulousl ... ing overall performance strategically.
+  item-951 at level 1: paragraph: Upon completing the RL training  ... ponses that are concise and effective.
+  item-952 at level 1: text: Non-Reasoning Data.
+  item-953 at level 1: paragraph: For non-reasoning data, such as  ...  accuracy and correctness of the data.
+  item-954 at level 1: text: SFT Settings.
+  item-955 at level 1: text: We fine-tune DeepSeek-V3-Base fo ... earning rate scheduling that starts at
+  item-956 at level 1: formula: 5 \times 10^{-6}
+  item-957 at level 1: text: and gradually decreases to
+  item-958 at level 1: formula: 1 \times 10^{-6}
+  item-959 at level 1: paragraph: . 
+During training, each single  ... emain isolated and mutually invisible.
+  item-960 at level 1: section_header: Reinforcement Learning
+  item-961 at level 1: section_header: Reward Model
+  item-962 at level 1: paragraph: We employ a rule-based Reward Mo ... nd a model-based RM in our RL process.
+  item-963 at level 1: text: Rule-Based RM.
+  item-964 at level 1: paragraph: For questions that can be valida ... stant to manipulation or exploitation.
+  item-965 at level 1: text: Model-Based RM.
+  item-966 at level 1: text: For questions with free-form gro ...  model is trained from the DeepSeek-V3
+  item-967 at level 1: paragraph: SFT checkpoints. 
+To enhance its ... k of reward hacking in specific tasks.
+  item-968 at level 1: section_header: Group Relative Policy Optimization
+  item-969 at level 1: paragraph: Similar to DeepSeek-V2
+  item-970 at level 1: reference: [dsvii]
+  item-971 at level 1: text: , we adopt Group Relative Policy Optimization(GRPO)
+  item-972 at level 1: reference: [deepseekmath]
+  item-973 at level 1: text: , which foregoes the critic mode ... tead. 
+Specifically, for each question
+  item-974 at level 1: formula: q
+  item-975 at level 1: text: , GRPO samples a group of outputs
+  item-976 at level 1: formula: \{o_1, o_2, \cdots, o_G\}
+  item-977 at level 1: text: from the old policy model
+  item-978 at level 1: formula: \pi_{\theta_{old}}
+  item-979 at level 1: text: and then optimizes the policy model
+  item-980 at level 1: formula: \pi_{\theta}
+  item-981 at level 1: text: by maximizing the following objective:
+  item-982 at level 1: formula: \begin{split}
+    \mathcal{J}_{G ...  \pi_{ref}\right)\right) ,
+\end{split}
+  item-983 at level 1: formula: \mathbb{D}_{KL}\left(\pi_{\theta ... ref}(o_i|q)}{\pi_{\theta}(o_i|q)} - 1,
+  item-984 at level 1: text: where
+  item-985 at level 1: formula: \epsilon
+  item-986 at level 1: text: and
+  item-987 at level 1: formula: \beta
+  item-988 at level 1: text: are hyper-parameters;
+  item-989 at level 1: formula: \pi_{ref}
+  item-990 at level 1: text: is the reference model; 
+and
+  item-991 at level 1: formula: A_i
+  item-992 at level 1: text: is the advantage, derived from the rewards
+  item-993 at level 1: formula: \{r_1, r_2, \ldots, r_G\}
+  item-994 at level 1: text: corresponding to the outputs within each group:
+  item-995 at level 1: formula: A_i = \frac{r_i - {\operatorname ... ame{std}(\{r_1, r_2, \cdots, r_G\})}}.
+  item-996 at level 1: paragraph: We incorporate prompts from dive ...  where available SFT data are limited.
+  item-997 at level 1: section_header: Evaluations
+  item-998 at level 1: section_header: Evaluation Settings
+  item-999 at level 1: text: Evaluation Benchmarks.
+  item-1000 at level 1: text: Apart from the benchmark we used ... r evaluate instructed models on IFEval
+  item-1001 at level 1: reference: [IFeval]
+  item-1002 at level 1: text: , FRAMES
+  item-1003 at level 1: reference: [frames]
+  item-1004 at level 1: text: , LongBench v2
+  item-1005 at level 1: reference: [bai2024longbench2]
+  item-1006 at level 1: text: , GPQA
+  item-1007 at level 1: reference: [gpqa]
+  item-1008 at level 1: text: , SimpleQA
+  item-1009 at level 1: reference: [simpleqa]
+  item-1010 at level 1: text: , C-SimpleQA
+  item-1011 at level 1: reference: [csimpleqa]
+  item-1012 at level 1: text: , SWE-Bench Verified
+  item-1013 at level 1: reference: [swe_verified]
+  item-1014 at level 1: text: , Aider
+  item-1015 at level 1: footnote: https://aider.chat
+  item-1016 at level 1: text: , LiveCodeBench
+  item-1017 at level 1: reference: [livecodebench]
+  item-1018 at level 1: text: (questions from August 2024 to November 2024), Codeforces
+  item-1019 at level 1: footnote: https://codeforces.com
+  item-1020 at level 1: text: , Chinese National High School Mathematics Olympiad (CNMO 2024)
+  item-1021 at level 1: footnote: https://www.cms.org.cn/Home/comp/comp/cid/12.html
+  item-1022 at level 1: text: , and American Invitational Mathematics Examination 2024 (AIME 2024)
+  item-1023 at level 1: reference: [AIME2024]
+  item-1024 at level 1: paragraph: .
+  item-1025 at level 1: text: Compared Baselines.
+  item-1026 at level 1: text: We conduct comprehensive evaluat ...  and GPT-4o-0513. 
+For the DeepSeek-V2
+  item-1027 at level 1: paragraph: model series, we select the most ... rformed through their respective APIs.
+  item-1028 at level 1: text: Detailed Evaluation Configurations.
+  item-1029 at level 1: text: For standard benchmarks includin ... rompts from the simple-evals framework
+  item-1030 at level 1: footnote: https://github.com/openai/simple-evals
+  item-1031 at level 1: text: . 
+We utilize the Zero-Eval prompt format
+  item-1032 at level 1: reference: [Lin_ZeroEval_A_Unified_2024]
+  item-1033 at level 1: text: for MMLU-Redux in a zero-shot se ... valuated using the agentless framework
+  item-1034 at level 1: reference: [agentless]
+  item-1035 at level 1: text: . 
+We use the diff
+  item-1036 at level 1: paragraph: format to evaluate the Aider-rel ... mum of 8192 tokens for each benchmark.
+  item-1037 at level 1: table with [28x9]
+  item-1038 at level 1: text: Comparison between
+  item-1039 at level 1: text: and other representative chat mo ... ttings to derive robust final results.
+  item-1040 at level 1: text: stands as the best-performing op ... against frontier closed-source models.
+  item-1041 at level 1: section_header: Standard Evaluation
+  item-1042 at level 1: paragraph: Table
+  item-1043 at level 1: reference: [tab:chat]
+  item-1044 at level 1: text: presents the evaluation results, showcasing that DeepSeek-V3
+  item-1045 at level 1: paragraph: stands as the best-performing op ... els like GPT-4o and Claude-3.5-Sonnet.
+  item-1046 at level 1: text: English Benchmarks.
+  item-1047 at level 1: text: MMLU is a widely recognized benc ... -level evaluation testbed, DeepSeek-V3
+  item-1048 at level 1: paragraph: achieves remarkable results, ran ... r competitors by a substantial margin.
+  item-1049 at level 1: paragraph: In long-context understanding be ...  LongBench v2, and FRAMES, DeepSeek-V3
+  item-1050 at level 1: text: continues to demonstrate its pos ... tperforms its predecessor, DeepSeek-V2
+  item-1051 at level 1: paragraph: -series, highlighting its improv ... re to user-defined format constraints.
+  item-1052 at level 1: text: Code and Math Benchmarks.
+  item-1053 at level 1: text: Coding is a challenging and prac ... ks. 
+In algorithmic tasks, DeepSeek-V3
+  item-1054 at level 1: paragraph: demonstrates superior performanc ... pabilities in algorithm-focused tasks.
+  item-1055 at level 1: paragraph: On math benchmarks, DeepSeek-V3
+  item-1056 at level 1: text: demonstrates exceptional perform ... del, Qwen2.5 72B, by approximately 10%
+  item-1057 at level 1: paragraph: in absolute scores, which is a s ... hly beneficial for non-o1-like models.
+  item-1058 at level 1: text: Chinese Benchmarks.
+  item-1059 at level 1: text: Qwen and DeepSeek are two repres ... than the 14.8T tokens that DeepSeek-V3
+  item-1060 at level 1: paragraph: is pre-trained on.
+  item-1061 at level 1: paragraph: On C-Eval, a representative benc ... inograd Schema Challenge), DeepSeek-V3
+  item-1062 at level 1: paragraph: and Qwen2.5-72B exhibit similar  ... guage reasoning and educational tasks.
+  item-1063 at level 1: table with [8x3]
+  item-1064 at level 1: text: English open-ended conversation  ... gth-controlled win rate as the metric.
+  item-1065 at level 1: section_header: Open-Ended Evaluation
+  item-1066 at level 1: paragraph: In addition to standard benchmar ... udges, with the results shown in Table
+  item-1067 at level 1: reference: [tab:open]
+  item-1068 at level 1: text: . 
+Specifically, we adhere to th ... ginal configurations of AlpacaEval 2.0
+  item-1069 at level 1: reference: [alpaca2.0]
+  item-1070 at level 1: text: and Arena-Hard
+  item-1071 at level 1: reference: [li2024crowdsourced]
+  item-1072 at level 1: text: , which leverage GPT-4-Turbo-110 ... first open-source model to surpass 85%
+  item-1073 at level 1: paragraph: on the Arena-Hard benchmark. 
+Th ... can accomplish in challenging domains.
+  item-1074 at level 1: paragraph: Similarly, DeepSeek-V3
+  item-1075 at level 1: text: showcases exceptional performanc ... .5-0905 by a significant margin of 20%
+  item-1076 at level 1: paragraph: , highlighting substantial impro ... the effectiveness of its advancements.
+  item-1077 at level 1: section_header: DeepSeek-V3 as a Generative Reward Model
+  item-1078 at level 1: paragraph: We compare the judgment ability of DeepSeek-V3
+  item-1079 at level 1: text: with state-of-the-art models, namely GPT-4o and Claude-3.5. 
+Table
+  item-1080 at level 1: reference: [tab:rewardbench]
+  item-1081 at level 1: text: presents the performance of these models in RewardBench
+  item-1082 at level 1: reference: [lambert2024rewardbench]
+  item-1083 at level 1: text: .
+DeepSeek-V3 achieves performan ... que. 
+Therefore, we employ DeepSeek-V3
+  item-1084 at level 1: paragraph: along with voting to offer self- ... d robustness of the alignment process.
+  item-1085 at level 1: table with [9x6]
+  item-1086 at level 1: text: Performances of GPT-4o, Claude-3.5-sonnet and DeepSeek-V3 on RewardBench.
+  item-1087 at level 1: section_header: Discussion
+  item-1088 at level 1: section_header: Distillation from DeepSeek-R1
+  item-1089 at level 1: paragraph: We ablate the contribution of di ... he expert checkpoints described above.
+  item-1090 at level 1: paragraph: Table
+  item-1091 at level 1: reference: [tab:distill]
+  item-1092 at level 1: text: demonstrates the effectiveness o ... ected optimal settings for DeepSeek-V3
+  item-1093 at level 1: paragraph: in distillation.
+  item-1094 at level 1: paragraph: Our research suggests that knowl ... portant direction for future research.
+  item-1095 at level 1: table with [5x5]
+  item-1096 at level 1: text: The contribution of distillation ...  and MATH-500 are the same as in Table
+  item-1097 at level 1: reference: [tab:chat]
+  item-1098 at level 1: text: .
+  item-1099 at level 1: section_header: Self-Rewarding
+  item-1100 at level 1: paragraph: Rewards play a pivotal role in R ... 
+During the development of DeepSeek-V3
+  item-1101 at level 1: text: , for these broader contexts, we employ the constitutional AI approach
+  item-1102 at level 1: reference: [bai2022constitutional]
+  item-1103 at level 1: text: , leveraging the voting evaluati ... nal constitutional inputs, DeepSeek-V3
+  item-1104 at level 1: paragraph: can optimize towards the constit ... del capabilities in general scenarios.
+  item-1105 at level 1: section_header: Multi-Token Prediction Evaluation
+  item-1106 at level 1: paragraph: Instead of predicting just the next single token, DeepSeek-V3
+  item-1107 at level 1: text: predicts the next 2 tokens throu ...  the framework of speculative decoding
+  item-1108 at level 1: reference: [speculative_google,speculative_xhm]
+  item-1109 at level 1: text: , it can significantly accelerat ... gh acceptance rate enables DeepSeek-V3
+  item-1110 at level 1: paragraph: to achieve a significantly impro ... ing 1.8 times TPS (Tokens Per Second).
+  item-1111 at level 1: section_header: Conclusion, Limitations, and Future Directions
+  item-1112 at level 1: paragraph: In this paper, we introduce DeepSeek-V3
+  item-1113 at level 1: text: , a large MoE language model wit ... rformance.
+The training of DeepSeek-V3
+  item-1114 at level 1: paragraph: is cost-effective due to the sup ... t length extension, and post-training.
+  item-1115 at level 1: paragraph: While acknowledging its strong p ... ss, we also recognize that DeepSeek-V3
+  item-1116 at level 1: text: has some limitations, especially ... ore than two times that of DeepSeek-V2
+  item-1117 at level 1: paragraph: , there still remains potential  ... development of more advanced hardware.
+  item-1118 at level 1: paragraph: DeepSeek consistently adheres to ... earch across the following directions.
+  item-1119 at level 1: list: group list
+    item-1120 at level 2: list_item: We will consistently study and r ... undaries of its modeling capabilities.
+    item-1121 at level 2: list_item: We will continuously iterate on  ... ore comprehensive range of dimensions.
+    item-1122 at level 2: list_item: We will consistently explore and ... ding their reasoning length and depth.
+    item-1123 at level 2: list_item: We will explore more comprehensi ... nd affect our foundational assessment.
+  item-1124 at level 1: section_header: Appendix
+  item-1125 at level 1: section_header: Contributions and Acknowledgments
+  item-1126 at level 1: text: 2
+  item-1127 at level 1: text: damaiblue Research Engineering
+  item-1128 at level 1: text: Aixin Liu
+  item-1129 at level 1: text: Bing Xue
+  item-1130 at level 1: text: Bingxuan Wang
+  item-1131 at level 1: text: Bochao Wu
+  item-1132 at level 1: text: Chengda Lu
+  item-1133 at level 1: text: Chenggang Zhao
+  item-1134 at level 1: text: Chengqi Deng
+  item-1135 at level 1: text: Chenyu Zhang*
+  item-1136 at level 1: text: Chong Ruan
+  item-1137 at level 1: text: Damai Dai
+  item-1138 at level 1: text: Daya Guo
+  item-1139 at level 1: text: Dejian Yang
+  item-1140 at level 1: text: Deli Chen
+  item-1141 at level 1: text: Erhang Li
+  item-1142 at level 1: text: Fangyun Lin
+  item-1143 at level 1: text: Fucong Dai
+  item-1144 at level 1: text: Fuli Luo*
+  item-1145 at level 1: text: Guangbo Hao
+  item-1146 at level 1: text: Guanting Chen
+  item-1147 at level 1: text: Guowei Li
+  item-1148 at level 1: text: H. Zhang
+  item-1149 at level 1: text: Han Bao*
+  item-1150 at level 1: text: Hanwei Xu
+  item-1151 at level 1: text: Haocheng Wang*
+  item-1152 at level 1: text: Haowei Zhang
+  item-1153 at level 1: text: Honghui Ding
+  item-1154 at level 1: text: Huajian Xin*
+  item-1155 at level 1: text: Huazuo Gao
+  item-1156 at level 1: text: Hui Qu
+  item-1157 at level 1: text: Jianzhong Guo
+  item-1158 at level 1: text: Jiashi Li
+  item-1159 at level 1: text: Jiawei Wang*
+  item-1160 at level 1: text: Jingchang Chen
+  item-1161 at level 1: text: Jingyang Yuan
+  item-1162 at level 1: text: Junjie Qiu
+  item-1163 at level 1: text: Junlong Li
+  item-1164 at level 1: text: Junxiao Song
+  item-1165 at level 1: text: Kai Dong
+  item-1166 at level 1: text: Kai Hu*
+  item-1167 at level 1: text: Kaige Gao
+  item-1168 at level 1: text: Kang Guan
+  item-1169 at level 1: text: Kexin Huang
+  item-1170 at level 1: text: Kuai Yu
+  item-1171 at level 1: text: Lean Wang
+  item-1172 at level 1: text: Lecong Zhang
+  item-1173 at level 1: text: Liang Zhao
+  item-1174 at level 1: text: Litong Wang
+  item-1175 at level 1: text: Liyue Zhang
+  item-1176 at level 1: text: Mingchuan Zhang
+  item-1177 at level 1: text: Minghua Zhang
+  item-1178 at level 1: text: Minghui Tang
+  item-1179 at level 1: text: Panpan Huang
+  item-1180 at level 1: text: Peiyi Wang
+  item-1181 at level 1: text: Qiancheng Wang
+  item-1182 at level 1: text: Qihao Zhu
+  item-1183 at level 1: text: Qinyu Chen
+  item-1184 at level 1: text: Qiushi Du
+  item-1185 at level 1: text: Ruiqi Ge
+  item-1186 at level 1: text: Ruisong Zhang
+  item-1187 at level 1: text: Ruizhe Pan
+  item-1188 at level 1: text: Runji Wang
+  item-1189 at level 1: text: Runxin Xu
+  item-1190 at level 1: text: Ruoyu Zhang
+  item-1191 at level 1: text: Shanghao Lu
+  item-1192 at level 1: text: Shangyan Zhou
+  item-1193 at level 1: text: Shanhuang Chen
+  item-1194 at level 1: text: Shengfeng Ye
+  item-1195 at level 1: text: Shirong Ma
+  item-1196 at level 1: text: Shiyu Wang
+  item-1197 at level 1: text: Shuiping Yu
+  item-1198 at level 1: text: Shunfeng Zhou
+  item-1199 at level 1: text: Shuting Pan
+  item-1200 at level 1: text: Tao Yun
+  item-1201 at level 1: text: Tian Pei
+  item-1202 at level 1: text: Wangding Zeng
+  item-1203 at level 1: text: Wanjia Zhao*
+  item-1204 at level 1: text: Wen Liu
+  item-1205 at level 1: text: Wenfeng Liang
+  item-1206 at level 1: text: Wenjun Gao
+  item-1207 at level 1: text: Wenqin Yu
+  item-1208 at level 1: text: Wentao Zhang
+  item-1209 at level 1: text: Xiao Bi
+  item-1210 at level 1: text: Xiaodong Liu
+  item-1211 at level 1: text: Xiaohan Wang
+  item-1212 at level 1: text: Xiaokang Chen
+  item-1213 at level 1: text: Xiaokang Zhang
+  item-1214 at level 1: text: Xiaotao Nie
+  item-1215 at level 1: text: Xin Cheng
+  item-1216 at level 1: text: Xin Liu
+  item-1217 at level 1: text: Xin Xie
+  item-1218 at level 1: text: Xingchao Liu
+  item-1219 at level 1: text: Xingkai Yu
+  item-1220 at level 1: text: Xinyu Yang
+  item-1221 at level 1: text: Xinyuan Li
+  item-1222 at level 1: text: Xuecheng Su
+  item-1223 at level 1: text: Xuheng Lin
+  item-1224 at level 1: text: Y.K. Li
+  item-1225 at level 1: text: Y.Q. Wang
+  item-1226 at level 1: text: Y.X. Wei
+  item-1227 at level 1: text: Yang Zhang
+  item-1228 at level 1: text: Yanhong Xu
+  item-1229 at level 1: text: Yao Li
+  item-1230 at level 1: text: Yao Zhao
+  item-1231 at level 1: text: Yaofeng Sun
+  item-1232 at level 1: text: Yaohui Wang
+  item-1233 at level 1: text: Yi Yu
+  item-1234 at level 1: text: Yichao Zhang
+  item-1235 at level 1: text: Yifan Shi
+  item-1236 at level 1: text: Yiliang Xiong
+  item-1237 at level 1: text: Ying He
+  item-1238 at level 1: text: Yishi Piao
+  item-1239 at level 1: text: Yisong Wang
+  item-1240 at level 1: text: Yixuan Tan
+  item-1241 at level 1: text: Yiyang Ma*
+  item-1242 at level 1: text: Yiyuan Liu
+  item-1243 at level 1: text: Yongqiang Guo
+  item-1244 at level 1: text: Yu Wu
+  item-1245 at level 1: text: Yuan Ou
+  item-1246 at level 1: text: Yuduan Wang
+  item-1247 at level 1: text: Yue Gong
+  item-1248 at level 1: text: Yuheng Zou
+  item-1249 at level 1: text: Yujia He
+  item-1250 at level 1: text: Yunfan Xiong
+  item-1251 at level 1: text: Yuxiang Luo
+  item-1252 at level 1: text: Yuxiang You
+  item-1253 at level 1: text: Yuxuan Liu
+  item-1254 at level 1: text: Yuyang Zhou
+  item-1255 at level 1: text: Z.F. Wu
+  item-1256 at level 1: text: Z.Z. Ren
+  item-1257 at level 1: text: Zehui Ren
+  item-1258 at level 1: text: Zhangli Sha
+  item-1259 at level 1: text: Zhe Fu
+  item-1260 at level 1: text: Zhean Xu
+  item-1261 at level 1: text: Zhenda Xie
+  item-1262 at level 1: text: Zhengyan Zhang
+  item-1263 at level 1: text: Zhewen Hao
+  item-1264 at level 1: text: Zhibin Gou
+  item-1265 at level 1: text: Zhicheng Ma
+  item-1266 at level 1: text: Zhigang Yan
+  item-1267 at level 1: text: Zhihong Shao
+  item-1268 at level 1: text: Zhiyu Wu
+  item-1269 at level 1: text: Zhuoshu Li
+  item-1270 at level 1: text: Zihui Gu
+  item-1271 at level 1: text: Zijia Zhu
+  item-1272 at level 1: text: Zijun Liu*
+  item-1273 at level 1: text: Zilin Li
+  item-1274 at level 1: text: Ziwei Xie
+  item-1275 at level 1: text: Ziyang Song
+  item-1276 at level 1: text: Ziyi Gao
+  item-1277 at level 1: text: Zizheng Pan
+  item-1278 at level 1: text: damaigreen Data Annotation
+  item-1279 at level 1: text: Bei Feng
+  item-1280 at level 1: text: Hui Li
+  item-1281 at level 1: text: J.L. Cai
+  item-1282 at level 1: text: Jiaqi Ni
+  item-1283 at level 1: text: Lei Xu
+  item-1284 at level 1: text: Meng Li
+  item-1285 at level 1: text: Ning Tian
+  item-1286 at level 1: text: R.J. Chen
+  item-1287 at level 1: text: R.L. Jin
+  item-1288 at level 1: text: Ruyi Chen
+  item-1289 at level 1: text: S.S. Li
+  item-1290 at level 1: text: Shuang Zhou
+  item-1291 at level 1: text: Tianyu Sun
+  item-1292 at level 1: text: X.Q. Li
+  item-1293 at level 1: text: Xiangyue Jin
+  item-1294 at level 1: text: Xiaojin Shen
+  item-1295 at level 1: text: Xiaosha Chen
+  item-1296 at level 1: text: Xiaowen Sun
+  item-1297 at level 1: text: Xiaoxiang Wang
+  item-1298 at level 1: text: Xinnan Song
+  item-1299 at level 1: text: Xinyi Zhou
+  item-1300 at level 1: text: Y.X. Zhu
+  item-1301 at level 1: text: Yanhong Xu
+  item-1302 at level 1: text: Yanping Huang
+  item-1303 at level 1: text: Yaohui Li
+  item-1304 at level 1: text: Yi Zheng
+  item-1305 at level 1: text: Yuchen Zhu
+  item-1306 at level 1: text: Yunxian Ma
+  item-1307 at level 1: text: Zhen Huang
+  item-1308 at level 1: text: Zhipeng Xu
+  item-1309 at level 1: text: Zhongyu Zhang
+  item-1310 at level 1: text: damaired Business Compliance
+  item-1311 at level 1: text: Dongjie Ji
+  item-1312 at level 1: text: Jian Liang
+  item-1313 at level 1: text: Jin Chen
+  item-1314 at level 1: text: Leyi Xia
+  item-1315 at level 1: text: Miaojun Wang
+  item-1316 at level 1: text: Mingming Li
+  item-1317 at level 1: text: Peng Zhang
+  item-1318 at level 1: text: Shaoqing Wu
+  item-1319 at level 1: text: Shengfeng Ye
+  item-1320 at level 1: text: T. Wang
+  item-1321 at level 1: text: W.L. Xiao
+  item-1322 at level 1: text: Wei An
+  item-1323 at level 1: text: Xianzu Wang
+  item-1324 at level 1: text: Xinxia Shan
+  item-1325 at level 1: text: Ying Tang
+  item-1326 at level 1: text: Yukun Zha
+  item-1327 at level 1: text: Yuting Yan
+  item-1328 at level 1: text: Zhen Zhang
+  item-1329 at level 1: paragraph: Within each role, authors are li ... duals who have departed from our team.
+  item-1330 at level 1: section_header: Ablation Studies for Low-Precision Training
+  item-1331 at level 1: caption: Image: figures/fp8-v.s.-bf16.pdf
+  item-1332 at level 1: picture
+    item-1332 at level 2: caption: Image: figures/fp8-v.s.-bf16.pdf
+  item-1333 at level 1: text: Loss curves comparison between B ... erage (EMA) with a coefficient of 0.9.
+  item-1334 at level 1: section_header: FP8 v.s. BF16 Training
+  item-1335 at level 1: text: We validate our FP8 mixed precis ...  We show the training curves in Figure
+  item-1336 at level 1: reference: [fig:fp8_vs_bf16]
+  item-1337 at level 1: text: and demonstrate that the relative error remains below 0.25%
+  item-1338 at level 1: paragraph: with our high-precision accumula ...  fine-grained quantization strategies.
+  item-1339 at level 1: section_header: Discussion About Block-Wise Quantization
+  item-1340 at level 1: text: Although our tile-wise fine-grai ... ngs for activation quantization, i.e.,
+  item-1341 at level 1: text: 1x128
+  item-1342 at level 1: text: in forward pass and
+  item-1343 at level 1: text: 128x1
+  item-1344 at level 1: text: for backward pass. 
+A similar pr ... s to apply block-wise quantization per
+  item-1345 at level 1: text: 128x128
+  item-1346 at level 1: text: elements like the way we quantiz ... ment where all tensors associated with
+  item-1347 at level 1: text: Dgrad
+  item-1348 at level 1: text: are quantized on a block-wise basis. 
+The results reveal that the
+  item-1349 at level 1: text: Dgrad
+  item-1350 at level 1: text: operation which computes the act ... resulting in token-correlated outliers
+  item-1351 at level 1: reference: [int4train]
+  item-1352 at level 1: paragraph: . 
+These outliers cannot be effe ... by a block-wise quantization approach.
+  item-1353 at level 1: section_header: Expert Specialization Patterns o ... ux-Loss-Based and Aux-Loss-Free Models
+  item-1354 at level 1: text: We record the expert load of the ...  all layers, as demonstrated in Figure
+  item-1355 at level 1: reference: [fig:detailed_expert_load]
+  item-1356 at level 1: paragraph: .
+  item-1357 at level 1: caption: Image: figures/relative_expert_load_multi_1-6.pdf
+  item-1358 at level 1: picture
+    item-1358 at level 2: caption: Image: figures/relative_expert_load_multi_1-6.pdf
+  item-1359 at level 1: text: [Layers 1-7]
+  item-1360 at level 1: caption: Image: figures/relative_expert_load_multi_7-12.pdf
+  item-1361 at level 1: picture
+    item-1361 at level 2: caption: Image: figures/relative_expert_load_multi_7-12.pdf
+  item-1362 at level 1: text: [Layers 7-13]
+  item-1363 at level 1: caption: Image: figures/relative_expert_load_multi_13-18.pdf
+  item-1364 at level 1: picture
+    item-1364 at level 2: caption: Image: figures/relative_expert_load_multi_13-18.pdf
+  item-1365 at level 1: text: [Layers 13-19]
+  item-1366 at level 1: caption: Image: figures/relative_expert_load_multi_19-24.pdf
+  item-1367 at level 1: picture
+    item-1367 at level 2: caption: Image: figures/relative_expert_load_multi_19-24.pdf
+  item-1368 at level 1: text: [Layers 19-25]
+  item-1369 at level 1: caption: Image: figures/relative_expert_load_multi_25-26.pdf
+  item-1370 at level 1: picture
+    item-1370 at level 2: caption: Image: figures/relative_expert_load_multi_25-26.pdf
+  item-1371 at level 1: text: [Layers 25-27]
+  item-1372 at level 1: text: Expert load of auxiliary-loss-fr ... he theoretically balanced expert load.
