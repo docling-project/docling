@@ -134,7 +134,11 @@ class RapidOcrModel(BaseOcrModel):
             rec_model_path = self.options.rec_model_path
             rec_keys_path = self.options.rec_keys_path
             font_path = self.options.font_path
-            if artifacts_path is not None:
+
+            # Handle model path resolution based on use_bundled_models flag
+            # When use_bundled_models=True: Skip artifacts_path and let RapidOCR use bundled models
+            # When use_bundled_models=False (default): Follow Docling's standard behavior
+            if not self.options.use_bundled_models and artifacts_path is not None:
                 det_model_path = (
                     det_model_path
                     or artifacts_path
@@ -178,36 +182,45 @@ class RapidOcrModel(BaseOcrModel):
                 if not Path(model_path).exists():
                     _log.warning(f"The provided model path {model_path} is not found.")
 
+            # Build params dict with base settings
             params = {
-                # Global settings (these are still correct)
+                # Global settings
                 "Global.text_score": self.options.text_score,
-                "Global.font_path": font_path,
                 # "Global.verbose": self.options.print_verbose,
                 # Detection model settings
-                "Det.model_path": det_model_path,
                 "Det.use_cuda": use_cuda,
                 "Det.use_dml": use_dml,
                 "Det.intra_op_num_threads": intra_op_num_threads,
+                "Det.engine_type": backend_enum,
                 # Classification model settings
-                "Cls.model_path": cls_model_path,
                 "Cls.use_cuda": use_cuda,
                 "Cls.use_dml": use_dml,
                 "Cls.intra_op_num_threads": intra_op_num_threads,
+                "Cls.engine_type": backend_enum,
                 # Recognition model settings
-                "Rec.model_path": rec_model_path,
-                "Rec.font_path": font_path,
-                "Rec.rec_keys_path": rec_keys_path,
                 "Rec.use_cuda": use_cuda,
                 "Rec.use_dml": use_dml,
                 "Rec.intra_op_num_threads": intra_op_num_threads,
-                "Det.engine_type": backend_enum,
-                "Cls.engine_type": backend_enum,
                 "Rec.engine_type": backend_enum,
                 "EngineConfig.paddle.use_cuda": use_cuda,
                 "EngineConfig.paddle.gpu_id": gpu_id,
                 "EngineConfig.torch.use_cuda": use_cuda,
                 "EngineConfig.torch.gpu_id": gpu_id,
             }
+
+            # Only add model paths if they are explicitly set (not None)
+            # This allows RapidOCR to use its bundled models when use_bundled_models=True
+            if det_model_path is not None:
+                params["Det.model_path"] = det_model_path
+            if cls_model_path is not None:
+                params["Cls.model_path"] = cls_model_path
+            if rec_model_path is not None:
+                params["Rec.model_path"] = rec_model_path
+            if rec_keys_path is not None:
+                params["Rec.rec_keys_path"] = rec_keys_path
+            if font_path is not None:
+                params["Global.font_path"] = font_path
+                params["Rec.font_path"] = font_path
 
             if self.options.rec_font_path is not None:
                 _log.warning(
