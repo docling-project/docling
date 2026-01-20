@@ -1,0 +1,6 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section_header: 5.1 Hyper Parameter Optimization
+  item-2 at level 1: text: We have chosen the PubTabNet dat ... up in the inference runtime over HTML.
+  item-3 at level 1: section_header: 5.2 Quantitative Results
+  item-4 at level 1: text: We picked the model parameter co ...  that contain sparse and large tables.
+  item-5 at level 1: text: Additionally, the results show t ... f the reduced sequence representation.

@@ -1,3 +1,5 @@
+import sys
+import threading
 from collections.abc import Iterable
 from pathlib import Path
 from typing import List, Literal, Optional, Union
@@ -8,32 +10,41 @@ from docling_core.types.doc import (
     NodeItem,
     PictureClassificationClass,
     PictureClassificationData,
+    PictureClassificationMetaField,
     PictureItem,
+    PictureMeta,
 )
+from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
 from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
-from docling.models.utils.hf_model_download import download_hf_model
+from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.utils.accelerator_utils import decide_device
+
+# Global lock for model initialization to prevent threading issues
+_model_init_lock = threading.Lock()
 
 
 class DocumentPictureClassifierOptions(BaseModel):
     """
     Options for configuring the DocumentPictureClassifier.
-
-    Attributes
-    ----------
-    kind : Literal["document_picture_classifier"]
-        Identifier for the type of classifier.
     """
 
     kind: Literal["document_picture_classifier"] = "document_picture_classifier"
+    repo_id: str = "docling-project/DocumentFigureClassifier-v2.0"
+    revision: str = "main"
+
+    @property
+    def repo_cache_folder(self) -> str:
+        return self.repo_id.replace("/", "--")
 
 
-class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
+class DocumentPictureClassifier(
+    BaseItemAndImageEnrichmentModel, HuggingFaceModelDownloadMixin
+):
     """
     A model for classifying pictures in documents.
 
@@ -59,7 +70,6 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
         Processes a batch of elements and adds classification annotations.
     """
 
-    _model_repo_folder = "docling-project--DocumentFigureClassifier"
     images_scale = 2
 
     def __init__(
@@ -87,33 +97,38 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
         self.options = options
 
         if self.enabled:
-            device = decide_device(accelerator_options.device)
-            from docling_ibm_models.document_figure_classifier_model.document_figure_classifier_predictor import (
-                DocumentFigureClassifierPredictor,
-            )
+            self._device = decide_device(accelerator_options.device)
+
+            repo_cache_folder = self.options.repo_cache_folder
 
             if artifacts_path is None:
-                artifacts_path = self.download_models()
-            else:
-                artifacts_path = artifacts_path / self._model_repo_folder
+                artifacts_path = self.download_models(
+                    self.options.repo_id, revision=self.options.revision
+                )
+            elif (artifacts_path / repo_cache_folder).exists():
+                artifacts_path = artifacts_path / repo_cache_folder
 
-            self.document_picture_classifier = DocumentFigureClassifierPredictor(
-                artifacts_path=str(artifacts_path),
-                device=device,
-                num_threads=accelerator_options.num_threads,
-            )
+            import torch
+            from transformers import AutoImageProcessor, AutoModelForImageClassification
 
-    @staticmethod
-    def download_models(
-        local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
-    ) -> Path:
-        return download_hf_model(
-            repo_id="docling-project/DocumentFigureClassifier",
-            revision="v1.0.1",
-            local_dir=local_dir,
-            force=force,
-            progress=progress,
-        )
+            with _model_init_lock:
+                # Image processor
+                self._processor = AutoImageProcessor.from_pretrained(
+                    artifacts_path, use_fast=True
+                )
+
+                # Model
+                self._model = AutoModelForImageClassification.from_pretrained(
+                    artifacts_path,
+                    device_map=self._device,
+                )
+
+                if sys.version_info < (3, 14):
+                    self._model = torch.compile(self._model)  # type: ignore
+                else:
+                    self._model.eval()
+
+            self._classes = self._model.config.id2label
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """
@@ -159,27 +174,73 @@ class DocumentPictureClassifier(BaseItemAndImageEnrichmentModel):
                 yield element.item
             return
 
+        import torch
+
         images: List[Union[Image.Image, np.ndarray]] = []
         elements: List[PictureItem] = []
-        for el in element_batch:
+        for i, el in enumerate(element_batch):
             assert isinstance(el.item, PictureItem)
             elements.append(el.item)
-            images.append(el.image)
 
-        outputs = self.document_picture_classifier.predict(images)
+            raw_image = el.image
+            if isinstance(raw_image, Image.Image):
+                raw_image = raw_image.convert("RGB")
+            elif isinstance(raw_image, np.ndarray):
+                raw_image = Image.fromarray(raw_image).convert("RGB")
+            else:
+                raise TypeError(
+                    "Supported input formats are PIL.Image.Image or numpy.ndarray."
+                )
+            images.append(raw_image)
 
-        for item, output in zip(elements, outputs):
+        inputs = self._processor(images=images, return_tensors="pt")
+        # move inputs to the same device as the model
+        inputs = {k: v.to(self._device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            logits = self._model(**inputs).logits  # (batch_size, num_classes)
+            probs_batch = logits.softmax(dim=1)  # (batch_size, num_classes)
+            probs_batch = probs_batch.cpu().numpy().tolist()
+
+        predictions_batch = []
+        for probs_image in probs_batch:
+            preds = [(self._classes[i], prob) for i, prob in enumerate(probs_image)]
+            preds.sort(key=lambda t: t[1], reverse=True)
+            predictions_batch.append(preds)
+
+        for item, output in zip(elements, predictions_batch):
+            predicted_classes = [
+                PictureClassificationClass(
+                    class_name=pred[0],
+                    confidence=pred[1],
+                )
+                for pred in output
+            ]
+
+            # FIXME: annotations is deprecated, remove once all consumers use meta.classification
             item.annotations.append(
                 PictureClassificationData(
                     provenance="DocumentPictureClassifier",
-                    predicted_classes=[
-                        PictureClassificationClass(
-                            class_name=pred[0],
-                            confidence=pred[1],
-                        )
-                        for pred in output
-                    ],
+                    predicted_classes=predicted_classes,
                 )
             )
+
+            # Store classification in the new meta field
+            predictions = [
+                PictureClassificationPrediction(
+                    class_name=pred.class_name,
+                    confidence=pred.confidence,
+                    created_by="DocumentPictureClassifier",
+                )
+                for pred in predicted_classes
+            ]
+            classification_data = PictureClassificationMetaField(
+                predictions=predictions,
+            )
+
+            if item.meta is not None:
+                item.meta.classification = classification_data
+            else:
+                item.meta = PictureMeta(classification=classification_data)
 
             yield item

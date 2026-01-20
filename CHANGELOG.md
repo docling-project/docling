@@ -1,3 +1,54 @@
+## [v2.69.0](https://github.com/docling-project/docling/releases/tag/v2.69.0) - 2026-01-20
+
+### Feature
+
+* New picture classifier v2.0 ([#2889](https://github.com/docling-project/docling/issues/2889)) ([`43badc3`](https://github.com/docling-project/docling/commit/43badc3838ccfc98fd28d9d66ffe0811585f90fd))
+* Add classification filters for picture description ([#2836](https://github.com/docling-project/docling/issues/2836)) ([`ac16a26`](https://github.com/docling-project/docling/commit/ac16a26a047ccf5edd88775197ca43d146d00528))
+
+### Fix
+
+* Torch compatibility for xpu ([#2894](https://github.com/docling-project/docling/issues/2894)) ([`00273f6`](https://github.com/docling-project/docling/commit/00273f6574ad2f72f8e8b727833f1e742ab59265))
+* Standardize page_no to 1-based indexing ([#2847](https://github.com/docling-project/docling/issues/2847)) ([`1b4d82d`](https://github.com/docling-project/docling/commit/1b4d82de2d6a7998656ff0a4224a55ad4ed24fbf))
+* Usage of direct logging ([#2884](https://github.com/docling-project/docling/issues/2884)) ([`2fe9def`](https://github.com/docling-project/docling/commit/2fe9def2828735dbeecb606361302521bfa36e9c))
+* Relax pypdfium2 version constraint, support 5.x ([#2873](https://github.com/docling-project/docling/issues/2873)) ([`daf2bc6`](https://github.com/docling-project/docling/commit/daf2bc6d55ab9fd3c818e5319d4820361cc28e47))
+
+### Documentation
+
+* Correct broken link to supported formats ([#2878](https://github.com/docling-project/docling/issues/2878)) ([`16e88d5`](https://github.com/docling-project/docling/commit/16e88d50fa9e50351b1847897ff10aa4a3324872))
+
+## [v2.68.0](https://github.com/docling-project/docling/releases/tag/v2.68.0) - 2026-01-13
+
+### Feature
+
+* Support for DeepSeek-OCR in VLM pipeline ([#2798](https://github.com/docling-project/docling/issues/2798)) ([`19af03f`](https://github.com/docling-project/docling/commit/19af03f539b40d88eedd132644ed085b572664d7))
+
+### Fix
+
+* **logging:** Include page numbers in preprocess error messages ([#2858](https://github.com/docling-project/docling/issues/2858)) ([`89bea24`](https://github.com/docling-project/docling/commit/89bea245392b840a0c25c5fc35c931477a34d881))
+* **docx:** Handle grouped pictures ([#2861](https://github.com/docling-project/docling/issues/2861)) ([`5c1f8f0`](https://github.com/docling-project/docling/commit/5c1f8f0171c92d33e65f6407f08d07353fe06ebf))
+
+### Documentation
+
+* Fix Colab badge links and Weaviate typo in docs examples ([#2871](https://github.com/docling-project/docling/issues/2871)) ([`72851cc`](https://github.com/docling-project/docling/commit/72851cce66c95ab66278d8e366a80abe331d1b7c))
+* **example:** Fix update sample image path to be relative ([#2864](https://github.com/docling-project/docling/issues/2864)) ([`211c759`](https://github.com/docling-project/docling/commit/211c759fd043e81c26d2dee4418e7bf99d128673))
+* Add Semantica integration ([#2860](https://github.com/docling-project/docling/issues/2860)) ([`bf80e32`](https://github.com/docling-project/docling/commit/bf80e329d1adae99327dd0ef9ccade0d4690305a))
+
+## [v2.67.0](https://github.com/docling-project/docling/releases/tag/v2.67.0) - 2026-01-09
+
+### Feature
+
+* Enrichment annotations in the new meta format ([#2859](https://github.com/docling-project/docling/issues/2859)) ([`aab3ff5`](https://github.com/docling-project/docling/commit/aab3ff5d82fc54864657c0c2ff8e0aa21461f23f))
+* Add XPU device support for Intel GPUs ([#2809](https://github.com/docling-project/docling/issues/2809)) ([`2b83fdd`](https://github.com/docling-project/docling/commit/2b83fdd0deeec0f1ad016cc78ea42d3144a86cad))
+* Add option to report timings details ([#2772](https://github.com/docling-project/docling/issues/2772)) ([`cbc6537`](https://github.com/docling-project/docling/commit/cbc6537ee856349cef9b1ed453310e269667534c))
+
+### Fix
+
+* Lock new deps and update python 3.14 warnings ([#2844](https://github.com/docling-project/docling/issues/2844)) ([`d9295df`](https://github.com/docling-project/docling/commit/d9295df30202e251c9e282a4d0ce61653c7268b6))
+* Correct type hint for table_structure_options usage ([#2823](https://github.com/docling-project/docling/issues/2823)) ([`a0530a2`](https://github.com/docling-project/docling/commit/a0530a271e5411bae96cfcb8a6ae23b3431a7462))
+* Transformers models lazy-loaded ([#2826](https://github.com/docling-project/docling/issues/2826)) ([`3ef4525`](https://github.com/docling-project/docling/commit/3ef45258b7de6f5efe13b1f5ba392d72e2854349))
+* Font download by passing font_path to RapidOcr ([#2822](https://github.com/docling-project/docling/issues/2822)) ([`ffafe58`](https://github.com/docling-project/docling/commit/ffafe58ad25e0ebdca44a41f8df9f691c9a393bf))
+* **cli:** Add Layout and Table models to --show-external-plugins ([#2832](https://github.com/docling-project/docling/issues/2832)) ([`ed57089`](https://github.com/docling-project/docling/commit/ed5708907fcd29e56b114ce7062c4c2693c67b6b))
+
 ## [v2.66.0](https://github.com/docling-project/docling/releases/tag/v2.66.0) - 2025-12-24
 
 ### Feature

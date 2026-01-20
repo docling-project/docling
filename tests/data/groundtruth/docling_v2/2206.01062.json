@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "name": "2206.01062",
   "origin": {
     "mimetype": "application/pdf",
@@ -15369,7 +15369,7 @@
           "page_no": 3,
           "bbox": {
             "l": 87.63,
-            "t": 700.1,
+            "t": 700.11,
             "r": 262.94,
             "b": 571.39,
             "coord_origin": "BOTTOMLEFT"

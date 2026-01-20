@@ -141,6 +141,7 @@ nav:
       - "LangChain": integrations/langchain.md
       - "Langflow": integrations/langflow.md
       - "LlamaIndex": integrations/llamaindex.md
+      - "Semantica": integrations/semantica.md
       - "txtai": integrations/txtai.md
     - ⭐️ Featured:
       - "Apify": integrations/apify.md

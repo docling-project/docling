@@ -31,6 +31,7 @@ from docling.backend.image_backend import ImageDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel import vlm_model_specs
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
@@ -78,18 +79,7 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
-from docling.datamodel.vlm_model_specs import (
-    GOT2_TRANSFORMERS,
-    GRANITE_VISION_OLLAMA,
-    GRANITE_VISION_TRANSFORMERS,
-    GRANITEDOCLING_MLX,
-    GRANITEDOCLING_TRANSFORMERS,
-    GRANITEDOCLING_VLLM,
-    SMOLDOCLING_MLX,
-    SMOLDOCLING_TRANSFORMERS,
-    SMOLDOCLING_VLLM,
-    VlmModelType,
-)
+from docling.datamodel.vlm_model_specs import VlmModelType
 from docling.document_converter import (
     AudioFormatOption,
     DocumentConverter,
@@ -820,18 +810,20 @@ def convert(  # noqa: C901
             )
 
             if vlm_model == VlmModelType.GRANITE_VISION:
-                pipeline_options.vlm_options = GRANITE_VISION_TRANSFORMERS
+                pipeline_options.vlm_options = (
+                    vlm_model_specs.GRANITE_VISION_TRANSFORMERS
+                )
             elif vlm_model == VlmModelType.GRANITE_VISION_OLLAMA:
-                pipeline_options.vlm_options = GRANITE_VISION_OLLAMA
+                pipeline_options.vlm_options = vlm_model_specs.GRANITE_VISION_OLLAMA
             elif vlm_model == VlmModelType.GOT_OCR_2:
-                pipeline_options.vlm_options = GOT2_TRANSFORMERS
+                pipeline_options.vlm_options = vlm_model_specs.GOT2_TRANSFORMERS
             elif vlm_model == VlmModelType.SMOLDOCLING:
-                pipeline_options.vlm_options = SMOLDOCLING_TRANSFORMERS
+                pipeline_options.vlm_options = vlm_model_specs.SMOLDOCLING_TRANSFORMERS
                 if sys.platform == "darwin":
                     try:
                         import mlx_vlm
 
-                        pipeline_options.vlm_options = SMOLDOCLING_MLX
+                        pipeline_options.vlm_options = vlm_model_specs.SMOLDOCLING_MLX
                     except ImportError:
                         _log.warning(
                             "To run SmolDocling faster, please install mlx-vlm:\n"
@@ -839,12 +831,16 @@ def convert(  # noqa: C901
                         )
 
             elif vlm_model == VlmModelType.GRANITEDOCLING:
-                pipeline_options.vlm_options = GRANITEDOCLING_TRANSFORMERS
+                pipeline_options.vlm_options = (
+                    vlm_model_specs.GRANITEDOCLING_TRANSFORMERS
+                )
                 if sys.platform == "darwin":
                     try:
                         import mlx_vlm
 
-                        pipeline_options.vlm_options = GRANITEDOCLING_MLX
+                        pipeline_options.vlm_options = (
+                            vlm_model_specs.GRANITEDOCLING_MLX
+                        )
                     except ImportError:
                         _log.warning(
                             "To run GraniteDocling faster, please install mlx-vlm:\n"
@@ -852,10 +848,13 @@ def convert(  # noqa: C901
                         )
 
             elif vlm_model == VlmModelType.SMOLDOCLING_VLLM:
-                pipeline_options.vlm_options = SMOLDOCLING_VLLM
+                pipeline_options.vlm_options = vlm_model_specs.SMOLDOCLING_VLLM
 
             elif vlm_model == VlmModelType.GRANITEDOCLING_VLLM:
-                pipeline_options.vlm_options = GRANITEDOCLING_VLLM
+                pipeline_options.vlm_options = vlm_model_specs.GRANITEDOCLING_VLLM
+
+            elif vlm_model == VlmModelType.DEEPSEEKOCR_OLLAMA:
+                pipeline_options.vlm_options = vlm_model_specs.DEEPSEEKOCR_OLLAMA
 
             pdf_format_option = PdfFormatOption(
                 pipeline_cls=VlmPipeline, pipeline_options=pipeline_options

@@ -1515,9 +1515,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_pictures(
         self, drawing_blip: Any, doc: DoclingDocument
     ) -> list[RefItem]:
-        def get_docx_image(drawing_blip: Any) -> Optional[bytes]:
+        def get_docx_image(image: Any) -> Optional[bytes]:
             image_data: Optional[bytes] = None
-            rId = drawing_blip[0].get(
+            rId = image.get(
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
             if rId in self.docx_obj.part.rels:
@@ -1527,36 +1527,47 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return image_data
 
         elem_ref: list[RefItem] = []
-        level = self._get_level()
-        # Open the BytesIO object with PIL to create an Image
-        image_data: Optional[bytes] = get_docx_image(drawing_blip)
-        if image_data is None:
-            _log.warning("Warning: image cannot be found")
-            p1 = doc.add_picture(
-                parent=self.parents[level - 1],
-                caption=None,
-                content_layer=self.content_layer,
+        if drawing_blip:
+            level = self._get_level()
+            # Open the BytesIO object with PIL to create an Image
+            parent: Optional[NodeItem] = (
+                self.parents[level - 1]
+                if len(drawing_blip) == 1
+                else doc.add_group(
+                    label=GroupLabel.PICTURE_AREA,
+                    parent=self.parents[level - 1],
+                    content_layer=self.content_layer,
+                )
             )
-            elem_ref.append(p1.get_ref())
-        else:
-            try:
-                image_bytes = BytesIO(image_data)
-                pil_image = Image.open(image_bytes)
-                p2 = doc.add_picture(
-                    parent=self.parents[level - 1],
-                    image=ImageRef.from_pil(image=pil_image, dpi=72),
-                    caption=None,
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(p2.get_ref())
-            except (UnidentifiedImageError, OSError):
-                _log.warning("Warning: image cannot be loaded by Pillow")
-                p3 = doc.add_picture(
-                    parent=self.parents[level - 1],
-                    caption=None,
-                    content_layer=self.content_layer,
-                )
-                elem_ref.append(p3.get_ref())
+            for image in drawing_blip:
+                image_data: Optional[bytes] = get_docx_image(image)
+                if image_data is None:
+                    _log.warning("Warning: image cannot be found")
+                    p1 = doc.add_picture(
+                        parent=parent,
+                        caption=None,
+                        content_layer=self.content_layer,
+                    )
+                    elem_ref.append(p1.get_ref())
+                else:
+                    try:
+                        image_bytes = BytesIO(image_data)
+                        pil_image = Image.open(image_bytes)
+                        p2 = doc.add_picture(
+                            parent=parent,
+                            image=ImageRef.from_pil(image=pil_image, dpi=72),
+                            caption=None,
+                            content_layer=self.content_layer,
+                        )
+                        elem_ref.append(p2.get_ref())
+                    except (UnidentifiedImageError, OSError):
+                        _log.warning("Warning: image cannot be loaded by Pillow")
+                        p3 = doc.add_picture(
+                            parent=parent,
+                            caption=None,
+                            content_layer=self.content_layer,
+                        )
+                        elem_ref.append(p3.get_ref())
         return elem_ref
 
     def _handle_drawingml(self, doc: DoclingDocument, drawingml_els: Any):

@@ -81,7 +81,7 @@ class ReadingOrderModel:
         for child in element.cluster.children:
             c_label = child.label
             c_bbox = child.bbox.to_bottom_left_origin(
-                doc.pages[element.page_no + 1].size.height
+                doc.pages[element.page_no].size.height
             )
             c_text = " ".join(
                 [
@@ -92,7 +92,7 @@ class ReadingOrderModel:
             )
 
             c_prov = ProvenanceItem(
-                page_no=element.page_no + 1, charspan=(0, len(c_text)), bbox=c_bbox
+                page_no=element.page_no, charspan=(0, len(c_text)), bbox=c_bbox
             )
             if c_label == DocItemLabel.LIST_ITEM:
                 # TODO: Infer if this is a numbered or a bullet list item
@@ -142,7 +142,7 @@ class ReadingOrderModel:
         out_doc: DoclingDocument = DoclingDocument(name=doc_name, origin=origin)
 
         for page in conv_res.pages:
-            page_no = page.page_no + 1
+            page_no = page.page_no
             size = page.size
 
             assert size is not None, "Page size is not initialized."
@@ -174,7 +174,7 @@ class ReadingOrderModel:
                 if element.label == DocItemLabel.CODE:
                     cap_text = element.text
                     prov = ProvenanceItem(
-                        page_no=element.page_no + 1,
+                        page_no=element.page_no,
                         charspan=(0, len(cap_text)),
                         bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
                     )
@@ -230,7 +230,7 @@ class ReadingOrderModel:
                     )
 
                 prov = ProvenanceItem(
-                    page_no=element.page_no + 1,
+                    page_no=element.page_no,
                     charspan=(0, 0),
                     bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
                 )
@@ -286,7 +286,7 @@ class ReadingOrderModel:
             elif isinstance(element, FigureElement):
                 cap_text = ""
                 prov = ProvenanceItem(
-                    page_no=element.page_no + 1,
+                    page_no=element.page_no,
                     charspan=(0, len(cap_text)),
                     bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
                 )
@@ -330,7 +330,7 @@ class ReadingOrderModel:
         assert isinstance(elem, TextElement)
         text = elem.text
         prov = ProvenanceItem(
-            page_no=elem.page_no + 1,
+            page_no=elem.page_no,
             charspan=(0, len(text)),
             bbox=elem.cluster.bbox.to_bottom_left_origin(page_height),
         )
@@ -343,7 +343,7 @@ class ReadingOrderModel:
         cap_text = element.text
 
         prov = ProvenanceItem(
-            page_no=element.page_no + 1,
+            page_no=element.page_no,
             charspan=(0, len(cap_text)),
             bbox=element.cluster.bbox.to_bottom_left_origin(page_height),
         )
@@ -391,7 +391,7 @@ class ReadingOrderModel:
             "Labels of merged elements must match."
         )
         prov = ProvenanceItem(
-            page_no=merged_elem.page_no + 1,
+            page_no=merged_elem.page_no,
             charspan=(
                 len(new_item.text) + 1,
                 len(new_item.text) + 1 + len(merged_elem.text),

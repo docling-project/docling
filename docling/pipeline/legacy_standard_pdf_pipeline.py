@@ -14,18 +14,27 @@ from docling.datamodel.layout_model_specs import LayoutModelConfig
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.datamodel.settings import settings
 from docling.models.base_ocr_model import BaseOcrModel
-from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
     get_table_structure_factory,
 )
-from docling.models.page_assemble_model import PageAssembleModel, PageAssembleOptions
-from docling.models.page_preprocessing_model import (
+from docling.models.stages.code_formula.code_formula_model import (
+    CodeFormulaModel,
+    CodeFormulaModelOptions,
+)
+from docling.models.stages.page_assemble.page_assemble_model import (
+    PageAssembleModel,
+    PageAssembleOptions,
+)
+from docling.models.stages.page_preprocessing.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
 )
-from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
+from docling.models.stages.reading_order.readingorder_model import (
+    ReadingOrderModel,
+    ReadingOrderOptions,
+)
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.model_downloader import download_models
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -136,7 +145,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
 
     def initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
         with TimeRecorder(conv_res, "page_init"):
-            page._backend = conv_res.input._backend.load_page(page.page_no)  # type: ignore
+            page._backend = conv_res.input._backend.load_page(page.page_no - 1)  # type: ignore
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()
 
@@ -167,7 +176,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             if self.pipeline_options.generate_page_images:
                 for page in conv_res.pages:
                     assert page.image is not None
-                    page_no = page.page_no + 1
+                    page_no = page.page_no
                     conv_res.document.pages[page_no].image = ImageRef.from_pil(
                         page.image, dpi=int(72 * self.pipeline_options.images_scale)
                     )
