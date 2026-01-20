@@ -122,15 +122,20 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return prov
 
-    def _lvl_of_paragraph(self, paragraph) -> int:
-        """
-        Determine paragraph level (0..8). Default is 0.
+    def _get_paragraph_level(self, paragraph) -> int:
+        """Return the indentation level of a paragraph XML element.
+
+        Paragraphs can have different indentation levels (0-8). The level is
+        stored in the `lvl` attribute of the `a:pPr` element (paragraph properties).
 
         Args:
-            paragraph: The paragraph XML element.
+            paragraph: Paragraph XML element whose level should be extracted.
 
         Returns:
-            int: The paragraph level (0-8).
+            int: Paragraph level in the range (0, 8). Returns 0 when:
+                * NO `a:pPr` element is found,
+                * NO `lvl` attribute exists, or
+                * The `lvl` attribute value is invalid.
         """
         pPr = paragraph.find("a:pPr", namespaces=self.namespaces)
         if pPr is not None and "lvl" in pPr.attrib:
@@ -140,20 +145,29 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 pass
         return 0
 
-    def _bullet_from_pPr(
+    def _parse_bullet_from_paragraph_properties(
         self, pPr
     ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
         """
-        Parse bullet/numbering from a:<pPr> (or a:lvlXpPr) element.
+        Parse bullet or numbering information from a paragraph properties node.
+
+        This inspects the `a:pPr` or `a:lvlXpPr` element and extracts
+        information about the bullet character, automatic numbering, picture
+        bullets, or explicit `buNone` markers.
 
         Args:
-            pPr: The paragraph properties XML element.
+            pPr: Paragraph properties XML element (`a:pPr`` or `a:lvlXpPr`).
 
         Returns:
-            tuple: (is_list, kind, detail)
-                - is_list: True/False/None indicating if this is a list item
-                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
-                - detail: Character or numbering type string, or None
+            tuple[Optional[bool], Optional[str], Optional[str]]: A 3-tuple
+            (is_list, kind, detail) where:
+
+                * is_list is True/False/None indicating whether
+                  this is a list item.
+                * kind is one of "buChar", "buAutoNum", "buBlip",
+                  "buNone" or None describing the marker type.
+                * detail is the bullet character, numbering type string, or
+                  None if not applicable.
         """
         if pPr is None:
             return (None, None, None)
@@ -179,60 +193,73 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return (None, None, None)
 
-    def _find_lvl_pPr_in_lstStyle(self, lstStyle, lvl: int):
-        """
-        Find a:lvl{lvl+1}pPr node in a:lstStyle for a given level.
-        a:lvl1pPr -> lvl=0, a:lvl2pPr -> lvl=1, ...
+    def _find_level_properties_in_list_style(self, lstStyle, lvl: int):
+        """Return the level-specific paragraph properties node from a list style.
+
+        This looks for an `a:lvl{lvl+1}pPr` node inside an `a:lstStyle`
+        element, where `a:lvl1pPr` corresponds to level 0,
+        `a:lvl2pPr` to level 1, and so on.
 
         Args:
-            lstStyle: The list style XML element.
-            lvl: The paragraph level (0-8).
+            lstStyle: List style XML element `a:lstStyle`.
+            lvl: Paragraph level in the range (0, 8).
 
         Returns:
-            The matching a:lvl{lvl+1}pPr XML element, or None if not found.
+            Matching `a:lvl{lvl+1}pPr` XML element, or None if no matching element is found.
         """
         if lstStyle is None:
             return None
         tag = f"a:lvl{lvl + 1}pPr"
         return lstStyle.find(tag, namespaces=self.namespaces)
 
-    def _bullet_from_txBody_lstStyle(
+    def _parse_bullet_from_text_body_list_style(
         self, txBody, lvl: int
-    ) -> tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
-        """
-        Look for a:lstStyle/a:lvl{lvl+1}pPr under a txBody and parse bullet from it.
+    ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
+        """Parse bullet or numbering information from a text body's list style.
+
+        This searches for `a:lstStyle/a:lvl{lvl+1}pPr` under a `txBody`
+        and uses the level-specific paragraph properties to deduce bullet or
+        numbering information.
 
         Args:
-            txBody: The text body XML element.
-            lvl: The paragraph level (0-8).
+            txBody: Text body XML element `p:txBody`.
+            lvl: Paragraph level in the range (0, 8).
 
         Returns:
-            tuple: (is_list, kind, detail, xml_node)
-                - is_list: True/False/None indicating if this is a list item
-                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
-                - detail: Character or numbering type string, or None
-                - xml_node: The XML element where the marker was found, or None
+            tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
+            A 3-tuple (is_list, kind, detail) where:
+
+                * is_list is True/False/None indicating whether
+                  this is a list item.
+                * kind is one of "buChar", "buAutoNum", "buBlip",
+                  "buNone" or None describing the marker type.
+                * detail is the bullet character or numbering type string, or
+                  None if not applicable.
         """
         if txBody is None:
-            return (None, None, None, None)
+            return (None, None, None)
         lstStyle = txBody.find("a:lstStyle", namespaces=self.namespaces)
-        lvl_pPr = self._find_lvl_pPr_in_lstStyle(lstStyle, lvl)
-        is_list, kind, detail = self._bullet_from_pPr(lvl_pPr)
-        return (is_list, kind, detail, lvl_pPr)
+        lvl_pPr = self._find_level_properties_in_list_style(lstStyle, lvl)
+        is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
+        return (is_list, kind, detail)
 
-    def _master_style_node(
+    def _get_master_text_style_node(
         self, slide_master, placeholder_type
     ) -> Optional[etree._Element]:
-        """
-        Decide which master txStyles bucket to use based on placeholder type.
-        Most content placeholders (BODY/OBJECT) use bodyStyle.
+        """Return the appropriate master text style node for a placeholder.
+
+        Most content placeholders (BODY/OBJECT) use `p:bodyStyle`,
+        while titles use `p:titleStyle`. All other placeholders default to
+        `p:otherStyle`.
 
         Args:
-            slide_master: The slide master object.
-            placeholder_type: The placeholder type.
+            slide_master: Slide master object associated with the current slide.
+            placeholder_type: Placeholder type enum from `PP_PLACEHOLDER`.
 
         Returns:
-            The matching style node from the master txStyles, or None if not found.
+            Matching style node from master
+            `p:txStyles` (`p:bodyStyle`, `p:titleStyle` or
+            `p:otherStyle`), or None when no styles are defined.
         """
         txStyles = slide_master._element.find(
             ".//p:txStyles", namespaces=self.namespaces
@@ -248,56 +275,56 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         return txStyles.find("p:otherStyle", namespaces=self.namespaces)
 
-    def _bullet_from_master_txStyles(
+    def _parse_bullet_from_master_text_styles(
         self, slide_master, placeholder_type, lvl: int
-    ) -> tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
-        """
-        Parse bullet/numbering from slideMaster's p:txStyles (titleStyle/bodyStyle/otherStyle).
+    ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
+        """Parse bullet or numbering information from the slide master text styles.
+
+        This looks up the appropriate style bucket in the slide master's
+        `p:txStyles` (`titleStyle`, `bodyStyle` or `otherStyle`) and
+        extracts bullet or numbering information for the given level.
 
         Args:
-            slide_master: The slide master object.
-            placeholder_type: The placeholder type.
-            lvl: The paragraph level (0-8).
+            slide_master: Slide master object associated with the current slide.
+            placeholder_type: Placeholder type enum from `PP_PLACEHOLDER`.
+            lvl: Paragraph level in the range (0, 8).
 
         Returns:
-            tuple: (is_list, kind, detail, xml_node)
-                - is_list: True/False/None indicating if this is a list item
-                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
-                - detail: Character or numbering type string, or None
-                - xml_node: The XML element where the marker was found, or None
+            tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
+            A 3-tuple ``(is_list, kind, detail)`` where:
+
+                * ``is_list`` is ``True``/``False``/``None`` indicating whether
+                  this is a list item.
+                * ``kind`` is one of ``"buChar"``, ``"buAutoNum"``, ``"buBlip"``,
+                  ``"buNone"`` or ``None`` describing the marker type.
+                * ``detail`` is the bullet character or numbering type string, or
+                  ``None`` if not applicable.
         """
-        style = self._master_style_node(slide_master, placeholder_type)
+        style = self._get_master_text_style_node(slide_master, placeholder_type)
         if style is None:
-            return (None, None, None, None)
+            return (None, None, None)
 
         lvl_pPr = style.find(f".//a:lvl{lvl + 1}pPr", namespaces=self.namespaces)
-        is_list, kind, detail = self._bullet_from_pPr(lvl_pPr)
-        return (is_list, kind, detail, lvl_pPr)
-
-    def _get_slide_master(self, shape) -> object:
-        """
-        Get the slide master associated with a shape.
-
-        Args:
-            shape: The shape object.
-
-        Returns:
-            The slide master object associated with the shape.
-        """
-        return shape.part.slide.slide_layout.slide_master
+        is_list, kind, detail = self._parse_bullet_from_paragraph_properties(lvl_pPr)
+        return (is_list, kind, detail)
 
     def is_list_item(self, paragraph) -> tuple[bool, str]:
-        """
-        Check if the paragraph is a list item.
-        Compatible interface with mspowerpoint_backend.py's existing is_list_item function.
-        bullet_type
+        """Determine whether a paragraph should be treated as a list item.
+
+        The method first tries to resolve list style information via the shape
+        that owns the paragraph. If that is not possible, it falls back to
+        simpler checks based on paragraph properties and level.
+
         Args:
-            paragraph: The paragraph object to check.
+            paragraph: `python-pptx` paragraph object to inspect.
 
         Returns:
-            tuple: (is_list, bullet_type)
-                - is_list: True/False indicating if the paragraph is a list item
-                - bullet_type: "Bullet" | "Numbered" | "None" indicating the list type
+            tuple[bool, str]: A 2-tuple (is_list, bullet_type) where:
+
+                * is_list is True if the paragraph is considered a list
+                  item, otherwise False.
+                * bullet_type is one of "Bullet", "Numbered" or
+                  "None" describing the list marker type.
         """
         p = paragraph._element
 
@@ -352,49 +379,54 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             return (False, "None")
 
     def effective_list_marker(self, shape, paragraph) -> dict:
-        """
-        Return dictionary describing the effective list marker for a paragraph.
+        """Return a dictionary describing the effective list marker for a paragraph.
+
+        List marker information can come from several sources: direct paragraph
+        properties, shape-level list styles, layout placeholders, or slide
+        master text styles. This helper resolves all of these layers and
+        returns a unified view of the effective marker.
 
         Args:
-            shape: The shape object containing the paragraph.
-            paragraph: The paragraph object to check.
+            shape: Shape object that contains the paragraph.
+            paragraph: `python-pptx` paragraph object to inspect.
 
         Returns:
-            dict: Dictionary with information about the list marker:
-                - is_list: True/False/None indicating if this is a list item
-                - kind: 'buChar' | 'buAutoNum' | 'buBlip' | 'buNone' | None indicating the marker type
-                - detail: Character or numbering type string, e.g., '•' or 'arabicPeriod'
-                - source: Source of the marker style: 'paragraph' | 'shape.lstStyle' | 'layout.lstStyle' | 'master.txStyles' | 'unknown'
-                - level: Paragraph level (0-8)
-                - xml_node: The XML element where the marker was found, or None
+            dict: Dictionary with information about the list marker, with keys:
+
+                * is_list: True/False/None indicating if this
+                  is a list item.
+                * kind: One of "buChar", "buAutoNum",
+                  "buBlip", "buNone" or None describing the marker
+                  type.
+                * detail: Bullet character or numbering type string, or
+                  None.
+                * level: Paragraph level in the range (0, 8).
         """
         p = paragraph._element
-        lvl = self._lvl_of_paragraph(p)
+        lvl = self._get_paragraph_level(p)
 
         # 1) Direct paragraph properties
         pPr = p.find("a:pPr", namespaces=self.namespaces)
-        is_list, kind, detail = self._bullet_from_pPr(pPr)
+        is_list, kind, detail = self._parse_bullet_from_paragraph_properties(pPr)
         if is_list is not None:
             return {
                 "is_list": is_list,
                 "kind": kind,
                 "detail": detail,
-                "source": "paragraph",
                 "level": lvl,
-                "xml_node": pPr,
             }
 
         # 2) Shape-level lstStyle (txBody/a:lstStyle)
         txBody = shape._element.find(".//p:txBody", namespaces=self.namespaces)
-        is_list, kind, detail, xml_node = self._bullet_from_txBody_lstStyle(txBody, lvl)
+        is_list, kind, detail = self._parse_bullet_from_text_body_list_style(
+            txBody, lvl
+        )
         if is_list is not None:
             return {
                 "is_list": is_list,
                 "kind": kind,
                 "detail": detail,
-                "source": "shape.lstStyle",
                 "level": lvl,
-                "xml_node": xml_node,
             }
 
         # 3) Layout placeholder lstStyle (if this is a placeholder)
@@ -412,7 +444,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 layout_tx = layout_ph._element.find(
                     ".//p:txBody", namespaces=self.namespaces
                 )
-                is_list, kind, detail, xml_node = self._bullet_from_txBody_lstStyle(
+                is_list, kind, detail = self._parse_bullet_from_text_body_list_style(
                     layout_tx, lvl
                 )
 
@@ -422,15 +454,13 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         "is_list": is_list,
                         "kind": kind,
                         "detail": detail,
-                        "source": "layout.lstStyle",
                         "level": lvl,
-                        "xml_node": xml_node,
                     }
 
-                # 4) Master txStyles (this is where your "With foo" inherits from)
+                # 4) Parse master txStyles
                 ph_type = shape.placeholder_format.type
-                master = self._get_slide_master(shape)
-                is_list, kind, detail, xml_node = self._bullet_from_master_txStyles(
+                master = shape.part.slide.slide_layout.slide_master
+                is_list, kind, detail = self._parse_bullet_from_master_text_styles(
                     master, ph_type, lvl
                 )
 
@@ -440,18 +470,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                         "is_list": True,
                         "kind": kind,
                         "detail": detail,
-                        "source": "master.txStyles",
                         "level": lvl,
-                        "xml_node": xml_node,
                     }
                 elif is_list is not None:
                     return {
                         "is_list": is_list,
                         "kind": kind,
                         "detail": detail,
-                        "source": "master.txStyles",
                         "level": lvl,
-                        "xml_node": xml_node,
                     }
 
             # If layout has explicit is_list value but master didn't override it, use layout
@@ -462,9 +488,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
             "is_list": None,
             "kind": None,
             "detail": None,
-            "source": "unknown",
             "level": lvl,
-            "xml_node": None,
         }
 
     def handle_text_elements(
