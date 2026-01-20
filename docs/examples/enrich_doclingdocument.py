@@ -35,7 +35,7 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import InputFormat, ItemAndImageEnrichmentElement
 from docling.datamodel.document import InputDocument
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
-from docling.models.document_picture_classifier import (
+from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
     DocumentPictureClassifierOptions,
 )

@@ -53,6 +53,7 @@ def main():
     data_folder = Path(__file__).parent / "../../tests/data"
     input_doc_path = data_folder / "pdf/2206.01062.pdf"
     output_dir = Path("scratch")  # ensure this directory exists before saving
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Important: For operating with page images, we must keep them, otherwise the DocumentConverter
     # will destroy them for cleaning up memory.

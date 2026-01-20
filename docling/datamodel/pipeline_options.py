@@ -4,6 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, ClassVar, Dict, List, Literal, Optional, Union
 
+from docling_core.types.doc import PictureClassificationLabel
 from pydantic import (
     AnyUrl,
     BaseModel,
@@ -233,6 +234,9 @@ class PictureDescriptionBaseOptions(BaseOptions):
     picture_area_threshold: float = (
         0.05  # percentage of the area for a picture to processed with the models
     )
+    classification_allow: Optional[List[PictureClassificationLabel]] = None
+    classification_deny: Optional[List[PictureClassificationLabel]] = None
+    classification_min_confidence: float = 0.0
 
 
 class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):

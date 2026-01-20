@@ -1,0 +1,18 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: DocLayNet: A Large Human-Annotated Dataset for Document-Layout Analysis
+  item-2 at level 1: text: Birgit Pfitzmann IBM Research Rueschlikon, Switzerland bpf@zurich.ibm.com
+  item-3 at level 1: text: Christoph Auer IBM Research Rueschlikon, Switzerland cau@zurich.ibm.com
+  item-4 at level 1: text: Michele Dolfi IBM Research Rueschlikon, Switzerland dol@zurich.ibm.com
+  item-5 at level 1: text: Ahmed S. Nassar IBM Research Rueschlikon, Switzerland ahn@zurich.ibm.com
+  item-6 at level 1: text: Peter Staar IBM Research Rueschlikon, Switzerland taa@zurich.ibm.com
+  item-7 at level 1: section_header: ABSTRACT
+  item-8 at level 1: text: Accurate document layout analysi ... al- purpose document- layout analysis.
+  item-9 at level 1: section_header: CCS CONCEPTS
+  item-10 at level 1: text: - Information systems \(\rightar ... ng; Computer vision; Object detection;
+  item-11 at level 1: caption: <center>Figure 1: Four examples  ... ifferent document categories </center>
+  item-12 at level 1: picture
+    item-12 at level 2: caption: <center>Figure 1: Four examples of complex page layouts across different document categories </center>
+  item-13 at level 1: section_header: KEYWORDS
+  item-14 at level 1: text: PDF document conversion, layout  ...  detection, data set, Machine Learning
+  item-15 at level 1: section_header: ACM Reference Format:
+  item-16 at level 1: text: Birgit Pfitzmann, Christoph Auer ... ttps://doi.org/10.1145/3534678.3539043

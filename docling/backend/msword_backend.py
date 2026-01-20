@@ -160,6 +160,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
+            # Reset mappings for a fresh conversion pass
+            self.paragraph_comment_map.clear()
+            self.paragraph_to_items.clear()
             doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
             self._add_header_footer(self.docx_obj, doc)
             # Add comments and link them to annotated paragraphs
@@ -910,6 +913,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # Track the paragraph element ID for comment linking
         para_element_id = id(element)
+        comment_ids = self._get_comment_ids_for_element(element)
 
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
@@ -1084,6 +1088,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         # Store mapping of paragraph element to created items for comment linking
         if elem_ref and para_element_id:
             self.paragraph_to_items[para_element_id] = elem_ref
+            if comment_ids:
+                self.paragraph_comment_map[para_element_id] = list(comment_ids)
 
         return elem_ref
 
@@ -1745,30 +1751,21 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             except Exception as e:
                                 _log.debug(f"Error resolving item ref: {e}")
 
-            # Use add_comment API to add comment with targets
-            if targets:
-                doc.add_comment(
-                    text=full_text,
-                    targets=targets,
-                )
-                _log.debug(
-                    f"Added comment {comment_id} linked to {len(targets)} item(s)"
-                )
-            else:
-                # No targets found, add comment without linking
-                # Create in a comment group for organization
-                comment_group = doc.add_group(
-                    label=GroupLabel.COMMENT_SECTION,
-                    name=f"comment-{comment_id}",
-                    content_layer=ContentLayer.NOTES,
-                )
-                doc.add_text(
-                    label=DocItemLabel.TEXT,
-                    parent=comment_group,
-                    text=full_text,
-                    content_layer=ContentLayer.NOTES,
-                )
-                _log.debug(f"Added comment {comment_id} without targets")
+            # Create a group for this comment in NOTES and add the comment there,
+            # linking to discovered targets (if any)
+            comment_group = doc.add_group(
+                label=GroupLabel.COMMENT_SECTION,
+                name=f"comment-{comment_id}",
+                content_layer=ContentLayer.NOTES,
+            )
+            doc.add_comment(
+                text=full_text,
+                targets=targets if targets else None,
+                parent=comment_group,
+            )
+            _log.debug(
+                f"Added comment {comment_id} in group with {len(targets)} linked item(s)"
+            )
 
     def _extract_comment_ranges(self) -> None:
         """Extract comment range markers from the document.
@@ -1820,3 +1817,34 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         except Exception as e:
             _log.debug(f"Error extracting comment ranges: {e}")
+
+    def _get_comment_ids_for_element(self, element: BaseOxmlElement) -> set[str]:
+        """Return the set of comment IDs attached to a paragraph element."""
+        namespaces = {
+            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        }
+        comment_ids: set[str] = set()
+
+        for marker in element.findall(".//w:commentRangeStart", namespaces):
+            comment_id = marker.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+            )
+            if comment_id:
+                comment_ids.add(comment_id)
+
+        for marker in element.findall(".//w:commentRangeEnd", namespaces):
+            comment_id = marker.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+            )
+            if comment_id:
+                comment_ids.add(comment_id)
+
+        # Some documents only contain commentReference nodes without range markers
+        for marker in element.findall(".//w:commentReference", namespaces):
+            comment_id = marker.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+            )
+            if comment_id:
+                comment_ids.add(comment_id)
+
+        return comment_ids

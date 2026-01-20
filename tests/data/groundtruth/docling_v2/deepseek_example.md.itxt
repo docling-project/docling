@@ -1,0 +1,9 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: section_header: 5.1 Hyper Parameter Optimization
+  item-2 at level 1: text: We have chosen the PubTabNet dat ... up in the inference runtime over HTML.
+  item-3 at level 1: caption: Table 1. HPO performed in OTSL a ... r mAP score than the HTML counterpart.
+  item-4 at level 1: table with [10x8]
+    item-4 at level 2: caption: Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer 9 architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart.
+  item-5 at level 1: section_header: 5.2 Quantitative Results
+  item-6 at level 1: text: We picked the model parameter co ...  that contain sparse and large tables.
+  item-7 at level 1: text: Additionally, the results show t ... f the reduced sequence representation.

@@ -1,6 +1,7 @@
 import logging
 import random
 from collections.abc import Iterable
+from importlib.metadata import version
 from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
@@ -97,6 +98,11 @@ if TYPE_CHECKING:
     from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
+
+
+# Resolve pypdfium2 major version
+# pypdfium2 5.x renamed PdfObject.get_pos() -> get_bounds()
+_PYPDFIUM2_MAJOR_VERSION = int(version("pypdfium2").split(".")[0])
 
 
 class PyPdfiumPageBackend(PdfPageBackend):
@@ -259,7 +265,10 @@ class PyPdfiumPageBackend(PdfPageBackend):
         with pypdfium2_lock:
             rotation = self._ppage.get_rotation()
             for obj in self._ppage.get_objects(filter=[pdfium_c.FPDF_PAGEOBJ_IMAGE]):
-                pos = obj.get_pos()
+                if _PYPDFIUM2_MAJOR_VERSION >= 5:
+                    pos = obj.get_bounds()  # pypdfium2 >= 5.x
+                else:
+                    pos = obj.get_pos()  # pypdfium2 <= 4.x
                 if rotation == 90:
                     pos = (
                         pos[1],
