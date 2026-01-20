@@ -113,3 +113,43 @@ def test_rapidocr_model_initialization_uses_mobile_default_paths(
     assert Path(params["Rec.model_path"]).name == rec_name
     assert Path(params["Rec.rec_keys_path"]).name == "ppocr_keys_v1.txt"
     assert Path(params["Global.font_path"]).name == "FZYTK.TTF"
+
+
+def test_rapidocr_model_initialization_can_use_bundled_models(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeEngineType(str, Enum):
+        ONNXRUNTIME = "onnxruntime"
+        OPENVINO = "openvino"
+        PADDLE = "paddle"
+        TORCH = "torch"
+
+    class FakeRapidOCR:
+        def __init__(self, params):
+            captured["params"] = params
+
+    monkeypatch.setitem(
+        sys.modules,
+        "rapidocr",
+        SimpleNamespace(EngineType=FakeEngineType, RapidOCR=FakeRapidOCR),
+    )
+
+    RapidOcrModel(
+        enabled=True,
+        artifacts_path=tmp_path,
+        options=RapidOcrOptions(
+            backend="onnxruntime",
+            use_bundled_models=True,
+        ),
+        accelerator_options=AcceleratorOptions(device="cpu", num_threads=1),
+    )
+
+    params = captured["params"]
+    assert params["Det.model_path"] is None
+    assert params["Cls.model_path"] is None
+    assert params["Rec.model_path"] is None
+    assert params["Rec.rec_keys_path"] is None
+    assert params["Global.font_path"] is None
