@@ -291,14 +291,14 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
         Returns:
             tuple[Optional[bool], Optional[str], Optional[str], Optional[object]]:
-            A 3-tuple ``(is_list, kind, detail)`` where:
+            A 3-tuple (is_list, kind, detail) where:
 
-                * ``is_list`` is ``True``/``False``/``None`` indicating whether
+                * is_list is True/False/None indicating whether
                   this is a list item.
-                * ``kind`` is one of ``"buChar"``, ``"buAutoNum"``, ``"buBlip"``,
-                  ``"buNone"`` or ``None`` describing the marker type.
-                * ``detail`` is the bullet character or numbering type string, or
-                  ``None`` if not applicable.
+                * kind is one of "buChar", "buAutoNum", "buBlip",
+                  "buNone" or None describing the marker type.
+                * detail is the bullet character or numbering type string, or
+                  None if not applicable.
         """
         style = self._get_master_text_style_node(slide_master, placeholder_type)
         if style is None:
