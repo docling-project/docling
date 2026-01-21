@@ -153,6 +153,12 @@ class RapidOcrOptions(OcrOptions):
     rec_font_path: Optional[str] = None  # Deprecated, please use font_path instead
     font_path: Optional[str] = None  # same default as rapidocr
 
+    # Use RapidOCR's bundled models (shipped with the package) instead of artifacts_path
+    # When True: Ignores artifacts_path and uses models from site-packages/rapidocr/models
+    # When False (default): Follows Docling's standard behavior - uses artifacts_path when set
+    # Note: Explicitly set model paths (det_model_path, etc.) always take precedence
+    use_bundled_models: bool = False
+
     # Dictionary to overwrite or pass-through additional parameters
     rapidocr_params: Dict[str, Any] = Field(default_factory=dict)
 
