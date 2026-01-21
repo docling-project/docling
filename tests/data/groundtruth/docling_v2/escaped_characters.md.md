@@ -31,6 +31,9 @@ Text: 00:16.000 ----&gt; 00:18.000 &amp; &lt; &gt; " '
 | Greater-than | >         |
 | Quotes       | "         |
 | Apostrophes  | '         |
+| Pipe         | | | |     |
+
+The pipe symbol (| or `|` ) only needs to be escaped in tables.
 
 # Raw HTML
 
