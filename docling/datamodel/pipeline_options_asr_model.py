@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, Any, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import AnyUrl, BaseModel, Field
 from typing_extensions import deprecated
@@ -18,8 +18,8 @@ class BaseAsrOptions(BaseModel):
         str,
         Field(
             description=(
-                "Type identifier for the ASR options. Used for discriminating between different ASR "
-                "configurations."
+                "Type identifier for the ASR options. Used for discriminating "
+                "between different ASR configurations."
             ),
         ),
     ]
@@ -39,60 +39,87 @@ class InlineAsrOptions(BaseAsrOptions):
         str,
         Field(
             description=(
-                "HuggingFace model repository ID for the ASR model. Must be a Whisper-compatible model for "
-                "automatic speech recognition."
+                "HuggingFace model repository ID for the ASR model. Must be a "
+                "Whisper-compatible model for automatic speech recognition."
             ),
             examples=["openai/whisper-tiny", "openai/whisper-base"],
         ),
     ]
-    verbose: bool = Field(
-        default=False,
-        description="Enable verbose logging output from the ASR model for debugging purposes.",
-    )
-    timestamps: bool = Field(
-        default=True,
-        description=(
-            "Generate timestamps for transcribed segments. When enabled, each transcribed segment includes start "
-            "and end times for temporal alignment with the audio."
+    verbose: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable verbose logging output from the ASR model for debugging "
+                "purposes."
+            )
         ),
-    )
-    temperature: float = Field(
-        default=0.0,
-        description=(
-            "Sampling temperature for text generation. 0.0 uses greedy decoding (deterministic), higher values "
-            "(e.g., 0.7-1.0) increase randomness. Recommended: 0.0 for consistent transcriptions."
+    ] = False
+    timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Generate timestamps for transcribed segments. When enabled, "
+                "each transcribed segment includes start and end times for "
+                "temporal alignment with the audio."
+            )
         ),
-    )
-    max_new_tokens: int = Field(
-        default=256,
-        description=(
-            "Maximum number of tokens to generate per transcription segment. Limits output length to prevent "
-            "runaway generation. Adjust based on expected transcript length."
+    ] = True
+    temperature: Annotated[
+        float,
+        Field(
+            description=(
+                "Sampling temperature for text generation. 0.0 uses greedy "
+                "decoding (deterministic), higher values (e.g., 0.7-1.0) "
+                "increase randomness. Recommended: 0.0 for consistent "
+                "transcriptions."
+            )
         ),
-    )
-    max_time_chunk: float = Field(
-        default=30.0,
-        description=(
-            "Maximum duration in seconds for each audio chunk processed by the model. Audio longer than this is "
-            "split into chunks. Whisper models are typically trained on 30-second segments."
+    ] = 0.0
+    max_new_tokens: Annotated[
+        int,
+        Field(
+            description=(
+                "Maximum number of tokens to generate per transcription segment. "
+                "Limits output length to prevent runaway generation. Adjust "
+                "based on expected transcript length."
+            )
         ),
-    )
-    torch_dtype: Optional[str] = Field(
-        default=None,
-        description=(
-            "PyTorch data type for model weights. Options: `float32`, `float16`, `bfloat16`. Lower precision "
-            "(float16/bfloat16) reduces memory usage and increases speed. If None, uses model default."
+    ] = 256
+    max_time_chunk: Annotated[
+        float,
+        Field(
+            description=(
+                "Maximum duration in seconds for each audio chunk processed by "
+                "the model. Audio longer than this is split into chunks. "
+                "Whisper models are typically trained on 30-second segments."
+            )
         ),
-    )
-    supported_devices: List[AcceleratorDevice] = Field(
-        default=[
-            AcceleratorDevice.CPU,
-            AcceleratorDevice.CUDA,
-            AcceleratorDevice.MPS,
-            AcceleratorDevice.XPU,
-        ],
-        description="List of hardware accelerators supported by this ASR model configuration.",
-    )
+    ] = 30.0
+    torch_dtype: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "PyTorch data type for model weights. Options: `float32`, "
+                "`float16`, `bfloat16`. Lower precision (float16/bfloat16) "
+                "reduces memory usage and increases speed. If None, uses model "
+                "default."
+            )
+        ),
+    ] = None
+    supported_devices: Annotated[
+        list[AcceleratorDevice],
+        Field(
+            description=(
+                "List of hardware accelerators supported by this ASR model "
+                "configuration."
+            )
+        ),
+    ] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ]
 
     @property
     def repo_cache_folder(self) -> str:
@@ -102,32 +129,48 @@ class InlineAsrOptions(BaseAsrOptions):
 class InlineAsrNativeWhisperOptions(InlineAsrOptions):
     """Configuration for native Whisper ASR implementation."""
 
-    inference_framework: InferenceAsrFramework = Field(
-        default=InferenceAsrFramework.WHISPER,
-        description="Inference framework for ASR. Uses native Whisper implementation for optimal performance.",
-    )
-    language: str = Field(
-        default="en",
-        description=(
-            "Language code for transcription. Specifying the correct language improves accuracy. "
-            "Use ISO 639-1 codes (e.g., `en`, `es`, `fr`)."
+    inference_framework: Annotated[
+        InferenceAsrFramework,
+        Field(
+            description=(
+                "Inference framework for ASR. Uses native Whisper "
+                "implementation for optimal performance."
+            )
         ),
-        examples=["en", "es", "fr", "de"],
-    )
-    supported_devices: List[AcceleratorDevice] = Field(
-        default=[
-            AcceleratorDevice.CPU,
-            AcceleratorDevice.CUDA,
-        ],
-        description="Hardware accelerators supported by native Whisper. Supports CPU and CUDA only.",
-    )
-    word_timestamps: bool = Field(
-        default=True,
-        description=(
-            "Generate word-level timestamps in addition to segment timestamps. Provides fine-grained temporal "
-            "alignment for each word in the transcription."
+    ] = InferenceAsrFramework.WHISPER
+    language: Annotated[
+        str,
+        Field(
+            description=(
+                "Language code for transcription. Specifying the correct "
+                "language improves accuracy. Use ISO 639-1 codes (e.g., `en`, "
+                "`es`, `fr`)."
+            ),
+            examples=["en", "es", "fr", "de"],
         ),
-    )
+    ] = "en"
+    supported_devices: Annotated[
+        list[AcceleratorDevice],
+        Field(
+            description=(
+                "Hardware accelerators supported by native Whisper. Supports "
+                "CPU and CUDA only."
+            )
+        ),
+    ] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+    ]
+    word_timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Generate word-level timestamps in addition to segment "
+                "timestamps. Provides fine-grained temporal alignment for each "
+                "word in the transcription."
+            )
+        ),
+    ] = True
 
 
 class InlineAsrMlxWhisperOptions(InlineAsrOptions):
@@ -136,55 +179,86 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
     Uses mlx-whisper library for efficient inference on Apple Silicon devices.
     """
 
-    inference_framework: InferenceAsrFramework = Field(
-        default=InferenceAsrFramework.MLX,
-        description="Inference framework for ASR. Uses MLX for optimized performance on Apple Silicon (M1/M2/M3).",
-    )
-    language: str = Field(
-        default="en",
-        description=(
-            "Language code for transcription. Specifying the correct language improves accuracy. "
-            "Use ISO 639-1 codes (e.g., `en`, `es`, `fr`)."
+    inference_framework: Annotated[
+        InferenceAsrFramework,
+        Field(
+            description=(
+                "Inference framework for ASR. Uses MLX for optimized "
+                "performance on Apple Silicon (M1/M2/M3)."
+            )
         ),
-        examples=["en", "es", "fr", "de"],
-    )
-    task: str = Field(
-        default="transcribe",
-        description=(
-            "ASR task type. `transcribe` converts speech to text in the same language. `translate` converts speech "
-            "to English text regardless of input language."
+    ] = InferenceAsrFramework.MLX
+    language: Annotated[
+        str,
+        Field(
+            description=(
+                "Language code for transcription. Specifying the correct "
+                "language improves accuracy. Use ISO 639-1 codes (e.g., `en`, "
+                "`es`, `fr`)."
+            ),
+            examples=["en", "es", "fr", "de"],
         ),
-        examples=["transcribe", "translate"],
-    )
-    supported_devices: List[AcceleratorDevice] = Field(
-        default=[AcceleratorDevice.MPS],
-        description="Hardware accelerators supported by MLX Whisper. Optimized for Apple Silicon (MPS) only.",
-    )
-    word_timestamps: bool = Field(
-        default=True,
-        description=(
-            "Generate word-level timestamps in addition to segment timestamps. Provides fine-grained temporal "
-            "alignment for each word in the transcription."
+    ] = "en"
+    task: Annotated[
+        str,
+        Field(
+            description=(
+                "ASR task type. `transcribe` converts speech to text in the "
+                "same language. `translate` converts speech to English text "
+                "regardless of input language."
+            ),
+            examples=["transcribe", "translate"],
         ),
-    )
-    no_speech_threshold: float = Field(
-        default=0.6,
-        description=(
-            "Threshold for detecting speech vs. silence. Segments with no-speech probability above this threshold "
-            "are considered silent. Range: 0.0-1.0. Higher values are more aggressive in filtering silence."
+    ] = "transcribe"
+    supported_devices: Annotated[
+        list[AcceleratorDevice],
+        Field(
+            description=(
+                "Hardware accelerators supported by MLX Whisper. Optimized for "
+                "Apple Silicon (MPS) only."
+            )
         ),
-    )
-    logprob_threshold: float = Field(
-        default=-1.0,
-        description=(
-            "Log probability threshold for filtering low-confidence transcriptions. Segments with average log "
-            "probability below this threshold are filtered out. More negative values are more permissive."
+    ] = [AcceleratorDevice.MPS]
+    word_timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Generate word-level timestamps in addition to segment "
+                "timestamps. Provides fine-grained temporal alignment for each "
+                "word in the transcription."
+            )
         ),
-    )
-    compression_ratio_threshold: float = Field(
-        default=2.4,
-        description=(
-            "Compression ratio threshold for detecting repetitive or low-quality transcriptions. Segments with "
-            "compression ratio above this threshold are filtered. Higher values are more permissive."
+    ] = True
+    no_speech_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "Threshold for detecting speech vs. silence. Segments with "
+                "no-speech probability above this threshold are considered "
+                "silent. Range: 0.0-1.0. Higher values are more aggressive in "
+                "filtering silence."
+            )
         ),
-    )
+    ] = 0.6
+    logprob_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "Log probability threshold for filtering low-confidence "
+                "transcriptions. Segments with average log probability below "
+                "this threshold are filtered out. More negative values are more "
+                "permissive."
+            )
+        ),
+    ] = -1.0
+    compression_ratio_threshold: Annotated[
+        float,
+        Field(
+            description=(
+                "Compression ratio threshold for detecting repetitive or "
+                "low-quality transcriptions. Segments with compression ratio "
+                "above this threshold are filtered. Higher values are more "
+                "permissive."
+            )
+        ),
+    ] = 2.4

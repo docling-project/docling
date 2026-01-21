@@ -17,7 +17,8 @@ class LayoutModelConfig(BaseModel):
         str,
         Field(
             description=(
-                "Human-readable name identifier for the layout model. Used for logging, debugging, and model selection."
+                "Human-readable name identifier for the layout model. Used for "
+                "logging, debugging, and model selection."
             ),
             examples=["docling_layout_heron", "docling_layout_egret_large"],
         ),
@@ -26,8 +27,9 @@ class LayoutModelConfig(BaseModel):
         str,
         Field(
             description=(
-                "HuggingFace repository ID where the model is hosted. Used to download model weights and configuration "
-                "files from HuggingFace Hub."
+                "HuggingFace repository ID where the model is hosted. Used to "
+                "download model weights and configuration files from "
+                "HuggingFace Hub."
             ),
             examples=[
                 "docling-project/docling-layout-heron",
@@ -39,8 +41,9 @@ class LayoutModelConfig(BaseModel):
         str,
         Field(
             description=(
-                "Git revision (branch, tag, or commit hash) of the model repository to use. Allows pinning to specific "
-                "model versions for reproducibility."
+                "Git revision (branch, tag, or commit hash) of the model "
+                "repository to use. Allows pinning to specific model versions "
+                "for reproducibility."
             ),
             examples=["main", "v1.0.0"],
         ),
@@ -49,22 +52,26 @@ class LayoutModelConfig(BaseModel):
         str,
         Field(
             description=(
-                "Relative path within the repository to model artifacts. Empty string indicates artifacts are in the "
-                "repository root. Used for repositories with multiple models or nested structures."
+                "Relative path within the repository to model artifacts. Empty "
+                "string indicates artifacts are in the repository root. Used "
+                "for repositories with multiple models or nested structures."
             ),
         ),
     ]
-    supported_devices: list[AcceleratorDevice] = Field(
-        default=[
-            AcceleratorDevice.CPU,
-            AcceleratorDevice.CUDA,
-            AcceleratorDevice.MPS,
-            AcceleratorDevice.XPU,
-        ],
-        description=(
-            "List of hardware accelerators supported by this model. The model can only run on devices in this list."
+    supported_devices: Annotated[
+        list[AcceleratorDevice],
+        Field(
+            description=(
+                "List of hardware accelerators supported by this model. The "
+                "model can only run on devices in this list."
+            )
         ),
-    )
+    ] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+        AcceleratorDevice.MPS,
+        AcceleratorDevice.XPU,
+    ]
 
     @property
     def model_repo_folder(self) -> str:
