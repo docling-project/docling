@@ -5,6 +5,7 @@ from typing import Union
 
 from docling_core.types.doc import (
     BoundingBox,
+    ChartData,
     CoordOrigin,
     DocItemLabel,
     DoclingDocument,
@@ -19,6 +20,7 @@ from docling_core.types.doc import (
 from docling_core.types.doc.document import ContentLayer
 from PIL import Image, UnidentifiedImageError
 from pptx import Presentation
+from pptx.chart.chart import Chart
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 from pptx.oxml.text import CT_TextLineBreak
 
@@ -317,6 +319,32 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 doc.add_table(parent=parent_slide, data=data, prov=prov)
         return
 
+    def handle_chart(self, shape, parent_slide, slide_ind, doc, slide_size) -> None:
+        # Handling charts
+        if shape.has_chart:
+            prov = self.generate_prov(shape, slide_ind, "", slide_size)
+            chart: Chart = shape.chart
+
+            series = [
+                (s.name, list(s.values)) for s in chart.series if s.values is not None
+            ]
+
+            categories = []
+            for plot in chart.plots:
+                for cat in plot.categories:
+                    categories.append(cat)
+
+            data = ChartData(
+                title=chart.chart_title.text_frame.text,
+                kind=chart.chart_type.name,
+                is_categorical=len(categories) > 0,
+                categories=categories,
+                series=series,
+            )
+
+            doc.add_chart(parent=parent_slide, data=data, prov=prov)
+        return
+
     def walk_linear(self, pptx_obj, doc) -> DoclingDocument:
         # Units of size in PPTX by default are EMU units (English Metric Units)
         slide_width = pptx_obj.slide_width
@@ -342,6 +370,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 if shape.has_table:
                     # Handle Tables
                     self.handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
+                if shape.has_chart:
+                    # Handle Charts
+                    self.handle_chart(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
                     if hasattr(shape, "image"):
