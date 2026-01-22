@@ -289,59 +289,77 @@ jobs:
 
   test-pip-install-no-lock:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Install package with pip (no lock file)
+      - name: Test pip install across Python versions
         run: |
-          python -m pip install --upgrade pip
-          pip install -e .[easyocr,tesserocr,vlm,rapidocr,asr]
-
-      - name: Run basic import test
-        run: |
-          python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful')"
+          for py_version in 3.9 3.10 3.11 3.12 3.13 3.14; do
+            echo "=========================================="
+            echo "Testing Python $py_version"
+            echo "=========================================="
+            
+            # Create virtual environment with uv
+            uv venv /tmp/venv-${py_version} --python=${py_version}
+            source /tmp/venv-${py_version}/bin/activate
+            
+            # Install package with pip (no lock file)
+            uv pip install -e .[easyocr,tesserocr,vlm,rapidocr,asr]
+            
+            # Run basic import test
+            python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version}')"
+            
+            # Cleanup
+            deactivate
+            rm -rf /tmp/venv-${py_version}
+            
+            echo "Python $py_version: PASSED"
+            echo ""
+          done
 
   test-pip-install-no-dev-headers:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Remove Python development headers
         run: |
           # Remove Python.h and other development files to simulate environment without dev tools
-          sudo apt-get -qq remove -y python3-dev python3.* || true
+          sudo apt-get -qq remove -y python3-dev python3.*-dev || true
           sudo rm -rf /usr/include/python* || true
           sudo rm -rf /usr/local/include/python* || true
 
-      - name: Install package with pip (no lock file, no compilation)
+      - name: Test pip install without dev headers across Python versions
         run: |
-          python -m pip install --upgrade pip
-          # Set pip to only use binary packages (no source builds)
-          export PIP_ONLY_BINARY=:all:
-          # Install without extras that require compilation (tesserocr requires dev headers)
-          pip install --only-binary=:all: -e .[easyocr,vlm,rapidocr,asr]
-
-      - name: Run basic import test
-        run: |
-          python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful without dev headers')"
+          for py_version in 3.9 3.10 3.11 3.12 3.13 3.14; do
+            echo "=========================================="
+            echo "Testing Python $py_version (no dev headers)"
+            echo "=========================================="
+            
+            # Create virtual environment with uv
+            uv venv /tmp/venv-nodev-${py_version} --python=${py_version}
+            source /tmp/venv-nodev-${py_version}/bin/activate
+            
+            # Install package with pip (no lock file, no compilation)
+            # Install without extras that require compilation (tesserocr requires dev headers)
+            uv pip install --only-binary=:all: -e .[easyocr,vlm,rapidocr,asr]
+            
+            # Run basic import test
+            python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version} without dev headers')"
+            
+            # Cleanup
+            deactivate
+            rm -rf /tmp/venv-nodev-${py_version}
+            
+            echo "Python $py_version (no dev headers): PASSED"
+            echo ""
+          done
 
   build-package:
     runs-on: ubuntu-latest
