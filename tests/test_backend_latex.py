@@ -1105,4 +1105,3 @@ def test_e2e_latex_conversions(latex_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
             f"Document JSON mismatch for {latex_path}"
         )
-
