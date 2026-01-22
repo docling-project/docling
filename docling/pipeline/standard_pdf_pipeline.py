@@ -40,18 +40,27 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
 from docling.datamodel.settings import settings
-from docling.models.code_formula_model import CodeFormulaModel, CodeFormulaModelOptions
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
     get_table_structure_factory,
 )
-from docling.models.page_assemble_model import PageAssembleModel, PageAssembleOptions
-from docling.models.page_preprocessing_model import (
+from docling.models.stages.code_formula.code_formula_model import (
+    CodeFormulaModel,
+    CodeFormulaModelOptions,
+)
+from docling.models.stages.page_assemble.page_assemble_model import (
+    PageAssembleModel,
+    PageAssembleOptions,
+)
+from docling.models.stages.page_preprocessing.page_preprocessing_model import (
     PagePreprocessingModel,
     PagePreprocessingOptions,
 )
-from docling.models.readingorder_model import ReadingOrderModel, ReadingOrderOptions
+from docling.models.stages.reading_order.readingorder_model import (
+    ReadingOrderModel,
+    ReadingOrderOptions,
+)
 from docling.pipeline.base_pipeline import ConvertPipeline
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
@@ -363,7 +372,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                         assert isinstance(backend, PdfDocumentBackend), (
                             "Threaded pipeline only supports PdfDocumentBackend."
                         )
-                        page_backend = backend.load_page(page.page_no)
+                        page_backend = backend.load_page(page.page_no - 1)
                         page._backend = page_backend
                         if page_backend.is_valid():
                             page.size = page_backend.get_size()
@@ -594,7 +603,7 @@ class StandardPdfPipeline(ConvertPipeline):
         pages: list[Page] = []
         for i in range(conv_res.input.page_count):
             if start_page - 1 <= i <= end_page - 1:
-                page = Page(page_no=i)
+                page = Page(page_no=i + 1)
                 conv_res.pages.append(page)
                 pages.append(page)
 
@@ -708,7 +717,7 @@ class StandardPdfPipeline(ConvertPipeline):
         ]
         # Add error details from failed pages
         for page_no, error in proc.failed_pages:
-            page_label = f"Page {page_no + 1}" if page_no >= 0 else "Unknown page"
+            page_label = f"Page {page_no}" if page_no > 0 else "Unknown page"
             error_msg = str(error) if error else ""
             error_item = ErrorItem(
                 component_type=DoclingComponentType.PIPELINE,
@@ -753,7 +762,7 @@ class StandardPdfPipeline(ConvertPipeline):
             if self.pipeline_options.generate_page_images:
                 for page in conv_res.pages:
                     assert page.image is not None
-                    page_no = page.page_no + 1
+                    page_no = page.page_no
                     conv_res.document.pages[page_no].image = ImageRef.from_pil(
                         page.image, dpi=int(72 * self.pipeline_options.images_scale)
                     )
@@ -776,7 +785,7 @@ class StandardPdfPipeline(ConvertPipeline):
                             isinstance(element, TableItem)
                             and self.pipeline_options.generate_table_images
                         ):
-                            page_ix = element.prov[0].page_no - 1
+                            page_ix = element.prov[0].page_no
                             page = next(
                                 (p for p in conv_res.pages if p.page_no == page_ix),
                                 cast("Page", None),

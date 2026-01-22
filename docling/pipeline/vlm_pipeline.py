@@ -43,11 +43,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
 )
 from docling.datamodel.settings import settings
-from docling.models.api_vlm_model import ApiVlmModel
-from docling.models.vlm_models_inline.hf_transformers_model import (
+from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
+from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
 )
-from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
+from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import PaginatedPipeline
 from docling.utils.deepseekocr_utils import parse_deepseekocr_markdown
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -100,7 +100,7 @@ class VlmPipeline(PaginatedPipeline):
                     ),
                 ]
             elif vlm_options.inference_framework == InferenceFramework.VLLM:
-                from docling.models.vlm_models_inline.vllm_model import VllmVlmModel
+                from docling.models.vlm_pipeline_models.vllm_model import VllmVlmModel
 
                 self.build_pipe = [
                     VllmVlmModel(
@@ -124,7 +124,7 @@ class VlmPipeline(PaginatedPipeline):
             images_scale = self.pipeline_options.images_scale
             if images_scale is not None:
                 page._default_image_scale = images_scale
-            page._backend = conv_res.input._backend.load_page(page.page_no)  # type: ignore
+            page._backend = conv_res.input._backend.load_page(page.page_no - 1)  # type: ignore
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()
 

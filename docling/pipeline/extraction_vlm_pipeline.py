@@ -20,7 +20,7 @@ from docling.datamodel.pipeline_options import (
     VlmExtractionPipelineOptions,
 )
 from docling.datamodel.settings import settings
-from docling.models.vlm_models_inline.nuextract_transformers_model import (
+from docling.models.extraction.nuextract_transformers_model import (
     NuExtractTransformersModel,
 )
 from docling.pipeline.base_extraction_pipeline import BaseExtractionPipeline
