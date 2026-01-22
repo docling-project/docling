@@ -307,7 +307,7 @@ jobs:
             source /tmp/venv-${py_version}/bin/activate
             
             # Install package with pip (no lock file)
-            uv pip install -e .[easyocr,tesserocr,vlm,rapidocr,asr]
+            uv pip install --extra-index-url https://download.pytorch.org/whl/cpu -e .[easyocr,tesserocr,vlm,rapidocr,asr]
             
             # Run basic import test
             python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version}')"
@@ -348,7 +348,8 @@ jobs:
             
             # Install package with pip (no lock file, no compilation)
             # Install without extras that require compilation (tesserocr requires dev headers)
-            uv pip install --only-binary=:all: -e .[easyocr,vlm,rapidocr,asr]
+            # Note: Not using --only-binary since some packages are sdist-only but don't require compilation
+            uv pip install --extra-index-url https://download.pytorch.org/whl/cpu -e .[easyocr,vlm,rapidocr,asr]
             
             # Run basic import test
             python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version} without dev headers')"
