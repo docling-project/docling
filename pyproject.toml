@@ -141,9 +141,13 @@ examples = [
   "python-dotenv~=1.0",
   "langchain-huggingface>=0.0.3",
   "langchain-milvus~=0.1",
-  "langchain-text-splitters~=0.2",
+  "langchain-text-splitters>=0.2",
   "modelscope>=1.29.0",
   'gliner>=0.2.21 ; python_version < "3.14"',  # gliner depends on onnxruntime which is not available on py3.14
+]
+constraints = [
+  'numba >=0.63.0',
+  'langchain-core >=0.3.81',
 ]
 
 
