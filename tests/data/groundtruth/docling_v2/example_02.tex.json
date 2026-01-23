@@ -96,10 +96,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "E = mc^2",
-      "text": "E = mc^2"
+      "orig": "$E = mc^2$",
+      "text": "$E = mc^2$"
     },
     {
       "self_ref": "#/texts/3",

@@ -160,10 +160,10 @@
         "$ref": "#/texts/48"
       },
       {
-        "$ref": "#/texts/49"
+        "$ref": "#/groups/0"
       },
       {
-        "$ref": "#/texts/50"
+        "$ref": "#/texts/49"
       },
       {
         "$ref": "#/texts/51"
@@ -176,9 +176,6 @@
       },
       {
         "$ref": "#/texts/54"
-      },
-      {
-        "$ref": "#/pictures/0"
       },
       {
         "$ref": "#/texts/55"
@@ -295,31 +292,13 @@
         "$ref": "#/texts/92"
       },
       {
-        "$ref": "#/texts/93"
-      },
-      {
-        "$ref": "#/texts/94"
-      },
-      {
-        "$ref": "#/texts/95"
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/96"
       },
       {
-        "$ref": "#/texts/97"
-      },
-      {
-        "$ref": "#/texts/98"
-      },
-      {
-        "$ref": "#/texts/99"
-      },
-      {
         "$ref": "#/texts/100"
-      },
-      {
-        "$ref": "#/texts/101"
       },
       {
         "$ref": "#/texts/102"
@@ -364,13 +343,7 @@
         "$ref": "#/texts/115"
       },
       {
-        "$ref": "#/texts/116"
-      },
-      {
-        "$ref": "#/texts/117"
-      },
-      {
-        "$ref": "#/texts/118"
+        "$ref": "#/groups/2"
       },
       {
         "$ref": "#/texts/119"
@@ -427,9 +400,6 @@
         "$ref": "#/texts/136"
       },
       {
-        "$ref": "#/pictures/1"
-      },
-      {
         "$ref": "#/texts/137"
       },
       {
@@ -440,9 +410,6 @@
       },
       {
         "$ref": "#/texts/140"
-      },
-      {
-        "$ref": "#/pictures/2"
       },
       {
         "$ref": "#/texts/141"
@@ -479,6 +446,9 @@
       },
       {
         "$ref": "#/texts/152"
+      },
+      {
+        "$ref": "#/tables/0"
       },
       {
         "$ref": "#/texts/153"
@@ -547,7 +517,13 @@
         "$ref": "#/texts/174"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/175"
+      },
+      {
+        "$ref": "#/texts/176"
+      },
+      {
+        "$ref": "#/texts/177"
       },
       {
         "$ref": "#/texts/178"
@@ -628,6 +604,9 @@
         "$ref": "#/texts/203"
       },
       {
+        "$ref": "#/tables/1"
+      },
+      {
         "$ref": "#/texts/204"
       },
       {
@@ -694,6 +673,9 @@
         "$ref": "#/texts/225"
       },
       {
+        "$ref": "#/tables/2"
+      },
+      {
         "$ref": "#/texts/226"
       },
       {
@@ -739,13 +721,13 @@
         "$ref": "#/texts/240"
       },
       {
+        "$ref": "#/tables/3"
+      },
+      {
         "$ref": "#/texts/241"
       },
       {
         "$ref": "#/texts/242"
-      },
-      {
-        "$ref": "#/tables/0"
       },
       {
         "$ref": "#/texts/243"
@@ -844,13 +826,19 @@
         "$ref": "#/texts/274"
       },
       {
+        "$ref": "#/groups/3"
+      },
+      {
         "$ref": "#/texts/275"
+      },
+      {
+        "$ref": "#/groups/4"
       },
       {
         "$ref": "#/texts/276"
       },
       {
-        "$ref": "#/texts/277"
+        "$ref": "#/groups/5"
       },
       {
         "$ref": "#/texts/278"
@@ -859,472 +847,13 @@
         "$ref": "#/texts/279"
       },
       {
-        "$ref": "#/texts/280"
+        "$ref": "#/groups/6"
       },
       {
         "$ref": "#/texts/281"
       },
       {
         "$ref": "#/texts/282"
-      },
-      {
-        "$ref": "#/texts/283"
-      },
-      {
-        "$ref": "#/texts/284"
-      },
-      {
-        "$ref": "#/texts/285"
-      },
-      {
-        "$ref": "#/texts/286"
-      },
-      {
-        "$ref": "#/texts/287"
-      },
-      {
-        "$ref": "#/texts/288"
-      },
-      {
-        "$ref": "#/texts/289"
-      },
-      {
-        "$ref": "#/texts/290"
-      },
-      {
-        "$ref": "#/texts/291"
-      },
-      {
-        "$ref": "#/texts/292"
-      },
-      {
-        "$ref": "#/texts/293"
-      },
-      {
-        "$ref": "#/texts/294"
-      },
-      {
-        "$ref": "#/texts/295"
-      },
-      {
-        "$ref": "#/texts/296"
-      },
-      {
-        "$ref": "#/texts/297"
-      },
-      {
-        "$ref": "#/texts/298"
-      },
-      {
-        "$ref": "#/texts/299"
-      },
-      {
-        "$ref": "#/texts/300"
-      },
-      {
-        "$ref": "#/texts/301"
-      },
-      {
-        "$ref": "#/texts/302"
-      },
-      {
-        "$ref": "#/texts/303"
-      },
-      {
-        "$ref": "#/texts/304"
-      },
-      {
-        "$ref": "#/texts/305"
-      },
-      {
-        "$ref": "#/texts/306"
-      },
-      {
-        "$ref": "#/texts/307"
-      },
-      {
-        "$ref": "#/texts/308"
-      },
-      {
-        "$ref": "#/texts/309"
-      },
-      {
-        "$ref": "#/texts/310"
-      },
-      {
-        "$ref": "#/texts/311"
-      },
-      {
-        "$ref": "#/texts/312"
-      },
-      {
-        "$ref": "#/texts/313"
-      },
-      {
-        "$ref": "#/texts/314"
-      },
-      {
-        "$ref": "#/texts/315"
-      },
-      {
-        "$ref": "#/texts/316"
-      },
-      {
-        "$ref": "#/texts/317"
-      },
-      {
-        "$ref": "#/texts/318"
-      },
-      {
-        "$ref": "#/texts/319"
-      },
-      {
-        "$ref": "#/texts/320"
-      },
-      {
-        "$ref": "#/texts/321"
-      },
-      {
-        "$ref": "#/tables/1"
-      },
-      {
-        "$ref": "#/texts/322"
-      },
-      {
-        "$ref": "#/texts/323"
-      },
-      {
-        "$ref": "#/texts/324"
-      },
-      {
-        "$ref": "#/texts/325"
-      },
-      {
-        "$ref": "#/texts/326"
-      },
-      {
-        "$ref": "#/texts/327"
-      },
-      {
-        "$ref": "#/texts/328"
-      },
-      {
-        "$ref": "#/texts/329"
-      },
-      {
-        "$ref": "#/texts/330"
-      },
-      {
-        "$ref": "#/texts/331"
-      },
-      {
-        "$ref": "#/texts/332"
-      },
-      {
-        "$ref": "#/texts/333"
-      },
-      {
-        "$ref": "#/texts/334"
-      },
-      {
-        "$ref": "#/texts/335"
-      },
-      {
-        "$ref": "#/texts/336"
-      },
-      {
-        "$ref": "#/texts/337"
-      },
-      {
-        "$ref": "#/texts/338"
-      },
-      {
-        "$ref": "#/texts/339"
-      },
-      {
-        "$ref": "#/texts/340"
-      },
-      {
-        "$ref": "#/texts/341"
-      },
-      {
-        "$ref": "#/texts/342"
-      },
-      {
-        "$ref": "#/texts/343"
-      },
-      {
-        "$ref": "#/texts/344"
-      },
-      {
-        "$ref": "#/texts/345"
-      },
-      {
-        "$ref": "#/texts/346"
-      },
-      {
-        "$ref": "#/texts/347"
-      },
-      {
-        "$ref": "#/texts/348"
-      },
-      {
-        "$ref": "#/texts/349"
-      },
-      {
-        "$ref": "#/texts/350"
-      },
-      {
-        "$ref": "#/texts/351"
-      },
-      {
-        "$ref": "#/texts/352"
-      },
-      {
-        "$ref": "#/texts/353"
-      },
-      {
-        "$ref": "#/texts/354"
-      },
-      {
-        "$ref": "#/texts/355"
-      },
-      {
-        "$ref": "#/texts/356"
-      },
-      {
-        "$ref": "#/texts/357"
-      },
-      {
-        "$ref": "#/texts/358"
-      },
-      {
-        "$ref": "#/texts/359"
-      },
-      {
-        "$ref": "#/texts/360"
-      },
-      {
-        "$ref": "#/tables/2"
-      },
-      {
-        "$ref": "#/texts/361"
-      },
-      {
-        "$ref": "#/texts/362"
-      },
-      {
-        "$ref": "#/texts/363"
-      },
-      {
-        "$ref": "#/texts/364"
-      },
-      {
-        "$ref": "#/texts/365"
-      },
-      {
-        "$ref": "#/texts/366"
-      },
-      {
-        "$ref": "#/texts/367"
-      },
-      {
-        "$ref": "#/texts/368"
-      },
-      {
-        "$ref": "#/texts/369"
-      },
-      {
-        "$ref": "#/texts/370"
-      },
-      {
-        "$ref": "#/texts/371"
-      },
-      {
-        "$ref": "#/texts/372"
-      },
-      {
-        "$ref": "#/texts/373"
-      },
-      {
-        "$ref": "#/texts/374"
-      },
-      {
-        "$ref": "#/texts/375"
-      },
-      {
-        "$ref": "#/texts/376"
-      },
-      {
-        "$ref": "#/texts/377"
-      },
-      {
-        "$ref": "#/tables/3"
-      },
-      {
-        "$ref": "#/texts/378"
-      },
-      {
-        "$ref": "#/texts/379"
-      },
-      {
-        "$ref": "#/texts/380"
-      },
-      {
-        "$ref": "#/texts/381"
-      },
-      {
-        "$ref": "#/texts/382"
-      },
-      {
-        "$ref": "#/texts/383"
-      },
-      {
-        "$ref": "#/texts/384"
-      },
-      {
-        "$ref": "#/texts/385"
-      },
-      {
-        "$ref": "#/texts/386"
-      },
-      {
-        "$ref": "#/texts/387"
-      },
-      {
-        "$ref": "#/texts/388"
-      },
-      {
-        "$ref": "#/texts/389"
-      },
-      {
-        "$ref": "#/texts/390"
-      },
-      {
-        "$ref": "#/texts/391"
-      },
-      {
-        "$ref": "#/texts/392"
-      },
-      {
-        "$ref": "#/texts/393"
-      },
-      {
-        "$ref": "#/texts/394"
-      },
-      {
-        "$ref": "#/texts/395"
-      },
-      {
-        "$ref": "#/texts/396"
-      },
-      {
-        "$ref": "#/texts/397"
-      },
-      {
-        "$ref": "#/texts/398"
-      },
-      {
-        "$ref": "#/texts/399"
-      },
-      {
-        "$ref": "#/texts/400"
-      },
-      {
-        "$ref": "#/texts/401"
-      },
-      {
-        "$ref": "#/texts/402"
-      },
-      {
-        "$ref": "#/texts/403"
-      },
-      {
-        "$ref": "#/texts/404"
-      },
-      {
-        "$ref": "#/texts/405"
-      },
-      {
-        "$ref": "#/texts/406"
-      },
-      {
-        "$ref": "#/texts/407"
-      },
-      {
-        "$ref": "#/texts/408"
-      },
-      {
-        "$ref": "#/texts/409"
-      },
-      {
-        "$ref": "#/texts/410"
-      },
-      {
-        "$ref": "#/texts/411"
-      },
-      {
-        "$ref": "#/texts/412"
-      },
-      {
-        "$ref": "#/texts/413"
-      },
-      {
-        "$ref": "#/texts/414"
-      },
-      {
-        "$ref": "#/texts/415"
-      },
-      {
-        "$ref": "#/texts/416"
-      },
-      {
-        "$ref": "#/texts/417"
-      },
-      {
-        "$ref": "#/groups/1"
-      },
-      {
-        "$ref": "#/texts/418"
-      },
-      {
-        "$ref": "#/texts/419"
-      },
-      {
-        "$ref": "#/pictures/3"
-      },
-      {
-        "$ref": "#/texts/420"
-      },
-      {
-        "$ref": "#/texts/421"
-      },
-      {
-        "$ref": "#/pictures/4"
-      },
-      {
-        "$ref": "#/texts/422"
-      },
-      {
-        "$ref": "#/pictures/5"
-      },
-      {
-        "$ref": "#/texts/423"
-      },
-      {
-        "$ref": "#/texts/424"
-      },
-      {
-        "$ref": "#/pictures/6"
-      },
-      {
-        "$ref": "#/texts/425"
-      },
-      {
-        "$ref": "#/pictures/7"
-      },
-      {
-        "$ref": "#/texts/426"
       }
     ],
     "content_layer": "body",
@@ -1339,13 +868,68 @@
       },
       "children": [
         {
-          "$ref": "#/texts/175"
+          "$ref": "#/pictures/0"
         },
         {
-          "$ref": "#/texts/176"
+          "$ref": "#/texts/50"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/93"
         },
         {
-          "$ref": "#/texts/177"
+          "$ref": "#/texts/94"
+        },
+        {
+          "$ref": "#/texts/95"
+        },
+        {
+          "$ref": "#/pictures/1"
+        },
+        {
+          "$ref": "#/texts/97"
+        },
+        {
+          "$ref": "#/texts/98"
+        },
+        {
+          "$ref": "#/texts/99"
+        },
+        {
+          "$ref": "#/pictures/2"
+        },
+        {
+          "$ref": "#/texts/101"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/116"
+        },
+        {
+          "$ref": "#/texts/117"
+        },
+        {
+          "$ref": "#/texts/118"
         }
       ],
       "content_layer": "body",
@@ -1353,7 +937,7 @@
       "label": "list"
     },
     {
-      "self_ref": "#/groups/1",
+      "self_ref": "#/groups/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -1361,6 +945,63 @@
       "content_layer": "body",
       "name": "bibliography",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/3"
+        },
+        {
+          "$ref": "#/texts/277"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/4"
+        },
+        {
+          "$ref": "#/pictures/5"
+        },
+        {
+          "$ref": "#/texts/280"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/6"
+        },
+        {
+          "$ref": "#/pictures/7"
+        },
+        {
+          "$ref": "#/texts/283"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
     }
   ],
   "texts": [
@@ -1541,73 +1182,13 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "h_t",
-      "text": "h_t"
+      "orig": "$h_t$, as a function of the previous hidden state $h_{t-1}$ and the input for position $t$. This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples.\nRecent work has achieved significant improvements in computational efficiency through factorization tricks",
+      "text": "$h_t$, as a function of the previous hidden state $h_{t-1}$ and the input for position $t$. This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples.\nRecent work has achieved significant improvements in computational efficiency through factorization tricks"
     },
     {
       "self_ref": "#/texts/15",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", as a function of the previous hidden state",
-      "text": ", as a function of the previous hidden state"
-    },
-    {
-      "self_ref": "#/texts/16",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "h_{t-1}",
-      "text": "h_{t-1}"
-    },
-    {
-      "self_ref": "#/texts/17",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and the input for position",
-      "text": "and the input for position"
-    },
-    {
-      "self_ref": "#/texts/18",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "t",
-      "text": "t"
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples.\nRecent work has achieved significant improvements in computational efficiency through factorization tricks",
-      "text": ". This inherently sequential nature precludes parallelization within training examples, which becomes critical at longer sequence lengths, as memory constraints limit batching across examples.\nRecent work has achieved significant improvements in computational efficiency through factorization tricks"
-    },
-    {
-      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/body"
       },
@@ -1619,7 +1200,7 @@
       "text": "[Kuchaiev2017Factorization]"
     },
     {
-      "self_ref": "#/texts/21",
+      "self_ref": "#/texts/16",
       "parent": {
         "$ref": "#/body"
       },
@@ -1631,7 +1212,7 @@
       "text": "and conditional computation"
     },
     {
-      "self_ref": "#/texts/22",
+      "self_ref": "#/texts/17",
       "parent": {
         "$ref": "#/body"
       },
@@ -1643,7 +1224,7 @@
       "text": "[shazeer2017outrageously]"
     },
     {
-      "self_ref": "#/texts/23",
+      "self_ref": "#/texts/18",
       "parent": {
         "$ref": "#/body"
       },
@@ -1655,7 +1236,7 @@
       "text": ", while also improving model performance in case of the latter. The fundamental constraint of sequential computation, however, remains."
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/19",
       "parent": {
         "$ref": "#/body"
       },
@@ -1667,7 +1248,7 @@
       "text": "Attention mechanisms have become an integral part of compelling sequence modeling and transduction models in various tasks, allowing modeling of dependencies without regard to their distance in the input or output sequences"
     },
     {
-      "self_ref": "#/texts/25",
+      "self_ref": "#/texts/20",
       "parent": {
         "$ref": "#/body"
       },
@@ -1679,7 +1260,7 @@
       "text": "[bahdanau2014neural, structuredAttentionNetworks]"
     },
     {
-      "self_ref": "#/texts/26",
+      "self_ref": "#/texts/21",
       "parent": {
         "$ref": "#/body"
       },
@@ -1691,7 +1272,7 @@
       "text": ". In all but a few cases"
     },
     {
-      "self_ref": "#/texts/27",
+      "self_ref": "#/texts/22",
       "parent": {
         "$ref": "#/body"
       },
@@ -1703,7 +1284,7 @@
       "text": "[decomposableAttnModel]"
     },
     {
-      "self_ref": "#/texts/28",
+      "self_ref": "#/texts/23",
       "parent": {
         "$ref": "#/body"
       },
@@ -1715,7 +1296,7 @@
       "text": ", however, such attention mechanisms are used in conjunction with a recurrent network."
     },
     {
-      "self_ref": "#/texts/29",
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/body"
       },
@@ -1727,7 +1308,7 @@
       "text": "In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying entirely on an attention mechanism to draw global dependencies between input and output. The Transformer allows for significantly more parallelization and can reach a new state of the art in translation quality after being trained for as little as twelve hours on eight P100 GPUs."
     },
     {
-      "self_ref": "#/texts/30",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/body"
       },
@@ -1740,7 +1321,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/26",
       "parent": {
         "$ref": "#/body"
       },
@@ -1752,7 +1333,7 @@
       "text": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU"
     },
     {
-      "self_ref": "#/texts/32",
+      "self_ref": "#/texts/27",
       "parent": {
         "$ref": "#/body"
       },
@@ -1764,7 +1345,7 @@
       "text": "[extendedngpu]"
     },
     {
-      "self_ref": "#/texts/33",
+      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/body"
       },
@@ -1776,7 +1357,7 @@
       "text": ", ByteNet"
     },
     {
-      "self_ref": "#/texts/34",
+      "self_ref": "#/texts/29",
       "parent": {
         "$ref": "#/body"
       },
@@ -1788,7 +1369,7 @@
       "text": "[NalBytenet2017]"
     },
     {
-      "self_ref": "#/texts/35",
+      "self_ref": "#/texts/30",
       "parent": {
         "$ref": "#/body"
       },
@@ -1800,7 +1381,7 @@
       "text": "and ConvS2S"
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/31",
       "parent": {
         "$ref": "#/body"
       },
@@ -1812,7 +1393,7 @@
       "text": "[JonasFaceNet2017]"
     },
     {
-      "self_ref": "#/texts/37",
+      "self_ref": "#/texts/32",
       "parent": {
         "$ref": "#/body"
       },
@@ -1824,7 +1405,7 @@
       "text": ", all of which use convolutional neural networks as basic building block, computing hidden representations in parallel for all input and output positions. In these models, the number of operations required to relate signals from two arbitrary input or output positions grows in the distance between positions, linearly for ConvS2S and logarithmically for ByteNet. This makes it more difficult to learn dependencies between distant positions"
     },
     {
-      "self_ref": "#/texts/38",
+      "self_ref": "#/texts/33",
       "parent": {
         "$ref": "#/body"
       },
@@ -1836,7 +1417,7 @@
       "text": "[hochreiter2001gradient]"
     },
     {
-      "self_ref": "#/texts/39",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/body"
       },
@@ -1848,7 +1429,7 @@
       "text": ". In the Transformer this is reduced to a constant number of operations, albeit at the cost of reduced effective resolution due to averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as described in section"
     },
     {
-      "self_ref": "#/texts/40",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/body"
       },
@@ -1860,7 +1441,7 @@
       "text": "[sec:attention]"
     },
     {
-      "self_ref": "#/texts/41",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/body"
       },
@@ -1872,7 +1453,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/body"
       },
@@ -1884,7 +1465,7 @@
       "text": "Self-attention, sometimes called intra-attention is an attention mechanism relating different positions of a single sequence in order to compute a representation of the sequence. Self-attention has been used successfully in a variety of tasks including reading comprehension, abstractive summarization, textual entailment and learning task-independent sentence representations"
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -1896,7 +1477,7 @@
       "text": "[cheng2016long, decomposableAttnModel, paulus2017deep, lin2017structured]"
     },
     {
-      "self_ref": "#/texts/44",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/body"
       },
@@ -1908,7 +1489,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/45",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/body"
       },
@@ -1920,7 +1501,7 @@
       "text": "End-to-end memory networks are based on a recurrent attention mechanism instead of sequence-aligned recurrence and have been shown to perform well on simple-language question answering and language modeling tasks"
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/body"
       },
@@ -1930,6 +1511,66 @@
       "prov": [],
       "orig": "[sukhbaatar2015]",
       "text": "[sukhbaatar2015]"
+    },
+    {
+      "self_ref": "#/texts/42",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": ".",
+      "text": "."
+    },
+    {
+      "self_ref": "#/texts/43",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [],
+      "orig": "To the best of our knowledge, however, the Transformer is the first transduction model relying entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution.\nIn the following sections, we will describe the Transformer, motivate self-attention and discuss its advantages over models such as",
+      "text": "To the best of our knowledge, however, the Transformer is the first transduction model relying entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution.\nIn the following sections, we will describe the Transformer, motivate self-attention and discuss its advantages over models such as"
+    },
+    {
+      "self_ref": "#/texts/44",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [],
+      "orig": "[neural_gpu, NalBytenet2017]",
+      "text": "[neural_gpu, NalBytenet2017]"
+    },
+    {
+      "self_ref": "#/texts/45",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "and",
+      "text": "and"
+    },
+    {
+      "self_ref": "#/texts/46",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "reference",
+      "prov": [],
+      "orig": "[JonasFaceNet2017]",
+      "text": "[JonasFaceNet2017]"
     },
     {
       "self_ref": "#/texts/47",
@@ -1950,66 +1591,6 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "To the best of our knowledge, however, the Transformer is the first transduction model relying entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution.\nIn the following sections, we will describe the Transformer, motivate self-attention and discuss its advantages over models such as",
-      "text": "To the best of our knowledge, however, the Transformer is the first transduction model relying entirely on self-attention to compute representations of its input and output without using sequence-aligned RNNs or convolution.\nIn the following sections, we will describe the Transformer, motivate self-attention and discuss its advantages over models such as"
-    },
-    {
-      "self_ref": "#/texts/49",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "reference",
-      "prov": [],
-      "orig": "[neural_gpu, NalBytenet2017]",
-      "text": "[neural_gpu, NalBytenet2017]"
-    },
-    {
-      "self_ref": "#/texts/50",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/51",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "reference",
-      "prov": [],
-      "orig": "[JonasFaceNet2017]",
-      "text": "[JonasFaceNet2017]"
-    },
-    {
-      "self_ref": "#/texts/52",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": ".",
-      "text": "."
-    },
-    {
-      "self_ref": "#/texts/53",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
       "label": "section_header",
       "prov": [],
       "orig": "Model Architecture",
@@ -2017,7 +1598,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/body"
       },
@@ -2029,9 +1610,9 @@
       "text": "Image: Figures/ModalNet-21"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/50",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -2041,7 +1622,7 @@
       "text": "The Transformer - model architecture."
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/body"
       },
@@ -2053,7 +1634,7 @@
       "text": "Most competitive neural sequence transduction models have an encoder-decoder structure"
     },
     {
-      "self_ref": "#/texts/57",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/body"
       },
@@ -2065,7 +1646,7 @@
       "text": "[cho2014learning,bahdanau2014neural,sutskever14]"
     },
     {
-      "self_ref": "#/texts/58",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/body"
       },
@@ -2073,107 +1654,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". Here, the encoder maps an input sequence of symbol representations",
-      "text": ". Here, the encoder maps an input sequence of symbol representations"
+      "orig": ". Here, the encoder maps an input sequence of symbol representations $(x_1, ..., x_n)$ to a sequence of continuous representations $\\mathbf{z} = (z_1, ..., z_n)$. Given $\\mathbf{z}$, the decoder then generates an output sequence $(y_1,...,y_m)$ of symbols one element at a time. At each step the model is auto-regressive",
+      "text": ". Here, the encoder maps an input sequence of symbol representations $(x_1, ..., x_n)$ to a sequence of continuous representations $\\mathbf{z} = (z_1, ..., z_n)$. Given $\\mathbf{z}$, the decoder then generates an output sequence $(y_1,...,y_m)$ of symbols one element at a time. At each step the model is auto-regressive"
     },
     {
-      "self_ref": "#/texts/59",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "(x_1, ..., x_n)",
-      "text": "(x_1, ..., x_n)"
-    },
-    {
-      "self_ref": "#/texts/60",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "to a sequence of continuous representations",
-      "text": "to a sequence of continuous representations"
-    },
-    {
-      "self_ref": "#/texts/61",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\mathbf{z} = (z_1, ..., z_n)",
-      "text": "\\mathbf{z} = (z_1, ..., z_n)"
-    },
-    {
-      "self_ref": "#/texts/62",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". Given",
-      "text": ". Given"
-    },
-    {
-      "self_ref": "#/texts/63",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\mathbf{z}",
-      "text": "\\mathbf{z}"
-    },
-    {
-      "self_ref": "#/texts/64",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", the decoder then generates an output sequence",
-      "text": ", the decoder then generates an output sequence"
-    },
-    {
-      "self_ref": "#/texts/65",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "(y_1,...,y_m)",
-      "text": "(y_1,...,y_m)"
-    },
-    {
-      "self_ref": "#/texts/66",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "of symbols one element at a time. At each step the model is auto-regressive",
-      "text": "of symbols one element at a time. At each step the model is auto-regressive"
-    },
-    {
-      "self_ref": "#/texts/67",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/body"
       },
@@ -2185,7 +1670,7 @@
       "text": "[graves2013generating]"
     },
     {
-      "self_ref": "#/texts/68",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/body"
       },
@@ -2197,7 +1682,7 @@
       "text": ", consuming the previously generated symbols as additional input when generating the next."
     },
     {
-      "self_ref": "#/texts/69",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/body"
       },
@@ -2209,7 +1694,7 @@
       "text": "The Transformer follows this overall architecture using stacked self-attention and point-wise, fully connected layers for both the encoder and decoder, shown in the left and right halves of Figure"
     },
     {
-      "self_ref": "#/texts/70",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -2221,7 +1706,7 @@
       "text": "[fig:model-arch]"
     },
     {
-      "self_ref": "#/texts/71",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -2233,7 +1718,7 @@
       "text": ", respectively."
     },
     {
-      "self_ref": "#/texts/72",
+      "self_ref": "#/texts/59",
       "parent": {
         "$ref": "#/body"
       },
@@ -2246,7 +1731,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/body"
       },
@@ -2258,7 +1743,7 @@
       "text": "Encoder:"
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/61",
       "parent": {
         "$ref": "#/body"
       },
@@ -2266,35 +1751,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The encoder is composed of a stack of",
-      "text": "The encoder is composed of a stack of"
+      "orig": "The encoder is composed of a stack of $N=6$ identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network.   We employ a residual connection",
+      "text": "The encoder is composed of a stack of $N=6$ identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network.   We employ a residual connection"
     },
     {
-      "self_ref": "#/texts/75",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "N=6",
-      "text": "N=6"
-    },
-    {
-      "self_ref": "#/texts/76",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network.   We employ a residual connection",
-      "text": "identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network.   We employ a residual connection"
-    },
-    {
-      "self_ref": "#/texts/77",
+      "self_ref": "#/texts/62",
       "parent": {
         "$ref": "#/body"
       },
@@ -2306,7 +1767,7 @@
       "text": "[he2016deep]"
     },
     {
-      "self_ref": "#/texts/78",
+      "self_ref": "#/texts/63",
       "parent": {
         "$ref": "#/body"
       },
@@ -2318,7 +1779,7 @@
       "text": "around each of the two sub-layers, followed by layer normalization"
     },
     {
-      "self_ref": "#/texts/79",
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/body"
       },
@@ -2330,7 +1791,7 @@
       "text": "[layernorm2016]"
     },
     {
-      "self_ref": "#/texts/80",
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/body"
       },
@@ -2338,71 +1799,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".  That is, the output of each sub-layer is",
-      "text": ".  That is, the output of each sub-layer is"
+      "orig": ".  That is, the output of each sub-layer is $\\mathrm{LayerNorm}(x + \\mathrm{Sublayer}(x))$, where $\\mathrm{Sublayer}(x)$ is the function implemented by the sub-layer itself.  To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension $\\dmodel=512$",
+      "text": ".  That is, the output of each sub-layer is $\\mathrm{LayerNorm}(x + \\mathrm{Sublayer}(x))$, where $\\mathrm{Sublayer}(x)$ is the function implemented by the sub-layer itself.  To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension $\\dmodel=512$"
     },
     {
-      "self_ref": "#/texts/81",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\mathrm{LayerNorm}(x + \\mathrm{Sublayer}(x))",
-      "text": "\\mathrm{LayerNorm}(x + \\mathrm{Sublayer}(x))"
-    },
-    {
-      "self_ref": "#/texts/82",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", where",
-      "text": ", where"
-    },
-    {
-      "self_ref": "#/texts/83",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\mathrm{Sublayer}(x)",
-      "text": "\\mathrm{Sublayer}(x)"
-    },
-    {
-      "self_ref": "#/texts/84",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is the function implemented by the sub-layer itself.  To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension",
-      "text": "is the function implemented by the sub-layer itself.  To facilitate these residual connections, all sub-layers in the model, as well as the embedding layers, produce outputs of dimension"
-    },
-    {
-      "self_ref": "#/texts/85",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\dmodel=512",
-      "text": "\\dmodel=512"
-    },
-    {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/body"
       },
@@ -2414,7 +1815,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/body"
       },
@@ -2426,7 +1827,7 @@
       "text": "Decoder:"
     },
     {
-      "self_ref": "#/texts/88",
+      "self_ref": "#/texts/68",
       "parent": {
         "$ref": "#/body"
       },
@@ -2434,71 +1835,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The decoder is also composed of a stack of",
-      "text": "The decoder is also composed of a stack of"
+      "orig": "The decoder is also composed of a stack of $N=6$ identical layers.  In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.  Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization.  We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions.  This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position $i$ can depend only on the known outputs at positions less than $i$",
+      "text": "The decoder is also composed of a stack of $N=6$ identical layers.  In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.  Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization.  We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions.  This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position $i$ can depend only on the known outputs at positions less than $i$"
     },
     {
-      "self_ref": "#/texts/89",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "N=6",
-      "text": "N=6"
-    },
-    {
-      "self_ref": "#/texts/90",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "identical layers.  In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.  Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization.  We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions.  This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position",
-      "text": "identical layers.  In addition to the two sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head attention over the output of the encoder stack.  Similar to the encoder, we employ residual connections around each of the sub-layers, followed by layer normalization.  We also modify the self-attention sub-layer in the decoder stack to prevent positions from attending to subsequent positions.  This masking, combined with fact that the output embeddings are offset by one position, ensures that the predictions for position"
-    },
-    {
-      "self_ref": "#/texts/91",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/92",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "can depend only on the known outputs at positions less than",
-      "text": "can depend only on the known outputs at positions less than"
-    },
-    {
-      "self_ref": "#/texts/93",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/94",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/body"
       },
@@ -2510,7 +1851,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/95",
+      "self_ref": "#/texts/70",
       "parent": {
         "$ref": "#/body"
       },
@@ -2523,7 +1864,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/96",
+      "self_ref": "#/texts/71",
       "parent": {
         "$ref": "#/body"
       },
@@ -2535,7 +1876,7 @@
       "text": "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors.  The output is computed as a weighted sum of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key."
     },
     {
-      "self_ref": "#/texts/97",
+      "self_ref": "#/texts/72",
       "parent": {
         "$ref": "#/body"
       },
@@ -2548,7 +1889,7 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/body"
       },
@@ -2560,7 +1901,7 @@
       "text": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure"
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/74",
       "parent": {
         "$ref": "#/body"
       },
@@ -2572,7 +1913,7 @@
       "text": "[fig:multi-head-att]"
     },
     {
-      "self_ref": "#/texts/100",
+      "self_ref": "#/texts/75",
       "parent": {
         "$ref": "#/body"
       },
@@ -2580,71 +1921,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ").   The input consists of queries and keys of dimension",
-      "text": ").   The input consists of queries and keys of dimension"
+      "orig": ").   The input consists of queries and keys of dimension $d_k$, and values of dimension $d_v$.  We compute the dot products of the query with all keys, divide each by $\\sqrt{d_k}$",
+      "text": ").   The input consists of queries and keys of dimension $d_k$, and values of dimension $d_v$.  We compute the dot products of the query with all keys, divide each by $\\sqrt{d_k}$"
     },
     {
-      "self_ref": "#/texts/101",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k",
-      "text": "d_k"
-    },
-    {
-      "self_ref": "#/texts/102",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", and values of dimension",
-      "text": ", and values of dimension"
-    },
-    {
-      "self_ref": "#/texts/103",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_v",
-      "text": "d_v"
-    },
-    {
-      "self_ref": "#/texts/104",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".  We compute the dot products of the query with all keys, divide each by",
-      "text": ".  We compute the dot products of the query with all keys, divide each by"
-    },
-    {
-      "self_ref": "#/texts/105",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\sqrt{d_k}",
-      "text": "\\sqrt{d_k}"
-    },
-    {
-      "self_ref": "#/texts/106",
+      "self_ref": "#/texts/76",
       "parent": {
         "$ref": "#/body"
       },
@@ -2656,7 +1937,7 @@
       "text": ", and apply a softmax function to obtain the weights on the values."
     },
     {
-      "self_ref": "#/texts/107",
+      "self_ref": "#/texts/77",
       "parent": {
         "$ref": "#/body"
       },
@@ -2668,19 +1949,7 @@
       "text": "In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix"
     },
     {
-      "self_ref": "#/texts/108",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "Q",
-      "text": "Q"
-    },
-    {
-      "self_ref": "#/texts/109",
+      "self_ref": "#/texts/78",
       "parent": {
         "$ref": "#/body"
       },
@@ -2688,47 +1957,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".   The keys and values are also packed together into matrices",
-      "text": ".   The keys and values are also packed together into matrices"
+      "orig": "$Q$.   The keys and values are also packed together into matrices $K$ and $V$",
+      "text": "$Q$.   The keys and values are also packed together into matrices $K$ and $V$"
     },
     {
-      "self_ref": "#/texts/110",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "K",
-      "text": "K"
-    },
-    {
-      "self_ref": "#/texts/111",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/112",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "V",
-      "text": "V"
-    },
-    {
-      "self_ref": "#/texts/113",
+      "self_ref": "#/texts/79",
       "parent": {
         "$ref": "#/body"
       },
@@ -2740,7 +1973,7 @@
       "text": ".  We compute the matrix of outputs as:"
     },
     {
-      "self_ref": "#/texts/114",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/body"
       },
@@ -2752,7 +1985,7 @@
       "text": "\\mathrm{Attention}(Q, K, V) = \\mathrm{softmax}(\\frac{QK^T}{\\sqrt{d_k}})V"
     },
     {
-      "self_ref": "#/texts/115",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/body"
       },
@@ -2764,7 +1997,7 @@
       "text": "The two most commonly used attention functions are additive attention"
     },
     {
-      "self_ref": "#/texts/116",
+      "self_ref": "#/texts/82",
       "parent": {
         "$ref": "#/body"
       },
@@ -2776,7 +2009,7 @@
       "text": "[bahdanau2014neural]"
     },
     {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/83",
       "parent": {
         "$ref": "#/body"
       },
@@ -2784,23 +2017,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", and dot-product (multiplicative) attention.  Dot-product attention is identical to our algorithm, except for the scaling factor of",
-      "text": ", and dot-product (multiplicative) attention.  Dot-product attention is identical to our algorithm, except for the scaling factor of"
+      "orig": ", and dot-product (multiplicative) attention.  Dot-product attention is identical to our algorithm, except for the scaling factor of $\\frac{1}{\\sqrt{d_k}}$",
+      "text": ", and dot-product (multiplicative) attention.  Dot-product attention is identical to our algorithm, except for the scaling factor of $\\frac{1}{\\sqrt{d_k}}$"
     },
     {
-      "self_ref": "#/texts/118",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\frac{1}{\\sqrt{d_k}}",
-      "text": "\\frac{1}{\\sqrt{d_k}}"
-    },
-    {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/84",
       "parent": {
         "$ref": "#/body"
       },
@@ -2812,7 +2033,7 @@
       "text": ". Additive attention computes the compatibility function using a feed-forward network with a single hidden layer.  While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code."
     },
     {
-      "self_ref": "#/texts/120",
+      "self_ref": "#/texts/85",
       "parent": {
         "$ref": "#/body"
       },
@@ -2824,19 +2045,7 @@
       "text": "While for small values of"
     },
     {
-      "self_ref": "#/texts/121",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k",
-      "text": "d_k"
-    },
-    {
-      "self_ref": "#/texts/122",
+      "self_ref": "#/texts/86",
       "parent": {
         "$ref": "#/body"
       },
@@ -2844,23 +2053,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of",
-      "text": "the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of"
+      "orig": "$d_k$ the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of $d_k$",
+      "text": "$d_k$ the two mechanisms perform similarly, additive attention outperforms dot product attention without scaling for larger values of $d_k$"
     },
     {
-      "self_ref": "#/texts/123",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k",
-      "text": "d_k"
-    },
-    {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/87",
       "parent": {
         "$ref": "#/body"
       },
@@ -2872,7 +2069,7 @@
       "text": "[DBLP:journals/corr/BritzGLL17]"
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/88",
       "parent": {
         "$ref": "#/body"
       },
@@ -2880,35 +2077,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". We suspect that for large values of",
-      "text": ". We suspect that for large values of"
+      "orig": ". We suspect that for large values of $d_k$, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients",
+      "text": ". We suspect that for large values of $d_k$, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients"
     },
     {
-      "self_ref": "#/texts/126",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k",
-      "text": "d_k"
-    },
-    {
-      "self_ref": "#/texts/127",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients",
-      "text": ", the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients"
-    },
-    {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/89",
       "parent": {
         "$ref": "#/body"
       },
@@ -2920,7 +2093,7 @@
       "text": "To illustrate why the dot products get large, assume that the components of $q$ and $k$ are independent random variables with mean $0$ and variance $1$. Then their dot product, $q \\cdot k = \\sum_{i=1}^{d_k} q_ik_i$, has mean $0$ and variance $d_k$."
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/90",
       "parent": {
         "$ref": "#/body"
       },
@@ -2928,23 +2101,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". To counteract this effect, we scale the dot products by",
-      "text": ". To counteract this effect, we scale the dot products by"
+      "orig": ". To counteract this effect, we scale the dot products by $\\frac{1}{\\sqrt{d_k}}$",
+      "text": ". To counteract this effect, we scale the dot products by $\\frac{1}{\\sqrt{d_k}}$"
     },
     {
-      "self_ref": "#/texts/130",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\frac{1}{\\sqrt{d_k}}",
-      "text": "\\frac{1}{\\sqrt{d_k}}"
-    },
-    {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/91",
       "parent": {
         "$ref": "#/body"
       },
@@ -2956,7 +2117,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/92",
       "parent": {
         "$ref": "#/body"
       },
@@ -2969,9 +2130,9 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/93",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -2981,9 +2142,9 @@
       "text": "0.5"
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/94",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -2993,9 +2154,9 @@
       "text": "[t]"
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/95",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -3005,7 +2166,7 @@
       "text": "Scaled Dot-Product Attention"
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/96",
       "parent": {
         "$ref": "#/body"
       },
@@ -3017,9 +2178,9 @@
       "text": "Image: Figures/ModalNet-19"
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/97",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -3029,9 +2190,9 @@
       "text": "0.5"
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/98",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -3041,9 +2202,9 @@
       "text": "[t]"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/99",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -3053,7 +2214,7 @@
       "text": "Multi-Head Attention"
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/100",
       "parent": {
         "$ref": "#/body"
       },
@@ -3065,9 +2226,9 @@
       "text": "Image: Figures/ModalNet-20"
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/101",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -3077,7 +2238,7 @@
       "text": "(left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel."
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/body"
       },
@@ -3089,19 +2250,7 @@
       "text": "Instead of performing a single attention function with"
     },
     {
-      "self_ref": "#/texts/143",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\dmodel",
-      "text": "\\dmodel"
-    },
-    {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/103",
       "parent": {
         "$ref": "#/body"
       },
@@ -3109,131 +2258,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values",
-      "text": "-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values"
+      "orig": "$\\dmodel$-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values $h$ times with different, learned linear projections to $d_k$, $d_k$ and $d_v$ dimensions, respectively.\nOn each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding $d_v$-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure",
+      "text": "$\\dmodel$-dimensional keys, values and queries, we found it beneficial to linearly project the queries, keys and values $h$ times with different, learned linear projections to $d_k$, $d_k$ and $d_v$ dimensions, respectively.\nOn each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding $d_v$-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure"
     },
     {
-      "self_ref": "#/texts/145",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "h",
-      "text": "h"
-    },
-    {
-      "self_ref": "#/texts/146",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "times with different, learned linear projections to",
-      "text": "times with different, learned linear projections to"
-    },
-    {
-      "self_ref": "#/texts/147",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k",
-      "text": "d_k"
-    },
-    {
-      "self_ref": "#/texts/148",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ",",
-      "text": ","
-    },
-    {
-      "self_ref": "#/texts/149",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k",
-      "text": "d_k"
-    },
-    {
-      "self_ref": "#/texts/150",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/151",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_v",
-      "text": "d_v"
-    },
-    {
-      "self_ref": "#/texts/152",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "dimensions, respectively.\nOn each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding",
-      "text": "dimensions, respectively.\nOn each of these projected versions of queries, keys and values we then perform the attention function in parallel, yielding"
-    },
-    {
-      "self_ref": "#/texts/153",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_v",
-      "text": "d_v"
-    },
-    {
-      "self_ref": "#/texts/154",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure",
-      "text": "-dimensional output values. These are concatenated and once again projected, resulting in the final values, as depicted in Figure"
-    },
-    {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/body"
       },
@@ -3245,7 +2274,7 @@
       "text": "[fig:multi-head-att]"
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/body"
       },
@@ -3257,7 +2286,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/106",
       "parent": {
         "$ref": "#/body"
       },
@@ -3269,7 +2298,7 @@
       "text": "Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this."
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/107",
       "parent": {
         "$ref": "#/body"
       },
@@ -3281,7 +2310,7 @@
       "text": "\\begin{align*}\n    \\mathrm{MultiHead}(Q, K, V) &= \\mathrm{Concat}(\\mathrm{head_1}, ..., \\mathrm{head_h})W^O\\\\\n%    \\mathrm{where} \\mathrm{head_i} &= \\mathrm{Attention}(QW_Q_i^{\\dmodel \\times d_q}, KW_K_i^{\\dmodel \\times d_k}, VW^V_i^{\\dmodel \\times d_v})\\\\\n    \\text{where}~\\mathrm{head_i} &= \\mathrm{Attention}(QW^Q_i, KW^K_i, VW^V_i)\\\\\n\\end{align*}"
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/108",
       "parent": {
         "$ref": "#/body"
       },
@@ -3293,19 +2322,7 @@
       "text": "Where the projections are parameter matrices"
     },
     {
-      "self_ref": "#/texts/160",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W^Q_i \\in \\mathbb{R}^{\\dmodel \\times d_k}",
-      "text": "W^Q_i \\in \\mathbb{R}^{\\dmodel \\times d_k}"
-    },
-    {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/109",
       "parent": {
         "$ref": "#/body"
       },
@@ -3313,71 +2330,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ",",
-      "text": ","
+      "orig": "$W^Q_i \\in \\mathbb{R}^{\\dmodel \\times d_k}$, $W^K_i \\in \\mathbb{R}^{\\dmodel \\times d_k}$, $W^V_i \\in \\mathbb{R}^{\\dmodel \\times d_v}$ and $W^O \\in \\mathbb{R}^{hd_v \\times \\dmodel}$",
+      "text": "$W^Q_i \\in \\mathbb{R}^{\\dmodel \\times d_k}$, $W^K_i \\in \\mathbb{R}^{\\dmodel \\times d_k}$, $W^V_i \\in \\mathbb{R}^{\\dmodel \\times d_v}$ and $W^O \\in \\mathbb{R}^{hd_v \\times \\dmodel}$"
     },
     {
-      "self_ref": "#/texts/162",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W^K_i \\in \\mathbb{R}^{\\dmodel \\times d_k}",
-      "text": "W^K_i \\in \\mathbb{R}^{\\dmodel \\times d_k}"
-    },
-    {
-      "self_ref": "#/texts/163",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ",",
-      "text": ","
-    },
-    {
-      "self_ref": "#/texts/164",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W^V_i \\in \\mathbb{R}^{\\dmodel \\times d_v}",
-      "text": "W^V_i \\in \\mathbb{R}^{\\dmodel \\times d_v}"
-    },
-    {
-      "self_ref": "#/texts/165",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/166",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W^O \\in \\mathbb{R}^{hd_v \\times \\dmodel}",
-      "text": "W^O \\in \\mathbb{R}^{hd_v \\times \\dmodel}"
-    },
-    {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/110",
       "parent": {
         "$ref": "#/body"
       },
@@ -3389,7 +2346,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/111",
       "parent": {
         "$ref": "#/body"
       },
@@ -3401,19 +2358,7 @@
       "text": "In this work we employ"
     },
     {
-      "self_ref": "#/texts/169",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "h=8",
-      "text": "h=8"
-    },
-    {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/112",
       "parent": {
         "$ref": "#/body"
       },
@@ -3421,23 +2366,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "parallel attention layers, or heads. For each of these we use",
-      "text": "parallel attention layers, or heads. For each of these we use"
+      "orig": "$h=8$ parallel attention layers, or heads. For each of these we use $d_k=d_v=\\dmodel/h=64$",
+      "text": "$h=8$ parallel attention layers, or heads. For each of these we use $d_k=d_v=\\dmodel/h=64$"
     },
     {
-      "self_ref": "#/texts/171",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k=d_v=\\dmodel/h=64",
-      "text": "d_k=d_v=\\dmodel/h=64"
-    },
-    {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/113",
       "parent": {
         "$ref": "#/body"
       },
@@ -3449,7 +2382,7 @@
       "text": ".\nDue to the reduced dimension of each head, the total computational cost is similar to that of single-head attention with full dimensionality."
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/114",
       "parent": {
         "$ref": "#/body"
       },
@@ -3462,7 +2395,7 @@
       "level": 3
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/115",
       "parent": {
         "$ref": "#/body"
       },
@@ -3474,9 +2407,9 @@
       "text": "The Transformer uses multi-head attention in three different ways:"
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/116",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -3488,9 +2421,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/117",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -3502,9 +2435,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/118",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -3516,7 +2449,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/119",
       "parent": {
         "$ref": "#/body"
       },
@@ -3529,7 +2462,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/body"
       },
@@ -3541,7 +2474,7 @@
       "text": "In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically.  This consists of two linear transformations with a ReLU activation in between."
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/body"
       },
@@ -3553,7 +2486,7 @@
       "text": "\\mathrm{FFN}(x)=\\max(0, xW_1 + b_1) W_2 + b_2"
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/body"
       },
@@ -3565,19 +2498,7 @@
       "text": "While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1.  The dimensionality of input and output is"
     },
     {
-      "self_ref": "#/texts/182",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\dmodel=512",
-      "text": "\\dmodel=512"
-    },
-    {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/body"
       },
@@ -3585,23 +2506,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", and the inner-layer has dimensionality",
-      "text": ", and the inner-layer has dimensionality"
+      "orig": "$\\dmodel=512$, and the inner-layer has dimensionality $d_{ff}=2048$",
+      "text": "$\\dmodel=512$, and the inner-layer has dimensionality $d_{ff}=2048$"
     },
     {
-      "self_ref": "#/texts/184",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_{ff}=2048",
-      "text": "d_{ff}=2048"
-    },
-    {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/body"
       },
@@ -3613,7 +2522,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/125",
       "parent": {
         "$ref": "#/body"
       },
@@ -3626,7 +2535,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/126",
       "parent": {
         "$ref": "#/body"
       },
@@ -3634,35 +2543,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension",
-      "text": "Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension"
+      "orig": "Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension $\\dmodel$.  We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities.  In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to",
+      "text": "Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension $\\dmodel$.  We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities.  In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to"
     },
     {
-      "self_ref": "#/texts/188",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\dmodel",
-      "text": "\\dmodel"
-    },
-    {
-      "self_ref": "#/texts/189",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".  We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities.  In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to",
-      "text": ".  We also use the usual learned linear transformation and softmax function to convert the decoder output to predicted next-token probabilities.  In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to"
-    },
-    {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/127",
       "parent": {
         "$ref": "#/body"
       },
@@ -3674,7 +2559,7 @@
       "text": "[press2016using]"
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/body"
       },
@@ -3682,23 +2567,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".   In the embedding layers, we multiply those weights by",
-      "text": ".   In the embedding layers, we multiply those weights by"
+      "orig": ".   In the embedding layers, we multiply those weights by $\\sqrt{\\dmodel}$",
+      "text": ".   In the embedding layers, we multiply those weights by $\\sqrt{\\dmodel}$"
     },
     {
-      "self_ref": "#/texts/192",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\sqrt{\\dmodel}",
-      "text": "\\sqrt{\\dmodel}"
-    },
-    {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/body"
       },
@@ -3710,7 +2583,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/body"
       },
@@ -3723,7 +2596,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/body"
       },
@@ -3731,35 +2604,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence.  To this end, we add \"positional encodings\" to the input embeddings at the bottoms of the encoder and decoder stacks.  The positional encodings have the same dimension",
-      "text": "Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence.  To this end, we add \"positional encodings\" to the input embeddings at the bottoms of the encoder and decoder stacks.  The positional encodings have the same dimension"
+      "orig": "Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence.  To this end, we add \"positional encodings\" to the input embeddings at the bottoms of the encoder and decoder stacks.  The positional encodings have the same dimension $\\dmodel$ as the embeddings, so that the two can be summed.   There are many choices of positional encodings, learned and fixed",
+      "text": "Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence.  To this end, we add \"positional encodings\" to the input embeddings at the bottoms of the encoder and decoder stacks.  The positional encodings have the same dimension $\\dmodel$ as the embeddings, so that the two can be summed.   There are many choices of positional encodings, learned and fixed"
     },
     {
-      "self_ref": "#/texts/196",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\dmodel",
-      "text": "\\dmodel"
-    },
-    {
-      "self_ref": "#/texts/197",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "as the embeddings, so that the two can be summed.   There are many choices of positional encodings, learned and fixed",
-      "text": "as the embeddings, so that the two can be summed.   There are many choices of positional encodings, learned and fixed"
-    },
-    {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/body"
       },
@@ -3771,7 +2620,7 @@
       "text": "[JonasFaceNet2017]"
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/body"
       },
@@ -3783,7 +2632,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/body"
       },
@@ -3795,7 +2644,7 @@
       "text": "In this work, we use sine and cosine functions of different frequencies:"
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/body"
       },
@@ -3807,7 +2656,7 @@
       "text": "\\begin{align*}\n    PE_{(pos,2i)} = sin(pos / 10000^{2i/\\dmodel}) \\\\\n    PE_{(pos,2i+1)} = cos(pos / 10000^{2i/\\dmodel})\n\\end{align*}"
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/body"
       },
@@ -3819,19 +2668,7 @@
       "text": "where"
     },
     {
-      "self_ref": "#/texts/203",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "pos",
-      "text": "pos"
-    },
-    {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/body"
       },
@@ -3839,143 +2676,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "is the position and",
-      "text": "is the position and"
+      "orig": "$pos$ is the position and $i$ is the dimension.  That is, each dimension of the positional encoding corresponds to a sinusoid.  The wavelengths form a geometric progression from $2\\pi$ to $10000 \\cdot 2\\pi$.  We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset $k$, $PE_{pos+k}$ can be represented as a linear function of $PE_{pos}$",
+      "text": "$pos$ is the position and $i$ is the dimension.  That is, each dimension of the positional encoding corresponds to a sinusoid.  The wavelengths form a geometric progression from $2\\pi$ to $10000 \\cdot 2\\pi$.  We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset $k$, $PE_{pos+k}$ can be represented as a linear function of $PE_{pos}$"
     },
     {
-      "self_ref": "#/texts/205",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/206",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is the dimension.  That is, each dimension of the positional encoding corresponds to a sinusoid.  The wavelengths form a geometric progression from",
-      "text": "is the dimension.  That is, each dimension of the positional encoding corresponds to a sinusoid.  The wavelengths form a geometric progression from"
-    },
-    {
-      "self_ref": "#/texts/207",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "2\\pi",
-      "text": "2\\pi"
-    },
-    {
-      "self_ref": "#/texts/208",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "to",
-      "text": "to"
-    },
-    {
-      "self_ref": "#/texts/209",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "10000 \\cdot 2\\pi",
-      "text": "10000 \\cdot 2\\pi"
-    },
-    {
-      "self_ref": "#/texts/210",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".  We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset",
-      "text": ".  We chose this function because we hypothesized it would allow the model to easily learn to attend by relative positions, since for any fixed offset"
-    },
-    {
-      "self_ref": "#/texts/211",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k",
-      "text": "k"
-    },
-    {
-      "self_ref": "#/texts/212",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ",",
-      "text": ","
-    },
-    {
-      "self_ref": "#/texts/213",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "PE_{pos+k}",
-      "text": "PE_{pos+k}"
-    },
-    {
-      "self_ref": "#/texts/214",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "can be represented as a linear function of",
-      "text": "can be represented as a linear function of"
-    },
-    {
-      "self_ref": "#/texts/215",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "PE_{pos}",
-      "text": "PE_{pos}"
-    },
-    {
-      "self_ref": "#/texts/216",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/body"
       },
@@ -3987,7 +2692,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/217",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/body"
       },
@@ -3999,7 +2704,7 @@
       "text": "We also experimented with using learned positional embeddings"
     },
     {
-      "self_ref": "#/texts/218",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/body"
       },
@@ -4011,7 +2716,7 @@
       "text": "[JonasFaceNet2017]"
     },
     {
-      "self_ref": "#/texts/219",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/body"
       },
@@ -4023,7 +2728,7 @@
       "text": "instead, and found that the two versions produced nearly identical results (see Table"
     },
     {
-      "self_ref": "#/texts/220",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/body"
       },
@@ -4035,7 +2740,7 @@
       "text": "[tab:variations]"
     },
     {
-      "self_ref": "#/texts/221",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/body"
       },
@@ -4047,7 +2752,7 @@
       "text": "row (E)).  We chose the sinusoidal version because it may allow the model to extrapolate to sequence lengths longer than the ones encountered during training."
     },
     {
-      "self_ref": "#/texts/222",
+      "self_ref": "#/texts/144",
       "parent": {
         "$ref": "#/body"
       },
@@ -4060,7 +2765,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/223",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/body"
       },
@@ -4072,19 +2777,7 @@
       "text": "In this section we compare various aspects of self-attention layers to the recurrent and convolutional layers commonly used for mapping one variable-length sequence of symbol representations"
     },
     {
-      "self_ref": "#/texts/224",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "(x_1, ..., x_n)",
-      "text": "(x_1, ..., x_n)"
-    },
-    {
-      "self_ref": "#/texts/225",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/body"
       },
@@ -4092,47 +2785,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "to another sequence of equal length",
-      "text": "to another sequence of equal length"
+      "orig": "$(x_1, ..., x_n)$ to another sequence of equal length $(z_1, ..., z_n)$, with $x_i, z_i \\in \\mathbb{R}^d$",
+      "text": "$(x_1, ..., x_n)$ to another sequence of equal length $(z_1, ..., z_n)$, with $x_i, z_i \\in \\mathbb{R}^d$"
     },
     {
-      "self_ref": "#/texts/226",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "(z_1, ..., z_n)",
-      "text": "(z_1, ..., z_n)"
-    },
-    {
-      "self_ref": "#/texts/227",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", with",
-      "text": ", with"
-    },
-    {
-      "self_ref": "#/texts/228",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "x_i, z_i \\in \\mathbb{R}^d",
-      "text": "x_i, z_i \\in \\mathbb{R}^d"
-    },
-    {
-      "self_ref": "#/texts/229",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/body"
       },
@@ -4144,7 +2801,7 @@
       "text": ", such as a hidden layer in a typical sequence transduction encoder or decoder. Motivating our use of self-attention we consider three desiderata."
     },
     {
-      "self_ref": "#/texts/230",
+      "self_ref": "#/texts/148",
       "parent": {
         "$ref": "#/body"
       },
@@ -4156,7 +2813,7 @@
       "text": "One is the total computational complexity per layer.\nAnother is the amount of computation that can be parallelized, as measured by the minimum number of sequential operations required."
     },
     {
-      "self_ref": "#/texts/231",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/body"
       },
@@ -4168,7 +2825,7 @@
       "text": "The third is the path length between long-range dependencies in the network. Learning long-range dependencies is a key challenge in many sequence transduction tasks. One key factor affecting the ability to learn such dependencies is the length of the paths forward and backward signals have to traverse in the network. The shorter these paths between any combination of positions in the input and output sequences, the easier it is to learn long-range dependencies"
     },
     {
-      "self_ref": "#/texts/232",
+      "self_ref": "#/texts/150",
       "parent": {
         "$ref": "#/body"
       },
@@ -4180,7 +2837,7 @@
       "text": "[hochreiter2001gradient]"
     },
     {
-      "self_ref": "#/texts/233",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/body"
       },
@@ -4192,7 +2849,7 @@
       "text": ". Hence we also compare the maximum path length between any two input and output positions in networks composed of the different layer types."
     },
     {
-      "self_ref": "#/texts/234",
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/body"
       },
@@ -4200,107 +2857,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types.",
-      "text": "Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types."
+      "orig": "Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types. $n$ is the sequence length, $d$ is the representation dimension, $k$ is the kernel size of convolutions and $r$ the size of the neighborhood in restricted self-attention.",
+      "text": "Maximum path lengths, per-layer complexity and minimum number of sequential operations for different layer types. $n$ is the sequence length, $d$ is the representation dimension, $k$ is the kernel size of convolutions and $r$ the size of the neighborhood in restricted self-attention."
     },
     {
-      "self_ref": "#/texts/235",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "n",
-      "text": "n"
-    },
-    {
-      "self_ref": "#/texts/236",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is the sequence length,",
-      "text": "is the sequence length,"
-    },
-    {
-      "self_ref": "#/texts/237",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d",
-      "text": "d"
-    },
-    {
-      "self_ref": "#/texts/238",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is the representation dimension,",
-      "text": "is the representation dimension,"
-    },
-    {
-      "self_ref": "#/texts/239",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k",
-      "text": "k"
-    },
-    {
-      "self_ref": "#/texts/240",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is the kernel size of convolutions and",
-      "text": "is the kernel size of convolutions and"
-    },
-    {
-      "self_ref": "#/texts/241",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "r",
-      "text": "r"
-    },
-    {
-      "self_ref": "#/texts/242",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "the size of the neighborhood in restricted self-attention.",
-      "text": "the size of the neighborhood in restricted self-attention."
-    },
-    {
-      "self_ref": "#/texts/243",
+      "self_ref": "#/texts/153",
       "parent": {
         "$ref": "#/body"
       },
@@ -4312,7 +2873,7 @@
       "text": "As noted in Table"
     },
     {
-      "self_ref": "#/texts/244",
+      "self_ref": "#/texts/154",
       "parent": {
         "$ref": "#/body"
       },
@@ -4324,7 +2885,7 @@
       "text": "[tab:op_complexities]"
     },
     {
-      "self_ref": "#/texts/245",
+      "self_ref": "#/texts/155",
       "parent": {
         "$ref": "#/body"
       },
@@ -4332,83 +2893,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires",
-      "text": ", a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires"
+      "orig": ", a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires $O(n)$ sequential operations.\nIn terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length $n$ is smaller than the representation dimensionality $d$, which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece",
+      "text": ", a self-attention layer connects all positions with a constant number of sequentially executed operations, whereas a recurrent layer requires $O(n)$ sequential operations.\nIn terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length $n$ is smaller than the representation dimensionality $d$, which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece"
     },
     {
-      "self_ref": "#/texts/246",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "O(n)",
-      "text": "O(n)"
-    },
-    {
-      "self_ref": "#/texts/247",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "sequential operations.\nIn terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length",
-      "text": "sequential operations.\nIn terms of computational complexity, self-attention layers are faster than recurrent layers when the sequence length"
-    },
-    {
-      "self_ref": "#/texts/248",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "n",
-      "text": "n"
-    },
-    {
-      "self_ref": "#/texts/249",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is smaller than the representation dimensionality",
-      "text": "is smaller than the representation dimensionality"
-    },
-    {
-      "self_ref": "#/texts/250",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d",
-      "text": "d"
-    },
-    {
-      "self_ref": "#/texts/251",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece",
-      "text": ", which is most often the case with sentence representations used by state-of-the-art models in machine translations, such as word-piece"
-    },
-    {
-      "self_ref": "#/texts/252",
+      "self_ref": "#/texts/156",
       "parent": {
         "$ref": "#/body"
       },
@@ -4420,7 +2909,7 @@
       "text": "[wu2016google]"
     },
     {
-      "self_ref": "#/texts/253",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/body"
       },
@@ -4432,7 +2921,7 @@
       "text": "and byte-pair"
     },
     {
-      "self_ref": "#/texts/254",
+      "self_ref": "#/texts/158",
       "parent": {
         "$ref": "#/body"
       },
@@ -4444,7 +2933,7 @@
       "text": "[sennrich2015neural]"
     },
     {
-      "self_ref": "#/texts/255",
+      "self_ref": "#/texts/159",
       "parent": {
         "$ref": "#/body"
       },
@@ -4452,47 +2941,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "representations.\nTo improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size",
-      "text": "representations.\nTo improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size"
+      "orig": "representations.\nTo improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size $r$ in the input sequence centered around the respective output position. This would increase the maximum path length to $O(n/r)$",
+      "text": "representations.\nTo improve computational performance for tasks involving very long sequences, self-attention could be restricted to considering only a neighborhood of size $r$ in the input sequence centered around the respective output position. This would increase the maximum path length to $O(n/r)$"
     },
     {
-      "self_ref": "#/texts/256",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "r",
-      "text": "r"
-    },
-    {
-      "self_ref": "#/texts/257",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "in the input sequence centered around the respective output position. This would increase the maximum path length to",
-      "text": "in the input sequence centered around the respective output position. This would increase the maximum path length to"
-    },
-    {
-      "self_ref": "#/texts/258",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "O(n/r)",
-      "text": "O(n/r)"
-    },
-    {
-      "self_ref": "#/texts/259",
+      "self_ref": "#/texts/160",
       "parent": {
         "$ref": "#/body"
       },
@@ -4504,7 +2957,7 @@
       "text": ". We plan to investigate this approach further in future work."
     },
     {
-      "self_ref": "#/texts/260",
+      "self_ref": "#/texts/161",
       "parent": {
         "$ref": "#/body"
       },
@@ -4516,19 +2969,7 @@
       "text": "A single convolutional layer with kernel width"
     },
     {
-      "self_ref": "#/texts/261",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k < n",
-      "text": "k < n"
-    },
-    {
-      "self_ref": "#/texts/262",
+      "self_ref": "#/texts/162",
       "parent": {
         "$ref": "#/body"
       },
@@ -4536,59 +2977,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "does not connect all pairs of input and output positions. Doing so requires a stack of",
-      "text": "does not connect all pairs of input and output positions. Doing so requires a stack of"
+      "orig": "$k < n$ does not connect all pairs of input and output positions. Doing so requires a stack of $O(n/k)$ convolutional layers in the case of contiguous kernels, or $O(log_k(n))$ in the case of dilated convolutions",
+      "text": "$k < n$ does not connect all pairs of input and output positions. Doing so requires a stack of $O(n/k)$ convolutional layers in the case of contiguous kernels, or $O(log_k(n))$ in the case of dilated convolutions"
     },
     {
-      "self_ref": "#/texts/263",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "O(n/k)",
-      "text": "O(n/k)"
-    },
-    {
-      "self_ref": "#/texts/264",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "convolutional layers in the case of contiguous kernels, or",
-      "text": "convolutional layers in the case of contiguous kernels, or"
-    },
-    {
-      "self_ref": "#/texts/265",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "O(log_k(n))",
-      "text": "O(log_k(n))"
-    },
-    {
-      "self_ref": "#/texts/266",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "in the case of dilated convolutions",
-      "text": "in the case of dilated convolutions"
-    },
-    {
-      "self_ref": "#/texts/267",
+      "self_ref": "#/texts/163",
       "parent": {
         "$ref": "#/body"
       },
@@ -4600,7 +2993,7 @@
       "text": "[NalBytenet2017]"
     },
     {
-      "self_ref": "#/texts/268",
+      "self_ref": "#/texts/164",
       "parent": {
         "$ref": "#/body"
       },
@@ -4608,35 +3001,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", increasing the length of the longest paths between any two positions in the network.\nConvolutional layers are generally more expensive than recurrent layers, by a factor of",
-      "text": ", increasing the length of the longest paths between any two positions in the network.\nConvolutional layers are generally more expensive than recurrent layers, by a factor of"
+      "orig": ", increasing the length of the longest paths between any two positions in the network.\nConvolutional layers are generally more expensive than recurrent layers, by a factor of $k$. Separable convolutions",
+      "text": ", increasing the length of the longest paths between any two positions in the network.\nConvolutional layers are generally more expensive than recurrent layers, by a factor of $k$. Separable convolutions"
     },
     {
-      "self_ref": "#/texts/269",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k",
-      "text": "k"
-    },
-    {
-      "self_ref": "#/texts/270",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". Separable convolutions",
-      "text": ". Separable convolutions"
-    },
-    {
-      "self_ref": "#/texts/271",
+      "self_ref": "#/texts/165",
       "parent": {
         "$ref": "#/body"
       },
@@ -4648,7 +3017,7 @@
       "text": "[xception2016]"
     },
     {
-      "self_ref": "#/texts/272",
+      "self_ref": "#/texts/166",
       "parent": {
         "$ref": "#/body"
       },
@@ -4656,47 +3025,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", however, decrease the complexity considerably, to",
-      "text": ", however, decrease the complexity considerably, to"
+      "orig": ", however, decrease the complexity considerably, to $O(k \\cdot n \\cdot d + n \\cdot d^2)$. Even with $k=n$",
+      "text": ", however, decrease the complexity considerably, to $O(k \\cdot n \\cdot d + n \\cdot d^2)$. Even with $k=n$"
     },
     {
-      "self_ref": "#/texts/273",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "O(k \\cdot n \\cdot d + n \\cdot d^2)",
-      "text": "O(k \\cdot n \\cdot d + n \\cdot d^2)"
-    },
-    {
-      "self_ref": "#/texts/274",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". Even with",
-      "text": ". Even with"
-    },
-    {
-      "self_ref": "#/texts/275",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k=n",
-      "text": "k=n"
-    },
-    {
-      "self_ref": "#/texts/276",
+      "self_ref": "#/texts/167",
       "parent": {
         "$ref": "#/body"
       },
@@ -4708,7 +3041,7 @@
       "text": ", however, the complexity of a separable convolution is equal to the combination of a self-attention layer and a point-wise feed-forward layer, the approach we take in our model."
     },
     {
-      "self_ref": "#/texts/277",
+      "self_ref": "#/texts/168",
       "parent": {
         "$ref": "#/body"
       },
@@ -4720,7 +3053,7 @@
       "text": "As side benefit, self-attention could yield more interpretable models. We inspect attention distributions from our models and present and discuss examples in the appendix. Not only do individual attention heads clearly learn to perform different tasks, many appear to exhibit behavior related to the syntactic and semantic structure of the sentences."
     },
     {
-      "self_ref": "#/texts/278",
+      "self_ref": "#/texts/169",
       "parent": {
         "$ref": "#/body"
       },
@@ -4733,7 +3066,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/279",
+      "self_ref": "#/texts/170",
       "parent": {
         "$ref": "#/body"
       },
@@ -4745,7 +3078,7 @@
       "text": "This section describes the training regime for our models."
     },
     {
-      "self_ref": "#/texts/280",
+      "self_ref": "#/texts/171",
       "parent": {
         "$ref": "#/body"
       },
@@ -4758,7 +3091,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/281",
+      "self_ref": "#/texts/172",
       "parent": {
         "$ref": "#/body"
       },
@@ -4770,7 +3103,7 @@
       "text": "We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs.  Sentences were encoded using byte-pair encoding"
     },
     {
-      "self_ref": "#/texts/282",
+      "self_ref": "#/texts/173",
       "parent": {
         "$ref": "#/body"
       },
@@ -4782,7 +3115,7 @@
       "text": "[DBLP:journals/corr/BritzGLL17]"
     },
     {
-      "self_ref": "#/texts/283",
+      "self_ref": "#/texts/174",
       "parent": {
         "$ref": "#/body"
       },
@@ -4794,7 +3127,7 @@
       "text": ", which has a shared source-target vocabulary of about 37000 tokens. For English-French, we used the significantly larger WMT 2014 English-French dataset consisting of 36M sentences and split tokens into a 32000 word-piece vocabulary"
     },
     {
-      "self_ref": "#/texts/284",
+      "self_ref": "#/texts/175",
       "parent": {
         "$ref": "#/body"
       },
@@ -4806,7 +3139,7 @@
       "text": "[wu2016google]"
     },
     {
-      "self_ref": "#/texts/285",
+      "self_ref": "#/texts/176",
       "parent": {
         "$ref": "#/body"
       },
@@ -4818,7 +3151,7 @@
       "text": ".  Sentence pairs were batched together by approximate sequence length.  Each training batch contained a set of sentence pairs containing approximately 25000 source tokens and 25000 target tokens."
     },
     {
-      "self_ref": "#/texts/286",
+      "self_ref": "#/texts/177",
       "parent": {
         "$ref": "#/body"
       },
@@ -4831,7 +3164,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/287",
+      "self_ref": "#/texts/178",
       "parent": {
         "$ref": "#/body"
       },
@@ -4843,7 +3176,7 @@
       "text": "We trained our models on one machine with 8 NVIDIA P100 GPUs.  For our base models using the hyperparameters described throughout the paper, each training step took about 0.4 seconds.  We trained the base models for a total of 100,000 steps or 12 hours.  For our big models,(described on the bottom line of table"
     },
     {
-      "self_ref": "#/texts/288",
+      "self_ref": "#/texts/179",
       "parent": {
         "$ref": "#/body"
       },
@@ -4855,7 +3188,7 @@
       "text": "[tab:variations]"
     },
     {
-      "self_ref": "#/texts/289",
+      "self_ref": "#/texts/180",
       "parent": {
         "$ref": "#/body"
       },
@@ -4867,7 +3200,7 @@
       "text": "), step time was 1.0 seconds.  The big models were trained for 300,000 steps (3.5 days)."
     },
     {
-      "self_ref": "#/texts/290",
+      "self_ref": "#/texts/181",
       "parent": {
         "$ref": "#/body"
       },
@@ -4880,7 +3213,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/291",
+      "self_ref": "#/texts/182",
       "parent": {
         "$ref": "#/body"
       },
@@ -4892,7 +3225,7 @@
       "text": "We used the Adam optimizer"
     },
     {
-      "self_ref": "#/texts/292",
+      "self_ref": "#/texts/183",
       "parent": {
         "$ref": "#/body"
       },
@@ -4904,7 +3237,7 @@
       "text": "[kingma2014adam]"
     },
     {
-      "self_ref": "#/texts/293",
+      "self_ref": "#/texts/184",
       "parent": {
         "$ref": "#/body"
       },
@@ -4912,71 +3245,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "with",
-      "text": "with"
+      "orig": "with $\\beta_1=0.9$, $\\beta_2=0.98$ and $\\epsilon=10^{-9}$",
+      "text": "with $\\beta_1=0.9$, $\\beta_2=0.98$ and $\\epsilon=10^{-9}$"
     },
     {
-      "self_ref": "#/texts/294",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\beta_1=0.9",
-      "text": "\\beta_1=0.9"
-    },
-    {
-      "self_ref": "#/texts/295",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ",",
-      "text": ","
-    },
-    {
-      "self_ref": "#/texts/296",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\beta_2=0.98",
-      "text": "\\beta_2=0.98"
-    },
-    {
-      "self_ref": "#/texts/297",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/298",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\epsilon=10^{-9}",
-      "text": "\\epsilon=10^{-9}"
-    },
-    {
-      "self_ref": "#/texts/299",
+      "self_ref": "#/texts/185",
       "parent": {
         "$ref": "#/body"
       },
@@ -4988,7 +3261,7 @@
       "text": ".  We varied the learning rate over the course of training, according to the formula:"
     },
     {
-      "self_ref": "#/texts/300",
+      "self_ref": "#/texts/186",
       "parent": {
         "$ref": "#/body"
       },
@@ -5000,7 +3273,7 @@
       "text": "lrate = \\dmodel^{-0.5} \\cdot\n  \\min({step\\_num}^{-0.5},\n    {step\\_num} \\cdot {warmup\\_steps}^{-1.5})"
     },
     {
-      "self_ref": "#/texts/301",
+      "self_ref": "#/texts/187",
       "parent": {
         "$ref": "#/body"
       },
@@ -5012,19 +3285,7 @@
       "text": "This corresponds to increasing the learning rate linearly for the first"
     },
     {
-      "self_ref": "#/texts/302",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "warmup\\_steps",
-      "text": "warmup\\_steps"
-    },
-    {
-      "self_ref": "#/texts/303",
+      "self_ref": "#/texts/188",
       "parent": {
         "$ref": "#/body"
       },
@@ -5032,23 +3293,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.  We used",
-      "text": "training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.  We used"
+      "orig": "$warmup\\_steps$ training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.  We used $warmup\\_steps=4000$",
+      "text": "$warmup\\_steps$ training steps, and decreasing it thereafter proportionally to the inverse square root of the step number.  We used $warmup\\_steps=4000$"
     },
     {
-      "self_ref": "#/texts/304",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "warmup\\_steps=4000",
-      "text": "warmup\\_steps=4000"
-    },
-    {
-      "self_ref": "#/texts/305",
+      "self_ref": "#/texts/189",
       "parent": {
         "$ref": "#/body"
       },
@@ -5060,7 +3309,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/306",
+      "self_ref": "#/texts/190",
       "parent": {
         "$ref": "#/body"
       },
@@ -5073,7 +3322,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/307",
+      "self_ref": "#/texts/191",
       "parent": {
         "$ref": "#/body"
       },
@@ -5085,7 +3334,7 @@
       "text": "We employ three types of regularization during training:"
     },
     {
-      "self_ref": "#/texts/308",
+      "self_ref": "#/texts/192",
       "parent": {
         "$ref": "#/body"
       },
@@ -5097,7 +3346,7 @@
       "text": "Residual Dropout"
     },
     {
-      "self_ref": "#/texts/309",
+      "self_ref": "#/texts/193",
       "parent": {
         "$ref": "#/body"
       },
@@ -5109,7 +3358,7 @@
       "text": "We apply dropout"
     },
     {
-      "self_ref": "#/texts/310",
+      "self_ref": "#/texts/194",
       "parent": {
         "$ref": "#/body"
       },
@@ -5121,7 +3370,7 @@
       "text": "[srivastava2014dropout]"
     },
     {
-      "self_ref": "#/texts/311",
+      "self_ref": "#/texts/195",
       "parent": {
         "$ref": "#/body"
       },
@@ -5129,23 +3378,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "to the output of each sub-layer, before it is added to the sub-layer input and normalized.   In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks.  For the base model, we use a rate of",
-      "text": "to the output of each sub-layer, before it is added to the sub-layer input and normalized.   In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks.  For the base model, we use a rate of"
+      "orig": "to the output of each sub-layer, before it is added to the sub-layer input and normalized.   In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks.  For the base model, we use a rate of $P_{drop}=0.1$",
+      "text": "to the output of each sub-layer, before it is added to the sub-layer input and normalized.   In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks.  For the base model, we use a rate of $P_{drop}=0.1$"
     },
     {
-      "self_ref": "#/texts/312",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "P_{drop}=0.1",
-      "text": "P_{drop}=0.1"
-    },
-    {
-      "self_ref": "#/texts/313",
+      "self_ref": "#/texts/196",
       "parent": {
         "$ref": "#/body"
       },
@@ -5157,7 +3394,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/314",
+      "self_ref": "#/texts/197",
       "parent": {
         "$ref": "#/body"
       },
@@ -5169,7 +3406,7 @@
       "text": "Label Smoothing"
     },
     {
-      "self_ref": "#/texts/315",
+      "self_ref": "#/texts/198",
       "parent": {
         "$ref": "#/body"
       },
@@ -5177,23 +3414,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "During training, we employed label smoothing of value",
-      "text": "During training, we employed label smoothing of value"
+      "orig": "During training, we employed label smoothing of value $\\epsilon_{ls}=0.1$",
+      "text": "During training, we employed label smoothing of value $\\epsilon_{ls}=0.1$"
     },
     {
-      "self_ref": "#/texts/316",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\epsilon_{ls}=0.1",
-      "text": "\\epsilon_{ls}=0.1"
-    },
-    {
-      "self_ref": "#/texts/317",
+      "self_ref": "#/texts/199",
       "parent": {
         "$ref": "#/body"
       },
@@ -5205,7 +3430,7 @@
       "text": "[DBLP:journals/corr/SzegedyVISW15]"
     },
     {
-      "self_ref": "#/texts/318",
+      "self_ref": "#/texts/200",
       "parent": {
         "$ref": "#/body"
       },
@@ -5217,7 +3442,7 @@
       "text": ".  This hurts perplexity, as the model learns to be more unsure, but improves accuracy and BLEU score."
     },
     {
-      "self_ref": "#/texts/319",
+      "self_ref": "#/texts/201",
       "parent": {
         "$ref": "#/body"
       },
@@ -5230,7 +3455,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/320",
+      "self_ref": "#/texts/202",
       "parent": {
         "$ref": "#/body"
       },
@@ -5243,7 +3468,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/321",
+      "self_ref": "#/texts/203",
       "parent": {
         "$ref": "#/body"
       },
@@ -5255,7 +3480,7 @@
       "text": "The Transformer achieves better BLEU scores than previous state-of-the-art models on the English-to-German and English-to-French newstest2014 tests at a fraction of the training cost."
     },
     {
-      "self_ref": "#/texts/322",
+      "self_ref": "#/texts/204",
       "parent": {
         "$ref": "#/body"
       },
@@ -5267,7 +3492,7 @@
       "text": "On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table"
     },
     {
-      "self_ref": "#/texts/323",
+      "self_ref": "#/texts/205",
       "parent": {
         "$ref": "#/body"
       },
@@ -5279,7 +3504,7 @@
       "text": "[tab:wmt-results]"
     },
     {
-      "self_ref": "#/texts/324",
+      "self_ref": "#/texts/206",
       "parent": {
         "$ref": "#/body"
       },
@@ -5287,59 +3512,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ") outperforms the best previously reported models (including ensembles) by more than",
-      "text": ") outperforms the best previously reported models (including ensembles) by more than"
+      "orig": ") outperforms the best previously reported models (including ensembles) by more than $2.0$ BLEU, establishing a new state-of-the-art BLEU score of $28.4$.  The configuration of this model is listed in the bottom line of Table",
+      "text": ") outperforms the best previously reported models (including ensembles) by more than $2.0$ BLEU, establishing a new state-of-the-art BLEU score of $28.4$.  The configuration of this model is listed in the bottom line of Table"
     },
     {
-      "self_ref": "#/texts/325",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "2.0",
-      "text": "2.0"
-    },
-    {
-      "self_ref": "#/texts/326",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "BLEU, establishing a new state-of-the-art BLEU score of",
-      "text": "BLEU, establishing a new state-of-the-art BLEU score of"
-    },
-    {
-      "self_ref": "#/texts/327",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "28.4",
-      "text": "28.4"
-    },
-    {
-      "self_ref": "#/texts/328",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".  The configuration of this model is listed in the bottom line of Table",
-      "text": ".  The configuration of this model is listed in the bottom line of Table"
-    },
-    {
-      "self_ref": "#/texts/329",
+      "self_ref": "#/texts/207",
       "parent": {
         "$ref": "#/body"
       },
@@ -5351,7 +3528,7 @@
       "text": "[tab:variations]"
     },
     {
-      "self_ref": "#/texts/330",
+      "self_ref": "#/texts/208",
       "parent": {
         "$ref": "#/body"
       },
@@ -5359,47 +3536,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".  Training took",
-      "text": ".  Training took"
+      "orig": ".  Training took $3.5$ days on $8$",
+      "text": ".  Training took $3.5$ days on $8$"
     },
     {
-      "self_ref": "#/texts/331",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "3.5",
-      "text": "3.5"
-    },
-    {
-      "self_ref": "#/texts/332",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "days on",
-      "text": "days on"
-    },
-    {
-      "self_ref": "#/texts/333",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "8",
-      "text": "8"
-    },
-    {
-      "self_ref": "#/texts/334",
+      "self_ref": "#/texts/209",
       "parent": {
         "$ref": "#/body"
       },
@@ -5411,7 +3552,7 @@
       "text": "P100 GPUs.  Even our base model surpasses all previously published models and ensembles, at a fraction of the training cost of any of the competitive models."
     },
     {
-      "self_ref": "#/texts/335",
+      "self_ref": "#/texts/210",
       "parent": {
         "$ref": "#/body"
       },
@@ -5423,19 +3564,7 @@
       "text": "On the WMT 2014 English-to-French translation task, our big model achieves a BLEU score of"
     },
     {
-      "self_ref": "#/texts/336",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "41.0",
-      "text": "41.0"
-    },
-    {
-      "self_ref": "#/texts/337",
+      "self_ref": "#/texts/211",
       "parent": {
         "$ref": "#/body"
       },
@@ -5443,71 +3572,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ", outperforming all of the previously published single models, at less than",
-      "text": ", outperforming all of the previously published single models, at less than"
+      "orig": "$41.0$, outperforming all of the previously published single models, at less than $1/4$ the training cost of the previous state-of-the-art model. The Transformer (big) model trained for English-to-French used dropout rate $P_{drop}=0.1$, instead of $0.3$",
+      "text": "$41.0$, outperforming all of the previously published single models, at less than $1/4$ the training cost of the previous state-of-the-art model. The Transformer (big) model trained for English-to-French used dropout rate $P_{drop}=0.1$, instead of $0.3$"
     },
     {
-      "self_ref": "#/texts/338",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "1/4",
-      "text": "1/4"
-    },
-    {
-      "self_ref": "#/texts/339",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "the training cost of the previous state-of-the-art model. The Transformer (big) model trained for English-to-French used dropout rate",
-      "text": "the training cost of the previous state-of-the-art model. The Transformer (big) model trained for English-to-French used dropout rate"
-    },
-    {
-      "self_ref": "#/texts/340",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "P_{drop}=0.1",
-      "text": "P_{drop}=0.1"
-    },
-    {
-      "self_ref": "#/texts/341",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", instead of",
-      "text": ", instead of"
-    },
-    {
-      "self_ref": "#/texts/342",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "0.3",
-      "text": "0.3"
-    },
-    {
-      "self_ref": "#/texts/343",
+      "self_ref": "#/texts/212",
       "parent": {
         "$ref": "#/body"
       },
@@ -5519,7 +3588,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/344",
+      "self_ref": "#/texts/213",
       "parent": {
         "$ref": "#/body"
       },
@@ -5531,19 +3600,7 @@
       "text": "For the base models, we used a single model obtained by averaging the last 5 checkpoints, which were written at 10-minute intervals.  For the big models, we averaged the last 20 checkpoints. We used beam search with a beam size of"
     },
     {
-      "self_ref": "#/texts/345",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "4",
-      "text": "4"
-    },
-    {
-      "self_ref": "#/texts/346",
+      "self_ref": "#/texts/214",
       "parent": {
         "$ref": "#/body"
       },
@@ -5551,23 +3608,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "and length penalty",
-      "text": "and length penalty"
+      "orig": "$4$ and length penalty $\\alpha=0.6$",
+      "text": "$4$ and length penalty $\\alpha=0.6$"
     },
     {
-      "self_ref": "#/texts/347",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\alpha=0.6",
-      "text": "\\alpha=0.6"
-    },
-    {
-      "self_ref": "#/texts/348",
+      "self_ref": "#/texts/215",
       "parent": {
         "$ref": "#/body"
       },
@@ -5579,7 +3624,7 @@
       "text": "[wu2016google]"
     },
     {
-      "self_ref": "#/texts/349",
+      "self_ref": "#/texts/216",
       "parent": {
         "$ref": "#/body"
       },
@@ -5587,35 +3632,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".  These hyperparameters were chosen after experimentation on the development set.  We set the maximum output length during inference to input length +",
-      "text": ".  These hyperparameters were chosen after experimentation on the development set.  We set the maximum output length during inference to input length +"
+      "orig": ".  These hyperparameters were chosen after experimentation on the development set.  We set the maximum output length during inference to input length + $50$, but terminate early when possible",
+      "text": ".  These hyperparameters were chosen after experimentation on the development set.  We set the maximum output length during inference to input length + $50$, but terminate early when possible"
     },
     {
-      "self_ref": "#/texts/350",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "50",
-      "text": "50"
-    },
-    {
-      "self_ref": "#/texts/351",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", but terminate early when possible",
-      "text": ", but terminate early when possible"
-    },
-    {
-      "self_ref": "#/texts/352",
+      "self_ref": "#/texts/217",
       "parent": {
         "$ref": "#/body"
       },
@@ -5627,7 +3648,7 @@
       "text": "[wu2016google]"
     },
     {
-      "self_ref": "#/texts/353",
+      "self_ref": "#/texts/218",
       "parent": {
         "$ref": "#/body"
       },
@@ -5639,7 +3660,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/354",
+      "self_ref": "#/texts/219",
       "parent": {
         "$ref": "#/body"
       },
@@ -5651,7 +3672,7 @@
       "text": "Table"
     },
     {
-      "self_ref": "#/texts/355",
+      "self_ref": "#/texts/220",
       "parent": {
         "$ref": "#/body"
       },
@@ -5663,7 +3684,7 @@
       "text": "[tab:wmt-results]"
     },
     {
-      "self_ref": "#/texts/356",
+      "self_ref": "#/texts/221",
       "parent": {
         "$ref": "#/body"
       },
@@ -5675,7 +3696,7 @@
       "text": "summarizes our results and compares our translation quality and training costs to other model architectures from the literature.  We estimate the number of floating point operations used to train a model by multiplying the training time, the number of GPUs used, and an estimate of the sustained single-precision floating-point capacity of each GPU"
     },
     {
-      "self_ref": "#/texts/357",
+      "self_ref": "#/texts/222",
       "parent": {
         "$ref": "#/body"
       },
@@ -5687,7 +3708,7 @@
       "text": "We used values of 2.8, 3.7, 6.0 and 9.5 TFLOPS for K80, K40, M40 and P100, respectively."
     },
     {
-      "self_ref": "#/texts/358",
+      "self_ref": "#/texts/223",
       "parent": {
         "$ref": "#/body"
       },
@@ -5699,7 +3720,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/359",
+      "self_ref": "#/texts/224",
       "parent": {
         "$ref": "#/body"
       },
@@ -5712,7 +3733,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/360",
+      "self_ref": "#/texts/225",
       "parent": {
         "$ref": "#/body"
       },
@@ -5724,7 +3745,7 @@
       "text": "Variations on the Transformer architecture. Unlisted values are identical to those of the base model.  All metrics are on the English-to-German translation development set, newstest2013.  Listed perplexities are per-wordpiece, according to our byte-pair encoding, and should not be compared to per-word perplexities."
     },
     {
-      "self_ref": "#/texts/361",
+      "self_ref": "#/texts/226",
       "parent": {
         "$ref": "#/body"
       },
@@ -5736,7 +3757,7 @@
       "text": "To evaluate the importance of different components of the Transformer, we varied our base model in different ways, measuring the change in performance on English-to-German translation on the development set, newstest2013. We used beam search as described in the previous section, but no checkpoint averaging.  We present these results in Table"
     },
     {
-      "self_ref": "#/texts/362",
+      "self_ref": "#/texts/227",
       "parent": {
         "$ref": "#/body"
       },
@@ -5748,7 +3769,7 @@
       "text": "[tab:variations]"
     },
     {
-      "self_ref": "#/texts/363",
+      "self_ref": "#/texts/228",
       "parent": {
         "$ref": "#/body"
       },
@@ -5760,7 +3781,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/364",
+      "self_ref": "#/texts/229",
       "parent": {
         "$ref": "#/body"
       },
@@ -5772,7 +3793,7 @@
       "text": "In Table"
     },
     {
-      "self_ref": "#/texts/365",
+      "self_ref": "#/texts/230",
       "parent": {
         "$ref": "#/body"
       },
@@ -5784,7 +3805,7 @@
       "text": "[tab:variations]"
     },
     {
-      "self_ref": "#/texts/366",
+      "self_ref": "#/texts/231",
       "parent": {
         "$ref": "#/body"
       },
@@ -5796,7 +3817,7 @@
       "text": "rows (A), we vary the number of attention heads and the attention key and value dimensions, keeping the amount of computation constant, as described in Section"
     },
     {
-      "self_ref": "#/texts/367",
+      "self_ref": "#/texts/232",
       "parent": {
         "$ref": "#/body"
       },
@@ -5808,7 +3829,7 @@
       "text": "[sec:multihead]"
     },
     {
-      "self_ref": "#/texts/368",
+      "self_ref": "#/texts/233",
       "parent": {
         "$ref": "#/body"
       },
@@ -5820,7 +3841,7 @@
       "text": ". While single-head attention is 0.9 BLEU worse than the best setting, quality also drops off with too many heads."
     },
     {
-      "self_ref": "#/texts/369",
+      "self_ref": "#/texts/234",
       "parent": {
         "$ref": "#/body"
       },
@@ -5832,7 +3853,7 @@
       "text": "In Table"
     },
     {
-      "self_ref": "#/texts/370",
+      "self_ref": "#/texts/235",
       "parent": {
         "$ref": "#/body"
       },
@@ -5844,7 +3865,7 @@
       "text": "[tab:variations]"
     },
     {
-      "self_ref": "#/texts/371",
+      "self_ref": "#/texts/236",
       "parent": {
         "$ref": "#/body"
       },
@@ -5852,35 +3873,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "rows (B), we observe that reducing the attention key size",
-      "text": "rows (B), we observe that reducing the attention key size"
+      "orig": "rows (B), we observe that reducing the attention key size $d_k$ hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting.  In row (E) we replace our sinusoidal positional encoding with learned positional embeddings",
+      "text": "rows (B), we observe that reducing the attention key size $d_k$ hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting.  In row (E) we replace our sinusoidal positional encoding with learned positional embeddings"
     },
     {
-      "self_ref": "#/texts/372",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_k",
-      "text": "d_k"
-    },
-    {
-      "self_ref": "#/texts/373",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting.  In row (E) we replace our sinusoidal positional encoding with learned positional embeddings",
-      "text": "hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial. We further observe in rows (C) and (D) that, as expected, bigger models are better, and dropout is very helpful in avoiding over-fitting.  In row (E) we replace our sinusoidal positional encoding with learned positional embeddings"
-    },
-    {
-      "self_ref": "#/texts/374",
+      "self_ref": "#/texts/237",
       "parent": {
         "$ref": "#/body"
       },
@@ -5892,7 +3889,7 @@
       "text": "[JonasFaceNet2017]"
     },
     {
-      "self_ref": "#/texts/375",
+      "self_ref": "#/texts/238",
       "parent": {
         "$ref": "#/body"
       },
@@ -5904,7 +3901,7 @@
       "text": ", and observe nearly identical results to the base model."
     },
     {
-      "self_ref": "#/texts/376",
+      "self_ref": "#/texts/239",
       "parent": {
         "$ref": "#/body"
       },
@@ -5917,7 +3914,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/377",
+      "self_ref": "#/texts/240",
       "parent": {
         "$ref": "#/body"
       },
@@ -5929,7 +3926,7 @@
       "text": "The Transformer generalizes well to English constituency parsing (Results are on Section 23 of WSJ)"
     },
     {
-      "self_ref": "#/texts/378",
+      "self_ref": "#/texts/241",
       "parent": {
         "$ref": "#/body"
       },
@@ -5941,7 +3938,7 @@
       "text": "To evaluate if the Transformer can generalize to other tasks we performed experiments on English constituency parsing. This task presents specific challenges: the output is subject to strong structural constraints and is significantly longer than the input.\nFurthermore, RNN sequence-to-sequence models have not been able to attain state-of-the-art results in small-data regimes"
     },
     {
-      "self_ref": "#/texts/379",
+      "self_ref": "#/texts/242",
       "parent": {
         "$ref": "#/body"
       },
@@ -5953,7 +3950,7 @@
       "text": "[KVparse15]"
     },
     {
-      "self_ref": "#/texts/380",
+      "self_ref": "#/texts/243",
       "parent": {
         "$ref": "#/body"
       },
@@ -5965,7 +3962,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/381",
+      "self_ref": "#/texts/244",
       "parent": {
         "$ref": "#/body"
       },
@@ -5977,19 +3974,7 @@
       "text": "We trained a 4-layer transformer with"
     },
     {
-      "self_ref": "#/texts/382",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "d_{model} = 1024",
-      "text": "d_{model} = 1024"
-    },
-    {
-      "self_ref": "#/texts/383",
+      "self_ref": "#/texts/245",
       "parent": {
         "$ref": "#/body"
       },
@@ -5997,11 +3982,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "on the Wall Street Journal (WSJ) portion of the Penn Treebank",
-      "text": "on the Wall Street Journal (WSJ) portion of the Penn Treebank"
+      "orig": "$d_{model} = 1024$ on the Wall Street Journal (WSJ) portion of the Penn Treebank",
+      "text": "$d_{model} = 1024$ on the Wall Street Journal (WSJ) portion of the Penn Treebank"
     },
     {
-      "self_ref": "#/texts/384",
+      "self_ref": "#/texts/246",
       "parent": {
         "$ref": "#/body"
       },
@@ -6013,7 +3998,7 @@
       "text": "[marcus1993building]"
     },
     {
-      "self_ref": "#/texts/385",
+      "self_ref": "#/texts/247",
       "parent": {
         "$ref": "#/body"
       },
@@ -6025,7 +4010,7 @@
       "text": ", about 40K training sentences. We also trained it in a semi-supervised setting, using the larger high-confidence and BerkleyParser corpora from with approximately 17M sentences"
     },
     {
-      "self_ref": "#/texts/386",
+      "self_ref": "#/texts/248",
       "parent": {
         "$ref": "#/body"
       },
@@ -6037,7 +4022,7 @@
       "text": "[KVparse15]"
     },
     {
-      "self_ref": "#/texts/387",
+      "self_ref": "#/texts/249",
       "parent": {
         "$ref": "#/body"
       },
@@ -6049,7 +4034,7 @@
       "text": ". We used a vocabulary of 16K tokens for the WSJ only setting and a vocabulary of 32K tokens for the semi-supervised setting."
     },
     {
-      "self_ref": "#/texts/388",
+      "self_ref": "#/texts/250",
       "parent": {
         "$ref": "#/body"
       },
@@ -6061,7 +4046,7 @@
       "text": "We performed only a small number of experiments to select the dropout, both attention and residual (section"
     },
     {
-      "self_ref": "#/texts/389",
+      "self_ref": "#/texts/251",
       "parent": {
         "$ref": "#/body"
       },
@@ -6073,7 +4058,7 @@
       "text": "[sec:reg]"
     },
     {
-      "self_ref": "#/texts/390",
+      "self_ref": "#/texts/252",
       "parent": {
         "$ref": "#/body"
       },
@@ -6081,71 +4066,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length +",
-      "text": "), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length +"
+      "orig": "), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + $300$. We used a beam size of $21$ and $\\alpha=0.3$",
+      "text": "), learning rates and beam size on the Section 22 development set, all other parameters remained unchanged from the English-to-German base translation model. During inference, we increased the maximum output length to input length + $300$. We used a beam size of $21$ and $\\alpha=0.3$"
     },
     {
-      "self_ref": "#/texts/391",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "300",
-      "text": "300"
-    },
-    {
-      "self_ref": "#/texts/392",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". We used a beam size of",
-      "text": ". We used a beam size of"
-    },
-    {
-      "self_ref": "#/texts/393",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "21",
-      "text": "21"
-    },
-    {
-      "self_ref": "#/texts/394",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/395",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\alpha=0.3",
-      "text": "\\alpha=0.3"
-    },
-    {
-      "self_ref": "#/texts/396",
+      "self_ref": "#/texts/253",
       "parent": {
         "$ref": "#/body"
       },
@@ -6157,7 +4082,7 @@
       "text": "for both WSJ only and the semi-supervised setting."
     },
     {
-      "self_ref": "#/texts/397",
+      "self_ref": "#/texts/254",
       "parent": {
         "$ref": "#/body"
       },
@@ -6169,7 +4094,7 @@
       "text": "Our results in Table"
     },
     {
-      "self_ref": "#/texts/398",
+      "self_ref": "#/texts/255",
       "parent": {
         "$ref": "#/body"
       },
@@ -6181,7 +4106,7 @@
       "text": "[tab:parsing-results]"
     },
     {
-      "self_ref": "#/texts/399",
+      "self_ref": "#/texts/256",
       "parent": {
         "$ref": "#/body"
       },
@@ -6193,7 +4118,7 @@
       "text": "show that despite the lack of task-specific tuning our model performs surprisingly well, yielding better results than all previously reported models with the exception of the Recurrent Neural Network Grammar"
     },
     {
-      "self_ref": "#/texts/400",
+      "self_ref": "#/texts/257",
       "parent": {
         "$ref": "#/body"
       },
@@ -6205,7 +4130,7 @@
       "text": "[dyer-rnng:16]"
     },
     {
-      "self_ref": "#/texts/401",
+      "self_ref": "#/texts/258",
       "parent": {
         "$ref": "#/body"
       },
@@ -6217,7 +4142,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/402",
+      "self_ref": "#/texts/259",
       "parent": {
         "$ref": "#/body"
       },
@@ -6229,7 +4154,7 @@
       "text": "In contrast to RNN sequence-to-sequence models"
     },
     {
-      "self_ref": "#/texts/403",
+      "self_ref": "#/texts/260",
       "parent": {
         "$ref": "#/body"
       },
@@ -6241,7 +4166,7 @@
       "text": "[KVparse15]"
     },
     {
-      "self_ref": "#/texts/404",
+      "self_ref": "#/texts/261",
       "parent": {
         "$ref": "#/body"
       },
@@ -6253,7 +4178,7 @@
       "text": ", the Transformer outperforms the BerkeleyParser"
     },
     {
-      "self_ref": "#/texts/405",
+      "self_ref": "#/texts/262",
       "parent": {
         "$ref": "#/body"
       },
@@ -6265,7 +4190,7 @@
       "text": "[petrov-EtAl:2006:ACL]"
     },
     {
-      "self_ref": "#/texts/406",
+      "self_ref": "#/texts/263",
       "parent": {
         "$ref": "#/body"
       },
@@ -6277,7 +4202,7 @@
       "text": "even when training only on the WSJ training set of 40K sentences."
     },
     {
-      "self_ref": "#/texts/407",
+      "self_ref": "#/texts/264",
       "parent": {
         "$ref": "#/body"
       },
@@ -6290,7 +4215,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/408",
+      "self_ref": "#/texts/265",
       "parent": {
         "$ref": "#/body"
       },
@@ -6302,7 +4227,7 @@
       "text": "In this work, we presented the Transformer, the first sequence transduction model based entirely on attention, replacing the recurrent layers most commonly used in encoder-decoder architectures with multi-headed self-attention."
     },
     {
-      "self_ref": "#/texts/409",
+      "self_ref": "#/texts/266",
       "parent": {
         "$ref": "#/body"
       },
@@ -6314,7 +4239,7 @@
       "text": "For translation tasks, the Transformer can be trained significantly faster than architectures based on recurrent or convolutional layers. On both WMT 2014 English-to-German and WMT 2014 English-to-French translation tasks, we achieve a new state of the art. In the former task our best model outperforms even all previously reported ensembles."
     },
     {
-      "self_ref": "#/texts/410",
+      "self_ref": "#/texts/267",
       "parent": {
         "$ref": "#/body"
       },
@@ -6326,7 +4251,7 @@
       "text": "We are excited about the future of attention-based models and plan to apply them to other tasks. We plan to extend the Transformer to problems involving input and output modalities other than text and to investigate local, restricted attention mechanisms to efficiently handle large inputs and outputs such as images, audio and video.\nMaking generation less sequential is another research goals of ours."
     },
     {
-      "self_ref": "#/texts/411",
+      "self_ref": "#/texts/268",
       "parent": {
         "$ref": "#/body"
       },
@@ -6338,7 +4263,7 @@
       "text": "The code we used to train and evaluate our models is available at"
     },
     {
-      "self_ref": "#/texts/412",
+      "self_ref": "#/texts/269",
       "parent": {
         "$ref": "#/body"
       },
@@ -6350,7 +4275,7 @@
       "text": "https://github.com/tensorflow/tensor2tensor"
     },
     {
-      "self_ref": "#/texts/413",
+      "self_ref": "#/texts/270",
       "parent": {
         "$ref": "#/body"
       },
@@ -6362,7 +4287,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/414",
+      "self_ref": "#/texts/271",
       "parent": {
         "$ref": "#/body"
       },
@@ -6374,7 +4299,7 @@
       "text": "Acknowledgements"
     },
     {
-      "self_ref": "#/texts/415",
+      "self_ref": "#/texts/272",
       "parent": {
         "$ref": "#/body"
       },
@@ -6386,7 +4311,7 @@
       "text": "We are grateful to Nal Kalchbrenner and Stephan Gouws for\ntheir fruitful comments, corrections and inspiration."
     },
     {
-      "self_ref": "#/texts/416",
+      "self_ref": "#/texts/273",
       "parent": {
         "$ref": "#/body"
       },
@@ -6398,7 +4323,7 @@
       "text": "plain"
     },
     {
-      "self_ref": "#/texts/417",
+      "self_ref": "#/texts/274",
       "parent": {
         "$ref": "#/body"
       },
@@ -6411,7 +4336,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/418",
+      "self_ref": "#/texts/275",
       "parent": {
         "$ref": "#/body"
       },
@@ -6424,7 +4349,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/419",
+      "self_ref": "#/texts/276",
       "parent": {
         "$ref": "#/body"
       },
@@ -6436,9 +4361,9 @@
       "text": "Image: ./vis/making_more_difficult5_new.pdf"
     },
     {
-      "self_ref": "#/texts/420",
+      "self_ref": "#/texts/277",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -6448,7 +4373,7 @@
       "text": "An example of the attention mechanism following long-distance dependencies in the encoder self-attention in layer 5 of 6. Many of the attention heads attend to a distant dependency of the verb `making', completing the phrase `making...more difficult'.  Attentions here shown only for the word `making'. Different colors represent different heads. Best viewed in color."
     },
     {
-      "self_ref": "#/texts/421",
+      "self_ref": "#/texts/278",
       "parent": {
         "$ref": "#/body"
       },
@@ -6460,7 +4385,7 @@
       "text": "Image: ./vis/anaphora_resolution_new.pdf"
     },
     {
-      "self_ref": "#/texts/422",
+      "self_ref": "#/texts/279",
       "parent": {
         "$ref": "#/body"
       },
@@ -6472,9 +4397,9 @@
       "text": "Image: ./vis/anaphora_resolution2_new.pdf"
     },
     {
-      "self_ref": "#/texts/423",
+      "self_ref": "#/texts/280",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -6484,7 +4409,7 @@
       "text": "Two attention heads, also in layer 5 of 6, apparently involved in anaphora resolution. Top: Full attentions for head 5. Bottom: Isolated attentions from just the word `its' for attention heads 5 and 6. Note that the attentions are very sharp for this word."
     },
     {
-      "self_ref": "#/texts/424",
+      "self_ref": "#/texts/281",
       "parent": {
         "$ref": "#/body"
       },
@@ -6496,7 +4421,7 @@
       "text": "Image: ./vis/attending_to_head_new.pdf"
     },
     {
-      "self_ref": "#/texts/425",
+      "self_ref": "#/texts/282",
       "parent": {
         "$ref": "#/body"
       },
@@ -6508,9 +4433,9 @@
       "text": "Image: ./vis/attending_to_head2_new.pdf"
     },
     {
-      "self_ref": "#/texts/426",
+      "self_ref": "#/texts/283",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -6524,7 +4449,7 @@
     {
       "self_ref": "#/pictures/0",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -6532,7 +4457,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/54"
+          "$ref": "#/texts/49"
         }
       ],
       "references": [],
@@ -6542,7 +4467,7 @@
     {
       "self_ref": "#/pictures/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -6550,7 +4475,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/136"
+          "$ref": "#/texts/96"
         }
       ],
       "references": [],
@@ -6560,7 +4485,7 @@
     {
       "self_ref": "#/pictures/2",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -6568,7 +4493,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/140"
+          "$ref": "#/texts/100"
         }
       ],
       "references": [],
@@ -6578,7 +4503,7 @@
     {
       "self_ref": "#/pictures/3",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -6586,7 +4511,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/419"
+          "$ref": "#/texts/276"
         }
       ],
       "references": [],
@@ -6605,7 +4530,7 @@
     {
       "self_ref": "#/pictures/4",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -6613,7 +4538,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/421"
+          "$ref": "#/texts/278"
         }
       ],
       "references": [],
@@ -6632,7 +4557,7 @@
     {
       "self_ref": "#/pictures/5",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -6640,7 +4565,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/422"
+          "$ref": "#/texts/279"
         }
       ],
       "references": [],
@@ -6659,7 +4584,7 @@
     {
       "self_ref": "#/pictures/6",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -6667,7 +4592,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/424"
+          "$ref": "#/texts/281"
         }
       ],
       "references": [],
@@ -6686,7 +4611,7 @@
     {
       "self_ref": "#/pictures/7",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -6694,7 +4619,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/425"
+          "$ref": "#/texts/282"
         }
       ],
       "references": [],

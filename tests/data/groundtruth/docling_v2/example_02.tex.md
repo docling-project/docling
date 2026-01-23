@@ -2,7 +2,7 @@
 
 Inline math:
 
-$$E = mc^2$$
+$E = mc^2$
 
 Display math:
 

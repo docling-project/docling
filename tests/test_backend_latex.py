@@ -131,11 +131,18 @@ def test_latex_math_parsing():
     doc = backend.convert()
 
     formulas = [t for t in doc.texts if t.label == DocItemLabel.FORMULA]
-    assert len(formulas) >= 3  # Inline, Display, Align
+    assert len(formulas) >= 2  # Display math and Align environment
+
+    # Inline math should be part of the paragraph text
+    paragraphs = [
+        t for t in doc.texts if t.label in [DocItemLabel.PARAGRAPH, DocItemLabel.TEXT]
+    ]
+    full_text = " ".join([p.text for p in paragraphs])
+    assert "$E=mc^2$" in full_text
 
     md = doc.export_to_markdown()
     # Check delimiters
-    assert "$E=mc^2$" in md or r"\( E=mc^2 \)" in md or "E=mc^2" in md
+    assert "$E=mc^2$" in md or r"\( E=mc^2 \)" in md
     assert r"\frac" in md
     assert r"\begin{align}" in md  # Should preserve align tag for proper rendering
 
@@ -839,8 +846,6 @@ def test_latex_empty_table():
     )
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
-
-    # Should not crash, table may or may not be added
     assert doc is not None
 
 
@@ -860,8 +865,6 @@ def test_latex_marginpar():
     )
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
-
-    # Just verify it doesn't crash and produces output
     assert doc is not None
 
 
@@ -1105,3 +1108,85 @@ def test_e2e_latex_conversions(latex_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE), (
             f"Document JSON mismatch for {latex_path}"
         )
+
+
+def test_latex_document_with_leading_comments():
+    """Test that documents starting with comment lines don't cause regex errors"""
+    latex_content = b"""% This is a leading comment
+% Another comment line
+\\documentclass{article}
+\\begin{document}
+\\section{Test Section}
+This is test content.
+\\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    # Should parse successfully without regex errors
+    assert len(doc.texts) > 0
+    md = doc.export_to_markdown()
+    assert "Test Section" in md
+    assert "test content" in md
+
+
+def test_latex_custom_macro_with_backslash():
+    """Test that custom macros containing backslashes don't cause regex errors"""
+    latex_content = b"""\\documentclass{article}
+\\newcommand{\\myterm}{special term}
+\\newcommand{\\myvalue}{42}
+\\begin{document}
+This is \\myterm and the value is \\myvalue.
+\\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    # Should parse successfully without regex errors
+    assert len(doc.texts) > 0
+    md = doc.export_to_markdown()
+    # The macro expansion should work
+    assert "special term" in md and "42" in md
+
+
+def test_latex_figure_with_caption():
+    """Test that figure environment properly groups caption and image"""
+    latex_content = b"""\\documentclass{article}
+\\begin{document}
+\\begin{figure}
+\\includegraphics{test.png}
+\\caption{This is a test figure caption}
+\\label{fig:test}
+\\end{figure}
+\\end{document}
+"""
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    # Should have a figure group
+    figure_groups = [g for g in doc.groups if g.name == "figure"]
+    assert len(figure_groups) >= 1
+
+    # Should have picture and caption
+    assert len(doc.pictures) >= 1
+    captions = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
+    # includegraphics creates one caption, and \caption macro creates another
+    assert len(captions) >= 1
