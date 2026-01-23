@@ -276,9 +276,3 @@ branch = "main"
 parser_angular_allowed_types = "build,chore,ci,docs,feat,fix,perf,style,refactor,test"
 parser_angular_minor_types = "feat"
 parser_angular_patch_types = "fix,perf"
-
-# Map commit types to changelog sections
-changelog_sections = "feature,fix,breaking,documentation,performance,chore"
-
-# Exclude version bump commits from changelog
-exclude_commit_patterns = "^chore: bump version.*\\[skip ci\\]$"
