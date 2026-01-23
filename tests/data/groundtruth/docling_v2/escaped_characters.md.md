@@ -24,14 +24,14 @@ Text: 00:16.000 ----&gt; 00:18.000 &amp; &lt; &gt; " '
 
 # Table
 
-| Key          | Example   |
-|--------------|-----------|
-| Ampersand    | &         |
-| Less-than    | <         |
-| Greater-than | >         |
-| Quotes       | "         |
-| Apostrophes  | '         |
-| Pipe         | | | |     |
+| Key          | Example              |
+|--------------|----------------------|
+| Ampersand    | &                    |
+| Less-than    | <                    |
+| Greater-than | >                    |
+| Quotes       | "                    |
+| Apostrophes  | '                    |
+| Pipe         | &#124; &#124; &#124; |
 
 The pipe symbol (| or `|` ) only needs to be escaped in tables.
 
