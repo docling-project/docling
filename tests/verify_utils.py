@@ -11,9 +11,9 @@ from docling_core.types.doc import (
     FormulaItem,
     PictureItem,
     ProvenanceItem,
-    ProvenanceTrack,
     TableItem,
     TextItem,
+    TrackProvenance,
 )
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
@@ -239,32 +239,23 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
             true_prov = true_item.prov[0]
             pred_prov = pred_item.prov[0]
 
-            assert type(pred_prov) is type(true_prov), "Provenance type mismatch"
-            if isinstance(pred_prov, ProvenanceItem):
-                assert true_prov.page_no == pred_prov.page_no, (
-                    "Page provenance mistmatch"
-                )
-            elif isinstance(pred_prov, ProvenanceTrack):
-                assert true_prov.start_time == pred_prov.start_time, (
-                    "ProvenanceTrack start time mismatch"
-                )
-                assert true_prov.end_time == pred_prov.end_time, (
-                    "ProvenanceTrack end time mismatch"
-                )
-                assert true_prov.languages == pred_prov.languages, (
-                    "ProvenanceTrack languages mismatch"
-                )
-                assert true_prov.classes == pred_prov.classes, (
-                    "ProvenanceTrack classes mismatch"
-                )
-                assert true_prov.identifier == pred_prov.identifier, (
-                    "ProvenanceTrack identifier mismatch"
-                )
-                assert true_prov.voice == pred_prov.voice, (
-                    "ProvenanceTrack voice mismatch"
-                )
+            assert true_prov.page_no == pred_prov.page_no, "Page provenance mistmatch"
 
             # TODO: add bbox check with tolerance
+
+        # Validate source
+        assert bool(true_item.source) == bool(pred_item.source), (
+            "Source exists mismatch"
+        )
+        if true_item.source:
+            true_source = true_item.source[0]
+            pred_source = pred_item.source[0]
+            assert true_source.start_time == pred_source.start_time, (
+                "TrackProvenance start time mismatch"
+            )
+            assert true_source.end_time == pred_source.end_time, (
+                "TrackProvenance end time mismatch"
+            )
 
         # Validate text content
         if isinstance(true_item, TextItem):

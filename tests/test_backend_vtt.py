@@ -1,8 +1,9 @@
+import warnings
 from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument, GroupItem, ProvenanceTrack, TextItem
+from docling_core.types.doc import DoclingDocument, GroupItem, TextItem, TrackProvenance
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, _DocumentConversionInput
@@ -54,8 +55,8 @@ def _process_vtt_doc(doc: DoclingDocument) -> str:
     for item in doc.texts:
         if (
             isinstance(item, TextItem)
-            and item.prov
-            and isinstance(item.prov[0], ProvenanceTrack)
+            and item.source
+            and item.source[0].kind == "track"
         ):
             parent = item.parent.resolve(doc)
             if parent and isinstance(parent, GroupItem):
@@ -258,28 +259,31 @@ outro
 
 def test_style_blocks_and_note_between_styles_are_ignored(converter):
     vtt = """
-    WEBVTT
+WEBVTT
 
-    STYLE
-    ::cue {
-      background-image: linear-gradient(to bottom, dimgray, lightgray);
-      color: papayawhip;
-    }
-    /* Style blocks cannot use blank lines nor "dash dash greater than" */
+STYLE
+::cue {
+  background-image: linear-gradient(to bottom, dimgray, lightgray);
+  color: papayawhip;
+}
+/* Style blocks cannot use blank lines nor "dash dash greater than" */
 
-    NOTE comment blocks can be used between style blocks.
+NOTE comment blocks can be used between style blocks.
 
-    STYLE
-    ::cue(b) {
-      color: peachpuff;
-    }
+STYLE
+::cue(b) {
+    color: peachpuff;
+}
 
-    hello
-    00:00:00.000 --> 00:00:10.000
-    Hello <b>world</b>.
-    """
+hello
+00:00:00.000 --> 00:00:10.000
+Hello <b>world</b>.
+"""
     stream = _create_vtt_stream(vtt)
-    doc = converter.convert(stream).document
+    with warnings.catch_warnings():
+        # STYLE and NOTE blocks should be ignored without warnings
+        warnings.simplefilter("error")
+        doc = converter.convert(stream).document
 
     # expected = "Hello world."
     # TODO: temporary ground truth (issue docling-project/docling-core/#371)

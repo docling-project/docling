@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union, cast
 
-from docling_core.types.doc import DoclingDocument, DocTagsDocument, ProvenanceItem
+from docling_core.types.doc import DoclingDocument, DocTagsDocument
 from PIL import Image as PILImage
 
 if TYPE_CHECKING:
@@ -370,17 +370,13 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                 page_map = {p.page_no: p for p in conv_res.pages}
                 scale = self.pipeline_options.images_scale
                 for element, _level in conv_res.document.iterate_items():
-                    if (
-                        not isinstance(element, DocItem)
-                        or not element.prov
-                        or not isinstance(prov := element.prov[0], ProvenanceItem)
-                    ):
+                    if not isinstance(element, DocItem) or len(element.prov) == 0:
                         continue
                     if (
                         isinstance(element, PictureItem)
                         and self.pipeline_options.generate_picture_images
                     ):
-                        page_no = prov.page_no
+                        page_no = element.prov[0].page_no
                         page = page_map.get(page_no)
                         if page is None:
                             _log.warning(
@@ -390,8 +386,10 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                         assert page.size is not None
                         assert page.image is not None
 
-                        crop_bbox = prov.bbox.scaled(scale=scale).to_top_left_origin(
-                            page_height=page.size.height * scale
+                        crop_bbox = (
+                            element.prov[0]
+                            .bbox.scaled(scale=scale)
+                            .to_top_left_origin(page_height=page.size.height * scale)
                         )
 
                         cropped_im = page.image.crop(crop_bbox.as_tuple())

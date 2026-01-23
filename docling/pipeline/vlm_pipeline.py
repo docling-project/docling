@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import List, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -12,8 +12,6 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
-    TableCell,
-    TableData,
     TextItem,
 )
 from docling_core.types.doc.base import (
@@ -21,7 +19,6 @@ from docling_core.types.doc.base import (
     Size,
 )
 from docling_core.types.doc.document import DocTagsDocument
-from lxml import etree
 from PIL import Image as PILImage
 
 from docling.backend.abstract_backend import (
@@ -42,7 +39,6 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.settings import settings
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
@@ -182,23 +178,21 @@ class VlmPipeline(PaginatedPipeline):
             if self.pipeline_options.generate_picture_images:
                 scale = self.pipeline_options.images_scale
                 for element, _level in conv_res.document.iterate_items():
-                    if (
-                        not isinstance(element, DocItem)
-                        or not element.prov
-                        or not isinstance(prov := element.prov[0], ProvenanceItem)
-                    ):
+                    if not isinstance(element, DocItem) or len(element.prov) == 0:
                         continue
                     if (
                         isinstance(element, PictureItem)
                         and self.pipeline_options.generate_picture_images
                     ):
-                        page_ix = prov.page_no - 1
+                        page_ix = element.prov[0].page_no - 1
                         page = conv_res.pages[page_ix]
                         assert page.size is not None
                         assert page.image is not None
 
-                        crop_bbox = prov.bbox.scaled(scale=scale).to_top_left_origin(
-                            page_height=page.size.height * scale
+                        crop_bbox = (
+                            element.prov[0]
+                            .bbox.scaled(scale=scale)
+                            .to_top_left_origin(page_height=page.size.height * scale)
                         )
 
                         cropped_im = page.image.crop(crop_bbox.as_tuple())
@@ -235,14 +229,12 @@ class VlmPipeline(PaginatedPipeline):
             if self.force_backend_text:
                 scale = self.pipeline_options.images_scale
                 for element, _level in conv_res.document.iterate_items():
-                    if (
-                        not isinstance(element, TextItem)
-                        or not element.prov
-                        or not isinstance(prov := element.prov[0], ProvenanceItem)
-                    ):
+                    if not isinstance(element, TextItem) or len(element.prov) == 0:
                         continue
-                    crop_bbox = prov.bbox.scaled(scale=scale).to_top_left_origin(
-                        page_height=page.size.height * scale
+                    crop_bbox = (
+                        element.prov[0]
+                        .bbox.scaled(scale=scale)
+                        .to_top_left_origin(page_height=page.size.height * scale)
                     )
                     txt = self.extract_text_from_backend(page, crop_bbox)
                     element.text = txt

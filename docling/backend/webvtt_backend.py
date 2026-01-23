@@ -11,7 +11,7 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     Formatting,
-    ProvenanceTrack,
+    TrackProvenance,
 )
 from docling_core.types.doc.webvtt import (
     WebVTTCueBoldSpan,
@@ -198,7 +198,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                 else None
             )
 
-            track = ProvenanceTrack(
+            track = TrackProvenance(
                 start_time=block.timings.start.seconds,
                 end_time=block.timings.end.seconds,
                 identifier=identifier,
@@ -207,14 +207,14 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                 voice=item.voice or None,
             )
 
-            doc.add_text(
+            cue_span = doc.add_text(
                 label=DocItemLabel.TEXT,
                 text=text,
                 content_layer=ContentLayer.BODY,
-                prov=track,
                 formatting=formatting,
                 parent=parent,
             )
+            cue_span.source = [track]
 
         if vtt.title:
             doc.add_title(vtt.title, content_layer=ContentLayer.BODY)

@@ -669,8 +669,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
             if not isinstance(item, DocItem):
                 continue
             for provenance in item.prov:
-                if not isinstance(provenance, ProvenanceItem):
-                    continue
                 bbox = provenance.bbox
                 left = min(left, bbox.l) if left != -1 else bbox.l
                 right = max(right, bbox.r) if right != -1 else bbox.r

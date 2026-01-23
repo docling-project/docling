@@ -156,7 +156,7 @@ package = true
 default-groups = "all"
 
 [tool.uv.sources]
-docling-core = { git = "ssh://git@github.com/docling-project/docling-core.git", rev = "c56a6915bea7712fd1a5b0b2923f80926d55b261" }
+docling-core = { git = "ssh://git@github.com/docling-project/docling-core.git", rev = "5e0a7870f842ce82b8ca09eed5264013e728ded3" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]

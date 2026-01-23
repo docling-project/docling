@@ -2,7 +2,7 @@ It’s a blue apple tree!
 
 No way!
 
-Hee! *laughter*
+Hee!   *laughter*
 
 That’s awesome!
 
