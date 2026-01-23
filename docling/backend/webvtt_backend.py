@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import Literal
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -36,8 +36,8 @@ _log = logging.getLogger(__name__)
 @dataclass
 class AnnotatedText:
     text: str
-    voice: Optional[str] = None
-    formatting: Optional[Formatting] = None
+    voice: str | None = None
+    formatting: Formatting | None = None
     classes: dict[Literal["b", "u", "i", "lang", "v"], list[str]] = field(
         default_factory=dict
     )
@@ -69,7 +69,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
     """
 
     @override
-    def __init__(self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]):
+    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path):
         super().__init__(in_doc, path_or_stream)
 
         self.content: str = ""
@@ -187,7 +187,7 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
 
         def _add_text_item(
             text: str,
-            formatting: Optional[Formatting],
+            formatting: Formatting | None,
             item: AnnotatedText,
             parent=None,
         ):
