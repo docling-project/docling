@@ -1,0 +1,398 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.8.0",
+  "name": "powerpoint_issue_2663",
+  "origin": {
+    "mimetype": "application/vnd.ms-powerpoint",
+    "binary_hash": 4058147445965489257,
+    "filename": "powerpoint_issue_2663.pptx"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [
+      {
+        "$ref": "#/groups/0"
+      }
+    ],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [
+    {
+      "self_ref": "#/groups/0",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/0"
+        },
+        {
+          "$ref": "#/texts/1"
+        },
+        {
+          "$ref": "#/groups/1"
+        },
+        {
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/groups/2"
+        }
+      ],
+      "content_layer": "body",
+      "name": "slide-0",
+      "label": "chapter"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/2"
+        },
+        {
+          "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/6"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        }
+      ],
+      "content_layer": "body",
+      "name": "list",
+      "label": "list"
+    }
+  ],
+  "texts": [
+    {
+      "self_ref": "#/texts/0",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "title",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 1690688.0,
+            "r": 11353800.0,
+            "b": 365125.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            20
+          ]
+        }
+      ],
+      "orig": "Open-Source Software",
+      "text": "Open-Source Software"
+    },
+    {
+      "self_ref": "#/texts/1",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Key Benefits:",
+      "text": "Key Benefits:"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Open-source software is cost-effective as it eliminates license fees, reducing overall expenses.",
+      "text": "Open-source software is cost-effective as it eliminates license fees, reducing overall expenses.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/3",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Ehnhances security and transparency by allowing public access to source code",
+      "text": "Ehnhances security and transparency by allowing public access to source code",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Strong global community improves and maintains open-source projects.",
+      "text": "Strong global community improves and maintains open-source projects.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Offers flexibility, allowing users to customize and adapt the software",
+      "text": "Offers flexibility, allowing users to customize and adapt the software",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "",
+      "text": "",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Considerations When Using Open-Source Software:",
+      "text": "Considerations When Using Open-Source Software:"
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Open-source projects often rely on community support, which may not be as reliable as dedicated customer service.",
+      "text": "Open-source projects often rely on community support, which may not be as reliable as dedicated customer service.",
+      "enumerated": false,
+      "marker": ""
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 838200.0,
+            "t": 6176963.0,
+            "r": 11353800.0,
+            "b": 1825625.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            594
+          ]
+        }
+      ],
+      "orig": "Some open-source solutions may require advanced technical expertise for implementation and maintenance.",
+      "text": "Some open-source solutions may require advanced technical expertise for implementation and maintenance.",
+      "enumerated": false,
+      "marker": ""
+    }
+  ],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 12192000.0,
+        "height": 6858000.0
+      },
+      "page_no": 1
+    }
+  }
+}

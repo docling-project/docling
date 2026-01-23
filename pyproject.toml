@@ -1,6 +1,6 @@
 [project]
 name = "docling"
-version = "2.69.0"  # DO NOT EDIT, updated automatically
+version = "2.69.1"  # DO NOT EDIT, updated automatically
 description = "SDK and CLI for parsing PDF, DOCX, HTML, and more, to a unified document representation for powering downstream workflows such as gen AI applications."
 license = "MIT"
 keywords = [
@@ -25,7 +25,6 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -42,7 +41,7 @@ authors = [
   { name = "Panos Vagenas", email = "pva@zurich.ibm.com" },
   { name = "Peter Staar", email = "taa@zurich.ibm.com" },
 ]
-requires-python = '>=3.9,<4.0'
+requires-python = '>=3.10,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
   'docling-core[chunking] (>=2.58.0,<3.0.0)',
@@ -70,8 +69,6 @@ dependencies = [
   'pluggy (>=1.0.0,<2.0.0)',
   'pylatexenc (>=2.10,<3.0)',
   'scipy (>=1.6.0,<2.0.0)',
-  # 'scipy (>=1.6.0,<2.0.0) ; python_version >= "3.10"',
-  # 'scipy (>=1.6.0,<1.14.0) ; python_version < "3.10"',
   "accelerate>=1.0.0,<2",
   "polyfactory>=2.22.2",
 ]
@@ -97,14 +94,12 @@ vlm = [
   'transformers (>=4.46.0,<5.0.0)',
   'accelerate (>=1.2.1,<2.0.0)',
   'mlx-vlm (>=0.3.0,<1.0.0) ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
-  'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and python_version < "3.14" and sys_platform == "linux" and platform_machine == "x86_64"',
+  # 'vllm (>=0.10.0,<1.0.0) ; python_version >= "3.10" and python_version < "3.14" and sys_platform == "linux" and platform_machine == "x86_64"',
   "qwen-vl-utils>=0.0.11",
 ]
 rapidocr = [
   'rapidocr (>=3.3,<4.0.0)',
   'onnxruntime (>=1.7.0,<2.0.0) ; python_version < "3.14"',
-  # 'onnxruntime (>=1.7.0,<2.0.0) ; python_version >= "3.10"',
-  # 'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
 ]
 asr = [
     'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
@@ -146,13 +141,13 @@ examples = [
   "python-dotenv~=1.0",
   "langchain-huggingface>=0.0.3",
   "langchain-milvus~=0.1",
-  "langchain-text-splitters~=0.2",
+  "langchain-text-splitters>=0.2",
   "modelscope>=1.29.0",
   'gliner>=0.2.21 ; python_version < "3.14"',  # gliner depends on onnxruntime which is not available on py3.14
 ]
 constraints = [
-  'onnxruntime (>=1.7.0,<2.0.0) ; python_version >= "3.10" and python_version < "3.14"',
-  'onnxruntime (>=1.7.0,<1.20.0) ; python_version < "3.10"',
+  'numba >=0.63.0',
+  'langchain-core >=0.3.81',
 ]
 
 
@@ -164,7 +159,7 @@ default-groups = "all"
 include = ["docling*"]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 88
 respect-gitignore = true
 

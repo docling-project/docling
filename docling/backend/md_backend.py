@@ -365,7 +365,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 element.dest
             )
 
-        elif isinstance(element, (marko.inline.RawText, marko.inline.Literal)):
+        elif isinstance(element, marko.inline.RawText | marko.inline.Literal):
             _log.debug(f" - RawText/Literal: {element.children}")
             snippet_text = (
                 element.children.strip() if isinstance(element.children, str) else ""
@@ -440,7 +440,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             )
 
         elif (
-            isinstance(element, (marko.block.CodeBlock, marko.block.FencedCode))
+            isinstance(element, marko.block.CodeBlock | marko.block.FencedCode)
             and len(element.children) > 0
             and isinstance((child := element.children[0]), marko.inline.RawText)
             and len(snippet_text := (child.children.strip())) > 0
@@ -482,7 +482,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Some other element: {element}")
 
         if (
-            isinstance(element, (marko.block.Paragraph, marko.block.Heading))
+            isinstance(element, marko.block.Paragraph | marko.block.Heading)
             and len(element.children) > 1
         ):
             parent_item = doc.add_inline_group(parent=parent_item)

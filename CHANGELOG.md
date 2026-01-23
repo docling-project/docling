@@ -1,3 +1,9 @@
+## [v2.69.1](https://github.com/docling-project/docling/releases/tag/v2.69.1) - 2026-01-21
+
+### Fix
+
+* Off-by-one error for page indexing in vlm_pipeline ([#2902](https://github.com/docling-project/docling/issues/2902)) ([`08f49e2`](https://github.com/docling-project/docling/commit/08f49e2abc74bfbc6be3433f64698c2b4ac7ddce))
+
 ## [v2.69.0](https://github.com/docling-project/docling/releases/tag/v2.69.0) - 2026-01-20
 
 ### Feature
