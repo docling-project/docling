@@ -91,7 +91,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         text = re.sub(r"(?<!\\)%.*$", "", text, flags=re.MULTILINE)
 
         for name, value in self._custom_macros.items():
-            text = re.sub(rf"\\{name}(?![a-zA-Z])", value, text)
+            text = re.sub(rf"\\{name}(?![a-zA-Z])", lambda m: value, text)
 
         return text
 
@@ -186,9 +186,16 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 self._process_environment(node, doc, parent)
 
             elif isinstance(node, LatexMathNode):
-                flush_text_buffer()
-                math_text = self._clean_math(node.latex_verbatim(), "inline")
-                doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+                math_verbatim = node.latex_verbatim()
+                if math_verbatim.startswith(("$$", "\\[")):
+                    flush_text_buffer()
+                    math_text = self._clean_math(math_verbatim, "inline")
+                    doc.add_text(
+                        parent=parent, label=DocItemLabel.FORMULA, text=math_text
+                    )
+                else:
+                    # Inline math: keep in buffer to avoid splitting paragraphs
+                    text_buffer.append(math_verbatim)
 
             elif isinstance(node, LatexGroupNode):
                 self._process_nodes(node.nodelist, doc, parent)
@@ -317,7 +324,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 doc.add_picture(
                     parent=parent,
                     caption=caption,
-                    image=image,  # Will be None if image couldn't be loaded
+                    image=image,
                 )
 
         elif node.macroname == "\\":
@@ -430,7 +437,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             self._process_nodes(node.nodelist, doc, parent)
 
         elif node.envname in ["figure", "figure*"]:
-            self._process_nodes(node.nodelist, doc, parent)
+            # Process figure environment with proper grouping
+            self._process_figure(node, doc, parent)
 
         elif node.envname in ["verbatim", "lstlisting", "minted"]:
             code_text = self._extract_verbatim_content(
@@ -447,6 +455,21 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         else:
             self._process_nodes(node.nodelist, doc, parent)
+
+    def _process_figure(
+        self,
+        node: LatexEnvironmentNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+    ):
+        """Process figure environment with proper grouping"""
+        # Create a group for the figure to contain images and captions together
+        figure_group = doc.add_group(
+            parent=parent, name="figure", label=GroupLabel.SECTION
+        )
+
+        # Process all nodes within the figure
+        self._process_nodes(node.nodelist, doc, figure_group)
 
     def _process_list(
         self,

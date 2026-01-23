@@ -1,7 +1,7 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: section_header: Math Examples
   item-2 at level 1: paragraph: Inline math:
-  item-3 at level 1: formula: E = mc^2
+  item-3 at level 1: text: $E = mc^2$
   item-4 at level 1: paragraph: Display math:
   item-5 at level 1: formula: \int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
   item-6 at level 1: formula: \nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}

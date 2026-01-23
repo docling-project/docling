@@ -112,22 +112,19 @@
         "$ref": "#/texts/31"
       },
       {
+        "$ref": "#/groups/0"
+      },
+      {
         "$ref": "#/texts/32"
-      },
-      {
-        "$ref": "#/pictures/1"
-      },
-      {
-        "$ref": "#/texts/33"
-      },
-      {
-        "$ref": "#/texts/34"
       },
       {
         "$ref": "#/texts/35"
       },
       {
         "$ref": "#/texts/36"
+      },
+      {
+        "$ref": "#/tables/0"
       },
       {
         "$ref": "#/texts/37"
@@ -158,9 +155,6 @@
       },
       {
         "$ref": "#/texts/46"
-      },
-      {
-        "$ref": "#/tables/0"
       },
       {
         "$ref": "#/texts/47"
@@ -199,19 +193,10 @@
         "$ref": "#/texts/58"
       },
       {
-        "$ref": "#/texts/59"
+        "$ref": "#/groups/1"
       },
       {
         "$ref": "#/texts/60"
-      },
-      {
-        "$ref": "#/texts/61"
-      },
-      {
-        "$ref": "#/texts/62"
-      },
-      {
-        "$ref": "#/texts/63"
       },
       {
         "$ref": "#/texts/64"
@@ -229,13 +214,10 @@
         "$ref": "#/texts/68"
       },
       {
+        "$ref": "#/groups/2"
+      },
+      {
         "$ref": "#/texts/69"
-      },
-      {
-        "$ref": "#/texts/70"
-      },
-      {
-        "$ref": "#/texts/71"
       },
       {
         "$ref": "#/texts/72"
@@ -244,22 +226,7 @@
         "$ref": "#/texts/73"
       },
       {
-        "$ref": "#/texts/74"
-      },
-      {
-        "$ref": "#/texts/75"
-      },
-      {
-        "$ref": "#/texts/76"
-      },
-      {
-        "$ref": "#/texts/77"
-      },
-      {
-        "$ref": "#/texts/78"
-      },
-      {
-        "$ref": "#/texts/79"
+        "$ref": "#/groups/3"
       },
       {
         "$ref": "#/texts/80"
@@ -304,13 +271,13 @@
         "$ref": "#/texts/93"
       },
       {
+        "$ref": "#/groups/4"
+      },
+      {
         "$ref": "#/texts/94"
       },
       {
-        "$ref": "#/texts/95"
-      },
-      {
-        "$ref": "#/texts/96"
+        "$ref": "#/tables/1"
       },
       {
         "$ref": "#/texts/97"
@@ -319,13 +286,10 @@
         "$ref": "#/texts/98"
       },
       {
+        "$ref": "#/groups/5"
+      },
+      {
         "$ref": "#/texts/99"
-      },
-      {
-        "$ref": "#/texts/100"
-      },
-      {
-        "$ref": "#/texts/101"
       },
       {
         "$ref": "#/texts/102"
@@ -334,7 +298,7 @@
         "$ref": "#/texts/103"
       },
       {
-        "$ref": "#/pictures/2"
+        "$ref": "#/tables/2"
       },
       {
         "$ref": "#/texts/104"
@@ -403,10 +367,10 @@
         "$ref": "#/texts/125"
       },
       {
-        "$ref": "#/texts/126"
+        "$ref": "#/tables/3"
       },
       {
-        "$ref": "#/pictures/3"
+        "$ref": "#/texts/126"
       },
       {
         "$ref": "#/texts/127"
@@ -421,7 +385,25 @@
         "$ref": "#/texts/130"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/131"
+      },
+      {
+        "$ref": "#/texts/132"
+      },
+      {
+        "$ref": "#/texts/133"
+      },
+      {
+        "$ref": "#/texts/134"
+      },
+      {
+        "$ref": "#/texts/135"
+      },
+      {
+        "$ref": "#/tables/4"
+      },
+      {
+        "$ref": "#/texts/136"
       },
       {
         "$ref": "#/texts/137"
@@ -469,214 +451,13 @@
         "$ref": "#/texts/151"
       },
       {
-        "$ref": "#/pictures/4"
+        "$ref": "#/groups/6"
       },
       {
         "$ref": "#/texts/152"
       },
       {
-        "$ref": "#/texts/153"
-      },
-      {
-        "$ref": "#/tables/1"
-      },
-      {
-        "$ref": "#/texts/154"
-      },
-      {
-        "$ref": "#/texts/155"
-      },
-      {
-        "$ref": "#/texts/156"
-      },
-      {
-        "$ref": "#/pictures/5"
-      },
-      {
         "$ref": "#/texts/157"
-      },
-      {
-        "$ref": "#/texts/158"
-      },
-      {
-        "$ref": "#/texts/159"
-      },
-      {
-        "$ref": "#/texts/160"
-      },
-      {
-        "$ref": "#/tables/2"
-      },
-      {
-        "$ref": "#/texts/161"
-      },
-      {
-        "$ref": "#/texts/162"
-      },
-      {
-        "$ref": "#/texts/163"
-      },
-      {
-        "$ref": "#/texts/164"
-      },
-      {
-        "$ref": "#/texts/165"
-      },
-      {
-        "$ref": "#/texts/166"
-      },
-      {
-        "$ref": "#/texts/167"
-      },
-      {
-        "$ref": "#/texts/168"
-      },
-      {
-        "$ref": "#/texts/169"
-      },
-      {
-        "$ref": "#/texts/170"
-      },
-      {
-        "$ref": "#/texts/171"
-      },
-      {
-        "$ref": "#/texts/172"
-      },
-      {
-        "$ref": "#/texts/173"
-      },
-      {
-        "$ref": "#/texts/174"
-      },
-      {
-        "$ref": "#/texts/175"
-      },
-      {
-        "$ref": "#/texts/176"
-      },
-      {
-        "$ref": "#/texts/177"
-      },
-      {
-        "$ref": "#/texts/178"
-      },
-      {
-        "$ref": "#/texts/179"
-      },
-      {
-        "$ref": "#/texts/180"
-      },
-      {
-        "$ref": "#/texts/181"
-      },
-      {
-        "$ref": "#/texts/182"
-      },
-      {
-        "$ref": "#/tables/3"
-      },
-      {
-        "$ref": "#/texts/183"
-      },
-      {
-        "$ref": "#/texts/184"
-      },
-      {
-        "$ref": "#/texts/185"
-      },
-      {
-        "$ref": "#/texts/186"
-      },
-      {
-        "$ref": "#/texts/187"
-      },
-      {
-        "$ref": "#/texts/188"
-      },
-      {
-        "$ref": "#/texts/189"
-      },
-      {
-        "$ref": "#/texts/190"
-      },
-      {
-        "$ref": "#/texts/191"
-      },
-      {
-        "$ref": "#/texts/192"
-      },
-      {
-        "$ref": "#/tables/4"
-      },
-      {
-        "$ref": "#/texts/193"
-      },
-      {
-        "$ref": "#/texts/194"
-      },
-      {
-        "$ref": "#/texts/195"
-      },
-      {
-        "$ref": "#/texts/196"
-      },
-      {
-        "$ref": "#/texts/197"
-      },
-      {
-        "$ref": "#/texts/198"
-      },
-      {
-        "$ref": "#/texts/199"
-      },
-      {
-        "$ref": "#/texts/200"
-      },
-      {
-        "$ref": "#/texts/201"
-      },
-      {
-        "$ref": "#/texts/202"
-      },
-      {
-        "$ref": "#/texts/203"
-      },
-      {
-        "$ref": "#/texts/204"
-      },
-      {
-        "$ref": "#/texts/205"
-      },
-      {
-        "$ref": "#/texts/206"
-      },
-      {
-        "$ref": "#/texts/207"
-      },
-      {
-        "$ref": "#/texts/208"
-      },
-      {
-        "$ref": "#/texts/209"
-      },
-      {
-        "$ref": "#/pictures/6"
-      },
-      {
-        "$ref": "#/texts/210"
-      },
-      {
-        "$ref": "#/texts/211"
-      },
-      {
-        "$ref": "#/texts/212"
-      },
-      {
-        "$ref": "#/texts/213"
-      },
-      {
-        "$ref": "#/texts/214"
       }
     ],
     "content_layer": "body",
@@ -691,27 +472,159 @@
       },
       "children": [
         {
-          "$ref": "#/texts/131"
+          "$ref": "#/pictures/1"
         },
         {
-          "$ref": "#/texts/132"
+          "$ref": "#/texts/33"
         },
         {
-          "$ref": "#/texts/133"
+          "$ref": "#/texts/34"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/1",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/59"
         },
         {
-          "$ref": "#/texts/134"
+          "$ref": "#/pictures/2"
         },
         {
-          "$ref": "#/texts/135"
+          "$ref": "#/texts/61"
         },
         {
-          "$ref": "#/texts/136"
+          "$ref": "#/texts/62"
+        },
+        {
+          "$ref": "#/texts/63"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/3"
+        },
+        {
+          "$ref": "#/texts/70"
+        },
+        {
+          "$ref": "#/texts/71"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/3",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/74"
+        },
+        {
+          "$ref": "#/texts/75"
+        },
+        {
+          "$ref": "#/texts/76"
+        },
+        {
+          "$ref": "#/texts/77"
+        },
+        {
+          "$ref": "#/texts/78"
+        },
+        {
+          "$ref": "#/texts/79"
         }
       ],
       "content_layer": "body",
       "name": "list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/4"
+        },
+        {
+          "$ref": "#/texts/95"
+        },
+        {
+          "$ref": "#/texts/96"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/5"
+        },
+        {
+          "$ref": "#/texts/100"
+        },
+        {
+          "$ref": "#/texts/101"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [
+        {
+          "$ref": "#/pictures/6"
+        },
+        {
+          "$ref": "#/texts/153"
+        },
+        {
+          "$ref": "#/texts/154"
+        },
+        {
+          "$ref": "#/texts/155"
+        },
+        {
+          "$ref": "#/texts/156"
+        }
+      ],
+      "content_layer": "body",
+      "name": "figure",
+      "label": "section"
     }
   ],
   "texts": [
@@ -1131,7 +1044,7 @@
     {
       "self_ref": "#/texts/33",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -1150,137 +1063,17 @@
     {
       "self_ref": "#/texts/34",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most",
-      "text": "The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most"
+      "orig": "The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \\times W$ tokens.",
+      "text": "The number of operations in vanilla attention is quadratic in the sequence length, and the memory increases linearly with the number of tokens. At inference time, this incurs higher latency and smaller throughput due to reduced cache availability. To alleviate this issue, we use sliding window attention: each token can attend to at most $W$ tokens from the previous layer (here, $W=3$). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by $W$ tokens. Hence, after $k$ attention layers, information can move forward by up to $k \\times W$ tokens."
     },
     {
       "self_ref": "#/texts/35",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W",
-      "text": "W"
-    },
-    {
-      "self_ref": "#/texts/36",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "tokens from the previous layer (here,",
-      "text": "tokens from the previous layer (here,"
-    },
-    {
-      "self_ref": "#/texts/37",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W=3",
-      "text": "W=3"
-    },
-    {
-      "self_ref": "#/texts/38",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by",
-      "text": "). Note that tokens outside the sliding window still influence next word prediction. At each attention layer, information can move forward by"
-    },
-    {
-      "self_ref": "#/texts/39",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W",
-      "text": "W"
-    },
-    {
-      "self_ref": "#/texts/40",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "tokens. Hence, after",
-      "text": "tokens. Hence, after"
-    },
-    {
-      "self_ref": "#/texts/41",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k",
-      "text": "k"
-    },
-    {
-      "self_ref": "#/texts/42",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "attention layers, information can move forward by up to",
-      "text": "attention layers, information can move forward by up to"
-    },
-    {
-      "self_ref": "#/texts/43",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k \\times W",
-      "text": "k \\times W"
-    },
-    {
-      "self_ref": "#/texts/44",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "tokens.",
-      "text": "tokens."
-    },
-    {
-      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/body"
       },
@@ -1292,7 +1085,7 @@
       "text": "r"
     },
     {
-      "self_ref": "#/texts/46",
+      "self_ref": "#/texts/36",
       "parent": {
         "$ref": "#/body"
       },
@@ -1304,7 +1097,7 @@
       "text": "0.275"
     },
     {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/37",
       "parent": {
         "$ref": "#/body"
       },
@@ -1316,7 +1109,7 @@
       "text": "table"
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -1335,7 +1128,7 @@
       }
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/39",
       "parent": {
         "$ref": "#/body"
       },
@@ -1347,7 +1140,7 @@
       "text": "Mistral 7B is based on a transformer architecture"
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/40",
       "parent": {
         "$ref": "#/body"
       },
@@ -1359,7 +1152,7 @@
       "text": "[vaswani2017attention]"
     },
     {
-      "self_ref": "#/texts/51",
+      "self_ref": "#/texts/41",
       "parent": {
         "$ref": "#/body"
       },
@@ -1371,7 +1164,7 @@
       "text": ". The main parameters of the architecture are summarized in Table"
     },
     {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/42",
       "parent": {
         "$ref": "#/body"
       },
@@ -1383,7 +1176,7 @@
       "text": "[tab:param]"
     },
     {
-      "self_ref": "#/texts/53",
+      "self_ref": "#/texts/43",
       "parent": {
         "$ref": "#/body"
       },
@@ -1395,7 +1188,7 @@
       "text": ". Compared to Llama, it introduces a few changes that we summarize below."
     },
     {
-      "self_ref": "#/texts/54",
+      "self_ref": "#/texts/44",
       "parent": {
         "$ref": "#/body"
       },
@@ -1407,7 +1200,7 @@
       "text": "=-1"
     },
     {
-      "self_ref": "#/texts/55",
+      "self_ref": "#/texts/45",
       "parent": {
         "$ref": "#/body"
       },
@@ -1426,7 +1219,7 @@
       }
     },
     {
-      "self_ref": "#/texts/56",
+      "self_ref": "#/texts/46",
       "parent": {
         "$ref": "#/body"
       },
@@ -1434,203 +1227,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "SWA exploits the stacked layers of a transformer to attend information beyond the window size",
-      "text": "SWA exploits the stacked layers of a transformer to attend information beyond the window size"
+      "orig": "SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$.\nThe hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$.\nRecursively, $h_i$ can access tokens from the input layer at a distance of up to $W \\times k$ tokens, as illustrated in Figure",
+      "text": "SWA exploits the stacked layers of a transformer to attend information beyond the window size $W$.\nThe hidden state in position $i$ of the layer $k$, $h_i$, attends to all hidden states from the previous layer with positions between $i-W$ and $i$.\nRecursively, $h_i$ can access tokens from the input layer at a distance of up to $W \\times k$ tokens, as illustrated in Figure"
     },
     {
-      "self_ref": "#/texts/57",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W",
-      "text": "W"
-    },
-    {
-      "self_ref": "#/texts/58",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".\nThe hidden state in position",
-      "text": ".\nThe hidden state in position"
-    },
-    {
-      "self_ref": "#/texts/59",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/60",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "of the layer",
-      "text": "of the layer"
-    },
-    {
-      "self_ref": "#/texts/61",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k",
-      "text": "k"
-    },
-    {
-      "self_ref": "#/texts/62",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ",",
-      "text": ","
-    },
-    {
-      "self_ref": "#/texts/63",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "h_i",
-      "text": "h_i"
-    },
-    {
-      "self_ref": "#/texts/64",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", attends to all hidden states from the previous layer with positions between",
-      "text": ", attends to all hidden states from the previous layer with positions between"
-    },
-    {
-      "self_ref": "#/texts/65",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i-W",
-      "text": "i-W"
-    },
-    {
-      "self_ref": "#/texts/66",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/67",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/68",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ".\nRecursively,",
-      "text": ".\nRecursively,"
-    },
-    {
-      "self_ref": "#/texts/69",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "h_i",
-      "text": "h_i"
-    },
-    {
-      "self_ref": "#/texts/70",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "can access tokens from the input layer at a distance of up to",
-      "text": "can access tokens from the input layer at a distance of up to"
-    },
-    {
-      "self_ref": "#/texts/71",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W \\times k",
-      "text": "W \\times k"
-    },
-    {
-      "self_ref": "#/texts/72",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "tokens, as illustrated in Figure",
-      "text": "tokens, as illustrated in Figure"
-    },
-    {
-      "self_ref": "#/texts/73",
+      "self_ref": "#/texts/47",
       "parent": {
         "$ref": "#/body"
       },
@@ -1642,7 +1243,7 @@
       "text": "[fig:swa]"
     },
     {
-      "self_ref": "#/texts/74",
+      "self_ref": "#/texts/48",
       "parent": {
         "$ref": "#/body"
       },
@@ -1650,83 +1251,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ".\nAt the last layer, using a window size of",
-      "text": ".\nAt the last layer, using a window size of"
+      "orig": ".\nAt the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens.\nIn practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention",
+      "text": ".\nAt the last layer, using a window size of $W=4096$, we have a theoretical attention span of approximately $131K$ tokens.\nIn practice, for a sequence length of 16K and $W=4096$, changes made to FlashAttention"
     },
     {
-      "self_ref": "#/texts/75",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W=4096",
-      "text": "W=4096"
-    },
-    {
-      "self_ref": "#/texts/76",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", we have a theoretical attention span of approximately",
-      "text": ", we have a theoretical attention span of approximately"
-    },
-    {
-      "self_ref": "#/texts/77",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "131K",
-      "text": "131K"
-    },
-    {
-      "self_ref": "#/texts/78",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "tokens.\nIn practice, for a sequence length of 16K and",
-      "text": "tokens.\nIn practice, for a sequence length of 16K and"
-    },
-    {
-      "self_ref": "#/texts/79",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W=4096",
-      "text": "W=4096"
-    },
-    {
-      "self_ref": "#/texts/80",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", changes made to FlashAttention",
-      "text": ", changes made to FlashAttention"
-    },
-    {
-      "self_ref": "#/texts/81",
+      "self_ref": "#/texts/49",
       "parent": {
         "$ref": "#/body"
       },
@@ -1738,7 +1267,7 @@
       "text": "[dao2022flashattention]"
     },
     {
-      "self_ref": "#/texts/82",
+      "self_ref": "#/texts/50",
       "parent": {
         "$ref": "#/body"
       },
@@ -1750,7 +1279,7 @@
       "text": "and xFormers"
     },
     {
-      "self_ref": "#/texts/83",
+      "self_ref": "#/texts/51",
       "parent": {
         "$ref": "#/body"
       },
@@ -1762,7 +1291,7 @@
       "text": "[xFormers2022]"
     },
     {
-      "self_ref": "#/texts/84",
+      "self_ref": "#/texts/52",
       "parent": {
         "$ref": "#/body"
       },
@@ -1774,7 +1303,7 @@
       "text": "yield a 2x speed improvement over a vanilla attention baseline."
     },
     {
-      "self_ref": "#/texts/85",
+      "self_ref": "#/texts/53",
       "parent": {
         "$ref": "#/body"
       },
@@ -1786,7 +1315,7 @@
       "text": "=-1"
     },
     {
-      "self_ref": "#/texts/86",
+      "self_ref": "#/texts/54",
       "parent": {
         "$ref": "#/body"
       },
@@ -1805,7 +1334,7 @@
       }
     },
     {
-      "self_ref": "#/texts/87",
+      "self_ref": "#/texts/55",
       "parent": {
         "$ref": "#/body"
       },
@@ -1813,131 +1342,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of",
-      "text": "A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of"
+      "orig": "A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \\bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure",
+      "text": "A fixed attention span means that we can limit our cache size using a rolling buffer cache.\nThe cache has a fixed size of $W$, and the keys and values for the timestep $i$ are stored in position $i \\bmod W$ of the cache. As a result, when the position $i$ is larger than $W$, past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure"
     },
     {
-      "self_ref": "#/texts/88",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W",
-      "text": "W"
-    },
-    {
-      "self_ref": "#/texts/89",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", and the keys and values for the timestep",
-      "text": ", and the keys and values for the timestep"
-    },
-    {
-      "self_ref": "#/texts/90",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/91",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "are stored in position",
-      "text": "are stored in position"
-    },
-    {
-      "self_ref": "#/texts/92",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i \\bmod W",
-      "text": "i \\bmod W"
-    },
-    {
-      "self_ref": "#/texts/93",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "of the cache. As a result, when the position",
-      "text": "of the cache. As a result, when the position"
-    },
-    {
-      "self_ref": "#/texts/94",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/95",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is larger than",
-      "text": "is larger than"
-    },
-    {
-      "self_ref": "#/texts/96",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W",
-      "text": "W"
-    },
-    {
-      "self_ref": "#/texts/97",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure",
-      "text": ", past values in the cache are overwritten, and the size of the cache stops increasing. We provide an illustration in Figure"
-    },
-    {
-      "self_ref": "#/texts/98",
+      "self_ref": "#/texts/56",
       "parent": {
         "$ref": "#/body"
       },
@@ -1949,7 +1358,7 @@
       "text": "[fig:cache]"
     },
     {
-      "self_ref": "#/texts/99",
+      "self_ref": "#/texts/57",
       "parent": {
         "$ref": "#/body"
       },
@@ -1957,23 +1366,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "for",
-      "text": "for"
+      "orig": "for $W=3$",
+      "text": "for $W=3$"
     },
     {
-      "self_ref": "#/texts/100",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W=3",
-      "text": "W=3"
-    },
-    {
-      "self_ref": "#/texts/101",
+      "self_ref": "#/texts/58",
       "parent": {
         "$ref": "#/body"
       },
@@ -1985,9 +1382,9 @@
       "text": ".\nOn a sequence length of 32k tokens, this reduces the cache memory usage by 8x, without impacting the model quality."
     },
     {
-      "self_ref": "#/texts/102",
+      "self_ref": "#/texts/59",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -1997,7 +1394,7 @@
       "text": "["
     },
     {
-      "self_ref": "#/texts/103",
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/body"
       },
@@ -2009,9 +1406,9 @@
       "text": "Image: images/rolling_buffer.pdf"
     },
     {
-      "self_ref": "#/texts/104",
+      "self_ref": "#/texts/61",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -2021,9 +1418,9 @@
       "text": "][c]"
     },
     {
-      "self_ref": "#/texts/105",
+      "self_ref": "#/texts/62",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -2040,139 +1437,19 @@
       }
     },
     {
-      "self_ref": "#/texts/106",
+      "self_ref": "#/texts/63",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "The cache has a fixed size of",
-      "text": "The cache has a fixed size of"
+      "orig": "The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \\bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange.",
+      "text": "The cache has a fixed size of $W=4$. Keys and values for position $i$ are stored in position $i \\bmod W$ of the cache. When the position $i$ is larger than $W$, past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange."
     },
     {
-      "self_ref": "#/texts/107",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W=4",
-      "text": "W=4"
-    },
-    {
-      "self_ref": "#/texts/108",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". Keys and values for position",
-      "text": ". Keys and values for position"
-    },
-    {
-      "self_ref": "#/texts/109",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/110",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "are stored in position",
-      "text": "are stored in position"
-    },
-    {
-      "self_ref": "#/texts/111",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i \\bmod W",
-      "text": "i \\bmod W"
-    },
-    {
-      "self_ref": "#/texts/112",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "of the cache. When the position",
-      "text": "of the cache. When the position"
-    },
-    {
-      "self_ref": "#/texts/113",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "i",
-      "text": "i"
-    },
-    {
-      "self_ref": "#/texts/114",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "is larger than",
-      "text": "is larger than"
-    },
-    {
-      "self_ref": "#/texts/115",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "W",
-      "text": "W"
-    },
-    {
-      "self_ref": "#/texts/116",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ", past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange.",
-      "text": ", past values in the cache are overwritten.\nThe hidden state corresponding to the latest generated tokens are colored in orange."
-    },
-    {
-      "self_ref": "#/texts/117",
+      "self_ref": "#/texts/64",
       "parent": {
         "$ref": "#/body"
       },
@@ -2184,7 +1461,7 @@
       "text": "=-1"
     },
     {
-      "self_ref": "#/texts/118",
+      "self_ref": "#/texts/65",
       "parent": {
         "$ref": "#/body"
       },
@@ -2203,7 +1480,7 @@
       }
     },
     {
-      "self_ref": "#/texts/119",
+      "self_ref": "#/texts/66",
       "parent": {
         "$ref": "#/body"
       },
@@ -2211,59 +1488,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the (",
-      "text": "When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ("
+      "orig": "When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure",
+      "text": "When generating a sequence, we need to predict tokens one-by-one, as each token is conditioned on the previous ones. However, the prompt is known in advance, and we can pre-fill the ($k$, $v$) cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure"
     },
     {
-      "self_ref": "#/texts/120",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "k",
-      "text": "k"
-    },
-    {
-      "self_ref": "#/texts/121",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ",",
-      "text": ","
-    },
-    {
-      "self_ref": "#/texts/122",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "v",
-      "text": "v"
-    },
-    {
-      "self_ref": "#/texts/123",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ") cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure",
-      "text": ") cache with the prompt. If the prompt is very large, we can chunk it into smaller pieces, and pre-fill the cache with each chunk. For this purpose, we can select the window size as our chunk size. \nFor each chunk, we thus need to compute the attention over the cache and over the chunk. \nFigure"
-    },
-    {
-      "self_ref": "#/texts/124",
+      "self_ref": "#/texts/67",
       "parent": {
         "$ref": "#/body"
       },
@@ -2275,7 +1504,7 @@
       "text": "[fig:chunking]"
     },
     {
-      "self_ref": "#/texts/125",
+      "self_ref": "#/texts/68",
       "parent": {
         "$ref": "#/body"
       },
@@ -2287,7 +1516,7 @@
       "text": "shows how the attention mask works over both the cache and the chunk."
     },
     {
-      "self_ref": "#/texts/126",
+      "self_ref": "#/texts/69",
       "parent": {
         "$ref": "#/body"
       },
@@ -2299,9 +1528,9 @@
       "text": "Image: images/chunking.pdf"
     },
     {
-      "self_ref": "#/texts/127",
+      "self_ref": "#/texts/70",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -2318,9 +1547,9 @@
       }
     },
     {
-      "self_ref": "#/texts/128",
+      "self_ref": "#/texts/71",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -2330,7 +1559,7 @@
       "text": "During pre-fill of the cache, long sequences are chunked to limit memory usage.\nWe process a sequence in three chunks, The cat sat on, the mat and saw, the dog go to. \nThe figure shows what happens for the third chunk (the dog go to): it attends itself using a causal mask (rightmost block), attends the cache using a sliding window (center block), and does not attend to past tokens as they are outside of the sliding window (left block)."
     },
     {
-      "self_ref": "#/texts/129",
+      "self_ref": "#/texts/72",
       "parent": {
         "$ref": "#/body"
       },
@@ -2343,7 +1572,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/130",
+      "self_ref": "#/texts/73",
       "parent": {
         "$ref": "#/body"
       },
@@ -2355,9 +1584,9 @@
       "text": "We compare Mistral 7B to Llama, and re-run all benchmarks with our own evaluation pipeline for fair comparison.\nWe measure performance on a wide variety of tasks categorized as follow:"
     },
     {
-      "self_ref": "#/texts/131",
+      "self_ref": "#/texts/74",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -2369,9 +1598,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/132",
+      "self_ref": "#/texts/75",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -2383,9 +1612,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/133",
+      "self_ref": "#/texts/76",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -2397,9 +1626,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/134",
+      "self_ref": "#/texts/77",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -2411,9 +1640,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/135",
+      "self_ref": "#/texts/78",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -2425,9 +1654,9 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/136",
+      "self_ref": "#/texts/79",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -2439,7 +1668,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/137",
+      "self_ref": "#/texts/80",
       "parent": {
         "$ref": "#/body"
       },
@@ -2451,7 +1680,7 @@
       "text": "Detailed results for Mistral 7B, Llama 2 7B/13B, and Code-Llama 7B are reported in Table"
     },
     {
-      "self_ref": "#/texts/138",
+      "self_ref": "#/texts/81",
       "parent": {
         "$ref": "#/body"
       },
@@ -2463,7 +1692,7 @@
       "text": "[tab:results]"
     },
     {
-      "self_ref": "#/texts/139",
+      "self_ref": "#/texts/82",
       "parent": {
         "$ref": "#/body"
       },
@@ -2475,7 +1704,7 @@
       "text": ".\nFigure"
     },
     {
-      "self_ref": "#/texts/140",
+      "self_ref": "#/texts/83",
       "parent": {
         "$ref": "#/body"
       },
@@ -2487,7 +1716,7 @@
       "text": "[fig:bars]"
     },
     {
-      "self_ref": "#/texts/141",
+      "self_ref": "#/texts/84",
       "parent": {
         "$ref": "#/body"
       },
@@ -2499,7 +1728,7 @@
       "text": "compares the performance of Mistral 7B with Llama 2 7B/13B, and Llama 1 34B"
     },
     {
-      "self_ref": "#/texts/142",
+      "self_ref": "#/texts/85",
       "parent": {
         "$ref": "#/body"
       },
@@ -2511,7 +1740,7 @@
       "text": "Since Llama 2 34B was not open-sourced, we report results for Llama 1 34B."
     },
     {
-      "self_ref": "#/texts/143",
+      "self_ref": "#/texts/86",
       "parent": {
         "$ref": "#/body"
       },
@@ -2523,7 +1752,7 @@
       "text": "in different categories.\nMistral 7B surpasses Llama 2 13B across all metrics, and outperforms Llama1"
     },
     {
-      "self_ref": "#/texts/144",
+      "self_ref": "#/texts/87",
       "parent": {
         "$ref": "#/body"
       },
@@ -2535,7 +1764,7 @@
       "text": "34B on most benchmarks.\nIn particular, Mistral 7B displays a superior performance in code, mathematics, and reasoning benchmarks."
     },
     {
-      "self_ref": "#/texts/145",
+      "self_ref": "#/texts/88",
       "parent": {
         "$ref": "#/body"
       },
@@ -2554,7 +1783,7 @@
       }
     },
     {
-      "self_ref": "#/texts/146",
+      "self_ref": "#/texts/89",
       "parent": {
         "$ref": "#/body"
       },
@@ -2566,7 +1795,7 @@
       "text": "We computed equivalent model sizes of the Llama 2 family, aiming to understand Mistral 7B models' efficiency in the cost-performance spectrum (see Figure"
     },
     {
-      "self_ref": "#/texts/147",
+      "self_ref": "#/texts/90",
       "parent": {
         "$ref": "#/body"
       },
@@ -2578,7 +1807,7 @@
       "text": "[fig:size]"
     },
     {
-      "self_ref": "#/texts/148",
+      "self_ref": "#/texts/91",
       "parent": {
         "$ref": "#/body"
       },
@@ -2590,7 +1819,7 @@
       "text": "). When evaluated on reasoning, comprehension, and STEM reasoning (specifically MMLU), Mistral 7B mirrored performance that one might expect from a Llama 2 model with more than 3x its size. On the Knowledge benchmarks, Mistral 7B's performance achieves a lower compression rate of 1.9x, which is likely due to its limited parameter count that restricts the amount of knowledge it can store."
     },
     {
-      "self_ref": "#/texts/149",
+      "self_ref": "#/texts/92",
       "parent": {
         "$ref": "#/body"
       },
@@ -2609,7 +1838,7 @@
       }
     },
     {
-      "self_ref": "#/texts/150",
+      "self_ref": "#/texts/93",
       "parent": {
         "$ref": "#/body"
       },
@@ -2621,7 +1850,7 @@
       "text": "On some benchmarks, there are some differences between our evaluation protocol and the one reported in the Llama 2 paper: 1) on MBPP, we use the hand-verified subset 2) on TriviaQA, we do not provide Wikipedia contexts."
     },
     {
-      "self_ref": "#/texts/151",
+      "self_ref": "#/texts/94",
       "parent": {
         "$ref": "#/body"
       },
@@ -2633,9 +1862,9 @@
       "text": "Image: images/230927_bars.png"
     },
     {
-      "self_ref": "#/texts/152",
+      "self_ref": "#/texts/95",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -2652,9 +1881,9 @@
       }
     },
     {
-      "self_ref": "#/texts/153",
+      "self_ref": "#/texts/96",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -2664,7 +1893,7 @@
       "text": ". All models were re-evaluated on all metrics with our evaluation pipeline for accurate comparison. Mistral 7B significantly outperforms Llama 2 7B and Llama 2 13B on all benchmarks. It is also vastly superior to Llama 1 34B in mathematics, code generation, and reasoning benchmarks."
     },
     {
-      "self_ref": "#/texts/154",
+      "self_ref": "#/texts/97",
       "parent": {
         "$ref": "#/body"
       },
@@ -2683,7 +1912,7 @@
       }
     },
     {
-      "self_ref": "#/texts/155",
+      "self_ref": "#/texts/98",
       "parent": {
         "$ref": "#/body"
       },
@@ -2695,7 +1924,7 @@
       "text": "Mistral 7B outperforms Llama 2 13B on all metrics, and approaches the code performance of Code-Llama 7B without sacrificing performance on non-code benchmarks."
     },
     {
-      "self_ref": "#/texts/156",
+      "self_ref": "#/texts/99",
       "parent": {
         "$ref": "#/body"
       },
@@ -2707,9 +1936,9 @@
       "text": "Image: images/230927_effective_sizes.png"
     },
     {
-      "self_ref": "#/texts/157",
+      "self_ref": "#/texts/100",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -2726,9 +1955,9 @@
       }
     },
     {
-      "self_ref": "#/texts/158",
+      "self_ref": "#/texts/101",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -2738,7 +1967,7 @@
       "text": ". Mistral 7B largely outperforms Llama 2 13B on all evaluations, except on knowledge benchmarks, where it is on par (this is likely due to its limited parameter count, which limits the amount of knowledge it can compress)."
     },
     {
-      "self_ref": "#/texts/159",
+      "self_ref": "#/texts/102",
       "parent": {
         "$ref": "#/body"
       },
@@ -2750,7 +1979,7 @@
       "text": "r"
     },
     {
-      "self_ref": "#/texts/160",
+      "self_ref": "#/texts/103",
       "parent": {
         "$ref": "#/body"
       },
@@ -2762,7 +1991,7 @@
       "text": "0.48"
     },
     {
-      "self_ref": "#/texts/161",
+      "self_ref": "#/texts/104",
       "parent": {
         "$ref": "#/body"
       },
@@ -2774,7 +2003,7 @@
       "text": "table"
     },
     {
-      "self_ref": "#/texts/162",
+      "self_ref": "#/texts/105",
       "parent": {
         "$ref": "#/body"
       },
@@ -2793,7 +2022,7 @@
       }
     },
     {
-      "self_ref": "#/texts/163",
+      "self_ref": "#/texts/106",
       "parent": {
         "$ref": "#/body"
       },
@@ -2805,7 +2034,7 @@
       "text": "Mistral 7B  Instruct outperforms all 7B models on MT-Bench, and is comparable to 13B  Chat models."
     },
     {
-      "self_ref": "#/texts/164",
+      "self_ref": "#/texts/107",
       "parent": {
         "$ref": "#/body"
       },
@@ -2818,7 +2047,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/165",
+      "self_ref": "#/texts/108",
       "parent": {
         "$ref": "#/body"
       },
@@ -2830,7 +2059,7 @@
       "text": "=-1 To evaluate the generalization capabilities of Mistral 7B, we fine-tuned it on instruction datasets publicly available on the Hugging Face repository.\nNo proprietary data or training tricks were utilized: Mistral 7B  Instruct model is a simple and preliminary demonstration that the base model can easily be fine-tuned to achieve good performance.\nIn Table"
     },
     {
-      "self_ref": "#/texts/166",
+      "self_ref": "#/texts/109",
       "parent": {
         "$ref": "#/body"
       },
@@ -2842,7 +2071,7 @@
       "text": "[tab:results_finetuning]"
     },
     {
-      "self_ref": "#/texts/167",
+      "self_ref": "#/texts/110",
       "parent": {
         "$ref": "#/body"
       },
@@ -2854,7 +2083,7 @@
       "text": ", we observe that the resulting model, Mistral 7B  Instruct, exhibits superior performance compared to all 7B models on MT-Bench, and is comparable to 13B  Chat models.\nAn independent human evaluation was conducted on"
     },
     {
-      "self_ref": "#/texts/168",
+      "self_ref": "#/texts/111",
       "parent": {
         "$ref": "#/body"
       },
@@ -2866,7 +2095,7 @@
       "text": "https://llmboxing.com/leaderboard"
     },
     {
-      "self_ref": "#/texts/169",
+      "self_ref": "#/texts/112",
       "parent": {
         "$ref": "#/body"
       },
@@ -2878,7 +2107,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/170",
+      "self_ref": "#/texts/113",
       "parent": {
         "$ref": "#/body"
       },
@@ -2890,7 +2119,7 @@
       "text": "In this evaluation, participants were provided with a set of questions along with anonymous responses from two models and were asked to select their preferred response, as illustrated in Figure"
     },
     {
-      "self_ref": "#/texts/171",
+      "self_ref": "#/texts/114",
       "parent": {
         "$ref": "#/body"
       },
@@ -2902,7 +2131,7 @@
       "text": "[fig:humanevalquestion]"
     },
     {
-      "self_ref": "#/texts/172",
+      "self_ref": "#/texts/115",
       "parent": {
         "$ref": "#/body"
       },
@@ -2914,7 +2143,7 @@
       "text": ".\nAs of October 6, 2023, the outputs generated by Mistral 7B were preferred 5020 times, compared to 4143 times for Llama 2 13B."
     },
     {
-      "self_ref": "#/texts/173",
+      "self_ref": "#/texts/116",
       "parent": {
         "$ref": "#/body"
       },
@@ -2927,7 +2156,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/174",
+      "self_ref": "#/texts/117",
       "parent": {
         "$ref": "#/body"
       },
@@ -2939,7 +2168,7 @@
       "text": "=-1 The ability to enforce guardrails when it comes to AI generation is important for front-facing applications.\nIn this section, we highlight how to leverage system prompting to optionally enforce output constraints on top of our models.\nAdditionally, we showcase the ability of Mistral 7B to perform fine-grained content moderation, which can be useful to enforce quality content in applications."
     },
     {
-      "self_ref": "#/texts/175",
+      "self_ref": "#/texts/118",
       "parent": {
         "$ref": "#/body"
       },
@@ -2952,7 +2181,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/176",
+      "self_ref": "#/texts/119",
       "parent": {
         "$ref": "#/body"
       },
@@ -2964,7 +2193,7 @@
       "text": "We introduce a system prompt (see below) to guide the model to generate answers within specified guardrails, similar to the work done with Llama 2. Using this prompt allows the user to move on the Pareto front of model utility / guardrails enforcement, as indicated in Table"
     },
     {
-      "self_ref": "#/texts/177",
+      "self_ref": "#/texts/120",
       "parent": {
         "$ref": "#/body"
       },
@@ -2976,7 +2205,7 @@
       "text": "[tab:guardrails]"
     },
     {
-      "self_ref": "#/texts/178",
+      "self_ref": "#/texts/121",
       "parent": {
         "$ref": "#/body"
       },
@@ -2988,7 +2217,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/179",
+      "self_ref": "#/texts/122",
       "parent": {
         "$ref": "#/body"
       },
@@ -3000,7 +2229,7 @@
       "text": "0.98"
     },
     {
-      "self_ref": "#/texts/180",
+      "self_ref": "#/texts/123",
       "parent": {
         "$ref": "#/body"
       },
@@ -3012,7 +2241,7 @@
       "text": "Always assist with care, respect, and truth. Respond with utmost utility yet securely. Avoid harmful, unethical, prejudiced, or negative content. Ensure replies promote fairness and positivity."
     },
     {
-      "self_ref": "#/texts/181",
+      "self_ref": "#/texts/124",
       "parent": {
         "$ref": "#/body"
       },
@@ -3024,7 +2253,7 @@
       "text": "r"
     },
     {
-      "self_ref": "#/texts/182",
+      "self_ref": "#/texts/125",
       "parent": {
         "$ref": "#/body"
       },
@@ -3036,7 +2265,7 @@
       "text": "0.38"
     },
     {
-      "self_ref": "#/texts/183",
+      "self_ref": "#/texts/126",
       "parent": {
         "$ref": "#/body"
       },
@@ -3048,7 +2277,7 @@
       "text": "table"
     },
     {
-      "self_ref": "#/texts/184",
+      "self_ref": "#/texts/127",
       "parent": {
         "$ref": "#/body"
       },
@@ -3067,7 +2296,7 @@
       }
     },
     {
-      "self_ref": "#/texts/185",
+      "self_ref": "#/texts/128",
       "parent": {
         "$ref": "#/body"
       },
@@ -3079,7 +2308,7 @@
       "text": "Mean official MT Bench score over 10 iterations with standard deviation for Mistral 7B  Instruct. For reference, Llama 2 13B  Chat reports official results of 6.65."
     },
     {
-      "self_ref": "#/texts/186",
+      "self_ref": "#/texts/129",
       "parent": {
         "$ref": "#/body"
       },
@@ -3091,7 +2320,7 @@
       "text": "=-1 We use a set of 175 unsafe prompts for evaluating safety.\nWith the recommended system prompt, the model properly declines to answer 100%"
     },
     {
-      "self_ref": "#/texts/187",
+      "self_ref": "#/texts/130",
       "parent": {
         "$ref": "#/body"
       },
@@ -3103,7 +2332,7 @@
       "text": "of the harmful questions."
     },
     {
-      "self_ref": "#/texts/188",
+      "self_ref": "#/texts/131",
       "parent": {
         "$ref": "#/body"
       },
@@ -3115,7 +2344,7 @@
       "text": "=-1 As an illustration, we provide in Table"
     },
     {
-      "self_ref": "#/texts/189",
+      "self_ref": "#/texts/132",
       "parent": {
         "$ref": "#/body"
       },
@@ -3127,7 +2356,7 @@
       "text": "[tab:guardrails_example]"
     },
     {
-      "self_ref": "#/texts/190",
+      "self_ref": "#/texts/133",
       "parent": {
         "$ref": "#/body"
       },
@@ -3139,7 +2368,7 @@
       "text": "the answers of both Mistral 7B  Instruct and Llama 2 Chat 13B to the question"
     },
     {
-      "self_ref": "#/texts/191",
+      "self_ref": "#/texts/134",
       "parent": {
         "$ref": "#/body"
       },
@@ -3158,7 +2387,7 @@
       }
     },
     {
-      "self_ref": "#/texts/192",
+      "self_ref": "#/texts/135",
       "parent": {
         "$ref": "#/body"
       },
@@ -3170,7 +2399,7 @@
       "text": "with system prompts activated.\nWe observe that Mistral 7B provides a correct response while Llama 2 declines to answer.\nNote that on this specific question, both models answer correctly when system prompts are deactivated."
     },
     {
-      "self_ref": "#/texts/193",
+      "self_ref": "#/texts/136",
       "parent": {
         "$ref": "#/body"
       },
@@ -3189,7 +2418,7 @@
       }
     },
     {
-      "self_ref": "#/texts/194",
+      "self_ref": "#/texts/137",
       "parent": {
         "$ref": "#/body"
       },
@@ -3201,7 +2430,7 @@
       "text": ".\nMistral provides the right answer whereas Llama2 declines to answer to the question"
     },
     {
-      "self_ref": "#/texts/195",
+      "self_ref": "#/texts/138",
       "parent": {
         "$ref": "#/body"
       },
@@ -3220,7 +2449,7 @@
       }
     },
     {
-      "self_ref": "#/texts/196",
+      "self_ref": "#/texts/139",
       "parent": {
         "$ref": "#/body"
       },
@@ -3232,7 +2461,7 @@
       "text": "."
     },
     {
-      "self_ref": "#/texts/197",
+      "self_ref": "#/texts/140",
       "parent": {
         "$ref": "#/body"
       },
@@ -3245,7 +2474,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/198",
+      "self_ref": "#/texts/141",
       "parent": {
         "$ref": "#/body"
       },
@@ -3257,7 +2486,7 @@
       "text": "=-1 Mistral 7B"
     },
     {
-      "self_ref": "#/texts/199",
+      "self_ref": "#/texts/142",
       "parent": {
         "$ref": "#/body"
       },
@@ -3269,7 +2498,7 @@
       "text": "Instruct can be used as a content moderator: the model itself is able to accurately classify a user prompt or its generated answer as being either acceptable or falling into one of the following categories:\nIllegal activities such as terrorism, child abuse or fraud;\nHateful, harassing or violent content such as discrimination, self-harm or bullying;\nUnqualified advice for instance in legal, medical or financial domains."
     },
     {
-      "self_ref": "#/texts/200",
+      "self_ref": "#/texts/143",
       "parent": {
         "$ref": "#/body"
       },
@@ -3281,7 +2510,7 @@
       "text": "=-1 To do so, we designed a self-reflection prompt that makes Mistral 7B classify a prompt or a generated answer. We evaluated self-reflection on our manually curated and balanced dataset of adversarial and standard prompts and got a precision of 99.4% for a recall of 95.6%"
     },
     {
-      "self_ref": "#/texts/201",
+      "self_ref": "#/texts/144",
       "parent": {
         "$ref": "#/body"
       },
@@ -3293,7 +2522,7 @@
       "text": "(considering acceptable prompts as positives)."
     },
     {
-      "self_ref": "#/texts/202",
+      "self_ref": "#/texts/145",
       "parent": {
         "$ref": "#/body"
       },
@@ -3305,7 +2534,7 @@
       "text": "=-1 The use cases are vast, from moderating comments on social media or forums to brand monitoring on the internet. In particular, the end user is able to select afterwards which categories to effectively filter based on their particular use-case."
     },
     {
-      "self_ref": "#/texts/203",
+      "self_ref": "#/texts/146",
       "parent": {
         "$ref": "#/body"
       },
@@ -3318,7 +2547,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/204",
+      "self_ref": "#/texts/147",
       "parent": {
         "$ref": "#/body"
       },
@@ -3330,7 +2559,7 @@
       "text": "Our work on Mistral 7B demonstrates that language models may compress knowledge more than what was previously thought. This opens up interesting perspectives: the field has so far put the emphasis on scaling laws in 2 dimensions (directly associating model capabilities to training cost, as in"
     },
     {
-      "self_ref": "#/texts/205",
+      "self_ref": "#/texts/148",
       "parent": {
         "$ref": "#/body"
       },
@@ -3342,7 +2571,7 @@
       "text": "[hoffmann2022compute]"
     },
     {
-      "self_ref": "#/texts/206",
+      "self_ref": "#/texts/149",
       "parent": {
         "$ref": "#/body"
       },
@@ -3354,7 +2583,7 @@
       "text": "); the problem is rather 3 dimensional (model capabilities, training cost, inference cost), and much remains to be explored to obtain the best performance with the smallest possible model."
     },
     {
-      "self_ref": "#/texts/207",
+      "self_ref": "#/texts/150",
       "parent": {
         "$ref": "#/body"
       },
@@ -3367,7 +2596,7 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/208",
+      "self_ref": "#/texts/151",
       "parent": {
         "$ref": "#/body"
       },
@@ -3379,7 +2608,7 @@
       "text": "=-1 We are grateful to CoreWeave for their 24/7 help in marshalling our cluster. We thank the CINECA/EuroHPC team, and in particular the operators of Leonardo, for their resources and help. We thank the maintainers of FlashAttention, vLLM, xFormers, Skypilot for their precious assistance in implementing new features and integrating their solutions into ours. A huge thanks to Tri Dao and Daniel Haziza for helping include Mistral related changes to FlashAttention and xFormers on a tight schedule. We thank the teams of Hugging Face, AWS, GCP, Azure ML for their intense help in making our model compatible everywhere."
     },
     {
-      "self_ref": "#/texts/209",
+      "self_ref": "#/texts/152",
       "parent": {
         "$ref": "#/body"
       },
@@ -3391,9 +2620,9 @@
       "text": "Image: images/llama_vs_mistral_example.png"
     },
     {
-      "self_ref": "#/texts/210",
+      "self_ref": "#/texts/153",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -3410,9 +2639,9 @@
       }
     },
     {
-      "self_ref": "#/texts/211",
+      "self_ref": "#/texts/154",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -3422,9 +2651,9 @@
       "text": "An example of human evaluation from"
     },
     {
-      "self_ref": "#/texts/212",
+      "self_ref": "#/texts/155",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -3434,9 +2663,9 @@
       "text": "llmboxing.com"
     },
     {
-      "self_ref": "#/texts/213",
+      "self_ref": "#/texts/156",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -3446,7 +2675,7 @@
       "text": ". The question asks for recommendations of books in quantum physics. Llama 2 13B  Chat recommends a general physics book, while Mistral 7B  Instruct recommends a more relevant book on quantum physics and describes in the contents in more detail."
     },
     {
-      "self_ref": "#/texts/214",
+      "self_ref": "#/texts/157",
       "parent": {
         "$ref": "#/body"
       },
@@ -3489,7 +2718,7 @@
     {
       "self_ref": "#/pictures/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -3516,7 +2745,7 @@
     {
       "self_ref": "#/pictures/2",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -3524,7 +2753,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/103"
+          "$ref": "#/texts/60"
         }
       ],
       "references": [],
@@ -3543,7 +2772,7 @@
     {
       "self_ref": "#/pictures/3",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
@@ -3551,7 +2780,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/126"
+          "$ref": "#/texts/69"
         }
       ],
       "references": [],
@@ -3570,7 +2799,7 @@
     {
       "self_ref": "#/pictures/4",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -3578,7 +2807,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/151"
+          "$ref": "#/texts/94"
         }
       ],
       "references": [],
@@ -3597,7 +2826,7 @@
     {
       "self_ref": "#/pictures/5",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/5"
       },
       "children": [],
       "content_layer": "body",
@@ -3605,7 +2834,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/156"
+          "$ref": "#/texts/99"
         }
       ],
       "references": [],
@@ -3624,7 +2853,7 @@
     {
       "self_ref": "#/pictures/6",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/6"
       },
       "children": [],
       "content_layer": "body",
@@ -3632,7 +2861,7 @@
       "prov": [],
       "captions": [
         {
-          "$ref": "#/texts/209"
+          "$ref": "#/texts/152"
         }
       ],
       "references": [],
