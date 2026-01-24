@@ -297,3 +297,73 @@ def test_comments_extraction(documents):
         assert group.content_layer == "notes", (
             "Comments should be in NOTES content layer"
         )
+
+
+@pytest.mark.parametrize(
+    "style_label,expected_label,expected_level",
+    [
+        ("Heading 1", "Heading", 1),
+        ("Heading 2", "Heading", 2),
+        ("Heading 9", "Heading", 9),
+        ("Heading 0", "Heading", 1),  # Custom style - level 0 should be clamped to 1
+        ("1 Heading", "Heading", 1),  # Number before text
+        ("0 Heading", "Heading", 1),  # Zero before text should be clamped to 1
+    ],
+)
+def test_get_heading_and_level(docx_paths, style_label, expected_label, expected_level):
+    """Test _get_heading_and_level handles edge cases like 'Heading 0' correctly."""
+    # Create a backend instance using any existing docx file
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    label, level = backend._get_heading_and_level(style_label)
+    assert label == expected_label, (
+        f"Expected label '{expected_label}' for '{style_label}', got '{label}'"
+    )
+    assert level == expected_level, (
+        f"Expected level {expected_level} for '{style_label}', got {level}"
+    )
+
+
+def test_get_outline_level_from_style():
+    """Test that _get_outline_level_from_style correctly extracts outlineLvl.
+
+    Uses word_sample.docx which has known heading paragraphs:
+    - Paragraph 5: "Let's swim!" with Heading 1 style (outlineLvl=0 in XML)
+    - Paragraph 15: "Let's eat" with Heading 2 style (outlineLvl=1 in XML)
+
+    OOXML outlineLvl is 0-indexed, so our method should return outlineLvl + 1.
+    """
+    from docx import Document
+
+    docx_path = Path("./tests/data/docx/word_sample.docx")
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+    doc = Document(docx_path)
+    paragraphs = doc.paragraphs
+
+    # Test Heading 1: outlineLvl=0 should return level 1
+    heading1_para = paragraphs[5]
+    assert heading1_para.text == "Let\u2019s swim!", "Test document structure changed"
+    assert heading1_para.style.name == "Heading 1"
+    assert backend._get_outline_level_from_style(heading1_para) == 1
+
+    # Test Heading 2: outlineLvl=1 should return level 2
+    heading2_para = paragraphs[15]
+    assert heading2_para.text == "Let\u2019s eat", "Test document structure changed"
+    assert heading2_para.style.name == "Heading 2"
+    assert backend._get_outline_level_from_style(heading2_para) == 2
+
+    # Test non-heading paragraph: should return None
+    normal_para = paragraphs[0]  # First paragraph is not a heading
+    assert "heading" not in normal_para.style.name.lower()
+    assert backend._get_outline_level_from_style(normal_para) is None
