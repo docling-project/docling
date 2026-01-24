@@ -491,6 +491,32 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Error determining if list is numbered: {e}")
             return False
 
+    def _get_outline_level_from_style(self, paragraph: Paragraph) -> Optional[int]:
+        """Extract outlineLvl from paragraph's style definition.
+
+        In OOXML, outlineLvl is 0-indexed (0-8 for heading levels 1-9).
+        This method returns the 1-indexed heading level (outlineLvl + 1).
+        """
+        if paragraph.style is None:
+            return None
+
+        style_elem = getattr(paragraph.style, "element", None)
+        if style_elem is None:
+            return None
+
+        # Look for outlineLvl in the style's paragraph properties
+        W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+        outline_elem = style_elem.find(f".//{W_NS}outlineLvl")
+        if outline_elem is not None:
+            val = outline_elem.get(f"{W_NS}val")
+            if val is not None:
+                try:
+                    # Convert 0-indexed outlineLvl to 1-indexed heading level
+                    return int(val) + 1
+                except ValueError:
+                    pass
+        return None
+
     def _get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
         parts = self._split_text_and_number(style_label)
 
@@ -504,6 +530,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if parts[1].strip().lower() == "heading":
                 label_str = "Heading"
                 label_level = self._str_to_int(parts[0], None)
+            # Ensure heading level is at least 1 (e.g., custom "Heading 0" styles)
+            if isinstance(label_level, int) and label_level < 1:
+                label_level = 1
             return label_str, label_level
 
         return style_label, None
@@ -530,14 +559,29 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if len(parts) == 2:
                 return parts[0], self._str_to_int(parts[1], None)
 
-        if "heading" in label.lower():
-            return self._get_heading_and_level(label)
-        if "heading" in name.lower():
-            return self._get_heading_and_level(name)
-        if base_style_label and "heading" in base_style_label.lower():
-            return self._get_heading_and_level(base_style_label)
-        if base_style_name and "heading" in base_style_name.lower():
-            return self._get_heading_and_level(base_style_name)
+        # Check if this is a heading style
+        is_heading = (
+            "heading" in label.lower()
+            or "heading" in name.lower()
+            or (base_style_label and "heading" in base_style_label.lower())
+            or (base_style_name and "heading" in base_style_name.lower())
+        )
+
+        if is_heading:
+            # First try to get the level from outlineLvl (authoritative source)
+            outline_level = self._get_outline_level_from_style(paragraph)
+            if outline_level is not None:
+                return "Heading", outline_level
+
+            # Fall back to parsing level from style name
+            if "heading" in label.lower():
+                return self._get_heading_and_level(label)
+            if "heading" in name.lower():
+                return self._get_heading_and_level(name)
+            if base_style_label and "heading" in base_style_label.lower():
+                return self._get_heading_and_level(base_style_label)
+            if base_style_name and "heading" in base_style_name.lower():
+                return self._get_heading_and_level(base_style_name)
 
         return label, None
 
@@ -1095,6 +1139,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     if key >= curr_level:
                         self.parents[key] = None
 
+            # Defense in depth: ensure level is at least 1
+            curr_level = max(1, curr_level)
             current_level = curr_level
             parent_level = curr_level - 1
             add_level = curr_level

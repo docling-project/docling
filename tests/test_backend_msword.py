@@ -252,3 +252,71 @@ def test_handle_pictures(documents):
     assert doc.pictures[2].parent == doc.pictures[3].parent
     assert isinstance(doc.pictures[4].parent.resolve(doc), SectionHeaderItem)
     assert doc.pictures[4].parent == doc.pictures[5].parent
+
+
+@pytest.mark.parametrize(
+    "style_label,expected_label,expected_level",
+    [
+        ("Heading 1", "Heading", 1),
+        ("Heading 2", "Heading", 2),
+        ("Heading 9", "Heading", 9),
+        ("Heading 0", "Heading", 1),  # Custom style - level 0 should be clamped to 1
+        ("1 Heading", "Heading", 1),  # Number before text
+        ("0 Heading", "Heading", 1),  # Zero before text should be clamped to 1
+    ],
+)
+def test_get_heading_and_level(docx_paths, style_label, expected_label, expected_level):
+    """Test _get_heading_and_level handles edge cases like 'Heading 0' correctly."""
+    # Create a backend instance using any existing docx file
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    label, level = backend._get_heading_and_level(style_label)
+    assert label == expected_label, f"Expected label '{expected_label}' for '{style_label}', got '{label}'"
+    assert level == expected_level, f"Expected level {expected_level} for '{style_label}', got {level}"
+
+
+def test_get_outline_level_from_style(docx_paths):
+    """Test that _get_outline_level_from_style correctly extracts outlineLvl.
+
+    OOXML outlineLvl is 0-indexed, so outlineLvl=0 -> heading level 1.
+    """
+    from docx import Document
+
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    # Load the document to access paragraphs
+    doc = Document(docx_path)
+
+    # Find paragraphs with heading styles and verify outline level extraction
+    for para in doc.paragraphs:
+        if para.style and para.style.name:
+            style_name = para.style.name.lower()
+            if style_name.startswith("heading "):
+                # Extract the expected level from the style name
+                try:
+                    expected_level = int(style_name.split()[-1])
+                except ValueError:
+                    continue
+
+                # Get the outline level using our method
+                outline_level = backend._get_outline_level_from_style(para)
+
+                # outlineLvl is 0-indexed, so Heading 1 has outlineLvl=0
+                # Our method should return the 1-indexed level
+                if outline_level is not None:
+                    assert outline_level == expected_level, (
+                        f"Style '{para.style.name}' has outlineLvl that should map to "
+                        f"level {expected_level}, but got {outline_level}"
+                    )
