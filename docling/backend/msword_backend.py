@@ -1751,18 +1751,26 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                             except Exception as e:
                                 _log.debug(f"Error resolving item ref: {e}")
 
-            # Create a group for this comment in NOTES and add the comment there,
-            # linking to discovered targets (if any)
+            # Create a group for this comment in NOTES and add the comment there
             comment_group = doc.add_group(
                 label=GroupLabel.COMMENT_SECTION,
                 name=f"comment-{comment_id}",
                 content_layer=ContentLayer.NOTES,
             )
+            # Add the comment text without targets first
             doc.add_comment(
                 text=full_text,
-                targets=targets if targets else None,
+                targets=None,
                 parent=comment_group,
             )
+
+            # Manually link targets to the comment GROUP (not the text item)
+            # This allows multiple comment replies to be grouped together
+            if targets:
+                group_ref = FineRef(cref=comment_group.self_ref)
+                for target in targets:
+                    target.comments.append(group_ref)
+
             _log.debug(
                 f"Added comment {comment_id} in group with {len(targets)} linked item(s)"
             )

@@ -115,7 +115,7 @@
       "prov": [],
       "comments": [
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/groups/0"
         }
       ],
       "orig": "This is the first paragraph that has a comment attached to it.",
@@ -139,7 +139,7 @@
       "prov": [],
       "comments": [
         {
-          "$ref": "#/texts/6"
+          "$ref": "#/groups/1"
         }
       ],
       "orig": "This second paragraph also has a reviewer annotation.",
@@ -182,7 +182,7 @@
       "prov": [],
       "comments": [
         {
-          "$ref": "#/texts/7"
+          "$ref": "#/groups/2"
         }
       ],
       "orig": "This paragraph has an anonymous comment.",
