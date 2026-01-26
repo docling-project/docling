@@ -1,0 +1,388 @@
+"""Transformers-based VLM runtime."""
+
+import importlib.metadata
+import logging
+import sys
+import time
+from pathlib import Path
+from typing import Any, Callable, Optional, Union
+
+import torch
+from PIL.Image import Image
+from transformers import (
+    AutoModel,
+    AutoModelForCausalLM,
+    AutoModelForImageTextToText,
+    AutoModelForVision2Seq,
+    AutoProcessor,
+    BitsAndBytesConfig,
+    GenerationConfig,
+    PreTrainedModel,
+    ProcessorMixin,
+    StoppingCriteriaList,
+    StopStringCriteria,
+)
+
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
+from docling.datamodel.pipeline_options_vlm_model import (
+    TransformersModelType,
+    TransformersPromptStyle,
+)
+from docling.datamodel.vlm_runtime_options import TransformersVlmRuntimeOptions
+from docling.models.runtimes.base import (
+    BaseVlmRuntime,
+    VlmRuntimeInput,
+    VlmRuntimeOutput,
+)
+from docling.models.utils.generation_utils import (
+    GenerationStopper,
+    HFStoppingCriteriaWrapper,
+)
+from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.utils.accelerator_utils import decide_device
+
+_log = logging.getLogger(__name__)
+
+
+class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
+    """HuggingFace Transformers runtime for VLM inference.
+
+    This runtime uses the transformers library to run vision-language models
+    locally on CPU, CUDA, or XPU devices.
+    """
+
+    def __init__(
+        self,
+        options: TransformersVlmRuntimeOptions,
+        accelerator_options: Optional[AcceleratorOptions] = None,
+        artifacts_path: Optional[Path] = None,
+    ):
+        """Initialize the Transformers runtime.
+
+        Args:
+            options: Transformers-specific runtime options
+            accelerator_options: Hardware accelerator configuration
+            artifacts_path: Path to cached model artifacts
+        """
+        super().__init__(options)
+        self.options: TransformersVlmRuntimeOptions = options
+        self.accelerator_options = accelerator_options or AcceleratorOptions()
+        self.artifacts_path = artifacts_path
+
+        # These will be set during initialization
+        self.device: Optional[str] = None
+        self.processor: Optional[ProcessorMixin] = None
+        self.vlm_model: Optional[PreTrainedModel] = None
+        self.generation_config: Optional[GenerationConfig] = None
+
+    def initialize(self) -> None:
+        """Initialize the Transformers model and processor."""
+        if self._initialized:
+            return
+
+        _log.info("Initializing Transformers VLM runtime...")
+
+        # Determine device
+        supported_devices = [
+            AcceleratorDevice.CPU,
+            AcceleratorDevice.CUDA,
+            AcceleratorDevice.XPU,
+        ]
+        self.device = decide_device(
+            self.options.device or self.accelerator_options.device,
+            supported_devices=supported_devices,
+        )
+        _log.info(f"Using device: {self.device}")
+
+        self._initialized = True
+
+    def _load_model_for_repo(
+        self,
+        repo_id: str,
+        revision: str = "main",
+        model_type: TransformersModelType = TransformersModelType.AUTOMODEL,
+    ) -> None:
+        """Load model and processor for a specific repository.
+
+        Args:
+            repo_id: HuggingFace repository ID
+            revision: Model revision
+            model_type: Type of model architecture
+        """
+        # Check for Phi-4 compatibility
+        transformers_version = importlib.metadata.version("transformers")
+        if (
+            repo_id == "microsoft/Phi-4-multimodal-instruct"
+            and transformers_version >= "4.52.0"
+        ):
+            raise NotImplementedError(
+                f"Phi 4 only works with transformers<4.52.0 but you have {transformers_version=}. "
+                f"Please downgrade by running: pip install -U 'transformers<4.52.0'"
+            )
+
+        # Download or locate model artifacts
+        repo_cache_folder = repo_id.replace("/", "--")
+        if self.artifacts_path is None:
+            artifacts_path = self.download_models(repo_id, revision=revision)
+        elif (self.artifacts_path / repo_cache_folder).exists():
+            artifacts_path = self.artifacts_path / repo_cache_folder
+        else:
+            artifacts_path = self.artifacts_path
+
+        # Setup quantization if needed
+        quantization_config: Optional[BitsAndBytesConfig] = None
+        if self.options.quantized:
+            quantization_config = BitsAndBytesConfig(
+                load_in_8bit=self.options.load_in_8bit,
+                llm_int8_threshold=self.options.llm_int8_threshold,
+            )
+
+        # Select model class
+        model_cls: type[
+            Union[
+                AutoModel,
+                AutoModelForCausalLM,
+                AutoModelForVision2Seq,
+                AutoModelForImageTextToText,
+            ]
+        ] = AutoModel
+        if model_type == TransformersModelType.AUTOMODEL_CAUSALLM:
+            model_cls = AutoModelForCausalLM  # type: ignore[assignment]
+        elif model_type == TransformersModelType.AUTOMODEL_VISION2SEQ:
+            model_cls = AutoModelForVision2Seq  # type: ignore[assignment]
+        elif model_type == TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT:
+            model_cls = AutoModelForImageTextToText  # type: ignore[assignment]
+
+        # Load processor
+        self.processor = AutoProcessor.from_pretrained(
+            artifacts_path,
+            trust_remote_code=self.options.trust_remote_code,
+            revision=revision,
+        )
+        self.processor.tokenizer.padding_side = "left"  # type: ignore[union-attr]
+
+        # Load model
+        self.vlm_model = model_cls.from_pretrained(
+            artifacts_path,
+            device_map=self.device,
+            dtype=self.options.torch_dtype,
+            _attn_implementation=(
+                "flash_attention_2"
+                if self.device.startswith("cuda")  # type: ignore[union-attr]
+                and self.accelerator_options.cuda_use_flash_attention2
+                else "sdpa"
+            ),
+            trust_remote_code=self.options.trust_remote_code,
+            revision=revision,
+            quantization_config=quantization_config,
+        )
+
+        # Compile model (Python < 3.14)
+        if sys.version_info < (3, 14):
+            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore[assignment]
+        else:
+            self.vlm_model.eval()
+
+        # Load generation config
+        self.generation_config = GenerationConfig.from_pretrained(
+            artifacts_path, revision=revision
+        )
+
+        _log.info(f"Loaded model {repo_id} (revision: {revision})")
+
+    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
+        """Run inference on a single image.
+
+        Args:
+            input_data: Input containing image, prompt, and configuration
+
+        Returns:
+            Generated text and metadata
+        """
+        if not self._initialized:
+            self.initialize()
+
+        # Load model if not already loaded or if repo_id changed
+        if self.vlm_model is None or self.processor is None:
+            # Determine model type from extra config
+            model_type = input_data.extra_generation_config.get(
+                "transformers_model_type",
+                TransformersModelType.AUTOMODEL,
+            )
+            prompt_style = input_data.extra_generation_config.get(
+                "transformers_prompt_style",
+                TransformersPromptStyle.CHAT,
+            )
+
+            self._load_model_for_repo(
+                input_data.repo_id,
+                revision=input_data.extra_generation_config.get("revision", "main"),
+                model_type=model_type,
+            )
+
+        # Prepare image
+        image = input_data.image
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        # Prepare prompt
+        prompt_style = input_data.extra_generation_config.get(
+            "transformers_prompt_style",
+            TransformersPromptStyle.CHAT,
+        )
+
+        if prompt_style == TransformersPromptStyle.NONE:
+            inputs = self.processor(  # type: ignore[misc]
+                [image],
+                return_tensors="pt",
+                padding=True,
+                **input_data.extra_generation_config.get("extra_processor_kwargs", {}),
+            )
+        else:
+            # Format prompt
+            if prompt_style == TransformersPromptStyle.CHAT:
+                formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
+                    [{"role": "user", "content": input_data.prompt}],
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+            else:  # RAW
+                formatted_prompt = input_data.prompt
+
+            inputs = self.processor(  # type: ignore[misc]
+                text=[formatted_prompt],
+                images=[image],
+                return_tensors="pt",
+                padding=True,
+                **input_data.extra_generation_config.get("extra_processor_kwargs", {}),
+            )
+
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        # Setup stopping criteria
+        stopping_criteria_list = StoppingCriteriaList()
+
+        if input_data.stop_strings:
+            stopping_criteria_list.append(
+                StopStringCriteria(
+                    stop_strings=input_data.stop_strings,
+                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr]
+                )
+            )
+
+        # Add custom stopping criteria from extra config
+        custom_criteria = input_data.extra_generation_config.get(
+            "custom_stopping_criteria", []
+        )
+        for criteria in custom_criteria:
+            if isinstance(criteria, type):
+                if issubclass(criteria, GenerationStopper):
+                    stopper_instance = criteria()
+                    wrapped_criteria = HFStoppingCriteriaWrapper(
+                        self.processor.tokenizer,  # type: ignore[union-attr]
+                        stopper_instance,
+                    )
+                    stopping_criteria_list.append(wrapped_criteria)
+            elif isinstance(criteria, GenerationStopper):
+                wrapped_criteria = HFStoppingCriteriaWrapper(
+                    self.processor.tokenizer,  # type: ignore[union-attr]
+                    criteria,
+                )
+                stopping_criteria_list.append(wrapped_criteria)
+            else:
+                stopping_criteria_list.append(criteria)
+
+        # Filter decoder-specific keys
+        decoder_keys = {
+            "skip_special_tokens",
+            "clean_up_tokenization_spaces",
+            "spaces_between_special_tokens",
+        }
+        generation_config = {
+            k: v
+            for k, v in input_data.extra_generation_config.items()
+            if k not in decoder_keys
+            and k
+            not in {
+                "transformers_model_type",
+                "transformers_prompt_style",
+                "extra_processor_kwargs",
+                "custom_stopping_criteria",
+                "revision",
+            }
+        }
+        decoder_config = {
+            k: v
+            for k, v in input_data.extra_generation_config.items()
+            if k in decoder_keys
+        }
+
+        # Generate
+        gen_kwargs = {
+            **inputs,
+            "max_new_tokens": input_data.max_new_tokens,
+            "use_cache": self.options.use_kv_cache,
+            "generation_config": self.generation_config,
+            **generation_config,
+        }
+
+        if input_data.temperature > 0:
+            gen_kwargs["do_sample"] = True
+            gen_kwargs["temperature"] = input_data.temperature
+        else:
+            gen_kwargs["do_sample"] = False
+
+        if stopping_criteria_list:
+            gen_kwargs["stopping_criteria"] = stopping_criteria_list
+
+        start_time = time.time()
+        with torch.inference_mode():
+            generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
+        generation_time = time.time() - start_time
+
+        # Decode
+        input_len = inputs["input_ids"].shape[1]
+        trimmed_sequences = generated_ids[:, input_len:]
+
+        decode_fn = getattr(self.processor, "batch_decode", None)
+        if decode_fn is None and hasattr(self.processor, "tokenizer"):
+            decode_fn = self.processor.tokenizer.batch_decode  # type: ignore[union-attr]
+        if decode_fn is None:
+            raise RuntimeError(
+                "Neither processor.batch_decode nor tokenizer.batch_decode is available."
+            )
+
+        decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
+
+        # Remove padding
+        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr]
+        if pad_token:
+            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        text = decoded_texts[0] if decoded_texts else ""
+
+        return VlmRuntimeOutput(
+            text=text,
+            stop_reason="unspecified",
+            metadata={
+                "generation_time": generation_time,
+                "num_tokens": int(generated_ids[0].shape[0])
+                if generated_ids.shape[0] > 0
+                else None,
+            },
+        )
+
+    def cleanup(self) -> None:
+        """Clean up model resources."""
+        if self.vlm_model is not None:
+            del self.vlm_model
+            self.vlm_model = None
+        if self.processor is not None:
+            del self.processor
+            self.processor = None
+
+        # Clear CUDA cache if using GPU
+        if self.device and self.device.startswith("cuda"):
+            torch.cuda.empty_cache()
+
+        _log.info("Transformers runtime cleaned up")

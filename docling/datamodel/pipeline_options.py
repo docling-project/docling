@@ -35,6 +35,22 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.stage_model_specs import (
+    CODE_FORMULA_DEFAULT,
+    CODE_FORMULA_GRANITE,
+    PICTURE_DESC_GRANITE_VISION,
+    PICTURE_DESC_PIXTRAL,
+    PICTURE_DESC_QWEN,
+    PICTURE_DESC_SMOLVLM,
+    VLM_CONVERT_DEEPSEEK_OCR,
+    VLM_CONVERT_GOT_OCR,
+    VLM_CONVERT_GRANITE_DOCLING,
+    VLM_CONVERT_GRANITE_VISION,
+    VLM_CONVERT_PIXTRAL,
+    VLM_CONVERT_SMOLDOCLING,
+    StagePresetMixin,
+    VlmModelSpec,
+)
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
@@ -43,6 +59,7 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
 )
+from docling.datamodel.vlm_runtime_options import BaseVlmRuntimeOptions
 
 _log = logging.getLogger(__name__)
 
@@ -574,10 +591,24 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
     ] = ""
 
 
-class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
-    """Configuration for inline vision-language models for picture description."""
+class PictureDescriptionVlmOptions(StagePresetMixin, PictureDescriptionBaseOptions):
+    """Configuration for inline vision-language models for picture description.
+
+    Supports preset-based configuration via StagePresetMixin.
+    Use `from_preset()` to create instances from registered presets.
+    """
 
     kind: ClassVar[Literal["vlm"]] = "vlm"
+
+    # New runtime system fields
+    model_spec: Optional[VlmModelSpec] = Field(
+        default=None, description="Model specification with runtime-specific overrides"
+    )
+    runtime_options: Optional[BaseVlmRuntimeOptions] = Field(
+        default=None, description="Runtime configuration (transformers, mlx, api, etc.)"
+    )
+
+    # Legacy fields (kept for backward compatibility)
     repo_id: Annotated[
         str,
         Field(
@@ -639,6 +670,111 @@ granite_picture_description = PictureDescriptionVlmOptions(
 Uses IBM's Granite Vision 3.3-2B model with a custom prompt for generating
 detailed descriptions of image content.
 """
+
+
+class VlmConvertOptions(StagePresetMixin, BaseModel):
+    """Configuration for VLM-based document conversion.
+
+    This stage uses vision-language models to convert document pages to
+    structured formats (DocTags, Markdown, etc.). Supports preset-based
+    configuration via StagePresetMixin.
+
+    Examples:
+        # Use preset with default runtime
+        options = VlmConvertOptions.from_preset("smoldocling")
+
+        # Use preset with runtime override
+        from docling.datamodel.vlm_runtime_options import ApiVlmRuntimeOptions, VlmRuntimeType
+        options = VlmConvertOptions.from_preset(
+            "smoldocling",
+            runtime_options=ApiVlmRuntimeOptions(runtime_type=VlmRuntimeType.API_OLLAMA)
+        )
+    """
+
+    model_spec: VlmModelSpec = Field(
+        description="Model specification with runtime-specific overrides"
+    )
+
+    runtime_options: BaseVlmRuntimeOptions = Field(
+        description="Runtime configuration (transformers, mlx, api, etc.)"
+    )
+
+    scale: float = Field(
+        default=2.0, description="Image scaling factor for preprocessing"
+    )
+
+    max_size: Optional[int] = Field(
+        default=None, description="Maximum image dimension (width or height)"
+    )
+
+    batch_size: int = Field(
+        default=1, description="Batch size for processing multiple pages"
+    )
+
+    force_backend_text: bool = Field(
+        default=False, description="Force use of backend text extraction instead of VLM"
+    )
+
+
+class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
+    """Configuration for VLM-based code and formula extraction.
+
+    This stage uses vision-language models to extract code blocks and
+    mathematical formulas from document images. Supports preset-based
+    configuration via StagePresetMixin.
+
+    Examples:
+        # Use default preset
+        options = CodeFormulaVlmOptions.from_preset("default")
+
+        # Use Granite Vision preset
+        options = CodeFormulaVlmOptions.from_preset("granite_vision")
+    """
+
+    model_spec: VlmModelSpec = Field(
+        description="Model specification with runtime-specific overrides"
+    )
+
+    runtime_options: BaseVlmRuntimeOptions = Field(
+        description="Runtime configuration (transformers, mlx, api, etc.)"
+    )
+
+    scale: float = Field(
+        default=2.0, description="Image scaling factor for preprocessing"
+    )
+
+    max_size: Optional[int] = Field(
+        default=None, description="Maximum image dimension (width or height)"
+    )
+
+    extract_code: bool = Field(default=True, description="Extract code blocks")
+
+    extract_formulas: bool = Field(
+        default=True, description="Extract mathematical formulas"
+    )
+
+
+# =============================================================================
+# PRESET REGISTRATION
+# =============================================================================
+
+# Register VlmConvert presets
+VlmConvertOptions.register_preset(VLM_CONVERT_SMOLDOCLING)
+VlmConvertOptions.register_preset(VLM_CONVERT_GRANITE_DOCLING)
+VlmConvertOptions.register_preset(VLM_CONVERT_DEEPSEEK_OCR)
+VlmConvertOptions.register_preset(VLM_CONVERT_GRANITE_VISION)
+VlmConvertOptions.register_preset(VLM_CONVERT_PIXTRAL)
+VlmConvertOptions.register_preset(VLM_CONVERT_GOT_OCR)
+
+# Register PictureDescription presets
+PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_SMOLVLM)
+PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_GRANITE_VISION)
+PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_PIXTRAL)
+PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_QWEN)
+
+# Register CodeFormula presets
+CodeFormulaVlmOptions.register_preset(CODE_FORMULA_DEFAULT)
+CodeFormulaVlmOptions.register_preset(CODE_FORMULA_GRANITE)
 
 
 # Define an enum for the backend options
@@ -831,11 +967,12 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         ),
     ] = False
     vlm_options: Annotated[
-        Union[InlineVlmOptions, ApiVlmOptions],
+        Union[VlmConvertOptions, InlineVlmOptions, ApiVlmOptions],
         Field(
             description=(
-                "Vision-Language Model configuration for document understanding. Specifies which VLM to use (inline or "
-                "API) and model-specific parameters for vision-based document processing."
+                "Vision-Language Model configuration for document understanding. Supports new VlmConvertOptions "
+                "(recommended, with preset system) or legacy InlineVlmOptions/ApiVlmOptions. "
+                "Example: VlmConvertOptions.from_preset('smoldocling')"
             )
         ),
     ] = vlm_model_specs.GRANITEDOCLING_TRANSFORMERS
