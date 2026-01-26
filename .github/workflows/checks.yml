@@ -328,13 +328,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Remove Python development headers
-        run: |
-          # Remove Python.h and other development files to simulate environment without dev tools
-          sudo apt-get -qq remove -y python3-dev python3.*-dev || true
-          sudo rm -rf /usr/include/python* || true
-          sudo rm -rf /usr/local/include/python* || true
-
       - name: Test pip install without dev headers across Python versions
         run: |
           for py_version in 3.10 3.11 3.12 3.13 3.14; do
@@ -346,10 +339,28 @@ jobs:
             uv venv /tmp/venv-nodev-${py_version} --python=${py_version}
             source /tmp/venv-nodev-${py_version}/bin/activate
             
+            # Find and remove Python.h from the uv-managed Python installation
+            echo "Removing Python development headers from uv Python installation..."
+            python_include_dir=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")
+            echo "Python include directory: $python_include_dir"
+            
+            if [ -f "$python_include_dir/Python.h" ]; then
+              echo "Found Python.h, removing it and other headers..."
+              rm -rf "$python_include_dir"/*
+              echo "✓ Headers removed"
+            else
+              echo "Warning: Python.h not found at expected location"
+            fi
+            
             # Verify that compilation fails without dev headers
             # Try to install numpy from source (sdist) - this should fail
             echo "Verifying compilation fails without dev headers..."
-            if uv pip install --no-binary=:all: numpy==1.26.4 2>&1 | tee /tmp/numpy-install-${py_version}.log; then
+            set +e  # Temporarily allow command to fail
+            uv pip install --no-binary=:all: numpy==1.26.4 > /tmp/numpy-install-${py_version}.log 2>&1
+            numpy_exit_code=$?
+            set -e  # Re-enable exit on error
+            
+            if [ $numpy_exit_code -eq 0 ]; then
               echo "ERROR: numpy installation from source succeeded, but it should have failed without dev headers!"
               cat /tmp/numpy-install-${py_version}.log
               exit 1
