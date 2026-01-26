@@ -30,10 +30,10 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -42,7 +42,7 @@ jobs:
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - name: Cache pre-commit environments
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pre-commit
           key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
@@ -64,14 +64,14 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Grant permissions to APT cache directory # allows restore
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
       - name: Cache APT packages
         id: apt-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /var/cache/apt/archives
           key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
@@ -87,7 +87,7 @@ jobs:
         run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -95,7 +95,7 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: Cache Models
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/huggingface
@@ -131,14 +131,14 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Grant permissions to APT cache directory # allows restore
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
       - name: Cache APT packages
         id: apt-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /var/cache/apt/archives
           key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
@@ -154,7 +154,7 @@ jobs:
         run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -162,7 +162,7 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: Cache Models
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/huggingface
@@ -203,14 +203,14 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Grant permissions to APT cache directory # allows restore
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
       - name: Cache APT packages
         id: apt-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: /var/cache/apt/archives
           key: apt-packages-${{ runner.os }}-${{ hashFiles('.github/workflows/checks.yml') }}
@@ -226,7 +226,7 @@ jobs:
         run: echo "TESSDATA_PREFIX=$(dpkg -L tesseract-ocr-eng | grep tessdata$)" >> "$GITHUB_ENV"
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -234,7 +234,7 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: Cache Models
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/huggingface
@@ -293,10 +293,10 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -311,7 +311,7 @@ jobs:
         run: unzip -l dist/*.whl
 
       - name: Store the distribution packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: python-package-distributions
           path: dist/
@@ -325,13 +325,13 @@ jobs:
         python-version: ["3.12"]
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: python-package-distributions
           path: dist/
 
       - name: Install uv and set the python version
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
           activate-environment: true
