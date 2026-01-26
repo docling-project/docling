@@ -339,14 +339,19 @@ jobs:
             uv venv /tmp/venv-nodev-${py_version} --python=${py_version}
             source /tmp/venv-nodev-${py_version}/bin/activate
             
-            # Find and remove Python.h from the uv-managed Python installation
-            echo "Removing Python development headers from uv Python installation..."
+            # Find and remove Python.h from the Python installation
+            echo "Removing Python development headers from Python installation..."
             python_include_dir=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")
             echo "Python include directory: $python_include_dir"
             
             if [ -f "$python_include_dir/Python.h" ]; then
               echo "Found Python.h, removing it and other headers..."
-              rm -rf "$python_include_dir"/*
+              # Use sudo if the directory is system-owned
+              if [ -w "$python_include_dir" ]; then
+                rm -rf "$python_include_dir"/*
+              else
+                sudo rm -rf "$python_include_dir"/*
+              fi
               echo "✓ Headers removed"
             else
               echo "Warning: Python.h not found at expected location"
