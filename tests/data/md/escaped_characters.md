@@ -25,6 +25,9 @@ Text:
 | Greater-than        | &gt;              |
 | Quotes              | &quot;            |
 | Apostrophes         | &#39;             |
+| Pipe                | &#124; &vert; &#x7C; |
+
+The pipe symbol (| or `|`) only needs to be escaped in tables.
 
 # Raw HTML
 <div title="">&amp; &lt; &gt; &quot; &#39;/div> 

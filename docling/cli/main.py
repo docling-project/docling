@@ -696,7 +696,7 @@ def convert(  # noqa: C901
         if ocr_lang_list is not None:
             ocr_options.lang = ocr_lang_list
         if psm is not None and isinstance(
-            ocr_options, (TesseractOcrOptions, TesseractCliOcrOptions)
+            ocr_options, TesseractOcrOptions | TesseractCliOcrOptions
         ):
             ocr_options.psm = psm
 
