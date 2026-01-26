@@ -13,8 +13,6 @@ from tests.verify_utils import CONFID_PREC, COORD_PREC
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document
 
-GENERATE = GEN_TEST_DATA
-
 
 def test_convert_valid():
     fmt = InputFormat.MD
@@ -47,7 +45,9 @@ def test_convert_valid():
         act_data = act_doc.export_to_markdown()
 
         if in_path.stem in json_filter:
-            assert verify_document(act_doc, json_gt_path, GENERATE), "export to json"
+            assert verify_document(act_doc, json_gt_path, GEN_TEST_DATA), (
+                "export to json"
+            )
 
         if GEN_TEST_DATA:
             with open(md_gt_path, mode="w", encoding="utf-8") as f:
