@@ -346,6 +346,23 @@ jobs:
             uv venv /tmp/venv-nodev-${py_version} --python=${py_version}
             source /tmp/venv-nodev-${py_version}/bin/activate
             
+            # Verify that compilation fails without dev headers
+            # Try to install numpy from source (sdist) - this should fail
+            echo "Verifying compilation fails without dev headers..."
+            if uv pip install --no-binary=:all: numpy==1.26.4 2>&1 | tee /tmp/numpy-install-${py_version}.log; then
+              echo "ERROR: numpy installation from source succeeded, but it should have failed without dev headers!"
+              cat /tmp/numpy-install-${py_version}.log
+              exit 1
+            else
+              echo "✓ Compilation correctly failed without dev headers (expected behavior)"
+              # Check that the error mentions missing Python.h or similar
+              if grep -qi "Python.h\|fatal error.*\.h" /tmp/numpy-install-${py_version}.log; then
+                echo "✓ Error message confirms missing development headers"
+              else
+                echo "Warning: Error message doesn't explicitly mention missing headers, but compilation failed as expected"
+              fi
+            fi
+            
             # Install package with pip (no lock file, no compilation)
             # Install without extras that require compilation (tesserocr requires dev headers)
             # Note: Not using --only-binary since some packages are sdist-only but don't require compilation
