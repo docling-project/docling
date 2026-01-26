@@ -297,7 +297,7 @@ jobs:
 
       - name: Test pip install across Python versions
         run: |
-          for py_version in 3.9 3.10 3.11 3.12 3.13 3.14; do
+          for py_version in 3.10 3.11 3.12 3.13 3.14; do
             echo "=========================================="
             echo "Testing Python $py_version"
             echo "=========================================="
@@ -337,7 +337,7 @@ jobs:
 
       - name: Test pip install without dev headers across Python versions
         run: |
-          for py_version in 3.9 3.10 3.11 3.12 3.13 3.14; do
+          for py_version in 3.10 3.11 3.12 3.13 3.14; do
             echo "=========================================="
             echo "Testing Python $py_version (no dev headers)"
             echo "=========================================="
