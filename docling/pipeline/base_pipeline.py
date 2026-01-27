@@ -216,7 +216,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
             for i in range(conv_res.input.page_count):
                 start_page, end_page = conv_res.input.limits.page_range
                 if (start_page - 1) <= i <= (end_page - 1):
-                    conv_res.pages.append(Page(page_no=i))
+                    conv_res.pages.append(Page(page_no=i + 1))
 
             try:
                 total_pages_processed = 0

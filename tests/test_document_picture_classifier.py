@@ -71,8 +71,8 @@ def test_picture_classifier():
         assert isinstance(res.annotations[0], PictureClassificationData)
         classification_data = res.annotations[0]
         assert classification_data.provenance == "DocumentPictureClassifier"
-        assert len(classification_data.predicted_classes) == 16, (
-            "Number of predicted classes is not equal to 16"
+        assert len(classification_data.predicted_classes) == 26, (
+            "Number of predicted classes is not equal to 26"
         )
         confidences = [
             pred.confidence for pred in classification_data.predicted_classes
@@ -91,8 +91,8 @@ def test_picture_classifier():
         )
         assert isinstance(res.meta.classification, PictureClassificationMetaField)
         meta_classification = res.meta.classification
-        assert len(meta_classification.predictions) == 16, (
-            "Number of predictions in meta is not equal to 16"
+        assert len(meta_classification.predictions) == 26, (
+            "Number of predictions in meta is not equal to 26"
         )
         meta_confidences = [pred.confidence for pred in meta_classification.predictions]
         assert meta_confidences == sorted(meta_confidences, reverse=True), (
@@ -113,8 +113,8 @@ def test_picture_classifier():
         assert isinstance(res.annotations[0], PictureClassificationData)
         classification_data = res.annotations[0]
         assert classification_data.provenance == "DocumentPictureClassifier"
-        assert len(classification_data.predicted_classes) == 16, (
-            "Number of predicted classes is not equal to 16"
+        assert len(classification_data.predicted_classes) == 26, (
+            "Number of predicted classes is not equal to 26"
         )
         confidences = [
             pred.confidence for pred in classification_data.predicted_classes
@@ -122,9 +122,9 @@ def test_picture_classifier():
         assert confidences == sorted(confidences, reverse=True), (
             "Predictions are not sorted in descending order of confidence"
         )
-        assert classification_data.predicted_classes[0].class_name == "map", (
-            "The prediction is wrong for the map image."
-        )
+        assert (
+            classification_data.predicted_classes[0].class_name == "geographical_map"
+        ), "The prediction is wrong for the map image."
 
         # Test new format (.meta.classification)
         assert res.meta is not None, "Picture meta should not be None"
@@ -133,14 +133,14 @@ def test_picture_classifier():
         )
         assert isinstance(res.meta.classification, PictureClassificationMetaField)
         meta_classification = res.meta.classification
-        assert len(meta_classification.predictions) == 16, (
-            "Number of predictions in meta is not equal to 16"
+        assert len(meta_classification.predictions) == 26, (
+            "Number of predictions in meta is not equal to 26"
         )
         meta_confidences = [pred.confidence for pred in meta_classification.predictions]
         assert meta_confidences == sorted(meta_confidences, reverse=True), (
             "Meta predictions are not sorted in descending order of confidence"
         )
-        assert meta_classification.predictions[0].class_name == "map", (
+        assert meta_classification.predictions[0].class_name == "geographical_map", (
             "The meta prediction is wrong for the map image."
         )
         assert (

@@ -61,6 +61,8 @@ To use Docling, simply install `docling` from your package manager, e.g. pip:
 pip install docling
 ```
 
+> **Note:** Python 3.9 support was dropped in docling version 2.70.0. Please use Python 3.10 or higher.
+
 Works on macOS, Linux and Windows environments. Both x86_64 and arm64 architectures.
 
 More [detailed installation instructions](https://docling-project.github.io/docling/installation/) are available in the docs.

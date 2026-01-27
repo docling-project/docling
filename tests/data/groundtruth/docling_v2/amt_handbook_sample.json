@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "name": "amt_handbook_sample",
   "origin": {
     "mimetype": "application/pdf",
@@ -837,9 +837,9 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 70.54,
+            "l": 70.53,
             "t": 243.17,
-            "r": 310.1,
+            "r": 310.09,
             "b": 79.25,
             "coord_origin": "BOTTOMLEFT"
           },
@@ -892,10 +892,10 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 320.56,
-            "t": 352.08,
-            "r": 559.39,
-            "b": 80.68,
+            "l": 320.57,
+            "t": 352.11,
+            "r": 559.38,
+            "b": 80.7,
             "coord_origin": "BOTTOMLEFT"
           },
           "charspan": [

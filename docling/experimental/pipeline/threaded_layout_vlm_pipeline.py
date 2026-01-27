@@ -235,7 +235,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         images_scale = self.pipeline_options.images_scale
         for i in range(conv_res.input.page_count):
             if start_page - 1 <= i <= end_page - 1:
-                page = Page(page_no=i)
+                page = Page(page_no=i + 1)
                 if images_scale is not None:
                     page._default_image_scale = images_scale
                 page._backend = backend.load_page(i)
