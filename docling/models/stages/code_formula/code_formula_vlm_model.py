@@ -248,31 +248,29 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             labels.append(el.item.label)
             images.append(el.image)
 
-        # Process each element through runtime
-        outputs = []
-        for image, label in zip(images, labels):
-            try:
-                # Get prompt for this element type
-                prompt = self._get_prompt(label)
-
-                # Create runtime input
-                runtime_input = VlmRuntimeInput(
+        # Process batch through runtime
+        try:
+            # Prepare batch of runtime inputs
+            runtime_inputs = [
+                VlmRuntimeInput(
                     image=image
                     if isinstance(image, Image.Image)
                     else Image.fromarray(image),
-                    prompt=prompt,
+                    prompt=self._get_prompt(label),
                     repo_id=self.repo_id,
                     temperature=0.0,
                     max_new_tokens=2048,
                 )
+                for image, label in zip(images, labels)
+            ]
 
-                # Run inference
-                output = self.runtime(runtime_input)
-                outputs.append(output.text)
+            # Run batch inference
+            batch_outputs = self.runtime.predict_batch(runtime_inputs)
+            outputs = [output.text for output in batch_outputs]
 
-            except Exception as e:
-                _log.error(f"Error processing code/formula element: {e}")
-                outputs.append("")
+        except Exception as e:
+            _log.error(f"Error processing code/formula batch: {e}")
+            outputs = [""] * len(images)
 
         # Post-process outputs
         outputs = self._post_process(outputs)

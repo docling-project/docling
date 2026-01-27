@@ -1,8 +1,10 @@
 """API-based VLM runtime for remote services."""
 
+import asyncio
 import logging
 import time
-from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional
 
 from PIL.Image import Image
 
@@ -141,6 +143,55 @@ class ApiVlmRuntime(BaseVlmRuntime):
                 "num_tokens": num_tokens,
             },
         )
+
+    def predict_batch(
+        self, input_batch: List[VlmRuntimeInput]
+    ) -> List[VlmRuntimeOutput]:
+        """Run inference on a batch of inputs using concurrent API requests.
+
+        This method processes multiple images concurrently using a thread pool,
+        which can significantly improve throughput for API-based runtimes.
+
+        Args:
+            input_batch: List of inputs to process
+
+        Returns:
+            List of outputs, one per input
+        """
+        if not self._initialized:
+            self.initialize()
+
+        if not input_batch:
+            return []
+
+        # Use ThreadPoolExecutor for concurrent API requests
+        max_workers = min(self.options.concurrency, len(input_batch))
+
+        _log.info(
+            f"Processing batch of {len(input_batch)} images with "
+            f"{max_workers} concurrent requests"
+        )
+
+        start_time = time.time()
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all requests
+            futures = [
+                executor.submit(self.predict, input_data) for input_data in input_batch
+            ]
+
+            # Collect results in order
+            outputs = [future.result() for future in futures]
+
+        total_time = time.time() - start_time
+
+        _log.info(
+            f"Batch processed {len(input_batch)} images in {total_time:.2f}s "
+            f"({total_time / len(input_batch):.2f}s per image, "
+            f"{max_workers} concurrent requests)"
+        )
+
+        return outputs
 
     def cleanup(self) -> None:
         """Clean up API runtime resources.

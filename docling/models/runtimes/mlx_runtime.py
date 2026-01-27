@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Optional
 
 from PIL.Image import Image
 
@@ -209,6 +209,30 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 "num_tokens": num_tokens,
             },
         )
+
+    def predict_batch(
+        self, input_batch: List[VlmRuntimeInput]
+    ) -> List[VlmRuntimeOutput]:
+        """Run inference on a batch of inputs.
+
+        Note: MLX models are not thread-safe and use a global lock, so batch
+        processing is done sequentially. This method is provided for API
+        consistency but does not provide performance benefits over sequential
+        processing.
+
+        Args:
+            input_batch: List of inputs to process
+
+        Returns:
+            List of outputs, one per input
+        """
+        # MLX doesn't support true batching due to thread-safety constraints
+        # Fall back to sequential processing with the base implementation
+        _log.debug(
+            f"MLX runtime processing batch of {len(input_batch)} images sequentially "
+            "(MLX does not support batched inference)"
+        )
+        return super().predict_batch(input_batch)
 
     def cleanup(self) -> None:
         """Clean up model resources."""

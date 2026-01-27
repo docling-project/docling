@@ -5,7 +5,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import torch
 from PIL.Image import Image
@@ -371,6 +371,218 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 else None,
             },
         )
+
+    def predict_batch(
+        self, input_batch: List[VlmRuntimeInput]
+    ) -> List[VlmRuntimeOutput]:
+        """Run inference on a batch of inputs efficiently.
+
+        This method processes multiple images in a single forward pass,
+        which is much more efficient than processing them sequentially.
+
+        Args:
+            input_batch: List of inputs to process
+
+        Returns:
+            List of outputs, one per input
+        """
+        if not self._initialized:
+            self.initialize()
+
+        if not input_batch:
+            return []
+
+        # Validate that all inputs use the same model and configuration
+        first_input = input_batch[0]
+        repo_id = first_input.repo_id
+        revision = first_input.extra_generation_config.get("revision", "main")
+        model_type = first_input.extra_generation_config.get(
+            "transformers_model_type",
+            TransformersModelType.AUTOMODEL,
+        )
+        prompt_style = first_input.extra_generation_config.get(
+            "transformers_prompt_style",
+            TransformersPromptStyle.CHAT,
+        )
+
+        # Load model if not already loaded
+        if self.vlm_model is None or self.processor is None:
+            self._load_model_for_repo(repo_id, revision=revision, model_type=model_type)
+
+        # Prepare images and prompts
+        images = []
+        prompts = []
+        for input_data in input_batch:
+            # Validate consistency
+            if input_data.repo_id != repo_id:
+                _log.warning(
+                    f"Batch contains different models: {input_data.repo_id} vs {repo_id}. "
+                    "Falling back to sequential processing."
+                )
+                return super().predict_batch(input_batch)
+
+            # Prepare image
+            image = input_data.image
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+            images.append(image)
+
+            # Format prompt
+            if prompt_style == TransformersPromptStyle.CHAT:
+                formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
+                    [{"role": "user", "content": input_data.prompt}],
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+            elif prompt_style == TransformersPromptStyle.RAW:
+                formatted_prompt = input_data.prompt
+            else:  # NONE
+                formatted_prompt = None
+
+            prompts.append(formatted_prompt)
+
+        # Process batch
+        if prompt_style == TransformersPromptStyle.NONE:
+            inputs = self.processor(  # type: ignore[misc]
+                images,
+                return_tensors="pt",
+                padding=True,
+                **first_input.extra_generation_config.get("extra_processor_kwargs", {}),
+            )
+        else:
+            inputs = self.processor(  # type: ignore[misc]
+                text=prompts,
+                images=images,
+                return_tensors="pt",
+                padding=True,
+                **first_input.extra_generation_config.get("extra_processor_kwargs", {}),
+            )
+
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        # Setup stopping criteria (use first input's config)
+        stopping_criteria_list = StoppingCriteriaList()
+
+        if first_input.stop_strings:
+            stopping_criteria_list.append(
+                StopStringCriteria(
+                    stop_strings=first_input.stop_strings,
+                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr]
+                )
+            )
+
+        # Add custom stopping criteria
+        custom_criteria = first_input.extra_generation_config.get(
+            "custom_stopping_criteria", []
+        )
+        for criteria in custom_criteria:
+            if isinstance(criteria, type):
+                if issubclass(criteria, GenerationStopper):
+                    stopper_instance = criteria()
+                    wrapped_criteria = HFStoppingCriteriaWrapper(
+                        self.processor.tokenizer,  # type: ignore[union-attr]
+                        stopper_instance,
+                    )
+                    stopping_criteria_list.append(wrapped_criteria)
+            elif isinstance(criteria, GenerationStopper):
+                wrapped_criteria = HFStoppingCriteriaWrapper(
+                    self.processor.tokenizer,  # type: ignore[union-attr]
+                    criteria,
+                )
+                stopping_criteria_list.append(wrapped_criteria)
+            else:
+                stopping_criteria_list.append(criteria)
+
+        # Filter decoder-specific keys
+        decoder_keys = {
+            "skip_special_tokens",
+            "clean_up_tokenization_spaces",
+            "spaces_between_special_tokens",
+        }
+        generation_config = {
+            k: v
+            for k, v in first_input.extra_generation_config.items()
+            if k not in decoder_keys
+            and k
+            not in {
+                "transformers_model_type",
+                "transformers_prompt_style",
+                "extra_processor_kwargs",
+                "custom_stopping_criteria",
+                "revision",
+            }
+        }
+        decoder_config = {
+            k: v
+            for k, v in first_input.extra_generation_config.items()
+            if k in decoder_keys
+        }
+
+        # Generate
+        gen_kwargs = {
+            **inputs,
+            "max_new_tokens": first_input.max_new_tokens,
+            "use_cache": self.options.use_kv_cache,
+            "generation_config": self.generation_config,
+            **generation_config,
+        }
+
+        if first_input.temperature > 0:
+            gen_kwargs["do_sample"] = True
+            gen_kwargs["temperature"] = first_input.temperature
+        else:
+            gen_kwargs["do_sample"] = False
+
+        if stopping_criteria_list:
+            gen_kwargs["stopping_criteria"] = stopping_criteria_list
+
+        start_time = time.time()
+        with torch.inference_mode():
+            generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
+        generation_time = time.time() - start_time
+
+        # Decode
+        input_len = inputs["input_ids"].shape[1]
+        trimmed_sequences = generated_ids[:, input_len:]
+
+        decode_fn = getattr(self.processor, "batch_decode", None)
+        if decode_fn is None and hasattr(self.processor, "tokenizer"):
+            decode_fn = self.processor.tokenizer.batch_decode  # type: ignore[union-attr]
+        if decode_fn is None:
+            raise RuntimeError(
+                "Neither processor.batch_decode nor tokenizer.batch_decode is available."
+            )
+
+        decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
+
+        # Remove padding
+        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr]
+        if pad_token:
+            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
+
+        # Create outputs
+        outputs = []
+        for i, text in enumerate(decoded_texts):
+            outputs.append(
+                VlmRuntimeOutput(
+                    text=text,
+                    stop_reason="unspecified",
+                    metadata={
+                        "generation_time": generation_time / len(input_batch),
+                        "num_tokens": int(generated_ids[i].shape[0])
+                        if i < generated_ids.shape[0]
+                        else None,
+                        "batch_size": len(input_batch),
+                    },
+                )
+            )
+
+        _log.info(
+            f"Batch processed {len(input_batch)} images in {generation_time:.2f}s "
+            f"({generation_time / len(input_batch):.2f}s per image)"
+        )
+
+        return outputs
 
     def cleanup(self) -> None:
         """Clean up model resources."""

@@ -132,25 +132,27 @@ class VlmConvertModel(BasePageModel):
                 _log.warning("No valid images to process")
                 return
 
-            # Process through runtime
-            _log.debug(f"Processing {len(images)} pages through VLM runtime")
+            # Process through runtime using batch prediction
+            _log.debug(f"Processing {len(images)} pages through VLM runtime (batched)")
 
             try:
-                # Process each image through runtime
-                for page, img, prompt in zip(valid_pages, images, prompts):
-                    # Create runtime input
-                    runtime_input = VlmRuntimeInput(
+                # Create batch of runtime inputs
+                runtime_inputs = [
+                    VlmRuntimeInput(
                         image=img,
                         prompt=prompt,
                         repo_id=self.repo_id,
                         temperature=0.0,  # Use from options if needed
                         max_new_tokens=4096,  # Use from options if needed
                     )
+                    for img, prompt in zip(images, prompts)
+                ]
 
-                    # Run inference
-                    output = self.runtime(runtime_input)
+                # Run batch inference
+                outputs = self.runtime.predict_batch(runtime_inputs)
 
-                    # Attach prediction to page
+                # Attach predictions to pages
+                for page, output in zip(valid_pages, outputs):
                     # Convert string stop_reason to VlmStopReason enum
                     stop_reason = VlmStopReason.UNSPECIFIED
                     if output.stop_reason:
@@ -213,20 +215,23 @@ class VlmConvertModel(BasePageModel):
                 )
             prompts = prompt
 
-        # Process each image
-        for img, p in zip(images, prompts):
-            # Create runtime input
-            runtime_input = VlmRuntimeInput(
+        # Process batch of images
+        runtime_inputs = [
+            VlmRuntimeInput(
                 image=img,
                 prompt=p,
                 repo_id=self.repo_id,
                 temperature=0.0,
                 max_new_tokens=4096,
             )
+            for img, p in zip(images, prompts)
+        ]
 
-            # Run inference
-            output = self.runtime(runtime_input)
+        # Run batch inference
+        outputs = self.runtime.predict_batch(runtime_inputs)
 
+        # Convert outputs to VlmPredictions
+        for output in outputs:
             # Convert string stop_reason to VlmStopReason enum
             stop_reason = VlmStopReason.UNSPECIFIED
             if output.stop_reason:

@@ -2,7 +2,7 @@
 
 import logging
 import platform
-from typing import Optional
+from typing import List, Optional
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.vlm_runtime_options import (
@@ -172,6 +172,25 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
 
         # Delegate to the actual runtime
         return self.actual_runtime.predict(input_data)
+
+    def predict_batch(
+        self, input_batch: List[VlmRuntimeInput]
+    ) -> List[VlmRuntimeOutput]:
+        """Run inference on a batch of inputs using the selected runtime.
+
+        Args:
+            input_batch: List of inputs to process
+
+        Returns:
+            List of outputs, one per input
+        """
+        if not self._initialized:
+            self.initialize()
+
+        assert self.actual_runtime is not None, "Runtime not initialized"
+
+        # Delegate to the actual runtime's batch implementation
+        return self.actual_runtime.predict_batch(input_batch)
 
     def cleanup(self) -> None:
         """Clean up the actual runtime resources."""

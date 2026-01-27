@@ -124,31 +124,38 @@ class PictureDescriptionVlmModelV2(PictureDescriptionBaseModel):
         # Get prompt from options
         prompt = self.options.prompt
 
-        # Process images one by one (TODO: implement batching)
-        for image in images:
-            try:
-                # Prepare runtime input
-                runtime_input = VlmRuntimeInput(
+        # Convert to list for batch processing
+        image_list = list(images)
+
+        if not image_list:
+            return
+
+        try:
+            # Prepare batch of runtime inputs
+            runtime_inputs = [
+                VlmRuntimeInput(
                     image=image,
                     prompt=prompt,
                     repo_id=self.repo_id,
                     temperature=0.0,
                     max_new_tokens=200,  # Use from options if available
                 )
+                for image in image_list
+            ]
 
-                # Generate description using runtime (call runtime as callable)
-                output = self.runtime(runtime_input)
+            # Generate descriptions using batch prediction
+            outputs = self.runtime.predict_batch(runtime_inputs)
 
-                # Extract text from output
+            # Extract and yield descriptions
+            for output in outputs:
                 description = output.text.strip()
-
                 _log.debug(f"Generated description: {description[:100]}...")
-
                 yield description
 
-            except Exception as e:
-                _log.error(f"Error generating picture description: {e}")
-                # Yield empty string on error to maintain batch alignment
+        except Exception as e:
+            _log.error(f"Error generating picture descriptions: {e}")
+            # Yield empty strings on error to maintain batch alignment
+            for _ in image_list:
                 yield ""
 
     def __del__(self):
