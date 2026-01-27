@@ -256,13 +256,13 @@ class TestPresetSystem:
         """Test that CodeFormula presets are registered."""
         preset_ids = CodeFormulaVlmOptions.list_preset_ids()
 
-        # Check that key presets exist
+        # Check that the default preset exists
         assert "default" in preset_ids
-        assert "granite_vision" in preset_ids
 
-        # Verify we can retrieve them
+        # Verify we can retrieve it
         default = CodeFormulaVlmOptions.get_preset("default")
         assert default.preset_id == "default"
+        assert default.name == "CodeFormulaV2"
 
     def test_preset_not_found_error(self):
         """Test that requesting non-existent preset raises KeyError."""
@@ -282,7 +282,7 @@ class TestPresetSystem:
         assert len(picture_desc_presets) >= 4  # At least 4 PictureDescription presets
 
         code_formula_presets = CodeFormulaVlmOptions.list_presets()
-        assert len(code_formula_presets) >= 2  # At least 2 CodeFormula presets
+        assert len(code_formula_presets) >= 1  # At least 1 CodeFormula preset
 
     def test_get_preset_info(self):
         """Test getting preset summary information."""

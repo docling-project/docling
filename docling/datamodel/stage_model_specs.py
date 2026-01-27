@@ -605,31 +605,12 @@ PICTURE_DESC_QWEN = StageModelPreset(
 
 CODE_FORMULA_DEFAULT = StageModelPreset(
     preset_id="default",
-    name="SmolVLM-256M (Code/Formula)",
-    description="Default model for code and formula extraction",
+    name="CodeFormulaV2",
+    description="Specialized model for code and formula extraction",
     model_spec=VlmModelSpec(
-        name="SmolVLM-256M-Instruct",
-        default_repo_id="HuggingFaceTB/SmolVLM-256M-Instruct",
-        prompt="Extract the code or formula from this image.",
-        response_format=ResponseFormat.PLAINTEXT,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
-                repo_id="moot20/SmolVLM-256M-Instruct-MLX"
-            ),
-        },
-    ),
-    scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
-)
-
-CODE_FORMULA_GRANITE = StageModelPreset(
-    preset_id="granite_vision",
-    name="Granite-Vision (Code/Formula)",
-    description="IBM Granite Vision for code and formula extraction",
-    model_spec=VlmModelSpec(
-        name="Granite-Vision-3.2-2B",
-        default_repo_id="ibm-granite/granite-vision-3.2-2b",
-        prompt="Extract the code or mathematical formula from this image.",
+        name="CodeFormulaV2",
+        default_repo_id="docling-project/CodeFormulaV2",
+        prompt="",
         response_format=ResponseFormat.PLAINTEXT,
     ),
     scale=2.0,

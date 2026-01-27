@@ -37,7 +37,6 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.stage_model_specs import (
     CODE_FORMULA_DEFAULT,
-    CODE_FORMULA_GRANITE,
     PICTURE_DESC_GRANITE_VISION,
     PICTURE_DESC_PIXTRAL,
     PICTURE_DESC_QWEN,
@@ -774,7 +773,6 @@ PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_QWEN)
 
 # Register CodeFormula presets
 CodeFormulaVlmOptions.register_preset(CODE_FORMULA_DEFAULT)
-CodeFormulaVlmOptions.register_preset(CODE_FORMULA_GRANITE)
 
 
 # Define an enum for the backend options
