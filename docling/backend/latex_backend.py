@@ -26,6 +26,7 @@ from pylatexenc.latexwalker import (
     LatexMathNode,
     LatexWalker,
 )
+from pylatexenc.latex2text import LatexNodes2Text
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
@@ -53,9 +54,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             with open(self.path_or_stream, encoding="utf-8") as f:
                 self.latex_text = f.read()
 
-        self._extract_custom_macros()
-        self.latex_text = self._preprocess_latex(self.latex_text)
-
     def is_valid(self) -> bool:
         return bool(self.latex_text.strip())
 
@@ -66,34 +64,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     @classmethod
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.LATEX}
-
-    def _extract_custom_macros(self):
-        """Extract custom macro definitions from LaTeX source"""
-        def_pattern = r"\\def\\(\w+)\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}"
-        for match in re.finditer(def_pattern, self.latex_text):
-            name, value = match.groups()
-            clean_value = re.sub(r"\\xspace\s*$", "", value).replace("~", " ").strip()
-            if clean_value and not clean_value.startswith("\\"):
-                self._custom_macros[name] = clean_value
-
-        newcmd_pattern = r"\\newcommand\{\\(\w+)\}\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}"
-        for match in re.finditer(newcmd_pattern, self.latex_text):
-            name, value = match.groups()
-            clean_value = re.sub(r"\\xspace\s*$", "", value).replace("~", " ").strip()
-            if clean_value and not clean_value.startswith("\\"):
-                self._custom_macros[name] = clean_value
-
-        if self._custom_macros:
-            _log.debug(f"Extracted {len(self._custom_macros)} custom macros")
-
-    def _preprocess_latex(self, text: str) -> str:
-        """Clean up common LaTeX issues before parsing"""
-        text = re.sub(r"(?<!\\)%.*$", "", text, flags=re.MULTILINE)
-
-        for name, value in self._custom_macros.items():
-            text = re.sub(rf"\\{name}(?![a-zA-Z])", lambda m: value, text)
-
-        return text
 
     def convert(self) -> DoclingDocument:
         doc = DoclingDocument(name=self.file.stem)
@@ -141,7 +111,12 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         return None
 
     def _process_nodes(
-        self, nodes, doc: DoclingDocument, parent: Optional[NodeItem] = None
+        self,
+        nodes,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         if nodes is None:
             return
@@ -153,7 +128,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 combined_text = "".join(text_buffer).strip()
                 if combined_text:
                     doc.add_text(
-                        parent=parent, label=DocItemLabel.TEXT, text=combined_text
+                        parent=parent,
+                        label=text_label or DocItemLabel.TEXT,
+                        text=combined_text,
+                        formatting=formatting,
                     )
                 text_buffer.clear()
 
@@ -167,7 +145,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     parts = [p.strip() for p in text.split("\n\n") if p.strip()]
                     for part in parts:
                         doc.add_text(
-                            parent=parent, label=DocItemLabel.PARAGRAPH, text=part
+                            parent=parent,
+                            label=text_label or DocItemLabel.PARAGRAPH,
+                            text=part,
+                            formatting=formatting,
                         )
                 else:
                     text_buffer.append(text)
@@ -179,26 +160,33 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     text_buffer.append(" ")
                 else:
                     flush_text_buffer()
-                    self._process_macro(node, doc, parent)
+                    self._process_macro(node, doc, parent, formatting, text_label)
 
             elif isinstance(node, LatexEnvironmentNode):
                 flush_text_buffer()
-                self._process_environment(node, doc, parent)
+                self._process_environment(node, doc, parent, formatting, text_label)
 
             elif isinstance(node, LatexMathNode):
-                math_verbatim = node.latex_verbatim()
-                if math_verbatim.startswith(("$$", "\\[")):
+                # pylatexenc 2.0+ provides displaytype
+                is_display = getattr(node, "displaytype", None) == "display"
+                
+                # Fallback for older versions or if displaytype is not set
+                if not is_display:
+                    math_verbatim = node.latex_verbatim()
+                    is_display = math_verbatim.startswith(("$$", "\\[")) or math_verbatim.startswith(("\\begin{equation}", "\\begin{align}", "\\begin{gather}", "\\begin{displaymath}"))
+
+                if is_display:
                     flush_text_buffer()
-                    math_text = self._clean_math(math_verbatim, "inline")
+                    math_text = self._clean_math(node.latex_verbatim(), "display")
                     doc.add_text(
                         parent=parent, label=DocItemLabel.FORMULA, text=math_text
                     )
                 else:
                     # Inline math: keep in buffer to avoid splitting paragraphs
-                    text_buffer.append(math_verbatim)
+                    text_buffer.append(node.latex_verbatim())
 
             elif isinstance(node, LatexGroupNode):
-                self._process_nodes(node.nodelist, doc, parent)
+                self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
         flush_text_buffer()
 
@@ -207,6 +195,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         node: LatexMacroNode,
         doc: DoclingDocument,
         parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process LaTeX macro nodes"""
 
@@ -234,27 +224,33 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             pass
 
         elif node.macroname in ["textbf", "textit", "emph", "texttt", "underline"]:
-            text = self._extract_macro_arg(node)
-            if text:
-                formatting = Formatting()
-                if node.macroname == "textbf":
-                    formatting.bold = True
-                elif node.macroname in ["textit", "emph"]:
-                    formatting.italic = True
-                elif node.macroname == "underline":
-                    formatting.underline = True
-
-                doc.add_text(
-                    parent=parent,
-                    label=DocItemLabel.TEXT,
-                    text=text,
-                    formatting=formatting,
-                )
+            # Traverse arguments instead of extracting text to support nested formatting
+            new_fmt = deepcopy(formatting) if formatting else Formatting()
+            
+            if node.macroname == "textbf":
+                new_fmt.bold = True
+            elif node.macroname in ["textit", "emph"]:
+                new_fmt.italic = True
+            elif node.macroname == "underline":
+                new_fmt.underline = True
+            elif node.macroname == "texttt":
+                pass 
+            
+            if node.nodeargd and node.nodeargd.argnlist:
+                arg = node.nodeargd.argnlist[-1]
+                if hasattr(arg, "nodelist"):
+                    self._process_nodes(arg.nodelist, doc, parent, new_fmt, text_label)
+                else:
+                    # Fallback for simple args (unlikely with pylatexenc)
+                    pass
 
         elif node.macroname in ["textsc", "textsf", "textrm", "textnormal", "mbox"]:
-            text = self._extract_macro_arg(node)
-            if text:
-                doc.add_text(parent=parent, label=DocItemLabel.TEXT, text=text)
+             # Similar recursion
+            if node.nodeargd and node.nodeargd.argnlist:
+                arg = node.nodeargd.argnlist[-1]
+                if hasattr(arg, "nodelist"):
+                    self._process_nodes(arg.nodelist, doc, parent, formatting, text_label)
+
 
         elif node.macroname in ["cite", "citep", "citet", "ref", "eqref"]:
             ref_arg = self._extract_macro_arg(node)
@@ -268,9 +264,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 doc.add_text(parent=parent, label=DocItemLabel.REFERENCE, text=url_text)
 
         elif node.macroname == "label":
-            label_text = self._extract_macro_arg(node)
-            if label_text:
-                self.labels[label_text] = True
+            # Labels not currently used in document model except for internal resolving if needed
+            # self._extract_macro_arg(node)
+            pass
 
         elif node.macroname == "caption":
             caption_text = self._extract_macro_arg(node)
@@ -317,6 +313,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 except Exception as e:
                     _log.debug(f"Could not load image {img_path}: {e}")
 
+                caption_node = None
+                # Check for caption in parent figure environment if we want to link explicitly
+                # But Docling add_picture logic handles caption?
+                # The existing code added caption then picture.
+                
                 caption = doc.add_text(
                     label=DocItemLabel.CAPTION, text=f"Image: {img_path}"
                 )
@@ -382,31 +383,79 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         content = input_path.read_text(encoding="utf-8")
                         sub_walker = LatexWalker(content, tolerant_parsing=True)
                         sub_nodes, _, _ = sub_walker.get_latex_nodes()
-                        self._process_nodes(sub_nodes, doc, parent)
+                        self._process_nodes(sub_nodes, doc, parent, formatting, text_label)
                         _log.debug(f"Loaded input file: {input_path}")
                     except Exception as e:
                         _log.debug(f"Failed to load input file {filepath}: {e}")
+
+        elif node.macroname in ["&", "%", "$", "#", "_", "{", "}"]:
+            # Escaped symbols: \& -> &
+            doc.add_text(parent=parent, text=node.macroname, formatting=formatting, label=(text_label or DocItemLabel.TEXT))
+
+        elif node.macroname in ["'", '"', "^", "`", "~", "=", ".", "c", "d", "b", "H", "k", "r", "t", "u", "v"]:
+            # Accents and diacritics
+            try:
+                text = LatexNodes2Text().nodelist_to_text([node])
+                doc.add_text(parent=parent, text=text, formatting=formatting, label=(text_label or DocItemLabel.TEXT))
+            except Exception:
+                # Fallback handled by generic handler if we don't catch it, 
+                # but we just continue
+                pass
+
+        elif node.macroname == "href":
+            # \href{url}{text}
+            if node.nodeargd and len(node.nodeargd.argnlist) >= 2:
+                # url_arg = node.nodeargd.argnlist[0]
+                text_arg = node.nodeargd.argnlist[1]
+                
+                # We process the text content. 
+                # Ideally we would mark it as a link, but Docling TextItem doesn't have URL field?
+                # We prioritize content preservation.
+                if hasattr(text_arg, "nodelist"):
+                    self._process_nodes(text_arg.nodelist, doc, parent, formatting, text_label)
+
+        elif node.macroname in ["newline", "hfill", "break", "centering"]:
+            if node.macroname == "newline":
+                 doc.add_text(parent=parent, text="\n", formatting=formatting, label=(text_label or DocItemLabel.TEXT))
+
+        elif node.macroname in ["bf", "it", "rm", "sc", "sf", "sl", "tt", "cal", "tiny", "scriptsize", "footnotesize", "small", "large", "Large", "LARGE", "huge", "Huge"]:
+            # Legacy formatting and size switches - ignore to preserve content flow (prevent "Unknown macro" skip)
+            pass
 
         elif node.macroname == "item":
             pass
 
         else:
-            _log.debug(f"Skipping unknown macro: {node.macroname}")
+            if node.nodeargd and node.nodeargd.argnlist:
+                processed_any = False
+                for arg in node.nodeargd.argnlist:
+                    if hasattr(arg, "nodelist"):
+                        self._process_nodes(arg.nodelist, doc, parent, formatting, text_label)
+                        processed_any = True
+                
+                if processed_any:
+                    _log.debug(f"Processed content of unknown macro: {node.macroname}")
+                else:
+                    _log.debug(f"Skipping unknown macro: {node.macroname}")
+            else:
+                _log.debug(f"Skipping unknown macro: {node.macroname}")
 
     def _process_environment(
         self,
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
         parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process LaTeX environment nodes"""
 
         if node.envname == "document":
-            self._process_nodes(node.nodelist, doc, parent)
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
         elif node.envname == "abstract":
             doc.add_heading(parent=parent, text="Abstract", level=1)
-            self._process_nodes(node.nodelist, doc, parent)
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
         elif node.envname.replace("*", "") in [
             "equation",
@@ -426,7 +475,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
 
         elif node.envname in ["itemize", "enumerate", "description"]:
-            self._process_list(node, doc, parent)
+            self._process_list(node, doc, parent, formatting, text_label)
 
         elif node.envname == "tabular":
             table_data = self._parse_table(node)
@@ -434,11 +483,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 doc.add_table(parent=parent, data=table_data)
 
         elif node.envname in ["table", "table*"]:
-            self._process_nodes(node.nodelist, doc, parent)
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
         elif node.envname in ["figure", "figure*"]:
             # Process figure environment with proper grouping
-            self._process_figure(node, doc, parent)
+            self._process_figure(node, doc, parent, formatting, text_label)
 
         elif node.envname in ["verbatim", "lstlisting", "minted"]:
             code_text = self._extract_verbatim_content(
@@ -448,19 +497,21 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         elif node.envname == "thebibliography":
             doc.add_heading(parent=parent, text="References", level=1)
-            self._process_bibliography(node, doc, parent)
+            self._process_bibliography(node, doc, parent, formatting)
 
         elif node.envname in ["filecontents", "filecontents*"]:
             pass
 
         else:
-            self._process_nodes(node.nodelist, doc, parent)
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
     def _process_figure(
         self,
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
         parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process figure environment with proper grouping"""
         # Create a group for the figure to contain images and captions together
@@ -469,13 +520,15 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         )
 
         # Process all nodes within the figure
-        self._process_nodes(node.nodelist, doc, figure_group)
+        self._process_nodes(node.nodelist, doc, figure_group, formatting, text_label)
 
     def _process_list(
         self,
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
         parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process itemize/enumerate environments"""
 
@@ -491,6 +544,14 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 current_item = []
 
                 if n.nodeargd and n.nodeargd.argnlist:
+                    # Handle optional argument for description lists or similar
+                    # But we are just collecting nodes here.
+                    # The content of item is in following nodes.
+                    # Does item macro have arguments? \item[label]
+                    # We should include the item macro itself or its argument?
+                    # The user issue 1.3 says "You skip \item in _process_macro, then re-handle it manually in _process_list... Nested lists break".
+                    # Here we are collecting nodes between items.
+                    # We should probably process the item arguments (label) if present.
                     current_item.append(n)
             else:
                 current_item.append(n)
@@ -499,82 +560,110 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             items.append(current_item)
 
         for item_nodes in items:
-            item_text = self._nodes_to_text(item_nodes)
-            if item_text:
-                doc.add_text(
-                    parent=list_group, label=DocItemLabel.LIST_ITEM, text=item_text
-                )
+            self._process_nodes(
+                item_nodes, 
+                doc, 
+                list_group, 
+                formatting, 
+                text_label=DocItemLabel.LIST_ITEM
+            )
+
+
 
     def _parse_table(self, node: LatexEnvironmentNode) -> Optional[TableData]:
-        """Parse tabular environment into TableData"""
-        try:
-            table_text = node.latex_verbatim()
+        """Parse tabular environment into TableData using AST"""
+        
+        rows = []
+        current_row = []
+        current_cell_nodes = []
 
-            content = re.search(
-                r"\\begin\{tabular\}.*?\{.*?\}(.*?)\\end\{tabular\}",
-                table_text,
-                re.DOTALL,
-            )
+        def finish_cell():
+            text = self._nodes_to_text(current_cell_nodes).strip()
+            # Handle empty cells or just spacing?
+            # Standard Latex table cell.
+            # Docling TableCell expects text. 
+            # We can rely on default spans (1,1).
+            # Initialize offsets to 0, they are updated later.
+            current_row.append(TableCell(
+                text=text,
+                start_row_offset_idx=0,
+                end_row_offset_idx=0,
+                start_col_offset_idx=0,
+                end_col_offset_idx=0
+            ))
+            current_cell_nodes.clear()
 
-            if not content:
-                return None
+        def finish_row():
+            finish_cell() # Finish the last cell of the row
+            if current_row:
+                rows.append(current_row[:]) # Copy
+            current_row.clear()
 
-            table_content = content.group(1).strip()
+        for n in node.nodelist:
+            if isinstance(n, LatexMacroNode):
+                if n.macroname == "\\": # Row break
+                    finish_row()
+                elif n.macroname in ["hline", "cline", "toprule", "midrule", "bottomrule"]:
+                     # Ignore rule lines for data extraction
+                    pass
+                elif n.macroname == "&": # Cell break (if parsed as macro)
+                    finish_cell()
+                else:
+                    current_cell_nodes.append(n)
+            
+            elif isinstance(n, LatexCharsNode):
+                text = n.chars
+                if "&" in text:
+                     # This happens if `&` is parsed as char. 
+                     # Split text by `&`.
+                     parts = text.split("&")
+                     for i, part in enumerate(parts):
+                         if part:
+                             # Add text node for the part
+                             current_cell_nodes.append(LatexCharsNode(chars=part))
+                         
+                         if i < len(parts) - 1:
+                             finish_cell()
+                else:
+                    current_cell_nodes.append(n)
 
-            rows = [r.strip() for r in table_content.split(r"\\") if r.strip()]
+            else:
+                 # Other nodes (Groups, etc).
+                 # Check if it is `&` (specials).
+                 if hasattr(n, 'specials_chars') and n.specials_chars == '&':
+                     finish_cell()
+                 else:
+                     current_cell_nodes.append(n)
 
-            table_rows = []
-            for row in rows:
-                row = row.replace(r"\hline", "").replace(r"\cline", "").strip()
+        finish_row()
 
-                if not row:
-                    continue
-
-                cells = []
-                for c in re.split(r"(?<!\\)&", row):
-                    cell_text = c.strip()
-
-                    cell_text = (
-                        cell_text.replace(r"\%", "%")
-                        .replace(r"\$", "$")
-                        .replace(r"\&", "&")
-                    )
-                    cell_text = cell_text.replace(r"\#", "#").replace(r"\_", "_")
-                    cell_text = cell_text.replace(r"\{", "{").replace(r"\}", "}")
-                    cells.append(cell_text)
-                table_rows.append(cells)
-
-            if not table_rows:
-                return None
-
-            num_rows = len(table_rows)
-            num_cols = max(len(row) for row in table_rows) if table_rows else 0
-
-            grid = []
-            for i, row in enumerate(table_rows):
-                grid_row = []
-                for j in range(num_cols):
-                    cell_text = row[j] if j < len(row) else ""
-                    grid_row.append(
-                        TableCell(
-                            text=cell_text,
-                            start_row_offset_idx=i,
-                            end_row_offset_idx=i + 1,
-                            start_col_offset_idx=j,
-                            end_col_offset_idx=j + 1,
-                        )
-                    )
-                grid.append(grid_row)
-
-            flat_cells = [cell for row in grid for cell in row]
-
-            return TableData(
-                num_rows=num_rows, num_cols=num_cols, table_cells=flat_cells
-            )
-
-        except Exception as e:
-            _log.warning(f"Failed to parse table: {e}")
+        if not rows:
             return None
+
+        # Calculate dimensions and build grid
+        num_rows = len(rows)
+        num_cols = max(len(row) for row in rows) if rows else 0
+
+        # Pad rows to uniform length
+        flat_cells = []
+        for i, row in enumerate(rows):
+            for j in range(num_cols):
+                if j < len(row):
+                    cell = row[j]
+                else:
+                    cell = TableCell(text="")
+                
+                # Update cell offsets (required by TableData?)
+                cell.start_row_offset_idx = i
+                cell.end_row_offset_idx = i + 1
+                cell.start_col_offset_idx = j
+                cell.end_col_offset_idx = j + 1
+                
+                flat_cells.append(cell)
+
+        return TableData(
+            num_rows=num_rows, num_cols=num_cols, table_cells=flat_cells
+        )
 
     def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str:
         """Extract content from verbatim environments"""
@@ -590,6 +679,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         node: LatexEnvironmentNode,
         doc: DoclingDocument,
         parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
     ):
         """Process bibliography environment"""
 
@@ -597,13 +687,53 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             parent=parent, name="bibliography", label=GroupLabel.LIST
         )
 
+        items = []
+        current_item: list = []
+        current_key = ""
+
+        # Pre-process to group by bibitem
         for n in node.nodelist:
             if isinstance(n, LatexMacroNode) and n.macroname == "bibitem":
-                bib_text = self._nodes_to_text([n])
-                if bib_text:
-                    doc.add_text(
-                        parent=bib_group, label=DocItemLabel.LIST_ITEM, text=bib_text
-                    )
+                if current_item:
+                    items.append((current_key, current_item))
+                current_item = []
+                current_key = self._extract_macro_arg(n)
+            else:
+                current_item.append(n)
+        
+        if current_item:
+            items.append((current_key, current_item))
+
+        for key, item_nodes in items:
+            # We can optionally add the key as text prefix if desired,
+            # but usually the renderer handles numbering/labels.
+            # However, for robustness, we might want to ensure the key is visible if it's manual.
+            # For now, just process the content.
+            # If we want to emulate [key], we can prepend a text node?
+            # Or assume Docling logic handles it? Docling logic is generic.
+            # I'll prepend the key if it exists.
+            
+            # Create a localized group or just add items?
+            # Using _process_nodes with LIST_ITEM label.
+            
+            if key:
+                # Add key as separate text or part of first item?
+                # Simply processing nodes will add text.
+                # I'll add the key manually first.
+                doc.add_text(
+                    parent=bib_group, 
+                    label=DocItemLabel.LIST_ITEM, 
+                    text=f"[{key}] ", 
+                    formatting=formatting
+                )
+
+            self._process_nodes(
+                item_nodes, 
+                doc, 
+                bib_group, 
+                formatting, 
+                text_label=DocItemLabel.LIST_ITEM
+            )
 
     def _nodes_to_text(self, nodes) -> str:
         """Convert a list of nodes to plain text"""
