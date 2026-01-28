@@ -95,6 +95,7 @@ def download_models(
 
     if with_smolvlm:
         _log.info("Downloading SmolVlm model...")
+        assert smolvlm_picture_description.repo_id is not None
         download_hf_model(
             repo_id=smolvlm_picture_description.repo_id,
             local_dir=output_dir / smolvlm_picture_description.repo_cache_folder,
@@ -140,6 +141,7 @@ def download_models(
 
     if with_granite_vision:
         _log.info("Downloading Granite Vision model...")
+        assert granite_picture_description.repo_id is not None
         download_hf_model(
             repo_id=granite_picture_description.repo_id,
             local_dir=output_dir / granite_picture_description.repo_cache_folder,

@@ -609,18 +609,20 @@ class PictureDescriptionVlmOptions(StagePresetMixin, PictureDescriptionBaseOptio
 
     # Legacy fields (kept for backward compatibility)
     repo_id: Annotated[
-        str,
+        Optional[str],
         Field(
+            default=None,
             description=(
                 "HuggingFace model repository ID for the vision-language model. "
-                "Must be a model capable of image-to-text generation for picture descriptions."
+                "Must be a model capable of image-to-text generation for picture descriptions. "
+                "LEGACY: Use model_spec instead for new runtime system."
             ),
             examples=[
                 "HuggingFaceTB/SmolVLM-256M-Instruct",
                 "ibm-granite/granite-vision-3.3-2b",
             ],
         ),
-    ]
+    ] = None
     prompt: Annotated[
         str,
         Field(
@@ -646,6 +648,18 @@ class PictureDescriptionVlmOptions(StagePresetMixin, PictureDescriptionBaseOptio
 
     @property
     def repo_cache_folder(self) -> str:
+        if self.repo_id is None:
+            # Use model_spec repo_id if available
+            if self.model_spec is not None:
+                from docling.models.runtimes.base import VlmRuntimeType
+
+                repo_id = self.model_spec.get_repo_id(
+                    self.runtime_options.runtime_type
+                    if self.runtime_options
+                    else VlmRuntimeType.AUTO_INLINE
+                )
+                return repo_id.replace("/", "--")
+            return "unknown"
         return self.repo_id.replace("/", "--")
 
 
@@ -754,25 +768,6 @@ class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
 
 
 # =============================================================================
-# MODULE-LEVEL DEFAULTS FOR NEW PRESET SYSTEM
-# =============================================================================
-
-# Default VlmConvertOptions using granite_docling preset
-_default_vlm_convert_options = VlmConvertOptions.from_preset("granite_docling")
-"""Default VLM convert options using granite_docling preset with AUTO_INLINE runtime."""
-
-# Default PictureDescriptionVlmOptions using smolvlm preset
-_default_picture_description_options = PictureDescriptionVlmOptions.from_preset(
-    "smolvlm"
-)
-"""Default picture description options using smolvlm preset with AUTO_INLINE runtime."""
-
-# Default CodeFormulaVlmOptions using default preset
-_default_code_formula_options = CodeFormulaVlmOptions.from_preset("default")
-"""Default code/formula options using default preset with AUTO_INLINE runtime."""
-
-
-# =============================================================================
 # PRESET REGISTRATION
 # =============================================================================
 
@@ -792,6 +787,26 @@ PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_QWEN)
 
 # Register CodeFormula presets
 CodeFormulaVlmOptions.register_preset(CODE_FORMULA_DEFAULT)
+
+
+# =============================================================================
+# MODULE-LEVEL DEFAULTS FOR NEW PRESET SYSTEM
+# =============================================================================
+# These must be created AFTER preset registration above
+
+# Default VlmConvertOptions using granite_docling preset
+_default_vlm_convert_options = VlmConvertOptions.from_preset("granite_docling")
+"""Default VLM convert options using granite_docling preset with AUTO_INLINE runtime."""
+
+# Default PictureDescriptionVlmOptions using smolvlm preset
+_default_picture_description_options = PictureDescriptionVlmOptions.from_preset(
+    "smolvlm"
+)
+"""Default picture description options using smolvlm preset with AUTO_INLINE runtime."""
+
+# Default CodeFormulaVlmOptions using default preset
+_default_code_formula_options = CodeFormulaVlmOptions.from_preset("default")
+"""Default code/formula options using default preset with AUTO_INLINE runtime."""
 
 
 # Define an enum for the backend options
