@@ -28,6 +28,7 @@ from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.image_backend import ImageDocumentBackend
+from docling.backend.latex_backend import LatexDocumentBackend
 from docling.backend.mets_gbs_backend import MetsGbsDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -86,6 +87,7 @@ from docling.document_converter import (
     ExcelFormatOption,
     FormatOption,
     HTMLFormatOption,
+    LatexFormatOption,
     MarkdownFormatOption,
     PdfFormatOption,
     PowerpointFormatOption,
@@ -800,6 +802,9 @@ def convert(  # noqa: C901
                     pipeline_options=simple_format_option
                 ),
                 InputFormat.MD: MarkdownFormatOption(
+                    pipeline_options=simple_format_option
+                ),
+                InputFormat.LATEX: LatexFormatOption(
                     pipeline_options=simple_format_option
                 ),
             }
