@@ -754,6 +754,25 @@ class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
 
 
 # =============================================================================
+# MODULE-LEVEL DEFAULTS FOR NEW PRESET SYSTEM
+# =============================================================================
+
+# Default VlmConvertOptions using granite_docling preset
+_default_vlm_convert_options = VlmConvertOptions.from_preset("granite_docling")
+"""Default VLM convert options using granite_docling preset with AUTO_INLINE runtime."""
+
+# Default PictureDescriptionVlmOptions using smolvlm preset
+_default_picture_description_options = PictureDescriptionVlmOptions.from_preset(
+    "smolvlm"
+)
+"""Default picture description options using smolvlm preset with AUTO_INLINE runtime."""
+
+# Default CodeFormulaVlmOptions using default preset
+_default_code_formula_options = CodeFormulaVlmOptions.from_preset("default")
+"""Default code/formula options using default preset with AUTO_INLINE runtime."""
+
+
+# =============================================================================
 # PRESET REGISTRATION
 # =============================================================================
 
@@ -903,11 +922,12 @@ class ConvertPipelineOptions(PipelineOptions):
         PictureDescriptionBaseOptions,
         Field(
             description=(
-                "Configuration for picture description model. Specifies which vision model to use (API or inline) "
-                "and model-specific parameters. Only applicable when `do_picture_description=True`."
-            )
+                "Configuration for picture description model. Uses new preset system (recommended). "
+                "Default: 'smolvlm' preset. Only applicable when `do_picture_description=True`. "
+                "Example: PictureDescriptionVlmOptions.from_preset('granite_vision')"
+            ),
         ),
-    ] = smolvlm_picture_description
+    ] = _default_picture_description_options
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
@@ -968,12 +988,12 @@ class VlmPipelineOptions(PaginatedPipelineOptions):
         Union[VlmConvertOptions, InlineVlmOptions, ApiVlmOptions],
         Field(
             description=(
-                "Vision-Language Model configuration for document understanding. Supports new VlmConvertOptions "
-                "(recommended, with preset system) or legacy InlineVlmOptions/ApiVlmOptions. "
-                "Example: VlmConvertOptions.from_preset('smoldocling')"
-            )
+                "Vision-Language Model configuration for document understanding. Uses new VlmConvertOptions "
+                "with preset system (recommended). Legacy InlineVlmOptions/ApiVlmOptions still supported. "
+                "Default: 'granite_docling' preset. Example: VlmConvertOptions.from_preset('smoldocling')"
+            ),
         ),
-    ] = vlm_model_specs.GRANITEDOCLING_TRANSFORMERS
+    ] = _default_vlm_convert_options
 
 
 class BaseLayoutOptions(BaseOptions):
@@ -1147,6 +1167,16 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = LayoutOptions()
+    code_formula_options: Annotated[
+        CodeFormulaVlmOptions,
+        Field(
+            description=(
+                "Configuration for code and formula extraction using VLM. Uses new preset system (recommended). "
+                "Default: 'default' preset. Only applicable when `do_code_enrichment=True` or `do_formula_enrichment=True`. "
+                "Example: CodeFormulaVlmOptions.from_preset('granite_vision')"
+            ),
+        ),
+    ] = _default_code_formula_options
     images_scale: Annotated[
         float,
         Field(
