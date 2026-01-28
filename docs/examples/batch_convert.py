@@ -37,7 +37,7 @@ from pathlib import Path
 import yaml
 from docling_core.types.doc import ImageRefMode
 
-from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
+from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -186,7 +186,7 @@ def main():
     doc_converter = DocumentConverter(
         format_options={
             InputFormat.PDF: PdfFormatOption(
-                pipeline_options=pipeline_options, backend=DoclingParseV4DocumentBackend
+                pipeline_options=pipeline_options, backend=DoclingParseDocumentBackend
             )
         }
     )
