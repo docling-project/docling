@@ -793,9 +793,11 @@ class DocumentProcessor:
         initialize Document Converter
         '''
 
+        self.ocr_endpoint = "http://192.168.73.172:48080/ocr"
         ocr_options = PaddleOcrOptions(
             force_full_page_ocr=False,
             lang=['korean'],
+            ocr_endpoint=self.ocr_endpoint,
             text_score=0.3)
 
         self.page_chunk_counts = defaultdict(int)
@@ -1185,20 +1187,54 @@ class DocumentProcessor:
         Returns:
             OCR이 완료된 문서의 DoclingDocument 객체
         """
+        import fitz
+        import base64
+        import requests
+
+        def post_ocr_bytes(img_bytes: bytes, timeout=60) -> dict:
+            HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
+            payload = {"file": base64.b64encode(img_bytes).decode("ascii"), "fileType": 1, "visualize": False}
+            r = requests.post(self.ocr_endpoint, json=payload, headers=HEADERS, timeout=timeout)
+            if not r.ok:
+                # 진단에 도움되도록 본문 일부 출력
+                raise RuntimeError(f"OCR HTTP {r.status_code}: {r.text[:500]}")
+            return r.json()
+
+        def extract_ocr_fields(resp: dict):
+            """
+            resp: 위와 같은 OCR 응답 JSON(dict)
+            return: (rec_texts, rec_scores, rec_boxes) — 모두 list
+            """
+            if resp is None:
+                return [], [], []
+
+            # 최상위 상태 체크
+            if resp.get("errorCode") not in (0, None):
+                return [], [], []
+
+            ocr_results = (
+                resp.get("result", {})
+                    .get("ocrResults", [])
+            )
+            if not ocr_results:
+                return [], [], []
+
+            pruned = (
+                ocr_results[0]
+                .get("prunedResult", {})
+            )
+            if not pruned:
+                return [], [], []
+
+            rec_texts  = pruned.get("rec_texts", [])   # list[str]
+            rec_scores = pruned.get("rec_scores", [])  # list[float]
+            rec_boxes  = pruned.get("rec_boxes", [])   # list[[x1,y1,x2,y2]]
+
+            # 길이 불일치 방어: 최소 길이에 맞춰 자르기
+            n = min(len(rec_texts), len(rec_scores), len(rec_boxes))
+            return rec_texts[:n], rec_scores[:n], rec_boxes[:n]
+
         try:
-            import fitz
-            import grpc
-            import docling.models.ocr_pb2 as ocr_pb2
-            import docling.models.ocr_pb2_grpc as ocr_pb2_grpc
-            import itertools
-
-            grpc_server_count = self.ocr_pipe_line_options.ocr_options.grpc_server_count
-
-            PORTS = [50051 + i for i in range(grpc_server_count)]
-            channels = [grpc.insecure_channel(f"localhost:{p}") for p in PORTS]
-            stubs = [(ocr_pb2_grpc.OCRServiceStub(ch), p) for ch, p in zip(channels, PORTS)]
-            rr = itertools.cycle(stubs)
-
             doc = fitz.open(pdf_path)
 
             for table_idx, table_item in enumerate(document.tables):
@@ -1217,7 +1253,7 @@ class DocumentProcessor:
 
                 for cell_idx, cell in enumerate(table_item.data.table_cells):
 
-                    # # Provenance 정보에서 위치 정보 추출
+                    # Provenance 정보에서 위치 정보 추출
                     if not table_item.prov:
                         continue
 
@@ -1249,23 +1285,16 @@ class DocumentProcessor:
                     pix = page.get_pixmap(matrix=mat, clip=cell_bbox)
                     img_data = pix.tobytes("png")
 
-                    # gRPC 서버와 연결
-                    # channel = grpc.insecure_channel('localhost:50051')
-                    # stub = ocr_pb2_grpc.OCRServiceStub(channel)
-
-                    # # OCR 요청: 이미지 데이터를 바이너리로 전송
-                    # response = stub.PerformOCR(ocr_pb2.OCRRequest(image_data=img_data))
-
-                    req = ocr_pb2.OCRRequest(image_data=img_data)
-                    stub, port = next(rr)  # 라운드 로빈 방식으로 스텁 선택
-                    response = stub.PerformOCR(req)
+                    result = post_ocr_bytes(img_data, timeout=60)
+                    rec_texts, rec_scores, rec_boxes = extract_ocr_fields(result)
 
                     cell.text = ""
-                    for result in response.results:
+                    for t in rec_texts:
                         if len(cell.text) > 0:
                             cell.text += " "
-                        cell.text += result.text if result else ""
-        except grpc.RpcError as e:
+                        cell.text += t if t else ""
+        except Exception as e:
+            print(f"OCR processing failed: {e}")
             pass
 
         return document
