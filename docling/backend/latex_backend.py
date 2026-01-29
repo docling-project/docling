@@ -18,6 +18,7 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import Formatting
 from PIL import Image
+from pylatexenc.latex2text import LatexNodes2Text
 from pylatexenc.latexwalker import (
     LatexCharsNode,
     LatexEnvironmentNode,
@@ -26,7 +27,6 @@ from pylatexenc.latexwalker import (
     LatexMathNode,
     LatexWalker,
 )
-from pylatexenc.latex2text import LatexNodes2Text
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.datamodel.backend_options import LatexBackendOptions
@@ -327,9 +327,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 if not is_display:
                     math_verbatim = node.latex_verbatim()
                     is_display = math_verbatim.startswith(
-                        ("$$", "\\[")
-                    ) or math_verbatim.startswith(
                         (
+                            "$$",
+                            "\\[",
                             "\\begin{equation}",
                             "\\begin{align}",
                             "\\begin{gather}",
@@ -463,7 +463,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 except Exception as e:
                     _log.debug(f"Could not load image {img_path}: {e}")
 
-                caption_node = None
                 caption = doc.add_text(
                     label=DocItemLabel.CAPTION, text=f"Image: {img_path}"
                 )
