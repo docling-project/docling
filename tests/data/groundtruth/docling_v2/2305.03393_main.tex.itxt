@@ -115,3 +115,37 @@ The table repr ... of tokens, terminated with "NL" token.
   item-102 at level 1: paragraph: in the inference runtime over HTML.
   item-103 at level 1: text: \extrarowheight 2pt 4pt
   item-104 at level 1: text: HPO performed in OTSL and HTML r ... r mAP score than the HTML counterpart.
+  item-105 at level 1: table with [11x8]
+  item-106 at level 1: section_header: Quantitative Results
+  item-107 at level 1: paragraph: We picked the model parameter co ... rmance results are presented in Table.
+  item-108 at level 1: text: [tab:HTMLvOTSL_precision]
+  item-109 at level 1: paragraph: . It is clearly evident that the ...  that contain sparse and large tables.
+  item-110 at level 1: text: TSR and cell detection results c ... eFormer] (with enc=6, dec=6, heads=8).
+  item-111 at level 1: table with [9x7]
+  item-112 at level 1: paragraph: Additionally, the results show t ... f the reduced sequence representation.
+  item-113 at level 1: section_header: Qualitative Results
+  item-114 at level 1: paragraph: To illustrate the qualitative differences between OTSL and HTML, Figure
+  item-115 at level 1: text: [OTSLvHTML_compare] demonstrates ... es with OTSL. In Figure[OTSLvHTML_ex3]
+  item-116 at level 1: paragraph: , OTSL proves to be more effecti ... ructure prediction and bounding boxes.
+  item-117 at level 1: section: group figure
+    item-118 at level 2: text: The OTSL model produces more acc ... C). "PMC2807444_006_00.png" PubTabNet.
+    item-119 at level 2: text: * .2cm
+    item-120 at level 2: picture
+      item-120 at level 3: caption: Image: ./figs/HTMLvOTSLv7.pdf
+  item-121 at level 1: caption: Image: ./figs/HTMLvOTSLv7.pdf
+  item-122 at level 1: section: group figure
+    item-123 at level 2: text: Visualization of predicted struc ... es. "PMC5406406_003_01.png" PubTabNet.
+    item-124 at level 2: text: * .2cm
+    item-125 at level 2: picture
+      item-125 at level 3: caption: Image: ./figs/otsl_vs_html_ex3_v2.pdf
+  item-126 at level 1: caption: Image: ./figs/otsl_vs_html_ex3_v2.pdf
+  item-127 at level 1: section_header: ConConclusion
+  item-128 at level 1: paragraph: We demonstrated that representin ... e languages, has several key benefits.
+  item-129 at level 1: paragraph: First and foremost, given the sa ... e to models trained on HTML (see Table
+  item-130 at level 1: text: [tab:HPO]
+  item-131 at level 1: paragraph: ).
+  item-132 at level 1: paragraph: Secondly, OTSL has more inherent ... e table-cell bounding boxes (see Table
+  item-133 at level 1: text: [tab:HTMLvOTSL_precision]). As shown in Figure[OTSLvHTML_compare]
+  item-134 at level 1: paragraph: , we observe that the OTSL drast ... on-the-fly during sequence generation.
+  item-135 at level 1: text: splncs04
+  item-136 at level 1: text: papers
