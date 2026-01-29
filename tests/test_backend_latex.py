@@ -1317,9 +1317,10 @@ Add this to test_backend_latex.py to debug what's happening
 def test_debug_macro_extraction():
     """Debug test to see what's actually being extracted"""
     from io import BytesIO
+
+    from docling.backend.latex_backend import LatexDocumentBackend
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.document import InputDocument
-    from docling.backend.latex_backend import LatexDocumentBackend
 
     latex_content = b"""\\documentclass{article}
 \\newcommand{\\myterm}{special term}
@@ -1346,12 +1347,12 @@ This is \\myterm and the value is \\myvalue.
     print(f"{'=' * 80}")
     print(f"Custom macros extracted: {backend._custom_macros}")
     print(f"Number of text items: {len(doc.texts)}")
-    print(f"\nText items:")
+    print("\nText items:")
     for i, text_item in enumerate(doc.texts):
         print(f"  {i}: {text_item.label} = {text_item.text!r}")
 
     md = doc.export_to_markdown()
-    print(f"\nMarkdown output:")
+    print("\nMarkdown output:")
     print(md)
     print(f"{'=' * 80}\n")
 
