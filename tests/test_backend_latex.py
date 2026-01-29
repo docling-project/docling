@@ -1240,7 +1240,9 @@ def test_macro_extraction():
     for input_str, expected in test_cases:
         result = extract_macro_name_old(input_str)
         status = "✓" if result == expected else "✗"
-        print(f"{status} Input: {input_str!r:20} → Result: {result!r:15} (expected: {expected!r})")
+        print(
+            f"{status} Input: {input_str!r:20} → Result: {result!r:15} (expected: {expected!r})"
+        )
         if result == expected:
             old_passed += 1
 
@@ -1251,7 +1253,9 @@ def test_macro_extraction():
     for input_str, expected in test_cases:
         result = extract_macro_name_new(input_str)
         status = "✓" if result == expected else "✗"
-        print(f"{status} Input: {input_str!r:20} → Result: {result!r:15} (expected: {expected!r})")
+        print(
+            f"{status} Input: {input_str!r:20} → Result: {result!r:15} (expected: {expected!r})"
+        )
         if result == expected:
             new_passed += 1
 
@@ -1265,8 +1269,10 @@ def test_macro_extraction():
         print("\n✓✓ SUCCESS: New implementation fixes the bug!")
     else:
         print("\n✗✗ FAILURE: New implementation still has issues")
-    
-    assert new_passed == len(test_cases), f"New implementation failed: {new_passed}/{len(test_cases)} tests passed"
+
+    assert new_passed == len(test_cases), (
+        f"New implementation failed: {new_passed}/{len(test_cases)} tests passed"
+    )
 
 
 def test_edge_cases():
@@ -1299,7 +1305,7 @@ def test_edge_cases():
         print("\n✓✓ All edge cases passed!")
     else:
         print("\n✗✗ Some edge cases failed")
-    
+
     assert all_passed, "Some edge cases failed"
 
 

@@ -38,10 +38,10 @@ _log = logging.getLogger(__name__)
 
 class LatexDocumentBackend(DeclarativeDocumentBackend):
     def __init__(
-            self,
-            in_doc: InputDocument,
-            path_or_stream: Union[BytesIO, Path],
-            options: LatexBackendOptions = LatexBackendOptions(),
+        self,
+        in_doc: InputDocument,
+        path_or_stream: Union[BytesIO, Path],
+        options: LatexBackendOptions = LatexBackendOptions(),
     ):
         super().__init__(in_doc, path_or_stream, options)
         self.latex_text = ""
@@ -68,12 +68,12 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         """Pre-process LaTeX to expand common problematic macros before parsing"""
         # Common equation shortcuts that cause parsing issues
-        latex_text = re.sub(r'\\be\b', r'\\begin{equation}', latex_text)
-        latex_text = re.sub(r'\\ee\b', r'\\end{equation}', latex_text)
-        latex_text = re.sub(r'\\bea\b', r'\\begin{eqnarray}', latex_text)
-        latex_text = re.sub(r'\\eea\b', r'\\end{eqnarray}', latex_text)
-        latex_text = re.sub(r'\\beq\b', r'\\begin{equation}', latex_text)
-        latex_text = re.sub(r'\\eeq\b', r'\\end{equation}', latex_text)
+        latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)
+        latex_text = re.sub(r"\\ee\b", r"\\end{equation}", latex_text)
+        latex_text = re.sub(r"\\bea\b", r"\\begin{eqnarray}", latex_text)
+        latex_text = re.sub(r"\\eea\b", r"\\end{eqnarray}", latex_text)
+        latex_text = re.sub(r"\\beq\b", r"\\begin{equation}", latex_text)
+        latex_text = re.sub(r"\\eeq\b", r"\\end{equation}", latex_text)
 
         return latex_text
 
@@ -118,10 +118,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(node, LatexMacroNode) and node.macroname == "newcommand":
                 if node.nodeargd and node.nodeargd.argnlist:
                     argnlist = node.nodeargd.argnlist
-                    
+
                     # Find the name argument (typically at index 1)
                     name_arg = argnlist[1] if len(argnlist) > 1 else None
-                    
+
                     # Find the definition argument (last non-None argument)
                     def_arg = None
                     for arg in reversed(argnlist):
@@ -137,7 +137,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         # Clean up: remove braces, spaces, and leading backslash
                         # This handles both {\myterm} and \myterm formats
                         macro_name = macro_name_raw.strip("{} \n\t")
-                        
+
                         # Remove leading backslash if present
                         if macro_name.startswith("\\"):
                             macro_name = macro_name[1:]
@@ -150,7 +150,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
                         if macro_name:  # Only register if we got a valid name
                             self._custom_macros[macro_name] = macro_def
-                            _log.debug(f"Registered custom macro: \\{macro_name} -> '{macro_def}'")
+                            _log.debug(
+                                f"Registered custom macro: \\{macro_name} -> '{macro_def}'"
+                            )
 
             # Recursively search in nested structures
             if hasattr(node, "nodelist") and node.nodelist:
@@ -184,12 +186,12 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         return None
 
     def _process_nodes(
-            self,
-            nodes,
-            doc: DoclingDocument,
-            parent: Optional[NodeItem] = None,
-            formatting: Optional[Formatting] = None,
-            text_label: Optional[DocItemLabel] = None,
+        self,
+        nodes,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         if nodes is None:
             return
@@ -235,14 +237,22 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 elif node.macroname == " ":
                     text_buffer.append(" ")
                 # Handle inline formatting macros - keep in buffer
-                elif node.macroname in ["textbf", "textit", "emph", "texttt", "underline"]:
+                elif node.macroname in [
+                    "textbf",
+                    "textit",
+                    "emph",
+                    "texttt",
+                    "underline",
+                ]:
                     formatted_text = self._extract_macro_arg(node)
                     if formatted_text:
                         text_buffer.append(formatted_text)
                 # Handle custom macros - expand and keep in buffer
                 elif node.macroname in self._custom_macros:
                     expansion = self._custom_macros[node.macroname]
-                    _log.debug(f"Expanding custom macro \\{node.macroname} -> '{expansion}'")
+                    _log.debug(
+                        f"Expanding custom macro \\{node.macroname} -> '{expansion}'"
+                    )
                     text_buffer.append(expansion)
                 # Handle citations and references inline to avoid line breaks
                 elif node.macroname in ["cite", "citep", "citet", "ref", "eqref"]:
@@ -257,14 +267,37 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     # Check if this is a structural macro that needs special handling
                     structural_macros = {
-                        "section", "subsection", "subsubsection", "chapter", "part",
-                        "paragraph", "subparagraph",
-                        "caption", "label", "includegraphics", "bibliography",
-                        "title", "author", "maketitle", "footnote", "marginpar",
-                        "textsc", "textsf", "textrm", "textnormal", "mbox",
-                        "href", "newline", "hfill", "break", "centering",
-                        "textcolor", "colorbox", "item",
-                        "input", "include",
+                        "section",
+                        "subsection",
+                        "subsubsection",
+                        "chapter",
+                        "part",
+                        "paragraph",
+                        "subparagraph",
+                        "caption",
+                        "label",
+                        "includegraphics",
+                        "bibliography",
+                        "title",
+                        "author",
+                        "maketitle",
+                        "footnote",
+                        "marginpar",
+                        "textsc",
+                        "textsf",
+                        "textrm",
+                        "textnormal",
+                        "mbox",
+                        "href",
+                        "newline",
+                        "hfill",
+                        "break",
+                        "centering",
+                        "textcolor",
+                        "colorbox",
+                        "item",
+                        "input",
+                        "include",
                     }
                     if node.macroname in structural_macros:
                         # Structural macro - flush buffer and process with _process_macro
@@ -276,9 +309,13 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         if inline_text:
                             text_buffer.append(inline_text)
                         else:
-                            _log.debug(f"Skipping unknown macro with no extractable content: {node.macroname}")
+                            _log.debug(
+                                f"Skipping unknown macro with no extractable content: {node.macroname}"
+                            )
                     else:
-                        _log.debug(f"Skipping unknown macro without arguments: {node.macroname}")
+                        _log.debug(
+                            f"Skipping unknown macro without arguments: {node.macroname}"
+                        )
 
             elif isinstance(node, LatexEnvironmentNode):
                 flush_text_buffer()
@@ -289,8 +326,16 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
                 if not is_display:
                     math_verbatim = node.latex_verbatim()
-                    is_display = math_verbatim.startswith(("$$", "\\[")) or math_verbatim.startswith(
-                        ("\\begin{equation}", "\\begin{align}", "\\begin{gather}", "\\begin{displaymath}"))
+                    is_display = math_verbatim.startswith(
+                        ("$$", "\\[")
+                    ) or math_verbatim.startswith(
+                        (
+                            "\\begin{equation}",
+                            "\\begin{align}",
+                            "\\begin{gather}",
+                            "\\begin{displaymath}",
+                        )
+                    )
 
                 if is_display:
                     flush_text_buffer()
@@ -308,17 +353,19 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         text_buffer.append(group_text)
                 else:
                     flush_text_buffer()
-                    self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+                    self._process_nodes(
+                        node.nodelist, doc, parent, formatting, text_label
+                    )
 
         flush_text_buffer()
 
     def _process_macro(  # noqa: C901
-            self,
-            node: LatexMacroNode,
-            doc: DoclingDocument,
-            parent: Optional[NodeItem] = None,
-            formatting: Optional[Formatting] = None,
-            text_label: Optional[DocItemLabel] = None,
+        self,
+        node: LatexMacroNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process LaTeX macro nodes"""
 
@@ -350,8 +397,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             if node.nodeargd and node.nodeargd.argnlist:
                 arg = node.nodeargd.argnlist[-1]
                 if hasattr(arg, "nodelist"):
-                    self._process_nodes(arg.nodelist, doc, parent, formatting, text_label)
-
+                    self._process_nodes(
+                        arg.nodelist, doc, parent, formatting, text_label
+                    )
 
         elif node.macroname in ["cite", "citep", "citet", "ref", "eqref"]:
             ref_arg = self._extract_macro_arg(node)
@@ -482,21 +530,49 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         content = input_path.read_text(encoding="utf-8")
                         sub_walker = LatexWalker(content, tolerant_parsing=True)
                         sub_nodes, _, _ = sub_walker.get_latex_nodes()
-                        self._process_nodes(sub_nodes, doc, parent, formatting, text_label)
+                        self._process_nodes(
+                            sub_nodes, doc, parent, formatting, text_label
+                        )
                         _log.debug(f"Loaded input file: {input_path}")
                     except Exception as e:
                         _log.debug(f"Failed to load input file {filepath}: {e}")
 
         elif node.macroname in ["&", "%", "$", "#", "_", "{", "}"]:
             # Escaped symbols: \& -> &
-            doc.add_text(parent=parent, text=node.macroname, formatting=formatting,
-                         label=(text_label or DocItemLabel.TEXT))
+            doc.add_text(
+                parent=parent,
+                text=node.macroname,
+                formatting=formatting,
+                label=(text_label or DocItemLabel.TEXT),
+            )
 
-        elif node.macroname in ["'", '"', "^", "`", "~", "=", ".", "c", "d", "b", "H", "k", "r", "t", "u", "v"]:
+        elif node.macroname in [
+            "'",
+            '"',
+            "^",
+            "`",
+            "~",
+            "=",
+            ".",
+            "c",
+            "d",
+            "b",
+            "H",
+            "k",
+            "r",
+            "t",
+            "u",
+            "v",
+        ]:
             # Accents and diacritics
             try:
                 text = LatexNodes2Text().nodelist_to_text([node])
-                doc.add_text(parent=parent, text=text, formatting=formatting, label=(text_label or DocItemLabel.TEXT))
+                doc.add_text(
+                    parent=parent,
+                    text=text,
+                    formatting=formatting,
+                    label=(text_label or DocItemLabel.TEXT),
+                )
             except Exception:
                 pass
 
@@ -507,15 +583,39 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 text_arg = node.nodeargd.argnlist[1]
 
                 if hasattr(text_arg, "nodelist"):
-                    self._process_nodes(text_arg.nodelist, doc, parent, formatting, text_label)
+                    self._process_nodes(
+                        text_arg.nodelist, doc, parent, formatting, text_label
+                    )
 
         elif node.macroname in ["newline", "hfill", "break", "centering"]:
             if node.macroname == "newline":
-                doc.add_text(parent=parent, text="\n", formatting=formatting, label=(text_label or DocItemLabel.TEXT))
+                doc.add_text(
+                    parent=parent,
+                    text="\n",
+                    formatting=formatting,
+                    label=(text_label or DocItemLabel.TEXT),
+                )
 
-        elif node.macroname in ["bf", "it", "rm", "sc", "sf", "sl", "tt", "cal", "em",
-                                "tiny", "scriptsize", "footnotesize", "small",
-                                "large", "Large", "LARGE", "huge", "Huge"]:
+        elif node.macroname in [
+            "bf",
+            "it",
+            "rm",
+            "sc",
+            "sf",
+            "sl",
+            "tt",
+            "cal",
+            "em",
+            "tiny",
+            "scriptsize",
+            "footnotesize",
+            "small",
+            "large",
+            "Large",
+            "LARGE",
+            "huge",
+            "Huge",
+        ]:
             # Legacy formatting and size switches - ignore to preserve content flow (prevent "Unknown macro" skip)
             pass
 
@@ -525,7 +625,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 # Find the last non-None argument (the text content)
                 for arg in reversed(node.nodeargd.argnlist):
                     if arg is not None and hasattr(arg, "nodelist"):
-                        self._process_nodes(arg.nodelist, doc, parent, formatting, text_label)
+                        self._process_nodes(
+                            arg.nodelist, doc, parent, formatting, text_label
+                        )
                         break
 
         elif node.macroname == "item":
@@ -537,7 +639,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 processed_any = False
                 for arg in node.nodeargd.argnlist:
                     if hasattr(arg, "nodelist"):
-                        self._process_nodes(arg.nodelist, doc, parent, formatting, text_label)
+                        self._process_nodes(
+                            arg.nodelist, doc, parent, formatting, text_label
+                        )
                         processed_any = True
 
                 if processed_any:
@@ -548,12 +652,12 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 _log.debug(f"Skipping unknown macro: {node.macroname}")
 
     def _process_environment(
-            self,
-            node: LatexEnvironmentNode,
-            doc: DoclingDocument,
-            parent: Optional[NodeItem] = None,
-            formatting: Optional[Formatting] = None,
-            text_label: Optional[DocItemLabel] = None,
+        self,
+        node: LatexEnvironmentNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process LaTeX environment nodes"""
 
@@ -613,12 +717,12 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
     def _process_figure(
-            self,
-            node: LatexEnvironmentNode,
-            doc: DoclingDocument,
-            parent: Optional[NodeItem] = None,
-            formatting: Optional[Formatting] = None,
-            text_label: Optional[DocItemLabel] = None,
+        self,
+        node: LatexEnvironmentNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process figure environment with proper grouping"""
         # Create a group for the figure to contain images and captions together
@@ -630,12 +734,12 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         self._process_nodes(node.nodelist, doc, figure_group, formatting, text_label)
 
     def _process_list(
-            self,
-            node: LatexEnvironmentNode,
-            doc: DoclingDocument,
-            parent: Optional[NodeItem] = None,
-            formatting: Optional[Formatting] = None,
-            text_label: Optional[DocItemLabel] = None,
+        self,
+        node: LatexEnvironmentNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
+        text_label: Optional[DocItemLabel] = None,
     ):
         """Process itemize/enumerate environments"""
 
@@ -651,7 +755,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 current_item = []
 
                 if n.nodeargd and n.nodeargd.argnlist:
-                     current_item.append(n)
+                    current_item.append(n)
             else:
                 current_item.append(n)
 
@@ -664,7 +768,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 doc,
                 list_group,
                 formatting,
-                text_label=DocItemLabel.LIST_ITEM
+                text_label=DocItemLabel.LIST_ITEM,
             )
 
     def _parse_table(self, node: LatexEnvironmentNode) -> Optional[TableData]:
@@ -676,13 +780,15 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         def finish_cell():
             text = self._nodes_to_text(current_cell_nodes).strip()
-            current_row.append(TableCell(
-                text=text,
-                start_row_offset_idx=0,
-                end_row_offset_idx=0,
-                start_col_offset_idx=0,
-                end_col_offset_idx=0
-            ))
+            current_row.append(
+                TableCell(
+                    text=text,
+                    start_row_offset_idx=0,
+                    end_row_offset_idx=0,
+                    start_col_offset_idx=0,
+                    end_col_offset_idx=0,
+                )
+            )
             current_cell_nodes.clear()
 
         def finish_row():
@@ -695,7 +801,13 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             if isinstance(n, LatexMacroNode):
                 if n.macroname == "\\":  # Row break
                     finish_row()
-                elif n.macroname in ["hline", "cline", "toprule", "midrule", "bottomrule"]:
+                elif n.macroname in [
+                    "hline",
+                    "cline",
+                    "toprule",
+                    "midrule",
+                    "bottomrule",
+                ]:
                     # Ignore rule lines for data extraction
                     pass
                 elif n.macroname == "&":  # Cell break (if parsed as macro)
@@ -721,7 +833,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     current_cell_nodes.append(n)
 
             else:
-                if hasattr(n, 'specials_chars') and n.specials_chars == '&':
+                if hasattr(n, "specials_chars") and n.specials_chars == "&":
                     finish_cell()
                 else:
                     current_cell_nodes.append(n)
@@ -751,9 +863,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
                 flat_cells.append(cell)
 
-        return TableData(
-            num_rows=num_rows, num_cols=num_cols, table_cells=flat_cells
-        )
+        return TableData(num_rows=num_rows, num_cols=num_cols, table_cells=flat_cells)
 
     def _extract_verbatim_content(self, latex_str: str, env_name: str) -> str:
         """Extract content from verbatim environments"""
@@ -765,11 +875,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         return latex_str
 
     def _process_bibliography(
-            self,
-            node: LatexEnvironmentNode,
-            doc: DoclingDocument,
-            parent: Optional[NodeItem] = None,
-            formatting: Optional[Formatting] = None,
+        self,
+        node: LatexEnvironmentNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem] = None,
+        formatting: Optional[Formatting] = None,
     ):
         """Process bibliography environment"""
 
@@ -795,13 +905,12 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             items.append((current_key, current_item))
 
         for key, item_nodes in items:
-
             if key:
                 doc.add_text(
                     parent=bib_group,
                     label=DocItemLabel.LIST_ITEM,
                     text=f"[{key}] ",
-                    formatting=formatting
+                    formatting=formatting,
                 )
 
             self._process_nodes(
@@ -809,7 +918,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 doc,
                 bib_group,
                 formatting,
-                text_label=DocItemLabel.LIST_ITEM
+                text_label=DocItemLabel.LIST_ITEM,
             )
 
     def _nodes_to_text(self, nodes) -> str:
@@ -920,9 +1029,20 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         # Macros that indicate structural content
         structural_macros = {
-            "section", "subsection", "subsubsection", "chapter", "part",
-            "caption", "label", "includegraphics", "bibliography",
-            "title", "author", "maketitle", "footnote", "marginpar",
+            "section",
+            "subsection",
+            "subsubsection",
+            "chapter",
+            "part",
+            "caption",
+            "label",
+            "includegraphics",
+            "bibliography",
+            "title",
+            "author",
+            "maketitle",
+            "footnote",
+            "marginpar",
         }
 
         for n in node.nodelist:
