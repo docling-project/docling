@@ -775,7 +775,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         rows = []
         current_row = []
-        current_cell_nodes = []
+        current_cell_nodes: list = []
 
         def finish_cell():
             text = self._nodes_to_text(current_cell_nodes).strip()
@@ -853,7 +853,13 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 if j < len(row):
                     cell = row[j]
                 else:
-                    cell = TableCell(text="")
+                    cell = TableCell(
+                        text="",
+                        start_row_offset_idx=0,
+                        end_row_offset_idx=0,
+                        start_col_offset_idx=0,
+                        end_col_offset_idx=0,
+                    )
 
                 cell.start_row_offset_idx = i
                 cell.end_row_offset_idx = i + 1
