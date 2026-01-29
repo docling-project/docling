@@ -1,24 +1,23 @@
 # %% [markdown]
-# Describe pictures using a remote VLM API (vLLM, LM Studio, or watsonx.ai).
+# Describe pictures using VLM models via API runtimes
 #
 # What this example does
-# - Configures `PictureDescriptionApiOptions` for local or cloud providers.
-# - Converts a PDF, then prints each picture's caption and annotations.
+# - Demonstrates using presets with API runtimes (LM Studio, watsonx.ai)
+# - Shows that API is just a runtime choice, not a different options class
+# - Explains pre-configured API types and custom API configuration
 #
 # Prerequisites
 # - Install Docling and `python-dotenv` if loading env vars from a `.env` file.
-# - For local providers: ensure vLLM or LM Studio is running.
+# - For LM Studio: ensure LM Studio is running with a VLM model loaded
 # - For watsonx.ai: set `WX_API_KEY` and `WX_PROJECT_ID` in the environment.
 #
 # How to run
 # - From the repo root: `python docs/examples/pictures_description_api.py`.
-# - Uncomment exactly one provider config and set `enable_remote_services=True` (already set).
+# - watsonx.ai example runs automatically if credentials are available
 #
 # Notes
-# - vLLM default endpoint: `http://localhost:8000/v1/chat/completions`.
-# - LM Studio default endpoint: `http://localhost:1234/v1/chat/completions`.
-# - Calling remote APIs sends page images/text to the provider; review privacy and
-#   costs. For local testing, LM Studio runs everything on your machine.
+# - The NEW runtime system unifies API and local inference
+# - For legacy approach, see `pictures_description_api_legacy.py`
 
 # %%
 
@@ -33,134 +32,47 @@ from dotenv import load_dotenv
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
-    PictureDescriptionApiOptions,
+    PictureDescriptionVlmOptions,
+)
+from docling.datamodel.vlm_runtime_options import (
+    ApiVlmRuntimeOptions,
+    VlmRuntimeType,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
-### Example of PictureDescriptionApiOptions definitions
 
-#### Using vLLM
-# Models can be launched via:
-# $ vllm serve MODEL_NAME
+def run_lm_studio_example(input_doc_path: Path):
+    """Example 1: Using Granite Vision preset with LM Studio API runtime."""
+    print("=" * 70)
+    print("Example 1: Granite Vision with LM Studio (pre-configured API type)")
+    print("=" * 70)
 
-
-def vllm_local_options(model: str):
-    options = PictureDescriptionApiOptions(
-        url="http://localhost:8000/v1/chat/completions",
-        params=dict(
-            model=model,
-            seed=42,
-            max_completion_tokens=200,
+    # Start LM Studio with granite-vision model loaded
+    # The preset is pre-configured for LM Studio API type
+    picture_desc_options = PictureDescriptionVlmOptions.from_preset(
+        "granite_vision",
+        runtime_options=ApiVlmRuntimeOptions(
+            runtime_type=VlmRuntimeType.API_LMSTUDIO,
+            # url is pre-configured for LM Studio (http://localhost:1234/v1/chat/completions)
+            # model name is pre-configured from the preset
+            timeout=90,
         ),
-        prompt="Describe the image in three sentences. Be consise and accurate.",
-        timeout=90,
     )
-    return options
 
-
-#### Using LM Studio
-
-
-def lms_local_options(model: str):
-    options = PictureDescriptionApiOptions(
-        url="http://localhost:1234/v1/chat/completions",
-        params=dict(
-            model=model,
-            seed=42,
-            max_completion_tokens=200,
-        ),
-        prompt="Describe the image in three sentences. Be consise and accurate.",
-        timeout=90,
-    )
-    return options
-
-
-#### Using a cloud service like IBM watsonx.ai
-
-
-def watsonx_vlm_options():
-    load_dotenv()
-    api_key = os.environ.get("WX_API_KEY")
-    project_id = os.environ.get("WX_PROJECT_ID")
-
-    def _get_iam_access_token(api_key: str) -> str:
-        res = requests.post(
-            url="https://iam.cloud.ibm.com/identity/token",
-            headers={
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            data=f"grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={api_key}",
-        )
-        res.raise_for_status()
-        api_out = res.json()
-        print(f"{api_out=}")
-        return api_out["access_token"]
-
-    # Background information in case the model_id is updated:
-    # [1] Official list of models: https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models.html?context=wx
-    # [2] Info on granite vision 3.3: https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-models-ibm.html?context=wx#granite-vision-3-3-2b
-
-    options = PictureDescriptionApiOptions(
-        url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
-        params=dict(
-            model_id="ibm/granite-vision-3-3-2b",
-            project_id=project_id,
-            parameters=dict(
-                max_new_tokens=400,
-            ),
-        ),
-        headers={
-            "Authorization": "Bearer " + _get_iam_access_token(api_key=api_key),
-        },
-        prompt="Describe the image in three sentences. Be consise and accurate.",
-        timeout=60,
-    )
-    return options
-
-
-### Usage and conversion
-
-
-def main():
-    logging.basicConfig(level=logging.INFO)
-
-    data_folder = Path(__file__).parent / "../../tests/data"
-    input_doc_path = data_folder / "pdf/2206.01062.pdf"
-
-    pipeline_options = PdfPipelineOptions(
-        enable_remote_services=True  # <-- this is required!
-    )
+    pipeline_options = PdfPipelineOptions()
     pipeline_options.do_picture_description = True
+    pipeline_options.picture_description_options = picture_desc_options
+    pipeline_options.enable_remote_services = True  # Required for API runtimes
 
-    # The PictureDescriptionApiOptions() allows to interface with APIs supporting
-    # the multi-modal chat interface. Here follow a few example on how to configure those.
-    #
-    # One possibility is self-hosting model, e.g. via VLLM.
-    # $ vllm serve MODEL_NAME
-    # Then PictureDescriptionApiOptions can point to the localhost endpoint.
-
-    # Example for the Granite Vision model:
-    # (uncomment the following lines)
-    # pipeline_options.picture_description_options = vllm_local_options(
-    #     model="ibm-granite/granite-vision-3.3-2b"
-    # )
-
-    # Example for the SmolVLM model:
-    # (uncomment the following lines)
-    # pipeline_options.picture_description_options = vllm_local_options(
-    #     model="HuggingFaceTB/SmolVLM-256M-Instruct"
-    # )
-
-    # For using models on LM Studio using the built-in GGUF or MLX runtimes, e.g. the SmolVLM model:
-    # (uncomment the following lines)
-    pipeline_options.picture_description_options = lms_local_options(
-        model="smolvlm-256m-instruct"
-    )
-
-    # Another possibility is using online services, e.g. watsonx.ai.
-    # Using requires setting the env variables WX_API_KEY and WX_PROJECT_ID.
-    # (uncomment the following lines)
-    # pipeline_options.picture_description_options = watsonx_vlm_options()
+    print("\nOther API types are also pre-configured:")
+    print("- VlmRuntimeType.API_OLLAMA: http://localhost:11434/v1/chat/completions")
+    print("- VlmRuntimeType.API_OPENAI: https://api.openai.com/v1/chat/completions")
+    print("- VlmRuntimeType.API: Generic API endpoint (you specify the URL)")
+    print("\nEach preset has pre-configured model names for these API types.")
+    print("For example, granite_vision preset knows:")
+    print('- Ollama model name: "granite3.2-vision:2b"')
+    print('- LM Studio model name: "granite-vision-3.3-2b"')
+    print("- OpenAI model name: would use the HuggingFace repo_id\n")
 
     doc_converter = DocumentConverter(
         format_options={
@@ -176,9 +88,126 @@ def main():
             print(
                 f"Picture {element.self_ref}\n"
                 f"Caption: {element.caption_text(doc=result.document)}\n"
-                f"Meta: {element.meta}"
+                f"Meta: {element.meta}\n"
             )
+
+
+def run_watsonx_example(input_doc_path: Path):
+    """Example 2: Using Granite Vision preset with watsonx.ai."""
+    print("\n" + "=" * 70)
+    print("Example 2: Granite Vision with watsonx.ai (custom API configuration)")
+    print("=" * 70)
+
+    # Check if running in CI environment
+    if os.environ.get("CI"):
+        print("Skipping watsonx.ai example in CI environment")
+        return
+
+    # Load environment variables
+    load_dotenv()
+    api_key = os.environ.get("WX_API_KEY")
+    project_id = os.environ.get("WX_PROJECT_ID")
+
+    # Check if credentials are available
+    if not api_key or not project_id:
+        print("WARNING: watsonx.ai credentials not found.")
+        print(
+            "Set WX_API_KEY and WX_PROJECT_ID environment variables to run this example."
+        )
+        print("Skipping watsonx.ai example.\n")
+        return
+
+    def _get_iam_access_token(api_key: str) -> str:
+        res = requests.post(
+            url="https://iam.cloud.ibm.com/identity/token",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data=f"grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={api_key}",
+        )
+        res.raise_for_status()
+        return res.json()["access_token"]
+
+    # For watsonx.ai, we need to provide custom URL, headers, and params
+    picture_desc_options = PictureDescriptionVlmOptions.from_preset(
+        "granite_vision",
+        runtime_options=ApiVlmRuntimeOptions(
+            runtime_type=VlmRuntimeType.API,  # Generic API type
+            url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
+            headers={
+                "Authorization": "Bearer " + _get_iam_access_token(api_key=api_key),
+            },
+            params={
+                "model_id": "ibm/granite-vision-3-3-2b",
+                "project_id": project_id,
+                "parameters": {"max_new_tokens": 400},
+            },
+            timeout=60,
+        ),
+    )
+
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_picture_description = True
+    pipeline_options.picture_description_options = picture_desc_options
+    pipeline_options.enable_remote_services = True
+
+    doc_converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+            )
+        }
+    )
+    result = doc_converter.convert(input_doc_path)
+
+    for element, _level in result.document.iterate_items():
+        if isinstance(element, PictureItem):
+            print(
+                f"Picture {element.self_ref}\n"
+                f"Caption: {element.caption_text(doc=result.document)}\n"
+                f"Meta: {element.meta}\n"
+            )
+
+
+def main():
+    logging.basicConfig(level=logging.INFO)
+
+    data_folder = Path(__file__).parent / "../../tests/data"
+    input_doc_path = data_folder / "pdf/2206.01062.pdf"
+
+    # Run LM Studio example
+    run_lm_studio_example(input_doc_path)
+
+    # Run watsonx.ai example (skips if in CI or credentials not found)
+    run_watsonx_example(input_doc_path)
 
 
 if __name__ == "__main__":
     main()
+
+
+# %% [markdown]
+# ## Key Concepts
+#
+# ### Pre-configured API Types
+# The new runtime system has pre-configured API types:
+# - **API_OLLAMA**: Ollama server (port 11434)
+# - **API_LMSTUDIO**: LM Studio server (port 1234)
+# - **API_OPENAI**: OpenAI API
+# - **API**: Generic API endpoint (you provide URL)
+#
+# Each preset knows the appropriate model names for these API types.
+#
+# ### Custom API Configuration
+# For services like watsonx.ai that need custom configuration:
+# - Use `VlmRuntimeType.API` (generic)
+# - Provide custom `url`, `headers`, and `params`
+# - The preset still provides the base model configuration
+#
+# ### Same Preset, Different Runtime
+# You can use the same preset (e.g., "granite_vision") with:
+# - Local Transformers runtime (see `picture_description_inline.py`)
+# - Local MLX runtime (macOS)
+# - LM Studio API runtime (this example)
+# - watsonx.ai API runtime (this example)
+# - Any other API endpoint
+#
+# This makes it easy to develop locally and deploy to production!

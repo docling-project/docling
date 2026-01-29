@@ -2,9 +2,10 @@
 # Compare different VLM models by running the VLM pipeline and timing outputs.
 #
 # What this example does
-# - Iterates through a list of VLM model configurations and converts the same file.
+# - Iterates through a list of VLM presets and converts the same file.
 # - Prints per-page generation times and saves JSON/MD/HTML to `scratch/`.
 # - Summarizes total inference time and pages processed in a table.
+# - Demonstrates the NEW preset-based approach with runtime overrides.
 #
 # Requirements
 # - Install `tabulate` for pretty printing (`pip install tabulate`).
@@ -14,7 +15,7 @@
 #
 # How to run
 # - From the repo root: `python docs/examples/compare_vlm_models.py`.
-# - Results are saved to `scratch/` with filenames including the model and framework.
+# - Results are saved to `scratch/` with filenames including the model and runtime.
 #
 # Notes
 # - MLX models are skipped automatically on non-macOS platforms.
@@ -33,35 +34,35 @@ from docling_core.types.doc import DocItemLabel, ImageRefMode
 from docling_core.types.doc.document import DEFAULT_EXPORT_LABELS
 from tabulate import tabulate
 
-from docling.datamodel import vlm_model_specs
-from docling.datamodel.accelerator_options import AcceleratorDevice
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
+    VlmConvertOptions,
     VlmPipelineOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import (
-    InferenceFramework,
-    InlineVlmOptions,
-    ResponseFormat,
-    TransformersModelType,
-    TransformersPromptStyle,
+from docling.datamodel.vlm_runtime_options import (
+    MlxVlmRuntimeOptions,
+    TransformersVlmRuntimeOptions,
+    VlmRuntimeType,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
 
 
-def convert(sources: list[Path], converter: DocumentConverter):
+def convert(
+    sources: list[Path],
+    converter: DocumentConverter,
+    preset_name: str,
+    runtime_type: VlmRuntimeType,
+):
     # Note: this helper assumes a single-item `sources` list. It returns after
     # processing the first source to keep runtime/output focused.
-    model_id = pipeline_options.vlm_options.repo_id.replace("/", "_")
-    framework = pipeline_options.vlm_options.inference_framework
     for source in sources:
         print("================================================")
         print("Processing...")
         print(f"Source: {source}")
         print("---")
-        print(f"Model: {model_id}")
-        print(f"Framework: {framework}")
+        print(f"Preset: {preset_name}")
+        print(f"Runtime: {runtime_type}")
         print("================================================")
         print("")
 
@@ -69,14 +70,14 @@ def convert(sources: list[Path], converter: DocumentConverter):
 
         print("")
 
-        fname = f"{res.input.file.stem}-{model_id}-{framework}"
+        fname = f"{res.input.file.stem}-{preset_name}-{runtime_type.value}"
 
         inference_time = 0.0
         for i, page in enumerate(res.pages):
             inference_time += page.predictions.vlm_response.generation_time
             print("")
             print(
-                f" ---------- Predicted page {i} in {pipeline_options.vlm_options.response_format} in {page.predictions.vlm_response.generation_time} [sec]:"
+                f" ---------- Predicted page {i} in {page.predictions.vlm_response.generation_time} [sec]:"
             )
             print(page.predictions.vlm_response.text)
             print(" ---------- ")
@@ -117,8 +118,8 @@ def convert(sources: list[Path], converter: DocumentConverter):
 
         return [
             source,
-            model_id,
-            str(framework),
+            preset_name,
+            str(runtime_type.value),
             pg_num,
             inference_time,
         ]
@@ -132,42 +133,7 @@ if __name__ == "__main__":
     out_path = Path("scratch")
     out_path.mkdir(parents=True, exist_ok=True)
 
-    ## Definiton of more inline models
-    llava_qwen = InlineVlmOptions(
-        repo_id="llava-hf/llava-interleave-qwen-0.5b-hf",
-        # prompt="Read text in the image.",
-        prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
-        # prompt="Parse the reading order of this document.",
-        response_format=ResponseFormat.MARKDOWN,
-        inference_framework=InferenceFramework.TRANSFORMERS,
-        transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-        supported_devices=[
-            AcceleratorDevice.CUDA,
-            AcceleratorDevice.CPU,
-            AcceleratorDevice.XPU,
-        ],
-        scale=2.0,
-        temperature=0.0,
-    )
-
-    # Note that this is not the expected way of using the Dolphin model, but it shows the usage of a raw prompt.
-    dolphin_oneshot = InlineVlmOptions(
-        repo_id="ByteDance/Dolphin",
-        prompt="<s>Read text in the image. <Answer/>",
-        response_format=ResponseFormat.MARKDOWN,
-        inference_framework=InferenceFramework.TRANSFORMERS,
-        transformers_model_type=TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-        transformers_prompt_style=TransformersPromptStyle.RAW,
-        supported_devices=[
-            AcceleratorDevice.CUDA,
-            AcceleratorDevice.CPU,
-            AcceleratorDevice.XPU,
-        ],
-        scale=2.0,
-        temperature=0.0,
-    )
-
-    ## Use VlmPipeline
+    ## Use VlmPipeline with presets
     pipeline_options = VlmPipelineOptions()
     pipeline_options.generate_page_images = True
 
@@ -175,31 +141,36 @@ if __name__ == "__main__":
     # pipeline_options.accelerator_options.device = AcceleratorDevice.CUDA
     # pipeline_options.accelerator_options.cuda_use_flash_attention2 = True
 
-    vlm_models = [
-        ## DocTags / SmolDocling models
-        vlm_model_specs.SMOLDOCLING_MLX,
-        vlm_model_specs.SMOLDOCLING_TRANSFORMERS,
-        ## Markdown models (using MLX framework)
-        vlm_model_specs.QWEN25_VL_3B_MLX,
-        vlm_model_specs.PIXTRAL_12B_MLX,
-        vlm_model_specs.GEMMA3_12B_MLX,
-        ## Markdown models (using Transformers framework)
-        vlm_model_specs.GRANITE_VISION_TRANSFORMERS,
-        vlm_model_specs.PHI4_TRANSFORMERS,
-        vlm_model_specs.PIXTRAL_12B_TRANSFORMERS,
-        ## More inline models
-        dolphin_oneshot,
-        llava_qwen,
+    # Define preset configurations to test
+    # Each tuple is (preset_name, runtime_options)
+    preset_configs = [
+        # SmolDocling with different runtimes
+        ("smoldocling", MlxVlmRuntimeOptions()),
+        ("smoldocling", TransformersVlmRuntimeOptions()),
+        # Granite models
+        ("granite_docling", TransformersVlmRuntimeOptions()),
+        ("granite_vision", TransformersVlmRuntimeOptions()),
+        # Other presets with MLX (macOS only)
+        ("pixtral", MlxVlmRuntimeOptions()),
+        ("qwen", MlxVlmRuntimeOptions()),
     ]
 
-    # Remove MLX models if not on Mac
+    # Remove MLX configs if not on Mac
     if sys.platform != "darwin":
-        vlm_models = [
-            m for m in vlm_models if m.inference_framework != InferenceFramework.MLX
+        preset_configs = [
+            (preset, runtime)
+            for preset, runtime in preset_configs
+            if runtime.runtime_type != VlmRuntimeType.MLX
         ]
 
     rows = []
-    for vlm_options in vlm_models:
+    for preset_name, runtime_options in preset_configs:
+        # Create VLM options from preset with runtime override
+        vlm_options = VlmConvertOptions.from_preset(
+            preset_name,
+            runtime_options=runtime_options,
+        )
+
         pipeline_options.vlm_options = vlm_options
 
         ## Set up pipeline for PDF or image inputs
@@ -216,13 +187,16 @@ if __name__ == "__main__":
             },
         )
 
-        row = convert(sources=sources, converter=converter)
+        row = convert(
+            sources=sources,
+            converter=converter,
+            preset_name=preset_name,
+            runtime_type=runtime_options.runtime_type,
+        )
         rows.append(row)
 
         print(
-            tabulate(
-                rows, headers=["source", "model_id", "framework", "num_pages", "time"]
-            )
+            tabulate(rows, headers=["source", "preset", "runtime", "num_pages", "time"])
         )
 
         print("see if memory gets released ...")
