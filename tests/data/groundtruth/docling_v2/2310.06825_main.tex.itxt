@@ -1,196 +1,31 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: caption: Image: images/header.jpeg
-  item-2 at level 1: picture
-    item-2 at level 2: caption: Image: images/header.jpeg
-  item-3 at level 1: section_header: Abstract
-  item-4 at level 1: text: We introduce Mistral 7B, a 7bill ... released under the Apache 2.0 license.
-  item-5 at level 1: text: Code:
-  item-6 at level 1: reference: https://github.com/mistralai/mistral-src
-  item-7 at level 1: text: Webpage:
-  item-8 at level 1: reference: https://mistral.ai/news/announcing-mistral-7b/
-  item-9 at level 1: section_header: Introduction
-  item-10 at level 1: text: =-1 In the rapidly evolving doma ...  the previous best 13B model (Llama 2,
-  item-11 at level 1: reference: [touvron2023llama2]
-  item-12 at level 1: text: ) across all tested benchmarks,  ... rpasses the best 34B model (LLaMa 34B,
-  item-13 at level 1: reference: [touvron2023llama]
-  item-14 at level 1: text: ) in mathematics and code genera ... he coding performance of Code-Llama 7B
-  item-15 at level 1: reference: [roziere2023code]
-  item-16 at level 1: paragraph: , without sacrificing performance on non-code related benchmarks.
-  item-17 at level 1: paragraph: Mistral 7B leverages grouped-query attention (GQA)
-  item-18 at level 1: reference: [ainslie2023gqa]
-  item-19 at level 1: text: , and sliding window attention (SWA)
-  item-20 at level 1: reference: [child2019generating,beltagy2020longformer]
-  item-21 at level 1: paragraph: . GQA significantly accelerates  ... formance and efficiency of Mistral 7B.
-  item-22 at level 1: paragraph: Mistral 7B is released under the ... ompanied by a reference implementation
-  item-23 at level 1: footnote: https://github.com/mistralai/mistral-src
-  item-24 at level 1: text: facilitating easy deployment eit ... h as AWS, GCP, or Azure using the vLLM
-  item-25 at level 1: reference: [kwon2023efficient]
-  item-26 at level 1: text: inference server and SkyPilot
-  item-27 at level 1: footnote: https://github.com/skypilot-org/skypilot
-  item-28 at level 1: text: .
+  item-1 at level 1: text: -30pt
+  item-2 at level 1: caption: Image: images/header.jpeg
+  item-3 at level 1: picture
+    item-3 at level 2: caption: Image: images/header.jpeg
+  item-4 at level 1: section_header: Abstract
+  item-5 at level 1: text: We introduce , a 7billion-parame ... mistral.ai/news/announcing-mistral-7b/
+  item-6 at level 1: section_header: Introduction
+  item-7 at level 1: text: =-1 In the rapidly evolving doma ... erformance of Code-7B[roziere2023code]
+  item-8 at level 1: paragraph: , without sacrificing performance on non-code related benchmarks.
+  item-9 at level 1: text: leverages grouped-query attentio ... enhanced performance and efficiency of
+  item-10 at level 1: paragraph: .
+  item-11 at level 1: text: is released under the Apache 2.0 ... ompanied by a reference implementation
+  item-12 at level 1: footnote: https://github.com/mistralai/mistral-src
+  item-13 at level 1: text: facilitating easy deployment eit ... ficient] inference server and SkyPilot
+  item-14 at level 1: footnote: https://github.com/skypilot-org/skypilot
+  item-15 at level 1: text: .
 Integration with Hugging Face
-  item-29 at level 1: footnote: https://huggingface.co/mistralai
-  item-30 at level 1: text: is also streamlined for easier i ... nificantly outperforms the Llama 2 13B
-  item-31 at level 1: paragraph: Chat model.
-  item-32 at level 1: paragraph: =-1 Mistral 7B takes a significa ... wide range of real-world applications.
-  item-33 at level 1: section_header: Architectural details
-  item-34 at level 1: section: group figure
-    item-35 at level 2: picture
-      item-35 at level 3: caption: Image: images/swa.pdf
-    item-36 at level 2: text: Sliding Window Attention.
-    item-37 at level 2: text: The number of operations in vani ...  forward by up to $k \times W$ tokens.
-  item-38 at level 1: caption: Image: images/swa.pdf
-  item-39 at level 1: text: r
-  item-40 at level 1: text: 0.275
-  item-41 at level 1: table with [11x2]
-  item-42 at level 1: text: table
-  item-43 at level 1: text: Model architecture.
-  item-44 at level 1: paragraph: Mistral 7B is based on a transformer architecture
-  item-45 at level 1: reference: [vaswani2017attention]
-  item-46 at level 1: text: . The main parameters of the architecture are summarized in Table
-  item-47 at level 1: reference: [tab:param]
-  item-48 at level 1: paragraph: . Compared to Llama, it introduces a few changes that we summarize below.
-  item-49 at level 1: text: =-1
-  item-50 at level 1: text: Sliding Window Attention.
-  item-51 at level 1: text: SWA exploits the stacked layers  ... es k$ tokens, as illustrated in Figure
-  item-52 at level 1: reference: [fig:swa]
-  item-53 at level 1: text: .
-At the last layer, using a win ... =4096$, changes made to FlashAttention
-  item-54 at level 1: reference: [dao2022flashattention]
-  item-55 at level 1: text: and xFormers
-  item-56 at level 1: reference: [xFormers2022]
-  item-57 at level 1: paragraph: yield a 2x speed improvement over a vanilla attention baseline.
-  item-58 at level 1: text: =-1
-  item-59 at level 1: text: Rolling Buffer Cache.
-  item-60 at level 1: text: A fixed attention span means tha ... . We provide an illustration in Figure
-  item-61 at level 1: reference: [fig:cache]
-  item-62 at level 1: text: for $W=3$
-  item-63 at level 1: paragraph: .
-On a sequence length of 32k to ... , without impacting the model quality.
-  item-64 at level 1: section: group figure
-    item-65 at level 2: text: [
-    item-66 at level 2: picture
-      item-66 at level 3: caption: Image: images/rolling_buffer.pdf
-    item-67 at level 2: text: ][c]
-    item-68 at level 2: text: Rolling buffer cache.
-    item-69 at level 2: text: The cache has a fixed size of $W ... enerated tokens are colored in orange.
-  item-70 at level 1: caption: Image: images/rolling_buffer.pdf
-  item-71 at level 1: text: =-1
-  item-72 at level 1: text: Pre-fill and Chunking.
-  item-73 at level 1: text: When generating a sequence, we n ...  the cache and over the chunk. 
-Figure
-  item-74 at level 1: reference: [fig:chunking]
-  item-75 at level 1: paragraph: shows how the attention mask works over both the cache and the chunk.
-  item-76 at level 1: section: group figure
-    item-77 at level 2: picture
-      item-77 at level 3: caption: Image: images/chunking.pdf
-    item-78 at level 2: text: Pre-fill and chunking.
-    item-79 at level 2: text: During pre-fill of the cache, lo ... de of the sliding window (left block).
-  item-80 at level 1: caption: Image: images/chunking.pdf
-  item-81 at level 1: section_header: Results
-  item-82 at level 1: paragraph: We compare Mistral 7B to Llama,  ... ariety of tasks categorized as follow:
-  item-83 at level 1: list: group list
-    item-84 at level 2: list_item: Commonsense Reasoning (0-shot):  ... nsenseQA\cite{talmor2018commonsenseqa}
-    item-85 at level 2: list_item: World Knowledge (5-shot): Natura ... ral}, TriviaQA\cite{joshi2017triviaqa}
-    item-86 at level 2: list_item: Reading Comprehension (0-shot):  ... ark2019boolq}, QuAC\cite{choi2018quac}
-    item-87 at level 2: list_item: Math: GSM8K\cite{cobbe2021traini ... ycks2021measuring} (4-shot) with maj@4
-    item-88 at level 2: list_item: Code: Humaneval\cite{chen2021eva ...  MBPP\cite{austin2021program} (3-shot)
-    item-89 at level 2: list_item: Popular aggregated results: MMLU ... nglish multiple-choice questions only)
-  item-90 at level 1: paragraph: Detailed results for Mistral 7B, ... nd Code-Llama 7B are reported in Table
-  item-91 at level 1: reference: [tab:results]
-  item-92 at level 1: text: .
-Figure
-  item-93 at level 1: reference: [fig:bars]
-  item-94 at level 1: text: compares the performance of Mist ... B with Llama 2 7B/13B, and Llama 1 34B
-  item-95 at level 1: footnote: Since Llama 2 34B was not open-sourced, we report results for Llama 1 34B.
-  item-96 at level 1: text: in different categories.
-Mistral ... ss all metrics, and outperforms Llama1
-  item-97 at level 1: paragraph: 34B on most benchmarks.
-In parti ... mathematics, and reasoning benchmarks.
-  item-98 at level 1: text: Size and Efficiency.
-  item-99 at level 1: text: We computed equivalent model siz ...  cost-performance spectrum (see Figure
-  item-100 at level 1: reference: [fig:size]
-  item-101 at level 1: paragraph: ). When evaluated on reasoning,  ...  the amount of knowledge it can store.
-  item-102 at level 1: text: Evaluation Differences.
-  item-103 at level 1: paragraph: On some benchmarks, there are so ...  we do not provide Wikipedia contexts.
-  item-104 at level 1: section: group figure
-    item-105 at level 2: picture
-      item-105 at level 3: caption: Image: images/230927_bars.png
-    item-106 at level 2: text: Performance of Mistral 7B and di ... a models on a wide range of benchmarks
-    item-107 at level 2: text: . All models were re-evaluated o ...  generation, and reasoning benchmarks.
-  item-108 at level 1: caption: Image: images/230927_bars.png
-  item-109 at level 1: table with [6x14]
-  item-110 at level 1: text: Comparison of Mistral 7B with Llama.
-  item-111 at level 1: text: Mistral 7B outperforms Llama 2 1 ... ng performance on non-code benchmarks.
-  item-112 at level 1: section: group figure
-    item-113 at level 2: picture
-      item-113 at level 3: caption: Image: images/230927_effective_sizes.png
-    item-114 at level 2: text: Results on MMLU, commonsense rea ... or Mistral 7B and Llama 2 (7B/13B/70B)
-    item-115 at level 2: text: . Mistral 7B largely outperforms ...  amount of knowledge it can compress).
-  item-116 at level 1: caption: Image: images/230927_effective_sizes.png
-  item-117 at level 1: text: r
-  item-118 at level 1: text: 0.48
-  item-119 at level 1: table with [2x2]
-  item-120 at level 1: text: table
-  item-121 at level 1: text: Comparison of Chat models.
-  item-122 at level 1: text: Mistral 7B  Instruct outperforms ... and is comparable to 13B  Chat models.
-  item-123 at level 1: section_header: Instruction Finetuning
-  item-124 at level 1: text: =-1 To evaluate the generalizati ...  to achieve good performance.
-In Table
-  item-125 at level 1: reference: [tab:results_finetuning]
-  item-126 at level 1: text: , we observe that the resulting  ... dent human evaluation was conducted on
-  item-127 at level 1: reference: https://llmboxing.com/leaderboard
-  item-128 at level 1: paragraph: .
-  item-129 at level 1: paragraph: In this evaluation, participants ... red response, as illustrated in Figure
-  item-130 at level 1: reference: [fig:humanevalquestion]
-  item-131 at level 1: paragraph: .
-As of October 6, 2023, the out ... ompared to 4143 times for Llama 2 13B.
-  item-132 at level 1: section_header: Adding guardrails for front-facing applications
-  item-133 at level 1: paragraph: =-1 The ability to enforce guard ... force quality content in applications.
-  item-134 at level 1: section_header: System prompt to enforce guardrails
-  item-135 at level 1: paragraph: We introduce a system prompt (se ... ils enforcement, as indicated in Table
-  item-136 at level 1: reference: [tab:guardrails]
-  item-137 at level 1: paragraph: .
-  item-138 at level 1: text: 0.98
-  item-139 at level 1: text: Always assist with care, respect ... plies promote fairness and positivity.
-  item-140 at level 1: text: r
-  item-141 at level 1: text: 0.38
-  item-142 at level 1: table with [5x2]
-  item-143 at level 1: text: table
-  item-144 at level 1: text: System prompts.
-  item-145 at level 1: text: Mean official MT Bench score ove ... Chat reports official results of 6.65.
-  item-146 at level 1: text: =-1 We use a set of 175 unsafe p ... model properly declines to answer 100%
-  item-147 at level 1: paragraph: of the harmful questions.
-  item-148 at level 1: text: =-1 As an illustration, we provide in Table
-  item-149 at level 1: reference: [tab:guardrails_example]
-  item-150 at level 1: text: the answers of both Mistral 7B   ... t and Llama 2 Chat 13B to the question
-  item-151 at level 1: text: How to kill a linux process
-  item-152 at level 1: paragraph: with system prompts activated.
-W ... y when system prompts are deactivated.
-  item-153 at level 1: table with [3x2]
-  item-154 at level 1: text: Comparison between Mistral and Llama system prompts
-  item-155 at level 1: text: .
-Mistral provides the right ans ... ma2 declines to answer to the question
-  item-156 at level 1: text: How to kill a linux process
-  item-157 at level 1: text: .
-  item-158 at level 1: section_header: Content moderation with self-reflection
-  item-159 at level 1: text: =-1 Mistral 7B
-  item-160 at level 1: paragraph: Instruct can be used as a conten ... n legal, medical or financial domains.
-  item-161 at level 1: text: =-1 To do so, we designed a self ... ecision of 99.4% for a recall of 95.6%
-  item-162 at level 1: paragraph: (considering acceptable prompts as positives).
-  item-163 at level 1: paragraph: =-1 The use cases are vast, from ... er based on their particular use-case.
-  item-164 at level 1: section_header: Conclusion
-  item-165 at level 1: paragraph: Our work on Mistral 7B demonstra ... l capabilities to training cost, as in
-  item-166 at level 1: reference: [hoffmann2022compute]
-  item-167 at level 1: paragraph: ); the problem is rather 3 dimen ... ance with the smallest possible model.
-  item-168 at level 1: section_header: Acknowledgements
-  item-169 at level 1: paragraph: =-1 We are grateful to CoreWeave ... aking our model compatible everywhere.
-  item-170 at level 1: section: group figure
-    item-171 at level 2: picture
-      item-171 at level 3: caption: Image: images/llama_vs_mistral_example.png
-    item-172 at level 2: text: Human evaluation of Mistral 7B Instruct vs Llama 213BChat Example.
-    item-173 at level 2: text: An example of human evaluation from
-    item-174 at level 2: reference: llmboxing.com
-    item-175 at level 2: text: . The question asks for recommen ... cribes in the contents in more detail.
-  item-176 at level 1: caption: Image: images/llama_vs_mistral_example.png
-  item-177 at level 1: text: plain
+  item-16 at level 1: footnote: https://huggingface.co/mistralai
+  item-17 at level 1: text: is also streamlined for easier i ... at significantly outperforms the 2 13B
+  item-18 at level 1: paragraph: Chat model.
+  item-19 at level 1: text: =-1
+  item-20 at level 1: paragraph: takes a significant step in bala ... wide range of real-world applications.
+  item-21 at level 1: section_header: Architectural details
+  item-22 at level 1: section: group figure
+    item-23 at level 2: picture
+      item-23 at level 3: caption: Image: images/swa.pdf
+    item-24 at level 2: text: Sliding Window Attention. The nu ...  forward by up to $k \times W$ tokens.
+  item-25 at level 1: caption: Image: images/swa.pdf
+  item-26 at level 1: text: r0.275
+-15pt

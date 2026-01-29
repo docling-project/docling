@@ -28,25 +28,16 @@
         "$ref": "#/texts/4"
       },
       {
-        "$ref": "#/texts/5"
-      },
-      {
-        "$ref": "#/texts/6"
-      },
-      {
-        "$ref": "#/texts/7"
-      },
-      {
         "$ref": "#/groups/0"
       },
       {
         "$ref": "#/groups/1"
       },
       {
-        "$ref": "#/texts/12"
+        "$ref": "#/texts/9"
       },
       {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/10"
       }
     ],
     "content_layer": "body",
@@ -61,10 +52,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/8"
+          "$ref": "#/texts/5"
         },
         {
-          "$ref": "#/texts/9"
+          "$ref": "#/texts/6"
         }
       ],
       "content_layer": "body",
@@ -78,10 +69,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/10"
+          "$ref": "#/texts/7"
         },
         {
-          "$ref": "#/texts/11"
+          "$ref": "#/texts/8"
         }
       ],
       "content_layer": "body",
@@ -137,61 +128,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Some background information here with",
-      "text": "Some background information here with"
+      "orig": "Some background information here with bold and italic",
+      "text": "Some background information here with bold and italic"
     },
     {
       "self_ref": "#/texts/4",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "bold",
-      "text": "bold",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/5",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "and",
-      "text": "and"
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "italic",
-      "text": "italic",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/body"
       },
@@ -203,7 +144,7 @@
       "text": "text."
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -217,7 +158,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -231,7 +172,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -245,7 +186,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/11",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -259,7 +200,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/body"
       },
@@ -272,7 +213,7 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/10",
       "parent": {
         "$ref": "#/body"
       },

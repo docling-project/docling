@@ -6,11 +6,3 @@ item-0 at level 0: unspecified: group _root_
   item-5 at level 1: formula: \int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
   item-6 at level 1: formula: \nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
   item-7 at level 1: section_header: Table Example
-  item-8 at level 1: table with [3x3]
-  item-9 at level 1: text: Sample table
-  item-10 at level 1: section_header: References
-  item-11 at level 1: text: See
-  item-12 at level 1: reference: [smith2020]
-  item-13 at level 1: text: for more details. Also refer to Section
-  item-14 at level 1: reference: [sec:math]
-  item-15 at level 1: paragraph: .

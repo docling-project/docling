@@ -1,319 +1,348 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: text: Provided proper attribution is p ... se in journalistic or scholarly works.
+  item-1 at level 1: text: red
+    Provided proper attribut ... se in journalistic or scholarly works.
   item-2 at level 1: section_header: Abstract
-  item-3 at level 1: paragraph: The dominant sequence transducti ...  with large and limited training data.
+  item-3 at level 1: text: The dominant sequence transducti ...  with large and limited training data.
   item-4 at level 1: section_header: Introduction
-  item-5 at level 1: text: Recurrent neural networks, long short-term memory
-  item-6 at level 1: reference: [hochreiter1997]
-  item-7 at level 1: text: and gated recurrent
-  item-8 at level 1: reference: [gruEval14]
-  item-9 at level 1: text: neural networks in particular, h ... guage modeling and machine translation
-  item-10 at level 1: reference: [sutskever14, bahdanau2014neural, cho2014learning]
-  item-11 at level 1: text: . Numerous efforts have since co ... dels and encoder-decoder architectures
-  item-12 at level 1: reference: [wu2016google,luong2015effective,jozefowicz2016exploring]
-  item-13 at level 1: paragraph: .
-  item-14 at level 1: paragraph: Recurrent models typically facto ... y generate a sequence of hidden states
-  item-15 at level 1: text: $h_t$, as a function of the prev ... fficiency through factorization tricks
-  item-16 at level 1: reference: [Kuchaiev2017Factorization]
-  item-17 at level 1: text: and conditional computation
-  item-18 at level 1: reference: [shazeer2017outrageously]
-  item-19 at level 1: paragraph: , while also improving model per ... uential computation, however, remains.
-  item-20 at level 1: paragraph: Attention mechanisms have become ... tance in the input or output sequences
-  item-21 at level 1: reference: [bahdanau2014neural, structuredAttentionNetworks]
-  item-22 at level 1: text: . In all but a few cases
-  item-23 at level 1: reference: [decomposableAttnModel]
-  item-24 at level 1: paragraph: , however, such attention mechan ...  conjunction with a recurrent network.
-  item-25 at level 1: paragraph: In this work we propose the Tran ... le as twelve hours on eight P100 GPUs.
-  item-26 at level 1: section_header: Background
-  item-27 at level 1: text: The goal of reducing sequential  ...  foundation of the Extended Neural GPU
-  item-28 at level 1: reference: [extendedngpu]
-  item-29 at level 1: text: , ByteNet
-  item-30 at level 1: reference: [NalBytenet2017]
-  item-31 at level 1: text: and ConvS2S
-  item-32 at level 1: reference: [JonasFaceNet2017]
-  item-33 at level 1: text: , all of which use convolutional ... dependencies between distant positions
-  item-34 at level 1: reference: [hochreiter2001gradient]
-  item-35 at level 1: text: . In the Transformer this is red ... Head Attention as described in section
-  item-36 at level 1: reference: [sec:attention]
-  item-37 at level 1: paragraph: .
-  item-38 at level 1: paragraph: Self-attention, sometimes called ... k-independent sentence representations
-  item-39 at level 1: reference: [cheng2016long, decomposableAttnModel, paulus2017deep, lin2017structured]
-  item-40 at level 1: paragraph: .
-  item-41 at level 1: paragraph: End-to-end memory networks are b ...  answering and language modeling tasks
-  item-42 at level 1: reference: [sukhbaatar2015]
-  item-43 at level 1: paragraph: .
-  item-44 at level 1: paragraph: To the best of our knowledge, ho ... uss its advantages over models such as
-  item-45 at level 1: reference: [neural_gpu, NalBytenet2017]
-  item-46 at level 1: text: and
-  item-47 at level 1: reference: [JonasFaceNet2017]
-  item-48 at level 1: paragraph: .
-  item-49 at level 1: section_header: Model Architecture
-  item-50 at level 1: section: group figure
-    item-51 at level 2: picture
-      item-51 at level 3: caption: Image: Figures/ModalNet-21
-    item-52 at level 2: text: The Transformer - model architecture.
-  item-53 at level 1: caption: Image: Figures/ModalNet-21
-  item-54 at level 1: paragraph: Most competitive neural sequence ... dels have an encoder-decoder structure
-  item-55 at level 1: reference: [cho2014learning,bahdanau2014neural,sutskever14]
-  item-56 at level 1: text: . Here, the encoder maps an inpu ... each step the model is auto-regressive
-  item-57 at level 1: reference: [graves2013generating]
-  item-58 at level 1: paragraph: , consuming the previously gener ... tional input when generating the next.
-  item-59 at level 1: paragraph: The Transformer follows this ove ... in the left and right halves of Figure
-  item-60 at level 1: reference: [fig:model-arch]
-  item-61 at level 1: paragraph: , respectively.
-  item-62 at level 1: section_header: Encoder and Decoder Stacks
-  item-63 at level 1: text: Encoder:
-  item-64 at level 1: text: The encoder is composed of a sta ... ork.   We employ a residual connection
-  item-65 at level 1: reference: [he2016deep]
-  item-66 at level 1: text: around each of the two sub-layers, followed by layer normalization
-  item-67 at level 1: reference: [layernorm2016]
-  item-68 at level 1: text: .  That is, the output of each s ... uce outputs of dimension $\dmodel=512$
-  item-69 at level 1: paragraph: .
-  item-70 at level 1: text: Decoder:
-  item-71 at level 1: text: The decoder is also composed of  ... own outputs at positions less than $i$
-  item-72 at level 1: paragraph: .
-  item-73 at level 1: section_header: Attention
-  item-74 at level 1: paragraph: An attention function can be des ...  the query with the corresponding key.
-  item-75 at level 1: section_header: Scaled Dot-Product Attention
-  item-76 at level 1: paragraph: We call our particular attention "Scaled Dot-Product Attention" (Figure
-  item-77 at level 1: reference: [fig:multi-head-att]
-  item-78 at level 1: text: ).   The input consists of queri ...  all keys, divide each by $\sqrt{d_k}$
-  item-79 at level 1: paragraph: , and apply a softmax function to obtain the weights on the values.
-  item-80 at level 1: paragraph: In practice, we compute the atte ... neously, packed together into a matrix
-  item-81 at level 1: text: $Q$.   The keys and values are a ... ked together into matrices $K$ and $V$
-  item-82 at level 1: paragraph: .  We compute the matrix of outputs as:
-  item-83 at level 1: formula: \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(\frac{QK^T}{\sqrt{d_k}})V
-  item-84 at level 1: paragraph: The two most commonly used attention functions are additive attention
-  item-85 at level 1: reference: [bahdanau2014neural]
-  item-86 at level 1: text: , and dot-product (multiplicativ ... aling factor of $\frac{1}{\sqrt{d_k}}$
-  item-87 at level 1: paragraph: . Additive attention computes th ...  optimized matrix multiplication code.
-  item-88 at level 1: paragraph: While for small values of
-  item-89 at level 1: text: $d_k$ the two mechanisms perform ... out scaling for larger values of $d_k$
-  item-90 at level 1: reference: [DBLP:journals/corr/BritzGLL17]
-  item-91 at level 1: text: . We suspect that for large valu ... where it has extremely small gradients
-  item-92 at level 1: footnote: To illustrate why the dot produc ... k_i$, has mean $0$ and variance $d_k$.
-  item-93 at level 1: text: . To counteract this effect, we  ... dot products by $\frac{1}{\sqrt{d_k}}$
-  item-94 at level 1: paragraph: .
-  item-95 at level 1: section_header: Multi-Head Attention
-  item-96 at level 1: section: group figure
-    item-97 at level 2: text: 0.5
-    item-98 at level 2: text: [t]
-    item-99 at level 2: text: Scaled Dot-Product Attention
-    item-100 at level 2: picture
-      item-100 at level 3: caption: Image: Figures/ModalNet-19
-    item-101 at level 2: text: 0.5
-    item-102 at level 2: text: [t]
-    item-103 at level 2: text: Multi-Head Attention
-    item-104 at level 2: picture
-      item-104 at level 3: caption: Image: Figures/ModalNet-20
-    item-105 at level 2: text: (left) Scaled Dot-Product Attent ...  attention layers running in parallel.
-  item-106 at level 1: caption: Image: Figures/ModalNet-19
-  item-107 at level 1: caption: Image: Figures/ModalNet-20
-  item-108 at level 1: paragraph: Instead of performing a single attention function with
-  item-109 at level 1: text: $\dmodel$-dimensional keys, valu ... he final values, as depicted in Figure
-  item-110 at level 1: reference: [fig:multi-head-att]
-  item-111 at level 1: paragraph: .
-  item-112 at level 1: paragraph: Multi-head attention allows the  ... tention head, averaging inhibits this.
-  item-113 at level 1: formula: \begin{align*}
+  item-5 at level 1: text: Recurrent neural networks, long  ... 2015effective,jozefowicz2016exploring]
+  item-6 at level 1: paragraph: .
+  item-7 at level 1: paragraph: Recurrent models typically facto ... y generate a sequence of hidden states
+  item-8 at level 1: text: $h_t$, as a function of the prev ...  computation [shazeer2017outrageously]
+  item-9 at level 1: paragraph: , while also improving model per ... uential computation, however, remains.
+  item-10 at level 1: paragraph: Attention mechanisms have become ... tance in the input or output sequences
+  item-11 at level 1: text: [bahdanau2014neural, structuredA ... ut a few cases [decomposableAttnModel]
+  item-12 at level 1: paragraph: , however, such attention mechan ...  conjunction with a recurrent network.
+  item-13 at level 1: paragraph: In this work we propose the Tran ... le as twelve hours on eight P100 GPUs.
+  item-14 at level 1: section_header: Background
+  item-15 at level 1: text: The goal of reducing sequential  ... as described in section[sec:attention]
+  item-16 at level 1: paragraph: .
+  item-17 at level 1: paragraph: Self-attention, sometimes called ... k-independent sentence representations
+  item-18 at level 1: text: [cheng2016long, decomposableAttnModel, paulus2017deep, lin2017structured]
+  item-19 at level 1: paragraph: .
+  item-20 at level 1: paragraph: End-to-end memory networks are b ...  answering and language modeling tasks
+  item-21 at level 1: text: [sukhbaatar2015]
+  item-22 at level 1: paragraph: .
+  item-23 at level 1: paragraph: To the best of our knowledge, ho ... uss its advantages over models such as
+  item-24 at level 1: text: [neural_gpu, NalBytenet2017] and [JonasFaceNet2017]
+  item-25 at level 1: paragraph: .
+  item-26 at level 1: section_header: Model Architecture
+  item-27 at level 1: section: group figure
+    item-28 at level 2: picture
+      item-28 at level 3: caption: Image: Figures/ModalNet-21
+    item-29 at level 2: text: The Transformer - model architecture.
+  item-30 at level 1: caption: Image: Figures/ModalNet-21
+  item-31 at level 1: paragraph: Most competitive neural sequence ... dels have an encoder-decoder structure
+  item-32 at level 1: text: [cho2014learning,bahdanau2014neu ... auto-regressive [graves2013generating]
+  item-33 at level 1: paragraph: , consuming the previously gener ... tional input when generating the next.
+  item-34 at level 1: paragraph: The Transformer follows this ove ... in the left and right halves of Figure
+  item-35 at level 1: text: [fig:model-arch]
+  item-36 at level 1: paragraph: , respectively.
+  item-37 at level 1: section_header: Encoder and Decoder Stacks
+  item-38 at level 1: text: Encoder:The encoder is composed  ... uce outputs of dimension $\dmodel=512$
+  item-39 at level 1: paragraph: .
+  item-40 at level 1: text: Decoder:The decoder is also comp ... own outputs at positions less than $i$
+  item-41 at level 1: paragraph: .
+  item-42 at level 1: section_header: Attention
+  item-43 at level 1: paragraph: An attention function can be des ...  the query with the corresponding key.
+  item-44 at level 1: section_header: Scaled Dot-Product Attention
+  item-45 at level 1: paragraph: We call our particular attention "Scaled Dot-Product Attention" (Figure
+  item-46 at level 1: text: [fig:multi-head-att]).   The inp ...  all keys, divide each by $\sqrt{d_k}$
+  item-47 at level 1: paragraph: , and apply a softmax function to obtain the weights on the values.
+  item-48 at level 1: paragraph: In practice, we compute the atte ... neously, packed together into a matrix
+  item-49 at level 1: text: $Q$.   The keys and values are a ... ked together into matrices $K$ and $V$
+  item-50 at level 1: paragraph: .  We compute the matrix of outputs as:
+  item-51 at level 1: formula: \mathrm{Attention}(Q, K, V) = \mathrm{softmax}(\frac{QK^T}{\sqrt{d_k}})V
+  item-52 at level 1: paragraph: The two most commonly used attention functions are additive attention
+  item-53 at level 1: text: [bahdanau2014neural], and dot-pr ... aling factor of $\frac{1}{\sqrt{d_k}}$
+  item-54 at level 1: paragraph: . Additive attention computes th ...  optimized matrix multiplication code.
+  item-55 at level 1: paragraph: While for small values of
+  item-56 at level 1: text: $d_k$ the two mechanisms perform ... where it has extremely small gradients
+  item-57 at level 1: footnote: To illustrate why the dot produc ... k_i$, has mean $0$ and variance $d_k$.
+  item-58 at level 1: text: . To counteract this effect, we  ... dot products by $\frac{1}{\sqrt{d_k}}$
+  item-59 at level 1: paragraph: .
+  item-60 at level 1: section_header: Multi-Head Attention
+  item-61 at level 1: section: group figure
+    item-62 at level 2: text: [t]0.5
+    item-63 at level 2: text: Scaled Dot-Product Attention 
+  0.5cm
+    item-64 at level 2: picture
+      item-64 at level 3: caption: Image: Figures/ModalNet-19
+    item-65 at level 2: text: [t]0.5
+    item-66 at level 2: text: Multi-Head Attention 
+  0.1cm
+    item-67 at level 2: picture
+      item-67 at level 3: caption: Image: Figures/ModalNet-20
+    item-68 at level 2: text: (left) Scaled Dot-Product Attent ...  attention layers running in parallel.
+  item-69 at level 1: caption: Image: Figures/ModalNet-19
+  item-70 at level 1: caption: Image: Figures/ModalNet-20
+  item-71 at level 1: paragraph: Instead of performing a single attention function with
+  item-72 at level 1: text: $\dmodel$-dimensional keys, valu ... depicted in Figure[fig:multi-head-att]
+  item-73 at level 1: paragraph: .
+  item-74 at level 1: paragraph: Multi-head attention allows the  ... tention head, averaging inhibits this.
+  item-75 at level 1: formula: \begin{align*}
     \mathrm{Multi ... QW^Q_i, KW^K_i, VW^V_i)\\
 \end{align*}
-  item-114 at level 1: paragraph: Where the projections are parameter matrices
-  item-115 at level 1: text: $W^Q_i \in \mathbb{R}^{\dmodel \ ...  \in \mathbb{R}^{hd_v \times \dmodel}$
-  item-116 at level 1: paragraph: .
-  item-117 at level 1: paragraph: In this work we employ
-  item-118 at level 1: text: $h=8$ parallel attention layers, ... of these we use $d_k=d_v=\dmodel/h=64$
-  item-119 at level 1: paragraph: .
+  item-76 at level 1: paragraph: Where the projections are parameter matrices
+  item-77 at level 1: text: $W^Q_i \in \mathbb{R}^{\dmodel \ ...  \in \mathbb{R}^{hd_v \times \dmodel}$
+  item-78 at level 1: paragraph: .
+  item-79 at level 1: paragraph: In this work we employ
+  item-80 at level 1: text: $h=8$ parallel attention layers, ... of these we use $d_k=d_v=\dmodel/h=64$
+  item-81 at level 1: paragraph: .
 Due to the reduced dimension o ... ad attention with full dimensionality.
-  item-120 at level 1: section_header: Applications of Attention in our Model
-  item-121 at level 1: paragraph: The Transformer uses multi-head attention in three different ways:
-  item-122 at level 1: list: group list
-    item-123 at level 2: list_item: In "encoder-decoder attention" l ...  bahdanau2014neural,JonasFaceNet2017}.
-    item-124 at level 2: list_item: The encoder contains self-attent ...  in the previous layer of the encoder.
-    item-125 at level 2: list_item: Similarly, self-attention layers ... s. See Figure\ref{fig:multi-head-att}.
-  item-126 at level 1: section_header: Position-wise Feed-Forward Networks
-  item-127 at level 1: paragraph: In addition to attention sub-lay ... ons with a ReLU activation in between.
-  item-128 at level 1: formula: \mathrm{FFN}(x)=\max(0, xW_1 + b_1) W_2 + b_2
-  item-129 at level 1: paragraph: While the linear transformations ...  dimensionality of input and output is
-  item-130 at level 1: text: $\dmodel=512$, and the inner-layer has dimensionality $d_{ff}=2048$
-  item-131 at level 1: paragraph: .
-  item-132 at level 1: section_header: Embeddings and Softmax
-  item-133 at level 1: text: Similarly to other sequence tran ... tmax linear transformation, similar to
-  item-134 at level 1: reference: [press2016using]
-  item-135 at level 1: text: .   In the embedding layers, we multiply those weights by $\sqrt{\dmodel}$
-  item-136 at level 1: paragraph: .
-  item-137 at level 1: section_header: Positional Encoding
-  item-138 at level 1: text: Since our model contains no recu ... ositional encodings, learned and fixed
-  item-139 at level 1: reference: [JonasFaceNet2017]
-  item-140 at level 1: paragraph: .
-  item-141 at level 1: paragraph: In this work, we use sine and cosine functions of different frequencies:
-  item-142 at level 1: formula: \begin{align*}
+  item-82 at level 1: section_header: Applications of Attention in our Model
+  item-83 at level 1: paragraph: The Transformer uses multi-head attention in three different ways:
+  item-84 at level 1: list: group list
+    item-85 at level 2: list_item: In "encoder-decoder attention" l ... , bahdanau2014neural,JonasFaceNet2017]
+    item-86 at level 2: list_item: .
+    item-87 at level 2: list_item: The encoder contains self-attent ...  in the previous layer of the encoder.
+    item-88 at level 2: list_item: Similarly, self-attention layers ... tions.  See Figure[fig:multi-head-att]
+    item-89 at level 2: list_item: .
+  item-90 at level 1: section_header: Position-wise Feed-Forward Networks
+  item-91 at level 1: paragraph: In addition to attention sub-lay ... ons with a ReLU activation in between.
+  item-92 at level 1: formula: \mathrm{FFN}(x)=\max(0, xW_1 + b_1) W_2 + b_2
+  item-93 at level 1: paragraph: While the linear transformations ...  dimensionality of input and output is
+  item-94 at level 1: text: $\dmodel=512$, and the inner-layer has dimensionality $d_{ff}=2048$
+  item-95 at level 1: paragraph: .
+  item-96 at level 1: section_header: Embeddings and Softmax
+  item-97 at level 1: text: Similarly to other sequence tran ... iply those weights by $\sqrt{\dmodel}$
+  item-98 at level 1: paragraph: .
+  item-99 at level 1: section_header: Positional Encoding
+  item-100 at level 1: text: Since our model contains no recu ... , learned and fixed [JonasFaceNet2017]
+  item-101 at level 1: paragraph: .
+  item-102 at level 1: paragraph: In this work, we use sine and cosine functions of different frequencies:
+  item-103 at level 1: formula: \begin{align*}
     PE_{(pos,2i)} ... pos / 10000^{2i/\dmodel})
 \end{align*}
-  item-143 at level 1: paragraph: where
-  item-144 at level 1: text: $pos$ is the position and $i$ is ... ted as a linear function of $PE_{pos}$
-  item-145 at level 1: paragraph: .
-  item-146 at level 1: paragraph: We also experimented with using learned positional embeddings
-  item-147 at level 1: reference: [JonasFaceNet2017]
-  item-148 at level 1: text: instead, and found that the two  ... ed nearly identical results (see Table
-  item-149 at level 1: reference: [tab:variations]
-  item-150 at level 1: text: row (E)).  We chose the sinusoid ...  the ones encountered during training.
-  item-151 at level 1: section_header: Why Self-Attention
-  item-152 at level 1: paragraph: In this section we compare vario ... gth sequence of symbol representations
-  item-153 at level 1: text: $(x_1, ..., x_n)$ to another seq ... _n)$, with $x_i, z_i \in \mathbb{R}^d$
-  item-154 at level 1: paragraph: , such as a hidden layer in a ty ... ttention we consider three desiderata.
-  item-155 at level 1: paragraph: One is the total computational c ... ber of sequential operations required.
-  item-156 at level 1: paragraph: The third is the path length bet ... it is to learn long-range dependencies
-  item-157 at level 1: reference: [hochreiter2001gradient]
-  item-158 at level 1: paragraph: . Hence we also compare the maxi ... composed of the different layer types.
-  item-159 at level 1: text: Maximum path lengths, per-layer  ... hborhood in restricted self-attention.
-  item-160 at level 1: table with [13x4]
-  item-161 at level 1: paragraph: As noted in Table
-  item-162 at level 1: reference: [tab:op_complexities]
-  item-163 at level 1: text: , a self-attention layer connect ... chine translations, such as word-piece
-  item-164 at level 1: reference: [wu2016google]
-  item-165 at level 1: text: and byte-pair
-  item-166 at level 1: reference: [sennrich2015neural]
-  item-167 at level 1: text: representations.
-To improve comp ... se the maximum path length to $O(n/r)$
-  item-168 at level 1: paragraph: . We plan to investigate this approach further in future work.
-  item-169 at level 1: paragraph: A single convolutional layer with kernel width
-  item-170 at level 1: text: $k < n$ does not connect all pai ... )$ in the case of dilated convolutions
-  item-171 at level 1: reference: [NalBytenet2017]
-  item-172 at level 1: text: , increasing the length of the l ...  factor of $k$. Separable convolutions
-  item-173 at level 1: reference: [xception2016]
-  item-174 at level 1: text: , however, decrease the complexi ... dot d + n \cdot d^2)$. Even with $k=n$
-  item-175 at level 1: paragraph: , however, the complexity of a s ... er, the approach we take in our model.
-  item-176 at level 1: paragraph: As side benefit, self-attention  ... d semantic structure of the sentences.
-  item-177 at level 1: section_header: Training
-  item-178 at level 1: paragraph: This section describes the training regime for our models.
-  item-179 at level 1: section_header: Training Data and Batching
-  item-180 at level 1: text: We trained on the standard WMT 2 ...  were encoded using byte-pair encoding
-  item-181 at level 1: reference: [DBLP:journals/corr/BritzGLL17]
-  item-182 at level 1: text: , which has a shared source-targ ... ens into a 32000 word-piece vocabulary
-  item-183 at level 1: reference: [wu2016google]
-  item-184 at level 1: paragraph: .  Sentence pairs were batched t ... source tokens and 25000 target tokens.
-  item-185 at level 1: section_header: Hardware and Schedule
-  item-186 at level 1: paragraph: We trained our models on one mac ... (described on the bottom line of table
-  item-187 at level 1: reference: [tab:variations]
-  item-188 at level 1: paragraph: ), step time was 1.0 seconds.  T ...  trained for 300,000 steps (3.5 days).
-  item-189 at level 1: section_header: Optimizer
-  item-190 at level 1: text: We used the Adam optimizer
-  item-191 at level 1: reference: [kingma2014adam]
-  item-192 at level 1: text: with $\beta_1=0.9$, $\beta_2=0.98$ and $\epsilon=10^{-9}$
-  item-193 at level 1: paragraph: .  We varied the learning rate o ... of training, according to the formula:
-  item-194 at level 1: formula: lrate = \dmodel^{-0.5} \cdot
+  item-104 at level 1: paragraph: where
+  item-105 at level 1: text: $pos$ is the position and $i$ is ... ted as a linear function of $PE_{pos}$
+  item-106 at level 1: paragraph: .
+  item-107 at level 1: paragraph: We also experimented with using learned positional embeddings
+  item-108 at level 1: text: [JonasFaceNet2017] instead, and  ...  the ones encountered during training.
+  item-109 at level 1: section_header: Why Self-Attention
+  item-110 at level 1: paragraph: In this section we compare vario ... gth sequence of symbol representations
+  item-111 at level 1: text: $(x_1, ..., x_n)$ to another seq ... _n)$, with $x_i, z_i \in \mathbb{R}^d$
+  item-112 at level 1: paragraph: , such as a hidden layer in a ty ... ttention we consider three desiderata.
+  item-113 at level 1: paragraph: One is the total computational c ... ber of sequential operations required.
+  item-114 at level 1: paragraph: The third is the path length bet ... it is to learn long-range dependencies
+  item-115 at level 1: text: [hochreiter2001gradient]
+  item-116 at level 1: paragraph: . Hence we also compare the maxi ... composed of the different layer types.
+  item-117 at level 1: text: Maximum path lengths, per-layer  ... hborhood in restricted self-attention.
+  item-118 at level 1: text: -1mm
+  item-119 at level 1: section_header: Training
+  item-120 at level 1: paragraph: This section describes the training regime for our models.
+  item-121 at level 1: section_header: Training Data and Batching
+  item-122 at level 1: text: We trained on the standard WMT 2 ... 0 word-piece vocabulary [wu2016google]
+  item-123 at level 1: paragraph: .  Sentence pairs were batched t ... source tokens and 25000 target tokens.
+  item-124 at level 1: section_header: Hardware and Schedule
+  item-125 at level 1: paragraph: We trained our models on one mac ... (described on the bottom line of table
+  item-126 at level 1: text: [tab:variations]
+  item-127 at level 1: paragraph: ), step time was 1.0 seconds.  T ...  trained for 300,000 steps (3.5 days).
+  item-128 at level 1: section_header: Optimizer
+  item-129 at level 1: text: We used the Adam optimizer[kingm ...  $\beta_2=0.98$ and $\epsilon=10^{-9}$
+  item-130 at level 1: paragraph: .  We varied the learning rate o ... of training, according to the formula:
+  item-131 at level 1: formula: lrate = \dmodel^{-0.5} \cdot
   \ ... ep\_num} \cdot {warmup\_steps}^{-1.5})
-  item-195 at level 1: paragraph: This corresponds to increasing the learning rate linearly for the first
-  item-196 at level 1: text: $warmup\_steps$ training steps,  ...  number.  We used $warmup\_steps=4000$
-  item-197 at level 1: paragraph: .
-  item-198 at level 1: section_header: Regularization
-  item-199 at level 1: paragraph: We employ three types of regularization during training:
-  item-200 at level 1: text: Residual Dropout
-  item-201 at level 1: text: We apply dropout
-  item-202 at level 1: reference: [srivastava2014dropout]
-  item-203 at level 1: text: to the output of each sub-layer, ... model, we use a rate of $P_{drop}=0.1$
-  item-204 at level 1: paragraph: .
-  item-205 at level 1: text: Label Smoothing
-  item-206 at level 1: text: During training, we employed label smoothing of value $\epsilon_{ls}=0.1$
-  item-207 at level 1: reference: [DBLP:journals/corr/SzegedyVISW15]
-  item-208 at level 1: text: .  This hurts perplexity, as the ...  but improves accuracy and BLEU score.
-  item-209 at level 1: section_header: Results
-  item-210 at level 1: section_header: Machine Translation
-  item-211 at level 1: text: The Transformer achieves better  ... ts at a fraction of the training cost.
-  item-212 at level 1: table with [13x6]
-  item-213 at level 1: paragraph: On the WMT 2014 English-to-Germa ... rmer model (Transformer (big) in Table
-  item-214 at level 1: reference: [tab:wmt-results]
-  item-215 at level 1: text: ) outperforms the best previousl ...  is listed in the bottom line of Table
-  item-216 at level 1: reference: [tab:variations]
-  item-217 at level 1: text: .  Training took $3.5$ days on $8$
-  item-218 at level 1: paragraph: P100 GPUs.  Even our base model  ... cost of any of the competitive models.
-  item-219 at level 1: paragraph: On the WMT 2014 English-to-Frenc ... our big model achieves a BLEU score of
-  item-220 at level 1: text: $41.0$, outperforming all of the ...  rate $P_{drop}=0.1$, instead of $0.3$
-  item-221 at level 1: paragraph: .
-  item-222 at level 1: paragraph: For the base models, we used a s ... e used beam search with a beam size of
-  item-223 at level 1: text: $4$ and length penalty $\alpha=0.6$
-  item-224 at level 1: reference: [wu2016google]
-  item-225 at level 1: text: .  These hyperparameters were ch ... 50$, but terminate early when possible
-  item-226 at level 1: reference: [wu2016google]
-  item-227 at level 1: paragraph: .
-  item-228 at level 1: paragraph: Table
-  item-229 at level 1: reference: [tab:wmt-results]
-  item-230 at level 1: text: summarizes our results and compa ... on floating-point capacity of each GPU
-  item-231 at level 1: footnote: We used values of 2.8, 3.7, 6.0  ...  K80, K40, M40 and P100, respectively.
-  item-232 at level 1: text: .
-  item-233 at level 1: section_header: Model Variations
-  item-234 at level 1: text: Variations on the Transformer ar ...  be compared to per-word perplexities.
-  item-235 at level 1: table with [23x13]
-  item-236 at level 1: paragraph: To evaluate the importance of di ... ng.  We present these results in Table
-  item-237 at level 1: reference: [tab:variations]
-  item-238 at level 1: paragraph: .
-  item-239 at level 1: paragraph: In Table
-  item-240 at level 1: reference: [tab:variations]
-  item-241 at level 1: text: rows (A), we vary the number of  ... tion constant, as described in Section
-  item-242 at level 1: reference: [sec:multihead]
-  item-243 at level 1: paragraph: . While single-head attention is ... ty also drops off with too many heads.
-  item-244 at level 1: paragraph: In Table
-  item-245 at level 1: reference: [tab:variations]
-  item-246 at level 1: text: rows (B), we observe that reduci ... ing with learned positional embeddings
-  item-247 at level 1: reference: [JonasFaceNet2017]
-  item-248 at level 1: paragraph: , and observe nearly identical results to the base model.
-  item-249 at level 1: section_header: English Constituency Parsing
-  item-250 at level 1: text: The Transformer generalizes well ... ing (Results are on Section 23 of WSJ)
-  item-251 at level 1: table with [13x3]
-  item-252 at level 1: paragraph: To evaluate if the Transformer c ... -the-art results in small-data regimes
-  item-253 at level 1: reference: [KVparse15]
-  item-254 at level 1: paragraph: .
-  item-255 at level 1: paragraph: We trained a 4-layer transformer with
-  item-256 at level 1: text: $d_{model} = 1024$ on the Wall S ... nal (WSJ) portion of the Penn Treebank
-  item-257 at level 1: reference: [marcus1993building]
-  item-258 at level 1: text: , about 40K training sentences.  ...  from with approximately 17M sentences
-  item-259 at level 1: reference: [KVparse15]
-  item-260 at level 1: paragraph: . We used a vocabulary of 16K to ... okens for the semi-supervised setting.
-  item-261 at level 1: paragraph: We performed only a small number ... , both attention and residual (section
-  item-262 at level 1: reference: [sec:reg]
-  item-263 at level 1: text: ), learning rates and beam size  ... d a beam size of $21$ and $\alpha=0.3$
-  item-264 at level 1: paragraph: for both WSJ only and the semi-supervised setting.
-  item-265 at level 1: paragraph: Our results in Table
-  item-266 at level 1: reference: [tab:parsing-results]
-  item-267 at level 1: text: show that despite the lack of ta ... f the Recurrent Neural Network Grammar
-  item-268 at level 1: reference: [dyer-rnng:16]
-  item-269 at level 1: paragraph: .
-  item-270 at level 1: paragraph: In contrast to RNN sequence-to-sequence models
-  item-271 at level 1: reference: [KVparse15]
-  item-272 at level 1: text: , the Transformer outperforms the BerkeleyParser
-  item-273 at level 1: reference: [petrov-EtAl:2006:ACL]
-  item-274 at level 1: text: even when training only on the WSJ training set of 40K sentences.
-  item-275 at level 1: section_header: Conclusion
-  item-276 at level 1: paragraph: In this work, we presented the T ... ures with multi-headed self-attention.
-  item-277 at level 1: paragraph: For translation tasks, the Trans ... ven all previously reported ensembles.
-  item-278 at level 1: paragraph: We are excited about the future  ... ial is another research goals of ours.
-  item-279 at level 1: paragraph: The code we used to train and evaluate our models is available at
-  item-280 at level 1: reference: https://github.com/tensorflow/tensor2tensor
-  item-281 at level 1: paragraph: .
-  item-282 at level 1: text: Acknowledgements
-  item-283 at level 1: paragraph: We are grateful to Nal Kalchbren ... comments, corrections and inspiration.
-  item-284 at level 1: text: plain
-  item-285 at level 1: section_header: References
-  item-286 at level 1: list: group bibliography
-  item-287 at level 1: section_header: Attention Visualizations
-  item-288 at level 1: section: group figure
-    item-289 at level 2: picture
-      item-289 at level 3: caption: Image: ./vis/making_more_difficult5_new.pdf
-    item-290 at level 2: text: An example of the attention mech ... different heads. Best viewed in color.
-  item-291 at level 1: caption: Image: ./vis/making_more_difficult5_new.pdf
-  item-292 at level 1: section: group figure
-    item-293 at level 2: picture
-      item-293 at level 3: caption: Image: ./vis/anaphora_resolution_new.pdf
-    item-294 at level 2: picture
-      item-294 at level 3: caption: Image: ./vis/anaphora_resolution2_new.pdf
-    item-295 at level 2: text: Two attention heads, also in lay ... tentions are very sharp for this word.
-  item-296 at level 1: caption: Image: ./vis/anaphora_resolution_new.pdf
-  item-297 at level 1: caption: Image: ./vis/anaphora_resolution2_new.pdf
-  item-298 at level 1: section: group figure
-    item-299 at level 2: picture
-      item-299 at level 3: caption: Image: ./vis/attending_to_head_new.pdf
-    item-300 at level 2: picture
-      item-300 at level 3: caption: Image: ./vis/attending_to_head2_new.pdf
-    item-301 at level 2: text: Many of the attention heads exhi ... ly learned to perform different tasks.
-  item-302 at level 1: caption: Image: ./vis/attending_to_head_new.pdf
-  item-303 at level 1: caption: Image: ./vis/attending_to_head2_new.pdf
+  item-132 at level 1: paragraph: This corresponds to increasing the learning rate linearly for the first
+  item-133 at level 1: text: $warmup\_steps$ training steps,  ...  number.  We used $warmup\_steps=4000$
+  item-134 at level 1: paragraph: .
+  item-135 at level 1: section_header: Regularization
+  item-136 at level 1: paragraph: We employ three types of regularization during training:
+  item-137 at level 1: text: Residual Dropout We apply dropou ... model, we use a rate of $P_{drop}=0.1$
+  item-138 at level 1: paragraph: .
+  item-139 at level 1: text: Label Smoothing During training, ...  but improves accuracy and BLEU score.
+  item-140 at level 1: section_header: Results
+  item-141 at level 1: section_header: Machine Translation
+  item-142 at level 1: text: The Transformer achieves better  ... ts at a fraction of the training cost.
+  item-143 at level 1: text: -2mm
+  item-144 at level 1: section_header: Conclusion
+  item-145 at level 1: paragraph: In this work, we presented the T ... ures with multi-headed self-attention.
+  item-146 at level 1: paragraph: For translation tasks, the Trans ... ven all previously reported ensembles.
+  item-147 at level 1: paragraph: We are excited about the future  ... ial is another research goals of ours.
+  item-148 at level 1: paragraph: The code we used to train and evaluate our models is available at
+  item-149 at level 1: text: https://github.com/tensorflow/tensor2tensor
+  item-150 at level 1: paragraph: .
+  item-151 at level 1: text: Acknowledgements
+  item-152 at level 1: paragraph: We are grateful to Nal Kalchbren ... comments, corrections and inspiration.
+  item-153 at level 1: text: plain
+  item-154 at level 1: section_header: References
+  item-155 at level 1: list: group bibliography
+    item-156 at level 2: list_item: 10
+    item-157 at level 2: list_item: layernorm2016
+JimmyLei Ba, Jamie ... ation.
+arXiv preprint arXiv:1607.06450
+    item-158 at level 2: list_item: , 2016.
+    item-159 at level 2: list_item: bahdanau2014neural
+Dzmitry Bahda ... earning to align and
+  translate.
+CoRR
+    item-160 at level 2: list_item: , abs/1409.0473, 2014.
+    item-161 at level 2: list_item: DBLP:journals/corr/BritzGLL17
+De ... achine translation architectures.
+CoRR
+    item-162 at level 2: list_item: , abs/1703.03906, 2017.
+    item-163 at level 2: list_item: cheng2016long
+Jianpeng Cheng, Li ... ading.
+arXiv preprint arXiv:1601.06733
+    item-164 at level 2: list_item: , 2016.
+    item-165 at level 2: list_item: cho2014learning
+Kyunghyun Cho, B ...  statistical machine translation.
+CoRR
+    item-166 at level 2: list_item: , abs/1406.1078, 2014.
+    item-167 at level 2: list_item: xception2016
+Francois Chollet.
+X ... tions.
+arXiv preprint arXiv:1610.02357
+    item-168 at level 2: list_item: , 2016.
+    item-169 at level 2: list_item: gruEval14
+Junyoung Chung, Caglar ...  networks on sequence
+  modeling.
+CoRR
+    item-170 at level 2: list_item: , abs/1412.3555, 2014.
+    item-171 at level 2: list_item: dyer-rnng:16
+Chris Dyer, Adhigun ... al network grammars.
+In Proc. of NAACL
+    item-172 at level 2: list_item: , 2016.
+    item-173 at level 2: list_item: JonasFaceNet2017
+Jonas Gehring,  ... ing.
+arXiv preprint arXiv:1705.03122v2
+    item-174 at level 2: list_item: , 2017.
+    item-175 at level 2: list_item: graves2013generating
+Alex Graves ... tworks.
+arXiv preprint arXiv:1308.0850
+    item-176 at level 2: list_item: , 2013.
+    item-177 at level 2: list_item: he2016deep
+Kaiming He, Xiangyu Z ... on and
+ Pattern Recognition, pages 770
+    item-178 at level 2: list_item: 778, 2016.
+    item-179 at level 2: list_item: hochreiter2001gradient
+Sepp Hoch ... aolo Frasconi, and Jurgen Schmidhuber.
+    item-180 at level 2: list_item: Gradient flow in recurrent nets: ... arning long-term
+  dependencies, 2001.
+    item-181 at level 2: list_item: hochreiter1997
+Sepp Hochreiter a ...  memory.
+Neural computation, 9(8):1735
+    item-182 at level 2: list_item: 1780, 1997.
+    item-183 at level 2: list_item: huang-harper:2009:EMNLP
+Zhongqia ... Natural Language Processing, pages 832
+    item-184 at level 2: list_item: 841. ACL, August 2009.
+    item-185 at level 2: list_item: jozefowicz2016exploring
+Rafal Jo ... eling.
+arXiv preprint arXiv:1602.02410
+    item-186 at level 2: list_item: , 2016.
+    item-187 at level 2: list_item: extendedngpu
+ukasz Kaiser and Sa ... Information Processing Systems, (NIPS)
+    item-188 at level 2: list_item: ,
+  2016.
+    item-189 at level 2: list_item: neural_gpu
+ukasz Kaiser and Ilya ... ce on Learning Representations
+ (ICLR)
+    item-190 at level 2: list_item: , 2016.
+    item-191 at level 2: list_item: NalBytenet2017
+Nal Kalchbrenner, ... ime.
+arXiv preprint arXiv:1610.10099v2
+    item-192 at level 2: list_item: , 2017.
+    item-193 at level 2: list_item: structuredAttentionNetworks
+Yoon ... Conference on Learning Representations
+    item-194 at level 2: list_item: , 2017.
+    item-195 at level 2: list_item: kingma2014adam
+Diederik Kingma a ... d for stochastic optimization.
+In ICLR
+    item-196 at level 2: list_item: , 2015.
+    item-197 at level 2: list_item: Kuchaiev2017Factorization
+Oleksi ... works.
+arXiv preprint arXiv:1703.10722
+    item-198 at level 2: list_item: , 2017.
+    item-199 at level 2: list_item: lin2017structured
+Zhouhan Lin, M ... dding.
+arXiv preprint arXiv:1703.03130
+    item-200 at level 2: list_item: , 2017.
+    item-201 at level 2: list_item: multiseq2seq
+Minh-Thang Luong, Q ... rning.
+arXiv preprint arXiv:1511.06114
+    item-202 at level 2: list_item: , 2015.
+    item-203 at level 2: list_item: luong2015effective
+Minh-Thang Lu ... ation.
+arXiv preprint arXiv:1508.04025
+    item-204 at level 2: list_item: , 2015.
+    item-205 at level 2: list_item: marcus1993building
+MitchellP Mar ... .
+Computational linguistics, 19(2):313
+    item-206 at level 2: list_item: 330, 1993.
+    item-207 at level 2: list_item: mcclosky-etAl:2006:NAACL
+David M ...  the NAACL, Main Conference, pages 152
+    item-208 at level 2: list_item: 159. ACL, June 2006.
+    item-209 at level 2: list_item: decomposableAttnModel
+Ankur Pari ... Methods in Natural Language Processing
+    item-210 at level 2: list_item: , 2016.
+    item-211 at level 2: list_item: paulus2017deep
+Romain Paulus, Ca ... ation.
+arXiv preprint arXiv:1705.04304
+    item-212 at level 2: list_item: , 2017.
+    item-213 at level 2: list_item: petrov-EtAl:2006:ACL
+Slav Petrov ... Annual Meeting of the ACL, pages
+  433
+    item-214 at level 2: list_item: 440. ACL, July 2006.
+    item-215 at level 2: list_item: press2016using
+Ofir Press and Li ... odels.
+arXiv preprint arXiv:1608.05859
+    item-216 at level 2: list_item: , 2016.
+    item-217 at level 2: list_item: sennrich2015neural
+Rico Sennrich ... units.
+arXiv preprint arXiv:1508.07909
+    item-218 at level 2: list_item: , 2015.
+    item-219 at level 2: list_item: shazeer2017outrageously
+Noam Sha ... layer.
+arXiv preprint arXiv:1701.06538
+    item-220 at level 2: list_item: , 2017.
+    item-221 at level 2: list_item: srivastava2014dropout
+Nitish Sri ...  Machine Learning Research, 15(1):1929
+    item-222 at level 2: list_item: 1958, 2014.
+    item-223 at level 2: list_item: sukhbaatar2015
+Sainbayar Sukhbaa ... on Processing Systems 28, pages
+  2440
+    item-224 at level 2: list_item: 2448. Curran Associates, Inc., 2015.
+    item-225 at level 2: list_item: sutskever14
+Ilya Sutskever, Orio ... ation Processing Systems, pages
+  3104
+    item-226 at level 2: list_item: 3112, 2014.
+    item-227 at level 2: list_item: DBLP:journals/corr/SzegedyVISW15 ... architecture for computer vision.
+CoRR
+    item-228 at level 2: list_item: , abs/1512.00567, 2015.
+    item-229 at level 2: list_item: KVparse15
+Vinyals & Kaiser, Koo, ...  Neural Information Processing Systems
+    item-230 at level 2: list_item: , 2015.
+    item-231 at level 2: list_item: wu2016google
+Yonghui Wu, Mike Sc ... ation.
+arXiv preprint arXiv:1609.08144
+    item-232 at level 2: list_item: , 2016.
+    item-233 at level 2: list_item: DBLP:journals/corr/ZhouCWLX16
+Ji ... for neural
+  machine translation.
+CoRR
+    item-234 at level 2: list_item: , abs/1606.04199, 2016.
+    item-235 at level 2: list_item: zhu-EtAl:2013:ACL
+Muhua Zhu, Yue ... CL (Volume 1:
+ Long Papers), pages 434
+    item-236 at level 2: list_item: 443. ACL, August 2013.
+  item-237 at level 1: section_header: Attention Visualizations
+  item-238 at level 1: section: group figure
+    item-239 at level 2: picture
+      item-239 at level 3: caption: Image: ./vis/making_more_difficult5_new.pdf
+    item-240 at level 2: text: An example of the attention mech ... different heads. Best viewed in color.
+  item-241 at level 1: caption: Image: ./vis/making_more_difficult5_new.pdf
+  item-242 at level 1: section: group figure
+    item-243 at level 2: picture
+      item-243 at level 3: caption: Image: ./vis/anaphora_resolution_new.pdf
+    item-244 at level 2: picture
+      item-244 at level 3: caption: Image: ./vis/anaphora_resolution2_new.pdf
+    item-245 at level 2: text: Two attention heads, also in lay ... tentions are very sharp for this word.
+  item-246 at level 1: caption: Image: ./vis/anaphora_resolution_new.pdf
+  item-247 at level 1: caption: Image: ./vis/anaphora_resolution2_new.pdf
+  item-248 at level 1: section: group figure
+    item-249 at level 2: picture
+      item-249 at level 3: caption: Image: ./vis/attending_to_head_new.pdf
+    item-250 at level 2: picture
+      item-250 at level 3: caption: Image: ./vis/attending_to_head2_new.pdf
+    item-251 at level 2: text: Many of the attention heads exhi ... ly learned to perform different tasks.
+  item-252 at level 1: caption: Image: ./vis/attending_to_head_new.pdf
+  item-253 at level 1: caption: Image: ./vis/attending_to_head2_new.pdf

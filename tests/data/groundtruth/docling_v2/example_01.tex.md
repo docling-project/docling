@@ -4,13 +4,7 @@ This is the first paragraph of the introduction.
 
 ## Background
 
-Some background information here with
-
-**bold**
-
-and
-
-*italic*
+Some background information here with bold and italic
 
 text.
 

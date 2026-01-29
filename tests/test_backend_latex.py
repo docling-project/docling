@@ -436,9 +436,10 @@ def test_latex_citet_macro():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    ref_items = [t for t in doc.texts if t.label == DocItemLabel.REFERENCE]
-    assert len(ref_items) >= 1
-    assert "author2020" in ref_items[0].text
+    # Citations are now inline with text
+    md = doc.export_to_markdown()
+    assert "[author2020]" in md
+    assert "According to" in md
 
 
 def test_latex_list_nested():
@@ -605,8 +606,12 @@ def test_latex_citations():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    ref_items = [t for t in doc.texts if t.label == DocItemLabel.REFERENCE]
-    assert len(ref_items) >= 2
+    # Citations are now inline with text
+    md = doc.export_to_markdown()
+    assert "[smith2020]" in md
+    assert "[jones2021]" in md
+    assert "[fig:1]" in md
+    assert "[eq:main]" in md
 
 
 def test_latex_title_macro():
@@ -1026,8 +1031,8 @@ def test_latex_displaymath_brackets():
     assert len(formulas) >= 1
 
 
-def test_latex_citet_macro():
-    """Test citet citation macro"""
+def test_latex_citet_macro_2():
+    """Test citet citation macro - citations inline with text"""
     latex_content = b"""
     \\documentclass{article}
     \\begin{document}
@@ -1043,8 +1048,10 @@ def test_latex_citet_macro():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    ref_items = [t for t in doc.texts if t.label == DocItemLabel.REFERENCE]
-    assert len(ref_items) >= 1
+    # Citations are now inline with text
+    md = doc.export_to_markdown()
+    assert "[author2022]" in md
+    assert "showed this" in md
 
 
 # E2E Ground-Truth Tests
@@ -1190,3 +1197,162 @@ def test_latex_figure_with_caption():
     captions = [t for t in doc.texts if t.label == DocItemLabel.CAPTION]
     # includegraphics creates one caption, and \caption macro creates another
     assert len(captions) >= 1
+
+
+def extract_macro_name_old(raw_string):
+    """The OLD buggy implementation"""
+    # This was the original broken code
+    macro_name_raw = raw_string.strip("{} ")
+    macro_name = macro_name_raw.lstrip("\\")
+    return macro_name
+
+
+def extract_macro_name_new(raw_string):
+    """The NEW fixed implementation"""
+    # This is the fixed code
+    macro_name = raw_string.strip("{} \n\t\\")
+    if macro_name.startswith("\\"):
+        macro_name = macro_name[1:]
+    return macro_name
+
+
+def test_macro_extraction():
+    """Test various formats of macro names"""
+    print("\n" + "=" * 80)
+    print("TESTING MACRO NAME EXTRACTION LOGIC")
+    print("=" * 80)
+
+    # Test cases: (input, expected_output)
+    test_cases = [
+        (r"{\myterm}", "myterm"),
+        (r"\myterm", "myterm"),
+        (r"{ \myterm }", "myterm"),
+        (r"{  \myvalue  }", "myvalue"),
+        (r"{\important}", "important"),
+        (r"{ \test }", "test"),
+        (r"{\alpha}", "alpha"),
+    ]
+
+    print("\n" + "-" * 80)
+    print("OLD (BUGGY) IMPLEMENTATION:")
+    print("-" * 80)
+    old_passed = 0
+    for input_str, expected in test_cases:
+        result = extract_macro_name_old(input_str)
+        status = "✓" if result == expected else "✗"
+        print(f"{status} Input: {input_str!r:20} → Result: {result!r:15} (expected: {expected!r})")
+        if result == expected:
+            old_passed += 1
+
+    print("\n" + "-" * 80)
+    print("NEW (FIXED) IMPLEMENTATION:")
+    print("-" * 80)
+    new_passed = 0
+    for input_str, expected in test_cases:
+        result = extract_macro_name_new(input_str)
+        status = "✓" if result == expected else "✗"
+        print(f"{status} Input: {input_str!r:20} → Result: {result!r:15} (expected: {expected!r})")
+        if result == expected:
+            new_passed += 1
+
+    print("\n" + "=" * 80)
+    print("RESULTS:")
+    print("=" * 80)
+    print(f"OLD implementation: {old_passed}/{len(test_cases)} tests passed")
+    print(f"NEW implementation: {new_passed}/{len(test_cases)} tests passed")
+
+    if new_passed == len(test_cases):
+        print("\n✓✓ SUCCESS: New implementation fixes the bug!")
+    else:
+        print("\n✗✗ FAILURE: New implementation still has issues")
+    
+    assert new_passed == len(test_cases), f"New implementation failed: {new_passed}/{len(test_cases)} tests passed"
+
+
+def test_edge_cases():
+    """Test edge cases and special characters"""
+    print("\n" + "=" * 80)
+    print("TESTING EDGE CASES")
+    print("=" * 80)
+
+    edge_cases = [
+        # Format: (input, expected, description)
+        (r"{\cmd}", "cmd", "Simple macro"),
+        (r"{\\cmd}", "cmd", "Double backslash"),
+        (r"{ \cmd }", "cmd", "Spaces around macro"),
+        (r"{\   cmd   }", "cmd", "Extra spaces"),
+        (r"{\my_macro}", "my_macro", "Underscore in name"),
+        (r"{\MyMacro}", "MyMacro", "CamelCase"),
+        (r"{\MACRO}", "MACRO", "Uppercase"),
+    ]
+
+    all_passed = True
+    for input_str, expected, description in edge_cases:
+        result = extract_macro_name_new(input_str)
+        status = "✓" if result == expected else "✗"
+        print(f"{status} {description:25} | Input: {input_str!r:20} → {result!r}")
+        if result != expected:
+            print(f"   Expected: {expected!r}")
+            all_passed = False
+
+    if all_passed:
+        print("\n✓✓ All edge cases passed!")
+    else:
+        print("\n✗✗ Some edge cases failed")
+    
+    assert all_passed, "Some edge cases failed"
+
+
+"""
+Add this to test_backend_latex.py to debug what's happening
+"""
+
+
+def test_debug_macro_extraction():
+    """Debug test to see what's actually being extracted"""
+    from io import BytesIO
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.document import InputDocument
+    from docling.backend.latex_backend import LatexDocumentBackend
+
+    latex_content = b"""\\documentclass{article}
+\\newcommand{\\myterm}{special term}
+\\newcommand{\\myvalue}{42}
+\\begin{document}
+This is \\myterm and the value is \\myvalue.
+\\end{document}
+"""
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+
+    # BEFORE conversion - check if macros get extracted
+    doc = backend.convert()
+
+    # Print debug info
+    print(f"\n{'=' * 80}")
+    print("DEBUG INFO:")
+    print(f"{'=' * 80}")
+    print(f"Custom macros extracted: {backend._custom_macros}")
+    print(f"Number of text items: {len(doc.texts)}")
+    print(f"\nText items:")
+    for i, text_item in enumerate(doc.texts):
+        print(f"  {i}: {text_item.label} = {text_item.text!r}")
+
+    md = doc.export_to_markdown()
+    print(f"\nMarkdown output:")
+    print(md)
+    print(f"{'=' * 80}\n")
+
+    # Check if macros were registered
+    assert "myterm" in backend._custom_macros, "myterm not in _custom_macros!"
+    assert backend._custom_macros["myterm"] == "special term"
+
+    # Check if they were expanded
+    assert "special term" in md, f"'special term' not in output: {md!r}"
+    assert "42" in md, f"'42' not in output: {md!r}"

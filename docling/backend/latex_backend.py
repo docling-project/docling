@@ -116,13 +116,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         for node in nodes:
             if isinstance(node, LatexMacroNode) and node.macroname == "newcommand":
-                # Extract macro name and definition
-                # pylatexenc parses \newcommand{\macroname}{definition} as:
-                # argnlist[0]: None (optional * variant)
-                # argnlist[1]: {\macroname} - the macro name
-                # argnlist[2]: None (optional number of arguments)
-                # argnlist[3]: None (optional default value)
-                # argnlist[4]: {definition} - the definition (or last non-None element)
                 if node.nodeargd and node.nodeargd.argnlist:
                     argnlist = node.nodeargd.argnlist
                     
@@ -262,8 +255,30 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     if url_text:
                         text_buffer.append(url_text)
                 else:
-                    flush_text_buffer()
-                    self._process_macro(node, doc, parent, formatting, text_label)
+                    # Check if this is a structural macro that needs special handling
+                    structural_macros = {
+                        "section", "subsection", "subsubsection", "chapter", "part",
+                        "paragraph", "subparagraph",
+                        "caption", "label", "includegraphics", "bibliography",
+                        "title", "author", "maketitle", "footnote", "marginpar",
+                        "textsc", "textsf", "textrm", "textnormal", "mbox",
+                        "href", "newline", "hfill", "break", "centering",
+                        "textcolor", "colorbox", "item",
+                        "input", "include",
+                    }
+                    if node.macroname in structural_macros:
+                        # Structural macro - flush buffer and process with _process_macro
+                        flush_text_buffer()
+                        self._process_macro(node, doc, parent, formatting, text_label)
+                    elif node.nodeargd and node.nodeargd.argnlist:
+                        # Unknown macro with arguments - extract all args as inline text
+                        inline_text = self._extract_all_macro_args_inline(node)
+                        if inline_text:
+                            text_buffer.append(inline_text)
+                        else:
+                            _log.debug(f"Skipping unknown macro with no extractable content: {node.macroname}")
+                    else:
+                        _log.debug(f"Skipping unknown macro without arguments: {node.macroname}")
 
             elif isinstance(node, LatexEnvironmentNode):
                 flush_text_buffer()
@@ -284,11 +299,16 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         parent=parent, label=DocItemLabel.FORMULA, text=math_text
                     )
                 else:
-                    # Inline math: keep in buffer to avoid splitting paragraphs
                     text_buffer.append(node.latex_verbatim())
 
             elif isinstance(node, LatexGroupNode):
-                self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+                if self._is_text_only_group(node):
+                    group_text = self._nodes_to_text(node.nodelist)
+                    if group_text:
+                        text_buffer.append(group_text)
+                else:
+                    flush_text_buffer()
+                    self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
 
         flush_text_buffer()
 
@@ -396,10 +416,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     _log.debug(f"Could not load image {img_path}: {e}")
 
                 caption_node = None
-                # Check for caption in parent figure environment if we want to link explicitly
-                # But Docling add_picture logic handles caption?
-                # The existing code added caption then picture.
-
                 caption = doc.add_text(
                     label=DocItemLabel.CAPTION, text=f"Image: {img_path}"
                 )
@@ -482,8 +498,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 text = LatexNodes2Text().nodelist_to_text([node])
                 doc.add_text(parent=parent, text=text, formatting=formatting, label=(text_label or DocItemLabel.TEXT))
             except Exception:
-                # Fallback handled by generic handler if we don't catch it,
-                # but we just continue
                 pass
 
         elif node.macroname == "href":
@@ -492,9 +506,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 # url_arg = node.nodeargd.argnlist[0]
                 text_arg = node.nodeargd.argnlist[1]
 
-                # We process the text content.
-                # Ideally we would mark it as a link, but Docling TextItem doesn't have URL field?
-                # We prioritize content preservation.
                 if hasattr(text_arg, "nodelist"):
                     self._process_nodes(text_arg.nodelist, doc, parent, formatting, text_label)
 
@@ -640,15 +651,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 current_item = []
 
                 if n.nodeargd and n.nodeargd.argnlist:
-                    # Handle optional argument for description lists or similar
-                    # But we are just collecting nodes here.
-                    # The content of item is in following nodes.
-                    # Does item macro have arguments? \item[label]
-                    # We should include the item macro itself or its argument?
-                    # The user issue 1.3 says "You skip \item in _process_macro, then re-handle it manually in _process_list... Nested lists break".
-                    # Here we are collecting nodes between items.
-                    # We should probably process the item arguments (label) if present.
-                    current_item.append(n)
+                     current_item.append(n)
             else:
                 current_item.append(n)
 
@@ -673,11 +676,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         def finish_cell():
             text = self._nodes_to_text(current_cell_nodes).strip()
-            # Handle empty cells or just spacing?
-            # Standard Latex table cell.
-            # Docling TableCell expects text.
-            # We can rely on default spans (1,1).
-            # Initialize offsets to 0, they are updated later.
             current_row.append(TableCell(
                 text=text,
                 start_row_offset_idx=0,
@@ -711,8 +709,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             elif isinstance(n, LatexCharsNode):
                 text = n.chars
                 if "&" in text:
-                    # This happens if `&` is parsed as char.
-                    # Split text by `&`.
                     parts = text.split("&")
                     for i, part in enumerate(parts):
                         if part:
@@ -725,8 +721,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     current_cell_nodes.append(n)
 
             else:
-                # Other nodes (Groups, etc).
-                # Check if it is `&` (specials).
                 if hasattr(n, 'specials_chars') and n.specials_chars == '&':
                     finish_cell()
                 else:
@@ -750,7 +744,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     cell = TableCell(text="")
 
-                # Update cell offsets (required by TableData?)
                 cell.start_row_offset_idx = i
                 cell.end_row_offset_idx = i + 1
                 cell.start_col_offset_idx = j
@@ -788,7 +781,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         current_item: list = []
         current_key = ""
 
-        # Pre-process to group by bibitem
+        # Pre process to group by bibitem
         for n in node.nodelist:
             if isinstance(n, LatexMacroNode) and n.macroname == "bibitem":
                 if current_item:
@@ -802,21 +795,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             items.append((current_key, current_item))
 
         for key, item_nodes in items:
-            # We can optionally add the key as text prefix if desired,
-            # but usually the renderer handles numbering/labels.
-            # However, for robustness, we might want to ensure the key is visible if it's manual.
-            # For now, just process the content.
-            # If we want to emulate [key], we can prepend a text node?
-            # Or assume Docling logic handles it? Docling logic is generic.
-            # I'll prepend the key if it exists.
-
-            # Create a localized group or just add items?
-            # Using _process_nodes with LIST_ITEM label.
 
             if key:
-                # Add key as separate text or part of first item?
-                # Simply processing nodes will add text.
-                # I'll add the key manually first.
                 doc.add_text(
                     parent=bib_group,
                     label=DocItemLabel.LIST_ITEM,
@@ -874,9 +854,21 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     expansion = self._custom_macros[node.macroname]
                     text_parts.append(expansion)
                 else:
-                    arg_text = self._extract_macro_arg(node)
-                    if arg_text:
-                        text_parts.append(arg_text)
+                    # Unknown macro - extract all arguments inline
+                    arg_parts = []
+                    if node.nodeargd and node.nodeargd.argnlist:
+                        for arg in node.nodeargd.argnlist:
+                            if arg is not None:
+                                if hasattr(arg, "nodelist"):
+                                    text = self._nodes_to_text(arg.nodelist)
+                                    if text:
+                                        arg_parts.append(text)
+                                else:
+                                    text = arg.latex_verbatim().strip("{} ")
+                                    if text:
+                                        arg_parts.append(text)
+                    if arg_parts:
+                        text_parts.append(" ".join(arg_parts))
 
             elif isinstance(node, LatexMathNode):
                 text_parts.append(node.latex_verbatim())
@@ -893,7 +885,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         return result.strip()
 
     def _extract_macro_arg(self, node: LatexMacroNode) -> str:
-        """Extract text from macro argument"""
+        """Extract text from macro argument (last argument only)"""
         if node.nodeargd and node.nodeargd.argnlist:
             arg = node.nodeargd.argnlist[-1]
             if arg:
@@ -901,6 +893,51 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     return self._nodes_to_text(arg.nodelist)
                 return arg.latex_verbatim().strip("{} ")
         return ""
+
+    def _extract_all_macro_args_inline(self, node: LatexMacroNode) -> str:
+        """Extract all macro arguments as inline text, concatenated with spaces."""
+        if not node.nodeargd or not node.nodeargd.argnlist:
+            return ""
+
+        parts = []
+        for arg in node.nodeargd.argnlist:
+            if arg is not None:
+                if hasattr(arg, "nodelist"):
+                    text = self._nodes_to_text(arg.nodelist)
+                    if text:
+                        parts.append(text)
+                else:
+                    text = arg.latex_verbatim().strip("{} ")
+                    if text:
+                        parts.append(text)
+
+        return " ".join(parts)
+
+    def _is_text_only_group(self, node: LatexGroupNode) -> bool:
+        """Check if a group contains only text-like content (no structural elements)."""
+        if not node.nodelist:
+            return True
+
+        # Macros that indicate structural content
+        structural_macros = {
+            "section", "subsection", "subsubsection", "chapter", "part",
+            "caption", "label", "includegraphics", "bibliography",
+            "title", "author", "maketitle", "footnote", "marginpar",
+        }
+
+        for n in node.nodelist:
+            if isinstance(n, LatexEnvironmentNode):
+                # Environments are usually structural
+                return False
+            elif isinstance(n, LatexMacroNode):
+                if n.macroname in structural_macros:
+                    return False
+            elif isinstance(n, LatexGroupNode):
+                # Recursively check nested groups
+                if not self._is_text_only_group(n):
+                    return False
+
+        return True
 
     def _clean_math(self, latex_str: str, env_name: str) -> str:
         """Clean math expressions for better readability"""

@@ -1,0 +1,211 @@
+\begin{thebibliography}{}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\providecommand{\url}[1]{\href{#1}{#1}}
+\providecommand{\dodoi}[1]{doi:~\href{http://doi.org/#1}{\nolinkurl{#1}}}
+\providecommand{\doeprint}[1]{\href{http://ascl.net/#1}{\nolinkurl{http://ascl.net/#1}}}
+\providecommand{\doarXiv}[1]{\href{https://arxiv.org/abs/#1}{\nolinkurl{https://arxiv.org/abs/#1}}}
+
+\bibitem[{{Abazajian} {et~al.}(2009){Abazajian}, {Adelman-McCarthy}, {Ag{\"u}eros}, {Allam}, {Allende Prieto}, {An}, {Anderson}, {Anderson}, {Annis}, {Bahcall}, \& et~al.}]{sdssdr7}
+{Abazajian}, K.~N., {Adelman-McCarthy}, J.~K., {Ag{\"u}eros}, M.~A., {et~al.} 2009, \apjs, 182, 543, \dodoi{10.1088/0067-0049/182/2/543}
+
+\bibitem[{{Alfonzo} {et~al.}(2024){Alfonzo}, {Iyer}, {Akiyama}, {Bryan}, {Cooray}, {Ludwig}, {Mowla}, {Omori}, {Pacifici}, {Speagle}, \& {Wu}}]{2024ApJ...967..152A}
+{Alfonzo}, J.~P., {Iyer}, K.~G., {Akiyama}, M., {et~al.} 2024, \apj, 967, 152, \dodoi{10.3847/1538-4357/ad3b95}
+
+\bibitem[{{Bait} {et~al.}(2017){Bait}, {Barway}, \& {Wadadekar}}]{2017MNRAS.471.2687B}
+{Bait}, O., {Barway}, S., \& {Wadadekar}, Y. 2017, \mnras, 471, 2687, \dodoi{10.1093/mnras/stx1688}
+
+\bibitem[{{Baldwin} {et~al.}(1981){Baldwin}, {Phillips}, \& {Terlevich}}]{1981PASP...93....5B}
+{Baldwin}, J.~A., {Phillips}, M.~M., \& {Terlevich}, R. 1981, \pasp, 93, 5, \dodoi{10.1086/130766}
+
+\bibitem[{Bau {et~al.}(2017)Bau, Zhou, Khosla, Oliva, \& Torralba}]{8099837}
+Bau, D., Zhou, B., Khosla, A., Oliva, A., \& Torralba, A. 2017, in 2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 3319--3327, \dodoi{10.1109/CVPR.2017.354}
+
+\bibitem[{{Bowles} {et~al.}(2021){Bowles}, {Scaife}, {Porter}, {Tang}, \& {Bastien}}]{2021MNRAS.501.4579B}
+{Bowles}, M., {Scaife}, A. M.~M., {Porter}, F., {Tang}, H., \& {Bastien}, D.~J. 2021, \mnras, 501, 4579, \dodoi{10.1093/mnras/staa3946}
+
+\bibitem[{{Bowles} {et~al.}(2022){Bowles}, {Tang}, {Vardoulaki}, {Alexander}, {Luo}, {Rudnick}, {Walmsley}, {Porter}, {Scaife}, {Slijepcevic}, \& {Segal}}]{2022arXiv221014760B}
+{Bowles}, M., {Tang}, H., {Vardoulaki}, E., {et~al.} 2022, arXiv e-prints, arXiv:2210.14760, \dodoi{10.48550/arXiv.2210.14760}
+
+\bibitem[{Bricken {et~al.}(2023)Bricken, Templeton, Batson, Chen, Jermyn, Conerly, Turner, Anil, Denison, Askell, Lasenby, Wu, Kravec, Schiefer, Maxwell, Joseph, Hatfield-Dodds, Tamkin, Nguyen, McLean, Burke, Hume, Carter, Henighan, \& Olah}]{bricken2023monosemanticity}
+Bricken, T., Templeton, A., Batson, J., {et~al.} 2023, Transformer Circuits Thread
+
+\bibitem[{{Brinchmann} {et~al.}(2004){Brinchmann}, {Charlot}, {White}, {Tremonti}, {Kauffmann}, {Heckman}, \& {Brinkmann}}]{2004MNRAS.351.1151B}
+{Brinchmann}, J., {Charlot}, S., {White}, S.~D.~M., {et~al.} 2004, \mnras, 351, 1151, \dodoi{10.1111/j.1365-2966.2004.07881.x}
+
+\bibitem[{{Buck} \& {Wolf}(2021)}]{2021arXiv211101154B}
+{Buck}, T., \& {Wolf}, S. 2021, arXiv e-prints, arXiv:2111.01154, \dodoi{10.48550/arXiv.2111.01154}
+
+\bibitem[{Charnock {et~al.}(2018)Charnock, Lavaux, \& Wandelt}]{Charnock_2018}
+Charnock, T., Lavaux, G., \& Wandelt, B.~D. 2018, Physical Review D, 97, \dodoi{10.1103/physrevd.97.083004}
+
+\bibitem[{Cunningham {et~al.}(2023)Cunningham, Ewart, Riggs, Huben, \& Sharkey}]{cunningham2023sparseautoencodershighlyinterpretable}
+Cunningham, H., Ewart, A., Riggs, L., Huben, R., \& Sharkey, L. 2023, Sparse Autoencoders Find Highly Interpretable Features in Language Models.
+\newblock \doarXiv{2309.08600}
+
+\bibitem[{Deng {et~al.}(2009)Deng, Dong, Socher, Li, Li, \& Fei-Fei}]{5206848}
+Deng, J., Dong, W., Socher, R., {et~al.} 2009, in 2009 IEEE Conference on Computer Vision and Pattern Recognition, 248--255, \dodoi{10.1109/CVPR.2009.5206848}
+
+\bibitem[{{Dey} {et~al.}(2019){Dey}, {Schlegel}, {Lang}, {Blum}, {Burleigh}, {Fan}, {Findlay}, {Finkbeiner}, {Herrera}, {Juneau}, {Landriau}, {Levi}, {McGreer}, {Meisner}, {Myers}, {Moustakas}, {Nugent}, {Patej}, {Schlafly}, {Walker}, {Valdes}, {Weaver}, {Y{\`e}che}, {Zou}, {Zhou}, {Abareshi}, {Abbott}, {Abolfathi}, {Aguilera}, {Alam}, {Allen}, {Alvarez}, {Annis}, {Ansarinejad}, {Aubert}, {Beechert}, {Bell}, {BenZvi}, {Beutler}, {Bielby}, {Bolton}, {Brice{\~n}o}, {Buckley-Geer}, {Butler}, {Calamida}, {Carlberg}, {Carter}, {Casas}, {Castander}, {Choi}, {Comparat}, {Cukanovaite}, {Delubac}, {DeVries}, {Dey}, {Dhungana}, {Dickinson}, {Ding}, {Donaldson}, {Duan}, {Duckworth}, {Eftekharzadeh}, {Eisenstein}, {Etourneau}, {Fagrelius}, {Farihi}, {Fitzpatrick}, {Font-Ribera}, {Fulmer}, {G{\"a}nsicke}, {Gaztanaga}, {George}, {Gerdes}, {Gontcho}, {Gorgoni}, {Green}, {Guy}, {Harmer}, {Hernandez}, {Honscheid}, {Huang}, {James}, {Jannuzi}, {Jiang}, {Joyce}, {Karcher}, {Karkar}, {Kehoe}, {Kneib}, {Kueter-Young}, {Lan},
+  {Lauer}, {Le Guillou}, {Le Van Suu}, {Lee}, {Lesser}, {Perreault Levasseur}, {Li}, {Mann}, {Marshall}, {Mart{\'\i}nez-V{\'a}zquez}, {Martini}, {du Mas des Bourboux}, {McManus}, {Meier}, {M{\'e}nard}, {Metcalfe}, {Mu{\~n}oz-Guti{\'e}rrez}, {Najita}, {Napier}, {Narayan}, {Newman}, {Nie}, {Nord}, {Norman}, {Olsen}, {Paat}, {Palanque-Delabrouille}, {Peng}, {Poppett}, {Poremba}, {Prakash}, {Rabinowitz}, {Raichoor}, {Rezaie}, {Robertson}, {Roe}, {Ross}, {Ross}, {Rudnick}, {Safonova}, {Saha}, {S{\'a}nchez}, {Savary}, {Schweiker}, {Scott}, {Seo}, {Shan}, {Silva}, {Slepian}, {Soto}, {Sprayberry}, {Staten}, {Stillman}, {Stupak}, {Summers}, {Sien Tie}, {Tirado}, {Vargas-Maga{\~n}a}, {Vivas}, {Wechsler}, {Williams}, {Yang}, {Yang}, {Yapici}, {Zaritsky}, {Zenteno}, {Zhang}, {Zhang}, {Zhou}, \& {Zhou}}]{2019AJ....157..168D}
+{Dey}, A., {Schlegel}, D.~J., {Lang}, D., {et~al.} 2019, \aj, 157, 168, \dodoi{10.3847/1538-3881/ab089d}
+
+\bibitem[{{Dobbels} {et~al.}(2019){Dobbels}, {Krier}, {Pirson}, {Viaene}, {De Geyter}, {Salim}, \& {Baes}}]{2019A&A...624A.102D}
+{Dobbels}, W., {Krier}, S., {Pirson}, S., {et~al.} 2019, \aap, 624, A102, \dodoi{10.1051/0004-6361/201834575}
+
+\bibitem[{{Doorenbos} {et~al.}(2022){Doorenbos}, {Cavuoti}, {Longo}, {Brescia}, {Sznitman}, \& {M{\'a}rquez-Neila}}]{Doorenbos+2022}
+{Doorenbos}, L., {Cavuoti}, S., {Longo}, G., {et~al.} 2022, arXiv e-prints, arXiv:2211.05556, \dodoi{10.48550/arXiv.2211.05556}
+
+\bibitem[{{Doorenbos} {et~al.}(2024){Doorenbos}, {Sextl}, {Heng}, {Cavuoti}, {Brescia}, {Torbaniuk}, {Longo}, {Sznitman}, \& {M{\'a}rquez-Neila}}]{Doorenbos+2024}
+{Doorenbos}, L., {Sextl}, E., {Heng}, K., {et~al.} 2024, arXiv e-prints, arXiv:2406.18175, \dodoi{10.48550/arXiv.2406.18175}
+
+\bibitem[{{Dressler}(1980)}]{1980ApJ...236..351D}
+{Dressler}, A. 1980, \apj, 236, 351, \dodoi{10.1086/157753}
+
+\bibitem[{Elhage {et~al.}(2022)Elhage, Hume, Olsson, Schiefer, Henighan, Kravec, Hatfield-Dodds, Lasenby, Drain, Chen, Grosse, McCandlish, Kaplan, Amodei, Wattenberg, \& Olah}]{superposition}
+Elhage, N., Hume, T., Olsson, C., {et~al.} 2022, Toy Models of Superposition.
+\newblock \doarXiv{2209.10652}
+
+\bibitem[{Erhan {et~al.}(2009)Erhan, Bengio, Courville, \& Vincent}]{erhan2009_visualizing}
+Erhan, D., Bengio, Y., Courville, A., \& Vincent, P. 2009, Visualizing Higher-Layer Features of a Deep Network, Tech. Rep. 1341, University of Montreal
+
+\bibitem[{Geva {et~al.}(2021)Geva, Schuster, Berant, \& Levy}]{geva2021transformerfeedforwardlayerskeyvalue}
+Geva, M., Schuster, R., Berant, J., \& Levy, O. 2021, Transformer Feed-Forward Layers Are Key-Value Memories.
+\newblock \doarXiv{2012.14913}
+
+\bibitem[{Gorton(2024)}]{gorton2024missingcurvedetectorsinceptionv1}
+Gorton, L. 2024, The Missing Curve Detectors of InceptionV1: Applying Sparse Autoencoders to InceptionV1 Early Vision.
+\newblock \doarXiv{2406.03662}
+
+\bibitem[{{Grover} {et~al.}(2021){Grover}, {Bait}, {Wadadekar}, \& {Mishra}}]{2021MNRAS.506.3313G}
+{Grover}, H., {Bait}, O., {Wadadekar}, Y., \& {Mishra}, P.~K. 2021, \mnras, 506, 3313, \dodoi{10.1093/mnras/stab1935}
+
+\bibitem[{{Guo} {et~al.}(2022){Guo}, {Wu}, \& {Sharon}}]{2022arXiv221207881G}
+{Guo}, Z., {Wu}, J.~F., \& {Sharon}, C.~E. 2022, arXiv e-prints, arXiv:2212.07881, \dodoi{10.48550/arXiv.2212.07881}
+
+\bibitem[{He {et~al.}(2015)He, Zhang, Ren, \& Sun}]{he2015deepresiduallearningimage}
+He, K., Zhang, X., Ren, S., \& Sun, J. 2015, Deep Residual Learning for Image Recognition.
+\newblock \doarXiv{1512.03385}
+
+\bibitem[{{Holwerda} {et~al.}(2021){Holwerda}, {Wu}, {Keel}, {Young}, {Mullins}, {Hinz}, {Ford}, {Barmby}, {Chandar}, {Bailin}, {Peek}, {Pickering}, \& {B{\"o}ker}}]{2021ApJ...914..142H}
+{Holwerda}, B.~W., {Wu}, J.~F., {Keel}, W.~C., {et~al.} 2021, \apj, 914, 142, \dodoi{10.3847/1538-4357/abffcc}
+
+\bibitem[{{Hubble}(1926)}]{1926ApJ....64..321H}
+{Hubble}, E.~P. 1926, \apj, 64, 321, \dodoi{10.1086/143018}
+
+\bibitem[{{Huertas-Company} \& {Lanusse}(2023)}]{2023PASA...40....1H}
+{Huertas-Company}, M., \& {Lanusse}, F. 2023, \pasa, 40, e001, \dodoi{10.1017/pasa.2022.55}
+
+\bibitem[{{Kauffmann} {et~al.}(2003){Kauffmann}, {Heckman}, {Tremonti}, {Brinchmann}, {Charlot}, {White}, {Ridgway}, {Brinkmann}, {Fukugita}, {Hall}, {Ivezi{\'c}}, {Richards}, \& {Schneider}}]{2003MNRAS.346.1055K}
+{Kauffmann}, G., {Heckman}, T.~M., {Tremonti}, C., {et~al.} 2003, \mnras, 346, 1055, \dodoi{10.1111/j.1365-2966.2003.07154.x}
+
+\bibitem[{{Kewley} {et~al.}(2019){Kewley}, {Nicholls}, \& {Sutherland}}]{2019ARA&A..57..511K}
+{Kewley}, L.~J., {Nicholls}, D.~C., \& {Sutherland}, R.~S. 2019, \araa, 57, 511, \dodoi{10.1146/annurev-astro-081817-051832}
+
+\bibitem[{Lee {et~al.}(2006)Lee, Battle, Raina, \& Ng}]{NIPS2006_2d71b2ae}
+Lee, H., Battle, A., Raina, R., \& Ng, A. 2006, in Advances in Neural Information Processing Systems, ed. B.~Sch\"{o}lkopf, J.~Platt, \& T.~Hoffman, Vol.~19 (MIT Press).
+\newblock \url{https://proceedings.neurips.cc/paper_files/paper/2006/file/2d71b2ae158c7c5912cc0bbde2bb9d95-Paper.pdf}
+
+\bibitem[{Lee {et~al.}(2007)Lee, Ekanadham, \& Ng}]{NIPS2007_4daa3db3}
+Lee, H., Ekanadham, C., \& Ng, A. 2007, in Advances in Neural Information Processing Systems, ed. J.~Platt, D.~Koller, Y.~Singer, \& S.~Roweis, Vol.~20 (Curran Associates, Inc.).
+\newblock \url{https://proceedings.neurips.cc/paper_files/paper/2007/file/4daa3db355ef2b0e64b472968cb70f0d-Paper.pdf}
+
+\bibitem[{{Lintott} {et~al.}(2008){Lintott}, {Schawinski}, {Slosar}, {Land}, {Bamford}, {Thomas}, {Raddick}, {Nichol}, {Szalay}, {Andreescu}, {Murray}, \& {Vandenberg}}]{2008MNRAS.389.1179L}
+{Lintott}, C.~J., {Schawinski}, K., {Slosar}, A., {et~al.} 2008, \mnras, 389, 1179, \dodoi{10.1111/j.1365-2966.2008.13689.x}
+
+\bibitem[{Makhzani \& Frey(2014)}]{makhzani2014ksparseautoencoders}
+Makhzani, A., \& Frey, B. 2014, k-Sparse Autoencoders.
+\newblock \doarXiv{1312.5663}
+
+\bibitem[{{Masters} \& {Galaxy Zoo Team}(2020)}]{2020IAUS..353..205M}
+{Masters}, K.~L., \& {Galaxy Zoo Team}. 2020, in IAU Symposium, Vol. 353, Galactic Dynamics in the Era of Large Surveys, ed. M.~{Valluri} \& J.~A. {Sellwood}, 205--212, \dodoi{10.1017/S1743921319008615}
+
+\bibitem[{{Masters} {et~al.}(2019){Masters}, {Lintott}, {Hart}, {Kruk}, {Smethurst}, {Casteels}, {Keel}, {Simmons}, {Stanescu}, {Tate}, \& {Tomi}}]{2019MNRAS.487.1808M}
+{Masters}, K.~L., {Lintott}, C.~J., {Hart}, R.~E., {et~al.} 2019, \mnras, 487, 1808, \dodoi{10.1093/mnras/stz1153}
+
+\bibitem[{Olah {et~al.}(2020)Olah, Cammarata, Schubert, Goh, Petrov, \& Carter}]{olah2020zoom}
+Olah, C., Cammarata, N., Schubert, L., {et~al.} 2020, Distill, \dodoi{10.23915/distill.00024.001}
+
+\bibitem[{Olah {et~al.}(2017)Olah, Mordvintsev, \& Schubert}]{olah2017feature}
+Olah, C., Mordvintsev, A., \& Schubert, L. 2017, Distill, \dodoi{10.23915/distill.00007}
+
+\bibitem[{Olshausen \& Field(1996)}]{Olshausen1996}
+Olshausen, B.~A., \& Field, D.~J. 1996, Nature, 381, 607, \dodoi{10.1038/381607a0}
+
+\bibitem[{Olshausen \& Field(1997)}]{OLSHAUSEN19973311}
+---. 1997, Vision Research, 37, 3311, \dodoi{https://doi.org/10.1016/S0042-6989(97)00169-7}
+
+\bibitem[{{O'Neill} {et~al.}(2024){O'Neill}, {Ye}, {Iyer}, \& {Wu}}]{2024arXiv240800657O}
+{O'Neill}, C., {Ye}, C., {Iyer}, K., \& {Wu}, J.~F. 2024, arXiv e-prints, arXiv:2408.00657, \dodoi{10.48550/arXiv.2408.00657}
+
+\bibitem[{{Parker} {et~al.}(2024){Parker}, {Lanusse}, {Golkar}, {Sarra}, {Cranmer}, {Bietti}, {Eickenberg}, {Krawezik}, {McCabe}, {Morel}, {Ohana}, {Pettee}, {R{\'e}galdo-Saint Blancard}, {Cho}, {Ho}, \& {Polymathic AI Collaboration}}]{2024MNRAS.531.4990P}
+{Parker}, L., {Lanusse}, F., {Golkar}, S., {et~al.} 2024, \mnras, 531, 4990, \dodoi{10.1093/mnras/stae1450}
+
+\bibitem[{{Peek} \& {Burkhart}(2019)}]{2019ApJ...882L..12P}
+{Peek}, J.~E.~G., \& {Burkhart}, B. 2019, \apjl, 882, L12, \dodoi{10.3847/2041-8213/ab3a9e}
+
+\bibitem[{Radford {et~al.}(2019)Radford, Wu, Child, Luan, Amodei, \& Sutskever}]{radford2019language}
+Radford, A., Wu, J., Child, R., {et~al.} 2019
+
+\bibitem[{Rai {et~al.}(2024)Rai, Zhou, Feng, Saparov, \& Yao}]{rai2024practicalreviewmechanisticinterpretability}
+Rai, D., Zhou, Y., Feng, S., Saparov, A., \& Yao, Z. 2024, A Practical Review of Mechanistic Interpretability for Transformer-Based Language Models.
+\newblock \doarXiv{2407.02646}
+
+\bibitem[{Räuker {et~al.}(2023)Räuker, Ho, Casper, \& Hadfield-Menell}]{10136140}
+Räuker, T., Ho, A., Casper, S., \& Hadfield-Menell, D. 2023, in 2023 IEEE Conference on Secure and Trustworthy Machine Learning (SaTML), 464--483, \dodoi{10.1109/SaTML54575.2023.00039}
+
+\bibitem[{{Sandage}(1961)}]{1961hag..book.....S}
+{Sandage}, A. 1961, {The Hubble Atlas of Galaxies}
+
+\bibitem[{Selvaraju {et~al.}(2017)Selvaraju, Cogswell, Das, Vedantam, Parikh, \& Batra}]{gradcam}
+Selvaraju, R.~R., Cogswell, M., Das, A., {et~al.} 2017, in 2017 IEEE International Conference on Computer Vision (ICCV), 618--626, \dodoi{10.1109/ICCV.2017.74}
+
+\bibitem[{Simonyan {et~al.}(2014)Simonyan, Vedaldi, \& Zisserman}]{simonyan2014deepinsideconvolutionalnetworks}
+Simonyan, K., Vedaldi, A., \& Zisserman, A. 2014, Deep Inside Convolutional Networks: Visualising Image Classification Models and Saliency Maps.
+\newblock \doarXiv{1312.6034}
+
+\bibitem[{{Somerville} \& {Dav{\'e}}(2015)}]{2015ARA&A..53...51S}
+{Somerville}, R.~S., \& {Dav{\'e}}, R. 2015, \araa, 53, 51, \dodoi{10.1146/annurev-astro-082812-140951}
+
+\bibitem[{{Strauss} {et~al.}(2002){Strauss}, {Weinberg}, {Lupton}, {Narayanan}, {Annis}, {Bernardi}, {Blanton}, {Burles}, {Connolly}, {Dalcanton}, {Doi}, {Eisenstein}, {Frieman}, {Fukugita}, {Gunn}, {Ivezi{\'c}}, {Kent}, {Kim}, {Knapp}, {Kron}, {Munn}, {Newberg}, {Nichol}, {Okamura}, {Quinn}, {Richmond}, {Schlegel}, {Shimasaku}, {SubbaRao}, {Szalay}, {Vanden Berk}, {Vogeley}, {Yanny}, {Yasuda}, {York}, \& {Zehavi}}]{2002AJ....124.1810S}
+{Strauss}, M.~A., {Weinberg}, D.~H., {Lupton}, R.~H., {et~al.} 2002, \aj, 124, 1810, \dodoi{10.1086/342343}
+
+\bibitem[{Templeton {et~al.}(2024)Templeton, Conerly, Marcus, Lindsey, Bricken, Chen, Pearce, Citro, Ameisen, Jones, Cunningham, Turner, McDougall, MacDiarmid, Freeman, Sumers, Rees, Batson, Jermyn, Carter, Olah, \& Henighan}]{templeton2024scaling}
+Templeton, A., Conerly, T., Marcus, J., {et~al.} 2024, Transformer Circuits Thread.
+\newblock \url{https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html}
+
+\bibitem[{{Tremonti} {et~al.}(2004){Tremonti}, {Heckman}, {Kauffmann}, {Brinchmann}, {Charlot}, {White}, {Seibert}, {Peng}, {Schlegel}, {Uomoto}, {Fukugita}, \& {Brinkmann}}]{2004ApJ...613..898T}
+{Tremonti}, C.~A., {Heckman}, T.~M., {Kauffmann}, G., {et~al.} 2004, \apj, 613, 898, \dodoi{10.1086/423264}
+
+\bibitem[{{Walmsley} {et~al.}(2023){Walmsley}, {Allen}, {Aussel}, {Bowles}, {Gregorowicz}, {Slijepcevic}, {Lintott}, {Scaife}, {Jab{\l}o{\'n}ska}, {Karchev}, {Lanzieri}, {Mohan}, {O'Ryan}, {Saiguhan}, {Su{\'a}rez}, {Guerra-Varas}, \& {Velu}}]{2023JOSS....8.5312W}
+{Walmsley}, M., {Allen}, C., {Aussel}, B., {et~al.} 2023, The Journal of Open Source Software, 8, 5312, \dodoi{10.21105/joss.05312}
+
+\bibitem[{{Walmsley} {et~al.}(2024){Walmsley}, {Bowles}, {Scaife}, {Shingirai Makechemu}, {Gordon}, {Ferguson}, {Mann}, {Pearson}, {Popp}, {Bovy}, {Speagle}, {Dickinson}, {Fortson}, {G{\'e}ron}, {Kruk}, {Lintott}, {Mantha}, {Mohan}, {O'Ryan}, \& {Slijepevic}}]{Walmsley+2024}
+{Walmsley}, M., {Bowles}, M., {Scaife}, A. M.~M., {et~al.} 2024, arXiv e-prints, arXiv:2404.02973, \dodoi{10.48550/arXiv.2404.02973}
+
+\bibitem[{Wright \& Demeure(2021)}]{wright2021ranger21synergisticdeeplearning}
+Wright, L., \& Demeure, N. 2021, Ranger21: a synergistic deep learning optimizer.
+\newblock \doarXiv{2106.13731}
+
+\bibitem[{{Wu}(2020)}]{2020ApJ...900..142W}
+{Wu}, J.~F. 2020, \apj, 900, 142, \dodoi{10.3847/1538-4357/abacbb}
+
+\bibitem[{{Wu} {et~al.}(2019){Wu}, {Baker}, {Heckman}, {Hicks}, {Lutz}, \& {Tacconi}}]{2019ApJ...887..251W}
+{Wu}, J.~F., {Baker}, A.~J., {Heckman}, T.~M., {et~al.} 2019, \apj, 887, 251, \dodoi{10.3847/1538-4357/ab5953}
+
+\bibitem[{{Wu} \& {Boada}(2019)}]{2019MNRAS.484.4683W}
+{Wu}, J.~F., \& {Boada}, S. 2019, \mnras, 484, 4683, \dodoi{10.1093/mnras/stz333}
+
+\bibitem[{{Wu} \& {Peek}(2020)}]{2020arXiv200912318W}
+{Wu}, J.~F., \& {Peek}, J.~E.~G. 2020, arXiv e-prints, arXiv:2009.12318, \dodoi{10.48550/arXiv.2009.12318}
+
+\bibitem[{{Zanisi} {et~al.}(2021){Zanisi}, {Huertas-Company}, {Lanusse}, {Bottrell}, {Pillepich}, {Nelson}, {Rodriguez-Gomez}, {Shankar}, {Hernquist}, {Dekel}, {Margalef-Bentabol}, {Vogelsberger}, \& {Primack}}]{2021MNRAS.501.4359Z}
+{Zanisi}, L., {Huertas-Company}, M., {Lanusse}, F., {et~al.} 2021, \mnras, 501, 4359, \dodoi{10.1093/mnras/staa3864}
+
+\bibitem[{Zeiler \& Fergus(2013)}]{zeiler2013visualizingunderstandingconvolutionalnetworks}
+Zeiler, M.~D., \& Fergus, R. 2013, Visualizing and Understanding Convolutional Networks.
+\newblock \doarXiv{1311.2901}
+
+\bibitem[{{Zwicky}(1959)}]{1959HDP....53..373Z}
+{Zwicky}, F. 1959, Handbuch der Physik, 53, 373, \dodoi{10.1007/978-3-642-45932-0_9}
+
+\end{thebibliography}
