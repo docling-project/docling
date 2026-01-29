@@ -312,3 +312,46 @@ def test_bytesio_stream():
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+
+
+def test_edge_cases_merging() -> None:
+    """Test that split tables are correctly merged using the region growing algorithm.
+
+    Verifies:
+    - Sheet 1 (missing_header): 1 table (Standard case)
+    - Sheet 2 (Attached_left): 1 MERGED table (The critical fix!)
+    - Sheet 3 (Diagonal): 2 separate tables (Correctly separated)
+    """
+
+    path = next(item for item in get_excel_paths() if item.stem == "edge_cases")
+
+    if not path.exists():
+        pytest.skip(f"Test file {path} not found.")
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    # Organize tables by Page Number (1-based index)
+    tables_by_page = {}
+    for table in doc.tables:
+        p_no = table.prov[0].page_no
+        if p_no not in tables_by_page:
+            tables_by_page[p_no] = []
+        tables_by_page[p_no].append(table)
+
+    # Page 1: Standard table
+    assert len(tables_by_page.get(1, [])) == 1, "Page 1 should have 1 table"
+
+    # Page 2: The 'Attached left' case.
+    # SUCCESS CONDITION: It is 1 single table.
+    # (If the fix failed, this would be 2 tables).
+    assert len(tables_by_page.get(2, [])) == 1, (
+        f"Page 2 (Attached Left) should be 1 merged table, but found {len(tables_by_page.get(2, []))}"
+    )
+
+    # Page 3: Diagonal case.
+    # These are physically separated by empty space, so they should remain 2 tables.
+    assert len(tables_by_page.get(3, [])) == 2, (
+        "Page 3 (Diagonal) should have 2 separate tables"
+    )
