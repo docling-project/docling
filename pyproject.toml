@@ -44,7 +44,7 @@ authors = [
 requires-python = '>=3.10,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
-  'docling-core[chunking] (>=2.58.0,<3.0.0)',
+  'docling-core[chunking] (>=2.62.0,<3.0.0)',
   'docling-parse (>=4.7.0,<5.0.0)',
   "docling-ibm-models>=3.9.1,<4",
   'filetype (>=1.2.0,<2.0.0)',
