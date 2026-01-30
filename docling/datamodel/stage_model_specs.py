@@ -11,7 +11,10 @@ from typing import Any, ClassVar, Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field
 
-from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
+from docling.datamodel.pipeline_options_vlm_model import (
+    ResponseFormat,
+    TransformersModelType,
+)
 from docling.datamodel.vlm_runtime_options import BaseVlmRuntimeOptions
 from docling.models.runtimes.base import VlmRuntimeType
 
@@ -459,13 +462,25 @@ VLM_CONVERT_GRANITE_VISION = StageModelPreset(
     name="Granite-Vision",
     description="IBM Granite Vision model for markdown conversion (2B parameters)",
     model_spec=VlmModelSpec(
-        name="Granite-Vision-3.2-2B",
-        default_repo_id="ibm-granite/granite-vision-3.2-2b",
+        name="Granite-Vision-3.3-2B",
+        default_repo_id="ibm-granite/granite-vision-3.3-2b",
         prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
         response_format=ResponseFormat.MARKDOWN,
+        supported_runtimes={
+            VlmRuntimeType.TRANSFORMERS,
+            VlmRuntimeType.API_OLLAMA,
+            VlmRuntimeType.API_LMSTUDIO,
+        },
+        runtime_overrides={
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+                }
+            ),
+        },
         api_overrides={
             VlmRuntimeType.API_OLLAMA: ApiModelConfig(
-                params={"model": "granite3.2-vision:2b"}
+                params={"model": "granite3.3-vision:2b"}
             ),
         },
     ),
@@ -542,6 +557,18 @@ PICTURE_DESC_GRANITE_VISION = StageModelPreset(
         default_repo_id="ibm-granite/granite-vision-3.3-2b",
         prompt="What is shown in this image?",
         response_format=ResponseFormat.PLAINTEXT,
+        supported_runtimes={
+            VlmRuntimeType.TRANSFORMERS,
+            VlmRuntimeType.API_OLLAMA,
+            VlmRuntimeType.API_LMSTUDIO,
+        },
+        runtime_overrides={
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+                }
+            ),
+        },
         api_overrides={
             VlmRuntimeType.API_OLLAMA: ApiModelConfig(
                 params={"model": "ibm/granite3.3-vision:2b"}
