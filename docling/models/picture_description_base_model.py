@@ -10,7 +10,6 @@ from docling_core.types.doc import (
     PictureClassificationLabel,
     PictureItem,
     PictureMeta,
-    ProvenanceItem,
 )
 from docling_core.types.doc.document import PictureDescriptionData
 from PIL import Image

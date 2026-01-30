@@ -4,12 +4,7 @@ from pathlib import Path
 from typing import Optional, cast
 
 import numpy as np
-from docling_core.types.doc import (
-    DocItem,
-    ImageRef,
-    PictureItem,
-    TableItem,
-)
+from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -194,7 +189,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
                     or self.pipeline_options.generate_table_images
                 ):
                     scale = self.pipeline_options.images_scale
-                    for element, _ in conv_res.document.iterate_items():
+                    for element, _level in conv_res.document.iterate_items():
                         if not isinstance(element, DocItem) or len(element.prov) == 0:
                             continue
                         if (

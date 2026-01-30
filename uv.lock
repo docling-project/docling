@@ -1035,7 +1035,7 @@ requires-dist = [
     { name = "accelerate", marker = "extra == 'vlm'", specifier = ">=1.2.1,<2.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
     { name = "certifi", specifier = ">=2024.7.4" },
-    { name = "docling-core", extras = ["chunking"], git = "ssh://git@github.com/docling-project/docling-core.git?rev=5e0a7870f842ce82b8ca09eed5264013e728ded3" },
+    { name = "docling-core", extras = ["chunking"], specifier = ">=2.58.0,<3.0.0" },
     { name = "docling-ibm-models", specifier = ">=3.9.1,<4" },
     { name = "docling-parse", specifier = ">=4.7.0,<5.0.0" },
     { name = "easyocr", marker = "extra == 'easyocr'", specifier = ">=1.7,<2.0" },
@@ -1119,8 +1119,8 @@ examples = [
 
 [[package]]
 name = "docling-core"
-version = "2.60.2"
-source = { git = "ssh://git@github.com/docling-project/docling-core.git?rev=5e0a7870f842ce82b8ca09eed5264013e728ded3#5e0a7870f842ce82b8ca09eed5264013e728ded3" }
+version = "2.62.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonref" },
     { name = "jsonschema" },
@@ -1132,6 +1132,10 @@ dependencies = [
     { name = "tabulate" },
     { name = "typer" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e0/21/20d58a48f4baa9e16d49aaccf3048346a8e7833b65b09144315bf1d956db/docling_core-2.62.0.tar.gz", hash = "sha256:147c958fe3b552db5e78b5a301dba19349820066ec5ef189b67eb5ed00306a07", size = 250107, upload-time = "2026-01-30T14:01:44.448Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c5/89/e5204af5669e6b73bfdf304fc3e4c6b4b98b10d06b8bd7dc186b5190c9f3/docling_core-2.62.0-py3-none-any.whl", hash = "sha256:0073ccbd0c9cf514b38be7d53ccd78ee7b92723294a623a3f36eb7a7aea67bf0", size = 238084, upload-time = "2026-01-30T14:01:43.059Z" },
 ]
 
 [package.optional-dependencies]

@@ -1,9 +1,7 @@
-import copy
 import logging
 from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
-from typing import Literal
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -11,14 +9,13 @@ from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
     Formatting,
-    TrackProvenance,
+    TrackSource,
 )
 from docling_core.types.doc.webvtt import (
     WebVTTCueBoldSpan,
     WebVTTCueComponent,
     WebVTTCueComponentWithTerminator,
     WebVTTCueItalicSpan,
-    WebVTTCueLanguageSpan,
     WebVTTCueTextSpan,
     WebVTTCueUnderlineSpan,
     WebVTTCueVoiceSpan,
@@ -38,18 +35,12 @@ class AnnotatedText:
     text: str
     voice: str | None = None
     formatting: Formatting | None = None
-    classes: dict[Literal["b", "u", "i", "lang", "v"], list[str]] = field(
-        default_factory=dict
-    )
-    lang: set[str] = field(default_factory=set)
 
     def copy_meta(self, text):
         return AnnotatedText(
             text=text,
             voice=self.voice,
             formatting=self.formatting.model_copy() if self.formatting else None,
-            classes=copy.deepcopy(self.classes),
-            lang=self.lang.copy(),
         )
 
 
@@ -105,20 +96,6 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
     def supported_formats(cls) -> set[InputFormat]:
         return {InputFormat.VTT}
 
-    @staticmethod
-    def _add_classes(
-        item: AnnotatedText,
-        key: Literal["b", "u", "i", "lang", "v"],
-        classes: list[str],
-    ) -> None:
-        if not classes:
-            return
-
-        bucket = item.classes.setdefault(key, [])
-        for cls in classes:
-            if cls not in bucket:
-                bucket.append(cls)
-
     @override
     def convert(self) -> DoclingDocument:
         _log.debug("Starting WebVTT conversion...")
@@ -156,26 +133,18 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
                     if isinstance(component, WebVTTCueBoldSpan):
                         item.formatting = item.formatting or Formatting()
                         item.formatting.bold = True
-                        self._add_classes(item, "b", component.start_tag.classes)
 
                     elif isinstance(component, WebVTTCueItalicSpan):
                         item.formatting = item.formatting or Formatting()
                         item.formatting.italic = True
-                        self._add_classes(item, "i", component.start_tag.classes)
 
                     elif isinstance(component, WebVTTCueUnderlineSpan):
                         item.formatting = item.formatting or Formatting()
                         item.formatting.underline = True
-                        self._add_classes(item, "u", component.start_tag.classes)
-
-                    elif isinstance(component, WebVTTCueLanguageSpan):
-                        item.lang.add(component.start_tag.annotation)
-                        self._add_classes(item, "lang", component.start_tag.classes)
 
                     elif isinstance(component, WebVTTCueVoiceSpan):
                         # voice spans cannot be embedded
                         item.voice = component.start_tag.annotation
-                        self._add_classes(item, "v", component.start_tag.classes)
 
                     parents.append(item)
                     _extract_components(component.internal_text.components)
@@ -191,30 +160,21 @@ class WebVTTDocumentBackend(DeclarativeDocumentBackend):
             item: AnnotatedText,
             parent=None,
         ):
-            languages = list(item.lang) if item.lang else None
-            classes = (
-                [".".join([k, *v]) for k, v in item.classes.items()]
-                if item.classes
-                else None
-            )
-
-            track = TrackProvenance(
+            track = TrackSource(
                 start_time=block.timings.start.seconds,
                 end_time=block.timings.end.seconds,
                 identifier=identifier,
-                languages=languages,
-                classes=classes,
                 voice=item.voice or None,
             )
 
-            cue_span = doc.add_text(
+            doc.add_text(
                 label=DocItemLabel.TEXT,
                 text=text,
                 content_layer=ContentLayer.BODY,
                 formatting=formatting,
                 parent=parent,
+                source=track,
             )
-            cue_span.source = [track]
 
         if vtt.title:
             doc.add_title(vtt.title, content_layer=ContentLayer.BODY)

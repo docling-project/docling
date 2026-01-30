@@ -12,7 +12,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union, cast
 
-from docling_core.types.doc import DoclingDocument, DocTagsDocument
+from docling_core.types.doc import DoclingDocument
+from docling_core.types.doc.document import DocTagsDocument
 from PIL import Image as PILImage
 
 if TYPE_CHECKING:

@@ -3,7 +3,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import DoclingDocument, GroupItem, TextItem, TrackProvenance
+from docling_core.types.doc import DoclingDocument, GroupItem, TextItem
 
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult, _DocumentConversionInput

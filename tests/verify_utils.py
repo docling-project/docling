@@ -10,10 +10,8 @@ from docling_core.types.doc import (
     DoclingDocument,
     FormulaItem,
     PictureItem,
-    ProvenanceItem,
     TableItem,
     TextItem,
-    TrackProvenance,
 )
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage

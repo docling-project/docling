@@ -44,6 +44,7 @@ authors = [
 requires-python = '>=3.10,<4.0'
 dependencies = [
   'pydantic (>=2.0.0,<3.0.0)',
+  'docling-core[chunking] (>=2.58.0,<3.0.0)',
   'docling-parse (>=4.7.0,<5.0.0)',
   "docling-ibm-models>=3.9.1,<4",
   'filetype (>=1.2.0,<2.0.0)',
@@ -70,7 +71,6 @@ dependencies = [
   'scipy (>=1.6.0,<2.0.0)',
   "accelerate>=1.0.0,<2",
   "polyfactory>=2.22.2",
-  "docling-core[chunking]",
 ]
 
 [project.urls]
@@ -154,9 +154,6 @@ constraints = [
 [tool.uv]
 package = true
 default-groups = "all"
-
-[tool.uv.sources]
-docling-core = { git = "ssh://git@github.com/docling-project/docling-core.git", rev = "5e0a7870f842ce82b8ca09eed5264013e728ded3" }
 
 [tool.setuptools.packages.find]
 include = ["docling*"]

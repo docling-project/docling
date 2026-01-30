@@ -10,7 +10,7 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
-    TrackProvenance,
+    TrackSource,
 )
 from pydantic import BaseModel, Field
 
@@ -178,17 +178,17 @@ class _NativeWhisperModel:
             )
 
             for citem in conversation:
-                source: TrackProvenance = TrackProvenance(
+                track: TrackSource = TrackSource(
                     start_time=citem.start_time,
                     end_time=citem.end_time,
                     voice=citem.speaker,
                 )
-                cue_span = conv_res.document.add_text(
+                conv_res.document.add_text(
                     label=DocItemLabel.TEXT,
                     text=citem.text,
                     content_layer=ContentLayer.BODY,
+                    source=track,
                 )
-                cue_span.source = [source]
 
             return conv_res
 
@@ -295,17 +295,17 @@ class _MlxWhisperModel:
             )
 
             for citem in conversation:
-                source: TrackProvenance = TrackProvenance(
+                track: TrackSource = TrackSource(
                     start_time=citem.start_time,
                     end_time=citem.end_time,
                     voice=citem.speaker,
                 )
-                cue_span = conv_res.document.add_text(
+                conv_res.document.add_text(
                     label=DocItemLabel.TEXT,
                     text=citem.text,
                     content_layer=ContentLayer.BODY,
+                    source=track,
                 )
-                cue_span.source = [source]
 
             conv_res.status = ConversionStatus.SUCCESS
             return conv_res
