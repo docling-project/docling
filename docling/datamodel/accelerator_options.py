@@ -5,7 +5,13 @@ from enum import Enum
 from typing import Annotated, Any, Union
 
 from pydantic import Field, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+except ImportError:
+    # Fallback for environments without pydantic-settings
+    from pydantic import BaseModel as BaseSettings
+    SettingsConfigDict = None
 
 _log = logging.getLogger(__name__)
 
@@ -26,9 +32,11 @@ class AcceleratorOptions(BaseSettings):
     Can be configured via environment variables with DOCLING_ prefix.
     """
 
-    model_config = SettingsConfigDict(
-        env_prefix="DOCLING_", env_nested_delimiter="_", populate_by_name=True
-    )
+    if SettingsConfigDict is not None:
+        model_config = SettingsConfigDict(
+            env_prefix="DOCLING_", env_nested_delimiter="_", populate_by_name=True
+        )
+    
     num_threads: Annotated[
         int,
         Field(
