@@ -4,6 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+# Skip entire module if pydantic_settings is not available
+pytest.importorskip("pydantic_settings")
+
 from docling.datamodel import asr_model_specs
 from docling.datamodel.base_models import ConversionStatus, InputFormat
 from docling.datamodel.document import ConversionResult, InputDocument
