@@ -28,7 +28,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 
-from docling.models.chart_extraction_model_granite_vision import (
+from docling.models.stages.chart_extraction.granite_vision import (
     ChartExtractionModelGraniteVision,
     ChartExtractionModelOptions,
 )
