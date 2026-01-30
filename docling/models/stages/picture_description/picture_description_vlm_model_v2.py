@@ -102,12 +102,46 @@ class PictureDescriptionVlmModelV2(PictureDescriptionBaseModel):
                 self.provenance = f"{self.repo_id} ({runtime_type.value})"
 
             else:
-                # Legacy path - fall back to old implementation
-                raise ValueError(
-                    "PictureDescriptionVlmModelV2 requires model_spec and runtime_options. "
-                    "Use PictureDescriptionVlmOptions.from_preset() to create options, "
-                    "or use the legacy PictureDescriptionVlmModel class."
+                # Apply default preset if no configuration provided
+                _log.info(
+                    "No model_spec or runtime_options provided, applying default preset 'smolvlm'"
                 )
+
+                # Create default options with smolvlm preset
+                default_options = PictureDescriptionVlmOptions.from_preset("smolvlm")
+
+                # Copy over any user-provided settings
+                if self.options.prompt != "Describe this image in a few sentences.":
+                    default_options.prompt = self.options.prompt
+                if self.options.generation_config != {
+                    "max_new_tokens": 200,
+                    "do_sample": False,
+                }:
+                    default_options.generation_config = self.options.generation_config
+
+                # Update self.options with the preset-based options
+                self.options = default_options
+
+                # Now initialize with the preset
+                # After from_preset(), these are guaranteed to be non-None
+                assert self.options.runtime_options is not None
+                assert self.options.model_spec is not None
+
+                runtime_type = self.options.runtime_options.runtime_type
+                self.repo_id = self.options.model_spec.get_repo_id(runtime_type)
+                self.revision = self.options.model_spec.get_revision(runtime_type)
+
+                _log.info(
+                    f"Initializing PictureDescriptionVlmModelV2 with default preset: "
+                    f"model={self.repo_id}, "
+                    f"runtime={runtime_type.value}"
+                )
+
+                # Create runtime using factory
+                self.runtime = create_vlm_runtime(self.options.runtime_options)
+
+                # Set provenance from model spec
+                self.provenance = f"{self.repo_id} ({runtime_type.value})"
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         """Generate descriptions for a batch of images.

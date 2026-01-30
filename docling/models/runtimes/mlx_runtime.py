@@ -155,16 +155,17 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 num_tokens = 0
                 stop_reason = "unspecified"
 
-                for chunk in self.stream_generate(  # type: ignore[misc]
+                for token in self.stream_generate(  # type: ignore[misc]
                     self.vlm_model,
                     self.processor,
-                    image,
-                    formatted_prompt,
+                    formatted_prompt,  # prompt comes BEFORE images
+                    [image],  # images must be a list
                     max_tokens=input_data.max_new_tokens,
                     temp=input_data.temperature,
                     verbose=False,
                 ):
-                    generated_text = chunk
+                    # stream_generate yields tokens with .text attribute
+                    generated_text += token.text
                     num_tokens += 1
 
                     # Check stopping criteria
@@ -179,16 +180,22 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 # Non-streaming generation
                 from mlx_vlm import generate
 
-                generated_text = generate(
+                result = generate(
                     self.vlm_model,
                     self.processor,
-                    image,
-                    formatted_prompt,
+                    formatted_prompt,  # prompt comes BEFORE images
+                    [image],  # images must be a list
                     max_tokens=input_data.max_new_tokens,
                     temp=input_data.temperature,
                     verbose=False,
                 )
-                num_tokens = len(generated_text.split())  # Rough estimate
+                # generate() returns a GenerationResult object with .text attribute
+                generated_text = result.text if hasattr(result, "text") else str(result)
+                num_tokens = (
+                    result.generation_tokens
+                    if hasattr(result, "generation_tokens")
+                    else len(generated_text.split())
+                )
                 stop_reason = "unspecified"
 
             generation_time = time.time() - start_time
