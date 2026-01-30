@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
     TransformersModelType,
+    TransformersPromptStyle,
 )
 from docling.datamodel.vlm_runtime_options import BaseVlmRuntimeOptions
 from docling.models.runtimes.base import VlmRuntimeType
@@ -41,6 +42,11 @@ class RuntimeModelConfig(BaseModel):
         default=None, description="Override model revision for this runtime"
     )
 
+    torch_dtype: Optional[str] = Field(
+        default=None,
+        description="Override torch dtype for this runtime (e.g., 'bfloat16')",
+    )
+
     extra_config: Dict[str, Any] = Field(
         default_factory=dict, description="Additional runtime-specific configuration"
     )
@@ -60,6 +66,7 @@ class RuntimeModelConfig(BaseModel):
         return RuntimeModelConfig(
             repo_id=self.repo_id or base_repo_id,
             revision=self.revision or base_revision,
+            torch_dtype=self.torch_dtype,
             extra_config=self.extra_config,
         )
 
@@ -130,6 +137,14 @@ class VlmModelSpec(BaseModel):
 
     trust_remote_code: bool = Field(
         default=False, description="Whether to trust remote code for this model"
+    )
+
+    stop_strings: List[str] = Field(
+        default_factory=list, description="Stop strings for generation"
+    )
+
+    max_new_tokens: int = Field(
+        default=4096, description="Maximum number of new tokens to generate"
     )
 
     def get_repo_id(self, runtime_type: VlmRuntimeType) -> str:
@@ -295,6 +310,10 @@ class StagePresetMixin:
         """
         if preset.preset_id not in cls._presets:
             cls._presets[preset.preset_id] = preset
+        else:
+            _log.error(
+                f"Preset '{preset.preset_id}' already registered for {cls.__name__}"
+            )
 
     @classmethod
     def get_preset(cls, preset_id: str) -> StageModelPreset:
@@ -430,9 +449,16 @@ VLM_CONVERT_SMOLDOCLING = StageModelPreset(
         default_repo_id="docling-project/SmolDocling-256M-preview",
         prompt="Convert this page to docling.",
         response_format=ResponseFormat.DOCTAGS,
+        stop_strings=["</doctag>", "<end_of_utterance>"],
         runtime_overrides={
             VlmRuntimeType.MLX: RuntimeModelConfig(
                 repo_id="docling-project/SmolDocling-256M-preview-mlx-bf16"
+            ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                },
             ),
         },
     ),
@@ -449,9 +475,17 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
         default_repo_id="ibm-granite/granite-docling-258M",
         prompt="Convert this page to docling.",
         response_format=ResponseFormat.DOCTAGS,
+        stop_strings=["</doctag>", "<|end_of_text|>"],
+        max_new_tokens=8192,
         runtime_overrides={
             VlmRuntimeType.MLX: RuntimeModelConfig(
                 repo_id="ibm-granite/granite-docling-258M-mlx"
+            ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "extra_generation_config": {"skip_special_tokens": False},
+                }
             ),
         },
         api_overrides={
@@ -528,6 +562,11 @@ VLM_CONVERT_PIXTRAL = StageModelPreset(
             VlmRuntimeType.MLX: RuntimeModelConfig(
                 repo_id="mlx-community/pixtral-12b-bf16"
             ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+                }
+            ),
         },
     ),
     scale=2.0,
@@ -544,6 +583,16 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
         prompt="",
         response_format=ResponseFormat.MARKDOWN,
         supported_runtimes={VlmRuntimeType.TRANSFORMERS},
+        stop_strings=["<|im_end|>"],
+        runtime_overrides={
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.NONE,
+                    "extra_processor_kwargs": {"format": True},
+                }
+            ),
+        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.TRANSFORMERS,
@@ -565,6 +614,12 @@ PICTURE_DESC_SMOLVLM = StageModelPreset(
         runtime_overrides={
             VlmRuntimeType.MLX: RuntimeModelConfig(
                 repo_id="moot20/SmolVLM-256M-Instruct-MLX"
+            ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                torch_dtype="bfloat16",
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                },
             ),
         },
     ),
@@ -622,6 +677,11 @@ PICTURE_DESC_PIXTRAL = StageModelPreset(
             VlmRuntimeType.MLX: RuntimeModelConfig(
                 repo_id="mlx-community/pixtral-12b-bf16"
             ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+                }
+            ),
         },
     ),
     scale=2.0,
@@ -643,6 +703,11 @@ PICTURE_DESC_QWEN = StageModelPreset(
         runtime_overrides={
             VlmRuntimeType.MLX: RuntimeModelConfig(
                 repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16"
+            ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                }
             ),
         },
     ),
