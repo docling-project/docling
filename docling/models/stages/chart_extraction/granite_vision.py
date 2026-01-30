@@ -87,7 +87,7 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         return download_hf_model(
             repo_id="ibm-granite/granite-vision-3.3-2b-chart2csv-preview",
             # Let's pin it to a specific commit to reduce potential regression errors
-            revision="6e1fbaae4604ecc85f4f371416d82154ca49ad67", 
+            revision="6e1fbaae4604ecc85f4f371416d82154ca49ad67",
             local_dir=local_dir,
             force=force,
             progress=progress,
@@ -186,13 +186,20 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
             padding_side="left",
         ).to(self.device)
 
+        eos_ids = [
+            self._processor.tokenizer.eos_token_id,
+            self._processor.tokenizer.convert_tokens_to_ids("<|end_of_text|>"),
+        ]
+
         # autoregressively complete prompt for batch
         output_ids = self._model.generate(
-            **inputs, max_new_tokens=self._model_max_length
+            **inputs,
+            max_new_tokens=self._model_max_length,
+            eos_token_id=eos_ids,  # self._processor.tokenizer.eos_token_id,
         )
 
         output_texts = self._processor.batch_decode(
-            output_ids, skip_special_tokens=False
+            output_ids, skip_special_tokens=True
         )
 
         chart_data: list[Optional[TabularChartMetaField]] = self._post_process(
@@ -252,15 +259,18 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
         assistant_response = assistant_match.group(1).strip()
 
-        # Remove code block markers - handle both ``` and ````
-        # First remove outer code blocks
-        csv_content = re.sub(r"^```+(?:csv)?\s*", "", assistant_response)
-        csv_content = re.sub(r"```+\s*$", "", csv_content)
-
-        # Clean up any remaining code block markers
-        csv_content = csv_content.strip()
-        csv_content = re.sub(r"^```+(?:csv)?\s*", "", csv_content)
-        csv_content = re.sub(r"```+\s*$", "", csv_content)
+        # Extract the first CSV code block (```csv ... ```)
+        # This handles <|end_of_text|> tokens and multiple blocks in the output
+        csv_match = re.search(r"```csv\s*\n(.*?)\n```", assistant_response, re.DOTALL)
+        if csv_match:
+            csv_content = csv_match.group(1).strip()
+        else:
+            # Fallback: take content up to first <|end_of_text|> and strip
+            # code block markers
+            csv_content = assistant_response.split("<|end_of_text|>")[0].strip()
+            csv_content = re.sub(r"^```+(?:csv)?\s*", "", csv_content)
+            csv_content = re.sub(r"```+\s*$", "", csv_content)
+            csv_content = csv_content.strip()
 
         # Convert to DataFrame
         try:
@@ -304,9 +314,9 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
         # Add header row cells if inferred
         if first_row_is_header:
-            for col_idx, col_name in enumerate(df.columns):
+            for col_idx, value in enumerate(df.iloc[0]):
                 cell = TableCell(
-                    text=str(col_name),
+                    text=str(value),
                     start_row_offset_idx=0,
                     end_row_offset_idx=1,
                     start_col_offset_idx=col_idx,
@@ -320,9 +330,10 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 )
                 table_cells.append(cell)
 
-        # Add data cells
+        # Add data cells (skip the first row if it was used as header)
+        data_df = df.iloc[1:] if first_row_is_header else df
         row_offset = 1 if first_row_is_header else 0
-        for row_idx, row in df.iterrows():
+        for row_idx, (_idx, row) in enumerate(data_df.iterrows()):
             for col_idx, value in enumerate(row):
                 # Convert value to string, handling NaN and None
                 if pd.isna(value):
@@ -335,8 +346,8 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
                 cell = TableCell(
                     text=text,
-                    start_row_offset_idx=int(row_idx) + row_offset,
-                    end_row_offset_idx=int(row_idx) + row_offset + 1,
+                    start_row_offset_idx=row_idx + row_offset,
+                    end_row_offset_idx=row_idx + row_offset + 1,
                     start_col_offset_idx=col_idx,
                     end_col_offset_idx=col_idx + 1,
                     row_span=1,
@@ -348,8 +359,10 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
                 )
                 table_cells.append(cell)
 
-        # Calculate total rows (header + data rows)
-        num_rows = len(df) + (1 if first_row_is_header else 0)
+        # Total rows equals DataFrame length in both cases:
+        # with header: 1 header + (len(df) - 1) data rows = len(df)
+        # without header: len(df) data rows
+        num_rows = len(df)
         num_cols = len(df.columns)
 
         return TableData(table_cells=table_cells, num_rows=num_rows, num_cols=num_cols)
