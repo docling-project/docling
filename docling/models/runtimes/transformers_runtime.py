@@ -253,8 +253,20 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         else:
             # Format prompt
             if prompt_style == TransformersPromptStyle.CHAT:
+                # Use structured message format with image placeholder (like legacy implementation)
+                # This is required for vision models like Granite Vision to properly tokenize
+                # both image features and text tokens
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image"},
+                            {"type": "text", "text": input_data.prompt},
+                        ],
+                    }
+                ]
                 formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
-                    [{"role": "user", "content": input_data.prompt}],
+                    messages,
                     tokenize=False,
                     add_generation_prompt=True,
                 )
@@ -429,8 +441,20 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
             # Format prompt
             if prompt_style == TransformersPromptStyle.CHAT:
+                # Use structured message format with image placeholder (like legacy implementation)
+                # This is required for vision models like Granite Vision to properly tokenize
+                # both image features and text tokens
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image"},
+                            {"type": "text", "text": input_data.prompt},
+                        ],
+                    }
+                ]
                 formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
-                    [{"role": "user", "content": input_data.prompt}],
+                    messages,
                     tokenize=False,
                     add_generation_prompt=True,
                 )
