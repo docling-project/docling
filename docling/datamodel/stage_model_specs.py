@@ -295,7 +295,18 @@ class StagePresetMixin:
     """
 
     # Class variable to store presets for this specific stage
-    _presets: ClassVar[Dict[str, StageModelPreset]] = {}
+    # Note: Each subclass gets its own _presets dict via __init_subclass__
+    _presets: ClassVar[Dict[str, StageModelPreset]]
+
+    def __init_subclass__(cls, **kwargs):
+        """Initialize each subclass with its own preset registry.
+
+        This ensures that each stage options class has an isolated preset
+        registry, preventing namespace collisions across different stages.
+        """
+        super().__init_subclass__(**kwargs)
+        # Each subclass gets its own _presets dictionary
+        cls._presets = {}
 
     @classmethod
     def register_preset(cls, preset: StageModelPreset) -> None:
