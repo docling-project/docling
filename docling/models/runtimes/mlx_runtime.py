@@ -8,6 +8,7 @@ from typing import Any, Callable, List, Optional
 
 from PIL.Image import Image
 
+from docling.datamodel.stage_model_specs import RuntimeModelConfig
 from docling.datamodel.vlm_runtime_options import MlxVlmRuntimeOptions
 from docling.models.runtimes.base import (
     BaseVlmRuntime,
@@ -37,14 +38,16 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         self,
         options: MlxVlmRuntimeOptions,
         artifacts_path: Optional[Path] = None,
+        model_config: Optional[RuntimeModelConfig] = None,
     ):
         """Initialize the MLX runtime.
 
         Args:
             options: MLX-specific runtime options
             artifacts_path: Path to cached model artifacts
+            model_config: Model configuration (repo_id, revision, extra_config)
         """
-        super().__init__(options)
+        super().__init__(options, model_config=model_config)
         self.options: MlxVlmRuntimeOptions = options
         self.artifacts_path = artifacts_path
 
@@ -55,6 +58,10 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         self.config: Any = None
         self.apply_chat_template: Any = None
         self.stream_generate: Any = None
+
+        # Initialize immediately if model_config is provided
+        if self.model_config is not None:
+            self.initialize()
 
     def initialize(self) -> None:
         """Initialize the MLX model and processor."""
@@ -75,6 +82,14 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
         self.apply_chat_template = apply_chat_template  # type: ignore[assignment]
         self.stream_generate = stream_generate  # type: ignore[assignment]
+
+        # Load model if model_config is provided
+        if self.model_config is not None and self.model_config.repo_id is not None:
+            repo_id = self.model_config.repo_id
+            revision = self.model_config.revision or "main"
+
+            _log.info(f"Loading MLX model {repo_id} (revision: {revision})")
+            self._load_model_for_repo(repo_id, revision=revision)
 
         self._initialized = True
         _log.info("MLX runtime initialized")
@@ -116,10 +131,11 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         if not self._initialized:
             self.initialize()
 
-        # Load model if not already loaded
+        # Model should already be loaded via initialize()
         if self.vlm_model is None or self.processor is None:
-            revision = input_data.extra_generation_config.get("revision", "main")
-            self._load_model_for_repo(input_data.repo_id, revision=revision)
+            raise RuntimeError(
+                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
+            )
 
         # Prepare image
         image = input_data.image

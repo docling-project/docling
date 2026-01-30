@@ -13,6 +13,7 @@ from PIL import Image as PILImage
 from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
+from docling.datamodel.stage_model_specs import RuntimeModelConfig
 from docling.models.base_model import BasePageModel
 from docling.models.runtimes.base import (
     BaseVlmRuntime,
@@ -57,7 +58,7 @@ class VlmConvertModel(BasePageModel):
         # Get runtime type from options
         runtime_type = options.runtime_options.runtime_type
 
-        # Get model configuration for this runtime
+        # Get model configuration for this runtime (for logging)
         self.repo_id = options.model_spec.get_repo_id(runtime_type)
         self.revision = options.model_spec.get_revision(runtime_type)
 
@@ -66,8 +67,11 @@ class VlmConvertModel(BasePageModel):
             f"model={self.repo_id}, revision={self.revision}"
         )
 
-        # Create the runtime
-        self.runtime: BaseVlmRuntime = create_vlm_runtime(options.runtime_options)
+        # Create the runtime - pass model_spec, let factory handle config generation
+        self.runtime: BaseVlmRuntime = create_vlm_runtime(
+            options.runtime_options,
+            model_spec=options.model_spec,
+        )
 
         _log.info("VlmConvertModel initialized successfully")
 

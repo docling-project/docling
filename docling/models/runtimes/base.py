@@ -3,10 +3,13 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from docling.datamodel.stage_model_specs import RuntimeModelConfig
 
 _log = logging.getLogger(__name__)
 
@@ -109,20 +112,29 @@ class BaseVlmRuntime(ABC):
     (PIL images + text prompts) and returns text predictions.
 
     Runtimes are independent of:
-    - Model specifications (repo_id, prompts)
     - Pipeline stages (DoclingDocument, Page objects)
     - Response formats (doctags, markdown, etc.)
 
-    These concerns are handled by the stages that use the runtime.
+    But they ARE aware of:
+    - Model specifications (repo_id, revision, model_type via RuntimeModelConfig)
+
+    These model specs are provided at construction time for eager initialization.
     """
 
-    def __init__(self, options: BaseVlmRuntimeOptions):
+    def __init__(
+        self,
+        options: BaseVlmRuntimeOptions,
+        model_config: Optional["RuntimeModelConfig"] = None,
+    ):
         """Initialize the runtime.
 
         Args:
             options: Runtime-specific configuration options
+            model_config: Model configuration (repo_id, revision, extra_config)
+                         If None, model must be specified in predict() calls
         """
         self.options = options
+        self.model_config = model_config
         self._initialized = False
 
     @abstractmethod

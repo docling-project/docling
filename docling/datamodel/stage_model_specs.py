@@ -190,6 +190,33 @@ class VlmModelSpec(BaseModel):
             return True
         return runtime_type in self.supported_runtimes
 
+    def get_runtime_config(self, runtime_type: VlmRuntimeType) -> RuntimeModelConfig:
+        """Get RuntimeModelConfig for a specific runtime type.
+
+        This is the single source of truth for generating runtime-specific
+        configuration from the model spec.
+
+        Args:
+            runtime_type: The runtime type to get config for
+
+        Returns:
+            RuntimeModelConfig with repo_id, revision, and runtime-specific extra_config
+        """
+        # Get repo_id and revision (with runtime-specific overrides if present)
+        repo_id = self.get_repo_id(runtime_type)
+        revision = self.get_revision(runtime_type)
+
+        # Get runtime-specific extra_config
+        extra_config = {}
+        if runtime_type in self.runtime_overrides:
+            extra_config = self.runtime_overrides[runtime_type].extra_config.copy()
+
+        return RuntimeModelConfig(
+            repo_id=repo_id,
+            revision=revision,
+            extra_config=extra_config,
+        )
+
 
 # =============================================================================
 # STAGE PRESET SYSTEM
@@ -474,7 +501,7 @@ VLM_CONVERT_GRANITE_VISION = StageModelPreset(
         runtime_overrides={
             VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
                 extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                 }
             ),
         },
@@ -565,7 +592,7 @@ PICTURE_DESC_GRANITE_VISION = StageModelPreset(
         runtime_overrides={
             VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
                 extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                 }
             ),
         },

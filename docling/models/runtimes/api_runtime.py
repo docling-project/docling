@@ -4,7 +4,7 @@ import asyncio
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from PIL.Image import Image
 
@@ -20,6 +20,9 @@ from docling.utils.api_image_request import (
     api_image_request_streaming,
 )
 
+if TYPE_CHECKING:
+    from docling.datamodel.stage_model_specs import RuntimeModelConfig
+
 _log = logging.getLogger(__name__)
 
 
@@ -33,13 +36,18 @@ class ApiVlmRuntime(BaseVlmRuntime):
     - OpenAI
     """
 
-    def __init__(self, options: ApiVlmRuntimeOptions):
+    def __init__(
+        self,
+        options: ApiVlmRuntimeOptions,
+        model_config: Optional["RuntimeModelConfig"] = None,
+    ):
         """Initialize the API runtime.
 
         Args:
             options: API-specific runtime options
+            model_config: Model configuration (repo_id, revision, extra_config)
         """
-        super().__init__(options)
+        super().__init__(options, model_config=model_config)
         self.options: ApiVlmRuntimeOptions = options
 
     def initialize(self) -> None:

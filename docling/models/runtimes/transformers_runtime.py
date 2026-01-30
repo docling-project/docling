@@ -28,6 +28,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
+from docling.datamodel.stage_model_specs import RuntimeModelConfig
 from docling.datamodel.vlm_runtime_options import TransformersVlmRuntimeOptions
 from docling.models.runtimes.base import (
     BaseVlmRuntime,
@@ -56,6 +57,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         options: TransformersVlmRuntimeOptions,
         accelerator_options: Optional[AcceleratorOptions] = None,
         artifacts_path: Optional[Path] = None,
+        model_config: Optional[RuntimeModelConfig] = None,
     ):
         """Initialize the Transformers runtime.
 
@@ -63,8 +65,9 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             options: Transformers-specific runtime options
             accelerator_options: Hardware accelerator configuration
             artifacts_path: Path to cached model artifacts
+            model_config: Model configuration (repo_id, revision, extra_config)
         """
-        super().__init__(options)
+        super().__init__(options, model_config=model_config)
         self.options: TransformersVlmRuntimeOptions = options
         self.accelerator_options = accelerator_options or AcceleratorOptions()
         self.artifacts_path = artifacts_path
@@ -74,6 +77,10 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         self.processor: Optional[ProcessorMixin] = None
         self.vlm_model: Optional[PreTrainedModel] = None
         self.generation_config: Optional[GenerationConfig] = None
+
+        # Initialize immediately if model_config is provided
+        if self.model_config is not None:
+            self.initialize()
 
     def initialize(self) -> None:
         """Initialize the Transformers model and processor."""
@@ -93,6 +100,23 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             supported_devices=supported_devices,
         )
         _log.info(f"Using device: {self.device}")
+
+        # Load model if model_config is provided
+        if self.model_config is not None and self.model_config.repo_id is not None:
+            repo_id = self.model_config.repo_id
+            revision = self.model_config.revision or "main"
+
+            # Get model_type from extra_config
+            model_type = self.model_config.extra_config.get(
+                "transformers_model_type",
+                TransformersModelType.AUTOMODEL,
+            )
+
+            _log.info(
+                f"Loading model {repo_id} (revision: {revision}, "
+                f"model_type: {model_type.value})"
+            )
+            self._load_model_for_repo(repo_id, revision=revision, model_type=model_type)
 
         self._initialized = True
 
@@ -202,22 +226,10 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         if not self._initialized:
             self.initialize()
 
-        # Load model if not already loaded or if repo_id changed
+        # Model should already be loaded via initialize()
         if self.vlm_model is None or self.processor is None:
-            # Determine model type from extra config
-            model_type = input_data.extra_generation_config.get(
-                "transformers_model_type",
-                TransformersModelType.AUTOMODEL,
-            )
-            prompt_style = input_data.extra_generation_config.get(
-                "transformers_prompt_style",
-                TransformersPromptStyle.CHAT,
-            )
-
-            self._load_model_for_repo(
-                input_data.repo_id,
-                revision=input_data.extra_generation_config.get("revision", "main"),
-                model_type=model_type,
+            raise RuntimeError(
+                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
             )
 
         # Prepare image
@@ -266,7 +278,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             stopping_criteria_list.append(
                 StopStringCriteria(
                     stop_strings=input_data.stop_strings,
-                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr]
+                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
                 )
             )
 
@@ -279,13 +291,13 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 if issubclass(criteria, GenerationStopper):
                     stopper_instance = criteria()
                     wrapped_criteria = HFStoppingCriteriaWrapper(
-                        self.processor.tokenizer,  # type: ignore[union-attr]
+                        self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
                         stopper_instance,
                     )
                     stopping_criteria_list.append(wrapped_criteria)
             elif isinstance(criteria, GenerationStopper):
                 wrapped_criteria = HFStoppingCriteriaWrapper(
-                    self.processor.tokenizer,  # type: ignore[union-attr]
+                    self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
                     criteria,
                 )
                 stopping_criteria_list.append(wrapped_criteria)
@@ -355,7 +367,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
 
         # Remove padding
-        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr]
+        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr,attr-defined]
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 
@@ -392,35 +404,23 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         if not input_batch:
             return []
 
-        # Validate that all inputs use the same model and configuration
+        # Model should already be loaded via initialize()
+        if self.vlm_model is None or self.processor is None:
+            raise RuntimeError(
+                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
+            )
+
+        # Get prompt style from first input's extra config
         first_input = input_batch[0]
-        repo_id = first_input.repo_id
-        revision = first_input.extra_generation_config.get("revision", "main")
-        model_type = first_input.extra_generation_config.get(
-            "transformers_model_type",
-            TransformersModelType.AUTOMODEL,
-        )
         prompt_style = first_input.extra_generation_config.get(
             "transformers_prompt_style",
             TransformersPromptStyle.CHAT,
         )
 
-        # Load model if not already loaded
-        if self.vlm_model is None or self.processor is None:
-            self._load_model_for_repo(repo_id, revision=revision, model_type=model_type)
-
         # Prepare images and prompts
         images = []
         prompts = []
         for input_data in input_batch:
-            # Validate consistency
-            if input_data.repo_id != repo_id:
-                _log.warning(
-                    f"Batch contains different models: {input_data.repo_id} vs {repo_id}. "
-                    "Falling back to sequential processing."
-                )
-                return super().predict_batch(input_batch)
-
             # Prepare image
             image = input_data.image
             if image.mode != "RGB":
@@ -467,7 +467,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             stopping_criteria_list.append(
                 StopStringCriteria(
                     stop_strings=first_input.stop_strings,
-                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr]
+                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
                 )
             )
 
@@ -480,13 +480,13 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 if issubclass(criteria, GenerationStopper):
                     stopper_instance = criteria()
                     wrapped_criteria = HFStoppingCriteriaWrapper(
-                        self.processor.tokenizer,  # type: ignore[union-attr]
+                        self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
                         stopper_instance,
                     )
                     stopping_criteria_list.append(wrapped_criteria)
             elif isinstance(criteria, GenerationStopper):
                 wrapped_criteria = HFStoppingCriteriaWrapper(
-                    self.processor.tokenizer,  # type: ignore[union-attr]
+                    self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
                     criteria,
                 )
                 stopping_criteria_list.append(wrapped_criteria)
@@ -556,7 +556,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
 
         # Remove padding
-        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr]
+        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr,attr-defined]
         if pad_token:
             decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
 

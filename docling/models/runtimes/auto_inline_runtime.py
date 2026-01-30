@@ -2,7 +2,7 @@
 
 import logging
 import platform
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.vlm_runtime_options import (
@@ -18,6 +18,9 @@ from docling.models.runtimes.base import (
     VlmRuntimeType,
 )
 from docling.utils.accelerator_utils import decide_device
+
+if TYPE_CHECKING:
+    from docling.datamodel.stage_model_specs import RuntimeModelConfig, VlmModelSpec
 
 _log = logging.getLogger(__name__)
 
@@ -38,6 +41,7 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
         options: AutoInlineVlmRuntimeOptions,
         accelerator_options: Optional[AcceleratorOptions] = None,
         artifacts_path=None,
+        model_spec: Optional["VlmModelSpec"] = None,
     ):
         """Initialize the auto-inline runtime.
 
@@ -45,18 +49,26 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
             options: Auto-inline runtime options
             accelerator_options: Hardware accelerator configuration
             artifacts_path: Path to cached model artifacts
+            model_spec: Model specification (for generating runtime-specific configs)
         """
-        super().__init__(options)
+        super().__init__(options, model_config=None)
         self.options: AutoInlineVlmRuntimeOptions = options
         self.accelerator_options = accelerator_options or AcceleratorOptions()
         self.artifacts_path = artifacts_path
+        self.model_spec = model_spec
 
         # The actual runtime will be set during initialization
         self.actual_runtime: Optional[BaseVlmRuntime] = None
         self.selected_runtime_type: Optional[VlmRuntimeType] = None
 
+        # Initialize immediately if model_spec is provided
+        if self.model_spec is not None:
+            self.initialize()
+
     def _select_runtime(self) -> VlmRuntimeType:
         """Select the best runtime based on platform and hardware.
+
+        Respects model's supported_runtimes if model_spec is provided.
 
         Returns:
             The selected runtime type
@@ -76,29 +88,40 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
 
         _log.info(f"Auto-selecting runtime for system={system}, device={device}")
 
-        # macOS with Apple Silicon -> MLX
+        # Get supported runtimes from model_spec if available
+        supported_runtimes = None
+        if self.model_spec is not None:
+            supported_runtimes = self.model_spec.supported_runtimes
+
+        # macOS with Apple Silicon -> MLX (if supported)
         if system == "Darwin" and device == "mps":
-            try:
-                import mlx_vlm
+            if supported_runtimes is None or VlmRuntimeType.MLX in supported_runtimes:
+                try:
+                    import mlx_vlm
 
-                _log.info("Selected MLX runtime (Apple Silicon detected)")
-                return VlmRuntimeType.MLX
-            except ImportError:
-                _log.warning(
-                    "MLX not available on Apple Silicon, falling back to Transformers"
-                )
+                    _log.info("Selected MLX runtime (Apple Silicon detected)")
+                    return VlmRuntimeType.MLX
+                except ImportError:
+                    _log.warning(
+                        "MLX not available on Apple Silicon, falling back to Transformers"
+                    )
+            else:
+                _log.info("MLX not in supported_runtimes, skipping")
 
-        # CUDA with prefer_vllm -> vLLM
+        # CUDA with prefer_vllm -> vLLM (if supported)
         if device.startswith("cuda") and self.options.prefer_vllm:
-            try:
-                import vllm
+            if supported_runtimes is None or VlmRuntimeType.VLLM in supported_runtimes:
+                try:
+                    import vllm
 
-                _log.info("Selected vLLM runtime (CUDA + prefer_vllm=True)")
-                return VlmRuntimeType.VLLM
-            except ImportError:
-                _log.warning("vLLM not available, falling back to Transformers")
+                    _log.info("Selected vLLM runtime (CUDA + prefer_vllm=True)")
+                    return VlmRuntimeType.VLLM
+                except ImportError:
+                    _log.warning("vLLM not available, falling back to Transformers")
+            else:
+                _log.info("vLLM not in supported_runtimes, skipping")
 
-        # Default to Transformers
+        # Default to Transformers (should always be supported)
         _log.info("Selected Transformers runtime (default)")
         return VlmRuntimeType.TRANSFORMERS
 
@@ -112,6 +135,17 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
         # Select the best runtime
         self.selected_runtime_type = self._select_runtime()
 
+        # Generate model_config for the selected runtime
+        model_config = None
+        if self.model_spec is not None:
+            model_config = self.model_spec.get_runtime_config(
+                self.selected_runtime_type
+            )
+            _log.info(
+                f"Generated config for {self.selected_runtime_type.value}: "
+                f"repo_id={model_config.repo_id}, extra_config={model_config.extra_config}"
+            )
+
         # Create the actual runtime
         if self.selected_runtime_type == VlmRuntimeType.MLX:
             from docling.models.runtimes.mlx_runtime import MlxVlmRuntime
@@ -124,6 +158,7 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
             self.actual_runtime = MlxVlmRuntime(
                 options=mlx_options,
                 artifacts_path=self.artifacts_path,
+                model_config=model_config,
             )
 
         elif self.selected_runtime_type == VlmRuntimeType.VLLM:
@@ -134,6 +169,7 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
                 options=vllm_options,
                 accelerator_options=self.accelerator_options,
                 artifacts_path=self.artifacts_path,
+                model_config=model_config,
             )
 
         else:  # TRANSFORMERS
@@ -146,10 +182,11 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
                 options=transformers_options,
                 accelerator_options=self.accelerator_options,
                 artifacts_path=self.artifacts_path,
+                model_config=model_config,
             )
 
-        # Initialize the actual runtime
-        self.actual_runtime.initialize()
+        # Note: actual_runtime.initialize() is called automatically in their __init__
+        # if model_config is provided
 
         self._initialized = True
         _log.info(

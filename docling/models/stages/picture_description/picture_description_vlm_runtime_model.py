@@ -16,6 +16,7 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
     PictureDescriptionVlmRuntimeOptions,
 )
+from docling.datamodel.stage_model_specs import RuntimeModelConfig
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.runtimes.base import BaseVlmRuntime, VlmRuntimeInput
 from docling.models.runtimes.factory import create_vlm_runtime
@@ -79,7 +80,7 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
             # Get runtime type from options
             runtime_type = self.options.runtime_options.runtime_type
 
-            # Get model configuration for this runtime
+            # Get model configuration for this runtime (for logging)
             self.repo_id = self.options.model_spec.get_repo_id(runtime_type)
             self.revision = self.options.model_spec.get_revision(runtime_type)
 
@@ -89,8 +90,11 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
                 f"runtime={runtime_type.value}"
             )
 
-            # Create runtime using factory
-            self.runtime = create_vlm_runtime(self.options.runtime_options)
+            # Create runtime - pass model_spec, let factory handle config generation
+            self.runtime = create_vlm_runtime(
+                self.options.runtime_options,
+                model_spec=self.options.model_spec,
+            )
 
             # Set provenance from model spec
             self.provenance = f"{self.repo_id} ({runtime_type.value})"
