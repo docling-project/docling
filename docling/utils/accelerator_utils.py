@@ -22,7 +22,7 @@ def decide_device(
 
     has_cuda = torch.backends.cuda.is_built() and torch.cuda.is_available()
     has_mps = torch.backends.mps.is_built() and torch.backends.mps.is_available()
-    has_xpu = torch.xpu.is_available()
+    has_xpu = hasattr(torch, "xpu") and torch.xpu.is_available()
 
     if supported_devices is not None:
         if has_cuda and AcceleratorDevice.CUDA not in supported_devices:

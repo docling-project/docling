@@ -13,7 +13,6 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -28,16 +27,18 @@ from docling.datamodel.pipeline_options import (
 )
 from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
+
 from docling.models.chart_extraction_model_granite_vision import (
     ChartExtractionModelGraniteVision,
     ChartExtractionModelOptions,
 )
-from docling.models.document_picture_classifier import (
+
+from docling.models.factories import get_picture_description_factory
+from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
     DocumentPictureClassifierOptions,
 )
-from docling.models.factories import get_picture_description_factory
-from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
 
@@ -231,7 +232,7 @@ class PaginatedPipeline(ConvertPipeline):  # TODO this is a bad name.
             for i in range(conv_res.input.page_count):
                 start_page, end_page = conv_res.input.limits.page_range
                 if (start_page - 1) <= i <= (end_page - 1):
-                    conv_res.pages.append(Page(page_no=i))
+                    conv_res.pages.append(Page(page_no=i + 1))
 
             try:
                 total_pages_processed = 0

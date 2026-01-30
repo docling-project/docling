@@ -32,13 +32,13 @@ from docling.datamodel.settings import settings
 from docling.experimental.datamodel.threaded_layout_vlm_pipeline_options import (
     ThreadedLayoutVlmPipelineOptions,
 )
-from docling.models.api_vlm_model import ApiVlmModel
 from docling.models.base_model import BaseVlmPageModel
-from docling.models.layout_model import LayoutModel
-from docling.models.vlm_models_inline.hf_transformers_model import (
+from docling.models.stages.layout.layout_model import LayoutModel
+from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
+from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
 )
-from docling.models.vlm_models_inline.mlx_model import HuggingFaceMlxModel
+from docling.models.vlm_pipeline_models.mlx_model import HuggingFaceMlxModel
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.pipeline.standard_pdf_pipeline import (
     ProcessingResult,
@@ -162,7 +162,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
                     vlm_options=vlm_options,
                 )
             elif vlm_options.inference_framework == InferenceFramework.VLLM:
-                from docling.models.vlm_models_inline.vllm_model import VllmVlmModel
+                from docling.models.vlm_pipeline_models.vllm_model import VllmVlmModel
 
                 self.vlm_model = VllmVlmModel(
                     enabled=True,
@@ -235,7 +235,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         images_scale = self.pipeline_options.images_scale
         for i in range(conv_res.input.page_count):
             if start_page - 1 <= i <= end_page - 1:
-                page = Page(page_no=i)
+                page = Page(page_no=i + 1)
                 if images_scale is not None:
                     page._default_image_scale = images_scale
                 page._backend = backend.load_page(i)

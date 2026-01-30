@@ -86,8 +86,9 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         progress: bool = False,
     ) -> Path:
         return download_hf_model(
-            repo_id="GV-charts/chart2csv",
-            revision="main",
+            repo_id="ibm-granite/granite-vision-3.3-2b-chart2csv-preview",
+            # Let's pin it to a specific commit to reduce potential regression errors
+            revision="6e1fbaae4604ecc85f4f371416d82154ca49ad67", 
             local_dir=local_dir,
             force=force,
             progress=progress,

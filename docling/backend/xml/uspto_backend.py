@@ -630,7 +630,7 @@ class PatentUsptoGrantV2(PatentUspto):
                     escaped = self.style_html.get_greek_from_iso8879(f"&{name};")
                     unescaped = html.unescape(escaped)
                     if unescaped == escaped:
-                        logging.debug("Unrecognized HTML entity: " + name)
+                        _log.debug("Unrecognized HTML entity: " + name)
                         return
 
                     if element in (
@@ -1191,7 +1191,7 @@ class PatentUsptoAppV1(PatentUspto):
                     escaped = self.style_html.get_greek_from_iso8879(f"&{name};")
                     unescaped = html.unescape(escaped)
                     if unescaped == escaped:
-                        logging.debug("Unrecognized HTML entity: " + name)
+                        _log.debug("Unrecognized HTML entity: " + name)
                         return
 
                     if element in (
