@@ -8,6 +8,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+# Skip all tests in this module if pydantic_settings is not available
+pytest.importorskip("pydantic_settings")
+
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
