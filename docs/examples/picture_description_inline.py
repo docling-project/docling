@@ -102,10 +102,9 @@ for element, _level in result.document.iterate_items():
 ###### EXAMPLE 3: Without presets - using HF repo_id directly with custom prompt
 
 print("\n" + "=" * 60)
-print("Example 3: Using repo_id directly (legacy approach)")
+print("Example 3: Using repo_id directly")
 print("=" * 60)
 
-# This demonstrates the legacy approach for backward compatibility
 # You can specify the HuggingFace repo_id directly and customize the prompt
 
 pipeline_options = PdfPipelineOptions()

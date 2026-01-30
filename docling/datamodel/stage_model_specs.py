@@ -535,16 +535,16 @@ PICTURE_DESC_SMOLVLM = StageModelPreset(
 
 PICTURE_DESC_GRANITE_VISION = StageModelPreset(
     preset_id="granite_vision",
-    name="Granite-Vision-3.2-2B",
+    name="Granite-Vision-3.3-2B",
     description="IBM Granite Vision model for detailed image descriptions (2B parameters)",
     model_spec=VlmModelSpec(
-        name="Granite-Vision-3.2-2B",
-        default_repo_id="ibm-granite/granite-vision-3.2-2b",
+        name="Granite-Vision-3.3-2B",
+        default_repo_id="ibm-granite/granite-vision-3.3-2b",
         prompt="What is shown in this image?",
         response_format=ResponseFormat.PLAINTEXT,
         api_overrides={
             VlmRuntimeType.API_OLLAMA: ApiModelConfig(
-                params={"model": "granite3.2-vision:2b"}
+                params={"model": "ibm/granite3.3-vision:2b"}
             ),
         },
     ),
