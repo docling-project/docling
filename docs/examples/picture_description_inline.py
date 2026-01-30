@@ -29,6 +29,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PictureDescriptionVlmOptions,
+    PictureDescriptionVlmRuntimeOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
@@ -75,8 +76,8 @@ print("=" * 60)
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.do_picture_description = True
-pipeline_options.picture_description_options = PictureDescriptionVlmOptions.from_preset(
-    "granite_vision"
+pipeline_options.picture_description_options = (
+    PictureDescriptionVlmRuntimeOptions.from_preset("granite_vision")
 )
 
 converter = DocumentConverter(

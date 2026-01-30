@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from docling.datamodel.pipeline_options import (
     CodeFormulaVlmOptions,
-    PictureDescriptionVlmOptions,
+    PictureDescriptionVlmRuntimeOptions,
     VlmConvertOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
@@ -239,7 +239,7 @@ class TestPresetSystem:
 
     def test_picture_description_presets_exist(self):
         """Test that PictureDescription presets are registered."""
-        preset_ids = PictureDescriptionVlmOptions.list_preset_ids()
+        preset_ids = PictureDescriptionVlmRuntimeOptions.list_preset_ids()
 
         # Check that key presets exist
         assert "smolvlm" in preset_ids
@@ -248,7 +248,7 @@ class TestPresetSystem:
         assert "qwen" in preset_ids
 
         # Verify we can retrieve them
-        smolvlm = PictureDescriptionVlmOptions.get_preset("smolvlm")
+        smolvlm = PictureDescriptionVlmRuntimeOptions.get_preset("smolvlm")
         assert smolvlm.preset_id == "smolvlm"
         assert smolvlm.name == "SmolVLM-256M"  # Full model name
 
@@ -278,7 +278,7 @@ class TestPresetSystem:
         assert len(vlm_convert_presets) >= 6  # At least 6 VlmConvert presets
         assert all(isinstance(p, StageModelPreset) for p in vlm_convert_presets)
 
-        picture_desc_presets = PictureDescriptionVlmOptions.list_presets()
+        picture_desc_presets = PictureDescriptionVlmRuntimeOptions.list_presets()
         assert len(picture_desc_presets) >= 4  # At least 4 PictureDescription presets
 
         code_formula_presets = CodeFormulaVlmOptions.list_presets()
@@ -430,11 +430,13 @@ class TestPresetRuntimeIntegration:
 
     def test_all_picture_description_presets_can_be_instantiated(self):
         """Test that all PictureDescription presets can be instantiated."""
-        # PictureDescriptionVlmOptions has legacy fields that need to be provided
-        # Skip this test as it requires backward compatibility handling
-        pytest.skip(
-            "PictureDescriptionVlmOptions requires legacy repo_id field - backward compatibility issue"
-        )
+        # Now fully supported with the new runtime options class
+        preset_ids = PictureDescriptionVlmRuntimeOptions.list_preset_ids()
+
+        for preset_id in preset_ids:
+            options = PictureDescriptionVlmRuntimeOptions.from_preset(preset_id)
+            assert options.model_spec is not None
+            assert options.runtime_options is not None
 
     def test_all_code_formula_presets_can_be_instantiated(self):
         """Test that all CodeFormula presets can be instantiated."""
@@ -492,7 +494,7 @@ class TestPresetRuntimeIntegration:
             assert preset.model_spec.response_format in all_valid_formats
 
         # Check PictureDescription presets
-        picture_desc_presets = PictureDescriptionVlmOptions.list_presets()
+        picture_desc_presets = PictureDescriptionVlmRuntimeOptions.list_presets()
         for preset in picture_desc_presets:
             assert preset.model_spec.response_format in all_valid_formats
 

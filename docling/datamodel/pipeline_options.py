@@ -590,39 +590,27 @@ class PictureDescriptionApiOptions(PictureDescriptionBaseOptions):
     ] = ""
 
 
-class PictureDescriptionVlmOptions(StagePresetMixin, PictureDescriptionBaseOptions):
+class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
     """Configuration for inline vision-language models for picture description.
 
-    Supports preset-based configuration via StagePresetMixin.
-    Use `from_preset()` to create instances from registered presets.
+    This is the legacy implementation that uses direct HuggingFace Transformers integration.
+    For the new runtime-based system with preset support, use PictureDescriptionVlmRuntimeOptions.
     """
 
     kind: ClassVar[Literal["vlm"]] = "vlm"
-
-    # New runtime system fields
-    model_spec: Optional[VlmModelSpec] = Field(
-        default=None, description="Model specification with runtime-specific overrides"
-    )
-    runtime_options: Optional[BaseVlmRuntimeOptions] = Field(
-        default=None, description="Runtime configuration (transformers, mlx, api, etc.)"
-    )
-
-    # Legacy fields (kept for backward compatibility)
     repo_id: Annotated[
-        Optional[str],
+        str,
         Field(
-            default=None,
             description=(
                 "HuggingFace model repository ID for the vision-language model. "
-                "Must be a model capable of image-to-text generation for picture descriptions. "
-                "LEGACY: Use model_spec instead for new runtime system."
+                "Must be a model capable of image-to-text generation for picture descriptions."
             ),
             examples=[
                 "HuggingFaceTB/SmolVLM-256M-Instruct",
                 "ibm-granite/granite-vision-3.3-2b",
             ],
         ),
-    ] = None
+    ]
     prompt: Annotated[
         str,
         Field(
@@ -648,19 +636,62 @@ class PictureDescriptionVlmOptions(StagePresetMixin, PictureDescriptionBaseOptio
 
     @property
     def repo_cache_folder(self) -> str:
-        if self.repo_id is None:
-            # Use model_spec repo_id if available
-            if self.model_spec is not None:
-                from docling.models.runtimes.base import VlmRuntimeType
-
-                repo_id = self.model_spec.get_repo_id(
-                    self.runtime_options.runtime_type
-                    if self.runtime_options
-                    else VlmRuntimeType.AUTO_INLINE
-                )
-                return repo_id.replace("/", "--")
-            return "unknown"
         return self.repo_id.replace("/", "--")
+
+
+class PictureDescriptionVlmRuntimeOptions(
+    StagePresetMixin, PictureDescriptionBaseOptions
+):
+    """Configuration for VLM runtime-based picture description.
+
+    This is the new implementation that uses the pluggable runtime system with preset support.
+    Supports all runtime types (Transformers, MLX, API, etc.) through the unified runtime interface.
+
+    Use `from_preset()` to create instances from registered presets.
+
+    Examples:
+        # Use preset with default runtime
+        options = PictureDescriptionVlmRuntimeOptions.from_preset("smolvlm")
+
+        # Use preset with runtime override
+        from docling.datamodel.vlm_runtime_options import MlxVlmRuntimeOptions, VlmRuntimeType
+        options = PictureDescriptionVlmRuntimeOptions.from_preset(
+            "smolvlm",
+            runtime_options=MlxVlmRuntimeOptions(runtime_type=VlmRuntimeType.MLX)
+        )
+    """
+
+    kind: ClassVar[Literal["picture_description_vlm_runtime"]] = (
+        "picture_description_vlm_runtime"
+    )
+
+    model_spec: VlmModelSpec = Field(
+        description="Model specification with runtime-specific overrides"
+    )
+    runtime_options: BaseVlmRuntimeOptions = Field(
+        description="Runtime configuration (transformers, mlx, api, etc.)"
+    )
+    prompt: Annotated[
+        str,
+        Field(
+            description=(
+                "Prompt template for the vision model. Customize to control description style, detail level, or focus."
+            ),
+            examples=[
+                "What is shown in this image?",
+                "Provide a detailed technical description",
+            ],
+        ),
+    ] = "Describe this image in a few sentences."
+    generation_config: Annotated[
+        dict[str, Any],
+        Field(
+            description=(
+                "Generation configuration for text generation. Controls output length, sampling strategy, "
+                "temperature, etc."
+            )
+        ),
+    ] = {"max_new_tokens": 200, "do_sample": False}
 
 
 # SmolVLM
@@ -779,11 +810,11 @@ VlmConvertOptions.register_preset(VLM_CONVERT_GRANITE_VISION)
 VlmConvertOptions.register_preset(VLM_CONVERT_PIXTRAL)
 VlmConvertOptions.register_preset(VLM_CONVERT_GOT_OCR)
 
-# Register PictureDescription presets
-PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_SMOLVLM)
-PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_GRANITE_VISION)
-PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_PIXTRAL)
-PictureDescriptionVlmOptions.register_preset(PICTURE_DESC_QWEN)
+# Register PictureDescription presets (for new runtime-based implementation)
+PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_SMOLVLM)
+PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_GRANITE_VISION)
+PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_PIXTRAL)
+PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_QWEN)
 
 # Register CodeFormula presets
 CodeFormulaVlmOptions.register_preset(CODE_FORMULA_DEFAULT)
@@ -798,8 +829,8 @@ CodeFormulaVlmOptions.register_preset(CODE_FORMULA_DEFAULT)
 _default_vlm_convert_options = VlmConvertOptions.from_preset("granite_docling")
 """Default VLM convert options using granite_docling preset with AUTO_INLINE runtime."""
 
-# Default PictureDescriptionVlmOptions using smolvlm preset
-_default_picture_description_options = PictureDescriptionVlmOptions.from_preset(
+# Default PictureDescriptionVlmRuntimeOptions using smolvlm preset
+_default_picture_description_options = PictureDescriptionVlmRuntimeOptions.from_preset(
     "smolvlm"
 )
 """Default picture description options using smolvlm preset with AUTO_INLINE runtime."""

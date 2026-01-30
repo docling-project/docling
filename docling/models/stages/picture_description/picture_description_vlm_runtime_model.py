@@ -1,4 +1,4 @@
-"""Picture description stage using the new VLM runtime system.
+"""Picture description stage using the VLM runtime system.
 
 This module provides a runtime-agnostic picture description stage that can use
 any VLM runtime (Transformers, MLX, API, etc.) through the unified runtime interface.
@@ -14,7 +14,7 @@ from PIL import Image
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
-    PictureDescriptionVlmOptions,
+    PictureDescriptionVlmRuntimeOptions,
 )
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
 from docling.models.runtimes.base import BaseVlmRuntime, VlmRuntimeInput
@@ -23,8 +23,8 @@ from docling.models.runtimes.factory import create_vlm_runtime
 _log = logging.getLogger(__name__)
 
 
-class PictureDescriptionVlmModelV2(PictureDescriptionBaseModel):
-    """Picture description stage using the new runtime system.
+class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
+    """Picture description stage using the VLM runtime system.
 
     This stage uses the unified VLM runtime interface to generate descriptions
     for pictures in documents. It supports all runtime types (Transformers, MLX,
@@ -37,13 +37,13 @@ class PictureDescriptionVlmModelV2(PictureDescriptionBaseModel):
 
     Example:
         ```python
-        from docling.datamodel.pipeline_options import PictureDescriptionVlmOptions
+        from docling.datamodel.pipeline_options import PictureDescriptionVlmRuntimeOptions
 
         # Use preset with default runtime
-        options = PictureDescriptionVlmOptions.from_preset("smolvlm")
+        options = PictureDescriptionVlmRuntimeOptions.from_preset("smolvlm")
 
         # Create stage
-        stage = PictureDescriptionVlmModelV2(
+        stage = PictureDescriptionVlmRuntimeModel(
             enabled=True,
             enable_remote_services=False,
             artifacts_path=None,
@@ -55,14 +55,14 @@ class PictureDescriptionVlmModelV2(PictureDescriptionBaseModel):
 
     @classmethod
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
-        return PictureDescriptionVlmOptions
+        return PictureDescriptionVlmRuntimeOptions
 
     def __init__(
         self,
         enabled: bool,
         enable_remote_services: bool,
         artifacts_path: Optional[Union[Path, str]],
-        options: PictureDescriptionVlmOptions,
+        options: PictureDescriptionVlmRuntimeOptions,
         accelerator_options: AcceleratorOptions,
     ):
         super().__init__(
@@ -72,76 +72,28 @@ class PictureDescriptionVlmModelV2(PictureDescriptionBaseModel):
             options=options,
             accelerator_options=accelerator_options,
         )
-        self.options: PictureDescriptionVlmOptions
+        self.options: PictureDescriptionVlmRuntimeOptions
         self.runtime: Optional[BaseVlmRuntime] = None
 
         if self.enabled:
-            # Check if using new runtime system
-            if (
-                self.options.model_spec is not None
-                and self.options.runtime_options is not None
-            ):
-                # New runtime system path
-                # Get runtime type from options
-                runtime_type = self.options.runtime_options.runtime_type
+            # Get runtime type from options
+            runtime_type = self.options.runtime_options.runtime_type
 
-                # Get model configuration for this runtime
-                self.repo_id = self.options.model_spec.get_repo_id(runtime_type)
-                self.revision = self.options.model_spec.get_revision(runtime_type)
+            # Get model configuration for this runtime
+            self.repo_id = self.options.model_spec.get_repo_id(runtime_type)
+            self.revision = self.options.model_spec.get_revision(runtime_type)
 
-                _log.info(
-                    f"Initializing PictureDescriptionVlmModelV2 with runtime system: "
-                    f"model={self.repo_id}, "
-                    f"runtime={runtime_type.value}"
-                )
+            _log.info(
+                f"Initializing PictureDescriptionVlmRuntimeModel with runtime system: "
+                f"model={self.repo_id}, "
+                f"runtime={runtime_type.value}"
+            )
 
-                # Create runtime using factory
-                self.runtime = create_vlm_runtime(self.options.runtime_options)
+            # Create runtime using factory
+            self.runtime = create_vlm_runtime(self.options.runtime_options)
 
-                # Set provenance from model spec
-                self.provenance = f"{self.repo_id} ({runtime_type.value})"
-
-            else:
-                # Apply default preset if no configuration provided
-                _log.info(
-                    "No model_spec or runtime_options provided, applying default preset 'smolvlm'"
-                )
-
-                # Create default options with smolvlm preset
-                default_options = PictureDescriptionVlmOptions.from_preset("smolvlm")
-
-                # Copy over any user-provided settings
-                if self.options.prompt != "Describe this image in a few sentences.":
-                    default_options.prompt = self.options.prompt
-                if self.options.generation_config != {
-                    "max_new_tokens": 200,
-                    "do_sample": False,
-                }:
-                    default_options.generation_config = self.options.generation_config
-
-                # Update self.options with the preset-based options
-                self.options = default_options
-
-                # Now initialize with the preset
-                # After from_preset(), these are guaranteed to be non-None
-                assert self.options.runtime_options is not None
-                assert self.options.model_spec is not None
-
-                runtime_type = self.options.runtime_options.runtime_type
-                self.repo_id = self.options.model_spec.get_repo_id(runtime_type)
-                self.revision = self.options.model_spec.get_revision(runtime_type)
-
-                _log.info(
-                    f"Initializing PictureDescriptionVlmModelV2 with default preset: "
-                    f"model={self.repo_id}, "
-                    f"runtime={runtime_type.value}"
-                )
-
-                # Create runtime using factory
-                self.runtime = create_vlm_runtime(self.options.runtime_options)
-
-                # Set provenance from model spec
-                self.provenance = f"{self.repo_id} ({runtime_type.value})"
+            # Set provenance from model spec
+            self.provenance = f"{self.repo_id} ({runtime_type.value})"
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         """Generate descriptions for a batch of images.

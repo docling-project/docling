@@ -32,7 +32,7 @@ from dotenv import load_dotenv
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
-    PictureDescriptionVlmOptions,
+    PictureDescriptionVlmRuntimeOptions,
 )
 from docling.datamodel.vlm_runtime_options import (
     ApiVlmRuntimeOptions,
@@ -49,7 +49,7 @@ def run_lm_studio_example(input_doc_path: Path):
 
     # Start LM Studio with granite-vision model loaded
     # The preset is pre-configured for LM Studio API type
-    picture_desc_options = PictureDescriptionVlmOptions.from_preset(
+    picture_desc_options = PictureDescriptionVlmRuntimeOptions.from_preset(
         "granite_vision",
         runtime_options=ApiVlmRuntimeOptions(
             runtime_type=VlmRuntimeType.API_LMSTUDIO,
@@ -127,7 +127,7 @@ def run_watsonx_example(input_doc_path: Path):
         return res.json()["access_token"]
 
     # For watsonx.ai, we need to provide custom URL, headers, and params
-    picture_desc_options = PictureDescriptionVlmOptions.from_preset(
+    picture_desc_options = PictureDescriptionVlmRuntimeOptions.from_preset(
         "granite_vision",
         runtime_options=ApiVlmRuntimeOptions(
             runtime_type=VlmRuntimeType.API,  # Generic API type
