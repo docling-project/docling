@@ -550,6 +550,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     charspan=(0, 0)
                 )
             )
+        else:
+            # shkim, 중첩 테이블인 경우 원본 HTML을 코드 블록으로 저장
+            original_html = str(element)
+
+            # 코드 아이템으로 추가하여 HTML 형식 유지
+            doc.add_code(
+                parent=self.parents[self.level],
+                text=original_html,
+                content_layer=self.content_layer,
+                prov=ProvenanceItem(
+                    page_no=1,
+                    bbox=BoundingBox(l=0, t=0, r=1, b=1),
+                    charspan=(0, len(original_html))
+                )
+            )
 
     def get_list_text(self, list_element: Tag, level: int = 0) -> list[str]:
         """Recursively extract text from <ul> or <ol> with proper indentation."""
