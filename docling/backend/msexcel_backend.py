@@ -297,8 +297,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 origin_row = excel_table.anchor[1]
                 num_rows = excel_table.num_rows
                 num_cols = excel_table.num_cols
-                is_singleton = len(excel_table.data) == 1
-                if treat_singleton_as_text and is_singleton and excel_table.data:
+                if treat_singleton_as_text and len(excel_table.data) == 1:
                     page_no = self.workbook.index(sheet) + 1
                     doc.add_text(
                         text=excel_table.data[0].text,
@@ -451,11 +450,37 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         max_row: int,
         max_col: int,
     ) -> tuple[ExcelTable, set[tuple[int, int]]]:
+        """Determine table bounds using a Flood Fill (BFS) strategy.
+
+        This method identifies contiguous regions of non-empty cells in an Excel worksheet
+        using a breadth-first search algorithm. It accurately detects non-rectangular tables
+        (e.g., L-shapes, staggered columns) by exploring connected cells with optional gap
+        tolerance.
+
+        The algorithm operates in two phases:
+        1. Flood Fill: Uses BFS to find all connected cells starting from the given position
+        2. Data Extraction: Builds a rectangular bounding box and extracts cell data,
+           handling merged cells appropriately
+
+        Args:
+            sheet: The Excel worksheet to analyze.
+            start_row: The starting row index (0-based) for the flood fill.
+            start_col: The starting column index (0-based) for the flood fill.
+            max_row: The maximum row index (0-based) to consider in the worksheet.
+            max_col: The maximum column index (0-based) to consider in the worksheet.
+
+        Returns:
+            A tuple containing:
+                - ExcelTable: An object representing the detected table with its anchor
+                  position, dimensions, and cell data.
+                - set[tuple[int, int]]: A set of (row, col) tuples representing all cells
+                  that were visited during the flood fill, used to prevent re-scanning.
+
+        Note:
+            The method respects the GAP_TOLERANCE option, which allows cells separated by
+            empty cells to be considered part of the same table if within tolerance distance.
         """
-        Determine table bounds using a Flood Fill (BFS) strategy.
-        This accurately detects non-rectangular tables (e.g., L-shapes, staggered columns).
-        """
-        GAP_TOLERANCE = getattr(self.options, "gap_tolerance", 0)
+        GAP_TOLERANCE = cast(MsExcelBackendOptions, self.options).gap_tolerance
 
         # Queue for BFS: (row, col)
         queue = collections.deque([(start_row, start_col)])
