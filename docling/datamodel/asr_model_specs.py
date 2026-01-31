@@ -12,6 +12,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InferenceAsrFramework,
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
+    InlineAsrWhisperS2TOptions,
     TransformersModelType,
 )
 
@@ -463,9 +464,138 @@ WHISPER_TURBO_NATIVE = InlineAsrNativeWhisperOptions(
     max_time_chunk=30.0,
 )
 
+# =============================================================================
+# WhisperS2T Models (CTranslate2 backend - fastest option for CPU/CUDA)
+# =============================================================================
+
+# Tiny models
+WHISPER_TINY_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="tiny",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=16,
+    beam_size=1,
+)
+
+WHISPER_TINY_EN_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="tiny.en",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=16,
+    beam_size=1,
+)
+
+# Base models
+WHISPER_BASE_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="base",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=12,
+    beam_size=1,
+)
+
+WHISPER_BASE_EN_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="base.en",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=12,
+    beam_size=1,
+)
+
+# Small models
+WHISPER_SMALL_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="small",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=8,
+    beam_size=1,
+)
+
+WHISPER_SMALL_EN_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="small.en",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=8,
+    beam_size=1,
+)
+
+WHISPER_DISTIL_SMALL_EN_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="distil-small.en",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=10,
+    beam_size=1,
+)
+
+# Medium models
+WHISPER_MEDIUM_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="medium",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=6,
+    beam_size=1,
+)
+
+WHISPER_MEDIUM_EN_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="medium.en",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=6,
+    beam_size=1,
+)
+
+WHISPER_DISTIL_MEDIUM_EN_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="distil-medium.en",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=8,
+    beam_size=1,
+)
+
+# Large models
+WHISPER_LARGE_V3_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="large-v3",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=4,
+    beam_size=1,
+)
+
+WHISPER_DISTIL_LARGE_V3_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="distil-large-v3",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=6,
+    beam_size=1,
+)
+
 # Note: The main WHISPER_* models (WHISPER_TURBO, WHISPER_BASE, etc.) automatically
 # select the best implementation (MLX on Apple Silicon, Native elsewhere).
-# Use the explicit _MLX or _NATIVE variants if you need to force a specific implementation.
+# Use the explicit _MLX, _NATIVE, or _S2T variants if you need to force a specific implementation.
 
 
 class AsrModelType(str, Enum):
@@ -492,3 +622,17 @@ class AsrModelType(str, Enum):
     WHISPER_BASE_NATIVE = "whisper_base_native"
     WHISPER_LARGE_NATIVE = "whisper_large_native"
     WHISPER_TURBO_NATIVE = "whisper_turbo_native"
+
+    # Explicit WhisperS2T models (CTranslate2 backend - fastest)
+    WHISPER_TINY_S2T = "whisper_tiny_s2t"
+    WHISPER_TINY_EN_S2T = "whisper_tiny_en_s2t"
+    WHISPER_BASE_S2T = "whisper_base_s2t"
+    WHISPER_BASE_EN_S2T = "whisper_base_en_s2t"
+    WHISPER_SMALL_S2T = "whisper_small_s2t"
+    WHISPER_SMALL_EN_S2T = "whisper_small_en_s2t"
+    WHISPER_DISTIL_SMALL_EN_S2T = "whisper_distil_small_en_s2t"
+    WHISPER_MEDIUM_S2T = "whisper_medium_s2t"
+    WHISPER_MEDIUM_EN_S2T = "whisper_medium_en_s2t"
+    WHISPER_DISTIL_MEDIUM_EN_S2T = "whisper_distil_medium_en_s2t"
+    WHISPER_LARGE_V3_S2T = "whisper_large_v3_s2t"
+    WHISPER_DISTIL_LARGE_V3_S2T = "whisper_distil_large_v3_s2t"

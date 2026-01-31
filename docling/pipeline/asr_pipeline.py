@@ -29,6 +29,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
+    InlineAsrWhisperS2TOptions,
 )
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
@@ -364,13 +365,200 @@ class _MlxWhisperModel:
         return convo
 
 
+class _WhisperS2TModel:
+    """Transcriber using WhisperS2T with CTranslate2 backend for high-speed inference."""
+
+    def __init__(
+        self,
+        enabled: bool,
+        artifacts_path: Optional[Path],
+        accelerator_options: AcceleratorOptions,
+        asr_options: InlineAsrWhisperS2TOptions,
+    ):
+        self.enabled = enabled
+
+        _log.info(f"artifacts-path: {artifacts_path}")
+        _log.info(f"accelerator_options: {accelerator_options}")
+
+        if self.enabled:
+            try:
+                import whisper_s2t  # type: ignore
+            except ImportError:
+                raise ImportError(
+                    "whisper_s2t is not installed. Please install it via "
+                    "`pip install whisper-s2t-reborn`."
+                )
+
+            self.whisper_s2t = whisper_s2t
+            self.asr_options = asr_options
+
+            raw_device = decide_device(
+                accelerator_options.device,
+                supported_devices=asr_options.supported_devices,
+            )
+
+            self.device, self.device_index = self._parse_device(raw_device)
+            _log.info(f"Available device for WhisperS2T: {self.device} (index: {self.device_index})")
+
+            self.model_identifier = asr_options.repo_id
+            _log.info(f"loading _WhisperS2TModel({self.model_identifier})")
+
+            # Build ASR options for whisper_s2t
+            asr_opts = {
+                "beam_size": asr_options.beam_size,
+                "word_timestamps": asr_options.word_timestamps,
+            }
+
+            # Build model kwargs
+            model_kwargs = {
+                "device": self.device,
+                "device_index": self.device_index,
+                "compute_type": asr_options.compute_type,
+                "cpu_threads": asr_options.cpu_threads,
+                "num_workers": asr_options.num_workers,
+                "asr_options": asr_opts,
+            }
+
+            # large-v3 and distil-large-v3 models require n_mels=128
+            if self.model_identifier in ["large-v3", "distil-large-v3"]:
+                model_kwargs["n_mels"] = 128
+
+            self.model = whisper_s2t.load_model(
+                model_identifier=self.model_identifier,
+                **model_kwargs,
+            )
+
+            # Store options for transcription
+            self.language = asr_options.language
+            self.task = asr_options.task
+            self.batch_size = asr_options.batch_size
+            self.initial_prompt = asr_options.initial_prompt
+            self.word_timestamps = asr_options.word_timestamps
+
+    def _parse_device(self, device_str: str) -> tuple:
+        """Parse device string like 'cuda:0' into ('cuda', 0)."""
+        if ":" in device_str:
+            parts = device_str.split(":")
+            device = parts[0]
+            try:
+                device_index = int(parts[1])
+            except (ValueError, IndexError):
+                device_index = 0
+            return device, device_index
+        return device_str, 0
+
+    def run(self, conv_res: ConversionResult) -> ConversionResult:
+        path_or_stream = conv_res.input._backend.path_or_stream
+
+        temp_file_path: Optional[Path] = None
+
+        if isinstance(path_or_stream, BytesIO):
+            suffix = Path(conv_res.input.file.name).suffix or ".wav"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+                tmp_file.write(path_or_stream.getvalue())
+                temp_file_path = Path(tmp_file.name)
+            audio_path = temp_file_path
+        elif isinstance(path_or_stream, Path):
+            audio_path = path_or_stream
+        else:
+            raise RuntimeError(
+                f"ASR pipeline requires a file path or BytesIO stream, "
+                f"but got {type(path_or_stream)}"
+            )
+
+        try:
+            conversation = self.transcribe(audio_path)
+
+            origin = DocumentOrigin(
+                filename=conv_res.input.file.name or "audio.wav",
+                mimetype="audio/x-wav",
+                binary_hash=conv_res.input.document_hash,
+            )
+            conv_res.document = DoclingDocument(
+                name=conv_res.input.file.stem or "audio.wav", origin=origin
+            )
+
+            for citem in conversation:
+                track: TrackSource = TrackSource(
+                    start_time=citem.start_time,
+                    end_time=citem.end_time,
+                    voice=citem.speaker,
+                )
+                conv_res.document.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=citem.text,
+                    content_layer=ContentLayer.BODY,
+                    source=track,
+                )
+
+            conv_res.status = ConversionStatus.SUCCESS
+            return conv_res
+
+        except Exception as exc:
+            _log.error(f"WhisperS2T transcription error: {exc}")
+            conv_res.status = ConversionStatus.FAILURE
+            return conv_res
+
+        finally:
+            if temp_file_path is not None and temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception as e:
+                    _log.warning(
+                        f"Failed to delete temporary file {temp_file_path}: {e}"
+                    )
+
+    def transcribe(self, fpath: Path) -> list[_ConversationItem]:
+        """
+        Transcribe audio using WhisperS2T.
+
+        Args:
+            fpath: Path to audio file
+
+        Returns:
+            List of conversation items with timestamps
+        """
+        out = self.model.transcribe_with_vad(
+            [str(fpath)],
+            lang_codes=[self.language],
+            tasks=[self.task],
+            initial_prompts=[self.initial_prompt],
+            batch_size=self.batch_size,
+        )
+
+        convo: list[_ConversationItem] = []
+
+        if out and len(out) > 0:
+            for segment in out[0]:
+                words = []
+                if self.word_timestamps and "word_timestamps" in segment:
+                    for w in segment["word_timestamps"]:
+                        words.append(
+                            _ConversationWord(
+                                start_time=w.get("start"),
+                                end_time=w.get("end"),
+                                text=w.get("word", ""),
+                            )
+                        )
+
+                item = _ConversationItem(
+                    start_time=segment.get("start_time"),
+                    end_time=segment.get("end_time"),
+                    text=segment.get("text", "").strip(),
+                    words=words if words else None,
+                )
+                convo.append(item)
+
+        return convo
+
+
 class AsrPipeline(BasePipeline):
     def __init__(self, pipeline_options: AsrPipelineOptions):
         super().__init__(pipeline_options)
         self.keep_backend = True
 
         self.pipeline_options: AsrPipelineOptions = pipeline_options
-        self._model: Union[_NativeWhisperModel, _MlxWhisperModel]
+        self._model: Union[_NativeWhisperModel, _MlxWhisperModel, _WhisperS2TModel]
 
         if isinstance(self.pipeline_options.asr_options, InlineAsrNativeWhisperOptions):
             native_asr_options: InlineAsrNativeWhisperOptions = (
@@ -391,6 +579,16 @@ class AsrPipeline(BasePipeline):
                 artifacts_path=self.artifacts_path,
                 accelerator_options=pipeline_options.accelerator_options,
                 asr_options=mlx_asr_options,
+            )
+        elif isinstance(self.pipeline_options.asr_options, InlineAsrWhisperS2TOptions):
+            s2t_asr_options: InlineAsrWhisperS2TOptions = (
+                self.pipeline_options.asr_options
+            )
+            self._model = _WhisperS2TModel(
+                enabled=True,  # must be always enabled for this pipeline to make sense.
+                artifacts_path=self.artifacts_path,
+                accelerator_options=pipeline_options.accelerator_options,
+                asr_options=s2t_asr_options,
             )
         else:
             _log.error(f"No model support for {self.pipeline_options.asr_options}")
