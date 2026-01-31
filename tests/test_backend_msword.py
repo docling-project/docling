@@ -367,3 +367,28 @@ def test_get_outline_level_from_style():
     normal_para = paragraphs[0]  # First paragraph is not a heading
     assert "heading" not in normal_para.style.name.lower()
     assert backend._get_outline_level_from_style(normal_para) is None
+
+
+@pytest.mark.parametrize(
+    "style_label,expected_label,expected_level",
+    [
+        ("Normal", "Normal", None),  # Non-heading style
+        ("Title", "Title", None),  # Non-heading style
+        ("CustomStyle", "CustomStyle", None),  # Non-heading style
+    ],
+)
+def test_get_heading_and_level_non_heading(
+    docx_paths, style_label, expected_label, expected_level
+):
+    """Test _get_heading_and_level returns input unchanged for non-heading styles."""
+    docx_path = docx_paths[0]
+    in_doc = InputDocument(
+        path_or_stream=docx_path,
+        format=InputFormat.DOCX,
+        backend=MsWordDocumentBackend,
+    )
+    backend = in_doc._backend
+
+    label, level = backend._get_heading_and_level(style_label)
+    assert label == expected_label
+    assert level == expected_level
