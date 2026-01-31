@@ -26,7 +26,14 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, cast
 
 import numpy as np
-from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
+from docling_core.types.doc import (
+    DocItem,
+    ImageRef,
+    PageItem,
+    PictureItem,
+    Size,
+    TableItem,
+)
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -75,11 +82,11 @@ _log = logging.getLogger(__name__)
 class ThreadedItem:
     """Envelope that travels between pipeline stages."""
 
-    payload: Optional[Page]
+    payload: Page | None
     run_id: int  # Unique per *execute* call, monotonic across pipeline instance
     page_no: int
     conv_res: ConversionResult
-    error: Optional[Exception] = None
+    error: Exception | None = None
     is_failed: bool = False
 
 
@@ -122,7 +129,7 @@ class ThreadedQueue:
         self._closed = False
 
     # ---------------------------------------------------------------- put()
-    def put(self, item: ThreadedItem, timeout: Optional[float] | None = None) -> bool:
+    def put(self, item: ThreadedItem, timeout: float | None | None = None) -> bool:
         """Block until queue accepts *item* or is closed.  Returns *False* if closed."""
         with self._not_full:
             if self._closed:
@@ -144,7 +151,7 @@ class ThreadedQueue:
 
     # ------------------------------------------------------------ get_batch()
     def get_batch(
-        self, size: int, timeout: Optional[float] | None = None
+        self, size: int, timeout: float | None | None = None
     ) -> List[ThreadedItem]:
         """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
         with self._not_empty:
@@ -188,8 +195,8 @@ class ThreadedPipelineStage:
         batch_size: int,
         batch_timeout: float,
         queue_max_size: int,
-        postprocess: Optional[Callable[[ThreadedItem], None]] = None,
-        timed_out_run_ids: Optional[set[int]] = None,
+        postprocess: Callable[[ThreadedItem], None] | None = None,
+        timed_out_run_ids: set[int] | None = None,
     ) -> None:
         self.name = name
         self.model = model
@@ -197,7 +204,7 @@ class ThreadedPipelineStage:
         self.batch_timeout = batch_timeout
         self.input_queue = ThreadedQueue(queue_max_size)
         self._outputs: list[ThreadedQueue] = []
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._running = False
         self._postprocess = postprocess
         self._timed_out_run_ids = (
@@ -328,7 +335,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
         batch_timeout: float,
         queue_max_size: int,
         model: Any,
-        timed_out_run_ids: Optional[set[int]] = None,
+        timed_out_run_ids: set[int] | None = None,
     ) -> None:
         super().__init__(
             name="preprocess",
@@ -502,7 +509,7 @@ class StandardPdfPipeline(ConvertPipeline):
         )
 
     # ---------------------------------------------------------------- helpers
-    def _make_ocr_model(self, art_path: Optional[Path]) -> Any:
+    def _make_ocr_model(self, art_path: Path | None) -> Any:
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
@@ -839,7 +846,72 @@ class StandardPdfPipeline(ConvertPipeline):
                         )
                     )
 
+            # Add failed pages to DoclingDocument.pages to preserve page numbering
+            # This ensures page break markers are generated for skipped/failed pages
+            self._add_failed_pages_to_document(conv_res)
+
         return conv_res
+
+    def _add_failed_pages_to_document(self, conv_res: ConversionResult) -> None:
+        """Add failed/skipped pages to DoclingDocument.pages.
+
+        This ensures that page break markers are correctly generated for documents
+        where some pages failed to parse. Without this, export functions would not
+        know about the missing pages and would generate incorrect page break counts.
+
+        The failed pages are added with their size information (if available from
+        the backend) but without any content.
+        """
+        if conv_res.document is None:
+            return
+
+        # Determine which pages were expected to be processed
+        start_page, end_page = conv_res.input.limits.page_range
+        expected_page_nos = set(
+            range(
+                max(1, start_page),
+                min(conv_res.input.page_count, end_page) + 1,
+            )
+        )
+
+        # Find pages that are missing from the document
+        existing_page_nos = set(conv_res.document.pages.keys())
+        missing_page_nos = expected_page_nos - existing_page_nos
+
+        if not missing_page_nos:
+            return
+
+        # Try to get size information from the backend for missing pages
+        backend = conv_res.input._backend
+        for page_no in sorted(missing_page_nos):
+            try:
+                # Attempt to get page size from backend
+                if isinstance(backend, PdfDocumentBackend):
+                    page_backend = backend.load_page(page_no - 1)
+                    if page_backend.is_valid():
+                        size = page_backend.get_size()
+                    else:
+                        # Use a default size if page backend is invalid
+                        size = Size(width=0.0, height=0.0)
+                    page_backend.unload()
+                else:
+                    size = Size(width=0.0, height=0.0)
+            except Exception:
+                # If we can't get size, use default
+                size = Size(width=0.0, height=0.0)
+
+            # Add the failed page to the document's pages dict
+            conv_res.document.pages[page_no] = PageItem(
+                page_no=page_no,
+                size=size,
+                image=None,
+            )
+
+        _log.debug(
+            "Added %d failed/skipped pages to document: %s",
+            len(missing_page_nos),
+            sorted(missing_page_nos),
+        )
 
     # ---------------------------------------------------------------- misc
     @classmethod
