@@ -290,8 +290,6 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                 and self.options.treat_singleton_as_text
             )
 
-            # debug_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-
             for excel_table in tables:
                 origin_col = excel_table.anchor[0]
                 origin_row = excel_table.anchor[1]
