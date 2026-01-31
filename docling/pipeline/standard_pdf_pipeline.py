@@ -129,7 +129,7 @@ class ThreadedQueue:
         self._closed = False
 
     # ---------------------------------------------------------------- put()
-    def put(self, item: ThreadedItem, timeout: float | None | None = None) -> bool:
+    def put(self, item: ThreadedItem, timeout: float | None = None) -> bool:
         """Block until queue accepts *item* or is closed.  Returns *False* if closed."""
         with self._not_full:
             if self._closed:
@@ -151,7 +151,7 @@ class ThreadedQueue:
 
     # ------------------------------------------------------------ get_batch()
     def get_batch(
-        self, size: int, timeout: float | None | None = None
+        self, size: int, timeout: float | None = None
     ) -> List[ThreadedItem]:
         """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
         with self._not_empty:
@@ -888,12 +888,14 @@ class StandardPdfPipeline(ConvertPipeline):
                 # Attempt to get page size from backend
                 if isinstance(backend, PdfDocumentBackend):
                     page_backend = backend.load_page(page_no - 1)
-                    if page_backend.is_valid():
-                        size = page_backend.get_size()
-                    else:
-                        # Use a default size if page backend is invalid
-                        size = Size(width=0.0, height=0.0)
-                    page_backend.unload()
+                    try:
+                        if page_backend.is_valid():
+                            size = page_backend.get_size()
+                        else:
+                            # Use a default size if page backend is invalid
+                            size = Size(width=0.0, height=0.0)
+                    finally:
+                        page_backend.unload()
                 else:
                     size = Size(width=0.0, height=0.0)
             except Exception:
