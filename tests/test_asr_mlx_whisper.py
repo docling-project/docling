@@ -133,6 +133,7 @@ class TestMlxWhisperIntegration:
             def is_available(self):
                 return False
 
+        # additional tests
         class _CudaOff:
             def is_available(self):
                 return False
