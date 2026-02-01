@@ -119,7 +119,7 @@ class InputDocument(BaseModel):
         Field(description="A stable hash of the path or stream of the input document."),
     ]
     valid: bool = Field(True, description="Whether this is is a valid input document.")
-    backend_options: Optional[BackendOptions] = Field(
+    backend_options: BackendOptions | None = Field(
         None, description="Custom options for backends."
     )
     limits: DocumentLimits = Field(
@@ -127,9 +127,7 @@ class InputDocument(BaseModel):
     )
     format: Annotated[InputFormat, Field(description="The document format.")]
 
-    filesize: Optional[int] = Field(
-        None, description="Size of the input file, in bytes."
-    )
+    filesize: int | None = Field(None, description="Size of the input file, in bytes.")
     page_count: int = Field(0, description="Number of pages in the input document.")
 
     _backend: AbstractDocumentBackend
@@ -139,9 +137,9 @@ class InputDocument(BaseModel):
         path_or_stream: Union[BytesIO, Path],
         format: InputFormat,
         backend: Type[AbstractDocumentBackend],
-        backend_options: Optional[BackendOptions] = None,
-        filename: Optional[str] = None,
-        limits: Optional[DocumentLimits] = None,
+        backend_options: BackendOptions | None = None,
+        filename: str | None = None,
+        limits: DocumentLimits | None = None,
     ) -> None:
         super().__init__(
             file="",
@@ -242,7 +240,7 @@ class DoclingVersion(BaseModel):
 class ConversionAssets(BaseModel):
     version: DoclingVersion = DoclingVersion()
     # When the assets were saved (ISO string from datetime.now())
-    timestamp: Optional[str] = None
+    timestamp: str | None = None
 
     status: ConversionStatus = ConversionStatus.PENDING  # failure, success
     errors: list[ErrorItem] = []  # structure to keep errors
@@ -262,7 +260,7 @@ class ConversionAssets(BaseModel):
         self,
         *,
         filename: Union[str, Path],
-        indent: Optional[int] = 2,
+        indent: int | None = 2,
     ):
         """Serialize the full ConversionAssets to JSON."""
         if isinstance(filename, str):
@@ -338,7 +336,7 @@ class ConversionAssets(BaseModel):
 
         # Read the ZIP and deserialize all items
         version_info: DoclingVersion = DoclingVersion()
-        timestamp: Optional[str] = None
+        timestamp: str | None = None
         status = ConversionStatus.PENDING
         errors: list[ErrorItem] = []
         pages: list[Page] = []
@@ -440,8 +438,8 @@ class _DummyBackend(AbstractDocumentBackend):
 
 class _DocumentConversionInput(BaseModel):
     path_or_stream_iterator: Iterable[Union[Path, str, DocumentStream]]
-    headers: Optional[dict[str, str]] = None
-    limits: Optional[DocumentLimits] = DocumentLimits()
+    headers: dict[str, str] | None = None
+    limits: DocumentLimits | None = DocumentLimits()
 
     def docs(
         self,
@@ -455,7 +453,7 @@ class _DocumentConversionInput(BaseModel):
             )
             format = self._guess_format(obj)
             backend: Type[AbstractDocumentBackend]
-            backend_options: Optional[BackendOptions] = None
+            backend_options: BackendOptions | None = None
             if not format or format not in format_options:
                 _log.error(
                     f"Input document {obj.name} with format {format} does not match "
@@ -485,7 +483,7 @@ class _DocumentConversionInput(BaseModel):
                 backend_options=backend_options,
             )
 
-    def _guess_format(self, obj: Union[Path, DocumentStream]) -> Optional[InputFormat]:
+    def _guess_format(self, obj: Union[Path, DocumentStream]) -> InputFormat | None:
         content = b""  # empty binary blob
         formats: list[InputFormat] = []
 
@@ -550,9 +548,9 @@ class _DocumentConversionInput(BaseModel):
     @staticmethod
     def _guess_from_content(
         content: bytes, mime: str, formats: list[InputFormat]
-    ) -> Optional[InputFormat]:
+    ) -> InputFormat | None:
         """Guess the input format of a document by checking part of its content."""
-        input_format: Optional[InputFormat] = None
+        input_format: InputFormat | None = None
 
         if mime == "application/xml":
             content_str = content.decode("utf-8")
@@ -612,7 +610,7 @@ class _DocumentConversionInput(BaseModel):
     @staticmethod
     def _detect_html_xhtml(
         content: bytes,
-    ) -> Optional[Literal["application/xhtml+xml", "application/xml", "text/html"]]:
+    ) -> Literal["application/xhtml+xml", "application/xml", "text/html"] | None:
         """Guess the mime type of an XHTML, HTML, or XML file from its content.
 
         Args:
@@ -651,7 +649,7 @@ class _DocumentConversionInput(BaseModel):
     @staticmethod
     def _detect_csv(
         content: bytes,
-    ) -> Optional[Literal["text/csv"]]:
+    ) -> Literal["text/csv"] | None:
         """Guess the mime type of a CSV file from its content.
 
         Args:
@@ -680,7 +678,7 @@ class _DocumentConversionInput(BaseModel):
     @staticmethod
     def _detect_mets_gbs(
         obj: Union[Path, DocumentStream],
-    ) -> Optional[Literal["application/mets+xml"]]:
+    ) -> Literal["application/mets+xml"] | None:
         content = obj if isinstance(obj, Path) else obj.stream
         tar: tarfile.TarFile
         member: tarfile.TarInfo

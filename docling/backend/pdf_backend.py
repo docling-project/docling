@@ -20,7 +20,7 @@ class PdfPageBackend(ABC):
         pass
 
     @abstractmethod
-    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+    def get_segmented_page(self) -> SegmentedPdfPage | None:
         pass
 
     @abstractmethod
@@ -33,7 +33,7 @@ class PdfPageBackend(ABC):
 
     @abstractmethod
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         pass
 

@@ -47,7 +47,7 @@ class BasePipeline(ABC):
         self.build_pipe: List[Callable] = []
         self.enrichment_pipe: List[GenericEnrichmentModel[Any]] = []
 
-        self.artifacts_path: Optional[Path] = None
+        self.artifacts_path: Path | None = None
         if pipeline_options.artifacts_path is not None:
             self.artifacts_path = Path(pipeline_options.artifacts_path).expanduser()
         elif settings.artifacts_path is not None:
@@ -169,8 +169,8 @@ class ConvertPipeline(BasePipeline):
         ]
 
     def _get_picture_description_model(
-        self, artifacts_path: Optional[Path] = None
-    ) -> Optional[PictureDescriptionBaseModel]:
+        self, artifacts_path: Path | None = None
+    ) -> PictureDescriptionBaseModel | None:
         factory = get_picture_description_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )

@@ -35,7 +35,7 @@ class PictureDescriptionBaseModel(
         *,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         options: PictureDescriptionBaseOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -110,9 +110,9 @@ class PictureDescriptionBaseModel(
 
 
 def _passes_classification(
-    meta: Optional[PictureMeta],
-    allow: Optional[List[PictureClassificationLabel]],
-    deny: Optional[List[PictureClassificationLabel]],
+    meta: PictureMeta | None,
+    allow: List[PictureClassificationLabel] | None,
+    deny: List[PictureClassificationLabel] | None,
     min_confidence: float,
 ) -> bool:
     if not allow and not deny:
@@ -143,7 +143,7 @@ def _label_value(label: Union[PictureClassificationLabel, str]) -> str:
     return label.value if isinstance(label, PictureClassificationLabel) else str(label)
 
 
-def _meets_confidence(confidence: Optional[float], min_confidence: float) -> bool:
+def _meets_confidence(confidence: float | None, min_confidence: float) -> bool:
     return min_confidence <= 0 or (
         confidence is not None and confidence >= min_confidence
     )

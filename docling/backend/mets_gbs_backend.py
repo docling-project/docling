@@ -85,7 +85,7 @@ class MetsGbsPageBackend(PdfPageBackend):
 
         return text_piece
 
-    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+    def get_segmented_page(self) -> SegmentedPdfPage | None:
         return self._dpage
 
     def get_text_cells(self) -> Iterable[TextCell]:
@@ -107,7 +107,7 @@ class MetsGbsPageBackend(PdfPageBackend):
                 yield cropbox
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         page_size = self.get_size()
         assert (
@@ -156,12 +156,12 @@ class _FileInfo:
 
 @dataclass
 class _PageFiles:
-    image: Optional[_FileInfo] = None
-    ocr: Optional[_FileInfo] = None
-    coordOCR: Optional[_FileInfo] = None
+    image: _FileInfo | None = None
+    ocr: _FileInfo | None = None
+    coordOCR: _FileInfo | None = None
 
 
-def _extract_rect(title_str: str) -> Optional[BoundingRectangle]:
+def _extract_rect(title_str: str) -> BoundingRectangle | None:
     """
     Extracts bbox from title string like 'bbox 279 177 306 214;x_wconf 97'
     """
@@ -203,7 +203,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
             if isinstance(self.path_or_stream, Path)
             else tarfile.open(fileobj=self.path_or_stream, mode="r:gz")
         )
-        self.root_mets: Optional[etree._Element] = None
+        self.root_mets: etree._Element | None = None
         self.page_map: Dict[int, _PageFiles] = {}
 
         for member in self._tar.getmembers():
@@ -282,7 +282,7 @@ class MetsGbsDocumentBackend(PdfDocumentBackend):
 
             self.page_map[page_no] = page_files
 
-    def _validate_mets_xml(self, xml_string) -> Optional[etree._Element]:
+    def _validate_mets_xml(self, xml_string) -> etree._Element | None:
         root: etree._Element = etree.fromstring(xml_string)
         if (
             root.tag == "{http://www.loc.gov/METS/}mets"

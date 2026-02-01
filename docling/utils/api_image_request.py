@@ -19,9 +19,9 @@ def api_image_request(
     prompt: str,
     url: AnyUrl,
     timeout: float = 20,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
     **params,
-) -> Tuple[str, Optional[int], VlmStopReason]:
+) -> Tuple[str, int | None, VlmStopReason]:
     img_io = BytesIO()
     image = (
         image.copy()
@@ -97,10 +97,10 @@ def api_image_request_streaming(
     url: AnyUrl,
     *,
     timeout: float = 20,
-    headers: Optional[dict[str, str]] = None,
+    headers: dict[str, str] | None = None,
     generation_stoppers: list[GenerationStopper] = [],
     **params,
-) -> Tuple[str, Optional[int]]:
+) -> Tuple[str, int | None]:
     """
     Stream a chat completion from an OpenAI-compatible server (e.g., vLLM).
     Parses SSE lines: 'data: {json}\\n\\n', terminated by 'data: [DONE]'.

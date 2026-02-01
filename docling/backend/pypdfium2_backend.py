@@ -119,7 +119,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
                 exc_info=True,
             )
             self.valid = False
-        self.text_page: Optional[PdfTextPage] = None
+        self.text_page: PdfTextPage | None = None
 
     def is_valid(self) -> bool:
         return self.valid
@@ -311,7 +311,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
 
         return text_piece
 
-    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+    def get_segmented_page(self) -> SegmentedPdfPage | None:
         if not self.valid:
             return None
 
@@ -335,7 +335,7 @@ class PyPdfiumPageBackend(PdfPageBackend):
         return self._compute_text_cells()
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         page_size = self.get_size()
 

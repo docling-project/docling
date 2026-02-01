@@ -97,7 +97,7 @@ class InlineAsrOptions(BaseAsrOptions):
         ),
     ] = 30.0
     torch_dtype: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "PyTorch data type for model weights. Options: `float32`, "
@@ -352,7 +352,7 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
         Field(description=("Number of parallel workers for CTranslate2.")),
     ] = 1
     initial_prompt: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Optional text prompt to condition the transcription style or "

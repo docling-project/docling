@@ -678,7 +678,7 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
         return (right - left, bottom - top)
 
     @staticmethod
-    def _get_sheet_content_layer(sheet: Worksheet) -> Optional[ContentLayer]:
+    def _get_sheet_content_layer(sheet: Worksheet) -> ContentLayer | None:
         return (
             None
             if sheet.sheet_state == Worksheet.SHEETSTATE_VISIBLE

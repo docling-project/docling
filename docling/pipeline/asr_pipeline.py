@@ -40,27 +40,27 @@ _log = logging.getLogger(__name__)
 
 class _ConversationWord(BaseModel):
     text: str
-    start_time: Optional[float] = Field(
+    start_time: float | None = Field(
         None, description="Start time in seconds from video start"
     )
-    end_time: Optional[float] = Field(
+    end_time: float | None = Field(
         None, ge=0, description="End time in seconds from video start"
     )
 
 
 class _ConversationItem(BaseModel):
     text: str
-    start_time: Optional[float] = Field(
+    start_time: float | None = Field(
         None, description="Start time in seconds from video start"
     )
-    end_time: Optional[float] = Field(
+    end_time: float | None = Field(
         None, ge=0, description="End time in seconds from video start"
     )
-    speaker_id: Optional[int] = Field(None, description="Numeric speaker identifier")
-    speaker: Optional[str] = Field(
+    speaker_id: int | None = Field(None, description="Numeric speaker identifier")
+    speaker: str | None = Field(
         None, description="Speaker name, defaults to speaker-{speaker_id}"
     )
-    words: Optional[list[_ConversationWord]] = Field(
+    words: list[_ConversationWord] | None = Field(
         None, description="Individual words with time-stamps"
     )
 
@@ -91,7 +91,7 @@ class _NativeWhisperModel:
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         asr_options: InlineAsrNativeWhisperOptions,
     ):
@@ -149,7 +149,7 @@ class _NativeWhisperModel:
         path_or_stream = conv_res.input._backend.path_or_stream
 
         # Handle both Path and BytesIO inputs
-        temp_file_path: Optional[Path] = None
+        temp_file_path: Path | None = None
 
         if isinstance(path_or_stream, BytesIO):
             # For BytesIO, write to a temporary file since whisper requires a file path
@@ -237,7 +237,7 @@ class _MlxWhisperModel:
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         asr_options: InlineAsrMlxWhisperOptions,
     ):
@@ -371,7 +371,7 @@ class _WhisperS2TModel:
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         asr_options: InlineAsrWhisperS2TOptions,
     ):
@@ -452,7 +452,7 @@ class _WhisperS2TModel:
     def run(self, conv_res: ConversionResult) -> ConversionResult:
         path_or_stream = conv_res.input._backend.path_or_stream
 
-        temp_file_path: Optional[Path] = None
+        temp_file_path: Path | None = None
 
         if isinstance(path_or_stream, BytesIO):
             suffix = Path(conv_res.input.file.name).suffix or ".wav"

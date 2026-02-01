@@ -178,7 +178,7 @@ def _process_annotation_item(
     label_str: str,
     content: str,
     prov: ProvenanceItem,
-    caption_item: Optional[Union[TextItem, RefItem]],
+    caption_item: Union[TextItem, RefItem] | None,
     page_doc: DoclingDocument,
     label_map: dict[str, DocItemLabel],
 ) -> None:
@@ -233,7 +233,7 @@ def parse_deepseekocr_markdown(
     original_page_size: Size,
     page_no: int,
     filename: str = "file",
-    page_image: Optional[PILImage.Image] = None,
+    page_image: PILImage.Image | None = None,
 ) -> DoclingDocument:
     """Parse DeepSeek OCR markdown with label[[x1, y1, x2, y2]] format.
 

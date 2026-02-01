@@ -48,7 +48,7 @@ class ExtractionVlmPipeline(BaseExtractionPipeline):
     def _extract_data(
         self,
         ext_res: ExtractionResult,
-        template: Optional[ExtractionTemplateType] = None,
+        template: ExtractionTemplateType | None = None,
     ) -> ExtractionResult:
         """Extract data using the VLM model."""
         try:

@@ -72,7 +72,7 @@ _PIPELINE_CACHE_LOCK = threading.Lock()
 
 class FormatOption(BaseFormatOption):
     pipeline_cls: Type[BasePipeline]
-    backend_options: Optional[BackendOptions] = None
+    backend_options: BackendOptions | None = None
 
     @model_validator(mode="after")
     def set_optional_field_default(self) -> Self:
@@ -105,7 +105,7 @@ class PowerpointFormatOption(FormatOption):
 class MarkdownFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = MarkdownDocumentBackend
-    backend_options: Optional[MarkdownBackendOptions] = None
+    backend_options: MarkdownBackendOptions | None = None
 
 
 class AsciiDocFormatOption(FormatOption):
@@ -116,7 +116,7 @@ class AsciiDocFormatOption(FormatOption):
 class HTMLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
     backend: Type[AbstractDocumentBackend] = HTMLDocumentBackend
-    backend_options: Optional[HTMLBackendOptions] = None
+    backend_options: HTMLBackendOptions | None = None
 
 
 class PatentUsptoFormatOption(FormatOption):
@@ -137,7 +137,7 @@ class ImageFormatOption(FormatOption):
 class PdfFormatOption(FormatOption):
     pipeline_cls: Type = StandardPdfPipeline
     backend: Type[AbstractDocumentBackend] = DoclingParseV4DocumentBackend
-    backend_options: Optional[PdfBackendOptions] = None
+    backend_options: PdfBackendOptions | None = None
 
 
 class AudioFormatOption(FormatOption):
@@ -197,8 +197,8 @@ class DocumentConverter:
 
     def __init__(
         self,
-        allowed_formats: Optional[list[InputFormat]] = None,
-        format_options: Optional[dict[InputFormat, FormatOption]] = None,
+        allowed_formats: list[InputFormat] | None = None,
+        format_options: dict[InputFormat, FormatOption] | None = None,
     ) -> None:
         """Initialize the converter based on format preferences.
 
@@ -284,7 +284,7 @@ class DocumentConverter:
     def convert(
         self,
         source: Union[Path, str, DocumentStream],  # TODO review naming
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -328,7 +328,7 @@ class DocumentConverter:
     def convert_all(
         self,
         source: Iterable[Union[Path, str, DocumentStream]],  # TODO review naming
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -393,7 +393,7 @@ class DocumentConverter:
         self,
         content: str,
         format: InputFormat,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> ConversionResult:
         """Convert a document given as a string using the specified format.
 
@@ -475,7 +475,7 @@ class DocumentConverter:
                     )
                     yield item
 
-    def _get_pipeline(self, doc_format: InputFormat) -> Optional[BasePipeline]:
+    def _get_pipeline(self, doc_format: InputFormat) -> BasePipeline | None:
         """Retrieve or initialize a pipeline, reusing instances based on class and options."""
         fopt = self.format_to_options.get(doc_format)
 

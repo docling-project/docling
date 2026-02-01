@@ -30,7 +30,7 @@ class TableCropsLayoutModel(BaseLayoutModel):
 
     def __init__(
         self,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         options: TableCropsLayoutOptions,
     ):

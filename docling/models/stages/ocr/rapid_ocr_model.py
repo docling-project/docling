@@ -90,7 +90,7 @@ class RapidOcrModel(BaseOcrModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: RapidOcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -225,7 +225,7 @@ class RapidOcrModel(BaseOcrModel):
     @staticmethod
     def download_models(
         backend: _ModelPathEngines,
-        local_dir: Optional[Path] = None,
+        local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
     ) -> Path:

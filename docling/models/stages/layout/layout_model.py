@@ -48,7 +48,7 @@ class LayoutModel(BaseLayoutModel):
 
     def __init__(
         self,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         options: LayoutOptions,
     ):
@@ -92,7 +92,7 @@ class LayoutModel(BaseLayoutModel):
 
     @staticmethod
     def download_models(
-        local_dir: Optional[Path] = None,
+        local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
         layout_model_config: LayoutModelConfig = LayoutOptions().model_spec,  # use default

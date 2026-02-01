@@ -7,10 +7,10 @@ _log = logging.getLogger(__name__)
 
 def download_hf_model(
     repo_id: str,
-    local_dir: Optional[Path] = None,
+    local_dir: Path | None = None,
     force: bool = False,
     progress: bool = False,
-    revision: Optional[str] = None,
+    revision: str | None = None,
 ) -> Path:
     from huggingface_hub import snapshot_download
     from huggingface_hub.utils import disable_progress_bars
@@ -31,10 +31,10 @@ class HuggingFaceModelDownloadMixin:
     @staticmethod
     def download_models(
         repo_id: str,
-        local_dir: Optional[Path] = None,
+        local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
-        revision: Optional[str] = None,
+        revision: str | None = None,
     ) -> Path:
         return download_hf_model(
             repo_id=repo_id,

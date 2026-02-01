@@ -100,10 +100,9 @@ class DocumentExtractor:
 
     def __init__(
         self,
-        allowed_formats: Optional[list[InputFormat]] = None,
-        extraction_format_options: Optional[
-            dict[InputFormat, ExtractionFormatOption]
-        ] = None,
+        allowed_formats: list[InputFormat] | None = None,
+        extraction_format_options: dict[InputFormat, ExtractionFormatOption]
+        | None = None,
     ) -> None:
         self.allowed_formats: list[InputFormat] = (
             allowed_formats if allowed_formats is not None else list(InputFormat)
@@ -127,7 +126,7 @@ class DocumentExtractor:
         self,
         source: Union[Path, str, DocumentStream],
         template: ExtractionTemplateType,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -149,7 +148,7 @@ class DocumentExtractor:
         self,
         source: Iterable[Union[Path, str, DocumentStream]],
         template: ExtractionTemplateType,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         raises_on_error: bool = True,
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
@@ -290,9 +289,7 @@ class DocumentExtractor:
             in_doc, raises_on_error=raises_on_error, template=template
         )
 
-    def _get_pipeline(
-        self, doc_format: InputFormat
-    ) -> Optional[BaseExtractionPipeline]:
+    def _get_pipeline(self, doc_format: InputFormat) -> BaseExtractionPipeline | None:
         """Retrieve or initialize a pipeline, reusing instances based on class and options."""
         fopt = self.extraction_format_to_options.get(doc_format)
         if fopt is None or fopt.pipeline_options is None:

@@ -85,7 +85,7 @@ def openai_compatible_vlm_options(
 
 def lms_olmocr_vlm_options(model: str):
     class OlmocrVlmOptions(ApiVlmOptions):
-        def build_prompt(self, page: Optional[SegmentedPage]) -> str:
+        def build_prompt(self, page: SegmentedPage | None) -> str:
             if page is None:
                 return self.prompt.replace("#RAW_TEXT#", "")
 

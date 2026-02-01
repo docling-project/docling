@@ -59,7 +59,7 @@ class AppSettings(BaseSettings):
     debug: DebugSettings = DebugSettings()
 
     cache_dir: Path = Path.home() / ".cache" / "docling"
-    artifacts_path: Optional[Path] = None
+    artifacts_path: Path | None = None
 
 
 settings = AppSettings()

@@ -80,13 +80,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.valid: bool = False
         # Initialise the parents for the hierarchy
         self.max_levels: int = 10
-        self.level_at_new_list: Optional[int] = None
-        self.parents: dict[int, Optional[NodeItem]] = {}
+        self.level_at_new_list: int | None = None
+        self.parents: dict[int, NodeItem | None] = {}
         self.numbered_headers: dict[int, int] = {}
         self.equation_bookends: str = "<eq>{EQ}</eq>"
         # Track processed textbox elements to avoid duplication
         self.processed_textbox_elements: list[int] = []
-        self.docx_to_pdf_converter: Optional[Callable] = None
+        self.docx_to_pdf_converter: Callable | None = None
         self.docx_to_pdf_converter_init = False
         self.display_drawingml_warning = True
 
@@ -193,9 +193,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _update_history(
         self,
         name: str,
-        level: Optional[int],
-        numid: Optional[int],
-        ilevel: Optional[int],
+        level: int | None,
+        numid: int | None,
+        ilevel: int | None,
     ):
         self.history["names"].append(name)
         self.history["levels"].append(level)
@@ -203,16 +203,16 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self.history["numids"].append(numid)
         self.history["indents"].append(ilevel)
 
-    def _prev_name(self) -> Optional[str]:
+    def _prev_name(self) -> str | None:
         return self.history["names"][-1]
 
-    def _prev_level(self) -> Optional[int]:
+    def _prev_level(self) -> int | None:
         return self.history["levels"][-1]
 
-    def _prev_numid(self) -> Optional[int]:
+    def _prev_numid(self) -> int | None:
         return self.history["numids"][-1]
 
-    def _prev_indent(self) -> Optional[int]:
+    def _prev_indent(self) -> int | None:
         return self.history["indents"][-1]
 
     def _get_level(self) -> int:
@@ -364,9 +364,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return doc, added_elements
 
-    def _str_to_int(
-        self, s: Optional[str], default: Optional[int] = 0
-    ) -> Optional[int]:
+    def _str_to_int(self, s: str | None, default: int | None = 0) -> int | None:
         if s is None:
             return None
         try:
@@ -384,7 +382,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
     def _get_numId_and_ilvl(
         self, paragraph: Paragraph
-    ) -> tuple[Optional[int], Optional[int]]:
+    ) -> tuple[int | None, int | None]:
         # Access the XML element of the paragraph
         numPr = paragraph._element.find(
             ".//w:numPr", namespaces=paragraph._element.nsmap
@@ -505,13 +503,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             _log.debug(f"Error determining if list is numbered: {e}")
             return False
 
-    def _get_heading_and_level(self, style_label: str) -> tuple[str, Optional[int]]:
+    def _get_heading_and_level(self, style_label: str) -> tuple[str, int | None]:
         parts = self._split_text_and_number(style_label)
 
         if len(parts) == 2:
             parts.sort()
             label_str: str = ""
-            label_level: Optional[int] = 0
+            label_level: int | None = 0
             if parts[0].strip().lower() == "heading":
                 label_str = "Heading"
                 label_level = self._str_to_int(parts[1], None)
@@ -522,14 +520,14 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         return style_label, None
 
-    def _get_label_and_level(self, paragraph: Paragraph) -> tuple[str, Optional[int]]:
+    def _get_label_and_level(self, paragraph: Paragraph) -> tuple[str, int | None]:
         if paragraph.style is None:
             return "Normal", None
 
         label: str = paragraph.style.style_id
         name: str = paragraph.style.name or ""
-        base_style_label: Optional[str] = None
-        base_style_name: Optional[str] = None
+        base_style_label: str | None = None
+        base_style_name: str | None = None
         if isinstance(
             base_style := getattr(paragraph.style, "base_style", None), ParagraphStyle
         ):
@@ -556,7 +554,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         return label, None
 
     @classmethod
-    def _get_format_from_run(cls, run: Run) -> Optional[Formatting]:
+    def _get_format_from_run(cls, run: Run) -> Formatting | None:
         # The .bold and .italic properties are booleans, but .underline can be an enum
         # like WD_UNDERLINE.THICK (value 6), so we need to convert it to a boolean
         is_bold = run.bold or False
@@ -586,7 +584,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return [("", None, None)]
 
         paragraph_elements: list[
-            tuple[str, Optional[Formatting], Optional[Union[AnyUrl, Path]]]
+            tuple[str, Formatting | None, Union[AnyUrl, Path] | None]
         ] = []
         group_text = ""
         previous_format = None
@@ -886,9 +884,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self,
         *,
         doc: DoclingDocument,
-        prev_parent: Optional[NodeItem],
+        prev_parent: NodeItem | None,
         paragraph_elements: list,
-    ) -> Optional[NodeItem]:
+    ) -> NodeItem | None:
         return (
             doc.add_inline_group(parent=prev_parent, content_layer=self.content_layer)
             if len(paragraph_elements) > 1
@@ -1096,7 +1094,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _add_heading(
         self,
         doc: DoclingDocument,
-        curr_level: Optional[int],
+        curr_level: int | None,
         text: str,
         is_numbered_style: bool = False,
     ) -> list[RefItem]:
@@ -1391,7 +1389,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                     cell_set.add(cell._tc)
 
                 spanned_idx = row_idx
-                spanned_tc: Optional[CT_Tc] = cell._tc
+                spanned_tc: CT_Tc | None = cell._tc
                 while spanned_tc == cell._tc:
                     spanned_idx += 1
                     spanned_tc = (
@@ -1540,8 +1538,8 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
     def _handle_pictures(
         self, drawing_blip: Any, doc: DoclingDocument
     ) -> list[RefItem]:
-        def get_docx_image(image: Any) -> Optional[bytes]:
-            image_data: Optional[bytes] = None
+        def get_docx_image(image: Any) -> bytes | None:
+            image_data: bytes | None = None
             rId = image.get(
                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
             )
@@ -1555,7 +1553,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         if drawing_blip:
             level = self._get_level()
             # Open the BytesIO object with PIL to create an Image
-            parent: Optional[NodeItem] = (
+            parent: NodeItem | None = (
                 self.parents[level - 1]
                 if len(drawing_blip) == 1
                 else doc.add_group(
@@ -1565,7 +1563,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 )
             )
             for image in drawing_blip:
-                image_data: Optional[bytes] = get_docx_image(image)
+                image_data: bytes | None = get_docx_image(image)
                 if image_data is None:
                     _log.warning("Warning: image cannot be found")
                     p1 = doc.add_picture(

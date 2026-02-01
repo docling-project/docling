@@ -7,7 +7,7 @@ _log = logging.getLogger(__name__)
 
 
 def decide_device(
-    accelerator_device: str, supported_devices: Optional[List[AcceleratorDevice]] = None
+    accelerator_device: str, supported_devices: List[AcceleratorDevice] | None = None
 ) -> str:
     r"""
     Resolve the device based on the acceleration options and the available devices in the system.

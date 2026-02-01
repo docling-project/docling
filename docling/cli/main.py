@@ -35,36 +35,36 @@ from docling.datamodel import vlm_model_specs
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.asr_model_specs import (
     WHISPER_BASE,
+    WHISPER_BASE_EN_S2T,
     WHISPER_BASE_MLX,
     WHISPER_BASE_NATIVE,
+    WHISPER_BASE_S2T,
+    WHISPER_DISTIL_LARGE_V3_S2T,
+    WHISPER_DISTIL_MEDIUM_EN_S2T,
+    WHISPER_DISTIL_SMALL_EN_S2T,
     WHISPER_LARGE,
     WHISPER_LARGE_MLX,
     WHISPER_LARGE_NATIVE,
+    WHISPER_LARGE_V3_S2T,
     WHISPER_MEDIUM,
+    WHISPER_MEDIUM_EN_S2T,
     WHISPER_MEDIUM_MLX,
     WHISPER_MEDIUM_NATIVE,
+    WHISPER_MEDIUM_S2T,
     WHISPER_SMALL,
+    WHISPER_SMALL_EN_S2T,
     WHISPER_SMALL_MLX,
     WHISPER_SMALL_NATIVE,
+    WHISPER_SMALL_S2T,
     WHISPER_TINY,
+    WHISPER_TINY_EN_S2T,
     WHISPER_TINY_MLX,
     WHISPER_TINY_NATIVE,
+    # WhisperS2T models
+    WHISPER_TINY_S2T,
     WHISPER_TURBO,
     WHISPER_TURBO_MLX,
     WHISPER_TURBO_NATIVE,
-    # WhisperS2T models
-    WHISPER_TINY_S2T,
-    WHISPER_TINY_EN_S2T,
-    WHISPER_BASE_S2T,
-    WHISPER_BASE_EN_S2T,
-    WHISPER_SMALL_S2T,
-    WHISPER_SMALL_EN_S2T,
-    WHISPER_DISTIL_SMALL_EN_S2T,
-    WHISPER_MEDIUM_S2T,
-    WHISPER_MEDIUM_EN_S2T,
-    WHISPER_DISTIL_MEDIUM_EN_S2T,
-    WHISPER_LARGE_V3_S2T,
-    WHISPER_DISTIL_LARGE_V3_S2T,
     AsrModelType,
 )
 from docling.datamodel.backend_options import PdfBackendOptions
@@ -372,7 +372,7 @@ def export_documents(
     )
 
 
-def _split_list(raw: Optional[str]) -> Optional[List[str]]:
+def _split_list(raw: str | None) -> List[str] | None:
     if raw is None:
         return None
     return re.split(r"[;,]", raw)
@@ -459,14 +459,14 @@ def convert(  # noqa: C901
         ),
     ] = OcrAutoOptions.kind,
     ocr_lang: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             ...,
             help="Provide a comma-separated list of languages used by the OCR engine. Note that each OCR engine has different values for the language names.",
         ),
     ] = None,
     psm: Annotated[
-        Optional[int],
+        int | None,
         typer.Option(
             ...,
             help="Page Segmentation Mode for the OCR engine (0-13).",
@@ -476,7 +476,7 @@ def convert(  # noqa: C901
         PdfBackend, typer.Option(..., help="The PDF backend to use.")
     ] = PdfBackend.DLPARSE_V4,
     pdf_password: Annotated[
-        Optional[str], typer.Option(..., help="Password for protected PDF documents")
+        str | None, typer.Option(..., help="Password for protected PDF documents")
     ] = None,
     table_mode: Annotated[
         TableFormerMode,
@@ -502,7 +502,7 @@ def convert(  # noqa: C901
         typer.Option(..., help="Enable the picture description model in the pipeline."),
     ] = False,
     artifacts_path: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(..., help="If provided, the location of the model artifacts."),
     ] = None,
     enable_remote_services: Annotated[
@@ -565,7 +565,7 @@ def convert(  # noqa: C901
         typer.Option(..., help="Enable debug output which visualizes the table cells"),
     ] = False,
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version",
             callback=version_callback,
@@ -574,7 +574,7 @@ def convert(  # noqa: C901
         ),
     ] = None,
     document_timeout: Annotated[
-        Optional[float],
+        float | None,
         typer.Option(
             ...,
             help="The timeout for processing each document, in seconds.",
@@ -585,7 +585,7 @@ def convert(  # noqa: C901
         AcceleratorDevice, typer.Option(..., help="Accelerator device")
     ] = AcceleratorDevice.AUTO,
     docling_logo: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--logo", callback=logo_callback, is_eager=True, help="Docling logo"
         ),
@@ -630,7 +630,7 @@ def convert(  # noqa: C901
     if from_formats is None:
         from_formats = list(InputFormat)
 
-    parsed_headers: Optional[Dict[str, str]] = None
+    parsed_headers: Dict[str, str] | None = None
     if headers is not None:
         headers_t = TypeAdapter(Dict[str, str])
         parsed_headers = headers_t.validate_json(headers)
@@ -720,7 +720,7 @@ def convert(  # noqa: C901
         pipeline_options: PipelineOptions
 
         format_options: Dict[InputFormat, FormatOption] = {}
-        pdf_backend_options: Optional[PdfBackendOptions] = PdfBackendOptions(
+        pdf_backend_options: PdfBackendOptions | None = PdfBackendOptions(
             password=pdf_password
         )
 

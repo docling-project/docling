@@ -66,7 +66,7 @@ def download(
         bool, typer.Option(..., help="If true, the download will be forced.")
     ] = False,
     models: Annotated[
-        Optional[list[_AvailableModels]],
+        list[_AvailableModels] | None,
         typer.Argument(
             help="Models to download (default behavior: a predefined set of models will be downloaded).",
         ),

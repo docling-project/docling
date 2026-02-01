@@ -199,7 +199,7 @@ def verify_table_v2(true_item: TableItem, pred_item: TableItem, fuzzy: bool):
 
 
 def verify_picture_image_v2(
-    true_image: PILImage.Image, pred_item: Optional[PILImage.Image]
+    true_image: PILImage.Image, pred_item: PILImage.Image | None
 ):
     assert pred_item is not None, "predicted image is None"
     assert true_image.size == pred_item.size
@@ -310,7 +310,7 @@ def verify_conversion_result_v1(
     input_path: Path,
     doc_result: ConversionResult,
     generate: bool = False,
-    ocr_engine: Optional[str] = None,
+    ocr_engine: str | None = None,
     fuzzy: bool = False,
     indent: int = 2,
 ):
@@ -378,7 +378,7 @@ def verify_conversion_result_v2(
     input_path: Path,
     doc_result: ConversionResult,
     generate: bool = False,
-    ocr_engine: Optional[str] = None,
+    ocr_engine: str | None = None,
     fuzzy: bool = False,
     verify_doctags: bool = True,
     indent: int = 2,

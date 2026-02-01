@@ -35,7 +35,7 @@ _log = logging.getLogger(__name__)
 
 
 def download_models(
-    output_dir: Optional[Path] = None,
+    output_dir: Path | None = None,
     *,
     force: bool = False,
     progress: bool = False,

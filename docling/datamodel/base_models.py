@@ -37,7 +37,7 @@ from docling.datamodel.pipeline_options import PipelineOptions
 class BaseFormatOption(BaseModel):
     """Base class for format options used by _DocumentConversionInput."""
 
-    pipeline_options: Optional[PipelineOptions] = None
+    pipeline_options: PipelineOptions | None = None
     backend: Type[AbstractDocumentBackend]
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -200,7 +200,7 @@ class BasePageElement(BaseModel):
     id: int
     page_no: int
     cluster: Cluster
-    text: Optional[str] = None
+    text: str | None = None
 
 
 class LayoutPrediction(BaseModel):
@@ -217,9 +217,9 @@ class VlmPrediction(BaseModel):
     text: str = ""
     generated_tokens: list[VlmPredictionToken] = []
     generation_time: float = -1
-    num_tokens: Optional[int] = None
+    num_tokens: int | None = None
     stop_reason: VlmStopReason = VlmStopReason.UNSPECIFIED
-    input_prompt: Optional[str] = None
+    input_prompt: str | None = None
 
 
 class ContainerElement(
@@ -245,14 +245,14 @@ class TextElement(BasePageElement):
 
 class FigureElement(BasePageElement):
     annotations: list[PictureDataType] = []
-    provenance: Optional[str] = None
-    predicted_class: Optional[str] = None
-    confidence: Optional[float] = None
+    provenance: str | None = None
+    predicted_class: str | None = None
+    confidence: float | None = None
 
     @field_serializer("confidence")
     def _serialize(
-        self, value: Optional[float], info: FieldSerializationInfo
-    ) -> Optional[float]:
+        self, value: float | None, info: FieldSerializationInfo
+    ) -> float | None:
         return (
             round_pydantic_float(value, info.context, PydanticSerCtxKey.CONFID_PREC)
             if value is not None
@@ -271,11 +271,11 @@ class EquationPrediction(BaseModel):
 
 
 class PagePredictions(BaseModel):
-    layout: Optional[LayoutPrediction] = None
-    tablestructure: Optional[TableStructurePrediction] = None
-    figures_classification: Optional[FigureClassificationPrediction] = None
-    equations_prediction: Optional[EquationPrediction] = None
-    vlm_response: Optional[VlmPrediction] = None
+    layout: LayoutPrediction | None = None
+    tablestructure: TableStructurePrediction | None = None
+    figures_classification: FigureClassificationPrediction | None = None
+    equations_prediction: EquationPrediction | None = None
+    vlm_response: VlmPrediction | None = None
 
 
 PageElement = Union[TextElement, Table, FigureElement, ContainerElement]
@@ -299,10 +299,10 @@ class Page(BaseModel):
 
     page_no: int
     # page_hash: Optional[str] = None
-    size: Optional[Size] = None
-    parsed_page: Optional[SegmentedPdfPage] = None
+    size: Size | None = None
+    parsed_page: SegmentedPdfPage | None = None
     predictions: PagePredictions = PagePredictions()
-    assembled: Optional[AssembledUnit] = None
+    assembled: AssembledUnit | None = None
 
     _backend: Optional["PdfPageBackend"] = (
         None  # Internal PDF backend. By default it is cleared during assembling.
@@ -323,9 +323,9 @@ class Page(BaseModel):
     def get_image(
         self,
         scale: float = 1.0,
-        max_size: Optional[int] = None,
-        cropbox: Optional[BoundingBox] = None,
-    ) -> Optional[Image]:
+        max_size: int | None = None,
+        cropbox: BoundingBox | None = None,
+    ) -> Image | None:
         if self._backend is None:
             return self._image_cache.get(scale, None)
 
@@ -351,7 +351,7 @@ class Page(BaseModel):
             )
 
     @property
-    def image(self) -> Optional[Image]:
+    def image(self) -> Image | None:
         return self.get_image(scale=self._default_image_scale)
 
 
@@ -366,7 +366,7 @@ class OpenAiChatMessage(BaseModel):
 class OpenAiResponseChoice(BaseModel):
     index: int
     message: OpenAiChatMessage
-    finish_reason: Optional[str]
+    finish_reason: str | None
 
 
 class OpenAiResponseUsage(BaseModel):
@@ -381,7 +381,7 @@ class OpenAiApiResponse(BaseModel):
     )
 
     id: str
-    model: Optional[str] = None  # returned by openai
+    model: str | None = None  # returned by openai
     choices: list[OpenAiResponseChoice]
     created: int
     usage: OpenAiResponseUsage

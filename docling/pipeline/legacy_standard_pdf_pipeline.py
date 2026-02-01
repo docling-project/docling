@@ -118,9 +118,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             self.keep_backend = True
 
     @staticmethod
-    def download_models_hf(
-        local_dir: Optional[Path] = None, force: bool = False
-    ) -> Path:
+    def download_models_hf(local_dir: Path | None = None, force: bool = False) -> Path:
         warnings.warn(
             "The usage of LegacyStandardPdfPipeline.download_models_hf() is deprecated "
             "use instead the utility `docling-tools models download`, or "
@@ -132,7 +130,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
         output_dir = download_models(output_dir=local_dir, force=force, progress=False)
         return output_dir
 
-    def get_ocr_model(self, artifacts_path: Optional[Path] = None) -> BaseOcrModel:
+    def get_ocr_model(self, artifacts_path: Path | None = None) -> BaseOcrModel:
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )

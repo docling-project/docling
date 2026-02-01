@@ -30,7 +30,7 @@ class TesseractOcrModel(BaseOcrModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: TesseractOcrOptions,
         accelerator_options: AcceleratorOptions,
     ):

@@ -24,7 +24,7 @@ _log = logging.getLogger(__name__)
 
 class _ImagePageBackend(PdfPageBackend):
     def __init__(self, image: Image.Image):
-        self._image: Optional[Image.Image] = image
+        self._image: Image.Image | None = image
         self.valid: bool = self._image is not None
 
     def is_valid(self) -> bool:
@@ -85,7 +85,7 @@ class _ImagePageBackend(PdfPageBackend):
         yield full_page_bbox
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         assert self._image is not None
         img = self._image
