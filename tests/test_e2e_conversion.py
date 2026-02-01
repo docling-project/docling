@@ -13,13 +13,19 @@ GENERATE_V2 = GEN_TEST_DATA
 
 SKIP_DOCTAGS_COMPARISON = ["2203.01017v2.pdf"]
 
+# PDFs that are tested separately in test_failed_pages.py (intentionally failing pages)
+SKIP_E2E_TEST = ["skipped_1page.pdf", "skipped_2pages.pdf"]
+
 
 def get_pdf_paths():
     # Define the directory you want to search
     directory = Path("./tests/data/pdf/")
 
     # List all PDF files in the directory and its subdirectories
-    pdf_files = sorted(directory.rglob("*.pdf"))
+    # Exclude PDFs that are tested separately for failure scenarios
+    pdf_files = sorted(
+        f for f in directory.rglob("*.pdf") if f.name not in SKIP_E2E_TEST
+    )
     return pdf_files
 
 
