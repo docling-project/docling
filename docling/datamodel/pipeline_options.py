@@ -36,7 +36,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
 )
 from docling.datamodel.stage_model_specs import (
-    CODE_FORMULA_DEFAULT,
+    CODE_FORMULA_CODEFORMULAV2,
     CODE_FORMULA_GRANITE_DOCLING,
     PICTURE_DESC_GRANITE_VISION,
     PICTURE_DESC_PIXTRAL,
@@ -769,11 +769,11 @@ class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
     configuration via StagePresetMixin.
 
     Examples:
-        # Use default preset
-        options = CodeFormulaVlmOptions.from_preset("default")
+        # Use CodeFormulaV2 preset
+        options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 
-        # Use Granite Vision preset
-        options = CodeFormulaVlmOptions.from_preset("granite_vision")
+        # Use Granite Docling preset
+        options = CodeFormulaVlmOptions.from_preset("granite_docling")
     """
 
     model_spec: VlmModelSpec = Field(
@@ -818,7 +818,7 @@ PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_PIXTRAL)
 PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_QWEN)
 
 # Register CodeFormula presets
-CodeFormulaVlmOptions.register_preset(CODE_FORMULA_DEFAULT)
+CodeFormulaVlmOptions.register_preset(CODE_FORMULA_CODEFORMULAV2)
 CodeFormulaVlmOptions.register_preset(CODE_FORMULA_GRANITE_DOCLING)
 
 
@@ -837,9 +837,9 @@ _default_picture_description_options = PictureDescriptionVlmRuntimeOptions.from_
 )
 """Default picture description options using smolvlm preset with AUTO_INLINE runtime."""
 
-# Default CodeFormulaVlmOptions using default preset
-_default_code_formula_options = CodeFormulaVlmOptions.from_preset("default")
-"""Default code/formula options using default preset with AUTO_INLINE runtime."""
+# Default CodeFormulaVlmOptions using codeformulav2 preset
+_default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2")
+"""Default code/formula options using codeformulav2 preset with AUTO_INLINE runtime."""
 
 
 # Define an enum for the backend options

@@ -1,7 +1,7 @@
 """Example: Comparing CodeFormula models for code and formula extraction.
 
-This example demonstrates how to use both the default CodeFormulaV2 model
-and the new Granite Docling model for extracting code blocks and mathematical
+This example demonstrates how to use both the CodeFormulaV2 model
+and the Granite Docling model for extracting code blocks and mathematical
 formulas from PDF documents, allowing you to compare their outputs.
 """
 
@@ -21,7 +21,7 @@ def extract_with_preset(preset_name: str, input_doc: Path):
     """Extract code and formulas using a specific preset.
 
     Args:
-        preset_name: Name of the preset to use ('default' or 'granite_docling')
+        preset_name: Name of the preset to use ('codeformulav2' or 'granite_docling')
         input_doc: Path to the input PDF document
 
     Returns:
@@ -93,8 +93,8 @@ def main():
     print("Comparing CodeFormula presets for code and formula extraction")
     print(f"Input document: {input_doc}")
 
-    # Extract with default CodeFormulaV2 model
-    extract_with_preset("default", input_doc)
+    # Extract with CodeFormulaV2 model
+    extract_with_preset("codeformulav2", input_doc)
 
     # Extract with Granite Docling model
     extract_with_preset("granite_docling", input_doc)
@@ -104,7 +104,7 @@ def main():
     print(f"{'=' * 60}")
     print("\nBoth presets have been tested. You can compare the outputs above.")
     print("\nKey differences:")
-    print("- Default: Uses specialized CodeFormulaV2 model")
+    print("- CodeFormulaV2: Uses specialized CodeFormulaV2 model")
     print(
         "- Granite Docling: Uses IBM Granite-Docling-258M with extended context (8192 tokens)"
     )

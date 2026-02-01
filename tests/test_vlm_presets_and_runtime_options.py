@@ -362,7 +362,7 @@ class TestPresetBasedOptionsCreation:
 
     def test_create_code_formula_from_preset(self):
         """Test creating CodeFormulaVlmOptions from preset."""
-        options = CodeFormulaVlmOptions.from_preset("default")
+        options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 
         assert options.model_spec is not None
         assert options.runtime_options is not None

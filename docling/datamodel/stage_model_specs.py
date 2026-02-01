@@ -448,6 +448,36 @@ class StagePresetMixin:
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# SHARED MODEL SPECS (for reuse across multiple stages)
+# -----------------------------------------------------------------------------
+
+# Shared Granite Docling model spec used across VLM_CONVERT and CODE_FORMULA stages
+GRANITE_DOCLING_MODEL_SPEC = VlmModelSpec(
+    name="Granite-Docling-258M",
+    default_repo_id="ibm-granite/granite-docling-258M",
+    prompt="",  # Will be overridden per stage
+    response_format=ResponseFormat.DOCTAGS,  # Default, can be overridden per stage
+    stop_strings=["</doctag>", "<|end_of_text|>"],
+    max_new_tokens=8192,
+    runtime_overrides={
+        VlmRuntimeType.MLX: RuntimeModelConfig(
+            repo_id="ibm-granite/granite-docling-258M-mlx"
+        ),
+        VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+            extra_config={
+                "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                "extra_generation_config": {"skip_special_tokens": False},
+            }
+        ),
+    },
+    api_overrides={
+        VlmRuntimeType.API_OLLAMA: ApiModelConfig(
+            params={"model": "ibm/granite-docling:258m"}
+        ),
+    },
+)
+
+# -----------------------------------------------------------------------------
 # VLM_CONVERT PRESETS (for full page conversion)
 # -----------------------------------------------------------------------------
 
@@ -482,28 +512,8 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
     name="Granite-Docling",
     description="IBM Granite DocTags model for document conversion (258M parameters)",
     model_spec=VlmModelSpec(
-        name="Granite-Docling-258M",
-        default_repo_id="ibm-granite/granite-docling-258M",
+        **GRANITE_DOCLING_MODEL_SPEC.model_dump(),
         prompt="Convert this page to docling.",
-        response_format=ResponseFormat.DOCTAGS,
-        stop_strings=["</doctag>", "<|end_of_text|>"],
-        max_new_tokens=8192,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
-                repo_id="ibm-granite/granite-docling-258M-mlx"
-            ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
-                extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-                    "extra_generation_config": {"skip_special_tokens": False},
-                }
-            ),
-        },
-        api_overrides={
-            VlmRuntimeType.API_OLLAMA: ApiModelConfig(
-                params={"model": "ibm/granite-docling:258m"}
-            ),
-        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
@@ -738,8 +748,8 @@ PICTURE_DESC_QWEN = StageModelPreset(
 # CODE_FORMULA PRESETS (for code and formula extraction)
 # -----------------------------------------------------------------------------
 
-CODE_FORMULA_DEFAULT = StageModelPreset(
-    preset_id="default",
+CODE_FORMULA_CODEFORMULAV2 = StageModelPreset(
+    preset_id="codeformulav2",
     name="CodeFormulaV2",
     description="Specialized model for code and formula extraction",
     model_spec=VlmModelSpec(
@@ -757,28 +767,9 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
     name="Granite-Docling-CodeFormula",
     description="IBM Granite Docling model for code and formula extraction (258M parameters)",
     model_spec=VlmModelSpec(
-        name="Granite-Docling-258M",
-        default_repo_id="ibm-granite/granite-docling-258M",
+        **GRANITE_DOCLING_MODEL_SPEC.model_dump(),
         prompt="",
         response_format=ResponseFormat.PLAINTEXT,
-        stop_strings=["</doctag>", "<|end_of_text|>"],
-        max_new_tokens=8192,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
-                repo_id="ibm-granite/granite-docling-258M-mlx"
-            ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
-                extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-                    "extra_generation_config": {"skip_special_tokens": False},
-                }
-            ),
-        },
-        api_overrides={
-            VlmRuntimeType.API_OLLAMA: ApiModelConfig(
-                params={"model": "ibm/granite-docling:258m"}
-            ),
-        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,

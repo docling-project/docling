@@ -49,7 +49,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         from docling.datamodel.pipeline_options import CodeFormulaVlmOptions
 
         # Use preset with default runtime
-        options = CodeFormulaVlmOptions.from_preset("default")
+        options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 
         # Create stage
         stage = CodeFormulaVlmModel(
