@@ -40,6 +40,7 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
 from docling.datamodel.vlm_runtime_options import (
+    ApiVlmRuntimeOptions,
     MlxVlmRuntimeOptions,
     TransformersVlmRuntimeOptions,
     VlmRuntimeType,
@@ -66,21 +67,39 @@ def convert(
         print("================================================")
         print("")
 
+        # Measure actual conversion time
+        start_time = time.time()
         res = converter.convert(source)
+        end_time = time.time()
+        wall_clock_time = end_time - start_time
 
         print("")
 
         fname = f"{res.input.file.stem}-{preset_name}-{runtime_type.value}"
 
+        # Try to get timing from VLM response, but use wall clock as fallback
         inference_time = 0.0
         for i, page in enumerate(res.pages):
-            inference_time += page.predictions.vlm_response.generation_time
-            print("")
-            print(
-                f" ---------- Predicted page {i} in {page.predictions.vlm_response.generation_time} [sec]:"
-            )
-            print(page.predictions.vlm_response.text)
-            print(" ---------- ")
+            if page.predictions.vlm_response is not None:
+                gen_time = getattr(
+                    page.predictions.vlm_response, "generation_time", 0.0
+                )
+                # Skip negative times (indicates timing not available)
+                if gen_time >= 0:
+                    inference_time += gen_time
+                    print("")
+                    print(f" ---------- Predicted page {i} in {gen_time:.2f} [sec]:")
+                else:
+                    print("")
+                    print(f" ---------- Predicted page {i} (timing not available):")
+                print(page.predictions.vlm_response.text)
+                print(" ---------- ")
+            else:
+                print(f" ---------- Page {i}: No VLM response available ---------- ")
+
+        # Use wall clock time if VLM timing not available
+        if inference_time == 0.0:
+            inference_time = wall_clock_time
 
         print("===== Final output of the converted document =======")
 
@@ -144,15 +163,24 @@ if __name__ == "__main__":
     # Define preset configurations to test
     # Each tuple is (preset_name, runtime_options)
     preset_configs = [
-        # SmolDocling with different runtimes
+        # SmolDocling
         ("smoldocling", MlxVlmRuntimeOptions()),
-        ("smoldocling", TransformersVlmRuntimeOptions()),
-        # Granite models
+        # GraniteDocling with different runtimes
+        ("granite_docling", MlxVlmRuntimeOptions()),
         ("granite_docling", TransformersVlmRuntimeOptions()),
+        # Granite models
         ("granite_vision", TransformersVlmRuntimeOptions()),
         # Other presets with MLX (macOS only)
         ("pixtral", MlxVlmRuntimeOptions()),
         ("qwen", MlxVlmRuntimeOptions()),
+        ("gemma_12b", MlxVlmRuntimeOptions()),
+        # Other presets with Ollama
+        ("deepseek_ocr", ApiVlmRuntimeOptions(runtime_type=VlmRuntimeType.API_OLLAMA)),
+        # Other presets with LM Studio
+        (
+            "deepseek_ocr",
+            ApiVlmRuntimeOptions(runtime_type=VlmRuntimeType.API_LMSTUDIO),
+        ),
     ]
 
     # Remove MLX configs if not on Mac

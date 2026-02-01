@@ -476,6 +476,46 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
     },
 }
 
+# Shared Pixtral model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
+PIXTRAL_MODEL_SPEC_BASE = {
+    "name": "Pixtral-12B",
+    "default_repo_id": "mistral-community/pixtral-12b",
+    "runtime_overrides": {
+        VlmRuntimeType.MLX: RuntimeModelConfig(
+            repo_id="mlx-community/pixtral-12b-bf16"
+        ),
+        VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+            extra_config={
+                "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
+            }
+        ),
+    },
+}
+
+# Shared Granite Vision model spec used across VLM_CONVERT and PICTURE_DESCRIPTION stages
+GRANITE_VISION_MODEL_SPEC_BASE = {
+    "name": "Granite-Vision-3.3-2B",
+    "default_repo_id": "ibm-granite/granite-vision-3.3-2b",
+    "supported_runtimes": {
+        VlmRuntimeType.TRANSFORMERS,
+        VlmRuntimeType.VLLM,
+        VlmRuntimeType.API_OLLAMA,
+        VlmRuntimeType.API_LMSTUDIO,
+    },
+    "runtime_overrides": {
+        VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+            extra_config={
+                "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+            }
+        ),
+    },
+    "api_overrides": {
+        VlmRuntimeType.API_OLLAMA: ApiModelConfig(
+            params={"model": "granite3.3-vision:2b"}
+        ),
+    },
+}
+
 # -----------------------------------------------------------------------------
 # VLM_CONVERT PRESETS (for full page conversion)
 # -----------------------------------------------------------------------------
@@ -522,16 +562,19 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
 VLM_CONVERT_DEEPSEEK_OCR = StageModelPreset(
     preset_id="deepseek_ocr",
     name="DeepSeek-OCR",
-    description="DeepSeek OCR model via Ollama for document conversion (3B parameters)",
+    description="DeepSeek OCR model via Ollama/LM Studio for document conversion (3B parameters)",
     model_spec=VlmModelSpec(
         name="DeepSeek-OCR-3B",
         default_repo_id="deepseek-ocr:3b",  # Ollama model name
         prompt="<|grounding|>Convert the document to markdown. ",
         response_format=ResponseFormat.DEEPSEEKOCR_MARKDOWN,
-        supported_runtimes={VlmRuntimeType.API_OLLAMA},
+        supported_runtimes={VlmRuntimeType.API_OLLAMA, VlmRuntimeType.API_LMSTUDIO},
         api_overrides={
             VlmRuntimeType.API_OLLAMA: ApiModelConfig(
                 params={"model": "deepseek-ocr:3b", "max_tokens": 4096}
+            ),
+            VlmRuntimeType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "deepseek-ocr", "max_tokens": 4096}
             ),
         },
     ),
@@ -544,27 +587,9 @@ VLM_CONVERT_GRANITE_VISION = StageModelPreset(
     name="Granite-Vision",
     description="IBM Granite Vision model for markdown conversion (2B parameters)",
     model_spec=VlmModelSpec(
-        name="Granite-Vision-3.3-2B",
-        default_repo_id="ibm-granite/granite-vision-3.3-2b",
+        **GRANITE_VISION_MODEL_SPEC_BASE,
         prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
         response_format=ResponseFormat.MARKDOWN,
-        supported_runtimes={
-            VlmRuntimeType.TRANSFORMERS,
-            VlmRuntimeType.API_OLLAMA,
-            VlmRuntimeType.API_LMSTUDIO,
-        },
-        runtime_overrides={
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
-                extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-                }
-            ),
-        },
-        api_overrides={
-            VlmRuntimeType.API_OLLAMA: ApiModelConfig(
-                params={"model": "granite3.3-vision:2b"}
-            ),
-        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
@@ -575,20 +600,9 @@ VLM_CONVERT_PIXTRAL = StageModelPreset(
     name="Pixtral-12B",
     description="Mistral Pixtral model for markdown conversion (12B parameters)",
     model_spec=VlmModelSpec(
-        name="Pixtral-12B",
-        default_repo_id="mistral-community/pixtral-12b",
+        **PIXTRAL_MODEL_SPEC_BASE,
         prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
         response_format=ResponseFormat.MARKDOWN,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
-                repo_id="mlx-community/pixtral-12b-bf16"
-            ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
-                extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
-                }
-            ),
-        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
@@ -617,6 +631,119 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.TRANSFORMERS,
+)
+
+VLM_CONVERT_PHI4 = StageModelPreset(
+    preset_id="phi4",
+    name="Phi-4",
+    description="Microsoft Phi-4 multimodal model for markdown conversion",
+    model_spec=VlmModelSpec(
+        name="Phi-4-Multimodal-Instruct",
+        default_repo_id="microsoft/Phi-4-multimodal-instruct",
+        prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
+        response_format=ResponseFormat.MARKDOWN,
+        trust_remote_code=True,
+        supported_runtimes={
+            VlmRuntimeType.TRANSFORMERS,
+            VlmRuntimeType.VLLM,
+        },
+        runtime_overrides={
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
+                    "extra_generation_config": {"num_logits_to_keep": 0},
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+)
+
+VLM_CONVERT_QWEN = StageModelPreset(
+    preset_id="qwen",
+    name="Qwen2.5-VL-3B",
+    description="Qwen vision-language model for markdown conversion (3B parameters)",
+    model_spec=VlmModelSpec(
+        name="Qwen2.5-VL-3B-Instruct",
+        default_repo_id="Qwen/Qwen2.5-VL-3B-Instruct",
+        prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
+        response_format=ResponseFormat.MARKDOWN,
+        runtime_overrides={
+            VlmRuntimeType.MLX: RuntimeModelConfig(
+                repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16"
+            ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+)
+
+VLM_CONVERT_GEMMA_12B = StageModelPreset(
+    preset_id="gemma_12b",
+    name="Gemma-3-12B",
+    description="Google Gemma-3 vision model for markdown conversion (12B parameters)",
+    model_spec=VlmModelSpec(
+        name="Gemma-3-12B-IT",
+        default_repo_id="google/gemma-3-12b-it",
+        prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
+        response_format=ResponseFormat.MARKDOWN,
+        supported_runtimes={VlmRuntimeType.MLX},
+        runtime_overrides={
+            VlmRuntimeType.MLX: RuntimeModelConfig(
+                repo_id="mlx-community/gemma-3-12b-it-bf16"
+            ),
+        },
+    ),
+    scale=2.0,
+    default_runtime_type=VlmRuntimeType.MLX,
+)
+
+VLM_CONVERT_GEMMA_27B = StageModelPreset(
+    preset_id="gemma_27b",
+    name="Gemma-3-27B",
+    description="Google Gemma-3 vision model for markdown conversion (27B parameters)",
+    model_spec=VlmModelSpec(
+        name="Gemma-3-27B-IT",
+        default_repo_id="google/gemma-3-27b-it",
+        prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
+        response_format=ResponseFormat.MARKDOWN,
+        supported_runtimes={VlmRuntimeType.MLX},
+        runtime_overrides={
+            VlmRuntimeType.MLX: RuntimeModelConfig(
+                repo_id="mlx-community/gemma-3-27b-it-bf16"
+            ),
+        },
+    ),
+    scale=2.0,
+    default_runtime_type=VlmRuntimeType.MLX,
+)
+
+VLM_CONVERT_DOLPHIN = StageModelPreset(
+    preset_id="dolphin",
+    name="Dolphin",
+    description="ByteDance Dolphin OCR model for markdown conversion",
+    model_spec=VlmModelSpec(
+        name="Dolphin",
+        default_repo_id="ByteDance/Dolphin",
+        prompt="<s>Read text in the image. <Answer/>",
+        response_format=ResponseFormat.MARKDOWN,
+        runtime_overrides={
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "transformers_prompt_style": TransformersPromptStyle.RAW,
+                }
+            ),
+        },
+    ),
+    scale=2.0,
+    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
 )
 
 # -----------------------------------------------------------------------------
@@ -661,27 +788,9 @@ PICTURE_DESC_GRANITE_VISION = StageModelPreset(
     name="Granite-Vision-3.3-2B",
     description="IBM Granite Vision model for detailed image descriptions (2B parameters)",
     model_spec=VlmModelSpec(
-        name="Granite-Vision-3.3-2B",
-        default_repo_id="ibm-granite/granite-vision-3.3-2b",
+        **GRANITE_VISION_MODEL_SPEC_BASE,
         prompt="What is shown in this image?",
         response_format=ResponseFormat.PLAINTEXT,
-        supported_runtimes={
-            VlmRuntimeType.TRANSFORMERS,
-            VlmRuntimeType.API_OLLAMA,
-            VlmRuntimeType.API_LMSTUDIO,
-        },
-        runtime_overrides={
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
-                extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
-                }
-            ),
-        },
-        api_overrides={
-            VlmRuntimeType.API_OLLAMA: ApiModelConfig(
-                params={"model": "ibm/granite3.3-vision:2b"}
-            ),
-        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
@@ -695,20 +804,9 @@ PICTURE_DESC_PIXTRAL = StageModelPreset(
     name="Pixtral-12B",
     description="Mistral Pixtral model for detailed image descriptions (12B parameters)",
     model_spec=VlmModelSpec(
-        name="Pixtral-12B",
-        default_repo_id="mistral-community/pixtral-12b",
+        **PIXTRAL_MODEL_SPEC_BASE,
         prompt="Describe this image in detail.",
         response_format=ResponseFormat.PLAINTEXT,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
-                repo_id="mlx-community/pixtral-12b-bf16"
-            ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
-                extra_config={
-                    "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
-                }
-            ),
-        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,

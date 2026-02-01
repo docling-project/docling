@@ -13,7 +13,7 @@ from pydantic import (
 )
 from typing_extensions import deprecated
 
-from docling.datamodel import asr_model_specs, vlm_model_specs
+from docling.datamodel import asr_model_specs, stage_model_specs, vlm_model_specs
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -36,18 +36,6 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
 )
 from docling.datamodel.stage_model_specs import (
-    CODE_FORMULA_CODEFORMULAV2,
-    CODE_FORMULA_GRANITE_DOCLING,
-    PICTURE_DESC_GRANITE_VISION,
-    PICTURE_DESC_PIXTRAL,
-    PICTURE_DESC_QWEN,
-    PICTURE_DESC_SMOLVLM,
-    VLM_CONVERT_DEEPSEEK_OCR,
-    VLM_CONVERT_GOT_OCR,
-    VLM_CONVERT_GRANITE_DOCLING,
-    VLM_CONVERT_GRANITE_VISION,
-    VLM_CONVERT_PIXTRAL,
-    VLM_CONVERT_SMOLDOCLING,
     StagePresetMixin,
     VlmModelSpec,
 )
@@ -804,22 +792,33 @@ class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
 # =============================================================================
 
 # Register VlmConvert presets
-VlmConvertOptions.register_preset(VLM_CONVERT_SMOLDOCLING)
-VlmConvertOptions.register_preset(VLM_CONVERT_GRANITE_DOCLING)
-VlmConvertOptions.register_preset(VLM_CONVERT_DEEPSEEK_OCR)
-VlmConvertOptions.register_preset(VLM_CONVERT_GRANITE_VISION)
-VlmConvertOptions.register_preset(VLM_CONVERT_PIXTRAL)
-VlmConvertOptions.register_preset(VLM_CONVERT_GOT_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_SMOLDOCLING)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_DOCLING)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DEEPSEEK_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GRANITE_VISION)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PIXTRAL)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GOT_OCR)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_PHI4)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_QWEN)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_12B)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
+VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 
 # Register PictureDescription presets (for new runtime-based implementation)
-PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_SMOLVLM)
-PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_GRANITE_VISION)
-PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_PIXTRAL)
-PictureDescriptionVlmRuntimeOptions.register_preset(PICTURE_DESC_QWEN)
+PictureDescriptionVlmRuntimeOptions.register_preset(
+    stage_model_specs.PICTURE_DESC_SMOLVLM
+)
+PictureDescriptionVlmRuntimeOptions.register_preset(
+    stage_model_specs.PICTURE_DESC_GRANITE_VISION
+)
+PictureDescriptionVlmRuntimeOptions.register_preset(
+    stage_model_specs.PICTURE_DESC_PIXTRAL
+)
+PictureDescriptionVlmRuntimeOptions.register_preset(stage_model_specs.PICTURE_DESC_QWEN)
 
 # Register CodeFormula presets
-CodeFormulaVlmOptions.register_preset(CODE_FORMULA_CODEFORMULAV2)
-CodeFormulaVlmOptions.register_preset(CODE_FORMULA_GRANITE_DOCLING)
+CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_CODEFORMULAV2)
+CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_GRANITE_DOCLING)
 
 
 # =============================================================================
