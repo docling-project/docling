@@ -13,7 +13,6 @@ from docling.backend.abstract_backend import (
     AbstractDocumentBackend,
     PaginatedDocumentBackend,
 )
-from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import (
     ConversionStatus,
     DoclingComponentType,
@@ -30,6 +29,10 @@ from docling.datamodel.settings import settings
 from docling.models.base_model import GenericEnrichmentModel
 from docling.models.factories import get_picture_description_factory
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
+from docling.models.stages.chart_extraction.granite_vision import (
+    ChartExtractionModelGraniteVision,
+    ChartExtractionModelOptions,
+)
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
     DocumentPictureClassifierOptions,
@@ -144,6 +147,10 @@ class ConvertPipeline(BasePipeline):
         super().__init__(pipeline_options)
         self.pipeline_options: ConvertPipelineOptions
 
+        # We need picture classification to do chart_extraction
+        if pipeline_options.do_chart_extraction:
+            pipeline_options.do_picture_classification = True
+
         # ------ Common enrichment models working on all backends
 
         # Picture description model
@@ -166,6 +173,13 @@ class ConvertPipeline(BasePipeline):
             ),
             # Document Picture description
             picture_description_model,
+            # Document Chart Extraction
+            ChartExtractionModelGraniteVision(
+                enabled=pipeline_options.do_chart_extraction,
+                artifacts_path=self.artifacts_path,
+                options=ChartExtractionModelOptions(),
+                accelerator_options=pipeline_options.accelerator_options,
+            ),
         ]
 
     def _get_picture_description_model(
