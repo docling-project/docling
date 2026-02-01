@@ -207,7 +207,11 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         to_remove = ["</code>", "</formula>", "<loc_0><loc_0><loc_500><loc_500>"]
 
         def clean_text(text: str) -> str:
+            # Handle both <end_of_utterance> and <end_of_utterance (without closing >)
+            # The tokenizer may decode it differently depending on skip_special_tokens setting
             idx = text.find("<end_of_utterance>")
+            if idx == -1:
+                idx = text.find("<end_of_utterance")
             if idx != -1:
                 text = text[:idx]
 
@@ -261,6 +265,9 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
                     prompt=self._get_prompt(label),
                     temperature=0.0,
                     max_new_tokens=2048,
+                    extra_generation_config={
+                        "skip_special_tokens": False,  # Keep special tokens for post-processing
+                    },
                 )
                 for image, label in zip(images, labels)
             ]

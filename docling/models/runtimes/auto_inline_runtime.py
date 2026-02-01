@@ -88,29 +88,48 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
 
         _log.info(f"Auto-selecting runtime for system={system}, device={device}")
 
-        # Get supported runtimes from model_spec if available
-        supported_runtimes = None
-        if self.model_spec is not None:
-            supported_runtimes = self.model_spec.supported_runtimes
-
-        # macOS with Apple Silicon -> MLX (if supported)
+        # macOS with Apple Silicon -> MLX (if explicitly supported)
         if system == "Darwin" and device == "mps":
-            if supported_runtimes is None or VlmRuntimeType.MLX in supported_runtimes:
+            # Check if model has explicit MLX export
+            has_mlx_export = False
+            if self.model_spec is not None:
+                has_mlx_export = self.model_spec.has_explicit_runtime_export(
+                    VlmRuntimeType.MLX
+                )
+
+            if has_mlx_export:
                 try:
                     import mlx_vlm
 
-                    _log.info("Selected MLX runtime (Apple Silicon detected)")
+                    _log.info(
+                        "Selected MLX runtime (Apple Silicon with explicit MLX export)"
+                    )
                     return VlmRuntimeType.MLX
                 except ImportError:
                     _log.warning(
                         "MLX not available on Apple Silicon, falling back to Transformers"
                     )
             else:
-                _log.info("MLX not in supported_runtimes, skipping")
+                _log.info(
+                    "MLX not selected: no explicit MLX export found for this model "
+                    "(no different repo_id in runtime_overrides or not in supported_runtimes). "
+                    "Falling back to Transformers."
+                )
 
         # CUDA with prefer_vllm -> vLLM (if supported)
         if device.startswith("cuda") and self.options.prefer_vllm:
-            if supported_runtimes is None or VlmRuntimeType.VLLM in supported_runtimes:
+            # For vLLM, check supported_runtimes if explicitly set
+            # (vLLM typically uses the same repo_id, so we only check explicit restrictions)
+            has_vllm_support = True
+            if (
+                self.model_spec is not None
+                and self.model_spec.supported_runtimes is not None
+            ):
+                has_vllm_support = (
+                    VlmRuntimeType.VLLM in self.model_spec.supported_runtimes
+                )
+
+            if has_vllm_support:
                 try:
                     import vllm
 
@@ -119,7 +138,10 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
                 except ImportError:
                     _log.warning("vLLM not available, falling back to Transformers")
             else:
-                _log.info("vLLM not in supported_runtimes, skipping")
+                _log.info(
+                    "vLLM not selected: not in model's supported_runtimes. "
+                    "Falling back to Transformers."
+                )
 
         # Default to Transformers (should always be supported)
         _log.info("Selected Transformers runtime (default)")

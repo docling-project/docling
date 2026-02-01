@@ -232,6 +232,65 @@ class VlmModelSpec(BaseModel):
             extra_config=extra_config,
         )
 
+    def has_explicit_runtime_export(self, runtime_type: VlmRuntimeType) -> bool:
+        """Check if this model has an explicit export for the given runtime.
+
+        An explicit export means either:
+        1. The runtime has a different repo_id in runtime_overrides, OR
+        2. The runtime is explicitly listed in supported_runtimes (not None)
+
+        This is used by auto_inline to determine if it should attempt to use
+        a specific runtime. For example, MLX should only be used if there's
+        an actual MLX export available (different repo_id) or if the model
+        explicitly declares MLX support.
+
+        Args:
+            runtime_type: The runtime type to check
+
+        Returns:
+            True if there's an explicit export, False otherwise
+
+        Examples:
+            >>> # Model with MLX export (different repo_id)
+            >>> spec = VlmModelSpec(
+            ...     name="Test",
+            ...     default_repo_id="org/model",
+            ...     runtime_overrides={
+            ...         VlmRuntimeType.MLX: RuntimeModelConfig(repo_id="org/model-mlx")
+            ...     }
+            ... )
+            >>> spec.has_explicit_runtime_export(VlmRuntimeType.MLX)
+            True
+
+            >>> # Model without MLX export (same repo_id or no override)
+            >>> spec = VlmModelSpec(name="Test", default_repo_id="org/model")
+            >>> spec.has_explicit_runtime_export(VlmRuntimeType.MLX)
+            False
+
+            >>> # Model with explicit supported_runtimes
+            >>> spec = VlmModelSpec(
+            ...     name="Test",
+            ...     default_repo_id="org/model",
+            ...     supported_runtimes={VlmRuntimeType.MLX}
+            ... )
+            >>> spec.has_explicit_runtime_export(VlmRuntimeType.MLX)
+            True
+        """
+        # If supported_runtimes is explicitly set and includes this runtime
+        if self.supported_runtimes is not None:
+            return runtime_type in self.supported_runtimes
+
+        # Check if there's a different repo_id for this runtime
+        if runtime_type in self.runtime_overrides:
+            override = self.runtime_overrides[runtime_type]
+            if (
+                override.repo_id is not None
+                and override.repo_id != self.default_repo_id
+            ):
+                return True
+
+        return False
+
 
 # =============================================================================
 # STAGE PRESET SYSTEM
@@ -855,6 +914,15 @@ CODE_FORMULA_CODEFORMULAV2 = StageModelPreset(
         default_repo_id="docling-project/CodeFormulaV2",
         prompt="",
         response_format=ResponseFormat.PLAINTEXT,
+        stop_strings=["</doctag>", "<end_of_utterance>"],
+        runtime_overrides={
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "extra_generation_config": {"skip_special_tokens": False},
+                }
+            ),
+        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
