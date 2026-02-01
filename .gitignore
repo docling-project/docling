@@ -439,3 +439,8 @@ pip-selfcheck.json
 # Docs
 # docs/**/*.png
 # docs/**/*.svg
+
+# local env files
+.devcontainer/
+tests/data/
+test-conversion.zip
