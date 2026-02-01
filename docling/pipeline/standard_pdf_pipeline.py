@@ -150,9 +150,7 @@ class ThreadedQueue:
             return True
 
     # ------------------------------------------------------------ get_batch()
-    def get_batch(
-        self, size: int, timeout: float | None = None
-    ) -> List[ThreadedItem]:
+    def get_batch(self, size: int, timeout: float | None = None) -> List[ThreadedItem]:
         """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
         with self._not_empty:
             start = time.monotonic()
