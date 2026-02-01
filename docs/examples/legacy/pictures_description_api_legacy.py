@@ -124,7 +124,7 @@ def watsonx_vlm_options():
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    data_folder = Path(__file__).parent / "../../tests/data"
+    data_folder = Path(__file__).parent / "../../../tests/data"
     input_doc_path = data_folder / "pdf/2206.01062.pdf"
 
     pipeline_options = PdfPipelineOptions(

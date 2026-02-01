@@ -28,14 +28,14 @@ from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
     PictureDescriptionVlmOptions,
 )
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, PdfFormatOption
 
 # %%
 # Example 1: Legacy approach with direct repo_id specification
 
 IMAGE_RESOLUTION_SCALE = 2.0
 
-input_doc_path = Path("./tests/data/2206.01062.pdf")
+input_doc_path = Path("./tests/data/pdf/2206.01062.pdf")
 
 # Configure pipeline with legacy VLM options
 pipeline_options = PdfPipelineOptions()
@@ -52,7 +52,7 @@ pipeline_options.picture_description_options = PictureDescriptionVlmOptions(
 
 doc_converter = DocumentConverter(
     format_options={
-        InputFormat.PDF: pipeline_options,
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
     }
 )
 
@@ -65,11 +65,11 @@ print("=" * 80)
 
 for item, _ in result.document.iterate_items():
     if isinstance(item, PictureItem):
-        print(f"\nCaption: {item.caption.text if item.caption else 'No caption'}")
-        if item.annotations:
-            for ann in item.annotations:
-                if hasattr(ann, "text"):
-                    print(f"Description: {ann.text}")
+        print(
+            f"Picture {item.self_ref}\n"
+            f"Caption: {item.caption_text(doc=result.document)}\n"
+            f"Meta: {item.meta}"
+        )
 
 # %%
 # Example 2: Legacy approach with custom prompt
@@ -92,7 +92,7 @@ pipeline_options.picture_description_options = PictureDescriptionVlmOptions(
 
 doc_converter = DocumentConverter(
     format_options={
-        InputFormat.PDF: pipeline_options,
+        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options),
     }
 )
 
@@ -102,12 +102,12 @@ print("\n" + "=" * 80)
 print("PICTURE DESCRIPTIONS (Legacy with Custom Prompt)")
 print("=" * 80)
 
-for element, _level in result.document.iterate_items():
-    if isinstance(element, PictureItem):
+for item, _level in result.document.iterate_items():
+    if isinstance(item, PictureItem):
         print(
-            f"Picture {element.self_ref}\n"
-            f"Caption: {element.caption_text(doc=result.document)}\n"
-            f"Meta: {element.meta}"
+            f"Picture {item.self_ref}\n"
+            f"Caption: {item.caption_text(doc=result.document)}\n"
+            f"Meta: {item.meta}"
         )
 
 print("\n" + "=" * 80)
