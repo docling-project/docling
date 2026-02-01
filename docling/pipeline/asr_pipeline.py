@@ -1,47 +1,35 @@
 import logging
-import os
-import re
 import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import Optional, Union
 
-from docling_core.types.doc import DoclingDocument, DocumentOrigin
-
-# import whisper  # type: ignore
-# import librosa
-# import numpy as np
-# import soundfile as sf  # type: ignore
-from docling_core.types.doc.labels import DocItemLabel
-from pydantic import BaseModel, Field, validator
+from docling_core.types.doc import (
+    ContentLayer,
+    DocItemLabel,
+    DoclingDocument,
+    DocumentOrigin,
+    TrackSource,
+)
+from pydantic import BaseModel, Field
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.noop_backend import NoOpBackend
-
-# from pydub import AudioSegment  # type: ignore
-# from transformers import WhisperForConditionalGeneration, WhisperProcessor, pipeline
 from docling.datamodel.accelerator_options import (
     AcceleratorOptions,
 )
 from docling.datamodel.base_models import (
     ConversionStatus,
-    FormatToMimeType,
 )
-from docling.datamodel.document import ConversionResult, InputDocument
+from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
     AsrPipelineOptions,
 )
 from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
-    # AsrResponseFormat,
-    InlineAsrOptions,
 )
-from docling.datamodel.pipeline_options_vlm_model import (
-    InferenceFramework,
-)
-from docling.datamodel.settings import settings
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -190,8 +178,16 @@ class _NativeWhisperModel:
             )
 
             for citem in conversation:
+                track: TrackSource = TrackSource(
+                    start_time=citem.start_time,
+                    end_time=citem.end_time,
+                    voice=citem.speaker,
+                )
                 conv_res.document.add_text(
-                    label=DocItemLabel.TEXT, text=citem.to_string()
+                    label=DocItemLabel.TEXT,
+                    text=citem.text,
+                    content_layer=ContentLayer.BODY,
+                    source=track,
                 )
 
             return conv_res
@@ -299,8 +295,16 @@ class _MlxWhisperModel:
             )
 
             for citem in conversation:
+                track: TrackSource = TrackSource(
+                    start_time=citem.start_time,
+                    end_time=citem.end_time,
+                    voice=citem.speaker,
+                )
                 conv_res.document.add_text(
-                    label=DocItemLabel.TEXT, text=citem.to_string()
+                    label=DocItemLabel.TEXT,
+                    text=citem.text,
+                    content_layer=ContentLayer.BODY,
+                    source=track,
                 )
 
             conv_res.status = ConversionStatus.SUCCESS

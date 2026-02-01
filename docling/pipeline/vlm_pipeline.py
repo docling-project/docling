@@ -2,7 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import List, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -12,8 +12,6 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
-    TableCell,
-    TableData,
     TextItem,
 )
 from docling_core.types.doc.base import (
@@ -21,7 +19,6 @@ from docling_core.types.doc.base import (
     Size,
 )
 from docling_core.types.doc.document import DocTagsDocument
-from lxml import etree
 from PIL import Image as PILImage
 
 from docling.backend.abstract_backend import (
@@ -42,7 +39,6 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
-from docling.datamodel.settings import settings
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
@@ -124,7 +120,7 @@ class VlmPipeline(PaginatedPipeline):
             images_scale = self.pipeline_options.images_scale
             if images_scale is not None:
                 page._default_image_scale = images_scale
-            page._backend = conv_res.input._backend.load_page(page.page_no)  # type: ignore
+            page._backend = conv_res.input._backend.load_page(page.page_no - 1)  # type: ignore
             if page._backend is not None and page._backend.is_valid():
                 page.size = page._backend.get_size()
 

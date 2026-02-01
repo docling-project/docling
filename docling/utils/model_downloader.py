@@ -21,6 +21,7 @@ from docling.models.stages.ocr.easyocr_model import EasyOcrModel
 from docling.models.stages.ocr.rapid_ocr_model import RapidOcrModel
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
+    DocumentPictureClassifierOptions,
 )
 from docling.models.stages.picture_description.picture_description_vlm_model import (
     PictureDescriptionVlmModel,
@@ -75,8 +76,11 @@ def download_models(
 
     if with_picture_classifier:
         _log.info("Downloading picture classifier model...")
+        pic_opts = DocumentPictureClassifierOptions()
         DocumentPictureClassifier.download_models(
-            local_dir=output_dir / DocumentPictureClassifier._model_repo_folder,
+            repo_id=pic_opts.repo_id,
+            revision=pic_opts.revision,
+            local_dir=output_dir / pic_opts.repo_cache_folder,
             force=force,
             progress=progress,
         )

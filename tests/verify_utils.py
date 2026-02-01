@@ -241,6 +241,20 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
 
             # TODO: add bbox check with tolerance
 
+        # Validate source
+        assert bool(true_item.source) == bool(pred_item.source), (
+            "Source exists mismatch"
+        )
+        if true_item.source:
+            true_source = true_item.source[0]
+            pred_source = pred_item.source[0]
+            assert true_source.start_time == pred_source.start_time, (
+                "TrackProvenance start time mismatch"
+            )
+            assert true_source.end_time == pred_source.end_time, (
+                "TrackProvenance end time mismatch"
+            )
+
         # Validate text content
         if isinstance(true_item, TextItem):
             assert isinstance(pred_item, TextItem), (

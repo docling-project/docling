@@ -2,9 +2,9 @@ import logging
 import os
 import re
 from enum import Enum
-from typing import Any, Union
+from typing import Annotated, Any, Union
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _log = logging.getLogger(__name__)
@@ -21,13 +21,50 @@ class AcceleratorDevice(str, Enum):
 
 
 class AcceleratorOptions(BaseSettings):
+    """Hardware acceleration configuration for model inference.
+
+    Can be configured via environment variables with DOCLING_ prefix.
+    """
+
     model_config = SettingsConfigDict(
         env_prefix="DOCLING_", env_nested_delimiter="_", populate_by_name=True
     )
-
-    num_threads: int = 4
-    device: Union[str, AcceleratorDevice] = "auto"
-    cuda_use_flash_attention2: bool = False
+    num_threads: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of CPU threads to use for model inference. Higher values "
+                "can improve throughput on multi-core systems but may increase "
+                "memory usage. Can be set via DOCLING_NUM_THREADS or "
+                "OMP_NUM_THREADS environment variables. Recommended: number of "
+                "physical CPU cores."
+            )
+        ),
+    ] = 4
+    device: Annotated[
+        Union[str, AcceleratorDevice],
+        Field(
+            description=(
+                "Hardware device for model inference. Options: `auto` "
+                "(automatic detection), `cpu` (CPU only), `cuda` (NVIDIA GPU), "
+                "`cuda:N` (specific GPU), `mps` (Apple Silicon), `xpu` (Intel "
+                "GPU). Auto mode selects the best available device. Can be set "
+                "via DOCLING_DEVICE environment variable."
+            )
+        ),
+    ] = "auto"
+    cuda_use_flash_attention2: Annotated[
+        bool,
+        Field(
+            description=(
+                "Enable Flash Attention 2 optimization for CUDA devices. "
+                "Provides significant speedup and memory reduction for "
+                "transformer models on compatible NVIDIA GPUs (Ampere or newer). "
+                "Requires flash-attn package installation. Can be set via "
+                "DOCLING_CUDA_USE_FLASH_ATTENTION2 environment variable."
+            )
+        ),
+    ] = False
 
     @field_validator("device")
     def validate_device(cls, value):
@@ -37,7 +74,8 @@ class AcceleratorOptions(BaseSettings):
         ):
             return value
         raise ValueError(
-            "Invalid device option. Use 'auto', 'cpu', 'mps', 'xpu', 'cuda', or 'cuda:N'."
+            "Invalid device option. Use `auto`, `cpu`, `mps`, `xpu`, `cuda`, "
+            "or `cuda:N`."
         )
 
     @model_validator(mode="before")
@@ -45,12 +83,15 @@ class AcceleratorOptions(BaseSettings):
     def check_alternative_envvars(cls, data: Any) -> Any:
         r"""
         Set num_threads from the "alternative" envvar OMP_NUM_THREADS.
-        The alternative envvar is used only if it is valid and the regular envvar is not set.
+        The alternative envvar is used only if it is valid and the regular
+        envvar is not set.
 
-        Notice: The standard pydantic settings mechanism with parameter "aliases" does not provide
-        the same functionality. In case the alias envvar is set and the user tries to override the
-        parameter in settings initialization, Pydantic treats the parameter provided in __init__()
-        as an extra input instead of simply overwriting the evvar value for that parameter.
+        Notice: The standard pydantic settings mechanism with parameter
+        "aliases" does not provide the same functionality. In case the alias
+        envvar is set and the user tries to override the parameter in settings
+        initialization, Pydantic treats the parameter provided in __init__()
+        as an extra input instead of simply overwriting the evvar value for
+        that parameter.
         """
         if isinstance(data, dict):
             input_num_threads = data.get("num_threads")
