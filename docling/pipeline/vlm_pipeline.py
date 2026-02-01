@@ -3,7 +3,7 @@ import re
 import warnings
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import List, Union, cast
 
 from docling_core.types.doc import (
     BoundingBox,
@@ -13,8 +13,6 @@ from docling_core.types.doc import (
     ImageRef,
     PictureItem,
     ProvenanceItem,
-    TableCell,
-    TableData,
     TextItem,
 )
 from docling_core.types.doc.base import (
@@ -22,7 +20,6 @@ from docling_core.types.doc.base import (
     Size,
 )
 from docling_core.types.doc.document import DocTagsDocument
-from lxml import etree
 from PIL import Image as PILImage
 
 from docling.backend.abstract_backend import (

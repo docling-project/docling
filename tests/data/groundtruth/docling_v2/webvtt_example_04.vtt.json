@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.8.0",
-  "name": "webvtt_example_02",
+  "name": "webvtt_example_04",
   "origin": {
     "mimetype": "text/vtt",
-    "binary_hash": 8584853280299071027,
-    "filename": "webvtt_example_02.vtt"
+    "binary_hash": 5389775195091554844,
+    "filename": "webvtt_example_04.vtt"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -21,13 +21,7 @@
         "$ref": "#/texts/0"
       },
       {
-        "$ref": "#/texts/1"
-      },
-      {
         "$ref": "#/groups/0"
-      },
-      {
-        "$ref": "#/texts/5"
       },
       {
         "$ref": "#/groups/1"
@@ -44,6 +38,9 @@
         "$ref": "#/body"
       },
       "children": [
+        {
+          "$ref": "#/texts/1"
+        },
         {
           "$ref": "#/texts/2"
         },
@@ -65,6 +62,9 @@
       },
       "children": [
         {
+          "$ref": "#/texts/5"
+        },
+        {
           "$ref": "#/texts/6"
         },
         {
@@ -72,6 +72,12 @@
         },
         {
           "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
@@ -92,21 +98,18 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 0.0,
-          "end_time": 2.0,
-          "voice": "Esme",
-          "classes": [
-            "v.first.loud"
-          ]
+          "start_time": 14580.0,
+          "end_time": 14760.0,
+          "identifier": "agcvs-08234"
         }
       ],
-      "orig": "It’s a blue apple tree!",
-      "text": "It’s a blue apple tree!"
+      "orig": "Last night the chef surprised us with a culinary adventure.",
+      "text": "Last night the chef surprised us with a culinary adventure."
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
@@ -115,13 +118,13 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 2.0,
-          "end_time": 4.0,
-          "voice": "Mary"
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234"
         }
       ],
-      "orig": "No way!",
-      "text": "No way!"
+      "orig": "The waiter offered a ",
+      "text": "The waiter offered a "
     },
     {
       "self_ref": "#/texts/2",
@@ -135,13 +138,20 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 4.0,
-          "end_time": 6.0,
-          "voice": "Esme"
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234"
         }
       ],
-      "orig": "Hee!",
-      "text": "Hee!"
+      "orig": "steaming bowl of ",
+      "text": "steaming bowl of ",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/3",
@@ -155,12 +165,23 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 4.0,
-          "end_time": 6.0
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234",
+          "languages": [
+            "es-ES"
+          ]
         }
       ],
-      "orig": " ",
-      "text": " "
+      "orig": "paella",
+      "text": "paella",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/4",
@@ -174,24 +195,18 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 4.0,
-          "end_time": 6.0
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234"
         }
       ],
-      "orig": "laughter",
-      "text": "laughter",
-      "formatting": {
-        "bold": false,
-        "italic": true,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": " that instantly transported the diners to a sunny Mediterranean coast.",
+      "text": " that instantly transported the diners to a sunny Mediterranean coast."
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/1"
       },
       "children": [],
       "content_layer": "body",
@@ -200,16 +215,13 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 6.0,
-          "end_time": 8.0,
-          "voice": "Mary",
-          "classes": [
-            "v.loud"
-          ]
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234"
         }
       ],
-      "orig": "That’s awesome!",
-      "text": "That’s awesome!"
+      "orig": "The dessert’s ",
+      "text": "The dessert’s "
     },
     {
       "self_ref": "#/texts/6",
@@ -223,12 +235,23 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 8.0,
-          "end_time": 10.0
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234",
+          "classes": [
+            "b.loud"
+          ]
         }
       ],
-      "orig": "Sur les ",
-      "text": "Sur les "
+      "orig": "unexpected",
+      "text": "unexpected",
+      "formatting": {
+        "bold": true,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
     },
     {
       "self_ref": "#/texts/7",
@@ -242,18 +265,13 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 8.0,
-          "end_time": 10.0,
-          "languages": [
-            "en"
-          ],
-          "classes": [
-            "i.foreignphrase"
-          ]
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234"
         }
       ],
-      "orig": "playground",
-      "text": "playground",
+      "orig": " ",
+      "text": " ",
       "formatting": {
         "bold": false,
         "italic": true,
@@ -274,12 +292,70 @@
       "source": [
         {
           "kind": "track",
-          "start_time": 8.0,
-          "end_time": 10.0
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234",
+          "languages": [
+            "it"
+          ]
         }
       ],
-      "orig": ", ici à Montpellier",
-      "text": ", ici à Montpellier"
+      "orig": "arcobaleno",
+      "text": "arcobaleno",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": true,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234"
+        }
+      ],
+      "orig": " of flavors",
+      "text": " of flavors",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/1"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 14760.0,
+          "end_time": 14818.239,
+          "identifier": "agcvs-08234"
+        }
+      ],
+      "orig": " left everyone in awe.",
+      "text": " left everyone in awe."
     }
   ],
   "pictures": [],
