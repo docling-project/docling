@@ -126,7 +126,6 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
                 VlmRuntimeInput(
                     image=image,
                     prompt=prompt,
-                    repo_id=self.repo_id,
                     temperature=0.0,
                     max_new_tokens=200,  # Use from options if available
                 )

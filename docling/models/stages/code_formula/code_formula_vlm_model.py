@@ -259,7 +259,6 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
                     if isinstance(image, Image.Image)
                     else Image.fromarray(image),
                     prompt=self._get_prompt(label),
-                    repo_id=self.repo_id,
                     temperature=0.0,
                     max_new_tokens=2048,
                 )

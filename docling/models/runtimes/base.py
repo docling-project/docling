@@ -75,7 +75,6 @@ class VlmRuntimeInput(BaseModel):
 
     image: Image = Field(description="PIL Image to process")
     prompt: str = Field(description="Text prompt for the model")
-    repo_id: str = Field(description="Model repository ID (e.g., HuggingFace repo)")
     temperature: float = Field(
         default=0.0, description="Sampling temperature for generation"
     )

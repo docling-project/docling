@@ -145,7 +145,6 @@ class VlmConvertModel(BasePageModel):
                     VlmRuntimeInput(
                         image=img,
                         prompt=prompt,
-                        repo_id=self.repo_id,
                         temperature=0.0,  # Use from options if needed
                         max_new_tokens=4096,  # Use from options if needed
                     )
@@ -224,7 +223,6 @@ class VlmConvertModel(BasePageModel):
             VlmRuntimeInput(
                 image=img,
                 prompt=p,
-                repo_id=self.repo_id,
                 temperature=0.0,
                 max_new_tokens=4096,
             )
