@@ -398,7 +398,9 @@ class _WhisperS2TModel:
             )
 
             self.device, self.device_index = self._parse_device(raw_device)
-            _log.info(f"Available device for WhisperS2T: {self.device} (index: {self.device_index})")
+            _log.info(
+                f"Available device for WhisperS2T: {self.device} (index: {self.device_index})"
+            )
 
             self.model_identifier = asr_options.repo_id
             _log.info(f"loading _WhisperS2TModel({self.model_identifier})")

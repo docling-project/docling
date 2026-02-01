@@ -86,6 +86,7 @@ class TestMlxWhisperIntegration:
         class _Torch:
             class backends:
                 mps = _Mps()
+
             cuda = _Cuda()
 
         monkeypatch.setitem(sys.modules, "torch", _Torch())
@@ -141,6 +142,7 @@ class TestMlxWhisperIntegration:
         class _TorchOff:
             class backends:
                 mps = _MpsOff()
+
             cuda = _CudaOff()
 
         monkeypatch.setitem(sys.modules, "torch", _TorchOff())
