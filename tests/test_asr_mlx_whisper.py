@@ -83,6 +83,11 @@ class TestMlxWhisperIntegration:
             class backends:
                 mps = _Mps()
 
+        class _Torch:
+            class backends:
+                mps = _Mps()
+            cuda = _Cuda()
+
         monkeypatch.setitem(sys.modules, "torch", _Torch())
         monkeypatch.setitem(sys.modules, "mlx_whisper", object())
 
@@ -128,9 +133,14 @@ class TestMlxWhisperIntegration:
             def is_available(self):
                 return False
 
+        class _CudaOff:
+            def is_available(self):
+                return False
+
         class _TorchOff:
             class backends:
                 mps = _MpsOff()
+            cuda = _CudaOff()
 
         monkeypatch.setitem(sys.modules, "torch", _TorchOff())
         n_tiny = specs._get_whisper_tiny_model()
