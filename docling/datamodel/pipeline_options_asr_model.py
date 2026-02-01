@@ -29,6 +29,7 @@ class InferenceAsrFramework(str, Enum):
     MLX = "mlx"
     # TRANSFORMERS = "transformers" # disabled for now
     WHISPER = "whisper"
+    WHISPER_S2T = "whisper_s2t"
 
 
 class InlineAsrOptions(BaseAsrOptions):
@@ -262,3 +263,115 @@ class InlineAsrMlxWhisperOptions(InlineAsrOptions):
             )
         ),
     ] = 2.4
+
+
+class InlineAsrWhisperS2TOptions(InlineAsrOptions):
+    """Configuration for WhisperS2T (CTranslate2-based) high-speed ASR.
+
+    Uses whisper_s2t library with CTranslate2 backend for fast inference
+    on CPU and CUDA devices. Requires whisper-s2t-reborn package.
+    """
+
+    inference_framework: Annotated[
+        InferenceAsrFramework,
+        Field(
+            description=(
+                "Inference framework for ASR. Uses WhisperS2T with CTranslate2 "
+                "backend for optimized high-speed inference."
+            )
+        ),
+    ] = InferenceAsrFramework.WHISPER_S2T
+    language: Annotated[
+        str,
+        Field(
+            description=(
+                "Language code for transcription. Use ISO 639-1 codes "
+                "(e.g., `en`, `es`, `fr`)."
+            ),
+            examples=["en", "es", "fr", "de", "ja", "zh"],
+        ),
+    ] = "en"
+    task: Annotated[
+        str,
+        Field(
+            description=(
+                "ASR task type. `transcribe` converts speech to text in the "
+                "same language. `translate` converts speech to English text."
+            ),
+            examples=["transcribe", "translate"],
+        ),
+    ] = "transcribe"
+    compute_type: Annotated[
+        str,
+        Field(
+            description=(
+                "Computation precision for CTranslate2. Options: `float32`, "
+                "`float16`, `bfloat16`. Lower precision increases speed and "
+                "reduces memory. bfloat16 requires compute capability >= 8.6."
+            ),
+            examples=["float32", "float16", "bfloat16"],
+        ),
+    ] = "float16"
+    batch_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of audio segments to process in parallel. Higher values "
+                "increase throughput but require more VRAM."
+            )
+        ),
+    ] = 8
+    beam_size: Annotated[
+        int,
+        Field(
+            description=(
+                "Beam size for beam search decoding. 1 = greedy decoding (fastest), "
+                "higher values (e.g., 5) may improve accuracy at cost of speed."
+            )
+        ),
+    ] = 1
+    word_timestamps: Annotated[
+        bool,
+        Field(
+            description=(
+                "Generate word-level timestamps. Requires an additional alignment "
+                "model and increases processing time."
+            )
+        ),
+    ] = False
+    cpu_threads: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of CPU threads for inference. Only used when device is CPU."
+            )
+        ),
+    ] = 4
+    num_workers: Annotated[
+        int,
+        Field(
+            description=(
+                "Number of parallel workers for CTranslate2."
+            )
+        ),
+    ] = 1
+    initial_prompt: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Optional text prompt to condition the transcription style or "
+                "provide context. Useful for domain-specific vocabulary."
+            )
+        ),
+    ] = None
+    supported_devices: Annotated[
+        list[AcceleratorDevice],
+        Field(
+            description=(
+                "Hardware accelerators supported by WhisperS2T."
+            )
+        ),
+    ] = [
+        AcceleratorDevice.CPU,
+        AcceleratorDevice.CUDA,
+    ]
