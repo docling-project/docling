@@ -21,9 +21,8 @@ RUN docling-tools models download
 # On container environments, always set a thread budget to avoid undesired thread congestion.
 ENV OMP_NUM_THREADS=4
 
-# On container shell:
-# > cd /root/
-# > python minimal.py
-
 # Running as `docker run -e DOCLING_ARTIFACTS_PATH=/root/.cache/docling/models` will use the
 # model weights included in the container image.
+
+WORKDIR /root
+CMD ["python", "minimal.py"]
