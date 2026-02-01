@@ -256,13 +256,18 @@ class TestPresetSystem:
         """Test that CodeFormula presets are registered."""
         preset_ids = CodeFormulaVlmOptions.list_preset_ids()
 
-        # Check that the default preset exists
-        assert "default" in preset_ids
+        # Check that key presets exist
+        assert "codeformulav2" in preset_ids
+        assert "granite_docling" in preset_ids
 
-        # Verify we can retrieve it
-        default = CodeFormulaVlmOptions.get_preset("default")
-        assert default.preset_id == "default"
-        assert default.name == "CodeFormulaV2"
+        # Verify we can retrieve them
+        codeformulav2 = CodeFormulaVlmOptions.get_preset("codeformulav2")
+        assert codeformulav2.preset_id == "codeformulav2"
+        assert codeformulav2.name == "CodeFormulaV2"
+
+        granite_docling = CodeFormulaVlmOptions.get_preset("granite_docling")
+        assert granite_docling.preset_id == "granite_docling"
+        assert granite_docling.name == "Granite-Docling-CodeFormula"
 
     def test_preset_not_found_error(self):
         """Test that requesting non-existent preset raises KeyError."""
