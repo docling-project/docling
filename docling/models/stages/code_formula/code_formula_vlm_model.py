@@ -104,7 +104,9 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
                 )
 
                 # Create runtime using factory
-                self.runtime = create_vlm_runtime(self.options.runtime_options)
+                self.runtime = create_vlm_runtime(
+                    self.options.runtime_options, model_spec=self.options.model_spec
+                )
 
                 _log.info("CodeFormulaVlmModel initialized successfully")
 

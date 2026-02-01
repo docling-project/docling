@@ -751,3 +751,35 @@ CODE_FORMULA_DEFAULT = StageModelPreset(
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
 )
+
+CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
+    preset_id="granite_docling",
+    name="Granite-Docling-CodeFormula",
+    description="IBM Granite Docling model for code and formula extraction (258M parameters)",
+    model_spec=VlmModelSpec(
+        name="Granite-Docling-258M",
+        default_repo_id="ibm-granite/granite-docling-258M",
+        prompt="",
+        response_format=ResponseFormat.PLAINTEXT,
+        stop_strings=["</doctag>", "<|end_of_text|>"],
+        max_new_tokens=8192,
+        runtime_overrides={
+            VlmRuntimeType.MLX: RuntimeModelConfig(
+                repo_id="ibm-granite/granite-docling-258M-mlx"
+            ),
+            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+                extra_config={
+                    "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
+                    "extra_generation_config": {"skip_special_tokens": False},
+                }
+            ),
+        },
+        api_overrides={
+            VlmRuntimeType.API_OLLAMA: ApiModelConfig(
+                params={"model": "ibm/granite-docling:258m"}
+            ),
+        },
+    ),
+    scale=2.0,
+    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+)
