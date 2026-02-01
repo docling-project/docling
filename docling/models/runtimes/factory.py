@@ -47,6 +47,11 @@ def create_vlm_runtime(
         # AUTO_INLINE handles model_spec internally
         model_config = model_spec.get_runtime_config(runtime_type)
 
+        # For API runtimes, add API params to extra_config
+        if VlmRuntimeType.is_api_variant(runtime_type):
+            api_params = model_spec.get_api_params(runtime_type)
+            model_config.extra_config["api_params"] = api_params
+
     if runtime_type == VlmRuntimeType.AUTO_INLINE:
         from docling.models.runtimes.auto_inline_runtime import (
             AutoInlineVlmRuntime,

@@ -136,7 +136,9 @@ def run_watsonx_example(input_doc_path: Path):
                 "Authorization": "Bearer " + _get_iam_access_token(api_key=api_key),
             },
             params={
-                "model_id": "ibm/granite-vision-3-3-2b",
+                # Note: Granite Vision models are no longer available on watsonx.ai (they are model on demand)
+                # "model_id": "ibm/granite-vision-3-3-2b",
+                "model_id": "meta-llama/llama-3-2-11b-vision-instruct",
                 "project_id": project_id,
                 "parameters": {"max_new_tokens": 400},
             },

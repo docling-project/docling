@@ -54,6 +54,22 @@ class ApiVlmRuntime(BaseVlmRuntime):
         super().__init__(options, model_config=model_config)
         self.options: ApiVlmRuntimeOptions = options
 
+        # Merge model_config extra_config (which contains API params from model spec)
+        # with runtime options params. Runtime options take precedence.
+        if model_config and "api_params" in model_config.extra_config:
+            # Model spec provides API params (e.g., model name)
+            model_api_params = model_config.extra_config["api_params"]
+
+            # Only use model spec params if user hasn't provided any params
+            # This prevents conflicts when users provide custom params (e.g., model_id for watsonx)
+            if not self.options.params:
+                self.merged_params = model_api_params.copy()
+            else:
+                # User provided params - use them as-is (don't merge with model spec)
+                self.merged_params = self.options.params.copy()
+        else:
+            self.merged_params = self.options.params.copy()
+
     def initialize(self) -> None:
         """Initialize the API runtime.
 
@@ -97,9 +113,9 @@ class ApiVlmRuntime(BaseVlmRuntime):
             images = preprocess_image_batch([input_data.image])
             image = images[0]
 
-            # Prepare API parameters
+            # Prepare API parameters (use merged params which include model spec params)
             api_params = {
-                **self.options.params,
+                **self.merged_params,
                 "temperature": input_data.temperature,
             }
 

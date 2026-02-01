@@ -633,6 +633,11 @@ PICTURE_DESC_SMOLVLM = StageModelPreset(
                 },
             ),
         },
+        api_overrides={
+            VlmRuntimeType.API_LMSTUDIO: ApiModelConfig(
+                params={"model": "smolvlm-256m-instruct"}
+            ),
+        },
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
