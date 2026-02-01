@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING, List, Optional
 from PIL.Image import Image
 
 from docling.datamodel.vlm_runtime_options import ApiVlmRuntimeOptions
+from docling.models.runtimes._utils import (
+    extract_generation_stoppers,
+    preprocess_image_batch,
+)
 from docling.models.runtimes.base import (
     BaseVlmRuntime,
     VlmRuntimeInput,
@@ -67,91 +71,6 @@ class ApiVlmRuntime(BaseVlmRuntime):
         self._initialized = True
         _log.info("API runtime initialized")
 
-    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
-        """Run inference via API.
-
-        Args:
-            input_data: Input containing image, prompt, and configuration
-
-        Returns:
-            Generated text and metadata
-        """
-        if not self._initialized:
-            self.initialize()
-
-        # Prepare image
-        image = input_data.image
-        if image.mode != "RGB":
-            image = image.convert("RGB")
-
-        # Prepare API parameters
-        api_params = {
-            **self.options.params,
-            "temperature": input_data.temperature,
-        }
-
-        # Add max_tokens if specified
-        if input_data.max_new_tokens:
-            api_params["max_tokens"] = input_data.max_new_tokens
-
-        # Add stop strings if specified
-        if input_data.stop_strings:
-            api_params["stop"] = input_data.stop_strings
-
-        # Check for custom stopping criteria
-        custom_stoppers = []
-        custom_criteria = input_data.extra_generation_config.get(
-            "custom_stopping_criteria", []
-        )
-        for criteria in custom_criteria:
-            if isinstance(criteria, GenerationStopper):
-                custom_stoppers.append(criteria)
-            elif isinstance(criteria, type) and issubclass(criteria, GenerationStopper):
-                custom_stoppers.append(criteria())
-
-        start_time = time.time()
-        stop_reason = "unspecified"
-
-        if custom_stoppers:
-            # Streaming path with early abort support
-            generated_text, num_tokens = api_image_request_streaming(
-                url=self.options.url,  # type: ignore[arg-type]
-                image=image,
-                prompt=input_data.prompt,
-                headers=self.options.headers,
-                generation_stoppers=custom_stoppers,
-                timeout=self.options.timeout,
-                **api_params,
-            )
-
-            # Check if stopped by custom criteria
-            for stopper in custom_stoppers:
-                if stopper.should_stop(generated_text):
-                    stop_reason = "custom_criteria"
-                    break
-        else:
-            # Non-streaming path
-            generated_text, num_tokens, api_stop_reason = api_image_request(
-                url=self.options.url,  # type: ignore[arg-type]
-                image=image,
-                prompt=input_data.prompt,
-                headers=self.options.headers,
-                timeout=self.options.timeout,
-                **api_params,
-            )
-            stop_reason = api_stop_reason
-
-        generation_time = time.time() - start_time
-
-        return VlmRuntimeOutput(
-            text=generated_text,
-            stop_reason=stop_reason,
-            metadata={
-                "generation_time": generation_time,
-                "num_tokens": num_tokens,
-            },
-        )
-
     def predict_batch(
         self, input_batch: List[VlmRuntimeInput]
     ) -> List[VlmRuntimeOutput]:
@@ -172,6 +91,74 @@ class ApiVlmRuntime(BaseVlmRuntime):
         if not input_batch:
             return []
 
+        def _process_single_input(input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
+            """Process a single input via API."""
+            # Prepare image using shared utility
+            images = preprocess_image_batch([input_data.image])
+            image = images[0]
+
+            # Prepare API parameters
+            api_params = {
+                **self.options.params,
+                "temperature": input_data.temperature,
+            }
+
+            # Add max_tokens if specified
+            if input_data.max_new_tokens:
+                api_params["max_tokens"] = input_data.max_new_tokens
+
+            # Add stop strings if specified
+            if input_data.stop_strings:
+                api_params["stop"] = input_data.stop_strings
+
+            # Extract custom stopping criteria using shared utility
+            custom_stoppers = extract_generation_stoppers(
+                input_data.extra_generation_config
+            )
+
+            request_start_time = time.time()
+            stop_reason = "unspecified"
+
+            if custom_stoppers:
+                # Streaming path with early abort support
+                generated_text, num_tokens = api_image_request_streaming(
+                    url=self.options.url,  # type: ignore[arg-type]
+                    image=image,
+                    prompt=input_data.prompt,
+                    headers=self.options.headers,
+                    generation_stoppers=custom_stoppers,
+                    timeout=self.options.timeout,
+                    **api_params,
+                )
+
+                # Check if stopped by custom criteria
+                for stopper in custom_stoppers:
+                    if stopper.should_stop(generated_text):
+                        stop_reason = "custom_criteria"
+                        break
+            else:
+                # Non-streaming path
+                generated_text, num_tokens, api_stop_reason = api_image_request(
+                    url=self.options.url,  # type: ignore[arg-type]
+                    image=image,
+                    prompt=input_data.prompt,
+                    headers=self.options.headers,
+                    timeout=self.options.timeout,
+                    **api_params,
+                )
+                stop_reason = api_stop_reason
+
+            generation_time = time.time() - request_start_time
+
+            return VlmRuntimeOutput(
+                text=generated_text,
+                stop_reason=stop_reason,
+                metadata={
+                    "generation_time": generation_time,
+                    "num_tokens": num_tokens,
+                },
+            )
+
         # Use ThreadPoolExecutor for concurrent API requests
         max_workers = min(self.options.concurrency, len(input_batch))
 
@@ -185,7 +172,8 @@ class ApiVlmRuntime(BaseVlmRuntime):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all requests
             futures = [
-                executor.submit(self.predict, input_data) for input_data in input_batch
+                executor.submit(_process_single_input, input_data)
+                for input_data in input_batch
             ]
 
             # Collect results in order

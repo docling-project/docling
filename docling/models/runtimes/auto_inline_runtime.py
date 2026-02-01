@@ -193,23 +193,6 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
             f"Auto-inline runtime initialized with {self.selected_runtime_type.value}"
         )
 
-    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
-        """Run inference using the selected runtime.
-
-        Args:
-            input_data: Input containing image, prompt, and configuration
-
-        Returns:
-            Generated text and metadata
-        """
-        if not self._initialized:
-            self.initialize()
-
-        assert self.actual_runtime is not None, "Runtime not initialized"
-
-        # Delegate to the actual runtime
-        return self.actual_runtime.predict(input_data)
-
     def predict_batch(
         self, input_batch: List[VlmRuntimeInput]
     ) -> List[VlmRuntimeOutput]:

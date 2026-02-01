@@ -30,6 +30,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
 )
 from docling.datamodel.stage_model_specs import RuntimeModelConfig
 from docling.datamodel.vlm_runtime_options import TransformersVlmRuntimeOptions
+from docling.models.runtimes._utils import (
+    extract_generation_stoppers,
+    preprocess_image_batch,
+    resolve_model_artifacts_path,
+)
 from docling.models.runtimes.base import (
     BaseVlmRuntime,
     VlmRuntimeInput,
@@ -144,14 +149,16 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 f"Please downgrade by running: pip install -U 'transformers<4.52.0'"
             )
 
-        # Download or locate model artifacts
-        repo_cache_folder = repo_id.replace("/", "--")
-        if self.artifacts_path is None:
-            artifacts_path = self.download_models(repo_id, revision=revision)
-        elif (self.artifacts_path / repo_cache_folder).exists():
-            artifacts_path = self.artifacts_path / repo_cache_folder
-        else:
-            artifacts_path = self.artifacts_path
+        # Download or locate model artifacts using shared utility
+        def download_wrapper(repo_id: str, revision: str) -> Path:
+            return self.download_models(repo_id, revision=revision)
+
+        artifacts_path = resolve_model_artifacts_path(
+            repo_id=repo_id,
+            revision=revision,
+            artifacts_path=self.artifacts_path,
+            download_fn=download_wrapper,
+        )
 
         # Setup quantization if needed
         quantization_config: Optional[BitsAndBytesConfig] = None
@@ -214,188 +221,6 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
         _log.info(f"Loaded model {repo_id} (revision: {revision})")
 
-    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
-        """Run inference on a single image.
-
-        Args:
-            input_data: Input containing image, prompt, and configuration
-
-        Returns:
-            Generated text and metadata
-        """
-        if not self._initialized:
-            self.initialize()
-
-        # Model should already be loaded via initialize()
-        if self.vlm_model is None or self.processor is None:
-            raise RuntimeError(
-                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
-            )
-
-        # Prepare image
-        image = input_data.image
-        if image.mode != "RGB":
-            image = image.convert("RGB")
-
-        # Prepare prompt
-        prompt_style = input_data.extra_generation_config.get(
-            "transformers_prompt_style",
-            TransformersPromptStyle.CHAT,
-        )
-
-        if prompt_style == TransformersPromptStyle.NONE:
-            inputs = self.processor(  # type: ignore[misc]
-                [image],
-                return_tensors="pt",
-                padding=True,
-                **input_data.extra_generation_config.get("extra_processor_kwargs", {}),
-            )
-        else:
-            # Format prompt
-            if prompt_style == TransformersPromptStyle.CHAT:
-                # Use structured message format with image placeholder (like legacy implementation)
-                # This is required for vision models like Granite Vision to properly tokenize
-                # both image features and text tokens
-                messages = [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "image"},
-                            {"type": "text", "text": input_data.prompt},
-                        ],
-                    }
-                ]
-                formatted_prompt = self.processor.apply_chat_template(  # type: ignore[union-attr]
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-            else:  # RAW
-                formatted_prompt = input_data.prompt
-
-            inputs = self.processor(  # type: ignore[misc]
-                text=[formatted_prompt],
-                images=[image],
-                return_tensors="pt",
-                padding=True,
-                **input_data.extra_generation_config.get("extra_processor_kwargs", {}),
-            )
-
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
-        # Setup stopping criteria
-        stopping_criteria_list = StoppingCriteriaList()
-
-        if input_data.stop_strings:
-            stopping_criteria_list.append(
-                StopStringCriteria(
-                    stop_strings=input_data.stop_strings,
-                    tokenizer=self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
-                )
-            )
-
-        # Add custom stopping criteria from extra config
-        custom_criteria = input_data.extra_generation_config.get(
-            "custom_stopping_criteria", []
-        )
-        for criteria in custom_criteria:
-            if isinstance(criteria, type):
-                if issubclass(criteria, GenerationStopper):
-                    stopper_instance = criteria()
-                    wrapped_criteria = HFStoppingCriteriaWrapper(
-                        self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
-                        stopper_instance,
-                    )
-                    stopping_criteria_list.append(wrapped_criteria)
-            elif isinstance(criteria, GenerationStopper):
-                wrapped_criteria = HFStoppingCriteriaWrapper(
-                    self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
-                    criteria,
-                )
-                stopping_criteria_list.append(wrapped_criteria)
-            else:
-                stopping_criteria_list.append(criteria)
-
-        # Filter decoder-specific keys
-        decoder_keys = {
-            "skip_special_tokens",
-            "clean_up_tokenization_spaces",
-            "spaces_between_special_tokens",
-        }
-        generation_config = {
-            k: v
-            for k, v in input_data.extra_generation_config.items()
-            if k not in decoder_keys
-            and k
-            not in {
-                "transformers_model_type",
-                "transformers_prompt_style",
-                "extra_processor_kwargs",
-                "custom_stopping_criteria",
-                "revision",
-            }
-        }
-        decoder_config = {
-            k: v
-            for k, v in input_data.extra_generation_config.items()
-            if k in decoder_keys
-        }
-
-        # Generate
-        gen_kwargs = {
-            **inputs,
-            "max_new_tokens": input_data.max_new_tokens,
-            "use_cache": self.options.use_kv_cache,
-            "generation_config": self.generation_config,
-            **generation_config,
-        }
-
-        if input_data.temperature > 0:
-            gen_kwargs["do_sample"] = True
-            gen_kwargs["temperature"] = input_data.temperature
-        else:
-            gen_kwargs["do_sample"] = False
-
-        if stopping_criteria_list:
-            gen_kwargs["stopping_criteria"] = stopping_criteria_list
-
-        start_time = time.time()
-        with torch.inference_mode():
-            generated_ids = self.vlm_model.generate(**gen_kwargs)  # type: ignore[union-attr,operator]
-        generation_time = time.time() - start_time
-
-        # Decode
-        input_len = inputs["input_ids"].shape[1]
-        trimmed_sequences = generated_ids[:, input_len:]
-
-        decode_fn = getattr(self.processor, "batch_decode", None)
-        if decode_fn is None and hasattr(self.processor, "tokenizer"):
-            decode_fn = self.processor.tokenizer.batch_decode  # type: ignore[union-attr]
-        if decode_fn is None:
-            raise RuntimeError(
-                "Neither processor.batch_decode nor tokenizer.batch_decode is available."
-            )
-
-        decoded_texts = decode_fn(trimmed_sequences, **decoder_config)
-
-        # Remove padding
-        pad_token = self.processor.tokenizer.pad_token  # type: ignore[union-attr,attr-defined]
-        if pad_token:
-            decoded_texts = [text.rstrip(pad_token) for text in decoded_texts]
-
-        text = decoded_texts[0] if decoded_texts else ""
-
-        return VlmRuntimeOutput(
-            text=text,
-            stop_reason="unspecified",
-            metadata={
-                "generation_time": generation_time,
-                "num_tokens": int(generated_ids[0].shape[0])
-                if generated_ids.shape[0] > 0
-                else None,
-            },
-        )
-
     def predict_batch(
         self, input_batch: List[VlmRuntimeInput]
     ) -> List[VlmRuntimeOutput]:
@@ -429,16 +254,12 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             TransformersPromptStyle.CHAT,
         )
 
-        # Prepare images and prompts
-        images = []
+        # Prepare images using shared utility
+        images = preprocess_image_batch([inp.image for inp in input_batch])
+
+        # Prepare prompts
         prompts = []
         for input_data in input_batch:
-            # Prepare image
-            image = input_data.image
-            if image.mode != "RGB":
-                image = image.convert("RGB")
-            images.append(image)
-
             # Format prompt
             if prompt_style == TransformersPromptStyle.CHAT:
                 # Use structured message format with image placeholder (like legacy implementation)
@@ -495,26 +316,26 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
                 )
             )
 
-        # Add custom stopping criteria
+        # Add custom stopping criteria using shared utility
+        custom_stoppers = extract_generation_stoppers(
+            first_input.extra_generation_config
+        )
+        for stopper in custom_stoppers:
+            wrapped_criteria = HFStoppingCriteriaWrapper(
+                self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
+                stopper,
+            )
+            stopping_criteria_list.append(wrapped_criteria)
+
+        # Also handle any HF StoppingCriteria directly passed
         custom_criteria = first_input.extra_generation_config.get(
             "custom_stopping_criteria", []
         )
         for criteria in custom_criteria:
-            if isinstance(criteria, type):
-                if issubclass(criteria, GenerationStopper):
-                    stopper_instance = criteria()
-                    wrapped_criteria = HFStoppingCriteriaWrapper(
-                        self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
-                        stopper_instance,
-                    )
-                    stopping_criteria_list.append(wrapped_criteria)
-            elif isinstance(criteria, GenerationStopper):
-                wrapped_criteria = HFStoppingCriteriaWrapper(
-                    self.processor.tokenizer,  # type: ignore[union-attr,attr-defined]
-                    criteria,
-                )
-                stopping_criteria_list.append(wrapped_criteria)
-            else:
+            # Skip GenerationStopper instances (already handled above)
+            if not isinstance(criteria, GenerationStopper) and not (
+                isinstance(criteria, type) and issubclass(criteria, GenerationStopper)
+            ):
                 stopping_criteria_list.append(criteria)
 
         # Filter decoder-specific keys

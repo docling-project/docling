@@ -10,6 +10,10 @@ from PIL.Image import Image
 
 from docling.datamodel.stage_model_specs import RuntimeModelConfig
 from docling.datamodel.vlm_runtime_options import MlxVlmRuntimeOptions
+from docling.models.runtimes._utils import (
+    extract_generation_stoppers,
+    preprocess_image_batch,
+)
 from docling.models.runtimes.base import (
     BaseVlmRuntime,
     VlmRuntimeInput,
@@ -119,120 +123,6 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
         _log.info(f"Loaded MLX model {repo_id} (revision: {revision})")
 
-    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
-        """Run inference on a single image.
-
-        Args:
-            input_data: Input containing image, prompt, and configuration
-
-        Returns:
-            Generated text and metadata
-        """
-        if not self._initialized:
-            self.initialize()
-
-        # Model should already be loaded via initialize()
-        if self.vlm_model is None or self.processor is None:
-            raise RuntimeError(
-                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
-            )
-
-        # Prepare image
-        image = input_data.image
-        if image.mode != "RGB":
-            image = image.convert("RGB")
-
-        # Format prompt using MLX's chat template
-        formatted_prompt = self.apply_chat_template(  # type: ignore[misc]
-            self.processor,
-            self.config,
-            input_data.prompt,
-            num_images=1,
-        )
-
-        # Check for custom stopping criteria
-        custom_stoppers = []
-        custom_criteria = input_data.extra_generation_config.get(
-            "custom_stopping_criteria", []
-        )
-        for criteria in custom_criteria:
-            if isinstance(criteria, GenerationStopper):
-                custom_stoppers.append(criteria)
-            elif isinstance(criteria, type) and issubclass(criteria, GenerationStopper):
-                custom_stoppers.append(criteria())
-
-        # Use global lock for thread safety
-        with _MLX_GLOBAL_LOCK:
-            start_time = time.time()
-
-            if custom_stoppers:
-                # Streaming generation with early abort support
-                generated_text = ""
-                num_tokens = 0
-                stop_reason = "unspecified"
-
-                for token in self.stream_generate(  # type: ignore[misc]
-                    self.vlm_model,
-                    self.processor,
-                    formatted_prompt,  # prompt comes BEFORE images
-                    [image],  # images must be a list
-                    max_tokens=input_data.max_new_tokens,
-                    temp=input_data.temperature,
-                    verbose=False,
-                ):
-                    # stream_generate yields tokens with .text attribute
-                    generated_text += token.text
-                    num_tokens += 1
-
-                    # Check stopping criteria
-                    for stopper in custom_stoppers:
-                        if stopper.should_stop(generated_text):
-                            stop_reason = "custom_criteria"
-                            break
-
-                    if stop_reason != "unspecified":
-                        break
-            else:
-                # Non-streaming generation
-                from mlx_vlm import generate
-
-                result = generate(
-                    self.vlm_model,
-                    self.processor,
-                    formatted_prompt,  # prompt comes BEFORE images
-                    [image],  # images must be a list
-                    max_tokens=input_data.max_new_tokens,
-                    temp=input_data.temperature,
-                    verbose=False,
-                )
-                # generate() returns a GenerationResult object with .text attribute
-                generated_text = result.text if hasattr(result, "text") else str(result)
-                num_tokens = (
-                    result.generation_tokens
-                    if hasattr(result, "generation_tokens")
-                    else len(generated_text.split())
-                )
-                stop_reason = "unspecified"
-
-            generation_time = time.time() - start_time
-
-        # Clean up the generated text
-        if input_data.stop_strings:
-            for stop_string in input_data.stop_strings:
-                if stop_string in generated_text:
-                    generated_text = generated_text.split(stop_string)[0]
-                    stop_reason = "stop_string"
-                    break
-
-        return VlmRuntimeOutput(
-            text=generated_text,
-            stop_reason=stop_reason,
-            metadata={
-                "generation_time": generation_time,
-                "num_tokens": num_tokens,
-            },
-        )
-
     def predict_batch(
         self, input_batch: List[VlmRuntimeInput]
     ) -> List[VlmRuntimeOutput]:
@@ -249,13 +139,126 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         Returns:
             List of outputs, one per input
         """
-        # MLX doesn't support true batching due to thread-safety constraints
-        # Fall back to sequential processing with the base implementation
+        if not self._initialized:
+            self.initialize()
+
+        if not input_batch:
+            return []
+
+        # Model should already be loaded via initialize()
+        if self.vlm_model is None or self.processor is None or self.config is None:
+            raise RuntimeError(
+                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
+            )
+
         _log.debug(
             f"MLX runtime processing batch of {len(input_batch)} images sequentially "
             "(MLX does not support batched inference)"
         )
-        return super().predict_batch(input_batch)
+
+        outputs: List[VlmRuntimeOutput] = []
+
+        # MLX models are not thread-safe - use global lock to serialize access
+        with _MLX_GLOBAL_LOCK:
+            _log.debug("MLX model: Acquired global lock for thread safety")
+
+            for input_data in input_batch:
+                # Preprocess image
+                images = preprocess_image_batch([input_data.image])
+                image = images[0]
+
+                # Format prompt using MLX's chat template
+                formatted_prompt = self.apply_chat_template(
+                    self.processor, self.config, input_data.prompt, num_images=1
+                )
+
+                # Extract custom stopping criteria
+                custom_stoppers = extract_generation_stoppers(
+                    input_data.extra_generation_config
+                )
+
+                # Stream generate with stop strings and custom stopping criteria support
+                start_time = time.time()
+                _log.debug("Starting MLX generation...")
+
+                output_text = ""
+                stop_reason = "unspecified"
+
+                # Use stream_generate for proper stop string handling
+                for token in self.stream_generate(
+                    self.vlm_model,
+                    self.processor,
+                    formatted_prompt,
+                    [image],  # MLX stream_generate expects list of images
+                    max_tokens=input_data.max_new_tokens,
+                    verbose=False,
+                    temp=input_data.temperature,
+                ):
+                    output_text += token.text
+
+                    # Check for configured stop strings
+                    if input_data.stop_strings:
+                        if any(
+                            stop_str in output_text
+                            for stop_str in input_data.stop_strings
+                        ):
+                            _log.debug("Stopping generation due to stop string match")
+                            stop_reason = "stop_string"
+                            break
+
+                    # Check for custom stopping criteria
+                    if custom_stoppers:
+                        for stopper in custom_stoppers:
+                            # Determine the text window to check based on lookback_tokens
+                            lookback_tokens = stopper.lookback_tokens()
+                            text_to_check = (
+                                output_text[-lookback_tokens:]
+                                if len(output_text) > lookback_tokens
+                                else output_text
+                            )
+
+                            try:
+                                if stopper.should_stop(text_to_check):
+                                    _log.info(
+                                        f"Stopping generation due to GenerationStopper: {type(stopper).__name__}"
+                                    )
+                                    stop_reason = "custom_criteria"
+                                    break
+                            except Exception as e:
+                                _log.warning(
+                                    f"Error in GenerationStopper.should_stop: {e}"
+                                )
+                                continue
+                        else:
+                            # for-else: only executed if inner loop didn't break
+                            continue
+                        # Break outer loop if any stopper triggered
+                        break
+
+                generation_time = time.time() - start_time
+
+                _log.debug(
+                    f"MLX generation completed in {generation_time:.2f}s, "
+                    f"stop_reason: {stop_reason}"
+                )
+
+                # Create output
+                outputs.append(
+                    VlmRuntimeOutput(
+                        text=output_text,
+                        stop_reason=stop_reason,
+                        metadata={
+                            "generation_time": generation_time,
+                            "model": self.model_config.repo_id
+                            if self.model_config
+                            else "unknown",
+                        },
+                    )
+                )
+
+            _log.debug("MLX model: Released global lock")
+
+        return outputs
 
     def cleanup(self) -> None:
         """Clean up model resources."""

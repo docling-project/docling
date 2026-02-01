@@ -146,23 +146,13 @@ class BaseVlmRuntime(ABC):
         """
 
     @abstractmethod
-    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
-        """Run inference on a single input.
-
-        Args:
-            input_data: Generic input containing image, prompt, and config
-
-        Returns:
-            Generic output containing generated text and metadata
-        """
-
     def predict_batch(
         self, input_batch: List[VlmRuntimeInput]
     ) -> List[VlmRuntimeOutput]:
         """Run inference on a batch of inputs.
 
-        Default implementation processes inputs sequentially. Subclasses should
-        override this method to implement efficient batched inference.
+        This is the primary method that all runtimes must implement.
+        Single predictions are routed through this method.
 
         Args:
             input_batch: List of inputs to process
@@ -170,11 +160,25 @@ class BaseVlmRuntime(ABC):
         Returns:
             List of outputs, one per input
         """
+
+    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
+        """Run inference on a single input.
+
+        This is a convenience method that wraps the input in a list and calls
+        predict_batch(). Runtimes should NOT override this method - all
+        inference logic should be in predict_batch().
+
+        Args:
+            input_data: Generic input containing image, prompt, and config
+
+        Returns:
+            Generic output containing generated text and metadata
+        """
         if not self._initialized:
             self.initialize()
 
-        # Default: process sequentially
-        return [self.predict(input_data) for input_data in input_batch]
+        results = self.predict_batch([input_data])
+        return results[0]
 
     def __call__(
         self, input_data: VlmRuntimeInput | List[VlmRuntimeInput]
