@@ -6,19 +6,16 @@ using vision-language models through a pluggable runtime system.
 
 import logging
 from collections.abc import Iterable
-from typing import Optional
 
 from PIL import Image as PILImage
 
 from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
-from docling.datamodel.stage_model_specs import RuntimeModelConfig
 from docling.models.base_model import BasePageModel
 from docling.models.runtimes.base import (
     BaseVlmRuntime,
     VlmRuntimeInput,
-    VlmRuntimeOutput,
 )
 from docling.models.runtimes.factory import create_vlm_runtime
 from docling.utils.profiling import TimeRecorder

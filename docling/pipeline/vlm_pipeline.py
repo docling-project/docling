@@ -45,7 +45,7 @@ from docling.datamodel.settings import settings
 
 # VlmResponseFormat is actually ResponseFormat from pipeline_options_vlm_model
 # No need to import it separately as it's already imported above
-from docling.models.stages.vlm_convert_model import VlmConvertModel
+from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
