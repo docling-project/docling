@@ -349,11 +349,7 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
     ] = 4
     num_workers: Annotated[
         int,
-        Field(
-            description=(
-                "Number of parallel workers for CTranslate2."
-            )
-        ),
+        Field(description=("Number of parallel workers for CTranslate2.")),
     ] = 1
     initial_prompt: Annotated[
         Optional[str],
@@ -366,11 +362,7 @@ class InlineAsrWhisperS2TOptions(InlineAsrOptions):
     ] = None
     supported_devices: Annotated[
         list[AcceleratorDevice],
-        Field(
-            description=(
-                "Hardware accelerators supported by WhisperS2T."
-            )
-        ),
+        Field(description=("Hardware accelerators supported by WhisperS2T.")),
     ] = [
         AcceleratorDevice.CPU,
         AcceleratorDevice.CUDA,
