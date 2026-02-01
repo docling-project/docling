@@ -79,9 +79,9 @@ class TestMlxWhisperIntegration:
             def is_available(self):
                 return True
 
-        class _Torch:
-            class backends:
-                mps = _Mps()
+        class _Cuda:
+            def is_available(self):
+                return False
 
         class _Torch:
             class backends:
