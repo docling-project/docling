@@ -189,9 +189,15 @@ class TestMlxWhisperIntegration:
             def is_available(self):
                 return False
 
+        class _CudaOff:
+            def is_available(self):
+                return False
+
         class _TorchOff:
             class backends:
                 mps = _MpsOff()
+
+            cuda = _CudaOff()
 
         monkeypatch.setitem(sys.modules, "torch", _TorchOff())
         if "mlx_whisper" in sys.modules:
