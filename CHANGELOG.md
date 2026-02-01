@@ -1,16 +1,3 @@
-## [v2.71.0](https://github.com/docling-project/docling/releases/tag/v2.71.0) - 2026-01-30
-
-### Feature
-
-* Webvtt and source tracker ([#2787](https://github.com/docling-project/docling/issues/2787)) ([`0602a7c`](https://github.com/docling-project/docling/commit/0602a7cdab17b0e42057e1ef502048e95bd589f4))
-* Add support for Word document comments extraction ([#2834](https://github.com/docling-project/docling/issues/2834)) ([`b6ca094`](https://github.com/docling-project/docling/commit/b6ca09451963c606b5d280b74e559278717bb911))
-
-### Fix
-
-* Allow newer typer versions ([#2930](https://github.com/docling-project/docling/issues/2930)) ([`6f205ae`](https://github.com/docling-project/docling/commit/6f205ae2119fe694abaf200df5662837b3854f53))
-* **rapidocr:** Use new model links for RapidOCR ([#2928](https://github.com/docling-project/docling/issues/2928)) ([`82b7982`](https://github.com/docling-project/docling/commit/82b7982e1b23f46fb664fb3229f3eac054957077))
-* Presets for ollama ([#2926](https://github.com/docling-project/docling/issues/2926)) ([`4a269de`](https://github.com/docling-project/docling/commit/4a269de91aeadd1a1c48b814dc4e5a2c28efe6d8))
-
 ## [v2.70.0](https://github.com/docling-project/docling/releases/tag/v2.70.0) - 2026-01-23
 
 ### Feature
