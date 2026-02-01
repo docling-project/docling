@@ -452,14 +452,13 @@ class StagePresetMixin:
 # -----------------------------------------------------------------------------
 
 # Shared Granite Docling model spec used across VLM_CONVERT and CODE_FORMULA stages
-GRANITE_DOCLING_MODEL_SPEC = VlmModelSpec(
-    name="Granite-Docling-258M",
-    default_repo_id="ibm-granite/granite-docling-258M",
-    prompt="",  # Will be overridden per stage
-    response_format=ResponseFormat.DOCTAGS,  # Default, can be overridden per stage
-    stop_strings=["</doctag>", "<|end_of_text|>"],
-    max_new_tokens=8192,
-    runtime_overrides={
+# Note: prompt and response_format are intentionally excluded here as they vary per stage
+GRANITE_DOCLING_MODEL_SPEC_BASE = {
+    "name": "Granite-Docling-258M",
+    "default_repo_id": "ibm-granite/granite-docling-258M",
+    "stop_strings": ["</doctag>", "<|end_of_text|>"],
+    "max_new_tokens": 8192,
+    "runtime_overrides": {
         VlmRuntimeType.MLX: RuntimeModelConfig(
             repo_id="ibm-granite/granite-docling-258M-mlx"
         ),
@@ -470,12 +469,12 @@ GRANITE_DOCLING_MODEL_SPEC = VlmModelSpec(
             }
         ),
     },
-    api_overrides={
+    "api_overrides": {
         VlmRuntimeType.API_OLLAMA: ApiModelConfig(
             params={"model": "ibm/granite-docling:258m"}
         ),
     },
-)
+}
 
 # -----------------------------------------------------------------------------
 # VLM_CONVERT PRESETS (for full page conversion)
@@ -512,8 +511,9 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
     name="Granite-Docling",
     description="IBM Granite DocTags model for document conversion (258M parameters)",
     model_spec=VlmModelSpec(
-        **GRANITE_DOCLING_MODEL_SPEC.model_dump(),
+        **GRANITE_DOCLING_MODEL_SPEC_BASE,
         prompt="Convert this page to docling.",
+        response_format=ResponseFormat.DOCTAGS,
     ),
     scale=2.0,
     default_runtime_type=VlmRuntimeType.AUTO_INLINE,
@@ -767,7 +767,7 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
     name="Granite-Docling-CodeFormula",
     description="IBM Granite Docling model for code and formula extraction (258M parameters)",
     model_spec=VlmModelSpec(
-        **GRANITE_DOCLING_MODEL_SPEC.model_dump(),
+        **GRANITE_DOCLING_MODEL_SPEC_BASE,
         prompt="",
         response_format=ResponseFormat.PLAINTEXT,
     ),
