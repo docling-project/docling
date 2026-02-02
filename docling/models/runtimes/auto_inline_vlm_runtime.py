@@ -170,7 +170,7 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
 
         # Create the actual runtime
         if self.selected_runtime_type == VlmRuntimeType.MLX:
-            from docling.models.runtimes.mlx_runtime import MlxVlmRuntime
+            from docling.models.runtimes.mlx_vlm_runtime import MlxVlmRuntime
 
             mlx_options = MlxVlmRuntimeOptions(
                 trust_remote_code=self.options.trust_remote_code
@@ -184,7 +184,7 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
             )
 
         elif self.selected_runtime_type == VlmRuntimeType.VLLM:
-            from docling.models.runtimes.vllm_runtime import VllmVlmRuntime
+            from docling.models.runtimes.vllm_vlm_runtime import VllmVlmRuntime
 
             vllm_options = VllmVlmRuntimeOptions()
             self.actual_runtime = VllmVlmRuntime(
@@ -195,7 +195,7 @@ class AutoInlineVlmRuntime(BaseVlmRuntime):
             )
 
         else:  # TRANSFORMERS
-            from docling.models.runtimes.transformers_runtime import (
+            from docling.models.runtimes.transformers_vlm_runtime import (
                 TransformersVlmRuntime,
             )
 

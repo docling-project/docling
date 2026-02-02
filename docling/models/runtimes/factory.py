@@ -11,13 +11,17 @@ from docling.models.runtimes.base import (
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import RuntimeModelConfig, VlmModelSpec
-    from docling.models.runtimes.api_runtime import ApiVlmRuntimeOptions
-    from docling.models.runtimes.auto_inline_runtime import AutoInlineVlmRuntimeOptions
-    from docling.models.runtimes.mlx_runtime import MlxVlmRuntimeOptions
-    from docling.models.runtimes.transformers_runtime import (
+    from docling.models.runtimes.api_openai_compatible_vlm_runtime import (
+        ApiVlmRuntimeOptions,
+    )
+    from docling.models.runtimes.auto_inline_vlm_runtime import (
+        AutoInlineVlmRuntimeOptions,
+    )
+    from docling.models.runtimes.mlx_vlm_runtime import MlxVlmRuntimeOptions
+    from docling.models.runtimes.transformers_vlm_runtime import (
         TransformersVlmRuntimeOptions,
     )
-    from docling.models.runtimes.vllm_runtime import VllmVlmRuntimeOptions
+    from docling.models.runtimes.vllm_vlm_runtime import VllmVlmRuntimeOptions
 
 _log = logging.getLogger(__name__)
 
@@ -53,7 +57,7 @@ def create_vlm_runtime(
             model_config.extra_config["api_params"] = api_params
 
     if runtime_type == VlmRuntimeType.AUTO_INLINE:
-        from docling.models.runtimes.auto_inline_runtime import (
+        from docling.models.runtimes.auto_inline_vlm_runtime import (
             AutoInlineVlmRuntime,
             AutoInlineVlmRuntimeOptions,
         )
@@ -65,7 +69,7 @@ def create_vlm_runtime(
         return AutoInlineVlmRuntime(options, model_spec=model_spec)
 
     elif runtime_type == VlmRuntimeType.TRANSFORMERS:
-        from docling.models.runtimes.transformers_runtime import (
+        from docling.models.runtimes.transformers_vlm_runtime import (
             TransformersVlmRuntime,
             TransformersVlmRuntimeOptions,
         )
@@ -77,7 +81,7 @@ def create_vlm_runtime(
         return TransformersVlmRuntime(options, model_config=model_config)
 
     elif runtime_type == VlmRuntimeType.MLX:
-        from docling.models.runtimes.mlx_runtime import (
+        from docling.models.runtimes.mlx_vlm_runtime import (
             MlxVlmRuntime,
             MlxVlmRuntimeOptions,
         )
@@ -87,7 +91,7 @@ def create_vlm_runtime(
         return MlxVlmRuntime(options, model_config=model_config)
 
     elif runtime_type == VlmRuntimeType.VLLM:
-        from docling.models.runtimes.vllm_runtime import (
+        from docling.models.runtimes.vllm_vlm_runtime import (
             VllmVlmRuntime,
             VllmVlmRuntimeOptions,
         )
@@ -97,7 +101,7 @@ def create_vlm_runtime(
         return VllmVlmRuntime(options, model_config=model_config)
 
     elif VlmRuntimeType.is_api_variant(runtime_type):
-        from docling.models.runtimes.api_runtime import (
+        from docling.models.runtimes.api_openai_compatible_vlm_runtime import (
             ApiVlmRuntime,
             ApiVlmRuntimeOptions,
         )
