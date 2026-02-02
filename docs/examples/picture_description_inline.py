@@ -3,7 +3,7 @@
 #
 # What this example does
 # - Demonstrates picture description in standard PDF pipeline
-# - Shows default preset, changing presets, and legacy repo_id approach
+# - Shows default preset, changing presets, and manual configuration without presets
 # - Enriches documents with AI-generated image captions
 #
 # Prerequisites
@@ -16,7 +16,7 @@
 # Notes
 # - This uses the standard PDF pipeline (not VlmPipeline)
 # - For API-based picture description, see `pictures_description_api.py`
-# - For legacy approach, see `picture_description_inline_legacy.py`
+# - For legacy PictureDescriptionVlmOptions approach, see `picture_description_inline_legacy.py`
 
 # %%
 
@@ -31,6 +31,9 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionVlmOptions,
     PictureDescriptionVlmRuntimeOptions,
 )
+from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
+from docling.datamodel.stage_model_specs import VlmModelSpec
+from docling.datamodel.vlm_runtime_options import AutoInlineVlmRuntimeOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 logging.basicConfig(level=logging.INFO)
@@ -99,18 +102,24 @@ for element, _level in result.document.iterate_items():
         )
 
 
-###### EXAMPLE 3: Without presets - using HF repo_id directly with custom prompt
+###### EXAMPLE 3: Without presets - manually configuring model and runtime
 
 print("\n" + "=" * 60)
-print("Example 3: Using repo_id directly")
+print("Example 3: Manual configuration without presets")
 print("=" * 60)
 
-# You can specify the HuggingFace repo_id directly and customize the prompt
+# You can manually configure the model spec and runtime options without using presets
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.do_picture_description = True
-pipeline_options.picture_description_options = PictureDescriptionVlmOptions(
-    repo_id="HuggingFaceTB/SmolVLM-256M-Instruct",
+pipeline_options.picture_description_options = PictureDescriptionVlmRuntimeOptions(
+    model_spec=VlmModelSpec(
+        name="SmolVLM-256M-Custom",
+        default_repo_id="HuggingFaceTB/SmolVLM-256M-Instruct",
+        prompt="Provide a detailed technical description of this image, focusing on any diagrams, charts, or technical content.",
+        response_format=ResponseFormat.PLAINTEXT,
+    ),
+    runtime_options=AutoInlineVlmRuntimeOptions(),
     prompt="Provide a detailed technical description of this image, focusing on any diagrams, charts, or technical content.",
 )
 
@@ -139,8 +148,9 @@ for element, _level in result.document.iterate_items():
 # This example shows three approaches:
 # 1. **Default**: No configuration needed, uses SmolVLM preset automatically
 # 2. **Preset-based**: Use `from_preset()` to select a different model (e.g., granite_vision)
-# 3. **Legacy repo_id**: Directly specify HuggingFace repo_id with custom prompt
+# 3. **Manual configuration**: Manually create VlmModelSpec and runtime options without presets
 #
 # Available presets: smolvlm, granite_vision, pixtral, qwen
 #
 # For API-based picture description (vLLM, LM Studio, watsonx.ai), see `pictures_description_api.py`
+# For the legacy approach using PictureDescriptionVlmOptions, see `picture_description_inline_legacy.py`
