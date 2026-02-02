@@ -21,6 +21,7 @@
 # %%
 
 import logging
+import os
 from pathlib import Path
 
 from docling_core.types.doc import PictureItem
@@ -40,6 +41,9 @@ logging.basicConfig(level=logging.INFO)
 
 # Test document with images
 input_doc_path = Path("tests/data/pdf/2206.01062.pdf")
+
+# Check if running in CI
+IS_CI = os.environ.get("CI", "").lower() in ("true", "1", "yes")
 
 ###### EXAMPLE 1: Using default VLM for picture description (SmolVLM)
 
@@ -71,35 +75,40 @@ for element, _level in result.document.iterate_items():
         )
 
 
-###### EXAMPLE 2: Change to Granite Vision preset
+###### EXAMPLE 2: Change to Granite Vision preset (skipped in CI)
 
-print("\n" + "=" * 60)
-print("Example 2: Using Granite Vision preset")
-print("=" * 60)
+if not IS_CI:
+    print("\n" + "=" * 60)
+    print("Example 2: Using Granite Vision preset")
+    print("=" * 60)
 
-pipeline_options = PdfPipelineOptions()
-pipeline_options.do_picture_description = True
-pipeline_options.picture_description_options = (
-    PictureDescriptionVlmRuntimeOptions.from_preset("granite_vision")
-)
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_picture_description = True
+    pipeline_options.picture_description_options = (
+        PictureDescriptionVlmRuntimeOptions.from_preset("granite_vision")
+    )
 
-converter = DocumentConverter(
-    format_options={
-        InputFormat.PDF: PdfFormatOption(
-            pipeline_options=pipeline_options,
-        )
-    }
-)
+    converter = DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(
+                pipeline_options=pipeline_options,
+            )
+        }
+    )
 
-result = converter.convert(input_doc_path)
+    result = converter.convert(input_doc_path)
 
-for element, _level in result.document.iterate_items():
-    if isinstance(element, PictureItem):
-        print(
-            f"Picture {element.self_ref}\n"
-            f"Caption: {element.caption_text(doc=result.document)}\n"
-            f"Meta: {element.meta}"
-        )
+    for element, _level in result.document.iterate_items():
+        if isinstance(element, PictureItem):
+            print(
+                f"Picture {element.self_ref}\n"
+                f"Caption: {element.caption_text(doc=result.document)}\n"
+                f"Meta: {element.meta}"
+            )
+else:
+    print("\n" + "=" * 60)
+    print("Example 2: Skipped (running in CI environment)")
+    print("=" * 60)
 
 
 ###### EXAMPLE 3: Without presets - manually configuring model and runtime
