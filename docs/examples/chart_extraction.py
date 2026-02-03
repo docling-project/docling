@@ -29,6 +29,12 @@ import time
 from pathlib import Path
 
 import pandas as pd
+from docling_core.transforms.serializer.html import (
+    HTMLDocSerializer,
+    HTMLOutputStyle,
+    HTMLParams,
+)
+from docling_core.transforms.visualizer.layout_visualizer import LayoutVisualizer
 from docling_core.types.doc import ImageRefMode, PictureItem
 
 from docling.datamodel.base_models import InputFormat
@@ -92,16 +98,25 @@ def main():
         for cell in table_data.table_cells:
             grid[cell.start_row_offset_idx][cell.start_col_offset_idx] = cell.text
 
-        df = pd.DataFrame(grid)
-        print(df.to_csv(index=False, header=False))
+        chart_df = pd.DataFrame(grid)
+        print(chart_df.to_csv(index=False, header=False))
 
     # Export the full document as split-page HTML with layout.
     html_filename = output_dir / f"{doc_filename}.html"
-    conv_res.document.save_as_html(
-        html_filename,
-        image_mode=ImageRefMode.EMBEDDED,
-        split_page_view=True,
+    ser = HTMLDocSerializer(
+        doc=conv_res.document,
+        params=HTMLParams(
+            image_mode=ImageRefMode.EMBEDDED,
+            output_style=HTMLOutputStyle.SPLIT_PAGE,
+        ),
     )
+    visualizer = LayoutVisualizer()
+    visualizer.params.show_label = False
+    ser_res = ser.serialize(
+        visualizer=visualizer,
+    )
+    with open(html_filename, "w") as fw:
+        fw.write(ser_res.text)
     _log.info(f"Saved split-page HTML to {html_filename}")
 
     elapsed = time.time() - start_time
