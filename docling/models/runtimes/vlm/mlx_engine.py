@@ -44,7 +44,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         self,
         options: MlxVlmEngineOptions,
         artifacts_path: Optional[Path] = None,
-        model_config: Optional[EngineModelConfig] = None,
+        model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the MLX engine.
 

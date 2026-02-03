@@ -64,7 +64,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         options: TransformersVlmEngineOptions,
         accelerator_options: Optional[AcceleratorOptions] = None,
         artifacts_path: Optional[Path] = None,
-        model_config: Optional[EngineModelConfig] = None,
+        model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the Transformers engine.
 
