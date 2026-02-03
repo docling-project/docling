@@ -12,10 +12,10 @@ class ExtractedPageData(BaseModel):
     """Data model for extracted content from a single page."""
 
     page_no: int = Field(..., description="1-indexed page number")
-    extracted_data: Optional[Dict[str, Any]] = Field(
+    extracted_data: Dict[str, Any] | None = Field(
         None, description="Extracted structured data from the page"
     )
-    raw_text: Optional[str] = Field(None, description="Raw extracted text")
+    raw_text: str | None = Field(None, description="Raw extracted text")
     errors: List[str] = Field(
         default_factory=list,
         description="Any errors encountered during extraction for this page",

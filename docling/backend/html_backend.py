@@ -237,14 +237,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ):
         super().__init__(in_doc, path_or_stream, options)
         self.options: HTMLBackendOptions
-        self.soup: Optional[BeautifulSoup] = None
+        self.soup: BeautifulSoup | None = None
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
-        self.base_path: Optional[str] = str(options.source_uri)
+        self.base_path: str | None = str(options.source_uri)
 
         # Initialize the parents for the hierarchy
         self.max_levels = 10
         self.level = 0
-        self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
+        self.parents: dict[int, Union[DocItem, GroupItem] | None] = {}
         self.ctx = _Context()
         for i in range(self.max_levels):
             self.parents[i] = None
@@ -523,7 +523,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         docling_table: TableItem,
         num_rows: int,
         num_cols: int,
-    ) -> Optional[TableData]:
+    ) -> TableData | None:
         for t in cast(list[Tag], element.find_all(["thead", "tbody"], recursive=False)):
             t.unwrap()
 
@@ -1027,7 +1027,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
         tag_name = tag.name.lower()
-        start: Optional[int] = None
+        start: int | None = None
         name: str = ""
         is_ordered = tag_name == "ol"
         if is_ordered:
@@ -1279,7 +1279,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 self._walk(tag, doc)
         return added_refs
 
-    def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
+    def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> RefItem | None:
         figure = img_tag.find_parent("figure")
         caption: AnnotatedTextList = AnnotatedTextList()
 
@@ -1309,7 +1309,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         caption_anno_text = caption.to_single_text_element()
 
-        caption_item: Optional[TextItem] = None
+        caption_item: TextItem | None = None
         if caption_anno_text.text:
             text_clean = HTMLDocumentBackend._clean_unicode(
                 caption_anno_text.text.strip()
@@ -1344,7 +1344,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         return docling_pic.get_ref()
 
-    def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
+    def _create_image_ref(self, src_url: str) -> ImageRef | None:
         try:
             img_data = self._load_image_data(src_url)
             if img_data:
@@ -1362,7 +1362,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         return None
 
-    def _load_image_data(self, src_loc: str) -> Optional[bytes]:
+    def _load_image_data(self, src_loc: str) -> bytes | None:
         if src_loc.lower().endswith(".svg"):
             _log.debug(f"Skipping SVG file: {src_loc}")
             return None

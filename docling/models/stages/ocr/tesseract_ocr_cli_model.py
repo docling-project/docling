@@ -36,7 +36,7 @@ class TesseractOcrCliModel(BaseOcrModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: TesseractCliOcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -50,10 +50,10 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         self.scale = 3  # multiplier for 72 dpi == 216 dpi.
 
-        self._name: Optional[str] = None
-        self._version: Optional[str] = None
-        self._tesseract_languages: Optional[List[str]] = None
-        self._script_prefix: Optional[str] = None
+        self._name: str | None = None
+        self._version: str | None = None
+        self._tesseract_languages: List[str] | None = None
+        self._script_prefix: str | None = None
         self._is_auto: bool = "auto" in self.options.lang
 
         if self.enabled:
@@ -99,7 +99,7 @@ class TesseractOcrCliModel(BaseOcrModel):
 
         return name, version
 
-    def _run_tesseract(self, ifilename: str, osd: Optional[pd.DataFrame]):
+    def _run_tesseract(self, ifilename: str, osd: pd.DataFrame | None):
         r"""
         Run tesseract CLI
         """
@@ -162,7 +162,7 @@ class TesseractOcrCliModel(BaseOcrModel):
         )
         return df_detected
 
-    def _parse_language(self, df_osd: pd.DataFrame) -> Optional[str]:
+    def _parse_language(self, df_osd: pd.DataFrame) -> str | None:
         assert self._tesseract_languages is not None
         scripts = df_osd.loc[df_osd["key"] == "Script"].value.tolist()
         if len(scripts) == 0:
@@ -235,7 +235,7 @@ class TesseractOcrCliModel(BaseOcrModel):
                                 fname = image_file.name
                                 high_res_image.save(image_file)
                             doc_orientation = 0
-                            df_osd: Optional[pd.DataFrame] = None
+                            df_osd: pd.DataFrame | None = None
                             try:
                                 df_osd = self._perform_osd(fname)
                                 doc_orientation = _parse_orientation(df_osd)

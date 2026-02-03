@@ -47,7 +47,7 @@ class BaseVlmOptions(BaseModel):
         ),
     ] = 2.0
     max_size: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description=(
                 "Maximum image dimension (width or height) in pixels. Images "
@@ -227,7 +227,7 @@ class InlineVlmOptions(BaseVlmOptions):
         ),
     ]
     torch_dtype: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "PyTorch data type for model weights. Options: `float32`, "

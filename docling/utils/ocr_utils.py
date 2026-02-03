@@ -35,7 +35,7 @@ def parse_tesseract_orientation(orientation: str) -> int:
 def tesseract_box_to_bounding_rectangle(
     bbox: BoundingBox,
     *,
-    original_offset: Optional[BoundingBox] = None,
+    original_offset: BoundingBox | None = None,
     scale: float,
     orientation: int,
     im_size: Tuple[int, int],

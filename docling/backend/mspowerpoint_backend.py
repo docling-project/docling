@@ -47,7 +47,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
         # Powerpoint file:
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
 
-        self.pptx_obj: Optional[presentation.Presentation] = None
+        self.pptx_obj: presentation.Presentation | None = None
         self.valid: bool = False
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -155,7 +155,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
     def _parse_bullet_from_paragraph_properties(
         self, pPr
-    ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
+    ) -> tuple[bool | None, str | None, str | None]:
         """Parse bullet or numbering information from a paragraph properties node.
 
         This inspects the `a:pPr` or `a:lvlXpPr` element and extracts
@@ -217,7 +217,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
     def _parse_bullet_from_text_body_list_style(
         self, txBody, lvl: int
-    ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
+    ) -> tuple[bool | None, str | None, str | None]:
         """Parse bullet or numbering information from a text body's list style.
 
         This searches for `a:lstStyle/a:lvl{lvl+1}pPr` under a `txBody` and uses the
@@ -243,7 +243,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
     def _get_master_text_style_node(
         self, slide_master, placeholder_type
-    ) -> Optional[etree._Element]:
+    ) -> etree._Element | None:
         """Get the appropriate master text style node for a placeholder.
 
         Most content placeholders (BODY/OBJECT) use `p:bodyStyle`, while titles use
@@ -273,7 +273,7 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
 
     def _parse_bullet_from_master_text_styles(
         self, slide_master, placeholder_type, lvl: int
-    ) -> tuple[Optional[bool], Optional[str], Optional[str]]:
+    ) -> tuple[bool | None, str | None, str | None]:
         """Parse bullet or numbering information from the slide master text styles.
 
         This looks up the appropriate style bucket in the slide master's `p:txStyles`

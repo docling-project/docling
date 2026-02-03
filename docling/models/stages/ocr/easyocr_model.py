@@ -31,7 +31,7 @@ class EasyOcrModel(BaseOcrModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: EasyOcrOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -94,7 +94,7 @@ class EasyOcrModel(BaseOcrModel):
     def download_models(
         detection_models: List[str] = ["craft"],
         recognition_models: List[str] = ["english_g2", "latin_g2"],
-        local_dir: Optional[Path] = None,
+        local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
     ) -> Path:

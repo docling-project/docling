@@ -33,7 +33,7 @@ class TableStructureModel(BaseTableStructureModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: TableStructureOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -94,7 +94,7 @@ class TableStructureModel(BaseTableStructureModel):
 
     @staticmethod
     def download_models(
-        local_dir: Optional[Path] = None, force: bool = False, progress: bool = False
+        local_dir: Path | None = None, force: bool = False, progress: bool = False
     ) -> Path:
         return download_hf_model(
             repo_id="docling-project/docling-models",

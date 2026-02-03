@@ -119,7 +119,7 @@ class DoclingParsePageBackend(PdfPageBackend):
 
         return text_piece
 
-    def get_segmented_page(self) -> Optional[SegmentedPdfPage]:
+    def get_segmented_page(self) -> SegmentedPdfPage | None:
         if not self.valid:
             return None
 
@@ -157,7 +157,7 @@ class DoclingParsePageBackend(PdfPageBackend):
                 yield cropbox
 
     def get_page_image(
-        self, scale: float = 1, cropbox: Optional[BoundingBox] = None
+        self, scale: float = 1, cropbox: BoundingBox | None = None
     ) -> Image.Image:
         page_size = self.get_size()
 

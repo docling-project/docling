@@ -76,11 +76,11 @@ _log = logging.getLogger(__name__)
 class ThreadedItem:
     """Envelope that travels between pipeline stages."""
 
-    payload: Optional[Page]
+    payload: Page | None
     run_id: int  # Unique per *execute* call, monotonic across pipeline instance
     page_no: int
     conv_res: ConversionResult
-    error: Optional[Exception] = None
+    error: Exception | None = None
     is_failed: bool = False
 
 
@@ -123,7 +123,7 @@ class ThreadedQueue:
         self._closed = False
 
     # ---------------------------------------------------------------- put()
-    def put(self, item: ThreadedItem, timeout: Optional[float] | None = None) -> bool:
+    def put(self, item: ThreadedItem, timeout: float | None | None = None) -> bool:
         """Block until queue accepts *item* or is closed.  Returns *False* if closed."""
         with self._not_full:
             if self._closed:
@@ -145,7 +145,7 @@ class ThreadedQueue:
 
     # ------------------------------------------------------------ get_batch()
     def get_batch(
-        self, size: int, timeout: Optional[float] | None = None
+        self, size: int, timeout: float | None | None = None
     ) -> List[ThreadedItem]:
         """Return up to *size* items.  Blocks until ≥1 item present or queue closed/timeout."""
         with self._not_empty:
@@ -189,8 +189,8 @@ class ThreadedPipelineStage:
         batch_size: int,
         batch_timeout: float,
         queue_max_size: int,
-        postprocess: Optional[Callable[[ThreadedItem], None]] = None,
-        timed_out_run_ids: Optional[set[int]] = None,
+        postprocess: Callable[[ThreadedItem], None] | None = None,
+        timed_out_run_ids: set[int] | None = None,
     ) -> None:
         self.name = name
         self.model = model
@@ -198,7 +198,7 @@ class ThreadedPipelineStage:
         self.batch_timeout = batch_timeout
         self.input_queue = ThreadedQueue(queue_max_size)
         self._outputs: list[ThreadedQueue] = []
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._running = False
         self._postprocess = postprocess
         self._timed_out_run_ids = (
@@ -329,7 +329,7 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
         batch_timeout: float,
         queue_max_size: int,
         model: Any,
-        timed_out_run_ids: Optional[set[int]] = None,
+        timed_out_run_ids: set[int] | None = None,
     ) -> None:
         super().__init__(
             name="preprocess",
@@ -500,7 +500,7 @@ class StandardPdfPipeline(ConvertPipeline):
         )
 
     # ---------------------------------------------------------------- helpers
-    def _make_ocr_model(self, art_path: Optional[Path]) -> Any:
+    def _make_ocr_model(self, art_path: Path | None) -> Any:
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )

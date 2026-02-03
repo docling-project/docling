@@ -10,7 +10,7 @@ from docx.document import Document
 from PIL import Image, ImageChops
 
 
-def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
+def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> str | None:
     """Return the libreoffice cmd and optionally test it."""
 
     libreoffice_cmd = (
@@ -41,7 +41,7 @@ def get_libreoffice_cmd(raise_if_unavailable: bool = False) -> Optional[str]:
     return libreoffice_cmd
 
 
-def get_docx_to_pdf_converter() -> Optional[Callable]:
+def get_docx_to_pdf_converter() -> Callable | None:
     """
     Detects the best available DOCX to PDF tool and returns a conversion function.
     The returned function accepts (input_path, output_path).
@@ -104,8 +104,8 @@ def crop_whitespace(image: Image.Image, bg_color=None, padding=0) -> Image.Image
 
 
 def get_pil_from_dml_docx(
-    docx: Document, converter: Optional[Callable]
-) -> Optional[Image.Image]:
+    docx: Document, converter: Callable | None
+) -> Image.Image | None:
     if converter is None:
         return None
 

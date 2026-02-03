@@ -75,7 +75,7 @@ class DocumentPictureClassifier(
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: DocumentPictureClassifierOptions,
         accelerator_options: AcceleratorOptions,
     ):

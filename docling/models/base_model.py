@@ -157,7 +157,7 @@ class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
     @abstractmethod
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
-    ) -> Optional[EnrichElementT]:
+    ) -> EnrichElementT | None:
         pass
 
     @abstractmethod
@@ -170,7 +170,7 @@ class GenericEnrichmentModel(ABC, Generic[EnrichElementT]):
 class BaseEnrichmentModel(GenericEnrichmentModel[NodeItem]):
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
-    ) -> Optional[NodeItem]:
+    ) -> NodeItem | None:
         if self.is_processable(doc=conv_res.document, element=element):
             return element
         return None
@@ -184,7 +184,7 @@ class BaseItemAndImageEnrichmentModel(
 
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
-    ) -> Optional[ItemAndImageEnrichmentElement]:
+    ) -> ItemAndImageEnrichmentElement | None:
         if not self.is_processable(doc=conv_res.document, element=element):
             return None
 

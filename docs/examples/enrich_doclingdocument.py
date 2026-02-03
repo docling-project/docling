@@ -56,7 +56,7 @@ def prepare_element(
     backend: PyPdfiumDocumentBackend,
     model: BaseItemAndImageEnrichmentModel,
     element: NodeItem,
-) -> Optional[ItemAndImageEnrichmentElement]:
+) -> ItemAndImageEnrichmentElement | None:
     if not model.is_processable(doc=doc, element=element):
         return None
 

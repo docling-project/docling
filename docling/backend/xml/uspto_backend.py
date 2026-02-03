@@ -65,7 +65,7 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
         super().__init__(in_doc, path_or_stream)
 
         self.patent_content: str = ""
-        self.parser: Optional[PatentUspto] = None
+        self.parser: PatentUspto | None = None
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -153,7 +153,7 @@ class PatentUspto(ABC):
     """Parser of patent documents from the US Patent Office."""
 
     @abstractmethod
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         """Parse a USPTO patent.
 
         Parameters:
@@ -177,7 +177,7 @@ class PatentUsptoIce(PatentUspto):
         self.handler = PatentUsptoIce.PatentHandler()
         self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
             xml.sax.parseString(patent_content, self.handler)
         except xml.sax._exceptions.SAXParseException as exc_sax:
@@ -247,11 +247,11 @@ class PatentUsptoIce(PatentUspto):
         def __init__(self) -> None:
             """Build an instance of the patent handler."""
             # Current patent being parsed
-            self.doc: Optional[DoclingDocument] = None
+            self.doc: DoclingDocument | None = None
             # Keep track of docling hierarchy level
             self.level: LevelNumber = 1
             # Keep track of docling parents by level
-            self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+            self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
             self.claim: str
@@ -514,7 +514,7 @@ class PatentUsptoGrantV2(PatentUspto):
         self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
     @override
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
             xml.sax.parseString(patent_content, self.handler)
         except xml.sax._exceptions.SAXParseException as exc_sax:
@@ -585,11 +585,11 @@ class PatentUsptoGrantV2(PatentUspto):
         def __init__(self) -> None:
             """Build an instance of the patent handler."""
             # Current patent being parsed
-            self.doc: Optional[DoclingDocument] = None
+            self.doc: DoclingDocument | None = None
             # Keep track of docling hierarchy level
             self.level: LevelNumber = 1
             # Keep track of docling parents by level
-            self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+            self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
             self.claim: str
@@ -887,13 +887,13 @@ class PatentUsptoGrantAps(PatentUspto):
     @override
     def __init__(self) -> None:
         """Build an instance of PatentUsptoGrantAps class."""
-        self.doc: Optional[DoclingDocument] = None
+        self.doc: DoclingDocument | None = None
         # Keep track of docling hierarchy level
         self.level: LevelNumber = 1
         # Keep track of docling parents by level
-        self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+        self.parents: dict[LevelNumber, DocItem | None] = {1: None}
 
-    def get_last_text_item(self) -> Optional[TextItem]:
+    def get_last_text_item(self) -> TextItem | None:
         """Get the last text item at the current document level.
 
         Returns:
@@ -1030,7 +1030,7 @@ class PatentUsptoGrantAps(PatentUspto):
                 parent=self.parents[self.level],
             )
 
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         self.doc = self.doc = DoclingDocument(name="file")
         section: str = ""
         key: str = ""
@@ -1075,7 +1075,7 @@ class PatentUsptoAppV1(PatentUspto):
         self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
     @override
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
             xml.sax.parseString(patent_content, self.handler)
         except xml.sax._exceptions.SAXParseException as exc_sax:
@@ -1146,11 +1146,11 @@ class PatentUsptoAppV1(PatentUspto):
         def __init__(self) -> None:
             """Build an instance of the patent handler."""
             # Current patent being parsed
-            self.doc: Optional[DoclingDocument] = None
+            self.doc: DoclingDocument | None = None
             # Keep track of docling hierarchy level
             self.level: LevelNumber = 1
             # Keep track of docling parents by level
-            self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+            self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
             self.claim: str
@@ -1678,7 +1678,7 @@ class XmlTable:
 
         return dl_table
 
-    def parse(self) -> Optional[TableData]:
+    def parse(self) -> TableData | None:
         """Parse the first table from an xml content.
 
         Returns:

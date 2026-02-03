@@ -177,19 +177,19 @@ class RapidOcrOptions(OcrOptions):
         ),
     ] = 0.5
     use_det: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text detection stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
     use_cls: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text direction classification stage. If None, uses RapidOCR default behavior."
         ),
     ] = None
     use_rec: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description="Enable text recognition stage. If None, uses RapidOCR default behavior."
         ),
@@ -201,38 +201,38 @@ class RapidOcrOptions(OcrOptions):
         ),
     ] = False
     det_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text detection model. If None, uses default RapidOCR model."
         ),
     ] = None
     cls_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text classification model. If None, uses default RapidOCR model."
         ),
     ] = None
     rec_model_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to text recognition model. If None, uses default RapidOCR model."
         ),
     ] = None
     rec_keys_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to recognition keys file. If None, uses default RapidOCR keys."
         ),
     ] = None
     rec_font_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Deprecated. Use font_path instead.",
             deprecated=True,
         ),
     ] = None
     font_path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Custom path to font file for text rendering in visualization."
         ),
@@ -265,7 +265,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = ["fr", "de", "es", "en"]
     use_gpu: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             description=(
                 "Enable GPU acceleration for EasyOCR. If None, automatically detects and uses GPU if available. "
@@ -283,7 +283,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = 0.5
     model_storage_directory: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Directory path for storing downloaded EasyOCR models. If None, uses default EasyOCR cache location. "
@@ -292,7 +292,7 @@ class EasyOcrOptions(OcrOptions):
         ),
     ] = None
     recog_network: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Recognition network architecture to use. Options: `standard` (default, balanced), `craft` (higher "
@@ -347,7 +347,7 @@ class TesseractCliOcrOptions(OcrOptions):
         ),
     ] = "tesseract"
     path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Path to Tesseract data directory containing language files. If None, uses Tesseract's default "
@@ -356,7 +356,7 @@ class TesseractCliOcrOptions(OcrOptions):
         ),
     ] = None
     psm: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description=(
                 "Page Segmentation Mode for Tesseract. Values 0-13 control how Tesseract segments the page. "
@@ -383,7 +383,7 @@ class TesseractOcrOptions(OcrOptions):
         ),
     ] = ["fra", "deu", "spa", "eng"]
     path: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Path to Tesseract data directory containing language files. If None, uses Tesseract's default "
@@ -392,7 +392,7 @@ class TesseractOcrOptions(OcrOptions):
         ),
     ] = None
     psm: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description=(
                 "Page Segmentation Mode for Tesseract. Values 0-13 control how Tesseract segments the page. "
@@ -472,7 +472,7 @@ class PictureDescriptionBaseOptions(BaseOptions):
         ),
     ] = 0.05
     classification_allow: Annotated[
-        Optional[list[PictureClassificationLabel]],
+        list[PictureClassificationLabel] | None,
         Field(
             description=(
                 "List of picture classification labels to allow for description. Only pictures classified with these "
@@ -482,7 +482,7 @@ class PictureDescriptionBaseOptions(BaseOptions):
         ),
     ] = None
     classification_deny: Annotated[
-        Optional[list[PictureClassificationLabel]],
+        list[PictureClassificationLabel] | None,
         Field(
             description=(
                 "List of picture classification labels to exclude from description. Pictures classified with these "
@@ -692,7 +692,7 @@ class PipelineOptions(BaseOptions):
     """Base configuration for document processing pipelines."""
 
     document_timeout: Annotated[
-        Optional[float],
+        float | None,
         Field(
             description=(
                 "Maximum processing time in seconds before aborting document conversion. When exceeded, the pipeline "
@@ -732,7 +732,7 @@ class PipelineOptions(BaseOptions):
         ),
     ] = False
     artifacts_path: Annotated[
-        Optional[Union[Path, str]],
+        Union[Path, str] | None,
         Field(
             description=(
                 "Local directory containing pre-downloaded model artifacts (weights, configs). If None, models are "
