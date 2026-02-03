@@ -1,4 +1,6 @@
 
+# Vision Models
+
 The `VlmPipeline` in Docling allows you to convert documents end-to-end using a vision-language model.
 
 Docling supports vision-language models which output:
@@ -6,6 +8,11 @@ Docling supports vision-language models which output:
 - DocTags (e.g. [SmolDocling](https://huggingface.co/ds4sd/SmolDocling-256M-preview)), the preferred choice
 - Markdown
 - HTML
+
+!!! tip "Complete Model Catalog"
+    For a comprehensive overview of **all models and stages** in Docling (Layout, Table Structure, OCR, VLM, etc.), see the **[Model Catalog](model_catalog.md)**.
+
+## Quick Start
 
 
 For running Docling using local models with the `VlmPipeline`:

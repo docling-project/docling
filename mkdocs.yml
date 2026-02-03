@@ -63,6 +63,7 @@ nav:
       - Supported formats: usage/supported_formats.md
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
+      - Model catalog: usage/model_catalog.md
       - GPU support: usage/gpu.md
       - MCP server: usage/mcp.md
       - Jobkit: usage/jobkit.md
