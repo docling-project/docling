@@ -19,7 +19,7 @@ from docling.datamodel.pipeline_options import (
 from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.datamodel.stage_model_specs import (
     ApiModelConfig,
-    RuntimeModelConfig,
+    EngineModelConfig,
     StageModelPreset,
     VlmModelSpec,
 )
@@ -43,7 +43,7 @@ class TestRuntimeOptions:
     def test_auto_inline_engine_options(self):
         """Test AutoInlineVlmEngineOptions creation."""
         options = AutoInlineVlmEngineOptions()
-        assert options.runtime_type == VlmEngineType.AUTO_INLINE
+        assert options.engine_type == VlmEngineType.AUTO_INLINE
         assert options.prefer_vllm is False
 
         options_with_vllm = AutoInlineVlmEngineOptions(prefer_vllm=True)
@@ -52,7 +52,7 @@ class TestRuntimeOptions:
     def test_transformers_engine_options(self):
         """Test TransformersVlmEngineOptions creation and defaults."""
         options = TransformersVlmEngineOptions()
-        assert options.runtime_type == VlmEngineType.TRANSFORMERS
+        assert options.engine_type == VlmEngineType.TRANSFORMERS
         assert options.load_in_8bit is True
         assert options.llm_int8_threshold == 6.0
         assert options.quantized is False
@@ -72,7 +72,7 @@ class TestRuntimeOptions:
     def test_mlx_engine_options(self):
         """Test MlxVlmEngineOptions creation."""
         options = MlxVlmEngineOptions()
-        assert options.runtime_type == VlmEngineType.MLX
+        assert options.engine_type == VlmEngineType.MLX
         assert options.trust_remote_code is False
 
         options_with_trust = MlxVlmEngineOptions(trust_remote_code=True)
@@ -81,33 +81,33 @@ class TestRuntimeOptions:
     def test_api_engine_options(self):
         """Test ApiVlmEngineOptions for different API types."""
         # Test Ollama
-        ollama_options = ApiVlmEngineOptions(runtime_type=VlmEngineType.API_OLLAMA)
-        assert ollama_options.runtime_type == VlmEngineType.API_OLLAMA
+        ollama_options = ApiVlmEngineOptions(engine_type=VlmEngineType.API_OLLAMA)
+        assert ollama_options.engine_type == VlmEngineType.API_OLLAMA
         assert ollama_options.timeout == 60.0  # Default timeout
         assert ollama_options.concurrency == 1
 
         # Test OpenAI
         openai_options = ApiVlmEngineOptions(
-            runtime_type=VlmEngineType.API_OPENAI,
+            engine_type=VlmEngineType.API_OPENAI,
             timeout=60.0,
             concurrency=5,
         )
-        assert openai_options.runtime_type == VlmEngineType.API_OPENAI
+        assert openai_options.engine_type == VlmEngineType.API_OPENAI
         assert openai_options.timeout == 60.0
         assert openai_options.concurrency == 5
 
         # Test LM Studio
-        lmstudio_options = ApiVlmEngineOptions(runtime_type=VlmEngineType.API_LMSTUDIO)
-        assert lmstudio_options.runtime_type == VlmEngineType.API_LMSTUDIO
+        lmstudio_options = ApiVlmEngineOptions(engine_type=VlmEngineType.API_LMSTUDIO)
+        assert lmstudio_options.engine_type == VlmEngineType.API_LMSTUDIO
 
         # Test Generic API
-        generic_options = ApiVlmEngineOptions(runtime_type=VlmEngineType.API)
-        assert generic_options.runtime_type == VlmEngineType.API
+        generic_options = ApiVlmEngineOptions(engine_type=VlmEngineType.API)
+        assert generic_options.engine_type == VlmEngineType.API
 
     def test_vllm_engine_options(self):
         """Test VllmVlmEngineOptions creation."""
         options = VllmVlmEngineOptions()
-        assert options.runtime_type == VlmEngineType.VLLM
+        assert options.engine_type == VlmEngineType.VLLM
 
 
 # =============================================================================
@@ -132,18 +132,18 @@ class TestVlmModelSpec:
         assert spec.prompt == "Test prompt"
         assert spec.response_format == ResponseFormat.DOCTAGS
 
-    def test_model_spec_with_runtime_overrides(self):
-        """Test model spec with runtime-specific overrides."""
+    def test_model_spec_with_engine_overrides(self):
+        """Test model spec with engine-specific overrides."""
         spec = VlmModelSpec(
             name="Test Model",
             default_repo_id="test/model",
             prompt="Test prompt",
             response_format=ResponseFormat.DOCTAGS,
-            runtime_overrides={
-                VlmEngineType.MLX: RuntimeModelConfig(
+            engine_overrides={
+                VlmEngineType.MLX: EngineModelConfig(
                     repo_id="test/model-mlx", revision="v1.0"
                 ),
-                VlmEngineType.TRANSFORMERS: RuntimeModelConfig(revision="v2.0"),
+                VlmEngineType.TRANSFORMERS: EngineModelConfig(revision="v2.0"),
             },
         )
 
@@ -181,20 +181,20 @@ class TestVlmModelSpec:
         assert ollama_params["model"] == "test-model:latest"
         assert ollama_params["max_tokens"] == 4096
 
-    def test_model_spec_supported_runtimes(self):
-        """Test model spec with supported runtimes restriction."""
+    def test_model_spec_supported_engines(self):
+        """Test model spec with supported engines restriction."""
         spec = VlmModelSpec(
             name="API-Only Model",
             default_repo_id="test/model",
             prompt="Test prompt",
             response_format=ResponseFormat.MARKDOWN,
-            supported_runtimes={VlmEngineType.API_OLLAMA, VlmEngineType.API_OPENAI},
+            supported_engines={VlmEngineType.API_OLLAMA, VlmEngineType.API_OPENAI},
         )
 
-        assert spec.is_runtime_supported(VlmEngineType.API_OLLAMA) is True
-        assert spec.is_runtime_supported(VlmEngineType.API_OPENAI) is True
-        assert spec.is_runtime_supported(VlmEngineType.TRANSFORMERS) is False
-        assert spec.is_runtime_supported(VlmEngineType.MLX) is False
+        assert spec.is_engine_supported(VlmEngineType.API_OLLAMA) is True
+        assert spec.is_engine_supported(VlmEngineType.API_OPENAI) is True
+        assert spec.is_engine_supported(VlmEngineType.TRANSFORMERS) is False
+        assert spec.is_engine_supported(VlmEngineType.MLX) is False
 
         # Test spec with no restrictions
         unrestricted_spec = VlmModelSpec(
@@ -203,10 +203,8 @@ class TestVlmModelSpec:
             prompt="Test prompt",
             response_format=ResponseFormat.DOCTAGS,
         )
-        assert (
-            unrestricted_spec.is_runtime_supported(VlmEngineType.TRANSFORMERS) is True
-        )
-        assert unrestricted_spec.is_runtime_supported(VlmEngineType.MLX) is True
+        assert unrestricted_spec.is_engine_supported(VlmEngineType.TRANSFORMERS) is True
+        assert unrestricted_spec.is_engine_supported(VlmEngineType.MLX) is True
 
 
 # =============================================================================
@@ -298,7 +296,7 @@ class TestPresetSystem:
             assert "name" in preset_info
             assert "description" in preset_info
             assert "model" in preset_info
-            assert "default_runtime" in preset_info
+            assert "default_engine" in preset_info
 
 
 # =============================================================================
@@ -317,40 +315,40 @@ class TestPresetBasedOptionsCreation:
         assert options.model_spec.name == "SmolDocling-256M"
         assert options.model_spec.response_format == ResponseFormat.DOCTAGS
         assert options.engine_options is not None
-        assert options.engine_options.runtime_type == VlmEngineType.AUTO_INLINE
+        assert options.engine_options.engine_type == VlmEngineType.AUTO_INLINE
         assert options.scale == 2.0
 
-    def test_create_vlm_convert_from_preset_with_runtime_override(self):
-        """Test creating VlmConvertOptions with runtime override."""
-        # Override with Transformers runtime
-        transformers_runtime = TransformersVlmEngineOptions(load_in_8bit=False)
+    def test_create_vlm_convert_from_preset_with_engine_override(self):
+        """Test creating VlmConvertOptions with engine override."""
+        # Override with Transformers engine
+        transformers_engine = TransformersVlmEngineOptions(load_in_8bit=False)
         options = VlmConvertOptions.from_preset(
-            "smoldocling", engine_options=transformers_runtime
+            "smoldocling", engine_options=transformers_engine
         )
 
-        assert options.engine_options.runtime_type == VlmEngineType.TRANSFORMERS
+        assert options.engine_options.engine_type == VlmEngineType.TRANSFORMERS
         assert isinstance(options.engine_options, TransformersVlmEngineOptions)
         assert options.engine_options.load_in_8bit is False
         assert options.model_spec.name == "SmolDocling-256M"
 
-        # Override with MLX runtime
-        mlx_runtime = MlxVlmEngineOptions()
+        # Override with MLX engine
+        mlx_engine = MlxVlmEngineOptions()
         options_mlx = VlmConvertOptions.from_preset(
-            "granite_docling", engine_options=mlx_runtime
+            "granite_docling", engine_options=mlx_engine
         )
 
-        assert options_mlx.engine_options.runtime_type == VlmEngineType.MLX
+        assert options_mlx.engine_options.engine_type == VlmEngineType.MLX
         assert options_mlx.model_spec.name == "Granite-Docling-258M"
 
-        # Override with API runtime
-        api_runtime = ApiVlmEngineOptions(
-            runtime_type=VlmEngineType.API_OLLAMA, timeout=60.0
+        # Override with API engine
+        api_engine = ApiVlmEngineOptions(
+            engine_type=VlmEngineType.API_OLLAMA, timeout=60.0
         )
         options_api = VlmConvertOptions.from_preset(
-            "deepseek_ocr", engine_options=api_runtime
+            "deepseek_ocr", engine_options=api_engine
         )
 
-        assert options_api.engine_options.runtime_type == VlmEngineType.API_OLLAMA
+        assert options_api.engine_options.engine_type == VlmEngineType.API_OLLAMA
         assert isinstance(options_api.engine_options, ApiVlmEngineOptions)
         assert options_api.engine_options.timeout == 60.0
 
@@ -383,14 +381,14 @@ class TestPresetBasedOptionsCreation:
         assert options.max_size == 2048
         assert options.model_spec.name == "SmolDocling-256M"
 
-    def test_preset_mlx_runtime_override_uses_mlx_repo(self):
-        """Test that MLX runtime uses MLX-specific repo_id from model spec."""
+    def test_preset_mlx_engine_override_uses_mlx_repo(self):
+        """Test that MLX engine uses MLX-specific repo_id from model spec."""
         preset = VlmConvertOptions.get_preset("smoldocling")
 
         # Check that MLX override exists
-        assert VlmEngineType.MLX in preset.model_spec.runtime_overrides
+        assert VlmEngineType.MLX in preset.model_spec.engine_overrides
 
-        # Get repo_id for different runtimes
+        # Get repo_id for different engines
         default_repo = preset.model_spec.get_repo_id(VlmEngineType.TRANSFORMERS)
         mlx_repo = preset.model_spec.get_repo_id(VlmEngineType.MLX)
 
@@ -399,7 +397,7 @@ class TestPresetBasedOptionsCreation:
         assert default_repo != mlx_repo
 
     def test_preset_api_override_uses_api_params(self):
-        """Test that API runtime uses API-specific params from model spec."""
+        """Test that API engine uses API-specific params from model spec."""
         preset = VlmConvertOptions.get_preset("granite_docling")
 
         # Check that API override exists for Ollama
@@ -418,8 +416,8 @@ class TestPresetBasedOptionsCreation:
 # =============================================================================
 
 
-class TestPresetRuntimeIntegration:
-    """Test integration between presets and runtime options."""
+class TestPresetEngineIntegration:
+    """Test integration between presets and engine options."""
 
     def test_all_vlm_convert_presets_can_be_instantiated(self):
         """Test that all VlmConvert presets can be instantiated."""
@@ -450,17 +448,17 @@ class TestPresetRuntimeIntegration:
             assert options.model_spec is not None
             assert options.engine_options is not None
 
-    def test_preset_with_all_runtime_types(self):
-        """Test that a preset can be used with all runtime types."""
+    def test_preset_with_all_engine_types(self):
+        """Test that a preset can be used with all engine types."""
         preset_id = "smoldocling"
 
-        # Test with each runtime type
+        # Test with each engine type
         engine_options_list = [
             AutoInlineVlmEngineOptions(),
             TransformersVlmEngineOptions(),
             MlxVlmEngineOptions(),
-            ApiVlmEngineOptions(runtime_type=VlmEngineType.API_OLLAMA),
-            ApiVlmEngineOptions(runtime_type=VlmEngineType.API_OPENAI),
+            ApiVlmEngineOptions(engine_type=VlmEngineType.API_OLLAMA),
+            ApiVlmEngineOptions(engine_type=VlmEngineType.API_OPENAI),
             VllmVlmEngineOptions(),
         ]
 
@@ -468,17 +466,17 @@ class TestPresetRuntimeIntegration:
             options = VlmConvertOptions.from_preset(
                 preset_id, engine_options=engine_options
             )
-            assert options.engine_options.runtime_type == engine_options.runtime_type
+            assert options.engine_options.engine_type == engine_options.engine_type
 
     def test_deepseek_ocr_preset_api_only(self):
         """Test that DeepSeek OCR preset is API-only."""
         preset = VlmConvertOptions.get_preset("deepseek_ocr")
 
-        # Should only support API runtimes
-        assert preset.model_spec.supported_runtimes is not None
-        assert VlmEngineType.API_OLLAMA in preset.model_spec.supported_runtimes
-        assert VlmEngineType.TRANSFORMERS not in preset.model_spec.supported_runtimes
-        assert VlmEngineType.MLX not in preset.model_spec.supported_runtimes
+        # Should only support API engines
+        assert preset.model_spec.supported_engines is not None
+        assert VlmEngineType.API_OLLAMA in preset.model_spec.supported_engines
+        assert VlmEngineType.TRANSFORMERS not in preset.model_spec.supported_engines
+        assert VlmEngineType.MLX not in preset.model_spec.supported_engines
 
     def test_response_format_consistency(self):
         """Test that response formats are valid across all presets."""
@@ -529,7 +527,7 @@ class TestEdgeCases:
         assert initial_count == final_count
 
     def test_engine_options_validation(self):
-        """Test that runtime options are validated properly."""
+        """Test that engine options are validated properly."""
         # Valid options should work
         valid_options = TransformersVlmEngineOptions(
             load_in_8bit=True,
@@ -537,9 +535,9 @@ class TestEdgeCases:
         )
         assert valid_options.load_in_8bit is True
 
-        # Invalid runtime_type should fail
+        # Invalid engine_type should fail
         with pytest.raises(ValidationError):
-            ApiVlmEngineOptions(runtime_type="invalid_runtime")  # type: ignore
+            ApiVlmEngineOptions(engine_type="invalid_engine")  # type: ignore
 
     def test_model_spec_with_empty_overrides(self):
         """Test model spec with empty override dictionaries."""
@@ -548,7 +546,7 @@ class TestEdgeCases:
             default_repo_id="test/model",
             prompt="Test prompt",
             response_format=ResponseFormat.DOCTAGS,
-            runtime_overrides={},
+            engine_overrides={},
             api_overrides={},
         )
 
