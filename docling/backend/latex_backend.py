@@ -49,10 +49,32 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         self._custom_macros: dict[str, str] = {}
 
         if isinstance(self.path_or_stream, BytesIO):
-            self.latex_text = self.path_or_stream.getvalue().decode("utf-8")
+            raw_bytes = self.path_or_stream.getvalue()
+
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    self.latex_text = raw_bytes.decode(encoding)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if not self.latex_text:
+                _log.warning("Failed to decode LaTeX content, using replacement mode")
+                self.latex_text = raw_bytes.decode('utf-8', errors='replace')
         elif isinstance(self.path_or_stream, Path):
-            with open(self.path_or_stream, encoding="utf-8") as f:
-                self.latex_text = f.read()
+            # Try multiple encodings for file
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    with open(self.path_or_stream, encoding=encoding) as f:
+                        self.latex_text = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+                except FileNotFoundError:
+                    _log.error(f"LaTeX file not found: {self.path_or_stream}")
+                    break
+                except IOError as e:
+                    _log.error(f"Error reading LaTeX file: {e}")
+                    break
 
     def is_valid(self) -> bool:
         return bool(self.latex_text.strip())
@@ -142,11 +164,13 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         if macro_name.startswith("\\"):
                             macro_name = macro_name[1:]
 
-                        # Extract definition text
+                        # Extract definition as raw LaTeX (for use in math expansion)
                         if hasattr(def_arg, "nodelist"):
-                            macro_def = self._nodes_to_text(def_arg.nodelist)
-                        else:
-                            macro_def = def_arg.latex_verbatim().strip("{} ")
+                            # Get raw LaTeX content for proper math expansion
+                            macro_def = def_arg.latex_verbatim()
+                            # Only strip outermost braces if they wrap the entire content
+                            if macro_def.startswith("{") and macro_def.endswith("}"):
+                                macro_def = macro_def[1:-1]
 
                         if macro_name:  # Only register if we got a valid name
                             self._custom_macros[macro_name] = macro_def
@@ -211,20 +235,32 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 text_buffer.clear()
 
         for node in nodes:
+          try:
             if isinstance(node, LatexCharsNode):
                 text = node.chars
 
                 if "\n\n" in text:
+                    # Split by paragraph breaks, keeping any content before first break
+                    parts = text.split("\n\n")
+                    
+                    # First part goes into current buffer (e.g., "." before a paragraph break)
+                    first_part = parts[0].strip()
+                    if first_part:
+                        text_buffer.append(first_part)
+                    
+                    # Flush buffer (now includes content before the break)
                     flush_text_buffer()
-
-                    parts = [p.strip() for p in text.split("\n\n") if p.strip()]
-                    for part in parts:
-                        doc.add_text(
-                            parent=parent,
-                            label=text_label or DocItemLabel.PARAGRAPH,
-                            text=part,
-                            formatting=formatting,
-                        )
+                    
+                    # Remaining parts are separate paragraphs
+                    for part in parts[1:]:
+                        part_stripped = part.strip()
+                        if part_stripped:
+                            doc.add_text(
+                                parent=parent,
+                                label=text_label or DocItemLabel.PARAGRAPH,
+                                text=part_stripped,
+                                formatting=formatting,
+                            )
                 else:
                     text_buffer.append(text)
 
@@ -264,6 +300,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     url_text = self._extract_macro_arg(node)
                     if url_text:
                         text_buffer.append(url_text)
+                # Skip formatting switches that take arguments we don't want to output
+                elif node.macroname in ["color", "definecolor", "colorlet"]:
+                    pass  # Ignore color commands entirely
                 else:
                     # Check if this is a structural macro that needs special handling
                     structural_macros = {
@@ -344,18 +383,22 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         parent=parent, label=DocItemLabel.FORMULA, text=math_text
                     )
                 else:
-                    text_buffer.append(node.latex_verbatim())
+                    # Expand custom macros in inline math for KaTeX compatibility
+                    text_buffer.append(self._expand_macros(node.latex_verbatim()))
 
             elif isinstance(node, LatexGroupNode):
-                if self._is_text_only_group(node):
+                if node.nodelist and self._is_text_only_group(node):
                     group_text = self._nodes_to_text(node.nodelist)
                     if group_text:
                         text_buffer.append(group_text)
-                else:
+                elif node.nodelist:
                     flush_text_buffer()
                     self._process_nodes(
                         node.nodelist, doc, parent, formatting, text_label
                     )
+          except Exception as e:
+              _log.warning(f"Failed to process node {type(node).__name__}: {e}")
+              continue  # Continue with next node
 
         flush_text_buffer()
 
@@ -614,6 +657,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "LARGE",
             "huge",
             "Huge",
+            "color",  # \color{red} - ignore color switch
         ]:
             # Legacy formatting and size switches - ignore to preserve content flow (prevent "Unknown macro" skip)
             pass
@@ -771,49 +815,147 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             )
 
     def _parse_table(self, node: LatexEnvironmentNode) -> Optional[TableData]:
-        """Parse tabular environment into TableData using AST"""
+        """Parse tabular environment into TableData with multicolumn/multirow support"""
 
         rows = []
         current_row = []
         current_cell_nodes: list = []
+        
+        # Get source latex for parsing multicolumn/multirow
+        # These macros don't have their args parsed by pylatexenc by default
+        source_latex = node.latex_verbatim()
+        
+        def parse_brace_args(text: str) -> list:
+            """Parse {arg1}{arg2}{arg3} from text, return list of args"""
+            args = []
+            i = 0
+            while i < len(text):
+                if text[i] == '{':
+                    depth = 1
+                    start = i + 1
+                    i += 1
+                    while i < len(text) and depth > 0:
+                        if text[i] == '{':
+                            depth += 1
+                        elif text[i] == '}':
+                            depth -= 1
+                        i += 1
+                    args.append(text[start:i-1])
+                else:
+                    i += 1
+            return args
+        
+        # Track multirow cells: {col_idx: {'remaining': int, 'content': str}}
+        multirow_tracker: dict = {}
 
-        def finish_cell():
+        def finish_cell(col_span: int = 1, row_span: int = 1):
+            """Finish current cell with optional spanning"""
             text = self._nodes_to_text(current_cell_nodes).strip()
-            current_row.append(
-                TableCell(
-                    text=text,
+            cell = TableCell(
+                text=text,
+                start_row_offset_idx=0,
+                end_row_offset_idx=0,
+                start_col_offset_idx=0,
+                end_col_offset_idx=0,
+            )
+            # Store span info temporarily (will be set properly later)
+            cell._col_span = col_span
+            cell._row_span = row_span
+            current_row.append(cell)
+            current_cell_nodes.clear()
+            
+            # Add placeholder cells for column span
+            for _ in range(col_span - 1):
+                placeholder = TableCell(
+                    text="",
                     start_row_offset_idx=0,
                     end_row_offset_idx=0,
                     start_col_offset_idx=0,
                     end_col_offset_idx=0,
                 )
-            )
-            current_cell_nodes.clear()
+                placeholder._is_placeholder = True
+                current_row.append(placeholder)
 
         def finish_row():
-            finish_cell()  # Finish the last cell of the row
+            """Finish current row and handle multirow placeholders"""
+            if current_cell_nodes:
+                finish_cell()  # Finish the last cell of the row
             if current_row:
                 rows.append(current_row[:])  # Copy
             current_row.clear()
+
+        # Guard against None nodelist
+        if node.nodelist is None:
+            return None
 
         for n in node.nodelist:
             if isinstance(n, LatexMacroNode):
                 if n.macroname == "\\":  # Row break
                     finish_row()
+                    
+                elif n.macroname == "multicolumn":
+                    # \multicolumn{num_cols}{alignment}{content}
+                    # Extract from source using node position
+                    if hasattr(n, 'pos') and n.pos is not None:
+                        remaining = source_latex[n.pos:]
+                        args = parse_brace_args(remaining)
+                        if len(args) >= 3:
+                            try:
+                                num_cols = int(args[0])
+                            except (ValueError, TypeError):
+                                num_cols = 1
+                            content_text = args[2]  # Skip alignment arg[1]
+                            if content_text:
+                                current_cell_nodes.append(LatexCharsNode(chars=content_text))
+                            finish_cell(col_span=num_cols)
+                        else:
+                            # Fallback
+                            current_cell_nodes.append(n)
+                    else:
+                        current_cell_nodes.append(n)
+                    
+                elif n.macroname == "multirow":
+                    # \multirow{num_rows}{width}{content}
+                    if hasattr(n, 'pos') and n.pos is not None:
+                        remaining = source_latex[n.pos:]
+                        args = parse_brace_args(remaining)
+                        if len(args) >= 3:
+                            try:
+                                num_rows = int(args[0])
+                            except (ValueError, TypeError):
+                                num_rows = 1
+                            content_text = args[2]  # Skip width arg[1]
+                            if content_text:
+                                current_cell_nodes.append(LatexCharsNode(chars=content_text))
+                            finish_cell(row_span=num_rows)
+                        else:
+                            # Fallback
+                            current_cell_nodes.append(n)
+                    else:
+                        current_cell_nodes.append(n)
+                    
                 elif n.macroname in [
-                    "hline",
-                    "cline",
-                    "toprule",
-                    "midrule",
-                    "bottomrule",
+                    "hline", "cline", "toprule", "midrule", "bottomrule",
+                    "cmidrule", "specialrule"
                 ]:
                     # Ignore rule lines for data extraction
                     pass
+                    
+                elif n.macroname in [
+                    "rule", "vspace", "hspace", "vskip", "hskip",
+                    "smallskip", "medskip", "bigskip", "strut",
+                    "phantom", "hphantom", "vphantom", "noalign"
+                ]:
+                    # Ignore formatting commands - don't add to cell content
+                    pass
+                    
                 elif n.macroname == "&":  # Cell break (if parsed as macro)
                     finish_cell()
+                    
                 elif n.macroname in ["%", "$", "#", "_", "{", "}"]:
                     # Escaped characters - add to current cell
                     current_cell_nodes.append(n)
+                    
                 else:
                     current_cell_nodes.append(n)
 
@@ -842,16 +984,19 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         if not rows:
             return None
 
-        # Calculate dimensions and build grid
+        # Calculate dimensions
         num_rows = len(rows)
         num_cols = max(len(row) for row in rows) if rows else 0
 
-        # Pad rows to uniform length
+        # Build flat cell list with proper indices and spans
         flat_cells = []
         for i, row in enumerate(rows):
             for j in range(num_cols):
                 if j < len(row):
                     cell = row[j]
+                    # Skip placeholder cells created by multicolumn
+                    if hasattr(cell, '_is_placeholder') and cell._is_placeholder:
+                        continue
                 else:
                     cell = TableCell(
                         text="",
@@ -861,10 +1006,15 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         end_col_offset_idx=0,
                     )
 
+                # Set row/col indices
                 cell.start_row_offset_idx = i
-                cell.end_row_offset_idx = i + 1
                 cell.start_col_offset_idx = j
-                cell.end_col_offset_idx = j + 1
+                
+                # Apply spans if stored
+                col_span = getattr(cell, '_col_span', 1)
+                row_span = getattr(cell, '_row_span', 1)
+                cell.end_row_offset_idx = i + row_span
+                cell.end_col_offset_idx = j + col_span
 
                 flat_cells.append(cell)
 
@@ -953,7 +1103,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 elif node.macroname == "\\":
                     text_parts.append("\n")
                 elif node.macroname in ["~"]:
-                    text_parts.append(" ")  # Non-breaking space becomes regular space
+                    text_parts.append(" ")
                 elif node.macroname == "item":
                     if node.nodeargd and node.nodeargd.argnlist:
                         arg = node.nodeargd.argnlist[0]
@@ -985,7 +1135,8 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         text_parts.append(" ".join(arg_parts))
 
             elif isinstance(node, LatexMathNode):
-                text_parts.append(node.latex_verbatim())
+                # Expand custom macros in math for KaTeX compatibility
+                text_parts.append(self._expand_macros(node.latex_verbatim()))
 
             elif isinstance(node, LatexEnvironmentNode):
                 if node.envname in ["equation", "align", "gather"]:
@@ -1007,6 +1158,26 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     return self._nodes_to_text(arg.nodelist)
                 return arg.latex_verbatim().strip("{} ")
         return ""
+
+    def _extract_macro_arg_by_index(self, node: LatexMacroNode, index: int) -> str:
+        """Extract text from macro argument by index (0-based)"""
+        if node.nodeargd and node.nodeargd.argnlist:
+            if 0 <= index < len(node.nodeargd.argnlist):
+                arg = node.nodeargd.argnlist[index]
+                if arg:
+                    if hasattr(arg, "nodelist"):
+                        return self._nodes_to_text(arg.nodelist)
+                    return arg.latex_verbatim().strip("{} ")
+        return ""
+
+    def _extract_macro_arg_nodes(self, node: LatexMacroNode, index: int) -> list:
+        """Extract node list from macro argument by index (0-based)"""
+        if node.nodeargd and node.nodeargd.argnlist:
+            if 0 <= index < len(node.nodeargd.argnlist):
+                arg = node.nodeargd.argnlist[index]
+                if arg and hasattr(arg, "nodelist"):
+                    return arg.nodelist
+        return []
 
     def _extract_all_macro_args_inline(self, node: LatexMacroNode) -> str:
         """Extract all macro arguments as inline text, concatenated with spaces."""
@@ -1064,6 +1235,18 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         return True
 
+    def _expand_macros(self, latex_str: str) -> str:
+        """Expand custom macros in LaTeX string for KaTeX/MathJax compatibility"""
+        for macro_name, macro_def in self._custom_macros.items():
+            # Replace \macroname with its definition (word boundary to avoid partial matches)
+            # Use lambda to avoid backslash interpretation in replacement string
+            latex_str = re.sub(
+                rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
+                lambda m: macro_def,
+                latex_str
+            )
+        return latex_str
+
     def _clean_math(self, latex_str: str, env_name: str) -> str:
         """Clean math expressions for better readability"""
 
@@ -1094,6 +1277,9 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             latex_str = latex_str[2:-2]
 
         latex_str = re.sub(r"\\label\{.*?\}", "", latex_str)
+
+        # Expand custom macros for KaTeX/MathJax compatibility
+        latex_str = self._expand_macros(latex_str)
 
         return latex_str.strip()
 
