@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "example_01",
   "furniture": {
     "self_ref": "#/furniture",
@@ -25,19 +25,16 @@
         "$ref": "#/texts/3"
       },
       {
-        "$ref": "#/texts/4"
-      },
-      {
         "$ref": "#/groups/0"
       },
       {
         "$ref": "#/groups/1"
       },
       {
-        "$ref": "#/texts/9"
+        "$ref": "#/texts/8"
       },
       {
-        "$ref": "#/texts/10"
+        "$ref": "#/texts/9"
       }
     ],
     "content_layer": "body",
@@ -52,10 +49,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/texts/4"
         },
         {
-          "$ref": "#/texts/6"
+          "$ref": "#/texts/5"
         }
       ],
       "content_layer": "body",
@@ -69,10 +66,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/7"
+          "$ref": "#/texts/6"
         },
         {
-          "$ref": "#/texts/8"
+          "$ref": "#/texts/7"
         }
       ],
       "content_layer": "body",
@@ -101,7 +98,7 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "This is the first paragraph of the introduction.",
       "text": "This is the first paragraph of the introduction."
@@ -128,23 +125,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Some background information here with bold and italic",
-      "text": "Some background information here with bold and italic"
+      "orig": "Some background information here with bold and italictext.",
+      "text": "Some background information here with bold and italictext."
     },
     {
       "self_ref": "#/texts/4",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": "text.",
-      "text": "text."
-    },
-    {
-      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -158,7 +143,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/6",
+      "self_ref": "#/texts/5",
       "parent": {
         "$ref": "#/groups/0"
       },
@@ -172,7 +157,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/7",
+      "self_ref": "#/texts/6",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -186,7 +171,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/8",
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/1"
       },
@@ -200,7 +185,7 @@
       "marker": ""
     },
     {
-      "self_ref": "#/texts/9",
+      "self_ref": "#/texts/8",
       "parent": {
         "$ref": "#/body"
       },
@@ -213,13 +198,13 @@
       "level": 2
     },
     {
-      "self_ref": "#/texts/10",
+      "self_ref": "#/texts/9",
       "parent": {
         "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "paragraph",
+      "label": "text",
       "prov": [],
       "orig": "A subsection with more content.",
       "text": "A subsection with more content."

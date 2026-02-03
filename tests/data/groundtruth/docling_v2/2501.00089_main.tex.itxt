@@ -8,193 +8,155 @@ S ... 3400 N Charles St, Baltimore, MD 21218
   item-6 at level 1: text: Galaxies (573), Astronomy image  ... , Convolutional neural networks (1938)
   item-7 at level 1: section_header: Introduction
   item-8 at level 1: paragraph: Galaxies have spectacularly info ... e simple morphological classifications
-  item-9 at level 1: text: [1926ApJ....64..321H,1959HDP.... ... tion and evolution with their detailed
-  item-10 at level 1: paragraph: appearances.
-  item-11 at level 1: paragraph: Deep neural networks that exploi ... nstrain their physical characteristics
-  item-12 at level 1: text: [2019ApJ...887..251W,2020ApJ...9 ... y imagingbut what about us astronomers
-  item-13 at level 1: paragraph: ?
-  item-14 at level 1: paragraph: Two major challenges arise when  ... ng in uninterpretable mess of features
-  item-15 at level 1: text: [superposition]. Second, each ne ... ended discussion in Appendix[appendix]
-  item-16 at level 1: paragraph: . Unfortunately, they also obscu ... ind the patterns that ML models learn.
-  item-17 at level 1: paragraph: Fortunately, there exists a stra ... s from a larger set of basis functions
-  item-18 at level 1: text: [Olshausen1996,NIPS2006_2d71b2ae ... 4arXiv240800657O,templeton2024scaling]
-  item-19 at level 1: paragraph: . Therefore, sparse coding can r ... ics of how deep neural networks learn.
-  item-20 at level 1: paragraph: We introduce a novel, interpreta ...  from a high-dimensional pixel space (
-  item-21 at level 1: text: $n \sim 10^5$ pixels) into a low ... ivations. 
-Since we only add a top-$k$
-  item-22 at level 1: paragraph: constraint to a standard CNN arc ... ro extra computational cost or memory.
-  item-23 at level 1: paragraph: We train the SFNet to predict ga ... o the methodology described in Section
-  item-24 at level 1: text: [sec:methodology]. In Section[se ... ur conclusions in Section[sec:summary]
-  item-25 at level 1: paragraph: .
-  item-26 at level 1: section: group figure
-    item-27 at level 2: picture
-      item-27 at level 3: caption: Image: SFNet_ResNet18-TopK.pdf
-    item-28 at level 2: text: Our SFNet architecture, which re ... together (i.e. a residual connection).
-  item-29 at level 1: caption: Image: SFNet_ResNet18-TopK.pdf
-  item-30 at level 1: section_header: Methodology
-  item-31 at level 1: paragraph: We select galaxies from the SDSS Main Galaxy Sample
-  item-32 at level 1: text: [2002AJ....124.1810S,sdssdr7] th ... y Survey website [2019AJ....157..168D]
-  item-33 at level 1: paragraph: . Our SDSS sample comprises 250,207 galaxies in total.
-  item-34 at level 1: paragraph: Our SFNet implementation is shown in Figure
-  item-35 at level 1: text: [fig:SFNet-architecture]. We use ... ca], we vary $k \in \{2, 3, 4, 6, 8\}$
-  item-36 at level 1: paragraph: . Thus, the SFNet learns a repre ... features are localized in pixel space.
-  item-37 at level 1: paragraph: The resnet18 backbone of the mod ... ialized to ImageNet-pretrained weights
-  item-38 at level 1: text: [5206848], and we update model p ... com/jwuphysics/sparse-feature-networks
-  item-39 at level 1: paragraph: .
-  item-40 at level 1: section_header: Results
-  item-41 at level 1: paragraph: Motivated by previous works that ... imaging with their physical properties
-  item-42 at level 1: text: [2019MNRAS.484.4683W,2020arXiv20 ... }$ and $A_{\tt Z\,256}$, respectively.
-  item-43 at level 1: section_header: Emission line fluxes
-  item-44 at level 1: paragraph: We train a SFNet to predict the spectral line fluxes for [
-  item-45 at level 1: text: N2], H$\alpha$, [O3], and H$\bet ...  the BPT diagram [1981PASP...93....5B]
-  item-46 at level 1: paragraph: , which is commonly used to diff ...  physical state, and dust attenuation.
-  item-47 at level 1: paragraph: The eight most frequently activated features explain 99.99
-  item-48 at level 1: text: % of the variance in the dataset ... eatures SL17, SL138, SL157, and SL322.
-  item-49 at level 1: paragraph: In Figure
-  item-50 at level 1: text: [fig:bpt-interpretation], we sho ... al interpretations for these features.
-  item-51 at level 1: section: group figure
-    item-52 at level 2: picture
-      item-52 at level 3: caption: Image: 17-bpt_scatter_examples_3x3.pdf
-    item-53 at level 2: picture
-      item-53 at level 3: caption: Image: 138-bpt_scatter_examples_3x3.pdf
-    item-54 at level 2: picture
-      item-54 at level 3: caption: Image: 157-bpt_scatter_examples_3x3.pdf
-    item-55 at level 2: picture
-      item-55 at level 3: caption: Image: 322-bpt_scatter_examples_3x3.pdf
-    item-56 at level 2: text: SFNet learned features when trai ... magenta (low) to bright yellow (high).
-  item-57 at level 1: caption: Image: 17-bpt_scatter_examples_3x3.pdf
-  item-58 at level 1: caption: Image: 138-bpt_scatter_examples_3x3.pdf
-  item-59 at level 1: caption: Image: 157-bpt_scatter_examples_3x3.pdf
-  item-60 at level 1: caption: Image: 322-bpt_scatter_examples_3x3.pdf
-  item-61 at level 1: text: lcll[t!]
+  item-9 at level 1: text: [1926ApJ....64..321H,1959HDP.... ... lution with their detailedappearances.
+  item-10 at level 1: paragraph: Deep neural networks that exploi ... nstrain their physical characteristics
+  item-11 at level 1: text: [2019ApJ...887..251W,2020ApJ...9 ...  imagingbut what about us astronomers?
+  item-12 at level 1: paragraph: Two major challenges arise when  ... ng in uninterpretable mess of features
+  item-13 at level 1: text: [superposition]. Second, each ne ... ind the patterns that ML models learn.
+  item-14 at level 1: paragraph: Fortunately, there exists a stra ... s from a larger set of basis functions
+  item-15 at level 1: text: [Olshausen1996,NIPS2006_2d71b2ae ... ics of how deep neural networks learn.
+  item-16 at level 1: paragraph: We introduce a novel, interpreta ...  from a high-dimensional pixel space (
+  item-17 at level 1: text: $n \sim 10^5$ pixels) into a low ... ro extra computational cost or memory.
+  item-18 at level 1: paragraph: We train the SFNet to predict ga ... o the methodology described in Section
+  item-19 at level 1: text: [sec:methodology]. In Section[se ... r conclusions in Section[sec:summary].
+  item-20 at level 1: section: group figure
+    item-21 at level 2: picture
+      item-21 at level 3: caption: Image: SFNet_ResNet18-TopK.pdf
+    item-22 at level 2: text: Our SFNet architecture, which re ... together (i.e. a residual connection).
+  item-23 at level 1: caption: Image: SFNet_ResNet18-TopK.pdf
+  item-24 at level 1: section_header: Methodology
+  item-25 at level 1: paragraph: We select galaxies from the SDSS Main Galaxy Sample
+  item-26 at level 1: text: [2002AJ....124.1810S,sdssdr7] th ... e comprises 250,207 galaxies in total.
+  item-27 at level 1: paragraph: Our SFNet implementation is shown in Figure
+  item-28 at level 1: text: [fig:SFNet-architecture]. We use ... features are localized in pixel space.
+  item-29 at level 1: paragraph: The resnet18 backbone of the mod ... ialized to ImageNet-pretrained weights
+  item-30 at level 1: text: [5206848], and we update model p ... om/jwuphysics/sparse-feature-networks.
+  item-31 at level 1: section_header: Results
+  item-32 at level 1: paragraph: Motivated by previous works that ... imaging with their physical properties
+  item-33 at level 1: text: [2019MNRAS.484.4683W,2020arXiv20 ... }$ and $A_{\tt Z\,256}$, respectively.
+  item-34 at level 1: section_header: Emission line fluxes
+  item-35 at level 1: paragraph: We train a SFNet to predict the spectral line fluxes for [
+  item-36 at level 1: text: N2], H$\alpha$, [O3], and H$\bet ...  physical state, and dust attenuation.
+  item-37 at level 1: paragraph: The eight most frequently activated features explain 99.99
+  item-38 at level 1: text: % of the variance in the dataset ... eatures SL17, SL138, SL157, and SL322.
+  item-39 at level 1: paragraph: In Figure
+  item-40 at level 1: text: [fig:bpt-interpretation], we sho ... al interpretations for these features.
+  item-41 at level 1: section: group figure
+    item-42 at level 2: picture
+      item-42 at level 3: caption: Image: 17-bpt_scatter_examples_3x3.pdf
+    item-43 at level 2: picture
+      item-43 at level 3: caption: Image: 138-bpt_scatter_examples_3x3.pdf
+    item-44 at level 2: picture
+      item-44 at level 3: caption: Image: 157-bpt_scatter_examples_3x3.pdf
+    item-45 at level 2: picture
+      item-45 at level 3: caption: Image: 322-bpt_scatter_examples_3x3.pdf
+    item-46 at level 2: text: SFNet learned features when trai ... magenta (low) to bright yellow (high).
+  item-47 at level 1: caption: Image: 17-bpt_scatter_examples_3x3.pdf
+  item-48 at level 1: caption: Image: 138-bpt_scatter_examples_3x3.pdf
+  item-49 at level 1: caption: Image: 157-bpt_scatter_examples_3x3.pdf
+  item-50 at level 1: caption: Image: 322-bpt_scatter_examples_3x3.pdf
+  item-51 at level 1: text: lcll[t!]
 4
-  item-62 at level 1: text: Image features learned by a SFNe ... es that are most frequently activated.
-  item-63 at level 1: text: Feature 
+  item-52 at level 1: text: Image features learned by a SFNe ... es that are most frequently activated.
+  item-53 at level 1: text: Feature 
  $f_{\rm activated}$ 
   ...   blue, edge-on disks  low metallicity
-  item-64 at level 1: section_header: Gas metallicity
-  item-65 at level 1: paragraph: We separately train a SFNet to predict the gas-phase metallicity,
-  item-66 at level 1: text: $Z_{\rm gas} = 12 + $log(O/H), d ... ion[ssec:performance-interpretability]
-  item-67 at level 1: paragraph: for further discussion).
-  item-68 at level 1: paragraph: In the bottom two rows of Table
-  item-69 at level 1: text: [tab:features], we describe the  ... collect light from lower-$Z_{\rm gas}$
-  item-70 at level 1: paragraph: outskirts of disk galaxies obser ... morphological features that it learns.
-  item-71 at level 1: section_header: Discussion
-  item-72 at level 1: section_header: Physical laws from galaxy images
-  item-73 at level 1: paragraph: Because the SFNet learns a linea ... prediction, we can write down a simple
-  item-74 at level 1: text: equation between learned galaxy  ...  of interest. In Figure[fig:equations]
-  item-75 at level 1: paragraph: , we present linear equations fo ... led by their activated feature index).
-  item-76 at level 1: section: group figure
-    item-77 at level 2: picture
-      item-77 at level 3: caption: Image: equations.pdf
-    item-78 at level 2: text: Linear relationships between gal ...  image cutout from the validation set.
-  item-79 at level 1: caption: Image: equations.pdf
-  item-80 at level 1: paragraph: These linear relations are so si ... at we can directly interpret them. The
-  item-81 at level 1: text: Z61 and Z256 features used to pr ... but anticorrelates with [N2]/H$\alpha$
-  item-82 at level 1: paragraph: , suggesting that it is associated with harder ionizing spectra.
-  item-83 at level 1: paragraph: The model is only able to learn  ... ay between multiple physical processes
-  item-84 at level 1: text: [2015ARAA..53...51S,2017MNRAS.47 ... phology relation [1980ApJ...236..351D]
-  item-85 at level 1: paragraph: can be implicitly learned via ML ... ionships that govern galaxy evolution.
-  item-86 at level 1: section_header: Performance versus interpretability
-  item-87 at level 1: paragraph: Previous works have found that a ... star-forming galaxies with an accuracy
-  item-88 at level 1: text: [2021ApJ...914..142H,2022arXiv22 ... accuracy of 0.85 and F1 score of 0.72.
-  item-89 at level 1: footnote: If we use all non-zero SFNet fea ... uces noiseanother benefit of sparsity.
-  item-90 at level 1: text: In comparison, the highly tuned  ...  demonstrate that a linear combination
-  item-91 at level 1: paragraph: of our interpretable features ca ... ble to state-of-the-art ML algorithms.
-  item-92 at level 1: paragraph: In Section
-  item-93 at level 1: text: [ssec:metallicity], we estimate  ...  the systematic scatter is $\sim 0.03$
-  item-94 at level 1: paragraph: dex. Again, this suggests that S ... nce in order to gain interpretability.
-  item-95 at level 1: section_header: Comparison to PCA
-  item-96 at level 1: paragraph: While the SFNet produces interpr ... ing eigenvalues).
+  item-54 at level 1: section_header: Gas metallicity
+  item-55 at level 1: paragraph: We separately train a SFNet to predict the gas-phase metallicity,
+  item-56 at level 1: text: $Z_{\rm gas} = 12 + $log(O/H), d ... erpretability]for further discussion).
+  item-57 at level 1: paragraph: In the bottom two rows of Table
+  item-58 at level 1: text: [tab:features], we describe the  ... morphological features that it learns.
+  item-59 at level 1: section_header: Discussion
+  item-60 at level 1: section_header: Physical laws from galaxy images
+  item-61 at level 1: paragraph: Because the SFNet learns a linea ... prediction, we can write down a simple
+  item-62 at level 1: text: equation between learned galaxy  ... led by their activated feature index).
+  item-63 at level 1: section: group figure
+    item-64 at level 2: picture
+      item-64 at level 3: caption: Image: equations.pdf
+    item-65 at level 2: text: Linear relationships between gal ...  image cutout from the validation set.
+  item-66 at level 1: caption: Image: equations.pdf
+  item-67 at level 1: paragraph: These linear relations are so si ... at we can directly interpret them. The
+  item-68 at level 1: text: Z61 and Z256 features used to pr ... sociated with harder ionizing spectra.
+  item-69 at level 1: paragraph: The model is only able to learn  ... ay between multiple physical processes
+  item-70 at level 1: text: [2015ARAA..53...51S,2017MNRAS.47 ... ionships that govern galaxy evolution.
+  item-71 at level 1: section_header: Performance versus interpretability
+  item-72 at level 1: paragraph: Previous works have found that a ... star-forming galaxies with an accuracy
+  item-73 at level 1: text: [2021ApJ...914..142H,2022arXiv22 ... accuracy of 0.85 and F1 score of 0.72.
+  item-74 at level 1: footnote: If we use all non-zero SFNet fea ... uces noiseanother benefit of sparsity.
+  item-75 at level 1: text: In comparison, the highly tuned  ... ble to state-of-the-art ML algorithms.
+  item-76 at level 1: paragraph: In Section
+  item-77 at level 1: text: [ssec:metallicity], we estimate  ... nce in order to gain interpretability.
+  item-78 at level 1: section_header: Comparison to PCA
+  item-79 at level 1: paragraph: While the SFNet produces interpr ... ing eigenvalues).
 By selecting the top
-  item-97 at level 1: text: $k$
-  item-98 at level 1: paragraph: principal components, we can pro ... a smaller space of sparse activations.
-  item-99 at level 1: section: group figure
-    item-100 at level 2: picture
-      item-100 at level 3: caption: Image: pca-comparison.pdf
-    item-101 at level 2: text: SFNet comparison against a CNN w ... sparsity or number of PCA components).
-  item-102 at level 1: caption: Image: pca-comparison.pdf
-  item-103 at level 1: paragraph: We test whether this smaller set ... inear regression model using the first
-  item-104 at level 1: text: $k$ principal components from de ... standard error on the prediction RMSE.
-  item-105 at level 1: footnote: We use the same training/validat ...  reported in Section\ref{sec:results}.
-  item-106 at level 1: text: The results are shown in Figure[ ...  values are given in Table[tab:dimred]
-  item-107 at level 1: paragraph: .
-  item-108 at level 1: text: l cc cc[t!]
+  item-80 at level 1: text: $k$principal components, we can  ... a smaller space of sparse activations.
+  item-81 at level 1: section: group figure
+    item-82 at level 2: picture
+      item-82 at level 3: caption: Image: pca-comparison.pdf
+    item-83 at level 2: text: SFNet comparison against a CNN w ... sparsity or number of PCA components).
+  item-84 at level 1: caption: Image: pca-comparison.pdf
+  item-85 at level 1: paragraph: We test whether this smaller set ... inear regression model using the first
+  item-86 at level 1: text: $k$ principal components from de ... standard error on the prediction RMSE.
+  item-87 at level 1: footnote: We use the same training/validat ...  reported in Section\ref{sec:results}.
+  item-88 at level 1: text: The results are shown in Figure[ ... values are given in Table[tab:dimred].
+  item-89 at level 1: text: l cc cc[t!]
 5
-  item-109 at level 1: text: Comparison of performance using  ... th PCA-based dimensionality reduction.
-  item-110 at level 1: text: 2cRMSE: Metallicity 
+  item-90 at level 1: text: Comparison of performance using  ... th PCA-based dimensionality reduction.
+  item-91 at level 1: text: 2cRMSE: Metallicity 
  2cRMSE: Sp ... $  0.0921  $0.2389 \pm 0.0012$  0.2396
-  item-111 at level 1: paragraph: For both metallicity and spectral line fluxes,
-  item-112 at level 1: text: $>95\%$ of the variance is expla ...  features extracted via a typical CNN.
-  item-113 at level 1: footnote: The non-monotonic decrease in RM ... vant for predicting galaxy properties.
-  item-114 at level 1: text: We turn our attention to spectra ... gnificantly worse performance at $k=2$
-  item-115 at level 1: paragraph: ).
-  item-116 at level 1: paragraph: Our experiment shows that we can ... ding optimal summary statistics; e.g.,
-  item-117 at level 1: text: Charnock_2018
-  item-118 at level 1: paragraph: ).
-By forcing a CNN to be sparse ... ures and produce accurate predictions.
-  item-119 at level 1: section_header: Comparison to GalaxyZoo features
-  item-120 at level 1: paragraph: Do regular CNNs also learn inter ... ned to classify GalaxyZoo morphologies
-  item-121 at level 1: text: [2008MNRAS.389.1179L,2023JOSS... ... traint (Figure[fig:SFNet-architecture]
-  item-122 at level 1: paragraph: ). Zoobot predicts citizen scien ... e combination of morphology and color.
-  item-123 at level 1: paragraph: Using morphological features fro ... ining/validation datasets from Section
-  item-124 at level 1: text: [ssec:metallicity], and independ ... d features as inputs and $Z_{\rm gas}$
-  item-125 at level 1: paragraph: as training targets.
-  item-126 at level 1: paragraph: First, we fit a linear model to  ... ce on the validation dataset (error of
-  item-127 at level 1: text: $0.183$dex). When we fit on the  ... rsthe error remains very high ($0.181$
-  item-128 at level 1: paragraph: dex). This result demonstrates t ... es can reconstruct galaxy metallicity.
-  item-129 at level 1: paragraph: Second, we fit an gradient-boost ... the training dataset, and achieve only
-  item-130 at level 1: text: $0.180$dex error on the validati ... we can lower the error down to $0.085$
-  item-131 at level 1: paragraph: dex (comparable to the SFNet performance).
-  item-132 at level 1: paragraph: Our experiments confirm that the ... idation set, but that these features (
-  item-133 at level 1: text: i) cannot be linearly combined to reconstruct galaxy metallicity, and (ii
-  item-134 at level 1: paragraph: ) cannot generalize across the r ...  is both performant and interpretable.
-  item-135 at level 1: paragraph: Finally, we check whether the SF ... es  using the Zoobot features, finding
-  item-136 at level 1: text: $R^2$ values of $0.253$ and $0.1 ... o primary SFNet features, Z61 and Z256
-  item-137 at level 1: paragraph: , respectively. These low coeffi ... nt morphological features than Zoobot.
-  item-138 at level 1: section_header: Limitations of previous interpretability methods
-  item-139 at level 1: paragraph: The ML discipline generally focu ... tion-based interpretability algorithms
-  item-140 at level 1: text: [erhan2009_visualizing,zeiler201 ... problem than a classification problem.
-  item-141 at level 1: footnote: While there is promise in improv ... mplification of richer (astro)physics.
-  item-142 at level 1: paragraph: Moreover, interpretation for cla ...  astronomers might ask questions like,
-  item-143 at level 1: text: which morphological features in  ... are selected via the softmax operation
-  item-144 at level 1: paragraph: only require the dominant class  ...  classification problems is different.
-  item-145 at level 1: paragraph: Other interpretability methods like saliency mapping
-  item-146 at level 1: text: [simonyan2014deepinsideconvoluti ... 21MNRAS.501.4579B,2024ApJ...967..152A]
-  item-147 at level 1: paragraph: . 
-Our results demonstrate that  ... rpretable ML in the physical sciences.
-  item-148 at level 1: section_header: Conclusions
-  item-149 at level 1: paragraph: We present a novel method for le ...  sparse feature network (SFNet; Figure
-  item-150 at level 1: text: [fig:SFNet-architecture]) maps g ... atures (see Figure[fig:pca-comparison]
-  item-151 at level 1: paragraph: ).
-  item-152 at level 1: paragraph: We do
-  item-153 at level 1: text: not imply that astrophysics can  ... we discuss in Section [sec:discussion]
-  item-154 at level 1: paragraph: , astronomers are still necessar ... ned features and predicted quantities.
-  item-155 at level 1: paragraph: This work represents important p ... results by incorporating a simple top-
-  item-156 at level 1: text: $k$ sparsity layer into a resnet ...  activating features [olah2017feature]
-  item-157 at level 1: paragraph: .
-  item-158 at level 1: text: Acknowledgments.
-  item-159 at level 1: paragraph: We thank Christian Jespersen, Ch ... Christine Ye for useful conversations.
-  item-160 at level 1: section_header: Why are deep neural networks so hard to decipher?
-  item-161 at level 1: section_header: Superposition and polysemanticity
-  item-162 at level 1: paragraph: Modern deep neural networks are  ... ms by which deep neural networks learn
-  item-163 at level 1: text: [olah2020zoom,rai2024practicalreviewmechanisticinterpretability]
-  item-164 at level 1: paragraph: , usually in simplified settings ...  trained neural networks have learned.
-  item-165 at level 1: paragraph: However, it is challenging to de ... ena: superposition and polysemanticity
-  item-166 at level 1: text: [superposition].
-  item-167 at level 1: list: group list
-    item-168 at level 2: list_item: Superposition is where semantic  ... rons (in one or even multiple layers).
-    item-169 at level 2: list_item: Polysemanticity means that any g ... ight bleed from nearby saturated star.
-  item-170 at level 1: paragraph: So rather than a one-to-one mapp ... networks, even in just a single layer.
-  item-171 at level 1: section_header: Sparse autoencoders and SFNets
-  item-172 at level 1: paragraph: Originally motivated by biological vision systems
-  item-173 at level 1: text: [OLSHAUSEN19973311,NIPS2007_4daa ... n2024missingcurvedetectorsinceptionv1]
-  item-174 at level 1: paragraph: .
-These recent works have demons ... s represented by deep neural networks.
-  item-175 at level 1: paragraph: Previous works with SAEs have ty ... ct the meanings of learned activations
-  item-176 at level 1: text: [bricken2023monosemanticity]
-  item-177 at level 1: paragraph: .
-SAEs are tasked with reconstru ... rk activations into a few sparse ones.
-  item-178 at level 1: paragraph: Our work builds on insights from ... ing to produce interpretable features.
-  item-179 at level 1: text: main
-  item-180 at level 1: text: aasjournal
+  item-92 at level 1: paragraph: For both metallicity and spectral line fluxes,
+  item-93 at level 1: text: $>95\%$ of the variance is expla ...  features extracted via a typical CNN.
+  item-94 at level 1: footnote: The non-monotonic decrease in RM ... vant for predicting galaxy properties.
+  item-95 at level 1: text: We turn our attention to spectra ... ificantly worse performance at $k=2$).
+  item-96 at level 1: paragraph: Our experiment shows that we can ... ding optimal summary statistics; e.g.,
+  item-97 at level 1: text: Charnock_2018).
+By forcing a CNN ... ures and produce accurate predictions.
+  item-98 at level 1: section_header: Comparison to GalaxyZoo features
+  item-99 at level 1: paragraph: Do regular CNNs also learn inter ... ned to classify GalaxyZoo morphologies
+  item-100 at level 1: text: [2008MNRAS.389.1179L,2023JOSS... ... e combination of morphology and color.
+  item-101 at level 1: paragraph: Using morphological features fro ... ining/validation datasets from Section
+  item-102 at level 1: text: [ssec:metallicity], and independ ...  and $Z_{\rm gas}$as training targets.
+  item-103 at level 1: paragraph: First, we fit a linear model to  ... ce on the validation dataset (error of
+  item-104 at level 1: text: $0.183$dex). When we fit on the  ... es can reconstruct galaxy metallicity.
+  item-105 at level 1: paragraph: Second, we fit an gradient-boost ... the training dataset, and achieve only
+  item-106 at level 1: text: $0.180$dex error on the validati ... (comparable to the SFNet performance).
+  item-107 at level 1: paragraph: Our experiments confirm that the ... idation set, but that these features (
+  item-108 at level 1: text: i) cannot be linearly combined t ...  is both performant and interpretable.
+  item-109 at level 1: paragraph: Finally, we check whether the SF ... es  using the Zoobot features, finding
+  item-110 at level 1: text: $R^2$ values of $0.253$ and $0.1 ... nt morphological features than Zoobot.
+  item-111 at level 1: section_header: Limitations of previous interpretability methods
+  item-112 at level 1: paragraph: The ML discipline generally focu ... tion-based interpretability algorithms
+  item-113 at level 1: text: [erhan2009_visualizing,zeiler201 ... problem than a classification problem.
+  item-114 at level 1: footnote: While there is promise in improv ... mplification of richer (astro)physics.
+  item-115 at level 1: paragraph: Moreover, interpretation for cla ...  astronomers might ask questions like,
+  item-116 at level 1: text: which morphological features in  ...  classification problems is different.
+  item-117 at level 1: paragraph: Other interpretability methods like saliency mapping
+  item-118 at level 1: text: [simonyan2014deepinsideconvoluti ... rpretable ML in the physical sciences.
+  item-119 at level 1: section_header: Conclusions
+  item-120 at level 1: paragraph: We present a novel method for le ...  sparse feature network (SFNet; Figure
+  item-121 at level 1: text: [fig:SFNet-architecture]) maps g ... ures (see Figure[fig:pca-comparison]).
+  item-122 at level 1: paragraph: We do
+  item-123 at level 1: text: not imply that astrophysics can  ... ned features and predicted quantities.
+  item-124 at level 1: paragraph: This work represents important p ... results by incorporating a simple top-
+  item-125 at level 1: text: $k$ sparsity layer into a resnet ... activating features [olah2017feature].
+  item-126 at level 1: text: Acknowledgments.
+  item-127 at level 1: text: We thank Christian Jespersen, Ch ... Christine Ye for useful conversations.
+  item-128 at level 1: section_header: Why are deep neural networks so hard to decipher?
+  item-129 at level 1: section_header: Superposition and polysemanticity
+  item-130 at level 1: paragraph: Modern deep neural networks are  ... ms by which deep neural networks learn
+  item-131 at level 1: text: [olah2020zoom,rai2024practicalre ...  trained neural networks have learned.
+  item-132 at level 1: paragraph: However, it is challenging to de ... ena: superposition and polysemanticity
+  item-133 at level 1: text: [superposition].
+  item-134 at level 1: list: group list
+    item-135 at level 2: list_item: Superposition is where semantic  ... rons (in one or even multiple layers).
+    item-136 at level 2: list_item: Polysemanticity means that any g ... ight bleed from nearby saturated star.
+  item-137 at level 1: text: So rather than a one-to-one mapp ... networks, even in just a single layer.
+  item-138 at level 1: section_header: Sparse autoencoders and SFNets
+  item-139 at level 1: paragraph: Originally motivated by biological vision systems
+  item-140 at level 1: text: [OLSHAUSEN19973311,NIPS2007_4daa ... s represented by deep neural networks.
+  item-141 at level 1: paragraph: Previous works with SAEs have ty ... ct the meanings of learned activations
+  item-142 at level 1: text: [bricken2023monosemanticity].
+SA ... rk activations into a few sparse ones.
+  item-143 at level 1: paragraph: Our work builds on insights from ... ing to produce interpretable features.
+  item-144 at level 1: text: main
+  item-145 at level 1: text: aasjournal

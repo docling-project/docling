@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "example_02",
   "furniture": {
     "self_ref": "#/furniture",
@@ -44,9 +44,6 @@
       },
       {
         "$ref": "#/texts/9"
-      },
-      {
-        "$ref": "#/texts/10"
       }
     ],
     "content_layer": "body",
@@ -175,20 +172,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "See [smith2020] for more details. Also refer to Section [sec:math]",
-      "text": "See [smith2020] for more details. Also refer to Section [sec:math]"
-    },
-    {
-      "self_ref": "#/texts/10",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "paragraph",
-      "prov": [],
-      "orig": ".",
-      "text": "."
+      "orig": "See [smith2020] for more details. Also refer to Section [sec:math].",
+      "text": "See [smith2020] for more details. Also refer to Section [sec:math]."
     }
   ],
   "pictures": [],

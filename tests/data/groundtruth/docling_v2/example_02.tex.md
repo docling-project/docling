@@ -22,6 +22,4 @@ Sample table
 
 ## References
 
-See [smith2020] for more details. Also refer to Section [sec:math]
-
-.
+See [smith2020] for more details. Also refer to Section [sec:math].

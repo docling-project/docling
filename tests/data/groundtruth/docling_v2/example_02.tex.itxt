@@ -9,5 +9,4 @@ item-0 at level 0: unspecified: group _root_
   item-8 at level 1: table with [4x3]
   item-9 at level 1: text: Sample table
   item-10 at level 1: section_header: References
-  item-11 at level 1: text: See [smith2020] for more details. Also refer to Section [sec:math]
-  item-12 at level 1: paragraph: .
+  item-11 at level 1: text: See [smith2020] for more details. Also refer to Section [sec:math].

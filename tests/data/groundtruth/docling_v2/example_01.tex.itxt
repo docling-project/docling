@@ -1,14 +1,13 @@
 item-0 at level 0: unspecified: group _root_
   item-1 at level 1: section_header: Introduction
-  item-2 at level 1: paragraph: This is the first paragraph of the introduction.
+  item-2 at level 1: text: This is the first paragraph of the introduction.
   item-3 at level 1: section_header: Background
-  item-4 at level 1: text: Some background information here with bold and italic
-  item-5 at level 1: paragraph: text.
-  item-6 at level 1: list: group list
-    item-7 at level 2: list_item: First item in unordered list
-    item-8 at level 2: list_item: Second item in unordered list
-  item-9 at level 1: list: group list
-    item-10 at level 2: list_item: First item in ordered list
-    item-11 at level 2: list_item: Second item in ordered list
-  item-12 at level 1: section_header: Nested Section
-  item-13 at level 1: paragraph: A subsection with more content.
+  item-4 at level 1: text: Some background information here with bold and italictext.
+  item-5 at level 1: list: group list
+    item-6 at level 2: list_item: First item in unordered list
+    item-7 at level 2: list_item: Second item in unordered list
+  item-8 at level 1: list: group list
+    item-9 at level 2: list_item: First item in ordered list
+    item-10 at level 2: list_item: Second item in ordered list
+  item-11 at level 1: section_header: Nested Section
+  item-12 at level 1: text: A subsection with more content.
