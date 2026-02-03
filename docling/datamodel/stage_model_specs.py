@@ -1,8 +1,8 @@
 """Model specifications and presets for VLM stages.
 
 This module defines:
-1. VlmModelSpec - Model configuration with runtime-specific overrides
-2. StageModelPreset - Preset combining model, runtime, and stage config
+1. VlmModelSpec - Model configuration with engine-specific overrides
+2. StageModelPreset - Preset combining model, engine, and stage config
 3. StagePresetMixin - Mixin for stage options to manage presets
 """
 
@@ -16,44 +16,44 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.datamodel.vlm_runtime_options import BaseVlmRuntimeOptions
-from docling.models.runtimes.base import VlmRuntimeType
+from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
+from docling.models.runtimes.base import VlmEngineType
 
 _log = logging.getLogger(__name__)
 
 
 # =============================================================================
-# RUNTIME-SPECIFIC MODEL CONFIGURATION
+# ENGINE-SPECIFIC MODEL CONFIGURATION
 # =============================================================================
 
 
-class RuntimeModelConfig(BaseModel):
-    """Runtime-specific model configuration.
+class EngineModelConfig(BaseModel):
+    """Engine-specific model configuration.
 
-    Allows overriding model settings for specific runtimes.
+    Allows overriding model settings for specific engines.
     For example, MLX might use a different repo_id than Transformers.
     """
 
     repo_id: Optional[str] = Field(
-        default=None, description="Override model repository ID for this runtime"
+        default=None, description="Override model repository ID for this engine"
     )
 
     revision: Optional[str] = Field(
-        default=None, description="Override model revision for this runtime"
+        default=None, description="Override model revision for this engine"
     )
 
     torch_dtype: Optional[str] = Field(
         default=None,
-        description="Override torch dtype for this runtime (e.g., 'bfloat16')",
+        description="Override torch dtype for this engine (e.g., 'bfloat16')",
     )
 
     extra_config: Dict[str, Any] = Field(
-        default_factory=dict, description="Additional runtime-specific configuration"
+        default_factory=dict, description="Additional engine-specific configuration"
     )
 
     def merge_with(
         self, base_repo_id: str, base_revision: str = "main"
-    ) -> "RuntimeModelConfig":
+    ) -> "EngineModelConfig":
         """Merge with base configuration.
 
         Args:
@@ -63,7 +63,7 @@ class RuntimeModelConfig(BaseModel):
         Returns:
             Merged configuration with overrides applied
         """
-        return RuntimeModelConfig(
+        return EngineModelConfig(
             repo_id=self.repo_id or base_repo_id,
             revision=self.revision or base_revision,
             torch_dtype=self.torch_dtype,
@@ -74,7 +74,7 @@ class RuntimeModelConfig(BaseModel):
 class ApiModelConfig(BaseModel):
     """API-specific model configuration.
 
-    For API runtimes, configuration is simpler - just params to send.
+    For API engines, configuration is simpler - just params to send.
     """
 
     params: Dict[str, Any] = Field(
@@ -103,12 +103,12 @@ class ApiModelConfig(BaseModel):
 class VlmModelSpec(BaseModel):
     """Specification for a VLM model.
 
-    This defines the model configuration that is independent of the runtime.
+    This defines the model configuration that is independent of the engine.
     It includes:
     - Default model repository ID
     - Prompt template
     - Response format
-    - Runtime-specific overrides
+    - Engine-specific overrides
     """
 
     name: str = Field(description="Human-readable model name")
@@ -123,15 +123,15 @@ class VlmModelSpec(BaseModel):
         description="Expected response format from the model"
     )
 
-    supported_runtimes: Optional[Set[VlmRuntimeType]] = Field(
-        default=None, description="Set of supported runtimes (None = all supported)"
+    supported_engines: Optional[Set[VlmEngineType]] = Field(
+        default=None, description="Set of supported engines (None = all supported)"
     )
 
-    runtime_overrides: Dict[VlmRuntimeType, RuntimeModelConfig] = Field(
-        default_factory=dict, description="Runtime-specific configuration overrides"
+    engine_overrides: Dict[VlmEngineType, EngineModelConfig] = Field(
+        default_factory=dict, description="Engine-specific configuration overrides"
     )
 
-    api_overrides: Dict[VlmRuntimeType, ApiModelConfig] = Field(
+    api_overrides: Dict[VlmEngineType, ApiModelConfig] = Field(
         default_factory=dict, description="API-specific configuration overrides"
     )
 
@@ -147,105 +147,105 @@ class VlmModelSpec(BaseModel):
         default=4096, description="Maximum number of new tokens to generate"
     )
 
-    def get_repo_id(self, runtime_type: VlmRuntimeType) -> str:
-        """Get the repository ID for a specific runtime.
+    def get_repo_id(self, engine_type: VlmEngineType) -> str:
+        """Get the repository ID for a specific engine.
 
         Args:
-            runtime_type: The runtime type
+            engine_type: The engine type
 
         Returns:
-            Repository ID (with runtime override if applicable)
+            Repository ID (with engine override if applicable)
         """
-        if runtime_type in self.runtime_overrides:
-            override = self.runtime_overrides[runtime_type]
+        if engine_type in self.engine_overrides:
+            override = self.engine_overrides[engine_type]
             return override.repo_id or self.default_repo_id
         return self.default_repo_id
 
-    def get_revision(self, runtime_type: VlmRuntimeType) -> str:
-        """Get the model revision for a specific runtime.
+    def get_revision(self, engine_type: VlmEngineType) -> str:
+        """Get the model revision for a specific engine.
 
         Args:
-            runtime_type: The runtime type
+            engine_type: The engine type
 
         Returns:
-            Model revision (with runtime override if applicable)
+            Model revision (with engine override if applicable)
         """
-        if runtime_type in self.runtime_overrides:
-            override = self.runtime_overrides[runtime_type]
+        if engine_type in self.engine_overrides:
+            override = self.engine_overrides[engine_type]
             return override.revision or self.revision
         return self.revision
 
-    def get_api_params(self, runtime_type: VlmRuntimeType) -> Dict[str, Any]:
-        """Get API parameters for a specific runtime.
+    def get_api_params(self, engine_type: VlmEngineType) -> Dict[str, Any]:
+        """Get API parameters for a specific engine.
 
         Args:
-            runtime_type: The runtime type
+            engine_type: The engine type
 
         Returns:
-            API parameters (with runtime override if applicable)
+            API parameters (with engine override if applicable)
         """
         base_params = {"model": self.default_repo_id}
 
-        if runtime_type in self.api_overrides:
-            override = self.api_overrides[runtime_type]
+        if engine_type in self.api_overrides:
+            override = self.api_overrides[engine_type]
             return override.merge_with(base_params).params
 
         return base_params
 
-    def is_runtime_supported(self, runtime_type: VlmRuntimeType) -> bool:
-        """Check if a runtime is supported by this model.
+    def is_engine_supported(self, engine_type: VlmEngineType) -> bool:
+        """Check if an engine is supported by this model.
 
         Args:
-            runtime_type: The runtime type to check
+            engine_type: The engine type to check
 
         Returns:
             True if supported, False otherwise
         """
-        if self.supported_runtimes is None:
+        if self.supported_engines is None:
             return True
-        return runtime_type in self.supported_runtimes
+        return engine_type in self.supported_engines
 
-    def get_runtime_config(self, runtime_type: VlmRuntimeType) -> RuntimeModelConfig:
-        """Get RuntimeModelConfig for a specific runtime type.
+    def get_engine_config(self, engine_type: VlmEngineType) -> EngineModelConfig:
+        """Get EngineModelConfig for a specific engine type.
 
-        This is the single source of truth for generating runtime-specific
+        This is the single source of truth for generating engine-specific
         configuration from the model spec.
 
         Args:
-            runtime_type: The runtime type to get config for
+            engine_type: The engine type to get config for
 
         Returns:
-            RuntimeModelConfig with repo_id, revision, and runtime-specific extra_config
+            EngineModelConfig with repo_id, revision, and engine-specific extra_config
         """
-        # Get repo_id and revision (with runtime-specific overrides if present)
-        repo_id = self.get_repo_id(runtime_type)
-        revision = self.get_revision(runtime_type)
+        # Get repo_id and revision (with engine-specific overrides if present)
+        repo_id = self.get_repo_id(engine_type)
+        revision = self.get_revision(engine_type)
 
-        # Get runtime-specific extra_config
+        # Get engine-specific extra_config
         extra_config = {}
-        if runtime_type in self.runtime_overrides:
-            extra_config = self.runtime_overrides[runtime_type].extra_config.copy()
+        if engine_type in self.engine_overrides:
+            extra_config = self.engine_overrides[engine_type].extra_config.copy()
 
-        return RuntimeModelConfig(
+        return EngineModelConfig(
             repo_id=repo_id,
             revision=revision,
             extra_config=extra_config,
         )
 
-    def has_explicit_runtime_export(self, runtime_type: VlmRuntimeType) -> bool:
-        """Check if this model has an explicit export for the given runtime.
+    def has_explicit_engine_export(self, engine_type: VlmEngineType) -> bool:
+        """Check if this model has an explicit export for the given engine.
 
         An explicit export means either:
-        1. The runtime has a different repo_id in runtime_overrides, OR
-        2. The runtime is explicitly listed in supported_runtimes (not None)
+        1. The engine has a different repo_id in engine_overrides, OR
+        2. The engine is explicitly listed in supported_engines (not None)
 
         This is used by auto_inline to determine if it should attempt to use
-        a specific runtime. For example, MLX should only be used if there's
+        a specific engine. For example, MLX should only be used if there's
         an actual MLX export available (different repo_id) or if the model
         explicitly declares MLX support.
 
         Args:
-            runtime_type: The runtime type to check
+            engine_type: The engine type to check
 
         Returns:
             True if there's an explicit export, False otherwise
@@ -255,34 +255,34 @@ class VlmModelSpec(BaseModel):
             >>> spec = VlmModelSpec(
             ...     name="Test",
             ...     default_repo_id="org/model",
-            ...     runtime_overrides={
-            ...         VlmRuntimeType.MLX: RuntimeModelConfig(repo_id="org/model-mlx")
+            ...     engine_overrides={
+            ...         VlmEngineType.MLX: EngineModelConfig(repo_id="org/model-mlx")
             ...     }
             ... )
-            >>> spec.has_explicit_runtime_export(VlmRuntimeType.MLX)
+            >>> spec.has_explicit_engine_export(VlmEngineType.MLX)
             True
 
             >>> # Model without MLX export (same repo_id or no override)
             >>> spec = VlmModelSpec(name="Test", default_repo_id="org/model")
-            >>> spec.has_explicit_runtime_export(VlmRuntimeType.MLX)
+            >>> spec.has_explicit_engine_export(VlmEngineType.MLX)
             False
 
-            >>> # Model with explicit supported_runtimes
+            >>> # Model with explicit supported_engines
             >>> spec = VlmModelSpec(
             ...     name="Test",
             ...     default_repo_id="org/model",
-            ...     supported_runtimes={VlmRuntimeType.MLX}
+            ...     supported_engines={VlmEngineType.MLX}
             ... )
-            >>> spec.has_explicit_runtime_export(VlmRuntimeType.MLX)
+            >>> spec.has_explicit_engine_export(VlmEngineType.MLX)
             True
         """
-        # If supported_runtimes is explicitly set and includes this runtime
-        if self.supported_runtimes is not None:
-            return runtime_type in self.supported_runtimes
+        # If supported_engines is explicitly set and includes this engine
+        if self.supported_engines is not None:
+            return engine_type in self.supported_engines
 
-        # Check if there's a different repo_id for this runtime
-        if runtime_type in self.runtime_overrides:
-            override = self.runtime_overrides[runtime_type]
+        # Check if there's a different repo_id for this engine
+        if engine_type in self.engine_overrides:
+            override = self.engine_overrides[engine_type]
             if (
                 override.repo_id is not None
                 and override.repo_id != self.default_repo_id
@@ -318,9 +318,9 @@ class StageModelPreset(BaseModel):
 
     max_size: Optional[int] = Field(default=None, description="Maximum image dimension")
 
-    default_runtime_type: VlmRuntimeType = Field(
-        default=VlmRuntimeType.AUTO_INLINE,
-        description="Default runtime to use with this preset",
+    default_engine_type: VlmEngineType = Field(
+        default=VlmEngineType.AUTO_INLINE,
+        description="Default engine to use with this preset",
     )
 
     stage_options: Dict[str, Any] = Field(
@@ -328,11 +328,11 @@ class StageModelPreset(BaseModel):
     )
 
     @property
-    def supported_runtimes(self) -> Set[VlmRuntimeType]:
-        """Get supported runtimes from model spec."""
-        if self.model_spec.supported_runtimes is None:
-            return set(VlmRuntimeType)
-        return self.model_spec.supported_runtimes
+    def supported_engines(self) -> Set[VlmEngineType]:
+        """Get supported engines from model spec."""
+        if self.model_spec.supported_engines is None:
+            return set(VlmEngineType)
+        return self.model_spec.supported_engines
 
 
 class StagePresetMixin:
@@ -436,7 +436,7 @@ class StagePresetMixin:
                 "name": p.name,
                 "description": p.description,
                 "model": p.model_spec.name,
-                "default_runtime": p.default_runtime_type.value,
+                "default_engine": p.default_engine_type.value,
             }
             for p in cls._presets.values()
         ]
@@ -445,51 +445,51 @@ class StagePresetMixin:
     def from_preset(
         cls,
         preset_id: str,
-        runtime_options: Optional[BaseVlmRuntimeOptions] = None,
+        engine_options: Optional[BaseVlmEngineOptions] = None,
         **overrides,
     ):
         """Create options from a registered preset.
 
         Args:
             preset_id: The preset identifier
-            runtime_options: Optional runtime override
+            engine_options: Optional engine override
             **overrides: Additional option overrides
 
         Returns:
             Instance of the stage options class
         """
-        from docling.datamodel.vlm_runtime_options import (
-            ApiVlmRuntimeOptions,
-            AutoInlineVlmRuntimeOptions,
-            MlxVlmRuntimeOptions,
-            TransformersVlmRuntimeOptions,
-            VllmVlmRuntimeOptions,
+        from docling.datamodel.vlm_engine_options import (
+            ApiVlmEngineOptions,
+            AutoInlineVlmEngineOptions,
+            MlxVlmEngineOptions,
+            TransformersVlmEngineOptions,
+            VllmVlmEngineOptions,
         )
 
         preset = cls.get_preset(preset_id)
 
-        # Create runtime options if not provided
-        if runtime_options is None:
-            if preset.default_runtime_type == VlmRuntimeType.AUTO_INLINE:
-                runtime_options = AutoInlineVlmRuntimeOptions()
-            elif VlmRuntimeType.is_api_variant(preset.default_runtime_type):
-                runtime_options = ApiVlmRuntimeOptions(
-                    runtime_type=preset.default_runtime_type
+        # Create engine options if not provided
+        if engine_options is None:
+            if preset.default_engine_type == VlmEngineType.AUTO_INLINE:
+                engine_options = AutoInlineVlmEngineOptions()
+            elif VlmEngineType.is_api_variant(preset.default_engine_type):
+                engine_options = ApiVlmEngineOptions(
+                    engine_type=preset.default_engine_type
                 )
-            elif preset.default_runtime_type == VlmRuntimeType.TRANSFORMERS:
-                runtime_options = TransformersVlmRuntimeOptions()
-            elif preset.default_runtime_type == VlmRuntimeType.MLX:
-                runtime_options = MlxVlmRuntimeOptions()
-            elif preset.default_runtime_type == VlmRuntimeType.VLLM:
-                runtime_options = VllmVlmRuntimeOptions()
+            elif preset.default_engine_type == VlmEngineType.TRANSFORMERS:
+                engine_options = TransformersVlmEngineOptions()
+            elif preset.default_engine_type == VlmEngineType.MLX:
+                engine_options = MlxVlmEngineOptions()
+            elif preset.default_engine_type == VlmEngineType.VLLM:
+                engine_options = VllmVlmEngineOptions()
             else:
-                runtime_options = AutoInlineVlmRuntimeOptions()
+                engine_options = AutoInlineVlmEngineOptions()
 
         # Create instance with preset values
         # Type ignore because cls is the concrete options class, not the mixin
         instance = cls(  # type: ignore[call-arg]
             model_spec=preset.model_spec,
-            runtime_options=runtime_options,
+            engine_options=engine_options,
             scale=preset.scale,
             max_size=preset.max_size,
             **preset.stage_options,
@@ -517,11 +517,11 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
     "default_repo_id": "ibm-granite/granite-docling-258M",
     "stop_strings": ["</doctag>", "<|end_of_text|>"],
     "max_new_tokens": 8192,
-    "runtime_overrides": {
-        VlmRuntimeType.MLX: RuntimeModelConfig(
+    "engine_overrides": {
+        VlmEngineType.MLX: EngineModelConfig(
             repo_id="ibm-granite/granite-docling-258M-mlx"
         ),
-        VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+        VlmEngineType.TRANSFORMERS: EngineModelConfig(
             extra_config={
                 "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                 "extra_generation_config": {"skip_special_tokens": False},
@@ -529,7 +529,7 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
         ),
     },
     "api_overrides": {
-        VlmRuntimeType.API_OLLAMA: ApiModelConfig(
+        VlmEngineType.API_OLLAMA: ApiModelConfig(
             params={"model": "ibm/granite-docling:258m"}
         ),
     },
@@ -539,11 +539,9 @@ GRANITE_DOCLING_MODEL_SPEC_BASE = {
 PIXTRAL_MODEL_SPEC_BASE = {
     "name": "Pixtral-12B",
     "default_repo_id": "mistral-community/pixtral-12b",
-    "runtime_overrides": {
-        VlmRuntimeType.MLX: RuntimeModelConfig(
-            repo_id="mlx-community/pixtral-12b-bf16"
-        ),
-        VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+    "engine_overrides": {
+        VlmEngineType.MLX: EngineModelConfig(repo_id="mlx-community/pixtral-12b-bf16"),
+        VlmEngineType.TRANSFORMERS: EngineModelConfig(
             extra_config={
                 "transformers_model_type": TransformersModelType.AUTOMODEL_VISION2SEQ,
             }
@@ -555,21 +553,21 @@ PIXTRAL_MODEL_SPEC_BASE = {
 GRANITE_VISION_MODEL_SPEC_BASE = {
     "name": "Granite-Vision-3.3-2B",
     "default_repo_id": "ibm-granite/granite-vision-3.3-2b",
-    "supported_runtimes": {
-        VlmRuntimeType.TRANSFORMERS,
-        VlmRuntimeType.VLLM,
-        VlmRuntimeType.API_OLLAMA,
-        VlmRuntimeType.API_LMSTUDIO,
+    "supported_engines": {
+        VlmEngineType.TRANSFORMERS,
+        VlmEngineType.VLLM,
+        VlmEngineType.API_OLLAMA,
+        VlmEngineType.API_LMSTUDIO,
     },
-    "runtime_overrides": {
-        VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+    "engine_overrides": {
+        VlmEngineType.TRANSFORMERS: EngineModelConfig(
             extra_config={
                 "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
             }
         ),
     },
     "api_overrides": {
-        VlmRuntimeType.API_OLLAMA: ApiModelConfig(
+        VlmEngineType.API_OLLAMA: ApiModelConfig(
             params={"model": "granite3.3-vision:2b"}
         ),
     },
@@ -589,11 +587,11 @@ VLM_CONVERT_SMOLDOCLING = StageModelPreset(
         prompt="Convert this page to docling.",
         response_format=ResponseFormat.DOCTAGS,
         stop_strings=["</doctag>", "<end_of_utterance>"],
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
                 repo_id="docling-project/SmolDocling-256M-preview-mlx-bf16"
             ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
@@ -602,7 +600,7 @@ VLM_CONVERT_SMOLDOCLING = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
@@ -615,7 +613,7 @@ VLM_CONVERT_GRANITE_DOCLING = StageModelPreset(
         response_format=ResponseFormat.DOCTAGS,
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 VLM_CONVERT_DEEPSEEK_OCR = StageModelPreset(
@@ -627,18 +625,18 @@ VLM_CONVERT_DEEPSEEK_OCR = StageModelPreset(
         default_repo_id="deepseek-ocr:3b",  # Ollama model name
         prompt="<|grounding|>Convert the document to markdown. ",
         response_format=ResponseFormat.DEEPSEEKOCR_MARKDOWN,
-        supported_runtimes={VlmRuntimeType.API_OLLAMA, VlmRuntimeType.API_LMSTUDIO},
+        supported_engines={VlmEngineType.API_OLLAMA, VlmEngineType.API_LMSTUDIO},
         api_overrides={
-            VlmRuntimeType.API_OLLAMA: ApiModelConfig(
+            VlmEngineType.API_OLLAMA: ApiModelConfig(
                 params={"model": "deepseek-ocr:3b", "max_tokens": 4096}
             ),
-            VlmRuntimeType.API_LMSTUDIO: ApiModelConfig(
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
                 params={"model": "deepseek-ocr", "max_tokens": 4096}
             ),
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.API_OLLAMA,
+    default_engine_type=VlmEngineType.API_OLLAMA,
 )
 
 VLM_CONVERT_GRANITE_VISION = StageModelPreset(
@@ -651,7 +649,7 @@ VLM_CONVERT_GRANITE_VISION = StageModelPreset(
         response_format=ResponseFormat.MARKDOWN,
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 VLM_CONVERT_PIXTRAL = StageModelPreset(
@@ -664,7 +662,7 @@ VLM_CONVERT_PIXTRAL = StageModelPreset(
         response_format=ResponseFormat.MARKDOWN,
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 VLM_CONVERT_GOT_OCR = StageModelPreset(
@@ -676,10 +674,10 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
         default_repo_id="stepfun-ai/GOT-OCR-2.0-hf",
         prompt="",
         response_format=ResponseFormat.MARKDOWN,
-        supported_runtimes={VlmRuntimeType.TRANSFORMERS},
+        supported_engines={VlmEngineType.TRANSFORMERS},
         stop_strings=["<|im_end|>"],
-        runtime_overrides={
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.NONE,
@@ -689,7 +687,7 @@ VLM_CONVERT_GOT_OCR = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.TRANSFORMERS,
+    default_engine_type=VlmEngineType.TRANSFORMERS,
 )
 
 VLM_CONVERT_PHI4 = StageModelPreset(
@@ -702,12 +700,12 @@ VLM_CONVERT_PHI4 = StageModelPreset(
         prompt="Convert this page to MarkDown. Do not miss any text and only output the bare markdown",
         response_format=ResponseFormat.MARKDOWN,
         trust_remote_code=True,
-        supported_runtimes={
-            VlmRuntimeType.TRANSFORMERS,
-            VlmRuntimeType.VLLM,
+        supported_engines={
+            VlmEngineType.TRANSFORMERS,
+            VlmEngineType.VLLM,
         },
-        runtime_overrides={
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_CAUSALLM,
                     "extra_generation_config": {"num_logits_to_keep": 0},
@@ -716,7 +714,7 @@ VLM_CONVERT_PHI4 = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 VLM_CONVERT_QWEN = StageModelPreset(
@@ -728,11 +726,11 @@ VLM_CONVERT_QWEN = StageModelPreset(
         default_repo_id="Qwen/Qwen2.5-VL-3B-Instruct",
         prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
         response_format=ResponseFormat.MARKDOWN,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
                 repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16"
             ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                 }
@@ -740,7 +738,7 @@ VLM_CONVERT_QWEN = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 VLM_CONVERT_GEMMA_12B = StageModelPreset(
@@ -752,15 +750,15 @@ VLM_CONVERT_GEMMA_12B = StageModelPreset(
         default_repo_id="google/gemma-3-12b-it",
         prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
         response_format=ResponseFormat.MARKDOWN,
-        supported_runtimes={VlmRuntimeType.MLX},
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
+        supported_engines={VlmEngineType.MLX},
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
                 repo_id="mlx-community/gemma-3-12b-it-bf16"
             ),
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.MLX,
+    default_engine_type=VlmEngineType.MLX,
 )
 
 VLM_CONVERT_GEMMA_27B = StageModelPreset(
@@ -772,15 +770,15 @@ VLM_CONVERT_GEMMA_27B = StageModelPreset(
         default_repo_id="google/gemma-3-27b-it",
         prompt="Convert this page to markdown. Do not miss any text and only output the bare markdown!",
         response_format=ResponseFormat.MARKDOWN,
-        supported_runtimes={VlmRuntimeType.MLX},
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
+        supported_engines={VlmEngineType.MLX},
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
                 repo_id="mlx-community/gemma-3-27b-it-bf16"
             ),
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.MLX,
+    default_engine_type=VlmEngineType.MLX,
 )
 
 VLM_CONVERT_DOLPHIN = StageModelPreset(
@@ -792,8 +790,8 @@ VLM_CONVERT_DOLPHIN = StageModelPreset(
         default_repo_id="ByteDance/Dolphin",
         prompt="<s>Read text in the image. <Answer/>",
         response_format=ResponseFormat.MARKDOWN,
-        runtime_overrides={
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "transformers_prompt_style": TransformersPromptStyle.RAW,
@@ -802,7 +800,7 @@ VLM_CONVERT_DOLPHIN = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 # -----------------------------------------------------------------------------
@@ -818,11 +816,11 @@ PICTURE_DESC_SMOLVLM = StageModelPreset(
         default_repo_id="HuggingFaceTB/SmolVLM-256M-Instruct",
         prompt="Describe this image in a few sentences.",
         response_format=ResponseFormat.PLAINTEXT,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
                 repo_id="moot20/SmolVLM-256M-Instruct-MLX"
             ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 torch_dtype="bfloat16",
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
@@ -830,13 +828,13 @@ PICTURE_DESC_SMOLVLM = StageModelPreset(
             ),
         },
         api_overrides={
-            VlmRuntimeType.API_LMSTUDIO: ApiModelConfig(
+            VlmEngineType.API_LMSTUDIO: ApiModelConfig(
                 params={"model": "smolvlm-256m-instruct"}
             ),
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
     stage_options={
         "picture_area_threshold": 0.05,
     },
@@ -852,7 +850,7 @@ PICTURE_DESC_GRANITE_VISION = StageModelPreset(
         response_format=ResponseFormat.PLAINTEXT,
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
     stage_options={
         "picture_area_threshold": 0.05,
     },
@@ -868,7 +866,7 @@ PICTURE_DESC_PIXTRAL = StageModelPreset(
         response_format=ResponseFormat.PLAINTEXT,
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
     stage_options={
         "picture_area_threshold": 0.05,
     },
@@ -883,11 +881,11 @@ PICTURE_DESC_QWEN = StageModelPreset(
         default_repo_id="Qwen/Qwen2.5-VL-3B-Instruct",
         prompt="Describe this image.",
         response_format=ResponseFormat.PLAINTEXT,
-        runtime_overrides={
-            VlmRuntimeType.MLX: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.MLX: EngineModelConfig(
                 repo_id="mlx-community/Qwen2.5-VL-3B-Instruct-bf16"
             ),
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                 }
@@ -895,7 +893,7 @@ PICTURE_DESC_QWEN = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
     stage_options={
         "picture_area_threshold": 0.05,
     },
@@ -915,8 +913,8 @@ CODE_FORMULA_CODEFORMULAV2 = StageModelPreset(
         prompt="",
         response_format=ResponseFormat.PLAINTEXT,
         stop_strings=["</doctag>", "<end_of_utterance>"],
-        runtime_overrides={
-            VlmRuntimeType.TRANSFORMERS: RuntimeModelConfig(
+        engine_overrides={
+            VlmEngineType.TRANSFORMERS: EngineModelConfig(
                 extra_config={
                     "transformers_model_type": TransformersModelType.AUTOMODEL_IMAGETEXTTOTEXT,
                     "extra_generation_config": {"skip_special_tokens": False},
@@ -925,7 +923,7 @@ CODE_FORMULA_CODEFORMULAV2 = StageModelPreset(
         },
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )
 
 CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
@@ -938,5 +936,5 @@ CODE_FORMULA_GRANITE_DOCLING = StageModelPreset(
         response_format=ResponseFormat.PLAINTEXT,
     ),
     scale=2.0,
-    default_runtime_type=VlmRuntimeType.AUTO_INLINE,
+    default_engine_type=VlmEngineType.AUTO_INLINE,
 )

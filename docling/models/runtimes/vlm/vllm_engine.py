@@ -1,4 +1,4 @@
-"""vLLM-based VLM runtime for high-throughput serving."""
+"""vLLM-based VLM inference engine for high-throughput serving."""
 
 import logging
 import sys
@@ -8,29 +8,29 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
-from docling.datamodel.vlm_runtime_options import VllmVlmRuntimeOptions
+from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
 from docling.models.runtimes._utils import (
     format_prompt_for_vlm,
     preprocess_image_batch,
     resolve_model_artifacts_path,
 )
 from docling.models.runtimes.base import (
-    BaseVlmRuntime,
-    VlmRuntimeInput,
-    VlmRuntimeOutput,
+    BaseVlmEngine,
+    VlmEngineInput,
+    VlmEngineOutput,
 )
 from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
-    from docling.datamodel.stage_model_specs import RuntimeModelConfig
+    from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
 
 
-class VllmVlmRuntime(BaseVlmRuntime):
-    """vLLM runtime for high-throughput VLM inference.
+class VllmVlmEngine(BaseVlmEngine):
+    """vLLM engine for high-throughput VLM inference.
 
-    This runtime uses the vLLM library for efficient batched inference
+    This engine uses the vLLM library for efficient batched inference
     on CUDA and XPU devices.
     """
 
@@ -86,12 +86,12 @@ class VllmVlmRuntime(BaseVlmRuntime):
 
     def __init__(
         self,
-        options: VllmVlmRuntimeOptions,
+        options: VllmVlmEngineOptions,
         accelerator_options: Optional[AcceleratorOptions] = None,
         artifacts_path: Optional[Path] = None,
-        model_config: Optional["RuntimeModelConfig"] = None,
+        model_config: Optional["EngineModelConfig"] = None,
     ):
-        """Initialize the vLLM runtime.
+        """Initialize the vLLM engine.
 
         Args:
             options: vLLM-specific runtime options
@@ -100,7 +100,7 @@ class VllmVlmRuntime(BaseVlmRuntime):
             model_config: Model configuration (repo_id, revision, extra_config)
         """
         super().__init__(options, model_config=model_config)
-        self.options: VllmVlmRuntimeOptions = options
+        self.options: VllmVlmEngineOptions = options
         self.accelerator_options = accelerator_options or AcceleratorOptions()
         self.artifacts_path = artifacts_path
 
@@ -115,11 +115,11 @@ class VllmVlmRuntime(BaseVlmRuntime):
             self.initialize()
 
     def initialize(self) -> None:
-        """Initialize the vLLM runtime."""
+        """Initialize the vLLM engine."""
         if self._initialized:
             return
 
-        _log.info("Initializing vLLM VLM runtime...")
+        _log.info("Initializing vLLM VLM inference engine...")
 
         try:
             from transformers import AutoProcessor
@@ -239,9 +239,7 @@ class VllmVlmRuntime(BaseVlmRuntime):
         self._initialized = True
         _log.info("vLLM runtime initialized")
 
-    def predict_batch(
-        self, input_batch: List[VlmRuntimeInput]
-    ) -> List[VlmRuntimeOutput]:
+    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs using vLLM.
 
         This method processes multiple images in a single batched vLLM call,
@@ -262,7 +260,7 @@ class VllmVlmRuntime(BaseVlmRuntime):
         # Model should already be loaded via initialize()
         if self.llm is None or self.processor is None or self.sampling_params is None:
             raise RuntimeError(
-                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
+                "Model not loaded. Ensure EngineModelConfig was provided during initialization."
             )
 
         # Preprocess images
@@ -318,7 +316,7 @@ class VllmVlmRuntime(BaseVlmRuntime):
         )
 
         # Create output objects
-        results: List[VlmRuntimeOutput] = []
+        results: List[VlmEngineOutput] = []
         for i, output in enumerate(outputs):
             text = output.outputs[0].text if output.outputs else ""
             stop_reason = (
@@ -328,7 +326,7 @@ class VllmVlmRuntime(BaseVlmRuntime):
             num_tokens = len(output.outputs[0].token_ids) if output.outputs else 0
 
             results.append(
-                VlmRuntimeOutput(
+                VlmEngineOutput(
                     text=text,
                     stop_reason=stop_reason,
                     metadata={

@@ -1,19 +1,19 @@
-"""VLM Runtime system for Docling.
+"""VLM inference engine system for Docling.
 
-This package provides a pluggable runtime system for vision-language models,
+This package provides a pluggable inference engine system for vision-language models,
 decoupling the inference backend from pipeline stages.
 """
 
 from docling.models.runtimes.base import (
-    BaseVlmRuntime,
-    BaseVlmRuntimeOptions,
-    VlmRuntimeType,
+    BaseVlmEngine,
+    BaseVlmEngineOptions,
+    VlmEngineType,
 )
-from docling.models.runtimes.factory import create_vlm_runtime
+from docling.models.runtimes.factory import create_vlm_engine
 
 __all__ = [
-    "BaseVlmRuntime",
-    "BaseVlmRuntimeOptions",
-    "VlmRuntimeType",
-    "create_vlm_runtime",
+    "BaseVlmEngine",
+    "BaseVlmEngineOptions",
+    "VlmEngineType",
+    "create_vlm_engine",
 ]

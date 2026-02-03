@@ -29,12 +29,12 @@ from docling_core.types.doc import PictureItem
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
+    PictureDescriptionVlmEngineOptions,
     PictureDescriptionVlmOptions,
-    PictureDescriptionVlmRuntimeOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import ResponseFormat
 from docling.datamodel.stage_model_specs import VlmModelSpec
-from docling.datamodel.vlm_runtime_options import AutoInlineVlmRuntimeOptions
+from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
 logging.basicConfig(level=logging.INFO)
@@ -85,7 +85,7 @@ if not IS_CI:
     pipeline_options = PdfPipelineOptions()
     pipeline_options.do_picture_description = True
     pipeline_options.picture_description_options = (
-        PictureDescriptionVlmRuntimeOptions.from_preset("granite_vision")
+        PictureDescriptionVlmEngineOptions.from_preset("granite_vision")
     )
 
     converter = DocumentConverter(
@@ -121,14 +121,14 @@ print("=" * 60)
 
 pipeline_options = PdfPipelineOptions()
 pipeline_options.do_picture_description = True
-pipeline_options.picture_description_options = PictureDescriptionVlmRuntimeOptions(
+pipeline_options.picture_description_options = PictureDescriptionVlmEngineOptions(
     model_spec=VlmModelSpec(
         name="SmolVLM-256M-Custom",
         default_repo_id="HuggingFaceTB/SmolVLM-256M-Instruct",
         prompt="Provide a detailed technical description of this image, focusing on any diagrams, charts, or technical content.",
         response_format=ResponseFormat.PLAINTEXT,
     ),
-    runtime_options=AutoInlineVlmRuntimeOptions(),
+    engine_options=AutoInlineVlmEngineOptions(),
     prompt="Provide a detailed technical description of this image, focusing on any diagrams, charts, or technical content.",
 )
 

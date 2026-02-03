@@ -1,11 +1,11 @@
-"""Transformers-based VLM runtime."""
+"""Transformers-based VLM inference engine."""
 
 import importlib.metadata
 import logging
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
 import torch
 from PIL.Image import Image
@@ -28,17 +28,16 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersModelType,
     TransformersPromptStyle,
 )
-from docling.datamodel.stage_model_specs import RuntimeModelConfig
-from docling.datamodel.vlm_runtime_options import TransformersVlmRuntimeOptions
+from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
 from docling.models.runtimes._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,
     resolve_model_artifacts_path,
 )
 from docling.models.runtimes.base import (
-    BaseVlmRuntime,
-    VlmRuntimeInput,
-    VlmRuntimeOutput,
+    BaseVlmEngine,
+    VlmEngineInput,
+    VlmEngineOutput,
 )
 from docling.models.utils.generation_utils import (
     GenerationStopper,
@@ -47,24 +46,27 @@ from docling.models.utils.generation_utils import (
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.utils.accelerator_utils import decide_device
 
+if TYPE_CHECKING:
+    from docling.datamodel.stage_model_specs import EngineModelConfig
+
 _log = logging.getLogger(__name__)
 
 
-class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
-    """HuggingFace Transformers runtime for VLM inference.
+class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
+    """HuggingFace Transformers engine for VLM inference.
 
-    This runtime uses the transformers library to run vision-language models
+    This engine uses the transformers library to run vision-language models
     locally on CPU, CUDA, or XPU devices.
     """
 
     def __init__(
         self,
-        options: TransformersVlmRuntimeOptions,
+        options: TransformersVlmEngineOptions,
         accelerator_options: Optional[AcceleratorOptions] = None,
         artifacts_path: Optional[Path] = None,
-        model_config: Optional[RuntimeModelConfig] = None,
+        model_config: Optional[EngineModelConfig] = None,
     ):
-        """Initialize the Transformers runtime.
+        """Initialize the Transformers engine.
 
         Args:
             options: Transformers-specific runtime options
@@ -73,7 +75,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             model_config: Model configuration (repo_id, revision, extra_config)
         """
         super().__init__(options, model_config=model_config)
-        self.options: TransformersVlmRuntimeOptions = options
+        self.options: TransformersVlmEngineOptions = options
         self.accelerator_options = accelerator_options or AcceleratorOptions()
         self.artifacts_path = artifacts_path
 
@@ -92,7 +94,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         if self._initialized:
             return
 
-        _log.info("Initializing Transformers VLM runtime...")
+        _log.info("Initializing Transformers VLM inference engine...")
 
         # Determine device
         supported_devices = [
@@ -221,9 +223,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
         _log.info(f"Loaded model {repo_id} (revision: {revision})")
 
-    def predict_batch(
-        self, input_batch: List[VlmRuntimeInput]
-    ) -> List[VlmRuntimeOutput]:
+    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs efficiently.
 
         This method processes multiple images in a single forward pass,
@@ -244,7 +244,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         # Model should already be loaded via initialize()
         if self.vlm_model is None or self.processor is None:
             raise RuntimeError(
-                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
+                "Model not loaded. Ensure EngineModelConfig was provided during initialization."
             )
 
         # Get prompt style from first input's extra config
@@ -409,7 +409,7 @@ class TransformersVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         outputs = []
         for i, text in enumerate(decoded_texts):
             outputs.append(
-                VlmRuntimeOutput(
+                VlmEngineOutput(
                     text=text,
                     stop_reason="unspecified",
                     metadata={

@@ -1,7 +1,7 @@
-"""Picture description stage using the VLM runtime system.
+"""Picture description stage using the VLM engine system.
 
-This module provides a runtime-agnostic picture description stage that can use
-any VLM runtime (Transformers, MLX, API, etc.) through the unified runtime interface.
+This module provides an engine-agnostic picture description stage that can use
+any VLM engine (Transformers, MLX, API, etc.) through the unified engine interface.
 """
 
 import logging
@@ -14,37 +14,37 @@ from PIL import Image
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.pipeline_options import (
     PictureDescriptionBaseOptions,
-    PictureDescriptionVlmRuntimeOptions,
+    PictureDescriptionVlmEngineOptions,
 )
-from docling.datamodel.stage_model_specs import RuntimeModelConfig
+from docling.datamodel.stage_model_specs import EngineModelConfig
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
-from docling.models.runtimes.base import BaseVlmRuntime, VlmRuntimeInput
-from docling.models.runtimes.factory import create_vlm_runtime
+from docling.models.runtimes.base import BaseVlmEngine, VlmEngineInput
+from docling.models.runtimes.factory import create_vlm_engine
 
 _log = logging.getLogger(__name__)
 
 
-class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
-    """Picture description stage using the VLM runtime system.
+class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
+    """Picture description stage using the VLM engine system.
 
-    This stage uses the unified VLM runtime interface to generate descriptions
-    for pictures in documents. It supports all runtime types (Transformers, MLX,
-    API, etc.) through the runtime factory.
+    This stage uses the unified VLM engine interface to generate descriptions
+    for pictures in documents. It supports all engine types (Transformers, MLX,
+    API, etc.) through the engine factory.
 
     The stage:
     1. Filters pictures based on size and classification thresholds
-    2. Uses the runtime to generate descriptions
+    2. Uses the engine to generate descriptions
     3. Stores descriptions in PictureItem metadata
 
     Example:
         ```python
-        from docling.datamodel.pipeline_options import PictureDescriptionVlmRuntimeOptions
+        from docling.datamodel.pipeline_options import PictureDescriptionVlmEngineOptions
 
-        # Use preset with default runtime
-        options = PictureDescriptionVlmRuntimeOptions.from_preset("smolvlm")
+        # Use preset with default engine
+        options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm")
 
         # Create stage
-        stage = PictureDescriptionVlmRuntimeModel(
+        stage = PictureDescriptionVlmEngineModel(
             enabled=True,
             enable_remote_services=False,
             artifacts_path=None,
@@ -56,14 +56,14 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
 
     @classmethod
     def get_options_type(cls) -> Type[PictureDescriptionBaseOptions]:
-        return PictureDescriptionVlmRuntimeOptions
+        return PictureDescriptionVlmEngineOptions
 
     def __init__(
         self,
         enabled: bool,
         enable_remote_services: bool,
         artifacts_path: Optional[Union[Path, str]],
-        options: PictureDescriptionVlmRuntimeOptions,
+        options: PictureDescriptionVlmEngineOptions,
         accelerator_options: AcceleratorOptions,
     ):
         super().__init__(
@@ -73,31 +73,31 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
             options=options,
             accelerator_options=accelerator_options,
         )
-        self.options: PictureDescriptionVlmRuntimeOptions
-        self.runtime: Optional[BaseVlmRuntime] = None
+        self.options: PictureDescriptionVlmEngineOptions
+        self.engine: Optional[BaseVlmEngine] = None
 
         if self.enabled:
-            # Get runtime type from options
-            runtime_type = self.options.runtime_options.runtime_type
+            # Get engine type from options
+            engine_type = self.options.engine_options.engine_type
 
-            # Get model configuration for this runtime (for logging)
-            self.repo_id = self.options.model_spec.get_repo_id(runtime_type)
-            self.revision = self.options.model_spec.get_revision(runtime_type)
+            # Get model configuration for this engine (for logging)
+            self.repo_id = self.options.model_spec.get_repo_id(engine_type)
+            self.revision = self.options.model_spec.get_revision(engine_type)
 
             _log.info(
-                f"Initializing PictureDescriptionVlmRuntimeModel with runtime system: "
+                f"Initializing PictureDescriptionVlmEngineModel with engine system: "
                 f"model={self.repo_id}, "
-                f"runtime={runtime_type.value}"
+                f"engine={engine_type.value}"
             )
 
-            # Create runtime - pass model_spec, let factory handle config generation
-            self.runtime = create_vlm_runtime(
-                self.options.runtime_options,
+            # Create engine - pass model_spec, let factory handle config generation
+            self.engine = create_vlm_engine(
+                self.options.engine_options,
                 model_spec=self.options.model_spec,
             )
 
             # Set provenance from model spec
-            self.provenance = f"{self.repo_id} ({runtime_type.value})"
+            self.provenance = f"{self.repo_id} ({engine_type.value})"
 
     def _annotate_images(self, images: Iterable[Image.Image]) -> Iterable[str]:
         """Generate descriptions for a batch of images.
@@ -108,8 +108,8 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
         Yields:
             Description text for each image
         """
-        if self.runtime is None:
-            raise RuntimeError("Runtime not initialized")
+        if self.engine is None:
+            raise RuntimeError("Engine not initialized")
 
         # Get prompt from options
         prompt = self.options.prompt
@@ -121,9 +121,9 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
             return
 
         try:
-            # Prepare batch of runtime inputs
-            runtime_inputs = [
-                VlmRuntimeInput(
+            # Prepare batch of engine inputs
+            engine_inputs = [
+                VlmEngineInput(
                     image=image,
                     prompt=prompt,
                     temperature=0.0,
@@ -133,7 +133,7 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
             ]
 
             # Generate descriptions using batch prediction
-            outputs = self.runtime.predict_batch(runtime_inputs)
+            outputs = self.engine.predict_batch(engine_inputs)
 
             # Extract and yield descriptions
             for output in outputs:
@@ -148,9 +148,9 @@ class PictureDescriptionVlmRuntimeModel(PictureDescriptionBaseModel):
                 yield ""
 
     def __del__(self):
-        """Cleanup runtime resources."""
-        if self.runtime is not None:
+        """Cleanup engine resources."""
+        if self.engine is not None:
             try:
-                self.runtime.cleanup()
+                self.engine.cleanup()
             except Exception as e:
-                _log.warning(f"Error cleaning up runtime: {e}")
+                _log.warning(f"Error cleaning up engine: {e}")

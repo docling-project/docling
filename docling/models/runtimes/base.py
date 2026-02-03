@@ -1,4 +1,4 @@
-"""Base classes for VLM runtimes."""
+"""Base classes for VLM inference engines."""
 
 import logging
 from abc import ABC, abstractmethod
@@ -9,20 +9,20 @@ from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, Field
 
 if TYPE_CHECKING:
-    from docling.datamodel.stage_model_specs import RuntimeModelConfig
+    from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
 
 
-class VlmRuntimeType(str, Enum):
-    """Types of VLM runtimes available."""
+class VlmEngineType(str, Enum):
+    """Types of VLM inference engines available."""
 
-    # Local/inline runtimes
+    # Local/inline engines
     TRANSFORMERS = "transformers"
     MLX = "mlx"
     VLLM = "vllm"
 
-    # API-based runtimes
+    # API-based engines
     API = "api"
     API_OLLAMA = "api_ollama"
     API_LMSTUDIO = "api_lmstudio"
@@ -32,9 +32,9 @@ class VlmRuntimeType(str, Enum):
     AUTO_INLINE = "auto_inline"
 
     @classmethod
-    def is_api_variant(cls, runtime_type: "VlmRuntimeType") -> bool:
-        """Check if a runtime type is an API variant."""
-        return runtime_type in {
+    def is_api_variant(cls, engine_type: "VlmEngineType") -> bool:
+        """Check if an engine type is an API variant."""
+        return engine_type in {
             cls.API,
             cls.API_OLLAMA,
             cls.API_LMSTUDIO,
@@ -42,33 +42,31 @@ class VlmRuntimeType(str, Enum):
         }
 
     @classmethod
-    def is_inline_variant(cls, runtime_type: "VlmRuntimeType") -> bool:
-        """Check if a runtime type is an inline/local variant."""
-        return runtime_type in {
+    def is_inline_variant(cls, engine_type: "VlmEngineType") -> bool:
+        """Check if an engine type is an inline/local variant."""
+        return engine_type in {
             cls.TRANSFORMERS,
             cls.MLX,
             cls.VLLM,
         }
 
 
-class BaseVlmRuntimeOptions(BaseModel):
-    """Base configuration for VLM runtimes.
+class BaseVlmEngineOptions(BaseModel):
+    """Base configuration for VLM inference engines.
 
-    Runtime options are independent of model specifications and prompts.
+    Engine options are independent of model specifications and prompts.
     They only control how the inference is executed.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    runtime_type: VlmRuntimeType = Field(
-        description="Type of runtime to use for inference"
-    )
+    engine_type: VlmEngineType = Field(description="Type of inference engine to use")
 
 
-class VlmRuntimeInput(BaseModel):
-    """Input to a VLM runtime.
+class VlmEngineInput(BaseModel):
+    """Input to a VLM inference engine.
 
-    This is the generic interface that all runtimes accept.
+    This is the generic interface that all engines accept.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -89,10 +87,10 @@ class VlmRuntimeInput(BaseModel):
     )
 
 
-class VlmRuntimeOutput(BaseModel):
-    """Output from a VLM runtime.
+class VlmEngineOutput(BaseModel):
+    """Output from a VLM inference engine.
 
-    This is the generic interface that all runtimes return.
+    This is the generic interface that all engines return.
     """
 
     text: str = Field(description="Generated text from the model")
@@ -100,35 +98,35 @@ class VlmRuntimeOutput(BaseModel):
         default=None, description="Reason why generation stopped"
     )
     metadata: Dict[str, Any] = Field(
-        default_factory=dict, description="Additional metadata from the runtime"
+        default_factory=dict, description="Additional metadata from the engine"
     )
 
 
-class BaseVlmRuntime(ABC):
-    """Abstract base class for VLM runtimes.
+class BaseVlmEngine(ABC):
+    """Abstract base class for VLM inference engines.
 
-    A runtime handles the low-level model inference with generic inputs
+    An engine handles the low-level model inference with generic inputs
     (PIL images + text prompts) and returns text predictions.
 
-    Runtimes are independent of:
+    Engines are independent of:
     - Pipeline stages (DoclingDocument, Page objects)
     - Response formats (doctags, markdown, etc.)
 
     But they ARE aware of:
-    - Model specifications (repo_id, revision, model_type via RuntimeModelConfig)
+    - Model specifications (repo_id, revision, model_type via EngineModelConfig)
 
     These model specs are provided at construction time for eager initialization.
     """
 
     def __init__(
         self,
-        options: BaseVlmRuntimeOptions,
-        model_config: Optional["RuntimeModelConfig"] = None,
+        options: BaseVlmEngineOptions,
+        model_config: Optional["EngineModelConfig"] = None,
     ):
-        """Initialize the runtime.
+        """Initialize the engine.
 
         Args:
-            options: Runtime-specific configuration options
+            options: Engine-specific configuration options
             model_config: Model configuration (repo_id, revision, extra_config)
                          If None, model must be specified in predict() calls
         """
@@ -138,19 +136,17 @@ class BaseVlmRuntime(ABC):
 
     @abstractmethod
     def initialize(self) -> None:
-        """Initialize the runtime (load models, setup connections, etc.).
+        """Initialize the engine (load models, setup connections, etc.).
 
         This is called once before the first inference.
         Implementations should set self._initialized = True when done.
         """
 
     @abstractmethod
-    def predict_batch(
-        self, input_batch: List[VlmRuntimeInput]
-    ) -> List[VlmRuntimeOutput]:
+    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs.
 
-        This is the primary method that all runtimes must implement.
+        This is the primary method that all engines must implement.
         Single predictions are routed through this method.
 
         Args:
@@ -160,11 +156,11 @@ class BaseVlmRuntime(ABC):
             List of outputs, one per input
         """
 
-    def predict(self, input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
+    def predict(self, input_data: VlmEngineInput) -> VlmEngineOutput:
         """Run inference on a single input.
 
         This is a convenience method that wraps the input in a list and calls
-        predict_batch(). Runtimes should NOT override this method - all
+        predict_batch(). Engines should NOT override this method - all
         inference logic should be in predict_batch().
 
         Args:
@@ -180,8 +176,8 @@ class BaseVlmRuntime(ABC):
         return results[0]
 
     def __call__(
-        self, input_data: VlmRuntimeInput | List[VlmRuntimeInput]
-    ) -> VlmRuntimeOutput | List[VlmRuntimeOutput]:
+        self, input_data: VlmEngineInput | List[VlmEngineInput]
+    ) -> VlmEngineOutput | List[VlmEngineOutput]:
         """Convenience method to run inference.
 
         Args:
@@ -201,6 +197,6 @@ class BaseVlmRuntime(ABC):
     def cleanup(self) -> None:
         """Clean up resources (optional).
 
-        Called when the runtime is no longer needed.
+        Called when the engine is no longer needed.
         Implementations can override to release resources.
         """

@@ -42,9 +42,9 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
 )
 from docling.datamodel.settings import settings
-from docling.datamodel.vlm_runtime_options import (
-    ApiVlmRuntimeOptions,
-    VlmRuntimeType,
+from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
+    VlmEngineType,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -69,8 +69,8 @@ def main():
     # Use the granite_docling preset with API runtime override for vLLM
     vlm_options = VlmConvertOptions.from_preset(
         "granite_docling",
-        runtime_options=ApiVlmRuntimeOptions(
-            runtime_type=VlmRuntimeType.API,
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API,
             url="http://localhost:8000/v1/chat/completions",
             concurrency=BATCH_SIZE,
         ),

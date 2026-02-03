@@ -1,6 +1,6 @@
-"""Runtime options for VLM inference.
+"""Engine options for VLM inference.
 
-This module defines runtime-specific configuration options that are independent
+This module defines engine-specific configuration options that are independent
 of model specifications and prompts.
 """
 
@@ -10,26 +10,26 @@ from typing import Any, Dict, Literal, Optional
 from pydantic import AnyUrl, Field
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
-from docling.models.runtimes.base import BaseVlmRuntimeOptions, VlmRuntimeType
+from docling.models.runtimes.base import BaseVlmEngineOptions, VlmEngineType
 
 _log = logging.getLogger(__name__)
 
 
 # =============================================================================
-# AUTO_INLINE RUNTIME OPTIONS
+# AUTO_INLINE ENGINE OPTIONS
 # =============================================================================
 
 
-class AutoInlineVlmRuntimeOptions(BaseVlmRuntimeOptions):
-    """Options for auto-selecting the best local runtime.
+class AutoInlineVlmEngineOptions(BaseVlmEngineOptions):
+    """Options for auto-selecting the best local inference engine.
 
-    Automatically selects the best available local runtime based on:
+    Automatically selects the best available local engine based on:
     - Platform (macOS -> MLX, Linux/Windows -> Transformers/VLLM)
     - Available hardware (CUDA, MPS, CPU)
     - Model support
     """
 
-    runtime_type: Literal[VlmRuntimeType.AUTO_INLINE] = VlmRuntimeType.AUTO_INLINE
+    engine_type: Literal[VlmEngineType.AUTO_INLINE] = VlmEngineType.AUTO_INLINE
 
     prefer_vllm: bool = Field(
         default=False,
@@ -38,14 +38,14 @@ class AutoInlineVlmRuntimeOptions(BaseVlmRuntimeOptions):
 
 
 # =============================================================================
-# TRANSFORMERS RUNTIME OPTIONS
+# TRANSFORMERS ENGINE OPTIONS
 # =============================================================================
 
 
-class TransformersVlmRuntimeOptions(BaseVlmRuntimeOptions):
-    """Options for HuggingFace Transformers runtime."""
+class TransformersVlmEngineOptions(BaseVlmEngineOptions):
+    """Options for HuggingFace Transformers inference engine."""
 
-    runtime_type: Literal[VlmRuntimeType.TRANSFORMERS] = VlmRuntimeType.TRANSFORMERS
+    engine_type: Literal[VlmEngineType.TRANSFORMERS] = VlmEngineType.TRANSFORMERS
 
     device: Optional[AcceleratorDevice] = Field(
         default=None, description="Device to use (auto-detected if None)"
@@ -77,14 +77,14 @@ class TransformersVlmRuntimeOptions(BaseVlmRuntimeOptions):
 
 
 # =============================================================================
-# MLX RUNTIME OPTIONS
+# MLX ENGINE OPTIONS
 # =============================================================================
 
 
-class MlxVlmRuntimeOptions(BaseVlmRuntimeOptions):
-    """Options for Apple MLX runtime (Apple Silicon only)."""
+class MlxVlmEngineOptions(BaseVlmEngineOptions):
+    """Options for Apple MLX inference engine (Apple Silicon only)."""
 
-    runtime_type: Literal[VlmRuntimeType.MLX] = VlmRuntimeType.MLX
+    engine_type: Literal[VlmEngineType.MLX] = VlmEngineType.MLX
 
     trust_remote_code: bool = Field(
         default=False, description="Allow execution of custom code from model repo"
@@ -92,14 +92,14 @@ class MlxVlmRuntimeOptions(BaseVlmRuntimeOptions):
 
 
 # =============================================================================
-# VLLM RUNTIME OPTIONS
+# VLLM ENGINE OPTIONS
 # =============================================================================
 
 
-class VllmVlmRuntimeOptions(BaseVlmRuntimeOptions):
-    """Options for vLLM runtime (high-throughput serving)."""
+class VllmVlmEngineOptions(BaseVlmEngineOptions):
+    """Options for vLLM inference engine (high-throughput serving)."""
 
-    runtime_type: Literal[VlmRuntimeType.VLLM] = VlmRuntimeType.VLLM
+    engine_type: Literal[VlmEngineType.VLLM] = VlmEngineType.VLLM
 
     device: Optional[AcceleratorDevice] = Field(
         default=None, description="Device to use (auto-detected if None)"
@@ -119,11 +119,11 @@ class VllmVlmRuntimeOptions(BaseVlmRuntimeOptions):
 
 
 # =============================================================================
-# API RUNTIME OPTIONS
+# API ENGINE OPTIONS
 # =============================================================================
 
 
-class ApiVlmRuntimeOptions(BaseVlmRuntimeOptions):
+class ApiVlmEngineOptions(BaseVlmEngineOptions):
     """Options for API-based VLM services.
 
     Supports multiple API variants:
@@ -133,8 +133,8 @@ class ApiVlmRuntimeOptions(BaseVlmRuntimeOptions):
     - OpenAI
     """
 
-    runtime_type: VlmRuntimeType = Field(
-        default=VlmRuntimeType.API, description="API variant to use"
+    engine_type: VlmEngineType = Field(
+        default=VlmEngineType.API, description="API variant to use"
     )
 
     url: AnyUrl = Field(
@@ -156,14 +156,14 @@ class ApiVlmRuntimeOptions(BaseVlmRuntimeOptions):
     concurrency: int = Field(default=1, description="Number of concurrent requests")
 
     def __init__(self, **data):
-        """Initialize with default URLs based on runtime type."""
-        if "runtime_type" in data and "url" not in data:
-            runtime_type = data["runtime_type"]
-            if runtime_type == VlmRuntimeType.API_OLLAMA:
+        """Initialize with default URLs based on engine type."""
+        if "engine_type" in data and "url" not in data:
+            engine_type = data["engine_type"]
+            if engine_type == VlmEngineType.API_OLLAMA:
                 data["url"] = "http://localhost:11434/v1/chat/completions"
-            elif runtime_type == VlmRuntimeType.API_LMSTUDIO:
+            elif engine_type == VlmEngineType.API_LMSTUDIO:
                 data["url"] = "http://localhost:1234/v1/chat/completions"
-            elif runtime_type == VlmRuntimeType.API_OPENAI:
+            elif engine_type == VlmEngineType.API_OPENAI:
                 data["url"] = "https://api.openai.com/v1/chat/completions"
 
         super().__init__(**data)

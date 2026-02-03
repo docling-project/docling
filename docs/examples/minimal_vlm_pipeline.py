@@ -26,9 +26,9 @@ from docling.datamodel.pipeline_options import (
     VlmConvertOptions,
     VlmPipelineOptions,
 )
-from docling.datamodel.vlm_runtime_options import (
-    MlxVlmRuntimeOptions,
-    VlmRuntimeType,
+from docling.datamodel.vlm_engine_options import (
+    MlxVlmEngineOptions,
+    VlmEngineType,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -82,11 +82,11 @@ print(doc.export_to_markdown())
 
 vlm_options = VlmConvertOptions.from_preset(
     "granite_docling",
-    runtime_options=MlxVlmRuntimeOptions(),
+    engine_options=MlxVlmEngineOptions(),
 )
 
 # The preset automatically selects the MLX-optimized model variant
-print(f"Using model: {vlm_options.model_spec.get_repo_id(VlmRuntimeType.MLX)}")
+print(f"Using model: {vlm_options.model_spec.get_repo_id(VlmEngineType.MLX)}")
 
 converter = DocumentConverter(
     format_options={

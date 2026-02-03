@@ -1,4 +1,4 @@
-"""API-based VLM runtime for remote services."""
+"""API-based VLM inference engine for remote services."""
 
 import asyncio
 import logging
@@ -8,15 +8,15 @@ from typing import TYPE_CHECKING, List, Optional
 
 from PIL.Image import Image
 
-from docling.datamodel.vlm_runtime_options import ApiVlmRuntimeOptions
+from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
 from docling.models.runtimes._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,
 )
 from docling.models.runtimes.base import (
-    BaseVlmRuntime,
-    VlmRuntimeInput,
-    VlmRuntimeOutput,
+    BaseVlmEngine,
+    VlmEngineInput,
+    VlmEngineOutput,
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.utils.api_image_request import (
@@ -25,13 +25,13 @@ from docling.utils.api_image_request import (
 )
 
 if TYPE_CHECKING:
-    from docling.datamodel.stage_model_specs import RuntimeModelConfig
+    from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
 
 
-class ApiVlmRuntime(BaseVlmRuntime):
-    """API runtime for VLM inference via remote services.
+class ApiVlmEngine(BaseVlmEngine):
+    """API engine for VLM inference via remote services.
 
     This runtime supports OpenAI-compatible API endpoints including:
     - Generic OpenAI-compatible APIs
@@ -42,17 +42,17 @@ class ApiVlmRuntime(BaseVlmRuntime):
 
     def __init__(
         self,
-        options: ApiVlmRuntimeOptions,
-        model_config: Optional["RuntimeModelConfig"] = None,
+        options: ApiVlmEngineOptions,
+        model_config: Optional["EngineModelConfig"] = None,
     ):
-        """Initialize the API runtime.
+        """Initialize the API engine.
 
         Args:
             options: API-specific runtime options
             model_config: Model configuration (repo_id, revision, extra_config)
         """
         super().__init__(options, model_config=model_config)
-        self.options: ApiVlmRuntimeOptions = options
+        self.options: ApiVlmEngineOptions = options
 
         # Merge model_config extra_config (which contains API params from model spec)
         # with runtime options params. Runtime options take precedence.
@@ -71,14 +71,16 @@ class ApiVlmRuntime(BaseVlmRuntime):
             self.merged_params = self.options.params.copy()
 
     def initialize(self) -> None:
-        """Initialize the API runtime.
+        """Initialize the API engine.
 
         For API runtimes, initialization is minimal - just validate options.
         """
         if self._initialized:
             return
 
-        _log.info(f"Initializing API VLM runtime (endpoint: {self.options.url})")
+        _log.info(
+            f"Initializing API VLM inference engine (endpoint: {self.options.url})"
+        )
 
         # Validate that we have a URL
         if not self.options.url:
@@ -87,9 +89,7 @@ class ApiVlmRuntime(BaseVlmRuntime):
         self._initialized = True
         _log.info("API runtime initialized")
 
-    def predict_batch(
-        self, input_batch: List[VlmRuntimeInput]
-    ) -> List[VlmRuntimeOutput]:
+    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs using concurrent API requests.
 
         This method processes multiple images concurrently using a thread pool,
@@ -107,7 +107,7 @@ class ApiVlmRuntime(BaseVlmRuntime):
         if not input_batch:
             return []
 
-        def _process_single_input(input_data: VlmRuntimeInput) -> VlmRuntimeOutput:
+        def _process_single_input(input_data: VlmEngineInput) -> VlmEngineOutput:
             """Process a single input via API."""
             # Prepare image using shared utility
             images = preprocess_image_batch([input_data.image])
@@ -166,7 +166,7 @@ class ApiVlmRuntime(BaseVlmRuntime):
 
             generation_time = time.time() - request_start_time
 
-            return VlmRuntimeOutput(
+            return VlmEngineOutput(
                 text=generated_text,
                 stop_reason=stop_reason,
                 metadata={

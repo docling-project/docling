@@ -1,26 +1,28 @@
-"""MLX-based VLM runtime for Apple Silicon."""
+"""MLX-based VLM inference engine for Apple Silicon."""
 
 import logging
 import threading
 import time
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 from PIL.Image import Image
 
-from docling.datamodel.stage_model_specs import RuntimeModelConfig
-from docling.datamodel.vlm_runtime_options import MlxVlmRuntimeOptions
+from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
 from docling.models.runtimes._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,
 )
 from docling.models.runtimes.base import (
-    BaseVlmRuntime,
-    VlmRuntimeInput,
-    VlmRuntimeOutput,
+    BaseVlmEngine,
+    VlmEngineInput,
+    VlmEngineOutput,
 )
 from docling.models.utils.generation_utils import GenerationStopper
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+
+if TYPE_CHECKING:
+    from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
 
@@ -29,10 +31,10 @@ _log = logging.getLogger(__name__)
 _MLX_GLOBAL_LOCK = threading.Lock()
 
 
-class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
-    """MLX runtime for VLM inference on Apple Silicon.
+class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
+    """MLX engine for VLM inference on Apple Silicon.
 
-    This runtime uses the mlx-vlm library to run vision-language models
+    This engine uses the mlx-vlm library to run vision-language models
     efficiently on Apple Silicon (M1/M2/M3) using the Metal Performance Shaders.
 
     Note: MLX models are not thread-safe and use a global lock.
@@ -40,11 +42,11 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
     def __init__(
         self,
-        options: MlxVlmRuntimeOptions,
+        options: MlxVlmEngineOptions,
         artifacts_path: Optional[Path] = None,
-        model_config: Optional[RuntimeModelConfig] = None,
+        model_config: Optional[EngineModelConfig] = None,
     ):
-        """Initialize the MLX runtime.
+        """Initialize the MLX engine.
 
         Args:
             options: MLX-specific runtime options
@@ -52,7 +54,7 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             model_config: Model configuration (repo_id, revision, extra_config)
         """
         super().__init__(options, model_config=model_config)
-        self.options: MlxVlmRuntimeOptions = options
+        self.options: MlxVlmEngineOptions = options
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization
@@ -72,7 +74,7 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         if self._initialized:
             return
 
-        _log.info("Initializing MLX VLM runtime...")
+        _log.info("Initializing MLX VLM inference engine...")
 
         try:
             from mlx_vlm import load, stream_generate
@@ -123,9 +125,7 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
         _log.info(f"Loaded MLX model {repo_id} (revision: {revision})")
 
-    def predict_batch(
-        self, input_batch: List[VlmRuntimeInput]
-    ) -> List[VlmRuntimeOutput]:
+    def predict_batch(self, input_batch: List[VlmEngineInput]) -> List[VlmEngineOutput]:
         """Run inference on a batch of inputs.
 
         Note: MLX models are not thread-safe and use a global lock, so batch
@@ -148,7 +148,7 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
         # Model should already be loaded via initialize()
         if self.vlm_model is None or self.processor is None or self.config is None:
             raise RuntimeError(
-                "Model not loaded. Ensure RuntimeModelConfig was provided during initialization."
+                "Model not loaded. Ensure EngineModelConfig was provided during initialization."
             )
 
         _log.debug(
@@ -156,7 +156,7 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
             "(MLX does not support batched inference)"
         )
 
-        outputs: List[VlmRuntimeOutput] = []
+        outputs: List[VlmEngineOutput] = []
 
         # MLX models are not thread-safe - use global lock to serialize access
         with _MLX_GLOBAL_LOCK:
@@ -244,7 +244,7 @@ class MlxVlmRuntime(BaseVlmRuntime, HuggingFaceModelDownloadMixin):
 
                 # Create output
                 outputs.append(
-                    VlmRuntimeOutput(
+                    VlmEngineOutput(
                         text=output_text,
                         stop_reason=stop_reason,
                         metadata={

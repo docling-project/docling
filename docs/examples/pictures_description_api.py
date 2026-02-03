@@ -32,11 +32,11 @@ from dotenv import load_dotenv
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
     PdfPipelineOptions,
-    PictureDescriptionVlmRuntimeOptions,
+    PictureDescriptionVlmEngineOptions,
 )
-from docling.datamodel.vlm_runtime_options import (
-    ApiVlmRuntimeOptions,
-    VlmRuntimeType,
+from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
+    VlmEngineType,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 
@@ -49,10 +49,10 @@ def run_lm_studio_example(input_doc_path: Path):
 
     # Start LM Studio with granite-vision model loaded
     # The preset is pre-configured for LM Studio API type
-    picture_desc_options = PictureDescriptionVlmRuntimeOptions.from_preset(
+    picture_desc_options = PictureDescriptionVlmEngineOptions.from_preset(
         "granite_vision",
-        runtime_options=ApiVlmRuntimeOptions(
-            runtime_type=VlmRuntimeType.API_LMSTUDIO,
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API_LMSTUDIO,
             # url is pre-configured for LM Studio (http://localhost:1234/v1/chat/completions)
             # model name is pre-configured from the preset
             timeout=90,
@@ -65,9 +65,9 @@ def run_lm_studio_example(input_doc_path: Path):
     pipeline_options.enable_remote_services = True  # Required for API runtimes
 
     print("\nOther API types are also pre-configured:")
-    print("- VlmRuntimeType.API_OLLAMA: http://localhost:11434/v1/chat/completions")
-    print("- VlmRuntimeType.API_OPENAI: https://api.openai.com/v1/chat/completions")
-    print("- VlmRuntimeType.API: Generic API endpoint (you specify the URL)")
+    print("- VlmEngineType.API_OLLAMA: http://localhost:11434/v1/chat/completions")
+    print("- VlmEngineType.API_OPENAI: https://api.openai.com/v1/chat/completions")
+    print("- VlmEngineType.API: Generic API endpoint (you specify the URL)")
     print("\nEach preset has pre-configured model names for these API types.")
     print("For example, granite_vision preset knows:")
     print('- Ollama model name: "ibm/granite3.3-vision:2b"')
@@ -127,10 +127,10 @@ def run_watsonx_example(input_doc_path: Path):
         return res.json()["access_token"]
 
     # For watsonx.ai, we need to provide custom URL, headers, and params
-    picture_desc_options = PictureDescriptionVlmRuntimeOptions.from_preset(
+    picture_desc_options = PictureDescriptionVlmEngineOptions.from_preset(
         "granite_vision",
-        runtime_options=ApiVlmRuntimeOptions(
-            runtime_type=VlmRuntimeType.API,  # Generic API type
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API,  # Generic API type
             url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
             headers={
                 "Authorization": "Bearer " + _get_iam_access_token(api_key=api_key),
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 #
 # ### Custom API Configuration
 # For services like watsonx.ai that need custom configuration:
-# - Use `VlmRuntimeType.API` (generic)
+# - Use `VlmEngineType.API` (generic)
 # - Provide custom `url`, `headers`, and `params`
 # - The preset still provides the base model configuration
 #

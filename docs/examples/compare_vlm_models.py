@@ -39,11 +39,11 @@ from docling.datamodel.pipeline_options import (
     VlmConvertOptions,
     VlmPipelineOptions,
 )
-from docling.datamodel.vlm_runtime_options import (
-    ApiVlmRuntimeOptions,
-    MlxVlmRuntimeOptions,
-    TransformersVlmRuntimeOptions,
-    VlmRuntimeType,
+from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
+    MlxVlmEngineOptions,
+    TransformersVlmEngineOptions,
+    VlmEngineType,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -53,7 +53,7 @@ def convert(
     sources: list[Path],
     converter: DocumentConverter,
     preset_name: str,
-    runtime_type: VlmRuntimeType,
+    runtime_type: VlmEngineType,
 ):
     # Note: this helper assumes a single-item `sources` list. It returns after
     # processing the first source to keep runtime/output focused.
@@ -161,25 +161,25 @@ if __name__ == "__main__":
     # pipeline_options.accelerator_options.cuda_use_flash_attention2 = True
 
     # Define preset configurations to test
-    # Each tuple is (preset_name, runtime_options)
+    # Each tuple is (preset_name, engine_options)
     preset_configs = [
         # SmolDocling
-        ("smoldocling", MlxVlmRuntimeOptions()),
+        ("smoldocling", MlxVlmEngineOptions()),
         # GraniteDocling with different runtimes
-        ("granite_docling", MlxVlmRuntimeOptions()),
-        ("granite_docling", TransformersVlmRuntimeOptions()),
+        ("granite_docling", MlxVlmEngineOptions()),
+        ("granite_docling", TransformersVlmEngineOptions()),
         # Granite models
-        ("granite_vision", TransformersVlmRuntimeOptions()),
+        ("granite_vision", TransformersVlmEngineOptions()),
         # Other presets with MLX (macOS only)
-        ("pixtral", MlxVlmRuntimeOptions()),
-        ("qwen", MlxVlmRuntimeOptions()),
-        ("gemma_12b", MlxVlmRuntimeOptions()),
+        ("pixtral", MlxVlmEngineOptions()),
+        ("qwen", MlxVlmEngineOptions()),
+        ("gemma_12b", MlxVlmEngineOptions()),
         # Other presets with Ollama
-        ("deepseek_ocr", ApiVlmRuntimeOptions(runtime_type=VlmRuntimeType.API_OLLAMA)),
+        ("deepseek_ocr", ApiVlmEngineOptions(runtime_type=VlmEngineType.API_OLLAMA)),
         # Other presets with LM Studio
         (
             "deepseek_ocr",
-            ApiVlmRuntimeOptions(runtime_type=VlmRuntimeType.API_LMSTUDIO),
+            ApiVlmEngineOptions(runtime_type=VlmEngineType.API_LMSTUDIO),
         ),
     ]
 
@@ -188,15 +188,15 @@ if __name__ == "__main__":
         preset_configs = [
             (preset, runtime)
             for preset, runtime in preset_configs
-            if runtime.runtime_type != VlmRuntimeType.MLX
+            if runtime.runtime_type != VlmEngineType.MLX
         ]
 
     rows = []
-    for preset_name, runtime_options in preset_configs:
+    for preset_name, engine_options in preset_configs:
         # Create VLM options from preset with runtime override
         vlm_options = VlmConvertOptions.from_preset(
             preset_name,
-            runtime_options=runtime_options,
+            engine_options=engine_options,
         )
 
         pipeline_options.vlm_options = vlm_options
@@ -219,7 +219,7 @@ if __name__ == "__main__":
             sources=sources,
             converter=converter,
             preset_name=preset_name,
-            runtime_type=runtime_options.runtime_type,
+            runtime_type=engine_options.runtime_type,
         )
         rows.append(row)
 

@@ -22,16 +22,16 @@ def picture_description():
     from docling.models.stages.picture_description.picture_description_api_model import (
         PictureDescriptionApiModel,
     )
+    from docling.models.stages.picture_description.picture_description_vlm_engine_model import (
+        PictureDescriptionVlmEngineModel,
+    )
     from docling.models.stages.picture_description.picture_description_vlm_model import (
         PictureDescriptionVlmModel,
-    )
-    from docling.models.stages.picture_description.picture_description_vlm_runtime_model import (
-        PictureDescriptionVlmRuntimeModel,
     )
 
     return {
         "picture_description": [
-            PictureDescriptionVlmRuntimeModel,  # New runtime-based (preferred)
+            PictureDescriptionVlmEngineModel,  # New engine-based (preferred)
             PictureDescriptionVlmModel,  # Legacy direct transformers
             PictureDescriptionApiModel,  # API-based
         ]

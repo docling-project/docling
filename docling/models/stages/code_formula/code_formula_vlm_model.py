@@ -25,8 +25,8 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.pipeline_options import CodeFormulaVlmOptions
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
-from docling.models.runtimes.base import BaseVlmRuntime, VlmRuntimeInput
-from docling.models.runtimes.factory import create_vlm_runtime
+from docling.models.runtimes.base import BaseVlmEngine, VlmEngineInput
+from docling.models.runtimes.factory import create_vlm_engine
 
 _log = logging.getLogger(__name__)
 
@@ -82,30 +82,30 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         """
         self.enabled = enabled
         self.options = options
-        self.runtime: Optional[BaseVlmRuntime] = None
+        self.engine: Optional[BaseVlmEngine] = None
 
         if self.enabled:
             # Check if using new runtime system
             if (
                 self.options.model_spec is not None
-                and self.options.runtime_options is not None
+                and self.options.engine_options is not None
             ):
                 # New runtime system path
-                runtime_type = self.options.runtime_options.runtime_type
+                engine_type = self.options.engine_options.engine_type
 
-                # Get model configuration for this runtime
-                self.repo_id = self.options.model_spec.get_repo_id(runtime_type)
-                self.revision = self.options.model_spec.get_revision(runtime_type)
+                # Get model configuration for this engine
+                self.repo_id = self.options.model_spec.get_repo_id(engine_type)
+                self.revision = self.options.model_spec.get_revision(engine_type)
 
                 _log.info(
                     f"Initializing CodeFormulaVlmModel with runtime system: "
                     f"model={self.repo_id}, "
-                    f"runtime={runtime_type.value}"
+                    f"engine={engine_type.value}"
                 )
 
-                # Create runtime using factory
-                self.runtime = create_vlm_runtime(
-                    self.options.runtime_options, model_spec=self.options.model_spec
+                # Create engine using factory
+                self.engine = create_vlm_engine(
+                    self.options.engine_options, model_spec=self.options.model_spec
                 )
 
                 _log.info("CodeFormulaVlmModel initialized successfully")
@@ -113,7 +113,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             else:
                 # Legacy path - fall back to old implementation
                 raise ValueError(
-                    "CodeFormulaVlmModel requires model_spec and runtime_options. "
+                    "CodeFormulaVlmModel requires model_spec and engine_options. "
                     "Use CodeFormulaVlmOptions.from_preset() to create options."
                 )
 
@@ -241,8 +241,8 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
                 yield element.item
             return
 
-        if self.runtime is None:
-            raise RuntimeError("Runtime not initialized")
+        if self.engine is None:
+            raise RuntimeError("Engine not initialized")
 
         labels: List[str] = []
         images: List[Union[Image.Image, np.ndarray]] = []
@@ -254,11 +254,11 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             labels.append(el.item.label)
             images.append(el.image)
 
-        # Process batch through runtime
+        # Process batch through engine
         try:
-            # Prepare batch of runtime inputs
-            runtime_inputs = [
-                VlmRuntimeInput(
+            # Prepare batch of engine inputs
+            engine_inputs = [
+                VlmEngineInput(
                     image=image
                     if isinstance(image, Image.Image)
                     else Image.fromarray(image),
@@ -273,7 +273,7 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             ]
 
             # Run batch inference
-            batch_outputs = self.runtime.predict_batch(runtime_inputs)
+            batch_outputs = self.engine.predict_batch(engine_inputs)
             outputs = [output.text for output in batch_outputs]
 
         except Exception as e:
@@ -293,9 +293,9 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
             yield item
 
     def __del__(self):
-        """Cleanup runtime resources."""
-        if self.runtime is not None:
+        """Cleanup engine resources."""
+        if self.engine is not None:
             try:
-                self.runtime.cleanup()
+                self.engine.cleanup()
             except Exception as e:
-                _log.warning(f"Error cleaning up runtime: {e}")
+                _log.warning(f"Error cleaning up engine: {e}")

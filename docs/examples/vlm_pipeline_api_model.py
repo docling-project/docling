@@ -33,9 +33,9 @@ from docling.datamodel.pipeline_options import (
     VlmConvertOptions,
     VlmPipelineOptions,
 )
-from docling.datamodel.vlm_runtime_options import (
-    ApiVlmRuntimeOptions,
-    VlmRuntimeType,
+from docling.datamodel.vlm_engine_options import (
+    ApiVlmEngineOptions,
+    VlmEngineType,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.pipeline.vlm_pipeline import VlmPipeline
@@ -188,8 +188,8 @@ def run_lmstudio_example(input_doc_path: Path) -> bool:
     # The preset is pre-configured for LM Studio API type
     vlm_options = VlmConvertOptions.from_preset(
         "granite_docling",
-        runtime_options=ApiVlmRuntimeOptions(
-            runtime_type=VlmRuntimeType.API_LMSTUDIO,
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API_LMSTUDIO,
             # url is pre-configured for LM Studio (http://localhost:1234/v1/chat/completions)
             # model name is pre-configured from the preset
             timeout=90,
@@ -202,9 +202,9 @@ def run_lmstudio_example(input_doc_path: Path) -> bool:
     )
 
     print("\nOther API types are also pre-configured:")
-    print("- VlmRuntimeType.API_OLLAMA: http://localhost:11434/v1/chat/completions")
-    print("- VlmRuntimeType.API_OPENAI: https://api.openai.com/v1/chat/completions")
-    print("- VlmRuntimeType.API: Generic API endpoint (you specify the URL)")
+    print("- VlmEngineType.API_OLLAMA: http://localhost:11434/v1/chat/completions")
+    print("- VlmEngineType.API_OPENAI: https://api.openai.com/v1/chat/completions")
+    print("- VlmEngineType.API: Generic API endpoint (you specify the URL)")
     print("\nEach preset has pre-configured model names for these API types.\n")
 
     doc_converter = DocumentConverter(
@@ -256,8 +256,8 @@ def run_ollama_example(input_doc_path: Path) -> bool:
     # Use granite_docling preset with Ollama API runtime
     vlm_options = VlmConvertOptions.from_preset(
         "granite_docling",
-        runtime_options=ApiVlmRuntimeOptions(
-            runtime_type=VlmRuntimeType.API_OLLAMA,
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API_OLLAMA,
             # url is pre-configured for Ollama (http://localhost:11434/v1/chat/completions)
             # model name is pre-configured from the preset
             timeout=90,
@@ -313,8 +313,8 @@ def run_vllm_example(input_doc_path: Path) -> bool:
     # For VLLM, we need to provide custom URL and params
     vlm_options = VlmConvertOptions.from_preset(
         "granite_docling",
-        runtime_options=ApiVlmRuntimeOptions(
-            runtime_type=VlmRuntimeType.API,  # Generic API type
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API,  # Generic API type
             url="http://localhost:8000/v1/chat/completions",
             params={
                 "model": "ibm-granite/granite-docling-258M",
@@ -389,8 +389,8 @@ def run_watsonx_example(input_doc_path: Path) -> bool:
     # Use granite_docling preset but override the model for watsonx.ai
     vlm_options = VlmConvertOptions.from_preset(
         "granite_docling",
-        runtime_options=ApiVlmRuntimeOptions(
-            runtime_type=VlmRuntimeType.API,  # Generic API type
+        engine_options=ApiVlmEngineOptions(
+            runtime_type=VlmEngineType.API,  # Generic API type
             url="https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29",
             headers={
                 "Authorization": "Bearer " + _get_iam_access_token(api_key=api_key),
@@ -482,7 +482,7 @@ if __name__ == "__main__":
 #
 # ### Custom API Configuration
 # For services like watsonx.ai that need custom configuration:
-# - Use `VlmRuntimeType.API` (generic)
+# - Use `VlmEngineType.API` (generic)
 # - Provide custom `url`, `headers`, and `params`
 # - The preset still provides the base model configuration (prompt, response format)
 #

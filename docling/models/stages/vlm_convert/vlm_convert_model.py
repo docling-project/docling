@@ -14,10 +14,10 @@ from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.models.base_model import BasePageModel
 from docling.models.runtimes.base import (
-    BaseVlmRuntime,
-    VlmRuntimeInput,
+    BaseVlmEngine,
+    VlmEngineInput,
 )
-from docling.models.runtimes.factory import create_vlm_runtime
+from docling.models.runtimes.factory import create_vlm_engine
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
@@ -52,21 +52,21 @@ class VlmConvertModel(BasePageModel):
         if not self.enabled:
             return
 
-        # Get runtime type from options
-        runtime_type = options.runtime_options.runtime_type
+        # Get engine type from options
+        engine_type = options.engine_options.engine_type
 
-        # Get model configuration for this runtime (for logging)
-        self.repo_id = options.model_spec.get_repo_id(runtime_type)
-        self.revision = options.model_spec.get_revision(runtime_type)
+        # Get model configuration for this engine (for logging)
+        self.repo_id = options.model_spec.get_repo_id(engine_type)
+        self.revision = options.model_spec.get_revision(engine_type)
 
         _log.info(
-            f"Initializing VlmConvertModel with runtime={runtime_type.value}, "
+            f"Initializing VlmConvertModel with engine={engine_type.value}, "
             f"model={self.repo_id}, revision={self.revision}"
         )
 
-        # Create the runtime - pass model_spec, let factory handle config generation
-        self.runtime: BaseVlmRuntime = create_vlm_runtime(
-            options.runtime_options,
+        # Create the engine - pass model_spec, let factory handle config generation
+        self.engine: BaseVlmEngine = create_vlm_engine(
+            options.engine_options,
             model_spec=options.model_spec,
         )
 
@@ -75,7 +75,7 @@ class VlmConvertModel(BasePageModel):
     def __call__(
         self, conv_res: ConversionResult, page_batch: Iterable[Page]
     ) -> Iterable[Page]:
-        """Process a batch of pages through the VLM runtime.
+        """Process a batch of pages through the VLM engine.
 
         Args:
             conv_res: Conversion result context
@@ -134,12 +134,12 @@ class VlmConvertModel(BasePageModel):
                 return
 
             # Process through runtime using batch prediction
-            _log.debug(f"Processing {len(images)} pages through VLM runtime (batched)")
+            _log.debug(f"Processing {len(images)} pages through VLM engine (batched)")
 
             try:
                 # Create batch of runtime inputs
-                runtime_inputs = [
-                    VlmRuntimeInput(
+                engine_inputs = [
+                    VlmEngineInput(
                         image=img,
                         prompt=prompt,
                         temperature=0.0,  # Use from options if needed
@@ -149,7 +149,7 @@ class VlmConvertModel(BasePageModel):
                 ]
 
                 # Run batch inference
-                outputs = self.runtime.predict_batch(runtime_inputs)
+                outputs = self.engine.predict_batch(engine_inputs)
 
                 # Attach predictions to pages
                 for page, output in zip(valid_pages, outputs):
@@ -171,7 +171,7 @@ class VlmConvertModel(BasePageModel):
                     )
 
             except Exception as e:
-                _log.error(f"Error processing pages through VLM runtime: {e}")
+                _log.error(f"Error processing pages through VLM engine: {e}")
                 raise
 
         # Yield all pages (including those that were skipped)
@@ -216,8 +216,8 @@ class VlmConvertModel(BasePageModel):
             prompts = prompt
 
         # Process batch of images
-        runtime_inputs = [
-            VlmRuntimeInput(
+        engine_inputs = [
+            VlmEngineInput(
                 image=img,
                 prompt=p,
                 temperature=0.0,
@@ -227,7 +227,7 @@ class VlmConvertModel(BasePageModel):
         ]
 
         # Run batch inference
-        outputs = self.runtime.predict_batch(runtime_inputs)
+        outputs = self.engine.predict_batch(engine_inputs)
 
         # Convert outputs to VlmPredictions
         for output in outputs:
@@ -246,9 +246,9 @@ class VlmConvertModel(BasePageModel):
             )
 
     def __del__(self):
-        """Cleanup runtime resources."""
-        if hasattr(self, "runtime"):
+        """Cleanup engine resources."""
+        if hasattr(self, "engine"):
             try:
-                self.runtime.cleanup()
+                self.engine.cleanup()
             except Exception as e:
-                _log.warning(f"Error cleaning up runtime: {e}")
+                _log.warning(f"Error cleaning up engine: {e}")

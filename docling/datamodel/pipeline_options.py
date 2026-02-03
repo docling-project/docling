@@ -39,6 +39,7 @@ from docling.datamodel.stage_model_specs import (
     StagePresetMixin,
     VlmModelSpec,
 )
+from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
     GRANITE_VISION_TRANSFORMERS as granite_vision_vlm_conversion_options,
@@ -47,7 +48,6 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
 )
-from docling.datamodel.vlm_runtime_options import BaseVlmRuntimeOptions
 
 _log = logging.getLogger(__name__)
 
@@ -583,7 +583,7 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
     """Configuration for inline vision-language models for picture description.
 
     This is the legacy implementation that uses direct HuggingFace Transformers integration.
-    For the new runtime-based system with preset support, use PictureDescriptionVlmRuntimeOptions.
+    For the new runtime-based system with preset support, use PictureDescriptionVlmEngineOptions.
     """
 
     kind: ClassVar[Literal["vlm"]] = "vlm"
@@ -628,7 +628,7 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
         return self.repo_id.replace("/", "--")
 
 
-class PictureDescriptionVlmRuntimeOptions(
+class PictureDescriptionVlmEngineOptions(
     StagePresetMixin, PictureDescriptionBaseOptions
 ):
     """Configuration for VLM runtime-based picture description.
@@ -640,24 +640,24 @@ class PictureDescriptionVlmRuntimeOptions(
 
     Examples:
         # Use preset with default runtime
-        options = PictureDescriptionVlmRuntimeOptions.from_preset("smolvlm")
+        options = PictureDescriptionVlmEngineOptions.from_preset("smolvlm")
 
         # Use preset with runtime override
-        from docling.datamodel.vlm_runtime_options import MlxVlmRuntimeOptions, VlmRuntimeType
-        options = PictureDescriptionVlmRuntimeOptions.from_preset(
+        from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions, VlmEngineType
+        options = PictureDescriptionVlmEngineOptions.from_preset(
             "smolvlm",
-            runtime_options=MlxVlmRuntimeOptions(runtime_type=VlmRuntimeType.MLX)
+            engine_options=MlxVlmEngineOptions(engine_type=VlmEngineType.MLX)
         )
     """
 
-    kind: ClassVar[Literal["picture_description_vlm_runtime"]] = (
-        "picture_description_vlm_runtime"
+    kind: ClassVar[Literal["picture_description_vlm_engine"]] = (
+        "picture_description_vlm_engine"
     )
 
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
     )
-    runtime_options: BaseVlmRuntimeOptions = Field(
+    engine_options: BaseVlmEngineOptions = Field(
         description="Runtime configuration (transformers, mlx, api, etc.)"
     )
     prompt: Annotated[
@@ -717,10 +717,10 @@ class VlmConvertOptions(StagePresetMixin, BaseModel):
         options = VlmConvertOptions.from_preset("smoldocling")
 
         # Use preset with runtime override
-        from docling.datamodel.vlm_runtime_options import ApiVlmRuntimeOptions, VlmRuntimeType
+        from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions, VlmEngineType
         options = VlmConvertOptions.from_preset(
             "smoldocling",
-            runtime_options=ApiVlmRuntimeOptions(runtime_type=VlmRuntimeType.API_OLLAMA)
+            engine_options=ApiVlmEngineOptions(engine_type=VlmEngineType.API_OLLAMA)
         )
     """
 
@@ -728,7 +728,7 @@ class VlmConvertOptions(StagePresetMixin, BaseModel):
         description="Model specification with runtime-specific overrides"
     )
 
-    runtime_options: BaseVlmRuntimeOptions = Field(
+    engine_options: BaseVlmEngineOptions = Field(
         description="Runtime configuration (transformers, mlx, api, etc.)"
     )
 
@@ -768,7 +768,7 @@ class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
         description="Model specification with runtime-specific overrides"
     )
 
-    runtime_options: BaseVlmRuntimeOptions = Field(
+    engine_options: BaseVlmEngineOptions = Field(
         description="Runtime configuration (transformers, mlx, api, etc.)"
     )
 
@@ -805,16 +805,16 @@ VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_GEMMA_27B)
 VlmConvertOptions.register_preset(stage_model_specs.VLM_CONVERT_DOLPHIN)
 
 # Register PictureDescription presets (for new runtime-based implementation)
-PictureDescriptionVlmRuntimeOptions.register_preset(
+PictureDescriptionVlmEngineOptions.register_preset(
     stage_model_specs.PICTURE_DESC_SMOLVLM
 )
-PictureDescriptionVlmRuntimeOptions.register_preset(
+PictureDescriptionVlmEngineOptions.register_preset(
     stage_model_specs.PICTURE_DESC_GRANITE_VISION
 )
-PictureDescriptionVlmRuntimeOptions.register_preset(
+PictureDescriptionVlmEngineOptions.register_preset(
     stage_model_specs.PICTURE_DESC_PIXTRAL
 )
-PictureDescriptionVlmRuntimeOptions.register_preset(stage_model_specs.PICTURE_DESC_QWEN)
+PictureDescriptionVlmEngineOptions.register_preset(stage_model_specs.PICTURE_DESC_QWEN)
 
 # Register CodeFormula presets
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_CODEFORMULAV2)
@@ -830,8 +830,8 @@ CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_GRANITE_DOC
 _default_vlm_convert_options = VlmConvertOptions.from_preset("granite_docling")
 """Default VLM convert options using granite_docling preset with AUTO_INLINE runtime."""
 
-# Default PictureDescriptionVlmRuntimeOptions using smolvlm preset
-_default_picture_description_options = PictureDescriptionVlmRuntimeOptions.from_preset(
+# Default PictureDescriptionVlmEngineOptions using smolvlm preset
+_default_picture_description_options = PictureDescriptionVlmEngineOptions.from_preset(
     "smolvlm"
 )
 """Default picture description options using smolvlm preset with AUTO_INLINE runtime."""
