@@ -942,6 +942,28 @@ class PipelineOptions(BaseOptions):
             examples=["./artifacts", "/tmp/docling_outputs"],
         ),
     ] = None
+    force_all_model_init: Annotated[
+        bool,
+        Field(
+            description=(
+                "Initialize all optional models regardless of do_* field values. "
+                "Enables runtime override of do_* fields without re-initialization. "
+                "Increases initialization time and memory usage."
+            ),
+            examples=[False],
+        ),
+    ] = False
+
+    def _get_compatibility_payload(self) -> dict[str, Any]:
+        """Get payload for compatibility hashing.
+
+        Base implementation returns full model dump. Subclasses with do_* fields
+        should override to exclude them.
+
+        Returns:
+            Dictionary suitable for compatibility hashing
+        """
+        return self.model_dump(serialize_as_any=True)
 
 
 class ConvertPipelineOptions(PipelineOptions):
@@ -979,6 +1001,14 @@ class ConvertPipelineOptions(PipelineOptions):
     do_chart_extraction: bool = (
         False  # True: extract data in tabular format from bar-, pie and line-charts
     )
+
+    def _get_compatibility_payload(self) -> dict[str, Any]:
+        """Override to exclude do_picture_* fields from compatibility check."""
+        payload = super()._get_compatibility_payload()
+        # Explicitly exclude do_* fields owned by this class
+        payload.pop("do_picture_classification", None)
+        payload.pop("do_picture_description", None)
+        return payload
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
@@ -1332,6 +1362,16 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = 100
+
+    def _get_compatibility_payload(self) -> dict[str, Any]:
+        """Override to exclude do_* fields from compatibility check."""
+        payload = super()._get_compatibility_payload()
+        # Explicitly exclude do_* fields owned by this class
+        payload.pop("do_table_structure", None)
+        payload.pop("do_ocr", None)
+        payload.pop("do_code_enrichment", None)
+        payload.pop("do_formula_enrichment", None)
+        return payload
 
 
 class ProcessingPipeline(str, Enum):

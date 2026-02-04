@@ -253,12 +253,56 @@ class DocumentConverter:
     ) -> dict[tuple[Type[BasePipeline], str], BasePipeline]:
         return self.initialized_pipelines
 
-    def _get_pipeline_options_hash(self, pipeline_options: PipelineOptions) -> str:
-        """Generate a hash of pipeline options to use as part of the cache key."""
-        options_str = str(pipeline_options.model_dump())
+    def _get_pipeline_options_hash(
+        self, pipeline_options: PipelineOptions, for_compatibility: bool = False
+    ) -> str:
+        """Generate a hash of pipeline options.
+
+        Args:
+            pipeline_options: Options to hash
+            for_compatibility: If True, use compatibility payload (excludes do_* fields)
+
+        Returns:
+            MD5 hash string
+        """
+        if for_compatibility:
+            options_str = str(pipeline_options._get_compatibility_payload())
+        else:
+            options_str = str(pipeline_options.model_dump(serialize_as_any=True))
+
         return hashlib.md5(
             options_str.encode("utf-8"), usedforsecurity=False
         ).hexdigest()
+
+    def _check_options_compatibility(
+        self, initialized_options: PipelineOptions, override_options: PipelineOptions
+    ) -> bool:
+        """Check if override options are compatible with initialized pipeline.
+
+        Compatible means:
+        - Same options class type
+        - Compatibility payloads match (non-do_* fields are identical)
+
+        Args:
+            initialized_options: Options used to initialize pipeline
+            override_options: Options to use for this execution
+
+        Returns:
+            True if compatible, False otherwise
+        """
+        # Must be same class
+        if type(initialized_options) is not type(override_options):
+            return False
+
+        # Compatibility hashes must match (all fields except do_*)
+        init_compat_hash = self._get_pipeline_options_hash(
+            initialized_options, for_compatibility=True
+        )
+        override_compat_hash = self._get_pipeline_options_hash(
+            override_options, for_compatibility=True
+        )
+
+        return init_compat_hash == override_compat_hash
 
     def initialize_pipeline(self, format: InputFormat):
         """Initialize the conversion pipeline for the selected format.
@@ -289,6 +333,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        format_options: Optional[dict[InputFormat, PipelineOptions]] = None,
     ) -> ConversionResult:
         """Convert one document fetched from a file path, URL, or DocumentStream.
 
@@ -306,6 +351,8 @@ class DocumentConverter:
                 Documents exceeding this number will not be converted.
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
+            format_options: Optional mapping of formats to pipeline options to override
+                initialized options. Must be compatible (same class, only do_* fields differ).
 
         Returns:
             The conversion result, which contains a `DoclingDocument` in the `document`
@@ -321,6 +368,7 @@ class DocumentConverter:
             max_file_size=max_file_size,
             headers=headers,
             page_range=page_range,
+            format_options=format_options,
         )
         return next(all_res)
 
@@ -333,6 +381,7 @@ class DocumentConverter:
         max_num_pages: int = sys.maxsize,
         max_file_size: int = sys.maxsize,
         page_range: PageRange = DEFAULT_PAGE_RANGE,
+        format_options: Optional[dict[InputFormat, PipelineOptions]] = None,
     ) -> Iterator[ConversionResult]:
         """Convert multiple documents from file paths, URLs, or DocumentStreams.
 
@@ -346,6 +395,8 @@ class DocumentConverter:
             max_file_size: Maximum number of pages accepted per document. Documents
                 exceeding this number will be skipped.
             page_range: Range of pages to convert in each document.
+            format_options: Optional mapping of formats to pipeline options to override
+                initialized options. Must be compatible (same class, only do_* fields differ).
 
         Yields:
             The conversion results, each containing a `DoclingDocument` in the
@@ -362,7 +413,11 @@ class DocumentConverter:
         conv_input = _DocumentConversionInput(
             path_or_stream_iterator=source, limits=limits, headers=headers
         )
-        conv_res_iter = self._convert(conv_input, raises_on_error=raises_on_error)
+        conv_res_iter = self._convert(
+            conv_input,
+            raises_on_error=raises_on_error,
+            override_format_options=format_options,
+        )
 
         had_result = False
         for conv_res in conv_res_iter:
@@ -438,7 +493,10 @@ class DocumentConverter:
             raise ValueError(f"format {format} is not supported in `convert_string`")
 
     def _convert(
-        self, conv_input: _DocumentConversionInput, raises_on_error: bool
+        self,
+        conv_input: _DocumentConversionInput,
+        raises_on_error: bool,
+        override_format_options: Optional[dict[InputFormat, PipelineOptions]] = None,
     ) -> Iterator[ConversionResult]:
         start_time = time.monotonic()
 
@@ -448,7 +506,9 @@ class DocumentConverter:
         ):
             _log.info("Going to convert document batch...")
             process_func = partial(
-                self._process_document, raises_on_error=raises_on_error
+                self._process_document,
+                raises_on_error=raises_on_error,
+                override_format_options=override_format_options,
             )
 
             if (
@@ -504,14 +564,72 @@ class DocumentConverter:
 
             return self.initialized_pipelines[cache_key]
 
+    def _get_or_create_pipeline(
+        self,
+        doc_format: InputFormat,
+        pipeline_options: Optional[PipelineOptions] = None,
+    ) -> Optional[BasePipeline]:
+        """Get or create pipeline with specific options.
+
+        This method creates and caches a new pipeline instance but does NOT
+        update self.format_to_options.
+
+        Args:
+            doc_format: The document format
+            pipeline_options: Options to use (if None, use format_to_options)
+
+        Returns:
+            Pipeline instance or None
+        """
+        fopt = self.format_to_options.get(doc_format)
+
+        if fopt is None:
+            return None
+
+        # Use override options if provided, else use format default
+        effective_options = (
+            pipeline_options if pipeline_options is not None else fopt.pipeline_options
+        )
+
+        if effective_options is None:
+            return None
+
+        pipeline_class = fopt.pipeline_cls
+        options_hash = self._get_pipeline_options_hash(effective_options)
+        cache_key = (pipeline_class, options_hash)
+
+        with _PIPELINE_CACHE_LOCK:
+            if cache_key not in self.initialized_pipelines:
+                _log.info(
+                    f"Initializing new pipeline for {pipeline_class.__name__} "
+                    f"with options hash {options_hash}"
+                )
+                self.initialized_pipelines[cache_key] = pipeline_class(
+                    pipeline_options=effective_options
+                )
+            else:
+                _log.debug(
+                    f"Reusing cached pipeline for {pipeline_class.__name__} "
+                    f"with options hash {options_hash}"
+                )
+
+            return self.initialized_pipelines[cache_key]
+
     def _process_document(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        override_format_options: Optional[dict[InputFormat, PipelineOptions]] = None,
     ) -> ConversionResult:
         valid = (
             self.allowed_formats is not None and in_doc.format in self.allowed_formats
         )
         if valid:
-            conv_res = self._execute_pipeline(in_doc, raises_on_error=raises_on_error)
+            conv_res = self._execute_pipeline(
+                in_doc,
+                raises_on_error=raises_on_error,
+                override_format_options=override_format_options,
+            )
         else:
             error_message = f"File format not allowed: {in_doc.file}"
             if raises_on_error:
@@ -529,12 +647,56 @@ class DocumentConverter:
         return conv_res
 
     def _execute_pipeline(
-        self, in_doc: InputDocument, raises_on_error: bool
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        override_format_options: Optional[dict[InputFormat, PipelineOptions]] = None,
     ) -> ConversionResult:
         if in_doc.valid:
             pipeline = self._get_pipeline(in_doc.format)
+
+            # Look up override options for this document's format
+            override_options = None
+            if override_format_options is not None:
+                override_options = override_format_options.get(in_doc.format)
+
+            # If override options provided, check compatibility and handle accordingly
+            if override_options is not None and pipeline is not None:
+                is_compatible = self._check_options_compatibility(
+                    pipeline.pipeline_options, override_options
+                )
+
+                if is_compatible:
+                    # Compatible but check if initialized with force_all_model_init
+                    if not pipeline.pipeline_options.force_all_model_init:
+                        # Warn and create new pipeline instance
+                        _log.warning(
+                            "Override options are compatible but pipeline was not "
+                            "initialized with force_all_model_init=True. Creating new "
+                            "pipeline instance. Consider using force_all_model_init=True "
+                            "for better performance."
+                        )
+                        # Get new pipeline with override options
+                        pipeline = self._get_or_create_pipeline(
+                            doc_format=in_doc.format, pipeline_options=override_options
+                        )
+                else:
+                    # Incompatible - create new pipeline instance
+                    _log.warning(
+                        "Override options are incompatible with initialized pipeline "
+                        "(type or non-do_* fields differ). Creating new pipeline instance."
+                    )
+                    # Get new pipeline with override options
+                    pipeline = self._get_or_create_pipeline(
+                        doc_format=in_doc.format, pipeline_options=override_options
+                    )
+
             if pipeline is not None:
-                conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)
+                conv_res = pipeline.execute(
+                    in_doc,
+                    raises_on_error=raises_on_error,
+                    override_options=override_options,
+                )
             else:
                 if raises_on_error:
                     raise ConversionError(

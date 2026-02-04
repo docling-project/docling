@@ -1,3 +1,4 @@
+import contextvars
 import functools
 import logging
 import time
@@ -42,6 +43,11 @@ from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 
+# Thread-local context for override options
+_override_options_context: contextvars.ContextVar[Optional[PipelineOptions]] = (
+    contextvars.ContextVar("override_options", default=None)
+)
+
 
 class BasePipeline(ABC):
     def __init__(self, pipeline_options: PipelineOptions):
@@ -62,11 +68,27 @@ class BasePipeline(ABC):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-    def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
+    def get_effective_options(self) -> PipelineOptions:
+        """Get effective options for current execution context.
+
+        Returns override options if set in context, else initialized options.
+        """
+        override = _override_options_context.get()
+        return override if override is not None else self.pipeline_options
+
+    def execute(
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        override_options: Optional[PipelineOptions] = None,
+    ) -> ConversionResult:
         conv_res = ConversionResult(input=in_doc)
 
-        _log.info(f"Processing document {in_doc.file.name}")
+        # Set override options in thread-local context
+        token = _override_options_context.set(override_options)
+
         try:
+            _log.info(f"Processing document {in_doc.file.name}")
             with TimeRecorder(
                 conv_res, "pipeline_total", scope=ProfilingScope.DOCUMENT
             ):
@@ -89,6 +111,8 @@ class BasePipeline(ABC):
             else:
                 raise RuntimeError(f"Pipeline {self.__class__.__name__} failed") from e
         finally:
+            # Reset context
+            _override_options_context.reset(token)
             self._unload(conv_res)
 
         return conv_res
@@ -163,10 +187,20 @@ class ConvertPipeline(BasePipeline):
                 f"The specified picture description kind is not supported: {pipeline_options.picture_description_options.kind}."
             )
 
+        # When force_all_model_init is True, enable all models regardless of do_* values
+        effective_do_picture_classification = (
+            pipeline_options.do_picture_classification
+            or pipeline_options.force_all_model_init
+        )
+        effective_do_chart_extraction = (
+            pipeline_options.do_chart_extraction
+            or pipeline_options.force_all_model_init
+        )
+
         self.enrichment_pipe = [
             # Document Picture Classifier
             DocumentPictureClassifier(
-                enabled=pipeline_options.do_picture_classification,
+                enabled=effective_do_picture_classification,
                 artifacts_path=self.artifacts_path,
                 options=DocumentPictureClassifierOptions(),
                 accelerator_options=pipeline_options.accelerator_options,
@@ -175,7 +209,7 @@ class ConvertPipeline(BasePipeline):
             picture_description_model,
             # Document Chart Extraction
             ChartExtractionModelGraniteVision(
-                enabled=pipeline_options.do_chart_extraction,
+                enabled=effective_do_chart_extraction,
                 artifacts_path=self.artifacts_path,
                 options=ChartExtractionModelOptions(),
                 accelerator_options=pipeline_options.accelerator_options,
@@ -188,9 +222,14 @@ class ConvertPipeline(BasePipeline):
         factory = get_picture_description_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
+        # When force_all_model_init is True, enable all models regardless of do_* values
+        effective_do_picture_description = (
+            self.pipeline_options.do_picture_description
+            or self.pipeline_options.force_all_model_init
+        )
         return factory.create_instance(
             options=self.pipeline_options.picture_description_options,
-            enabled=self.pipeline_options.do_picture_description,
+            enabled=effective_do_picture_description,
             enable_remote_services=self.pipeline_options.enable_remote_services,
             artifacts_path=artifacts_path,
             accelerator_options=self.pipeline_options.accelerator_options,
