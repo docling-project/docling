@@ -1,3 +1,18 @@
+## [v2.72.0](https://github.com/docling-project/docling/releases/tag/v2.72.0) - 2026-02-03
+
+### Feature
+
+* Add chart extraction models ([#2848](https://github.com/docling-project/docling/issues/2848)) ([`fe45c71`](https://github.com/docling-project/docling/commit/fe45c71fe7ad137088e3719dc99e337860120d33))
+
+### Fix
+
+* **backend:** Improve Excel table bounds detection and flatten merged cells ([#2778](https://github.com/docling-project/docling/issues/2778)) ([`3110c43`](https://github.com/docling-project/docling/commit/3110c439da48fe215379492a29a310e64e9d67e7))
+* **pptx:** Handle picture shapes with external image references ([#2914](https://github.com/docling-project/docling/issues/2914)) ([`5e452a2`](https://github.com/docling-project/docling/commit/5e452a2e8fcb5ea43a8a7666320998604279c152))
+
+### Documentation
+
+* Add granite vision for charts ([#2946](https://github.com/docling-project/docling/issues/2946)) ([`a5ad8f2`](https://github.com/docling-project/docling/commit/a5ad8f24ff0fe9bcb0b915a26b4132b6dbb65f93))
+
 ## [v2.71.0](https://github.com/docling-project/docling/releases/tag/v2.71.0) - 2026-01-30
 
 ### Feature
