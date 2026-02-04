@@ -15,7 +15,7 @@ from datetime import datetime
 from fastapi import Request
 from pydantic import BaseModel
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain.document_loaders import (
     PyMuPDFLoader,                    # PDF
