@@ -61,7 +61,7 @@ jobs:
 
       - name: Import smoke
         working-directory: genon/preprocessor
-        run: uv run python -c "import importlib; importlib.import_module('facade.basic_processor')"
+        run: uv run python -c "import importlib; importlib.import_module('facade.attachment_processor')"
 
       - name: Pytest (unit+smoke+regression)
         working-directory: genon/preprocessor

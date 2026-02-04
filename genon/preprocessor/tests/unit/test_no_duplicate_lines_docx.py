@@ -18,11 +18,11 @@ class _DummyRequest:
 
 def _import_processor():
     try:
-        from facade.basic_processor import DocumentProcessor
+        from facade.convert_processor import DocumentProcessor
         return DocumentProcessor
     except ModuleNotFoundError:
         sys.path.append(str(Path(__file__).resolve().parents[3]))
-        from facade.basic_processor import DocumentProcessor
+        from facade.convert_processor import DocumentProcessor
         return DocumentProcessor
 
 

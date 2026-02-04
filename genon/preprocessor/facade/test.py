@@ -10,10 +10,8 @@ sys.path.insert(0, "../../../") # 현재 doc_parser의 docling 폴더 참조
 
 # 테스트할 전처리기 임포트
 # from attachment_processor import DocumentProcessor # 첨부용
-# from basic_processor import DocumentProcessor # 기본형
-# from intelligent_processor import DocumentProcessor # 지능형
-from intelligent_processor_ocr import DocumentProcessor # 지능형 + OCR
-# from intelligent_processor_law import DocumentProcessor # 지능형 + 법률문서특화
+# from convert_processor import DocumentProcessor # 변환형
+from intelligent_processor import DocumentProcessor # 지능형
 
 # 파일 경로
 file_path = "../sample_files/pdf_sample.pdf"

@@ -32,7 +32,7 @@ def regression_test_dir(repo_root: Path) -> Path:
 # 모듈이 없으면 해당 테스트를 skip 처리
 @pytest.fixture(scope="session")
 def basic_processor():
-    mod = pytest.importorskip("facade.basic_processor")
+    mod = pytest.importorskip("facade.attachment_processor")
     return mod.DocumentProcessor
 
 

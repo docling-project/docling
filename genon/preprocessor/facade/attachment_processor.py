@@ -1417,12 +1417,12 @@ class DocumentProcessor:
         print(f"Setting log level to: {level_name}")
 
         if level_name == "NOLOG" or not hasattr(logging, level_name):
-            logging.disable(logging.CRITICAL)  # 🔥 모든 로그 비활성화
+            logging.disable(logging.CRITICAL)  # 모든 로그 비활성화
             return
 
         level = getattr(logging, level_name.upper())
 
-        # 🔥 root logger 설정 (핸들러는 main에서만 설정)
+        # root logger 설정 (핸들러는 main에서만 설정)
         logging.basicConfig(
             level=level,
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",

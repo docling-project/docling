@@ -3,31 +3,51 @@ from __future__ import annotations
 import json
 import os
 import logging
-import math, bisect
 from pathlib import Path
 
 from collections import defaultdict
 from datetime import datetime
 from typing import Optional, Iterable, Any, List, Dict, Tuple
 
-from fastapi import Request
-
 _log = logging.getLogger(__name__)
 
+from fastapi import Request
+# from utils import assert_cancelled
+import shutil
+import subprocess
+import tempfile
+import unicodedata
+import fitz
+import math, bisect
+import uuid
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import (
+    # TextLoader,                       # TXT
+    PyMuPDFLoader,  # PDF
+    DataFrameLoader,  # DataFrame
+    UnstructuredWordDocumentLoader,  # DOC and DOCX
+    UnstructuredPowerPointLoader,  # PPT and PPTX
+    UnstructuredImageLoader,  # JPG, PNG
+    UnstructuredMarkdownLoader,  # Markdown
+    UnstructuredFileLoader,  # Generic fallback
+)
+from langchain_core.documents import Document
 # docling imports
-
+from docling.pipeline.simple_pipeline import SimplePipeline
 from docling.backend.docling_parse_v4_backend import DoclingParseV4DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.backend.genos_msword_backend import GenosMsWordDocumentBackend
 from docling.datamodel.base_models import InputFormat
-from docling.pipeline.simple_pipeline import SimplePipeline
 # from docling.datamodel.document import ConversionStatus
 from docling.datamodel.pipeline_options import (
     AcceleratorDevice,
     AcceleratorOptions,
+    # EasyOcrOptions,
     # OcrEngine,
     # PdfBackend,
     PdfPipelineOptions,
     TableFormerMode,
+    TesseractOcrOptions,
     PipelineOptions,
     PaddleOcrOptions,
 )
@@ -35,7 +55,8 @@ from docling.datamodel.pipeline_options import (
 from docling.document_converter import (
     DocumentConverter,
     PdfFormatOption,
-    FormatOption
+    FormatOption,
+    WordFormatOption
 )
 from docling.datamodel.pipeline_options import DataEnrichmentOptions
 from docling.utils.document_enrichment import enrich_document, check_document
@@ -46,12 +67,15 @@ from docling_core.transforms.chunker import (
     DocChunk,
     DocMeta,
 )
+
 from docling_core.types import DoclingDocument
 
 from pandas import DataFrame
 import asyncio
+# from docling_core.transforms.chunker import BaseChunk, BaseChunker, BaseMeta
 from docling_core.types import DoclingDocument as DLDocument
 from docling_core.types.doc.document import (
+    # DocItem,
     DocumentOrigin,
     LevelNumber,
     ListItem,
@@ -61,9 +85,18 @@ from docling_core.types.doc.document import (
 from docling_core.types.doc.labels import DocItemLabel
 from docling_core.types.doc import (
     BoundingBox,
+    # CoordOrigin,
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    # GroupLabel,
+    # ImageRef,
+    # ProvenanceItem,
+    # Size,
+    # TableCell,
+    # TableData,
+    # GroupItem,
+
     DocItem,
     PictureItem,
     SectionHeaderItem,
@@ -73,8 +106,9 @@ from docling_core.types.doc import (
 )
 from collections import Counter
 import re
-import json
 import warnings
+import asyncio
+
 from typing import Iterable, Iterator, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, PositiveInt, TypeAdapter, model_validator
@@ -101,6 +135,80 @@ except ImportError:
 #
 
 """Chunker implementation leveraging the document structure."""
+CONVERTIBLE_EXTENSIONS = ['.txt', '.json', '.md', '.docx', '.ppt', '.pptx']
+def convert_to_pdf(file_path: str) -> str | None:
+    """
+    LibreOffice로 PDF 변환을 시도한다.
+    실패해도 예외를 던지지 않고 None을 반환한다.
+    """
+    try:
+        in_path = Path(file_path).resolve()
+        out_dir = in_path.parent
+        pdf_path = in_path.with_suffix('.pdf')
+
+        # headless에서 UTF-8 locale 보장
+        env = os.environ.copy()
+        env.setdefault("LANG", "C.UTF-8")
+        env.setdefault("LC_ALL", "C.UTF-8")
+
+        # 확장자에 따라 필터(.ppt는 impress 필터)
+        ext = in_path.suffix.lower()
+        if ext in ('.ppt', '.pptx'):
+            convert_arg = "pdf:impress_pdf_Export"
+        elif ext in ('.doc', '.docx'):
+            convert_arg = "pdf:writer_pdf_Export"
+        else:
+            convert_arg = "pdf"
+
+        # 비ASCII 파일명 이슈 대비 임시 ASCII 파일명 복사본 시도
+        try:
+            in_path.name.encode('ascii')
+            candidates = [in_path]
+            tmp_dir = None
+        except UnicodeEncodeError:
+            tmp_dir = Path(tempfile.mkdtemp())
+            ascii_name = unicodedata.normalize('NFKD', in_path.stem).encode('ascii','ignore').decode('ascii') or "file"
+            ascii_copy = tmp_dir / f"{ascii_name}{in_path.suffix}"
+            shutil.copy2(in_path, ascii_copy)
+            candidates = [ascii_copy, in_path]
+
+        for cand in candidates:
+            cmd = [
+                "soffice", "--headless",
+                "--convert-to", convert_arg,
+                "--outdir", str(out_dir),
+                str(cand)
+            ]
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+            if proc.returncode == 0 and pdf_path.exists():
+                if tmp_dir:
+                    shutil.rmtree(tmp_dir, ignore_errors=True)
+                return str(pdf_path)
+            # 실패해도 계속 시도 (로그만 찍고 무시)
+            print(f"[convert_to_pdf] stderr: {proc.stderr.strip()}")
+            print(f"[convert_to_pdf] stdout: {proc.stdout.strip()}")
+
+        if tmp_dir: # ASCII 파일명 복사본 시도 후에도 실패하면 none 반환
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        return None
+
+    except Exception as e:
+        if pdf_path.exists():
+            return str(pdf_path)
+
+def _get_pdf_path(file_path: str) -> str:
+    """
+    다양한 파일 확장자를 PDF 확장자로 변경하는 공통 함수
+    Args:
+        file_path (str): 원본 파일 경로
+    Returns:
+        str: PDF 확장자로 변경된 파일 경로
+    """
+    pdf_path = file_path
+    for ext in CONVERTIBLE_EXTENSIONS:
+        pdf_path = pdf_path.replace(ext, '.pdf')
+    return pdf_path
+
 
 class GenosBucketChunker(BaseChunker):
     """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커 (v2)"""
@@ -846,12 +954,11 @@ class GenosBucketChunker(BaseChunker):
         if not doc_chunks:
             return iter([])
 
-        doc_chunk = doc_chunks[0]  # HierarchicalChunker는 하나의 청크만 반환
+        doc_chunk = doc_chunks[0]  # preprocess는 하나의 청크만 반환
 
         final_chunks = self._split_document_by_tokens(doc_chunk, dl_doc)
 
         return iter(final_chunks)
-
 
 class GenOSVectorMeta(BaseModel):
     class Config:
@@ -871,10 +978,9 @@ class GenOSVectorMeta(BaseModel):
     reg_date: str = None
     chunk_bboxes: str = None
     media_files: str = None
-    title: str = None
-    created_date: int = None
-    appendix: str = None ## !! appendix feature (2025-09-30, geonhee kim) !!
-
+    created_date: int = None  # YYYYMMDD 형식의 정수
+    authors: str = None      # 팀 리스트
+    title: str = None         # 문서 제목
 
 class GenOSVectorMetaBuilder:
     def __init__(self):
@@ -893,9 +999,9 @@ class GenOSVectorMetaBuilder:
         self.reg_date: Optional[str] = None
         self.chunk_bboxes: Optional[str] = None
         self.media_files: Optional[str] = None
-        self.title: Optional[str] = None
         self.created_date: Optional[int] = None
-        self.appendix: Optional[str] = None # !! appendix feature (2025-09-30, geonhee kim) !!
+        self.authors: Optional[str] = None      # 팀 리스트
+        self.title: Optional[str] = None
 
     def set_text(self, text: str) -> "GenOSVectorMetaBuilder":
         """텍스트와 관련된 데이터를 설정"""
@@ -972,9 +1078,9 @@ class GenOSVectorMetaBuilder:
             reg_date=self.reg_date,
             chunk_bboxes=self.chunk_bboxes,
             media_files=self.media_files,
-            title=self.title,
             created_date=self.created_date,
-            appendix=self.appendix or "" # !! appendix feature (2025-09-30, geonhee kim) !!
+            authors= self.authors,      # 팀 리스트
+            title=self.title,
         )
 
 
@@ -1095,17 +1201,6 @@ class DocumentProcessor:
         )
 
     def load_documents_with_docling(self, file_path: str, **kwargs: dict) -> DoclingDocument:
-        # kwargs에서 save_images 값을 가져와서 옵션 업데이트
-        save_images = kwargs.get('save_images', True)
-        include_wmf = kwargs.get('include_wmf', False)
-
-        # save_images 옵션이 현재 설정과 다르면 컨버터 재생성
-        if (self.simple_pipeline_options.save_images != save_images or
-            getattr(self.simple_pipeline_options, 'include_wmf', False) != include_wmf):
-            self.simple_pipeline_options.save_images = save_images
-            self.simple_pipeline_options.include_wmf = include_wmf
-            self._create_converters()
-
         try:
             conv_result: ConversionResult = self.converter.convert(file_path, raises_on_error=True)
         except Exception as e:
@@ -1113,16 +1208,6 @@ class DocumentProcessor:
         return conv_result.document
 
     def load_documents_with_docling_ocr(self, file_path: str, **kwargs: dict) -> DoclingDocument:
-        # kwargs에서 save_images 값을 가져와서 옵션 업데이트
-        save_images = kwargs.get('save_images', True)
-        include_wmf = kwargs.get('include_wmf', False)
-
-        # save_images 옵션이 현재 설정과 다르면 컨버터 재생성
-        if (self.simple_pipeline_options.save_images != save_images or
-            getattr(self.simple_pipeline_options, 'include_wmf', False) != include_wmf):
-            self.simple_pipeline_options.save_images = save_images
-            self.simple_pipeline_options.include_wmf = include_wmf
-            self._create_converters()
 
         try:
             conv_result: ConversionResult = self.ocr_converter.convert(file_path, raises_on_error=True)
@@ -1130,15 +1215,67 @@ class DocumentProcessor:
             conv_result: ConversionResult = self.ocr_second_converter.convert(file_path, raises_on_error=True)
         return conv_result.document
 
-    def load_documents(self, file_path: str, **kwargs) -> DoclingDocument:
+    def load_documents(self, file_path: str, **kwargs: dict) -> DoclingDocument:
         return self.load_documents_with_docling(file_path, **kwargs)
+
+    def get_loader_langchain(self, file_path: str):
+        """PPT 파일용 langchain 로더"""
+        ext = os.path.splitext(file_path)[-1].lower()
+        if ext == '.ppt':
+            convert_to_pdf(file_path)
+            return UnstructuredPowerPointLoader(file_path)
+        else:
+            return UnstructuredFileLoader(file_path)
+
+    def load_documents_langchain(self, file_path: str, **kwargs: dict):
+        """langchain으로 문서 로드"""
+        loader = self.get_loader_langchain(file_path)
+        documents = loader.load()
+        return documents
+
+    def split_documents_langchain(self, documents, **kwargs: dict):
+        """langchain 문서를 청킹"""
+
+        splitter_params = {}
+        chunk_size = kwargs.get('chunk_size')
+        chunk_overlap = kwargs.get('chunk_overlap')
+
+        if chunk_size is not None:
+            splitter_params['chunk_size'] = chunk_size
+
+        if chunk_overlap is not None:
+            splitter_params['chunk_overlap'] = chunk_overlap
+
+        text_splitter = RecursiveCharacterTextSplitter(**splitter_params)
+        chunks = text_splitter.split_documents(documents)
+        chunks = [chunk for chunk in chunks if chunk.page_content]
+        if not chunks:
+            raise Exception('Empty document')
+
+        for chunk in chunks:
+            page = chunk.metadata.get('page', 1)
+
+            source = chunk.metadata.get('source', '')
+            file_ext = os.path.splitext(source)[-1].lower() if source else ''
+
+            if file_ext in ['.jpg', '.jpeg', '.png']:
+                # 이미지 파일: 이미 1-based이므로 그대로 사용
+                if isinstance(page, int) and page <= 0:
+                    page = 1  # 0이거나 음수인 경우에만 1로 설정
+            else:
+                # 다른 파일들: 0-based를 1-based로 변환
+                if isinstance(page, int) and page >= 0:
+                    page += 1
+
+            chunk.metadata['page'] = page
+            self.page_chunk_counts[page] += 1
+        return chunks
 
     def split_documents(self, documents: DoclingDocument, **kwargs: dict) -> List[DocChunk]:
         chunker: GenosBucketChunker = GenosBucketChunker(
-            max_tokens=0,
-            merge_peers=True
-        )
-
+              max_tokens=2000,
+              merge_peers=True
+            )
         chunks: List[DocChunk] = list(chunker.chunk(dl_doc=documents, **kwargs))
         for chunk in chunks:
             self.page_chunk_counts[chunk.meta.doc_items[0].prov[0].page_no] += 1
@@ -1152,10 +1289,8 @@ class DocumentProcessor:
     def parse_created_date(self, date_text: str) -> Optional[int]:
         """
         작성일 텍스트를 파싱하여 YYYYMMDD 형식의 정수로 변환
-
         Args:
             date_text: 작성일 텍스트 (YYYY-MM 또는 YYYY-MM-DD 형식)
-
         Returns:
             YYYYMMDD 형식의 정수, 파싱 실패시 None
         """
@@ -1199,28 +1334,83 @@ class DocumentProcessor:
 
         return 0
 
+    def parse_authors(self, authors_data) -> list[str]:
+        """
+        작성자 데이터에서 이름만 추출하여 문자열 리스트로 반환
+        Args:
+            authors_data: 작성자 정보 (딕셔너리 리스트 또는 문자열)
+        Returns:
+            list[str]: 작성자 이름 리스트
+        """
+        if not authors_data:
+            return []
+
+        # 리스트인 경우
+        if isinstance(authors_data, list):
+            names = []
+            for author in authors_data:
+                if isinstance(author, dict):
+                    # 딕셔너리에서 "이름" 키 찾기
+                    if "이름" in author:
+                        name = author["이름"].strip()
+                        if name:  # 빈 문자열이 아닌 경우만 추가
+                            names.append(name)
+                    elif "name" in author:
+                        name = author["name"].strip()
+                        if name:
+                            names.append(name)
+                elif isinstance(author, str):
+                    # 문자열인 경우 직접 추가
+                    name = author.strip()
+                    if name:
+                        names.append(name)
+
+            # 중복 제거
+            return list(set(names))
+
+        # 문자열인 경우 (쉼표로 구분된 이름들)
+        elif isinstance(authors_data, str):
+            # 여러 구분자로 분리
+            separators = [',', ';', '/', '\n', '·', '•']
+            for sep in separators:
+                if sep in authors_data:
+                    names = [name.strip() for name in authors_data.split(sep) if name.strip()]
+                    return list(set(names))  # 중복 제거
+
+            # 구분자가 없는 경우 전체를 하나의 이름으로 처리
+            name = authors_data.strip()
+            return [name] if name else []
+
+        return []
+
     def enrichment(self, document: DoclingDocument, **kwargs: dict) -> DoclingDocument:
 
         # 새로운 enriched result 받기
         document = enrich_document(document, self.enrichment_options, **kwargs)
         return document
 
-    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request,
-                              **kwargs: dict) -> \
+    async def compose_vectors(self, document: DoclingDocument, chunks: List[DocChunk], file_path: str, request: Request, **kwargs: dict) -> \
             list[dict]:
-        title = ""
         created_date = 0
+        authors = ""
+        title = ""
+
         try:
             if (document.key_value_items and
-                    len(document.key_value_items) > 0 and
-                    hasattr(document.key_value_items[0], 'graph') and
-                    hasattr(document.key_value_items[0].graph, 'cells') and
-                    len(document.key_value_items[0].graph.cells) > 1):
+                len(document.key_value_items) > 0 and
+                hasattr(document.key_value_items[0], 'graph') and
+                hasattr(document.key_value_items[0].graph, 'cells') and
+                len(document.key_value_items[0].graph.cells) > 1):
+
                 # 작성일 추출 (cells[1])
                 date_text = document.key_value_items[0].graph.cells[1].text
                 created_date = self.parse_created_date(date_text)
         except (AttributeError, IndexError) as e:
             pass
+
+        # kwargs에서 authors 추출 (이름만)
+        if "authors" in kwargs:
+            authors = json.dumps(self.parse_authors(kwargs["authors"]))
 
         for item, _ in document.iterate_items():
             if hasattr(item, 'label'):
@@ -1228,21 +1418,12 @@ class DocumentProcessor:
                     title = item.text.strip() if item.text else ""
                     break
 
-        # kwargs에서 부록 정보 추출 !! appendix feature (2025-09-30, geonhee kim) !!
-        appendix_info = kwargs.get('appendix', '')
-        appendix_list = []
-        if isinstance(appendix_info, str):
-            appendix_list = [item.strip() for item in json.loads(appendix_info) if item.strip()] if appendix_info else []
-        elif isinstance(appendix_info, list):
-            appendix_list = appendix_info
-        else:
-            appendix_list = []
-
         global_metadata = dict(
             n_chunk_of_doc=len(chunks),
             n_page=document.num_pages(),
             reg_date=datetime.now().isoformat(timespec='seconds') + 'Z',
             created_date=created_date,
+            authors=authors,
             title=title
         )
 
@@ -1256,13 +1437,6 @@ class DocumentProcessor:
             headers_text = "HEADER: " + ", ".join(chunk.meta.headings) + '\n' if chunk.meta.headings else ''
             content = headers_text + chunk.text
 
-            # appendix 추출 !! appendix feature (2025-09-30, geonhee kim) !!
-            matched_appendices = self.check_appendix_keywords(content, appendix_list)
-            # print(appendix_list, matched_appendices)
-            chunk_global_metadata = global_metadata.copy()
-            chunk_global_metadata['appendix'] = matched_appendices  # Only matched ones
-            ###
-
             if chunk_page != current_page:
                 current_page = chunk_page
                 chunk_index_on_page = 0
@@ -1271,7 +1445,7 @@ class DocumentProcessor:
                       .set_text(content)
                       .set_page_info(chunk_page, chunk_index_on_page, self.page_chunk_counts[chunk_page])
                       .set_chunk_index(chunk_idx)
-                      .set_global_metadata(**chunk_global_metadata) #!! appendix feature (2025-09-30, geonhee kim) !!
+                      .set_global_metadata(**global_metadata)
                       .set_chunk_bboxes(chunk.meta.doc_items, document)
                       .set_media_files(chunk.meta.doc_items)
                       ).build()
@@ -1288,6 +1462,153 @@ class DocumentProcessor:
             await asyncio.gather(*upload_tasks)
 
         return vectors
+
+    def compose_vectors_langchain(self, chunks, file_path: str, **kwargs: dict) -> list[dict]:
+        """langchain 청크를 벡터로 변환 (PPT용)"""
+        pdf_path = _get_pdf_path(file_path)
+        doc = None
+        total_pages = 0
+
+        try:
+            if os.path.exists(pdf_path):
+                doc = fitz.open(pdf_path)
+                total_pages = len(doc)
+        except Exception as e:
+            print(f"Failed to open PDF {pdf_path}: {e}")
+
+        global_metadata = dict(
+            n_chunk_of_doc=len(chunks),
+            n_page=max([chunk.metadata['page'] for chunk in chunks]),
+            reg_date=datetime.now().isoformat(timespec='seconds') + 'Z'
+        )
+
+        current_page = None
+        chunk_index_on_page = 0
+        vectors = []
+
+        chunk_bboxes_data = []
+        i_page_value = None
+        e_page_value = None
+
+        for chunk_idx, chunk in enumerate(chunks):
+            page = chunk.metadata['page']
+            text = chunk.page_content
+
+            if page != current_page:
+                current_page = page
+                chunk_index_on_page = 0
+
+            i_page_value = page  # 디폴트값
+            e_page_value = page  # 디폴트값
+
+            if doc and total_pages > 0:
+                page_index = page - 1
+                if 0 <= page_index < total_pages:
+                    fitz_page = doc.load_page(page_index)
+                    try:
+                        from genos_utils import merge_overlapping_bboxes
+                        merged_bboxes = merge_overlapping_bboxes([
+                            {
+                                'page': page,
+                                'type': 'text',
+                                'bbox': {
+                                    'l': rect[0] / fitz_page.rect.width,
+                                    't': rect[1] / fitz_page.rect.height,
+                                    'r': rect[2] / fitz_page.rect.width,
+                                    'b': rect[3] / fitz_page.rect.height,
+                                }
+                            } for rect in fitz_page.search_for(text)
+                        ], x_tolerance=1 / fitz_page.rect.width,
+                            y_tolerance=1 / fitz_page.rect.height)
+                    except ImportError:
+                        merged_bboxes = []
+                        for rect in fitz_page.search_for(text):
+                            bbox_data = {
+                                'page': page,
+                                'type': 'text',
+                                'bbox': {
+                                    'l': rect[0] / fitz_page.rect.width,
+                                    't': rect[1] / fitz_page.rect.height,
+                                    'r': rect[2] / fitz_page.rect.width,
+                                    'b': rect[3] / fitz_page.rect.height,
+                                }
+                            }
+                            merged_bboxes.append(bbox_data)
+
+                    chunk_bboxes_data = merged_bboxes
+                    global_metadata['chunk_bboxes'] = json.dumps(merged_bboxes)
+
+                    if merged_bboxes:
+                        bbox_pages = [bbox.get('page') for bbox in merged_bboxes if bbox.get('page') is not None]
+                        if bbox_pages:
+                            i_page_value = min(bbox_pages)  # 최소값
+                            e_page_value = max(bbox_pages)  # 최대값
+
+            vectors.append(GenOSVectorMeta.model_validate({
+                'text': text,
+                'n_chars': len(text),
+                'n_words': len(text.split()),
+                'n_lines': len(text.splitlines()),
+                'i_page': i_page_value,
+                'e_page': e_page_value,
+                'i_chunk_on_page': chunk_index_on_page,
+                'n_chunk_of_page': self.page_chunk_counts[page],
+                'i_chunk_on_doc': chunk_idx,
+                'chunk_bboxes': json.dumps(chunk_bboxes_data),
+                'media_files': json.dumps([]),
+                **global_metadata
+            }))
+            chunk_index_on_page += 1
+
+        if doc:
+            doc.close()
+
+        return vectors
+
+    async def _extract_page_images(self, pdf_path: str, request: Request) -> dict[int, list[dict]]:
+        if not os.path.exists(pdf_path):
+            return {}
+
+        try:
+            doc = fitz.open(pdf_path)
+        except Exception as e:
+            print(f"Failed to open PDF {pdf_path}: {e}")
+            return {}
+        file_list: list[dict] = []
+        page_meta: dict[int, list[dict]] = defaultdict(list)
+
+        for page_index in range(len(doc)):
+            page = doc.load_page(page_index)
+            for img_idx, img in enumerate(page.get_images(full=True)):
+                try:
+                    xref = img[0]
+                    pix = fitz.Pixmap(doc, xref)
+
+                    # Convert to RGB if needed
+                    if pix.n >= 5:  # CMYK
+                        pix = fitz.Pixmap(fitz.csRGB, pix)
+                    elif pix.n == 4:  # RGBA
+                        pix = fitz.Pixmap(fitz.csRGB, pix)
+                    elif pix.alpha:
+                        pix = fitz.Pixmap(fitz.csRGB, pix)
+                    elif pix.n < 3:  # Grayscale
+                        pix = fitz.Pixmap(fitz.csRGB, pix)
+
+                    img_name = f"{uuid.uuid4()}.png"
+                    img_path = os.path.join("/tmp", img_name)
+
+                    pix.save(img_path)
+                except Exception as e:
+                    print(f"Failed to save image: {e}")
+                    continue
+                finally:
+                    pix = None  # Free memory
+
+        if file_list and upload_files:
+            await upload_files(file_list, request=request)
+
+        doc.close()
+        return page_meta
 
     def get_media_files(self, doc_items: list):
         temp_list = []
@@ -1325,50 +1646,6 @@ class DocumentProcessor:
                     return True
 
         return False
-
-    def check_appendix_keywords(self, content: str, appendix_list: list) -> str: # !! appendix feature (2025-09-30, geonhee kim) !!
-        if not content or not appendix_list:
-            return ""
-
-        matched_appendices = []
-
-        # 1. Find appendix patterns in content first
-        found_patterns = []
-
-        # Complex patterns: 별지/별표/장부 + numbers (with hyphens, Roman numerals)
-        # Updated regex to capture full patterns like "별지 제 Ⅰ -1 호 서식" by matching until closing delimiters
-        content = re.sub(r"\s+", "", content)
-        complex_patterns = re.findall(r'(별지|별표|장부)(?:제)?([^<>()\[\]]+?)(?=(?:호|서식)|[<>\)\]]|$)', content)
-        for pattern_type, number in complex_patterns:
-            found_patterns.extend([
-                f"{pattern_type} {number}",
-                f"{pattern_type} 제{number}호",
-                f"{pattern_type}{number}",
-                f"{pattern_type}제{number}호"
-            ])
-
-        # Standalone patterns: (별표), (별지), (장부)
-        standalone_patterns = re.findall(r'[\(\[]+(별지|별표|장부)[\)\]]+', content)
-        for pattern_type in set(standalone_patterns):
-            found_patterns.extend([
-                pattern_type,
-                f"{pattern_type}",
-            ])
-
-        # 2. Check if found patterns match any appendix in the list
-        for appendix in appendix_list:
-            if not appendix or not isinstance(appendix, str):
-                continue
-
-            appendix_clean = appendix.replace('.pdf', '').lower().strip()
-
-            # If any found pattern exists in appendix filename, it's a match
-            for pattern in found_patterns:
-                if pattern.lower().strip() in appendix_clean:
-                    matched_appendices.append(appendix)
-                    break  # Prevent duplicates
-
-        return ', '.join(matched_appendices) if matched_appendices else ""
 
     def ocr_all_table_cells(self, document: DoclingDocument, pdf_path) -> List[Dict[str, Any]]:
         """
@@ -1509,12 +1786,12 @@ class DocumentProcessor:
         print(f"Setting log level to: {level_name}")
 
         if level_name == "NOLOG" or not hasattr(logging, level_name):
-            logging.disable(logging.CRITICAL)  # 🔥 모든 로그 비활성화
+            logging.disable(logging.CRITICAL)  # 모든 로그 비활성화
             return
 
         level = getattr(logging, level_name.upper())
 
-        # 🔥 root logger 설정 (핸들러는 main에서만 설정)
+        # root logger 설정 (핸들러는 main에서만 설정)
         logging.basicConfig(
             level=level,
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -1530,84 +1807,86 @@ class DocumentProcessor:
         _log.info(f"file_path: {file_path}")
         _log.info(f"kwargs: {kwargs}")
 
-        document: DoclingDocument = self.load_documents(file_path, **kwargs)
+        ext = Path(file_path).suffix.lower()
 
-        if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
-            # OCR이 필요하다고 판단되면 OCR 수행
-            document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
+        # PPT 파일은 langchain으로 처리
+        if ext in ['.ppt']:
+            documents = self.load_documents_langchain(file_path, **kwargs)
+            # await assert_cancelled(request)
 
-        # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
-        document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
+            chunks = self.split_documents_langchain(documents, **kwargs)
+            # await assert_cancelled(request)
 
-        output_path, output_file = os.path.split(file_path)
-        filename, _ = os.path.splitext(output_file)
-        artifacts_dir = Path(f"{output_path}/{filename}")
-        if artifacts_dir.is_absolute():
-            reference_path = None
+            pdf_path = _get_pdf_path(file_path)
+            page_image_meta = {}
+            try:
+                page_image_meta = await self._extract_page_images(pdf_path, request)
+            except:
+                pass
+            # await assert_cancelled(request)
+
+            vectors = self.compose_vectors_langchain(chunks, file_path, **kwargs)
+
+            for v in vectors:
+                if v.i_page in page_image_meta:
+                    v.media_files = json.dumps(page_image_meta[v.i_page], ensure_ascii=False)
+                else:
+                    v.media_files = json.dumps([])
+
+            return vectors
+
+        # 기존 docling 처리 (PDF, DOCX 등)
         else:
-            reference_path = artifacts_dir.parent
+            document: DoclingDocument = self.load_documents(file_path, **kwargs)
 
-        document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
+            if ext in ['.pdf']:
+                if not check_document(document, self.enrichment_options) or self.check_glyphs(document):
+                    # OCR이 필요하다고 판단되면 OCR 수행
+                    document: DoclingDocument = self.load_documents_with_docling_ocr(file_path, **kwargs)
+                # 글리프 깨진 텍스트가 있는 테이블에 대해서만 OCR 수행 (청크토큰 8k이상 발생 방지)
+                document: DoclingDocument = self.ocr_all_table_cells(document, file_path)
 
-        document = self.enrichment(document, **kwargs)
+            # DOCX 파일만 PDF로 변환 (PPT는 위에서 처리됨)
+            if ext in ['.docx','.pptx']:
+                convert_to_pdf(file_path)
 
-        has_text_items = False
-        for item, _ in document.iterate_items():
-            if (isinstance(item, (TextItem, ListItem, CodeItem, SectionHeaderItem)) and item.text and item.text.strip()) or (isinstance(item, TableItem) and item.data and len(item.data.table_cells) == 0):
-                has_text_items = True
-                break
+            output_path, output_file = os.path.split(file_path)
+            filename, _ = os.path.splitext(output_file)
+            artifacts_dir = Path(f"{output_path}/{filename}")
+            if artifacts_dir.is_absolute():
+                reference_path = None
+            else:
+                reference_path = artifacts_dir.parent
 
-        if has_text_items:
+            document = document._with_pictures_refs(image_dir=artifacts_dir, page_no=None, reference_path=reference_path)
+
+            document = self.enrichment(document, **kwargs)
+
             # Extract Chunk from DoclingDocument
             chunks: List[DocChunk] = self.split_documents(document, **kwargs)
-        else:
-            # text가 있는 item이 없을 때 document에 임의의 text item 추가
-            from docling_core.types.doc import ProvenanceItem
+            # await assert_cancelled(request)
 
-            # 첫 번째 페이지의 기본 정보 사용 (1-based indexing)
-            page_no = 1
+            vectors = []
+            if len(chunks) >= 1:
+                vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
+            else:
+                raise GenosServiceException("1", f"chunk length is 0")
 
-            # ProvenanceItem 생성
-            prov = ProvenanceItem(
-                page_no=page_no,
-                bbox=BoundingBox(l=0, t=0, r=1, b=1),  # 최소 bbox
-                charspan=(0, 1)
-            )
+            """
+            # 미디어 파일 업로드 방법
+            media_files = [
+                { 'path': '/tmp/graph.jpg', 'name': 'graph.jpg', 'type': 'image' },
+                { 'path': '/result/1/graph.jpg', 'name': '1/graph.jpg', 'type': 'image' },
+            ]
+            # 업로드 요청 시에는 path, name 필요
+            file_list = [{k: v for k, v in file.items() if k != 'type'} for file in media_files]
+            await upload_files(file_list, request=request)
+            # 메타에 저장시에는 name, type 필요
+            meta = [{k: v for k, v in file.items() if k != 'path'} for file in media_files]
+            vectors[0].media_files = meta
+            """
 
-            # document에 temp text item 추가
-            document.add_text(
-                label=DocItemLabel.TEXT,
-                text=".",
-                prov=prov
-            )
-
-            # split_documents 호출
-            chunks: List[DocChunk] = self.split_documents(document, **kwargs)
-        # await assert_cancelled(request)
-
-        vectors = []
-        if len(chunks) >= 1:
-            vectors: list[dict] = await self.compose_vectors(document, chunks, file_path, request, **kwargs)
-        else:
-            raise GenosServiceException(1, f"chunk length is 0")
-
-        """
-        # 미디어 파일 업로드 방법
-        media_files = [
-            { 'path': '/tmp/graph.jpg', 'name': 'graph.jpg', 'type': 'image' },
-            { 'path': '/result/1/graph.jpg', 'name': '1/graph.jpg', 'type': 'image' },
-        ]
-
-        # 업로드 요청 시에는 path, name 필요
-        file_list = [{k: v for k, v in file.items() if k != 'type'} for file in media_files]
-        await upload_files(file_list, request=request)
-
-        # 메타에 저장시에는 name, type 필요
-        meta = [{k: v for k, v in file.items() if k != 'path'} for file in media_files]
-        vectors[0].media_files = meta
-        """
-
-        return vectors
+            return vectors
 
 
 class GenosServiceException(Exception):
@@ -1626,88 +1905,75 @@ class GenosServiceException(Exception):
 # GenOS 와의 의존성 제거를 위해 추가
 async def assert_cancelled(request: Request):
     if await request.is_disconnected():
-        raise GenosServiceException(1, f"Cancelled")
-
+        raise GenosServiceException("1", f"Cancelled")
 
 #-----------------------------------------------------------------
 # enrichment 프롬프트
 #-----------------------------------------------------------------
 
-# 규정용 프롬프트
-toc_system_prompt = "당신은 규정/규칙/지침과 같은 한국어 문서에서 **목차**를 생성하는 전문가입니다."
-toc_user_prompt = """주어진 법령문서 텍스트에서 문서제목, 장/절/조, 부칙, 부록/별지/별표의 제목을 추출한다.
+toc_system_prompt = """You are an expert at generating table of contents (목차) from Korean documents. You specialize in regulatory documents, terms of service, contracts, and mixed-format documents that combine formal regulatory structures with general section headers.
+""".strip()
+toc_user_prompt = """
+Here is the Korean document you need to analyze:
 
-## 단계별 추론 (CoT 방식)
-1. 문서제목은 chunk 초반에서 제목 후보를 탐색하고 나열한다.
-2. 문서제목 가능성이 높은 문구를 하나 선택하고 `TITLE:<문서제목>` 형식으로 기록한다.
-    - 단, 제목으로 보이는 문구가 없으면 `TITLE:` 로 기록
-3. 모든 "제x조(...)" 패턴을 모두 탐색하고 나열한다.
-    - 반복적 패턴(재등록, 재재등록 등) 생성을 피한다.
-4. 나머지 장/절, 부칙, 부록/별지/별표의 패턴을 모두 탐색하고 나열한다.
-    - "제x장","제x절"
-    - "부칙 <제xxx호, YYYY. MM. DD>(...)" 또는 "부칙 (YYYY. MM. DD)(...)"
-    - "부록", "<별지>", "<별표>", "[별지 ...] <개정 YYYY.MM.DD>", "[별표 ...] <개정 YYYY.MM.DD>"
-    - 본문의 리스트 항목이 탐색되는 것을 피한다. ("①", "②","①(...)", "②(...)", "1.", "가." 등)
-5. 탐색된 모든 항목을 재검토하여 패턴에 맞는 항목만 남긴다.
-6. 남겨진 항목을 문서내 순서대로 나열한 후 계층관계를 분석한다.
-    - 1, 1.1, 1.1.1 등으로 표현
-    - 부칙 하위에 나오는 조는 부칙의 하위로 둔다.
-7. 분석된 계층관계가 올바른지 재검토한다.
-    - 장/절/조는 "조"까지만 남긴다.
+<document>
+{{raw_text}}
+</document>
 
-## 주의사항
-- 반드시 chunk 내부에서 보이는 내용만 처리한다.
-- 목차가 있으면 참고만하고 반드시 본문에서 추출한다.
+Your task is to extract and organize all structural elements from this document into a hierarchical table of contents. Korean documents often have mixed structures where some sections follow formal regulatory patterns (제x장/절/관/조) while others use general section numbering and headers.
 
-## 출력 형식
-- 첫 줄: `TITLE:<문서제목>`, (없으면 `TITLE:` 만 출력)
-- 이후 줄: 장/절/조, 부칙, 부록/별지/별표 제목
-- 일반 텍스트 형식으로 출력한다.
-- 원문의 텍스트를 그대로 출력한다.
+## Analysis Process
 
-## Few-shot 예시
+Before generating the final table of contents, work through the document systematically in `<analysis>` tags. It's OK for this section to be quite long. Follow these steps:
 
-### 예시 1 (중간 chunk)
+1. **Document Title Extraction**: Quote the main document title exactly as it appears at the beginning of the document.
 
-#### 입력
+2. **Structural Marker Identification**: Scan through the document and quote all the key structural markers you find, such as:
+   - Formal regulatory patterns: 제x장, 제x절, 제x관, 제x조
+   - General section patterns: numbered headers (1., 2., etc.), lettered headers (가., 나., etc.)
+   - Special sections: 부칙, 별지, 별표, etc.
 
-인원보안 규정
+3. **Systematic Section Extraction**: Work through the document from beginning to end, extracting each structural element in order:
+   - For each main section, quote the exact title as it appears
+   - For each subsection, quote the exact title and note which main section it belongs under
+   - For each article/item, quote the exact title and note its parent section
+   - Include any appendices, attachments, and addenda
 
-에 과다한 비용을 요한다고 인정하는 경우 또는 당행이 공종별 목적물을 관계법령에 따른 내구연한(耐久年限)이나 설계상의 구조내력을 초과하여사용한 것을 원인으로 하여 하자가 발생하였다고 인정하는 경우에는 그러하지 아니하다.
+4. **Hierarchy Building**: For each extracted element, explicitly note:
+   - What level it should be at (main section, subsection, sub-subsection, etc.)
+   - What its parent section is (if any)
+   - What numbering it should receive in the final TOC (1., 1.1., 1.1.1., etc.)
 
-제18조 (자격등록 확인) 세칙 제52조에 따라 하자검사를 하는 자는...
-제19조 (자격등록 및 갱신등록의 거부) 하자보수보증금률을 정하여야 한다...
-제5장 인원보안
-제1절 보안책임
-제30조(보안책임자) 보안담당은...
-제30조의2 (자격등록 및 갱신등록의 거부) 하자보수보증금을 직접 사용하고자 할 때에는...
-부칙 (2022. 1. 2)
-제4조(조사절차) 계약담당은 제1항의 보증채무 이행 대금, ...
-제7조(조사결과 보고) 락률 산정은 다음 각 호의 산식에따른다. ...
-[별지 제6호 서식] 여비정산신청서
-[별표 1] <개정 2026.2.11>
-<별표 2> 회계장부의 보존연한표
-[별지 제1호 서식]<개정 2022.04.25> 보안심사(실무)위원회 회의록
+5. **Structure Verification**: Review your extracted elements to ensure:
+   - All structural elements are captured in document order
+   - The hierarchy makes logical sense
+   - No elements are duplicated or missed
 
-#### 출력
+## Output Requirements
 
-TITLE:인원보안 규정
-1. 제18조 (자격등록 확인)
-2. 제19조 (자격등록 및 갱신등록의 거부)
-3. 제5장 인원보안
-3.1. 제1절 보안책임
-3.1.1. 제30조(보안책임자)
-3.1.2. 제30조의2 (자격등록 및 갱신등록의 거부)
-4. 부칙 (2022. 1. 2)
-4.1. 제4조(조사절차)
-4.2. 제7조(조사결과 보고)
-5. [별지 제6호 서식] 여비정산신청서
-6. [별표 1] <개정 2026.2.11>
-7. [별표 2] 회계장부의 보존연한표
-8. [별지 제1호 서식]<개정 2022.04.25> 보안심사(실무)위원회 회의록
+After your analysis, generate the table of contents with this exact format:
 
----
+```
+<toc>
+TITLE:<document title>
+1. <first main section title>
+1.1. <first subsection title>
+1.1.1. <first sub-subsection title>
+1.2. <second subsection title>
+2. <second main section title>
+2.1. <subsection under second main section>
+3. <third main section title>
+</toc>
+```
 
-## 실제 작업할 입력
-{raw_text}
-"""
+## Formatting Guidelines
+
+- Start with `TITLE:` followed by the document title
+- Use hierarchical decimal numbering (1, 1.1, 1.1.1, etc.)
+- Follow each number with a space and the original title exactly as it appears
+- Maintain the document's logical hierarchy
+- Include appendices, attachments, and addenda as separate top-level items
+- Extract titles exactly as they appear - do not include explanatory content
+- Handle both formal regulatory structures and general section headers
+- Wrap the entire table of contents in `<toc></toc>` tags
+""".strip()
