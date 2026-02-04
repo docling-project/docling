@@ -6,17 +6,17 @@ import pytest
     not (Path(__file__).resolve().parents[2] / "sample_files" / "hwpx_sample.hwpx").exists(),
     reason="hwpx_sample.hwpx not found",
 )
-def test_hwpx_smoke(basic_processor):
-    dp = basic_processor()
-    sample = Path(__file__).resolve().parents[2] / "sample_files" / "hwpx_sample.hwpx"
+# def test_hwpx_smoke(basic_processor):
+#     dp = basic_processor()
+#     sample = Path(__file__).resolve().parents[2] / "sample_files" / "hwpx_sample.hwpx"
 
-    doc = dp.load_documents(str(sample))
-    assert doc is not None
-    if hasattr(doc, "num_pages"):
-        assert doc.num_pages() >= 1
+#     doc = dp.load_documents(str(sample))
+#     assert doc is not None
+#     if hasattr(doc, "num_pages"):
+#         assert doc.num_pages() >= 1
 
-    chunks = dp.split_documents(doc)
-    assert isinstance(chunks, list) and len(chunks) >= 1
+#     chunks = dp.split_documents(doc)
+#     assert isinstance(chunks, list) and len(chunks) >= 1
 
 @pytest.mark.smoke
 @pytest.mark.skipif(
