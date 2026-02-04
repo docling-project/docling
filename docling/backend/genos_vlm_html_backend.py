@@ -69,7 +69,7 @@ CLASS_TO_DOCITEM_LABEL: dict[str, DocItemLabel] = {
     "Form": DocItemLabel.TEXT,
 }
 
-TEXT_LABLE = [
+TEXT_LABEL = [
         DocItemLabel.CAPTION,
         DocItemLabel.CHECKBOX_SELECTED,
         DocItemLabel.CHECKBOX_UNSELECTED,
@@ -79,7 +79,6 @@ TEXT_LABLE = [
         DocItemLabel.PARAGRAPH,
         DocItemLabel.REFERENCE,
         DocItemLabel.TEXT,
-        DocItemLabel.EMPTY_VALUE,
 ]
 
 class _Context(BaseModel):
@@ -207,7 +206,7 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                     text = text.strip()
                     if text and tag.name in ["div"]:
                         label = self._label_from_current_class(DocItemLabel.TEXT)
-                        label = label if label in TEXT_LABLE else DocItemLabel.TEXT
+                        label = label if label in TEXT_LABEL else DocItemLabel.TEXT
                         doc.add_text(
                             parent=self.parents[self.level],
                             label=label,
@@ -354,7 +353,7 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
         text = element.text.strip()
         if text:
             label = self._label_from_current_class(DocItemLabel.TEXT)
-            label = label if label in TEXT_LABLE else DocItemLabel.TEXT
+            label = label if label in TEXT_LABEL else DocItemLabel.TEXT
             doc.add_text(
                 parent=self.parents[self.level],
                 label=label,
