@@ -25,8 +25,11 @@ from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
 from docling.datamodel.pipeline_options import CodeFormulaVlmOptions
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
-from docling.models.runtimes.base import BaseVlmEngine, VlmEngineInput
-from docling.models.runtimes.factory import create_vlm_engine
+from docling.models.inference_engines.vlm import (
+    BaseVlmEngine,
+    VlmEngineInput,
+    create_vlm_engine,
+)
 
 _log = logging.getLogger(__name__)
 

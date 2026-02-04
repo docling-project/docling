@@ -13,11 +13,11 @@ from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
 from docling.models.base_model import BasePageModel
-from docling.models.runtimes.base import (
+from docling.models.inference_engines.vlm import (
     BaseVlmEngine,
     VlmEngineInput,
+    create_vlm_engine,
 )
-from docling.models.runtimes.factory import create_vlm_engine
 from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)

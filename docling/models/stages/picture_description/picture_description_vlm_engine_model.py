@@ -17,9 +17,12 @@ from docling.datamodel.pipeline_options import (
     PictureDescriptionVlmEngineOptions,
 )
 from docling.datamodel.stage_model_specs import EngineModelConfig
+from docling.models.inference_engines.vlm import (
+    BaseVlmEngine,
+    VlmEngineInput,
+    create_vlm_engine,
+)
 from docling.models.picture_description_base_model import PictureDescriptionBaseModel
-from docling.models.runtimes.base import BaseVlmEngine, VlmEngineInput
-from docling.models.runtimes.factory import create_vlm_engine
 
 _log = logging.getLogger(__name__)
 

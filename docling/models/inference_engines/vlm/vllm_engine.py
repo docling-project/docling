@@ -9,12 +9,12 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
 from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
-from docling.models.runtimes._utils import (
+from docling.models.inference_engines.vlm._utils import (
     format_prompt_for_vlm,
     preprocess_image_batch,
     resolve_model_artifacts_path,
 )
-from docling.models.runtimes.base import (
+from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,

@@ -10,7 +10,10 @@ from typing import Any, Dict, Literal, Optional
 from pydantic import AnyUrl, Field
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
-from docling.models.runtimes.base import BaseVlmEngineOptions, VlmEngineType
+from docling.models.inference_engines.vlm.base import (
+    BaseVlmEngineOptions,
+    VlmEngineType,
+)
 
 _log = logging.getLogger(__name__)
 

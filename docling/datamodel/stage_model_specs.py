@@ -17,7 +17,7 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
-from docling.models.runtimes.base import VlmEngineType
+from docling.models.inference_engines.vlm.base import VlmEngineType
 
 _log = logging.getLogger(__name__)
 

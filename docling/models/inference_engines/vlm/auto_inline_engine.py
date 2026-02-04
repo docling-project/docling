@@ -11,7 +11,7 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
-from docling.models.runtimes.base import (
+from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,
@@ -168,7 +168,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
 
         # Create the actual engine
         if self.selected_engine_type == VlmEngineType.MLX:
-            from docling.models.runtimes.vlm.mlx_engine import MlxVlmEngine
+            from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
 
             mlx_options = MlxVlmEngineOptions(
                 trust_remote_code=self.options.trust_remote_code
@@ -182,7 +182,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
             )
 
         elif self.selected_engine_type == VlmEngineType.VLLM:
-            from docling.models.runtimes.vlm.vllm_engine import VllmVlmEngine
+            from docling.models.inference_engines.vlm.vllm_engine import VllmVlmEngine
 
             vllm_options = VllmVlmEngineOptions()
             self.actual_engine = VllmVlmEngine(
@@ -193,7 +193,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
             )
 
         else:  # TRANSFORMERS
-            from docling.models.runtimes.vlm.transformers_engine import (
+            from docling.models.inference_engines.vlm.transformers_engine import (
                 TransformersVlmEngine,
             )
 

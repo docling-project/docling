@@ -3,7 +3,7 @@
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from docling.models.runtimes.base import (
+from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     BaseVlmEngineOptions,
     VlmEngineType,
@@ -54,7 +54,7 @@ def create_vlm_engine(
 
     if engine_type == VlmEngineType.AUTO_INLINE:
         from docling.datamodel.vlm_engine_options import AutoInlineVlmEngineOptions
-        from docling.models.runtimes.vlm.auto_inline_engine import (
+        from docling.models.inference_engines.vlm.auto_inline_engine import (
             AutoInlineVlmEngine,
         )
 
@@ -66,7 +66,7 @@ def create_vlm_engine(
 
     elif engine_type == VlmEngineType.TRANSFORMERS:
         from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
-        from docling.models.runtimes.vlm.transformers_engine import (
+        from docling.models.inference_engines.vlm.transformers_engine import (
             TransformersVlmEngine,
         )
 
@@ -78,7 +78,7 @@ def create_vlm_engine(
 
     elif engine_type == VlmEngineType.MLX:
         from docling.datamodel.vlm_engine_options import MlxVlmEngineOptions
-        from docling.models.runtimes.vlm.mlx_engine import MlxVlmEngine
+        from docling.models.inference_engines.vlm.mlx_engine import MlxVlmEngine
 
         if not isinstance(options, MlxVlmEngineOptions):
             raise ValueError(f"Expected MlxVlmEngineOptions, got {type(options)}")
@@ -86,7 +86,7 @@ def create_vlm_engine(
 
     elif engine_type == VlmEngineType.VLLM:
         from docling.datamodel.vlm_engine_options import VllmVlmEngineOptions
-        from docling.models.runtimes.vlm.vllm_engine import VllmVlmEngine
+        from docling.models.inference_engines.vlm.vllm_engine import VllmVlmEngine
 
         if not isinstance(options, VllmVlmEngineOptions):
             raise ValueError(f"Expected VllmVlmEngineOptions, got {type(options)}")
@@ -94,7 +94,7 @@ def create_vlm_engine(
 
     elif VlmEngineType.is_api_variant(engine_type):
         from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
-        from docling.models.runtimes.vlm.api_openai_compatible_engine import (
+        from docling.models.inference_engines.vlm.api_openai_compatible_engine import (
             ApiVlmEngine,
         )
 

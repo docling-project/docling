@@ -29,12 +29,12 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import TransformersVlmEngineOptions
-from docling.models.runtimes._utils import (
+from docling.models.inference_engines.vlm._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,
     resolve_model_artifacts_path,
 )
-from docling.models.runtimes.base import (
+from docling.models.inference_engines.vlm.base import (
     BaseVlmEngine,
     VlmEngineInput,
     VlmEngineOutput,

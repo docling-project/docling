@@ -30,7 +30,7 @@ from docling.datamodel.vlm_engine_options import (
     TransformersVlmEngineOptions,
     VllmVlmEngineOptions,
 )
-from docling.models.runtimes.base import VlmEngineType
+from docling.models.inference_engines.vlm import VlmEngineType
 
 # =============================================================================
 # RUNTIME OPTIONS TESTS
