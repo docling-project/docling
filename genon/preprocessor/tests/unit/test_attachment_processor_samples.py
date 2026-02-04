@@ -58,16 +58,16 @@ def _import_processor():
         return DocumentProcessor, _get_pdf_path, convert_to_pdf, TextLoader
 
 
-def _import_basic_processor():
-    try:
-        # 정상 경로 시도
-        from facade.basic_processor import DocumentProcessor as BasicDocumentProcessor
-        return BasicDocumentProcessor
-    except ModuleNotFoundError:
-        # 테스트 실행 루트에 따라 sys.path 보정
-        sys.path.append(str(Path(__file__).resolve().parents[3]))
-        from facade.basic_processor import DocumentProcessor as BasicDocumentProcessor
-        return BasicDocumentProcessor
+# def _import_basic_processor():
+#     try:
+#         # 정상 경로 시도
+#         from facade.basic_processor import DocumentProcessor as BasicDocumentProcessor
+#         return BasicDocumentProcessor
+#     except ModuleNotFoundError:
+#         # 테스트 실행 루트에 따라 sys.path 보정
+#         sys.path.append(str(Path(__file__).resolve().parents[3]))
+#         from facade.basic_processor import DocumentProcessor as BasicDocumentProcessor
+#         return BasicDocumentProcessor
 
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"}
