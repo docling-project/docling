@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, List
 
@@ -47,7 +47,7 @@ class TimeRecorder:
         scope: ProfilingScope = ProfilingScope.PAGE,
     ):
         if settings.debug.profile_pipeline_timings:
-            if key not in conv_res.timings.keys():
+            if key not in conv_res.timings:
                 conv_res.timings[key] = ProfilingItem(scope=scope)
             self.conv_res = conv_res
             self.key = key
@@ -55,7 +55,7 @@ class TimeRecorder:
     def __enter__(self):
         if settings.debug.profile_pipeline_timings:
             self.start = time.monotonic()
-            self.conv_res.timings[self.key].start_timestamps.append(datetime.utcnow())
+            self.conv_res.timings[self.key].start_timestamps.append(datetime.now(timezone.utc))
         return self
 
     def __exit__(self, *args):
