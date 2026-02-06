@@ -1,0 +1,58 @@
+"""Engine option helpers for object-detection runtimes."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import List, Literal, Optional
+
+from pydantic import Field
+
+from docling.models.inference_engines.object_detection.base import (
+    BaseObjectDetectionEngineOptions,
+    ObjectDetectionEngineType,
+)
+
+
+class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
+    """Runtime configuration for ONNX Runtime based object-detection models.
+
+    Preprocessing parameters come from HuggingFace preprocessor configs,
+    not from these options.
+    """
+
+    engine_type: Literal[ObjectDetectionEngineType.ONNXRUNTIME] = (
+        ObjectDetectionEngineType.ONNXRUNTIME
+    )
+
+    providers: List[str] = Field(
+        default_factory=lambda: ["CPUExecutionProvider"],
+        description="Ordered list of ONNX Runtime execution providers to try",
+    )
+
+    artifacts_path: Optional[Path] = Field(
+        default=None,
+        description=(
+            "Local artifacts directory. If provided, models are loaded "
+            "from here instead of downloading from HuggingFace."
+        ),
+    )
+
+    image_input_name: str = Field(
+        default="images",
+        description="Name of the tensor input that receives the image batch",
+    )
+
+    sizes_input_name: str = Field(
+        default="orig_target_sizes",
+        description="Name of the tensor input that receives the input sizes",
+    )
+
+
+class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
+    """Placeholder for future Transformers engine support."""
+
+    engine_type: Literal[ObjectDetectionEngineType.TRANSFORMERS] = (
+        ObjectDetectionEngineType.TRANSFORMERS
+    )
+
+    # TBD: Add transformers-specific options when implemented

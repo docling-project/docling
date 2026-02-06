@@ -17,6 +17,9 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
+from docling.models.inference_engines.object_detection.base import (
+    ObjectDetectionEngineType,
+)
 from docling.models.inference_engines.vlm.base import VlmEngineType
 
 _log = logging.getLogger(__name__)
@@ -290,6 +293,59 @@ class VlmModelSpec(BaseModel):
                 return True
 
         return False
+
+
+# =============================================================================
+# OBJECT DETECTION MODEL SPECIFICATION
+# =============================================================================
+
+
+class ObjectDetectionModelSpec(BaseModel):
+    """Specification for an object detection model.
+
+    Simpler than VlmModelSpec - no prompts, no preprocessing params.
+    Preprocessing comes from HuggingFace preprocessor configs.
+    Model files are assumed to be at the root of the HuggingFace repo.
+    """
+
+    name: str = Field(description="Human-readable model name")
+
+    repo_id: str = Field(description="Default HuggingFace repository ID")
+
+    revision: str = Field(default="main", description="Default model revision")
+
+    engine_overrides: Dict["ObjectDetectionEngineType", EngineModelConfig] = Field(
+        default_factory=dict,
+        description="Engine-specific configuration overrides",
+    )
+
+    def get_repo_id(self, engine_type: "ObjectDetectionEngineType") -> str:
+        """Get repository ID for specific engine.
+
+        Args:
+            engine_type: The engine type
+
+        Returns:
+            Repository ID (with engine override if applicable)
+        """
+        override = self.engine_overrides.get(engine_type)
+        if override and override.repo_id:
+            return override.repo_id
+        return self.repo_id
+
+    def get_revision(self, engine_type: "ObjectDetectionEngineType") -> str:
+        """Get revision for specific engine.
+
+        Args:
+            engine_type: The engine type
+
+        Returns:
+            Model revision (with engine override if applicable)
+        """
+        override = self.engine_overrides.get(engine_type)
+        if override and override.revision:
+            return override.revision
+        return self.revision
 
 
 # =============================================================================
