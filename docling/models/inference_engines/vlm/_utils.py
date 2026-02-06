@@ -93,7 +93,7 @@ def extract_generation_stoppers(
 def resolve_model_artifacts_path(
     repo_id: str,
     revision: str,
-    artifacts_path: Optional[Path],
+    artifacts_path: Optional[Union[Path, str]],
     download_fn: Callable[[str, str], Path],
 ) -> Path:
     """Resolve the path to model artifacts, downloading if needed.
@@ -111,6 +111,8 @@ def resolve_model_artifacts_path(
         Path to the model artifacts directory
     """
     repo_cache_folder = repo_id.replace("/", "--")
+
+    artifacts_path = artifacts_path if artifacts_path is None else Path(artifacts_path)
 
     if artifacts_path is None:
         # No cache path provided - download

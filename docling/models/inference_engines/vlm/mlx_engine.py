@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
 from PIL.Image import Image
 
@@ -43,7 +43,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         options: MlxVlmEngineOptions,
-        artifacts_path: Optional[Path] = None,
+        artifacts_path: Optional[Union[Path, str]],
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the MLX engine.
@@ -55,7 +55,9 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         """
         super().__init__(options, model_config=model_config)
         self.options: MlxVlmEngineOptions = options
-        self.artifacts_path = artifacts_path
+        self.artifacts_path = (
+            artifacts_path if artifacts_path is None else Path(artifacts_path)
+        )
 
         # These will be set during initialization
         # MLX types are complex and external, using Any with type: ignore
