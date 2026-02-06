@@ -319,6 +319,22 @@ class ObjectDetectionModelSpec(BaseModel):
         description="Engine-specific configuration overrides",
     )
 
+    def get_engine_config(
+        self, engine_type: "ObjectDetectionEngineType"
+    ) -> EngineModelConfig:
+        """Get EngineModelConfig for a specific object-detection engine.
+
+        Args:
+            engine_type: The engine type being requested
+
+        Returns:
+            EngineModelConfig populated with repo/revision and engine overrides
+        """
+        override = self.engine_overrides.get(engine_type)
+        if override is not None:
+            return override.merge_with(self.repo_id, self.revision)
+        return EngineModelConfig(repo_id=self.repo_id, revision=self.revision)
+
     def get_repo_id(self, engine_type: "ObjectDetectionEngineType") -> str:
         """Get repository ID for specific engine.
 

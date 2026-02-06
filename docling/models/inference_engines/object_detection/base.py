@@ -5,10 +5,13 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from PIL.Image import Image
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from docling.datamodel.stage_model_specs import EngineModelConfig
 
 _log = logging.getLogger(__name__)
 
@@ -75,7 +78,7 @@ class BaseObjectDetectionEngine(ABC):
     def __init__(
         self,
         options: BaseObjectDetectionEngineOptions,
-        model_config: Optional[Any] = None,
+        model_config: Optional[EngineModelConfig] = None,
     ) -> None:
         """Initialize the engine.
 

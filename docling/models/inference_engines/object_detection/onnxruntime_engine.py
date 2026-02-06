@@ -10,7 +10,6 @@ import numpy as np
 import onnxruntime as ort
 from transformers import RTDetrImageProcessor
 
-from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
     OnnxRuntimeObjectDetectionEngineOptions,
 )
@@ -39,8 +38,6 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
     def __init__(
         self,
         options: OnnxRuntimeObjectDetectionEngineOptions,
-        accelerator_options: Optional[AcceleratorOptions] = None,
-        artifacts_path: Optional[Path] = None,
         model_config: Optional[EngineModelConfig] = None,
     ):
         """Initialize the ONNX Runtime engine.
@@ -53,8 +50,6 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
         """
         super().__init__(options, model_config=model_config)
         self.options: OnnxRuntimeObjectDetectionEngineOptions = options
-        self.accelerator_options = accelerator_options or AcceleratorOptions()
-        self.artifacts_path = artifacts_path
         self._session: Optional[ort.InferenceSession] = None
         self._processor: Optional[RTDetrImageProcessor] = None
         self._model_path: Optional[Path] = None
@@ -68,25 +63,25 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
         if self.model_config is None:
             raise ValueError("model_config is required for ONNX engine")
 
-        repo_id = getattr(self.model_config, "repo_id", None)
-        revision = getattr(self.model_config, "revision", "main")
+        repo_id = self.model_config.repo_id
+        revision = self.model_config.revision or "main"
 
         if repo_id is None:
             raise ValueError("model_config must provide repo_id")
 
-        # Use artifacts_path if provided
-        if self.artifacts_path is not None:
-            # Check if model exists in artifacts_path
-            model_folder = self.artifacts_path / repo_id.replace("/", "--")
-            candidate = model_folder / "model.onnx"
+        model_filename = self._resolve_model_filename()
+
+        artifacts_root = self.options.artifacts_path
+        if artifacts_root is not None:
+            model_folder = artifacts_root / repo_id.replace("/", "--")
+            candidate = model_folder / model_filename
             if candidate.exists():
                 _log.info(f"Using ONNX model from artifacts_path: {candidate}")
                 return candidate
-            else:
-                _log.warning(
-                    f"Model not found in artifacts_path ({candidate}), "
-                    "will download from HuggingFace"
-                )
+            _log.warning(
+                "Model not found in artifacts_path (%s), will download from HuggingFace",
+                candidate,
+            )
 
         # Download from HuggingFace
         _log.info(f"Downloading model from HuggingFace: {repo_id}@{revision}")
@@ -98,14 +93,23 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
             progress=False,
         )
 
-        candidate = base_path / "model.onnx"
+        candidate = base_path / model_filename
         if not candidate.exists():
             raise FileNotFoundError(
-                f"Expected ONNX file 'model.onnx' not found in repo '{repo_id}'. "
+                f"Expected ONNX file '{model_filename}' not found in repo '{repo_id}'. "
                 f"Searched in: {base_path}"
             )
 
         return candidate
+
+    def _resolve_model_filename(self) -> str:
+        """Determine which ONNX filename to load."""
+        filename = self.options.model_filename
+        if self.model_config is not None:
+            extra_filename = self.model_config.extra_config.get("model_filename")
+            if isinstance(extra_filename, str) and extra_filename:
+                filename = extra_filename
+        return filename
 
     def _load_preprocessor(self, model_folder: Path) -> RTDetrImageProcessor:
         """Load HuggingFace preprocessor from model folder.
@@ -127,17 +131,17 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
                 _log.debug(f"Could not load preprocessor from local: {e}")
 
         # Fall back to repo_id if available
-        if self.model_config is not None:
-            repo_id = getattr(self.model_config, "repo_id", None)
-            if repo_id:
-                try:
-                    _log.debug(f"Loading preprocessor from HuggingFace: {repo_id}")
-                    return RTDetrImageProcessor.from_pretrained(repo_id)
-                except Exception as e:
-                    _log.warning(
-                        f"Could not load preprocessor from {repo_id}: {e}. "
-                        "Using default configuration."
-                    )
+        if self.model_config is not None and self.model_config.repo_id:
+            repo_id = self.model_config.repo_id
+            try:
+                _log.debug(f"Loading preprocessor from HuggingFace: {repo_id}")
+                return RTDetrImageProcessor.from_pretrained(repo_id)
+            except Exception as e:
+                _log.warning(
+                    "Could not load preprocessor from %s: %s. Using default configuration.",
+                    repo_id,
+                    e,
+                )
 
         # Last resort: use default preprocessor
         _log.warning("Using default RTDetrImageProcessor configuration")

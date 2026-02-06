@@ -24,6 +24,11 @@ class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
         ObjectDetectionEngineType.ONNXRUNTIME
     )
 
+    model_filename: str = Field(
+        default="model.onnx",
+        description="Filename of the ONNX export inside the model repository",
+    )
+
     providers: List[str] = Field(
         default_factory=lambda: ["CPUExecutionProvider"],
         description="Ordered list of ONNX Runtime execution providers to try",

@@ -1,45 +1,57 @@
 """Factory for creating object detection engines."""
 
-import logging
-from pathlib import Path
-from typing import Optional
+from __future__ import annotations
 
-from docling.datamodel.accelerator_options import AcceleratorOptions
+import logging
+from typing import TYPE_CHECKING, Optional
+
 from docling.models.inference_engines.object_detection.base import (
     BaseObjectDetectionEngine,
     BaseObjectDetectionEngineOptions,
     ObjectDetectionEngineType,
 )
 
+if TYPE_CHECKING:
+    from docling.datamodel.stage_model_specs import (
+        EngineModelConfig,
+        ObjectDetectionModelSpec,
+    )
+
 _log = logging.getLogger(__name__)
 
 
 def create_object_detection_engine(
     options: BaseObjectDetectionEngineOptions,
-    accelerator_options: Optional[AcceleratorOptions] = None,
-    artifacts_path: Optional[Path] = None,
-    model_config: Optional[object] = None,
+    model_spec: Optional[ObjectDetectionModelSpec] = None,
 ) -> BaseObjectDetectionEngine:
     """Factory to create object detection engines.
 
     Args:
         options: Engine-specific options
-        accelerator_options: Hardware accelerator configuration
-        artifacts_path: Path to cached model artifacts
-        model_config: Model configuration (repo_id, revision, extra_config)
+        model_spec: Model specification used to derive engine configuration
 
     Returns:
         Initialized engine instance (call .initialize() before use)
     """
+    model_config: Optional[EngineModelConfig] = None
+    if model_spec is not None:
+        model_config = model_spec.get_engine_config(options.engine_type)
+
     if options.engine_type == ObjectDetectionEngineType.ONNXRUNTIME:
+        from docling.datamodel.object_detection_engine_options import (
+            OnnxRuntimeObjectDetectionEngineOptions,
+        )
         from docling.models.inference_engines.object_detection.onnxruntime_engine import (
             OnnxRuntimeObjectDetectionEngine,
         )
 
+        if not isinstance(options, OnnxRuntimeObjectDetectionEngineOptions):
+            raise ValueError(
+                f"Expected OnnxRuntimeObjectDetectionEngineOptions, got {type(options)}"
+            )
+
         return OnnxRuntimeObjectDetectionEngine(
             options,
-            accelerator_options=accelerator_options,
-            artifacts_path=artifacts_path,
             model_config=model_config,
         )
 
