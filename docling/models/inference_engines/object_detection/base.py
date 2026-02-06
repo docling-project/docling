@@ -45,26 +45,20 @@ class ObjectDetectionEngineInput(BaseModel):
     )
 
 
-class ObjectDetectionEnginePrediction(BaseModel):
-    """Single detection prediction."""
-
-    label_id: int = Field(description="Predicted class index")
-    score: float = Field(description="Confidence score for the prediction")
-    bbox: List[float] = Field(
-        description="Bounding box as [x_min, y_min, x_max, y_max] in input image pixels",
-    )
-    metadata: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Optional metadata provided by the engine",
-    )
-
-
 class ObjectDetectionEngineOutput(BaseModel):
     """Output returned by object-detection engines."""
 
-    predictions: List[ObjectDetectionEnginePrediction] = Field(
+    label_ids: List[int] = Field(
         default_factory=list,
-        description="List of predictions for the corresponding input image",
+        description="Predicted class indices",
+    )
+    scores: List[float] = Field(
+        default_factory=list,
+        description="Confidence scores for the predictions",
+    )
+    bboxes: List[List[float]] = Field(
+        default_factory=list,
+        description="Bounding boxes as [x_min, y_min, x_max, y_max] in pixels",
     )
     metadata: Dict[str, Any] = Field(
         default_factory=dict,

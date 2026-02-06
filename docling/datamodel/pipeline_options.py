@@ -15,7 +15,6 @@ from typing_extensions import deprecated
 
 from docling.datamodel import (
     asr_model_specs,
-    object_detection_model_specs,
     stage_model_specs,
     vlm_model_specs,
 )
@@ -31,6 +30,9 @@ from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_V2,
     LayoutModelConfig,
 )
+from docling.datamodel.object_detection_engine_options import (
+    BaseObjectDetectionEngineOptions,
+)
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
@@ -39,14 +41,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
 )
 from docling.datamodel.stage_model_specs import (
+    ObjectDetectionModelSpec,
     ObjectDetectionStagePresetMixin,
     StagePresetMixin,
     VlmModelSpec,
 )
-from docling.datamodel.object_detection_engine_options import (
-    BaseObjectDetectionEngineOptions,
-)
-from docling.datamodel.object_detection_model_specs import ObjectDetectionModelSpec
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
 from docling.datamodel.vlm_model_specs import (
     GRANITE_VISION_OLLAMA as granite_vision_vlm_ollama_conversion_options,
@@ -109,53 +108,6 @@ class TableStructureOptions(BaseTableStructureOptions):
             )
         ),
     ] = TableFormerMode.ACCURATE
-
-
-class TableStructureObjectDetectionOptions(
-    ObjectDetectionStagePresetMixin, BaseTableStructureOptions
-):
-    """Configuration for table structure extraction via object detection."""
-
-    kind: ClassVar[str] = "table_structure_object_detection"
-
-    model_spec: ObjectDetectionModelSpec = Field(
-        default=object_detection_model_specs.TABLE_MODEL_RTDETR,
-        description="Object-detection model specification for table analysis",
-    )
-
-    engine_options: BaseObjectDetectionEngineOptions = Field(
-        description="Runtime configuration for the object-detection engine",
-    )
-
-    do_cell_matching: Annotated[
-        bool,
-        Field(
-            description=(
-                "Match detected table cells with OCR text cells to populate textual content. "
-                "Disable to skip the text-assignment step for performance-sensitive workflows."
-            )
-        ),
-    ] = True
-
-    concurrency: Annotated[
-        int,
-        Field(
-            description=(
-                "Maximum number of worker threads for processing tables across pages."
-            ),
-            ge=1,
-        ),
-    ] = 1
-
-    scale: Annotated[
-        float,
-        Field(
-            description=(
-                "Image scale factor used when cropping table regions prior to detection."
-            ),
-            gt=0,
-        ),
-    ] = 2.0
 
 
 class OcrOptions(BaseOptions):
@@ -875,13 +827,6 @@ PictureDescriptionVlmEngineOptions.register_preset(stage_model_specs.PICTURE_DES
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_CODEFORMULAV2)
 CodeFormulaVlmOptions.register_preset(stage_model_specs.CODE_FORMULA_GRANITE_DOCLING)
 
-LayoutObjectDetectionOptions.register_preset(
-    object_detection_model_specs.LAYOUT_OBJECT_DETECTION_PRESET
-)
-TableStructureObjectDetectionOptions.register_preset(
-    object_detection_model_specs.TABLE_OBJECT_DETECTION_PRESET
-)
-
 
 # =============================================================================
 # MODULE-LEVEL DEFAULTS FOR NEW PRESET SYSTEM
@@ -1156,21 +1101,36 @@ class LayoutOptions(BaseLayoutOptions):
     ] = DOCLING_LAYOUT_HERON
 
 
-class LayoutObjectDetectionOptions(
-    ObjectDetectionStagePresetMixin, LayoutOptions
-):
+class LayoutObjectDetectionOptions(ObjectDetectionStagePresetMixin, BaseLayoutOptions):
     """Options for layout detection using object-detection runtimes."""
 
     kind: ClassVar[str] = "layout_object_detection"
 
+    create_orphan_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Create clusters for orphaned elements not assigned to any structure. When True, isolated text or "
+                "elements are grouped into their own clusters. Recommended for complete document coverage."
+            )
+        ),
+    ] = True
+
     model_spec: ObjectDetectionModelSpec = Field(
-        default=object_detection_model_specs.LAYOUT_HERON_ONNX,
+        default_factory=lambda: stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON.model_spec.model_copy(
+            deep=True
+        ),
         description="Object-detection model specification for layout analysis",
     )
 
     engine_options: BaseObjectDetectionEngineOptions = Field(
         description="Runtime configuration for the object-detection engine",
     )
+
+
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON
+)
 
 
 class AsrPipelineOptions(PipelineOptions):

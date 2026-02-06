@@ -5,7 +5,6 @@ from docling.models.inference_engines.object_detection.base import (
     BaseObjectDetectionEngineOptions,
     ObjectDetectionEngineInput,
     ObjectDetectionEngineOutput,
-    ObjectDetectionEnginePrediction,
     ObjectDetectionEngineType,
 )
 from docling.models.inference_engines.object_detection.factory import (
@@ -17,7 +16,6 @@ __all__ = [
     "BaseObjectDetectionEngineOptions",
     "ObjectDetectionEngineInput",
     "ObjectDetectionEngineOutput",
-    "ObjectDetectionEnginePrediction",
     "ObjectDetectionEngineType",
     "create_object_detection_engine",
 ]

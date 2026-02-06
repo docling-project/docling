@@ -18,7 +18,7 @@ from docling.models.base_layout_model import BaseLayoutModel
 from docling.models.inference_engines.object_detection import (
     BaseObjectDetectionEngine,
     ObjectDetectionEngineInput,
-    ObjectDetectionEnginePrediction,
+    ObjectDetectionEngineOutput,
     create_object_detection_engine,
 )
 from docling.utils.layout_postprocessor import LayoutPostprocessor
@@ -50,15 +50,13 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         accelerator_options: AcceleratorOptions,
         options: LayoutObjectDetectionOptions,
     ) -> None:
-        del accelerator_options  # Layout detection currently CPU-only
         self.options = options
-        engine_options = options.engine_options.model_copy(deep=True)
-        if artifacts_path is not None:
-            engine_options.artifacts_path = artifacts_path
 
         self.engine: BaseObjectDetectionEngine = create_object_detection_engine(
-            engine_options,
+            options=options.engine_options,
             model_spec=self.options.model_spec,
+            artifacts_path=artifacts_path,
+            accelerator_options=accelerator_options,
         )
         self.engine.initialize()
 
@@ -99,7 +97,7 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
                 clusters = self._predictions_to_clusters(
                     page=page,
                     image=page_image,
-                    predictions=engine_output.predictions,
+                    engine_output=engine_output,
                 )
 
                 processed_clusters, processed_cells = LayoutPostprocessor(
@@ -134,27 +132,29 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         self,
         page: Page,
         image: Image.Image,
-        predictions: List[ObjectDetectionEnginePrediction],
+        engine_output: ObjectDetectionEngineOutput,
     ) -> List[Cluster]:
         assert page.size is not None
         scale_x = page.size.width / image.width
         scale_y = page.size.height / image.height
 
         clusters: List[Cluster] = []
-        for idx, pred in enumerate(predictions):
-            label = self.LABEL_MAP.get(pred.label_id, DocItemLabel.TEXT)
+        for idx, (label_id, score, bbox_coords) in enumerate(
+            zip(engine_output.label_ids, engine_output.scores, engine_output.bboxes)
+        ):
+            label = self.LABEL_MAP.get(label_id, DocItemLabel.TEXT)
             bbox = BoundingBox(
-                l=pred.bbox[0] * scale_x,
-                t=pred.bbox[1] * scale_y,
-                r=pred.bbox[2] * scale_x,
-                b=pred.bbox[3] * scale_y,
+                l=bbox_coords[0] * scale_x,
+                t=bbox_coords[1] * scale_y,
+                r=bbox_coords[2] * scale_x,
+                b=bbox_coords[3] * scale_y,
                 coord_origin=CoordOrigin.TOPLEFT,
             )
             clusters.append(
                 Cluster(
                     id=idx,
                     label=label,
-                    confidence=pred.score,
+                    confidence=score,
                     bbox=bbox,
                     cells=[],
                 )

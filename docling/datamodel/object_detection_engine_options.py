@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List, Literal
 
 from pydantic import Field
 
@@ -32,14 +31,6 @@ class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
     providers: List[str] = Field(
         default_factory=lambda: ["CPUExecutionProvider"],
         description="Ordered list of ONNX Runtime execution providers to try",
-    )
-
-    artifacts_path: Optional[Path] = Field(
-        default=None,
-        description=(
-            "Local artifacts directory. If provided, models are loaded "
-            "from here instead of downloading from HuggingFace."
-        ),
     )
 
     image_input_name: str = Field(

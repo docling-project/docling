@@ -42,10 +42,10 @@ def layout_engines():
     from docling.experimental.models.table_crops_layout_model import (
         TableCropsLayoutModel,
     )
+    from docling.models.stages.layout.layout_model import LayoutModel
     from docling.models.stages.layout.layout_object_detection_model import (
         LayoutObjectDetectionModel,
     )
-    from docling.models.stages.layout.layout_model import LayoutModel
 
     return {
         "layout_engines": [
@@ -60,13 +60,9 @@ def table_structure_engines():
     from docling.models.stages.table_structure.table_structure_model import (
         TableStructureModel,
     )
-    from docling.models.stages.table_structure.table_object_detection_model import (
-        TableObjectDetectionModel,
-    )
 
     return {
         "table_structure_engines": [
             TableStructureModel,
-            TableObjectDetectionModel,
         ]
     }

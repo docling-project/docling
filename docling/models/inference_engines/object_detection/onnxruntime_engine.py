@@ -10,6 +10,7 @@ import numpy as np
 import onnxruntime as ort
 from transformers import RTDetrImageProcessor
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
     OnnxRuntimeObjectDetectionEngineOptions,
 )
@@ -17,7 +18,6 @@ from docling.models.inference_engines.object_detection.base import (
     BaseObjectDetectionEngine,
     ObjectDetectionEngineInput,
     ObjectDetectionEngineOutput,
-    ObjectDetectionEnginePrediction,
 )
 from docling.models.utils.hf_model_download import download_hf_model
 
@@ -39,6 +39,9 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
         self,
         options: OnnxRuntimeObjectDetectionEngineOptions,
         model_config: Optional[EngineModelConfig] = None,
+        *,
+        artifacts_path: Optional[Path] = None,
+        accelerator_options: Optional[AcceleratorOptions] = None,
     ):
         """Initialize the ONNX Runtime engine.
 
@@ -50,6 +53,8 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
         """
         super().__init__(options, model_config=model_config)
         self.options: OnnxRuntimeObjectDetectionEngineOptions = options
+        self._accelerator_options = accelerator_options
+        self._artifacts_path = artifacts_path
         self._session: Optional[ort.InferenceSession] = None
         self._processor: Optional[RTDetrImageProcessor] = None
         self._model_path: Optional[Path] = None
@@ -71,7 +76,7 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
 
         model_filename = self._resolve_model_filename()
 
-        artifacts_root = self.options.artifacts_path
+        artifacts_root = self._artifacts_path
         if artifacts_root is not None:
             model_folder = artifacts_root / repo_id.replace("/", "--")
             candidate = model_folder / model_filename
@@ -198,7 +203,7 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
 
         # Get original sizes for post-processing
         orig_sizes = np.array(
-            [[img.width, img.height] for img in images], dtype=np.float32
+            [[img.width, img.height] for img in images], dtype=np.int64
         )
 
         # Run ONNX inference
@@ -218,24 +223,18 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
 
         labels_batch, boxes_batch, scores_batch = output_tensors[:3]
 
-        # Convert to structured outputs
         batch_outputs: List[ObjectDetectionEngineOutput] = []
         for idx, input_item in enumerate(input_batch):
-            predictions: List[ObjectDetectionEnginePrediction] = []
-            for label, box, score in zip(
-                labels_batch[idx], boxes_batch[idx], scores_batch[idx]
-            ):
-                predictions.append(
-                    ObjectDetectionEnginePrediction(
-                        label_id=int(label),
-                        score=float(score),
-                        bbox=[float(v) for v in box],
-                    )
-                )
+            labels = [int(label) for label in labels_batch[idx]]
+            boxes = [[float(v) for v in box] for box in boxes_batch[idx]]
+            scores = [float(score) for score in scores_batch[idx]]
 
             batch_outputs.append(
                 ObjectDetectionEngineOutput(
-                    predictions=predictions, metadata=input_item.metadata.copy()
+                    label_ids=labels,
+                    scores=scores,
+                    bboxes=boxes,
+                    metadata=input_item.metadata.copy(),
                 )
             )
 

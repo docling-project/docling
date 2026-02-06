@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.models.inference_engines.object_detection.base import (
     BaseObjectDetectionEngine,
     BaseObjectDetectionEngineOptions,
@@ -23,6 +25,9 @@ _log = logging.getLogger(__name__)
 def create_object_detection_engine(
     options: BaseObjectDetectionEngineOptions,
     model_spec: Optional[ObjectDetectionModelSpec] = None,
+    *,
+    artifacts_path: Optional[Path] = None,
+    accelerator_options: Optional[AcceleratorOptions] = None,
 ) -> BaseObjectDetectionEngine:
     """Factory to create object detection engines.
 
@@ -53,6 +58,8 @@ def create_object_detection_engine(
         return OnnxRuntimeObjectDetectionEngine(
             options,
             model_config=model_config,
+            artifacts_path=artifacts_path,
+            accelerator_options=accelerator_options,
         )
 
     elif options.engine_type == ObjectDetectionEngineType.TRANSFORMERS:

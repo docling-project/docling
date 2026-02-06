@@ -7,7 +7,7 @@ This module defines:
 """
 
 import logging
-from typing import Any, ClassVar, Dict, List, Optional, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field
 
@@ -751,6 +751,23 @@ GRANITE_VISION_MODEL_SPEC_BASE = {
         ),
     },
 }
+
+# -----------------------------------------------------------------------------
+# OBJECT DETECTION PRESETS
+# -----------------------------------------------------------------------------
+
+OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
+    preset_id="layout_heron_default",
+    name="Layout Heron",
+    description="RT-DETR layout-heron model (ResNet50)",
+    model_spec=ObjectDetectionModelSpec(
+        name="layout_heron",
+        repo_id="docling-project/docling-layout-heron",
+        revision="main",
+    ),
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
 
 # -----------------------------------------------------------------------------
 # VLM_CONVERT PRESETS (for full page conversion)
