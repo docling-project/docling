@@ -69,6 +69,18 @@ CLASS_TO_DOCITEM_LABEL: dict[str, DocItemLabel] = {
     "Form": DocItemLabel.TEXT,
 }
 
+TEXT_LABEL = [
+        DocItemLabel.CAPTION,
+        DocItemLabel.CHECKBOX_SELECTED,
+        DocItemLabel.CHECKBOX_UNSELECTED,
+        DocItemLabel.FOOTNOTE,
+        DocItemLabel.PAGE_FOOTER,
+        DocItemLabel.PAGE_HEADER,
+        DocItemLabel.PARAGRAPH,
+        DocItemLabel.REFERENCE,
+        DocItemLabel.TEXT,
+]
+
 class _Context(BaseModel):
     list_ordered_flag_by_ref: dict[str, bool] = {}
     list_start_by_ref: dict[str, int] = {}
@@ -193,18 +205,8 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 ):
                     text = text.strip()
                     if text and tag.name in ["div"]:
-                        # doc.add_text(
-                        #     parent=self.parents[self.level],
-                        #     label=DocItemLabel.TEXT,
-                        #     text=text,
-                        #     content_layer=self.content_layer,
-                        #     prov=ProvenanceItem(
-                        #          page_no=1,
-                        #          bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                        #          charspan=(0, 0)
-                        #      )
-                        # )
                         label = self._label_from_current_class(DocItemLabel.TEXT)
+                        label = label if label in TEXT_LABEL else DocItemLabel.TEXT
                         doc.add_text(
                             parent=self.parents[self.level],
                             label=label,
@@ -302,11 +304,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 label=DocItemLabel.TITLE,
                 text=text,
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(len(text))
             )
         else:
@@ -333,11 +330,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 text=text,
                 level=hlevel - 1,
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(len(text))
             )
 
@@ -351,11 +343,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 text=text,
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(char_end=len(text)),
             )
 
@@ -365,19 +352,8 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
             return
         text = element.text.strip()
         if text:
-            # doc.add_text(
-            #     parent=self.parents[self.level],
-            #     label=DocItemLabel.TEXT,
-            #     text=text,
-            #     content_layer=self.content_layer,
-            #     prov=ProvenanceItem(
-            #         page_no=1,
-            #         bbox=BoundingBox(l=0, t=0, r=1, b=1),
-            #         charspan=(0, 0)
-            #     )
-            # )
-
             label = self._label_from_current_class(DocItemLabel.TEXT)
+            label = label if label in TEXT_LABEL else DocItemLabel.TEXT
             doc.add_text(
                 parent=self.parents[self.level],
                 label=label,
@@ -445,11 +421,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                     marker=marker,
                     parent=parent,
                     content_layer=self.content_layer,
-                    # prov=ProvenanceItem(
-                    #     page_no=1,
-                    #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                    #     charspan=(0, 0)
-                    # )
                     prov=self._prov_from_current_bbox(char_end=len(text)),
                 )
                 self.level += 1
@@ -468,11 +439,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 marker=marker,
                 parent=parent,
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(char_end=len(text)),
             )
         else:
@@ -604,11 +570,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 data=table_data,
                 parent=self.parents[self.level],
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(char_end=0),
             )
         else:
@@ -620,11 +581,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 text=original_html,
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, len(original_html))
-                # )
                 prov=self._prov_from_current_bbox(char_end=len(original_html)),
             )
 
@@ -670,11 +626,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 parent=self.parents[self.level],
                 caption=None,
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(0)
             )
         else:
@@ -686,22 +637,12 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
                 label=DocItemLabel.CAPTION,
                 text=("".join(texts)).strip(),
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(0)
             )
             doc.add_picture(
                 parent=self.parents[self.level],
                 caption=fig_caption,
                 content_layer=self.content_layer,
-                # prov=ProvenanceItem(
-                #     page_no=1,
-                #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-                #     charspan=(0, 0)
-                # )
                 prov=self._prov_from_current_bbox(0)
             )
 
@@ -713,11 +654,6 @@ class GenosVlmHTMLDocumentBackend(DeclarativeDocumentBackend):
             parent=self.parents[self.level],
             caption=None,
             content_layer=self.content_layer,
-            # prov=ProvenanceItem(
-            #     page_no=1,
-            #     bbox=BoundingBox(l=0, t=0, r=1, b=1),
-            #     charspan=(0, 0),
-            # )
             prov=self._prov_from_current_bbox(0)
         )
 
