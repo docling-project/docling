@@ -464,9 +464,14 @@ class StandardPdfPipeline(ConvertPipeline):
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
+        # When force_all_model_init is True, enable all models regardless of do_* values
+        effective_do_table_structure = (
+            self.pipeline_options.do_table_structure
+            or self.pipeline_options.force_all_model_init
+        )
         self.table_model = table_factory.create_instance(
             options=self.pipeline_options.table_structure_options,
-            enabled=self.pipeline_options.do_table_structure,
+            enabled=effective_do_table_structure,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
@@ -479,11 +484,16 @@ class StandardPdfPipeline(ConvertPipeline):
         code_formula_opts.extract_code = self.pipeline_options.do_code_enrichment
         code_formula_opts.extract_formulas = self.pipeline_options.do_formula_enrichment
 
+        # When force_all_model_init is True, enable all models regardless of do_* values
+        effective_do_code_or_formula = (
+            self.pipeline_options.do_code_enrichment
+            or self.pipeline_options.do_formula_enrichment
+            or self.pipeline_options.force_all_model_init
+        )
         self.enrichment_pipe = [
             # Code Formula Enrichment Model (using new VLM runtime system)
             CodeFormulaVlmModel(
-                enabled=self.pipeline_options.do_code_enrichment
-                or self.pipeline_options.do_formula_enrichment,
+                enabled=effective_do_code_or_formula,
                 artifacts_path=self.artifacts_path,
                 options=code_formula_opts,
                 accelerator_options=self.pipeline_options.accelerator_options,
@@ -505,9 +515,13 @@ class StandardPdfPipeline(ConvertPipeline):
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
+        # When force_all_model_init is True, enable all models regardless of do_* values
+        effective_do_ocr = (
+            self.pipeline_options.do_ocr or self.pipeline_options.force_all_model_init
+        )
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
-            enabled=self.pipeline_options.do_ocr,
+            enabled=effective_do_ocr,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
