@@ -43,9 +43,13 @@ def layout_engines():
         TableCropsLayoutModel,
     )
     from docling.models.stages.layout.layout_model import LayoutModel
+    from docling.models.stages.layout.layout_object_detection_model import (
+        LayoutObjectDetectionModel,
+    )
 
     return {
         "layout_engines": [
+            LayoutObjectDetectionModel,
             LayoutModel,
             TableCropsLayoutModel,
         ]

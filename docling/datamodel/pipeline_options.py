@@ -13,7 +13,11 @@ from pydantic import (
 )
 from typing_extensions import deprecated
 
-from docling.datamodel import asr_model_specs, stage_model_specs, vlm_model_specs
+from docling.datamodel import (
+    asr_model_specs,
+    stage_model_specs,
+    vlm_model_specs,
+)
 
 # Import the following for backwards compatibility
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
@@ -26,9 +30,10 @@ from docling.datamodel.layout_model_specs import (
     DOCLING_LAYOUT_V2,
     LayoutModelConfig,
 )
-from docling.datamodel.pipeline_options_asr_model import (
-    InlineAsrOptions,
+from docling.datamodel.object_detection_engine_options import (
+    BaseObjectDetectionEngineOptions,
 )
+from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
     InferenceFramework,
@@ -36,6 +41,8 @@ from docling.datamodel.pipeline_options_vlm_model import (
     ResponseFormat,
 )
 from docling.datamodel.stage_model_specs import (
+    ObjectDetectionModelSpec,
+    ObjectDetectionStagePresetMixin,
     StagePresetMixin,
     VlmModelSpec,
 )
@@ -1092,6 +1099,38 @@ class LayoutOptions(BaseLayoutOptions):
             )
         ),
     ] = DOCLING_LAYOUT_HERON
+
+
+class LayoutObjectDetectionOptions(ObjectDetectionStagePresetMixin, BaseLayoutOptions):
+    """Options for layout detection using object-detection runtimes."""
+
+    kind: ClassVar[str] = "layout_object_detection"
+
+    create_orphan_clusters: Annotated[
+        bool,
+        Field(
+            description=(
+                "Create clusters for orphaned elements not assigned to any structure. When True, isolated text or "
+                "elements are grouped into their own clusters. Recommended for complete document coverage."
+            )
+        ),
+    ] = True
+
+    model_spec: ObjectDetectionModelSpec = Field(
+        default_factory=lambda: stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON.model_spec.model_copy(
+            deep=True
+        ),
+        description="Object-detection model specification for layout analysis",
+    )
+
+    engine_options: BaseObjectDetectionEngineOptions = Field(
+        description="Runtime configuration for the object-detection engine",
+    )
+
+
+LayoutObjectDetectionOptions.register_preset(
+    stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON
+)
 
 
 class AsrPipelineOptions(PipelineOptions):
