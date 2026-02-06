@@ -28,7 +28,9 @@ _log = logging.getLogger(__name__)
 
 
 class LayoutObjectDetectionModel(BaseLayoutModel):
-    """Layout detection using the generic object-detection inference engines."""
+    """Layout detection using the generic object-detection inference engines.
+    
+    Warning: This implementation is unchecked and WIP. It is certainly broken. """
 
     LABEL_MAP = {
         0: DocItemLabel.TEXT,
