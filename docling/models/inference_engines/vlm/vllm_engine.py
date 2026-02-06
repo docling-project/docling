@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.pipeline_options_vlm_model import TransformersPromptStyle
@@ -87,8 +87,8 @@ class VllmVlmEngine(BaseVlmEngine):
     def __init__(
         self,
         options: VllmVlmEngineOptions,
-        accelerator_options: Optional[AcceleratorOptions] = None,
-        artifacts_path: Optional[Path] = None,
+        accelerator_options: AcceleratorOptions,
+        artifacts_path: Optional[Union[Path, str]],
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the vLLM engine.
@@ -101,7 +101,7 @@ class VllmVlmEngine(BaseVlmEngine):
         """
         super().__init__(options, model_config=model_config)
         self.options: VllmVlmEngineOptions = options
-        self.accelerator_options = accelerator_options or AcceleratorOptions()
+        self.accelerator_options = accelerator_options
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization

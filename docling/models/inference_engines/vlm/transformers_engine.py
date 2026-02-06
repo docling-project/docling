@@ -62,8 +62,8 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         options: TransformersVlmEngineOptions,
-        accelerator_options: Optional[AcceleratorOptions] = None,
-        artifacts_path: Optional[Path] = None,
+        accelerator_options: AcceleratorOptions,
+        artifacts_path: Optional[Union[Path, str]],
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the Transformers engine.
@@ -76,7 +76,7 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         """
         super().__init__(options, model_config=model_config)
         self.options: TransformersVlmEngineOptions = options
-        self.accelerator_options = accelerator_options or AcceleratorOptions()
+        self.accelerator_options = accelerator_options
         self.artifacts_path = artifacts_path
 
         # These will be set during initialization

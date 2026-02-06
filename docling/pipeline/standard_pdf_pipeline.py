@@ -487,6 +487,7 @@ class StandardPdfPipeline(ConvertPipeline):
                 artifacts_path=self.artifacts_path,
                 options=code_formula_opts,
                 accelerator_options=self.pipeline_options.accelerator_options,
+                enable_remote_services=self.pipeline_options.enable_remote_services,
             ),
             *self.enrichment_pipe,
         ]

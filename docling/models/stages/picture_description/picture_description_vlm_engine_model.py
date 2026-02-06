@@ -95,8 +95,11 @@ class PictureDescriptionVlmEngineModel(PictureDescriptionBaseModel):
 
             # Create engine - pass model_spec, let factory handle config generation
             self.engine = create_vlm_engine(
-                self.options.engine_options,
+                options=self.options.engine_options,
                 model_spec=self.options.model_spec,
+                accelerator_options=accelerator_options,
+                artifacts_path=artifacts_path,
+                enable_remote_services=enable_remote_services,
             )
 
             # Set provenance from model spec

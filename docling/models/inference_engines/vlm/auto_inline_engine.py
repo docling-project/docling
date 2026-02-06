@@ -2,7 +2,8 @@
 
 import logging
 import platform
-from typing import TYPE_CHECKING, List, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, List, Optional, Union
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.vlm_engine_options import (
@@ -39,8 +40,8 @@ class AutoInlineVlmEngine(BaseVlmEngine):
     def __init__(
         self,
         options: AutoInlineVlmEngineOptions,
-        accelerator_options: Optional[AcceleratorOptions] = None,
-        artifacts_path=None,
+        accelerator_options: AcceleratorOptions,
+        artifacts_path: Optional[Union[Path, str]],
         model_spec: Optional["VlmModelSpec"] = None,
     ):
         """Initialize the auto-inline engine.
@@ -53,7 +54,7 @@ class AutoInlineVlmEngine(BaseVlmEngine):
         """
         super().__init__(options, model_config=None)
         self.options: AutoInlineVlmEngineOptions = options
-        self.accelerator_options = accelerator_options or AcceleratorOptions()
+        self.accelerator_options = accelerator_options
         self.artifacts_path = artifacts_path
         self.model_spec = model_spec
 

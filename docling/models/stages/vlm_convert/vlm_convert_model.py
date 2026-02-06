@@ -6,9 +6,12 @@ using vision-language models through a pluggable runtime system.
 
 import logging
 from collections.abc import Iterable
+from pathlib import Path
+from typing import Optional, Union
 
 from PIL import Image as PILImage
 
+from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import Page, VlmPrediction, VlmStopReason
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import VlmConvertOptions
@@ -38,7 +41,10 @@ class VlmConvertModel(BasePageModel):
     def __init__(
         self,
         enabled: bool,
+        enable_remote_services: bool,
+        artifacts_path: Optional[Union[Path, str]],
         options: VlmConvertOptions,
+        accelerator_options: AcceleratorOptions,
     ):
         """Initialize the VLM convert stage.
 
@@ -66,8 +72,11 @@ class VlmConvertModel(BasePageModel):
 
         # Create the engine - pass model_spec, let factory handle config generation
         self.engine: BaseVlmEngine = create_vlm_engine(
-            options.engine_options,
-            model_spec=options.model_spec,
+            options=self.options.engine_options,
+            model_spec=self.options.model_spec,
+            accelerator_options=accelerator_options,
+            artifacts_path=artifacts_path,
+            enable_remote_services=enable_remote_services,
         )
 
         _log.info("VlmConvertModel initialized successfully")
