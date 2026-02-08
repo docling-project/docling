@@ -1,5 +1,6 @@
 import logging
 import re
+import warnings
 from io import BytesIO
 from pathlib import Path
 from typing import List, Union, cast
@@ -31,6 +32,7 @@ from docling.backend.pdf_backend import PdfDocumentBackend
 from docling.datamodel.base_models import InputFormat, Page
 from docling.datamodel.document import ConversionResult, InputDocument
 from docling.datamodel.pipeline_options import (
+    VlmConvertOptions,
     VlmPipelineOptions,
 )
 from docling.datamodel.pipeline_options_vlm_model import (
@@ -39,6 +41,11 @@ from docling.datamodel.pipeline_options_vlm_model import (
     InlineVlmOptions,
     ResponseFormat,
 )
+from docling.datamodel.settings import settings
+
+# VlmResponseFormat is actually ResponseFormat from pipeline_options_vlm_model
+# No need to import it separately as it's already imported above
+from docling.models.stages.vlm_convert.vlm_convert_model import VlmConvertModel
 from docling.models.vlm_pipeline_models.api_vlm_model import ApiVlmModel
 from docling.models.vlm_pipeline_models.hf_transformers_model import (
     HuggingFaceTransformersVlmModel,
@@ -55,14 +62,75 @@ class VlmPipeline(PaginatedPipeline):
     def __init__(self, pipeline_options: VlmPipelineOptions):
         super().__init__(pipeline_options)
         self.keep_backend = True
-
         self.pipeline_options: VlmPipelineOptions
+
+        # Check if using new VlmConvertOptions
+        if isinstance(pipeline_options.vlm_options, VlmConvertOptions):
+            self._initialize_new_runtime_system(pipeline_options)
+        else:
+            self._initialize_legacy_vlm_models(pipeline_options)
+
+        self.enrichment_pipe = [
+            # Other models working on `NodeItem` elements in the DoclingDocument
+        ]
+
+    def _initialize_new_runtime_system(
+        self, pipeline_options: VlmPipelineOptions
+    ) -> None:
+        """Initialize pipeline with new VlmConvertOptions and runtime system.
+
+        Args:
+            pipeline_options: Pipeline configuration with VlmConvertOptions
+        """
+        vlm_convert_options = cast(VlmConvertOptions, pipeline_options.vlm_options)
+
+        # Determine response format from model spec
+        response_format = vlm_convert_options.model_spec.response_format
+
+        # force_backend_text = False - use text that is coming from VLM response
+        # force_backend_text = True - get text from backend using bounding boxes predicted by SmolDocling doctags
+        self.force_backend_text = (
+            vlm_convert_options.force_backend_text
+            and response_format == ResponseFormat.DOCTAGS
+        )
+
+        self.keep_images = self.pipeline_options.generate_page_images
+
+        # Use new VlmConvertModel stage
+        self.build_pipe = [
+            VlmConvertModel(
+                enabled=True,
+                options=vlm_convert_options,
+            ),
+        ]
+
+        _log.info("Using new VlmConvertModel with runtime system")
+
+    def _initialize_legacy_vlm_models(
+        self, pipeline_options: VlmPipelineOptions
+    ) -> None:
+        """Initialize pipeline with legacy InlineVlmOptions or ApiVlmOptions.
+
+        Args:
+            pipeline_options: Pipeline configuration with legacy VLM options
+
+        Note:
+            This method is deprecated and will be removed in a future version.
+        """
+        # Legacy path - using old InlineVlmOptions or ApiVlmOptions
+        warnings.warn(
+            "Using legacy VLM options (InlineVlmOptions/ApiVlmOptions) is deprecated. "
+            "Please migrate to VlmConvertOptions with preset system. "
+            "Example: VlmConvertOptions.from_preset('smoldocling')",
+            DeprecationWarning,
+            stacklevel=3,
+        )
 
         # force_backend_text = False - use text that is coming from VLM response
         # force_backend_text = True - get text from backend using bounding boxes predicted by SmolDocling doctags
         self.force_backend_text = (
             pipeline_options.force_backend_text
-            and pipeline_options.vlm_options.response_format == ResponseFormat.DOCTAGS
+            and pipeline_options.vlm_options.response_format == ResponseFormat.DOCTAGS  # type: ignore[union-attr]
         )
 
         self.keep_images = self.pipeline_options.generate_page_images
@@ -70,7 +138,7 @@ class VlmPipeline(PaginatedPipeline):
         if isinstance(pipeline_options.vlm_options, ApiVlmOptions):
             self.build_pipe = [
                 ApiVlmModel(
-                    enabled=True,  # must be always enabled for this pipeline to make sense.
+                    enabled=True,
                     enable_remote_services=self.pipeline_options.enable_remote_services,
                     vlm_options=cast(ApiVlmOptions, self.pipeline_options.vlm_options),
                 ),
@@ -80,7 +148,7 @@ class VlmPipeline(PaginatedPipeline):
             if vlm_options.inference_framework == InferenceFramework.MLX:
                 self.build_pipe = [
                     HuggingFaceMlxModel(
-                        enabled=True,  # must be always enabled for this pipeline to make sense.
+                        enabled=True,
                         artifacts_path=self.artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
@@ -89,7 +157,7 @@ class VlmPipeline(PaginatedPipeline):
             elif vlm_options.inference_framework == InferenceFramework.TRANSFORMERS:
                 self.build_pipe = [
                     HuggingFaceTransformersVlmModel(
-                        enabled=True,  # must be always enabled for this pipeline to make sense.
+                        enabled=True,
                         artifacts_path=self.artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
@@ -100,7 +168,7 @@ class VlmPipeline(PaginatedPipeline):
 
                 self.build_pipe = [
                     VllmVlmModel(
-                        enabled=True,  # must be always enabled for this pipeline to make sense.
+                        enabled=True,
                         artifacts_path=self.artifacts_path,
                         accelerator_options=pipeline_options.accelerator_options,
                         vlm_options=vlm_options,
@@ -110,10 +178,6 @@ class VlmPipeline(PaginatedPipeline):
                 raise ValueError(
                     f"Could not instantiate the right type of VLM pipeline: {vlm_options.inference_framework}"
                 )
-
-        self.enrichment_pipe = [
-            # Other models working on `NodeItem` elements in the DoclingDocument
-        ]
 
     def initialize_page(self, conv_res: ConversionResult, page: Page) -> Page:
         with TimeRecorder(conv_res, "page_init"):
@@ -142,36 +206,38 @@ class VlmPipeline(PaginatedPipeline):
 
     def _assemble_document(self, conv_res: ConversionResult) -> ConversionResult:
         with TimeRecorder(conv_res, "doc_assemble", scope=ProfilingScope.DOCUMENT):
-            if (
-                self.pipeline_options.vlm_options.response_format
-                == ResponseFormat.DOCTAGS
-            ):
+            # Determine response format from options
+            if isinstance(self.pipeline_options.vlm_options, VlmConvertOptions):
+                response_format = (
+                    self.pipeline_options.vlm_options.model_spec.response_format
+                )
+                # Response format is already ResponseFormat, no mapping needed
+                response_format_legacy = response_format
+            else:
+                # Legacy path
+                response_format_legacy = (
+                    self.pipeline_options.vlm_options.response_format
+                )
+
+            if response_format_legacy == ResponseFormat.DOCTAGS:
                 conv_res.document = self._turn_dt_into_doc(conv_res)
 
-            elif (
-                self.pipeline_options.vlm_options.response_format
-                == ResponseFormat.DEEPSEEKOCR_MARKDOWN
-            ):
+            elif response_format_legacy == ResponseFormat.DEEPSEEKOCR_MARKDOWN:
                 conv_res.document = self._parse_deepseekocr_markdown(conv_res)
 
-            elif (
-                self.pipeline_options.vlm_options.response_format
-                == ResponseFormat.MARKDOWN
-            ):
+            elif response_format_legacy == ResponseFormat.MARKDOWN:
                 conv_res.document = self._convert_text_with_backend(
                     conv_res, InputFormat.MD, MarkdownDocumentBackend
                 )
 
-            elif (
-                self.pipeline_options.vlm_options.response_format == ResponseFormat.HTML
-            ):
+            elif response_format_legacy == ResponseFormat.HTML:
                 conv_res.document = self._convert_text_with_backend(
                     conv_res, InputFormat.HTML, HTMLDocumentBackend
                 )
 
             else:
                 raise RuntimeError(
-                    f"Unsupported VLM response format {self.pipeline_options.vlm_options.response_format}"
+                    f"Unsupported VLM response format {response_format_legacy}"
                 )
 
             # Generate images of the requested element types
