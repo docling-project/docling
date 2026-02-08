@@ -12,6 +12,7 @@ Below you can find a listing of all supported input and output formats.
 | DOCX, XLSX, PPTX | Default formats in MS Office 2007+, based on Office Open XML |
 | Markdown | |
 | AsciiDoc | Human-readable, plain-text markup language for structured technical content |
+| LaTeX | Scientific document preparation system |
 | HTML, XHTML | |
 | CSV | |
 | PNG, JPEG, TIFF, BMP, WEBP | Image formats |

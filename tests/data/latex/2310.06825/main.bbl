@@ -1,0 +1,148 @@
+\begin{thebibliography}{10}
+
+\bibitem{ainslie2023gqa}
+Joshua Ainslie, James Lee-Thorp, Michiel de~Jong, Yury Zemlyanskiy, Federico Lebr{\'o}n, and Sumit Sanghai.
+\newblock Gqa: Training generalized multi-query transformer models from multi-head checkpoints.
+\newblock {\em arXiv preprint arXiv:2305.13245}, 2023.
+
+\bibitem{austin2021program}
+Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski, David Dohan, Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, et~al.
+\newblock Program synthesis with large language models.
+\newblock {\em arXiv preprint arXiv:2108.07732}, 2021.
+
+\bibitem{beltagy2020longformer}
+Iz~Beltagy, Matthew~E Peters, and Arman Cohan.
+\newblock Longformer: The long-document transformer.
+\newblock {\em arXiv preprint arXiv:2004.05150}, 2020.
+
+\bibitem{bisk2020piqa}
+Yonatan Bisk, Rowan Zellers, Jianfeng Gao, Yejin Choi, et~al.
+\newblock Piqa: Reasoning about physical commonsense in natural language.
+\newblock In {\em Proceedings of the AAAI conference on artificial intelligence}, 2020.
+
+\bibitem{chen2021evaluating}
+Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de~Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, et~al.
+\newblock Evaluating large language models trained on code.
+\newblock {\em arXiv preprint arXiv:2107.03374}, 2021.
+
+\bibitem{child2019generating}
+Rewon Child, Scott Gray, Alec Radford, and Ilya Sutskever.
+\newblock Generating long sequences with sparse transformers.
+\newblock {\em arXiv preprint arXiv:1904.10509}, 2019.
+
+\bibitem{choi2018quac}
+Eunsol Choi, He~He, Mohit Iyyer, Mark Yatskar, Wen-tau Yih, Yejin Choi, Percy Liang, and Luke Zettlemoyer.
+\newblock Quac: Question answering in context.
+\newblock {\em arXiv preprint arXiv:1808.07036}, 2018.
+
+\bibitem{clark2019boolq}
+Christopher Clark, Kenton Lee, Ming-Wei Chang, Tom Kwiatkowski, Michael Collins, and Kristina Toutanova.
+\newblock Boolq: Exploring the surprising difficulty of natural yes/no questions.
+\newblock {\em arXiv preprint arXiv:1905.10044}, 2019.
+
+\bibitem{clark2018think}
+Peter Clark, Isaac Cowhey, Oren Etzioni, Tushar Khot, Ashish Sabharwal, Carissa Schoenick, and Oyvind Tafjord.
+\newblock Think you have solved question answering? try arc, the ai2 reasoning challenge.
+\newblock {\em arXiv preprint arXiv:1803.05457}, 2018.
+
+\bibitem{cobbe2021training}
+Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, et~al.
+\newblock Training verifiers to solve math word problems.
+\newblock {\em arXiv preprint arXiv:2110.14168}, 2021.
+
+\bibitem{dao2022flashattention}
+Tri Dao, Daniel~Y. Fu, Stefano Ermon, Atri Rudra, and Christopher R{\'e}.
+\newblock Flash{A}ttention: Fast and memory-efficient exact attention with {IO}-awareness.
+\newblock In {\em Advances in Neural Information Processing Systems}, 2022.
+
+\bibitem{hendrycks2020measuring}
+Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt.
+\newblock Measuring massive multitask language understanding.
+\newblock {\em arXiv preprint arXiv:2009.03300}, 2020.
+
+\bibitem{hendrycks2021measuring}
+Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric Tang, Dawn Song, and Jacob Steinhardt.
+\newblock Measuring mathematical problem solving with the math dataset.
+\newblock {\em arXiv preprint arXiv:2103.03874}, 2021.
+
+\bibitem{hoffmann2022compute}
+Jordan Hoffmann, Sebastian Borgeaud, Arthur Mensch, Elena Buchatskaya, Trevor Cai, Eliza Rutherford, Diego de~Las~Casas, Lisa~Anne Hendricks, Johannes Welbl, Aidan Clark, Thomas Hennigan, Eric Noland, Katherine Millican, George van~den Driessche, Bogdan Damoc, Aurelia Guy, Simon Osindero, Kar\'{e}n Simonyan, Erich Elsen, Oriol Vinyals, Jack Rae, and Laurent Sifre.
+\newblock An empirical analysis of compute-optimal large language model training.
+\newblock In {\em Advances in Neural Information Processing Systems}, volume~35, 2022.
+
+\bibitem{joshi2017triviaqa}
+Mandar Joshi, Eunsol Choi, Daniel~S Weld, and Luke Zettlemoyer.
+\newblock Triviaqa: A large scale distantly supervised challenge dataset for reading comprehension.
+\newblock {\em arXiv preprint arXiv:1705.03551}, 2017.
+
+\bibitem{kwiatkowski2019natural}
+Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redfield, Michael Collins, Ankur Parikh, Chris Alberti, Danielle Epstein, Illia Polosukhin, Jacob Devlin, Kenton Lee, et~al.
+\newblock Natural questions: a benchmark for question answering research.
+\newblock {\em Transactions of the Association for Computational Linguistics}, 7:453--466, 2019.
+
+\bibitem{kwon2023efficient}
+Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin Zheng, Cody~Hao Yu, Joseph~E. Gonzalez, Hao Zhang, and Ion Stoica.
+\newblock Efficient memory management for large language model serving with pagedattention.
+\newblock In {\em Proceedings of the ACM SIGOPS 29th Symposium on Operating Systems Principles}, 2023.
+
+\bibitem{xFormers2022}
+Benjamin Lefaudeux, Francisco Massa, Diana Liskovich, Wenhan Xiong, Vittorio Caggiano, Sean Naren, Min Xu, Jieru Hu, Marta Tintore, Susan Zhang, Patrick Labatut, and Daniel Haziza.
+\newblock xformers: A modular and hackable transformer modelling library.
+\newblock \url{https://github.com/facebookresearch/xformers}, 2022.
+
+\bibitem{mihaylov2018can}
+Todor Mihaylov, Peter Clark, Tushar Khot, and Ashish Sabharwal.
+\newblock Can a suit of armor conduct electricity? a new dataset for open book question answering.
+\newblock {\em arXiv preprint arXiv:1809.02789}, 2018.
+
+\bibitem{roziere2023code}
+Baptiste Rozi{\`e}re, Jonas Gehring, Fabian Gloeckle, Sten Sootla, Itai Gat, Xiaoqing~Ellen Tan, Yossi Adi, Jingyu Liu, Tal Remez, J{\'e}r{\'e}my Rapin, et~al.
+\newblock Code llama: Open foundation models for code.
+\newblock {\em arXiv preprint arXiv:2308.12950}, 2023.
+
+\bibitem{sakaguchi2021winogrande}
+Keisuke Sakaguchi, Ronan~Le Bras, Chandra Bhagavatula, and Yejin Choi.
+\newblock Winogrande: An adversarial winograd schema challenge at scale.
+\newblock {\em Communications of the ACM}, 64(9):99--106, 2021.
+
+\bibitem{sap2019socialiqa}
+Maarten Sap, Hannah Rashkin, Derek Chen, Ronan LeBras, and Yejin Choi.
+\newblock Socialiqa: Commonsense reasoning about social interactions.
+\newblock {\em arXiv preprint arXiv:1904.09728}, 2019.
+
+\bibitem{suzgun2022challenging}
+Mirac Suzgun, Nathan Scales, Nathanael Sch{\"a}rli, Sebastian Gehrmann, Yi~Tay, Hyung~Won Chung, Aakanksha Chowdhery, Quoc~V Le, Ed~H Chi, Denny Zhou, , and Jason Wei.
+\newblock Challenging big-bench tasks and whether chain-of-thought can solve them.
+\newblock {\em arXiv preprint arXiv:2210.09261}, 2022.
+
+\bibitem{talmor2018commonsenseqa}
+Alon Talmor, Jonathan Herzig, Nicholas Lourie, and Jonathan Berant.
+\newblock Commonsenseqa: A question answering challenge targeting commonsense knowledge.
+\newblock {\em arXiv preprint arXiv:1811.00937}, 2018.
+
+\bibitem{touvron2023llama}
+Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet, Marie-Anne Lachaux, Timoth{\'e}e Lacroix, Baptiste Rozi{\`e}re, Naman Goyal, Eric Hambro, Faisal Azhar, et~al.
+\newblock Llama: Open and efficient foundation language models.
+\newblock {\em arXiv preprint arXiv:2302.13971}, 2023.
+
+\bibitem{touvron2023llama2}
+Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, et~al.
+\newblock Llama 2: Open foundation and fine-tuned chat models.
+\newblock {\em arXiv preprint arXiv:2307.09288}, 2023.
+
+\bibitem{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan~N Gomez, {\L}ukasz Kaiser, and Illia Polosukhin.
+\newblock Attention is all you need.
+\newblock {\em Advances in neural information processing systems}, 30, 2017.
+
+\bibitem{zellers2019hellaswag}
+Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali Farhadi, and Yejin Choi.
+\newblock Hellaswag: Can a machine really finish your sentence?
+\newblock {\em arXiv preprint arXiv:1905.07830}, 2019.
+
+\bibitem{zhong2023agieval}
+Wanjun Zhong, Ruixiang Cui, Yiduo Guo, Yaobo Liang, Shuai Lu, Yanlin Wang, Amin Saied, Weizhu Chen, and Nan Duan.
+\newblock Agieval: A human-centric benchmark for evaluating foundation models.
+\newblock {\em arXiv preprint arXiv:2304.06364}, 2023.
+
+\end{thebibliography}

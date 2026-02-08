@@ -1,0 +1,59 @@
+\begin{table}[!h]
+    \centering
+    \footnotesize
+    \setlength{\tabcolsep}{4.5pt}
+    \begin{tabular}{@{}c l c | c | c c | c@{}}
+    \toprule
+    & \multirow{2}{*}{\centering \textbf{Benchmark {\tiny (Metric)}}} & \multirow{2}{*}{\textbf{\# Shots}} & \textbf{\dsvii{}} & \textbf{Qwen2.5} & \textbf{LLaMA-3.1} & \textbf{\dsviii{}} \\
+    & & & \textbf{Base} & \textbf{72B Base} & \textbf{405B Base} & \textbf{Base} \\
+    \midrule
+    & Architecture & - & MoE & Dense & Dense & MoE \\
+    & \# Activated Params & - & 21B & 72B & 405B & 37B \\
+    & \# Total Params & - & 236B & 72B & 405B & 671B \\
+    \midrule
+    \multirow{16}{*}{English} & Pile-test {\tiny (BPB)} & - & 0.606 & 0.638 & \textbf{0.542} & 0.548 \\
+    & BBH {\tiny (EM)} & 3-shot & 78.8 & 79.8 & 82.9 & \textbf{87.5} \\
+    & MMLU {\tiny (EM)} & 5-shot & 78.4 & 85.0 & 84.4 & \textbf{87.1} \\
+    & MMLU-Redux {\tiny (EM)} & 5-shot & 75.6 & 83.2 & 81.3 & \textbf{86.2} \\
+    & MMLU-Pro {\tiny (EM)} & 5-shot & 51.4 & 58.3 & 52.8 & \textbf{64.4} \\
+    & DROP {\tiny (F1)} & 3-shot & 80.4 & 80.6 & 86.0 & \textbf{89.0} \\
+    & ARC-Easy {\tiny (EM)} & 25-shot & 97.6 & 98.4 & 98.4 & \textbf{98.9} \\
+    & ARC-Challenge {\tiny (EM)} & 25-shot & 92.2 & 94.5 & \textbf{95.3} & \textbf{95.3} \\
+    & HellaSwag {\tiny (EM)} & 10-shot & 87.1 & 84.8 & \textbf{89.2} & \textbf{88.9} \\
+    & PIQA {\tiny (EM)} & 0-shot & 83.9 & 82.6 & \textbf{85.9} & 84.7 \\
+    & WinoGrande {\tiny (EM)} & 5-shot & \textbf{86.3} & 82.3 & 85.2 & 84.9 \\
+    & RACE-Middle {\tiny (EM)} & 5-shot & 73.1 & 68.1 & \textbf{74.2} & 67.1 \\
+    & RACE-High {\tiny (EM)} & 5-shot & 52.6 & 50.3 & \textbf{56.8} & 51.3 \\
+    & TriviaQA {\tiny (EM)} & 5-shot & 80.0 & 71.9 & \textbf{82.7} & \textbf{82.9} \\
+    & NaturalQuestions {\tiny (EM)} & 5-shot & 38.6 & 33.2 & \textbf{41.5} & 40.0 \\
+    & AGIEval {\tiny (EM)} & 0-shot & 57.5 & 75.8 & 60.6 & \textbf{79.6} \\
+    \midrule
+    \multirow{4}{*}{Code} & HumanEval {\tiny (Pass@1)} & 0-shot & 43.3 & 53.0 & 54.9 & \textbf{65.2} \\
+    & MBPP {\tiny (Pass@1)} & 3-shot & 65.0 & 72.6 & 68.4 & \textbf{75.4} \\
+    & LiveCodeBench-Base {\tiny (Pass@1)} & 3-shot & 11.6 & 12.9 & 15.5 & \textbf{19.4} \\
+    & CRUXEval-I {\tiny (EM)} & 2-shot & 52.5 & 59.1 & 58.5 & \textbf{67.3} \\
+    & CRUXEval-O {\tiny (EM)} & 2-shot & 49.8 & 59.9 & 59.9 & \textbf{69.8} \\
+    \midrule
+    \multirow{3}{*}{Math} & GSM8K {\tiny (EM)} & 8-shot & 81.6 & 88.3 & 83.5 & \textbf{89.3} \\
+    & MATH {\tiny (EM)} & 4-shot & 43.4 & 54.4 & 49.0 & \textbf{61.6} \\
+    & MGSM {\tiny (EM)} & 8-shot & 63.6 & 76.2 & 69.9 & \textbf{79.8} \\
+    & CMath {\tiny (EM)} & 3-shot & 78.7 & 84.5 & 77.3 & \textbf{90.7} \\
+    \midrule
+    \multirow{7}{*}{Chinese} & CLUEWSC {\tiny (EM)} & 5-shot & 82.0 & 82.5 & \textbf{83.0} & \textbf{82.7} \\
+    & C-Eval {\tiny (EM)} & 5-shot & 81.4 & 89.2 & 72.5 & \textbf{90.1} \\
+    & CMMLU {\tiny (EM)} & 5-shot & 84.0 & \textbf{89.5} & 73.7 & 88.8 \\
+    & CMRC {\tiny (EM)} & 1-shot & \textbf{77.4} & 75.8 & 76.0 & 76.3 \\
+    & C3 {\tiny (EM)} & 0-shot & 77.4 & 76.7 & \textbf{79.7} & 78.6 \\
+    & CCPM {\tiny (EM)} & 0-shot & \textbf{93.0} & 88.5 & 78.6 & 92.0 \\
+    \midrule
+    \multirow{1}{*}{Multilingual} & MMMLU-non-English {\tiny (EM)} & 5-shot & 64.0 & 74.8 & 73.8 & \textbf{79.4} \\
+    \bottomrule
+    \end{tabular}
+    \caption{
+        Comparison among \dsviii{}-Base and other representative open-source base models.
+        All models are evaluated in our internal framework and share the same evaluation setting.
+        Scores with a gap not exceeding 0.3 are considered to be at the same level. 
+        \dsviii{}-Base achieves the best performance on most benchmarks, especially on math and code tasks. 
+    }
+    \label{tab:main}
+\end{table}
