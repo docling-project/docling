@@ -45,9 +45,8 @@ from docling.models.factories import (
     get_ocr_factory,
     get_table_structure_factory,
 )
-from docling.models.stages.code_formula.code_formula_model import (
-    CodeFormulaModel,
-    CodeFormulaModelOptions,
+from docling.models.stages.code_formula.code_formula_vlm_model import (
+    CodeFormulaVlmModel,
 )
 from docling.models.stages.page_assemble.page_assemble_model import (
     PageAssembleModel,
@@ -475,16 +474,18 @@ class StandardPdfPipeline(ConvertPipeline):
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
 
         # --- optional enrichment ------------------------------------------------
+        # Update code_formula_options to match the boolean flags
+        code_formula_opts = self.pipeline_options.code_formula_options
+        code_formula_opts.extract_code = self.pipeline_options.do_code_enrichment
+        code_formula_opts.extract_formulas = self.pipeline_options.do_formula_enrichment
+
         self.enrichment_pipe = [
-            # Code Formula Enrichment Model
-            CodeFormulaModel(
+            # Code Formula Enrichment Model (using new VLM runtime system)
+            CodeFormulaVlmModel(
                 enabled=self.pipeline_options.do_code_enrichment
                 or self.pipeline_options.do_formula_enrichment,
                 artifacts_path=self.artifacts_path,
-                options=CodeFormulaModelOptions(
-                    do_code_enrichment=self.pipeline_options.do_code_enrichment,
-                    do_formula_enrichment=self.pipeline_options.do_formula_enrichment,
-                ),
+                options=code_formula_opts,
                 accelerator_options=self.pipeline_options.accelerator_options,
             ),
             *self.enrichment_pipe,

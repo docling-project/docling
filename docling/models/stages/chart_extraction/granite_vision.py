@@ -35,6 +35,9 @@ class ChartExtractionModelOptions(BaseModel):
 
 class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
     SUPPORTED_CHART_TYPES = ["bar_chart", "pie_chart", "line_chart"]
+    _model_repo_folder = "ibm-granite--granite-vision-3.3-2b-chart2csv-preview"
+    _model_repo_id = "ibm-granite/granite-vision-3.3-2b-chart2csv-preview"
+    _model_repo_revision = "6e1fbaae4604ecc85f4f371416d82154ca49ad67"
 
     def __init__(
         self,
@@ -68,6 +71,12 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
 
             if artifacts_path is None:
                 artifacts_path = self.download_models()
+            elif (artifacts_path / self._model_repo_folder).exists():
+                artifacts_path = artifacts_path / self._model_repo_folder
+            else:
+                _log.warning(
+                    f"Model artifacts not found at {artifacts_path / self._model_repo_folder}, they will be downloaded."
+                )
 
             self._processor = AutoProcessor.from_pretrained(
                 artifacts_path,
@@ -85,9 +94,9 @@ class ChartExtractionModelGraniteVision(BaseItemAndImageEnrichmentModel):
         progress: bool = False,
     ) -> Path:
         return download_hf_model(
-            repo_id="ibm-granite/granite-vision-3.3-2b-chart2csv-preview",
+            repo_id=ChartExtractionModelGraniteVision._model_repo_id,
             # Let's pin it to a specific commit to reduce potential regression errors
-            revision="6e1fbaae4604ecc85f4f371416d82154ca49ad67",
+            revision=ChartExtractionModelGraniteVision._model_repo_revision,
             local_dir=local_dir,
             force=force,
             progress=progress,
