@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import pypdfium2
 from docling_core.types.doc import (
@@ -51,7 +51,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(self.path_or_stream, BytesIO):
             raw_bytes = self.path_or_stream.getvalue()
 
-            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+            for encoding in ["utf-8", "latin-1", "cp1252"]:
                 try:
                     self.latex_text = raw_bytes.decode(encoding)
                     break
@@ -59,10 +59,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     continue
             if not self.latex_text:
                 _log.warning("Failed to decode LaTeX content, using replacement mode")
-                self.latex_text = raw_bytes.decode('utf-8', errors='replace')
+                self.latex_text = raw_bytes.decode("utf-8", errors="replace")
         elif isinstance(self.path_or_stream, Path):
             # Try multiple encodings for file
-            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+            for encoding in ["utf-8", "latin-1", "cp1252"]:
                 try:
                     with open(self.path_or_stream, encoding=encoding) as f:
                         self.latex_text = f.read()
@@ -72,7 +72,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 except FileNotFoundError:
                     _log.error(f"LaTeX file not found: {self.path_or_stream}")
                     break
-                except IOError as e:
+                except OSError as e:
                     _log.error(f"Error reading LaTeX file: {e}")
                     break
 
@@ -209,6 +209,191 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                                 return result
         return None
 
+    def _process_chars_node(
+        self,
+        node: LatexCharsNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem],
+        formatting: Optional[Formatting],
+        text_label: Optional[DocItemLabel],
+        text_buffer: List[str],
+        flush_fn: Callable[[], None],
+    ):
+        text = node.chars
+
+        if "\n\n" in text:
+            # Split by paragraph breaks, keeping any content before first break
+            parts = text.split("\n\n")
+
+            # First part goes into current buffer (e.g., "." before a paragraph break)
+            first_part = parts[0].strip()
+            if first_part:
+                text_buffer.append(first_part)
+
+            # Flush buffer (now includes content before the break)
+            flush_fn()
+
+            # Remaining parts are separate paragraphs
+            for part in parts[1:]:
+                part_stripped = part.strip()
+                if part_stripped:
+                    doc.add_text(
+                        parent=parent,
+                        label=text_label or DocItemLabel.PARAGRAPH,
+                        text=part_stripped,
+                        formatting=formatting,
+                    )
+        else:
+            text_buffer.append(text)
+
+    def _process_macro_node_inline(
+        self,
+        node: LatexMacroNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem],
+        formatting: Optional[Formatting],
+        text_label: Optional[DocItemLabel],
+        text_buffer: List[str],
+        flush_fn: Callable[[], None],
+    ):
+        if node.macroname in ["%", "$", "&", "#", "_", "{", "}", "~"]:
+            if node.macroname == "~":
+                text_buffer.append(" ")  # Non-breaking space
+            else:
+                text_buffer.append(node.macroname)
+        elif node.macroname == " ":
+            text_buffer.append(" ")
+        # Handle inline formatting macros - keep in buffer
+        elif node.macroname in [
+            "textbf",
+            "textit",
+            "emph",
+            "texttt",
+            "underline",
+        ]:
+            formatted_text = self._extract_macro_arg(node)
+            if formatted_text:
+                text_buffer.append(formatted_text)
+        # Handle custom macros - expand and keep in buffer
+        elif node.macroname in self._custom_macros:
+            expansion = self._custom_macros[node.macroname]
+            _log.debug(f"Expanding custom macro \\{node.macroname} -> '{expansion}'")
+            text_buffer.append(expansion)
+        # Handle citations and references inline to avoid line breaks
+        elif node.macroname in ["cite", "citep", "citet", "ref", "eqref"]:
+            ref_arg = self._extract_macro_arg(node)
+            if ref_arg:
+                text_buffer.append(f"[{ref_arg}]")
+        # Handle URLs inline
+        elif node.macroname == "url":
+            url_text = self._extract_macro_arg(node)
+            if url_text:
+                text_buffer.append(url_text)
+        # Skip formatting switches that take arguments we don't want to output
+        elif node.macroname in ["color", "definecolor", "colorlet"]:
+            pass  # Ignore color commands entirely
+        else:
+            # Check if this is a structural macro that needs special handling
+            structural_macros = {
+                "section",
+                "subsection",
+                "subsubsection",
+                "chapter",
+                "part",
+                "paragraph",
+                "subparagraph",
+                "caption",
+                "label",
+                "includegraphics",
+                "bibliography",
+                "title",
+                "author",
+                "maketitle",
+                "footnote",
+                "marginpar",
+                "textsc",
+                "textsf",
+                "textrm",
+                "textnormal",
+                "mbox",
+                "href",
+                "newline",
+                "hfill",
+                "break",
+                "centering",
+                "textcolor",
+                "colorbox",
+                "item",
+                "input",
+                "include",
+            }
+            if node.macroname in structural_macros:
+                # Structural macro - flush buffer and process with _process_macro
+                flush_fn()
+                self._process_macro(node, doc, parent, formatting, text_label)
+            elif node.nodeargd and node.nodeargd.argnlist:
+                # Unknown macro with arguments - extract all args as inline text
+                inline_text = self._extract_all_macro_args_inline(node)
+                if inline_text:
+                    text_buffer.append(inline_text)
+                else:
+                    _log.debug(
+                        f"Skipping unknown macro with no extractable content: {node.macroname}"
+                    )
+            else:
+                _log.debug(
+                    f"Skipping unknown macro without arguments: {node.macroname}"
+                )
+
+    def _process_math_node(
+        self,
+        node: LatexMathNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem],
+        text_buffer: List[str],
+        flush_fn: Callable[[], None],
+    ):
+        is_display = getattr(node, "displaytype", None) == "display"
+
+        if not is_display:
+            math_verbatim = node.latex_verbatim()
+            is_display = math_verbatim.startswith(
+                (
+                    "$$",
+                    "\\[",
+                    "\\begin{equation}",
+                    "\\begin{align}",
+                    "\\begin{gather}",
+                    "\\begin{displaymath}",
+                )
+            )
+
+        if is_display:
+            flush_fn()
+            math_text = self._clean_math(node.latex_verbatim(), "display")
+            doc.add_text(parent=parent, label=DocItemLabel.FORMULA, text=math_text)
+        else:
+            # Expand custom macros in inline math for KaTeX compatibility
+            text_buffer.append(self._expand_macros(node.latex_verbatim()))
+
+    def _process_group_node(
+        self,
+        node: LatexGroupNode,
+        doc: DoclingDocument,
+        parent: Optional[NodeItem],
+        formatting: Optional[Formatting],
+        text_label: Optional[DocItemLabel],
+        text_buffer: List[str],
+        flush_fn: Callable[[], None],
+    ):
+        if node.nodelist and self._is_text_only_group(node):
+            group_text = self._nodes_to_text(node.nodelist)
+            if group_text:
+                text_buffer.append(group_text)
+        elif node.nodelist:
+            flush_fn()
+            self._process_nodes(node.nodelist, doc, parent, formatting, text_label)
+
     def _process_nodes(
         self,
         nodes,
@@ -235,170 +420,52 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 text_buffer.clear()
 
         for node in nodes:
-          try:
-            if isinstance(node, LatexCharsNode):
-                text = node.chars
+            try:
+                if isinstance(node, LatexCharsNode):
+                    self._process_chars_node(
+                        node,
+                        doc,
+                        parent,
+                        formatting,
+                        text_label,
+                        text_buffer,
+                        flush_text_buffer,
+                    )
 
-                if "\n\n" in text:
-                    # Split by paragraph breaks, keeping any content before first break
-                    parts = text.split("\n\n")
-                    
-                    # First part goes into current buffer (e.g., "." before a paragraph break)
-                    first_part = parts[0].strip()
-                    if first_part:
-                        text_buffer.append(first_part)
-                    
-                    # Flush buffer (now includes content before the break)
+                elif isinstance(node, LatexMacroNode):
+                    self._process_macro_node_inline(
+                        node,
+                        doc,
+                        parent,
+                        formatting,
+                        text_label,
+                        text_buffer,
+                        flush_text_buffer,
+                    )
+
+                elif isinstance(node, LatexEnvironmentNode):
                     flush_text_buffer()
-                    
-                    # Remaining parts are separate paragraphs
-                    for part in parts[1:]:
-                        part_stripped = part.strip()
-                        if part_stripped:
-                            doc.add_text(
-                                parent=parent,
-                                label=text_label or DocItemLabel.PARAGRAPH,
-                                text=part_stripped,
-                                formatting=formatting,
-                            )
-                else:
-                    text_buffer.append(text)
+                    self._process_environment(node, doc, parent, formatting, text_label)
 
-            elif isinstance(node, LatexMacroNode):
-                if node.macroname in ["%", "$", "&", "#", "_", "{", "}", "~"]:
-                    if node.macroname == "~":
-                        text_buffer.append(" ")  # Non-breaking space
-                    else:
-                        text_buffer.append(node.macroname)
-                elif node.macroname == " ":
-                    text_buffer.append(" ")
-                # Handle inline formatting macros - keep in buffer
-                elif node.macroname in [
-                    "textbf",
-                    "textit",
-                    "emph",
-                    "texttt",
-                    "underline",
-                ]:
-                    formatted_text = self._extract_macro_arg(node)
-                    if formatted_text:
-                        text_buffer.append(formatted_text)
-                # Handle custom macros - expand and keep in buffer
-                elif node.macroname in self._custom_macros:
-                    expansion = self._custom_macros[node.macroname]
-                    _log.debug(
-                        f"Expanding custom macro \\{node.macroname} -> '{expansion}'"
-                    )
-                    text_buffer.append(expansion)
-                # Handle citations and references inline to avoid line breaks
-                elif node.macroname in ["cite", "citep", "citet", "ref", "eqref"]:
-                    ref_arg = self._extract_macro_arg(node)
-                    if ref_arg:
-                        text_buffer.append(f"[{ref_arg}]")
-                # Handle URLs inline
-                elif node.macroname == "url":
-                    url_text = self._extract_macro_arg(node)
-                    if url_text:
-                        text_buffer.append(url_text)
-                # Skip formatting switches that take arguments we don't want to output
-                elif node.macroname in ["color", "definecolor", "colorlet"]:
-                    pass  # Ignore color commands entirely
-                else:
-                    # Check if this is a structural macro that needs special handling
-                    structural_macros = {
-                        "section",
-                        "subsection",
-                        "subsubsection",
-                        "chapter",
-                        "part",
-                        "paragraph",
-                        "subparagraph",
-                        "caption",
-                        "label",
-                        "includegraphics",
-                        "bibliography",
-                        "title",
-                        "author",
-                        "maketitle",
-                        "footnote",
-                        "marginpar",
-                        "textsc",
-                        "textsf",
-                        "textrm",
-                        "textnormal",
-                        "mbox",
-                        "href",
-                        "newline",
-                        "hfill",
-                        "break",
-                        "centering",
-                        "textcolor",
-                        "colorbox",
-                        "item",
-                        "input",
-                        "include",
-                    }
-                    if node.macroname in structural_macros:
-                        # Structural macro - flush buffer and process with _process_macro
-                        flush_text_buffer()
-                        self._process_macro(node, doc, parent, formatting, text_label)
-                    elif node.nodeargd and node.nodeargd.argnlist:
-                        # Unknown macro with arguments - extract all args as inline text
-                        inline_text = self._extract_all_macro_args_inline(node)
-                        if inline_text:
-                            text_buffer.append(inline_text)
-                        else:
-                            _log.debug(
-                                f"Skipping unknown macro with no extractable content: {node.macroname}"
-                            )
-                    else:
-                        _log.debug(
-                            f"Skipping unknown macro without arguments: {node.macroname}"
-                        )
-
-            elif isinstance(node, LatexEnvironmentNode):
-                flush_text_buffer()
-                self._process_environment(node, doc, parent, formatting, text_label)
-
-            elif isinstance(node, LatexMathNode):
-                is_display = getattr(node, "displaytype", None) == "display"
-
-                if not is_display:
-                    math_verbatim = node.latex_verbatim()
-                    is_display = math_verbatim.startswith(
-                        (
-                            "$$",
-                            "\\[",
-                            "\\begin{equation}",
-                            "\\begin{align}",
-                            "\\begin{gather}",
-                            "\\begin{displaymath}",
-                        )
+                elif isinstance(node, LatexMathNode):
+                    self._process_math_node(
+                        node, doc, parent, text_buffer, flush_text_buffer
                     )
 
-                if is_display:
-                    flush_text_buffer()
-                    math_text = self._clean_math(node.latex_verbatim(), "display")
-                    doc.add_text(
-                        parent=parent, label=DocItemLabel.FORMULA, text=math_text
+                elif isinstance(node, LatexGroupNode):
+                    self._process_group_node(
+                        node,
+                        doc,
+                        parent,
+                        formatting,
+                        text_label,
+                        text_buffer,
+                        flush_text_buffer,
                     )
-                else:
-                    # Expand custom macros in inline math for KaTeX compatibility
-                    text_buffer.append(self._expand_macros(node.latex_verbatim()))
 
-            elif isinstance(node, LatexGroupNode):
-                if node.nodelist and self._is_text_only_group(node):
-                    group_text = self._nodes_to_text(node.nodelist)
-                    if group_text:
-                        text_buffer.append(group_text)
-                elif node.nodelist:
-                    flush_text_buffer()
-                    self._process_nodes(
-                        node.nodelist, doc, parent, formatting, text_label
-                    )
-          except Exception as e:
-              _log.warning(f"Failed to process node {type(node).__name__}: {e}")
-              continue  # Continue with next node
+            except Exception as e:
+                _log.warning(f"Failed to process node {type(node).__name__}: {e}")
+                continue  # Continue with next node
 
         flush_text_buffer()
 
@@ -814,39 +881,129 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 text_label=DocItemLabel.LIST_ITEM,
             )
 
+    def _process_table_macro_node(
+        self,
+        n: LatexMacroNode,
+        source_latex: str,
+        current_cell_nodes: List,
+        finish_cell_fn: Callable[..., None],
+        finish_row_fn: Callable[[], None],
+        parse_brace_args_fn: Callable[[str], List[str]],
+    ):
+        if n.macroname == "\\":  # Row break
+            finish_row_fn()
+
+        elif n.macroname == "multicolumn":
+            # \multicolumn{num_cols}{alignment}{content}
+            # Extract from source using node position
+            if hasattr(n, "pos") and n.pos is not None:
+                remaining = source_latex[n.pos :]
+                args = parse_brace_args_fn(remaining)
+                if len(args) >= 3:
+                    try:
+                        num_cols = int(args[0])
+                    except (ValueError, TypeError):
+                        num_cols = 1
+                    content_text = args[2]  # Skip alignment arg[1]
+                    if content_text:
+                        current_cell_nodes.append(LatexCharsNode(chars=content_text))
+                    finish_cell_fn(col_span=num_cols)
+                else:
+                    # Fallback
+                    current_cell_nodes.append(n)
+            else:
+                current_cell_nodes.append(n)
+
+        elif n.macroname == "multirow":
+            # \multirow{num_rows}{width}{content}
+            if hasattr(n, "pos") and n.pos is not None:
+                remaining = source_latex[n.pos :]
+                args = parse_brace_args_fn(remaining)
+                if len(args) >= 3:
+                    try:
+                        num_rows = int(args[0])
+                    except (ValueError, TypeError):
+                        num_rows = 1
+                    content_text = args[2]  # Skip width arg[1]
+                    if content_text:
+                        current_cell_nodes.append(LatexCharsNode(chars=content_text))
+                    finish_cell_fn(row_span=num_rows)
+                else:
+                    # Fallback
+                    current_cell_nodes.append(n)
+            else:
+                current_cell_nodes.append(n)
+
+        elif n.macroname in [
+            "hline",
+            "cline",
+            "toprule",
+            "midrule",
+            "bottomrule",
+            "cmidrule",
+            "specialrule",
+        ]:
+            # Ignore rule lines for data extraction
+            pass
+
+        elif n.macroname in [
+            "rule",
+            "vspace",
+            "hspace",
+            "vskip",
+            "hskip",
+            "smallskip",
+            "medskip",
+            "bigskip",
+            "strut",
+            "phantom",
+            "hphantom",
+            "vphantom",
+            "noalign",
+        ]:
+            # Ignore formatting commands - don't add to cell content
+            pass
+
+        elif n.macroname == "&":  # Cell break (if parsed as macro)
+            finish_cell_fn()
+
+        elif n.macroname in ["%", "$", "#", "_", "{", "}"]:
+            # Escaped characters - add to current cell
+            current_cell_nodes.append(n)
+
+        else:
+            current_cell_nodes.append(n)
+
     def _parse_table(self, node: LatexEnvironmentNode) -> Optional[TableData]:
         """Parse tabular environment into TableData with multicolumn/multirow support"""
 
         rows = []
         current_row = []
         current_cell_nodes: list = []
-        
+
         # Get source latex for parsing multicolumn/multirow
         # These macros don't have their args parsed by pylatexenc by default
         source_latex = node.latex_verbatim()
-        
+
         def parse_brace_args(text: str) -> list:
             """Parse {arg1}{arg2}{arg3} from text, return list of args"""
             args = []
             i = 0
             while i < len(text):
-                if text[i] == '{':
+                if text[i] == "{":
                     depth = 1
                     start = i + 1
                     i += 1
                     while i < len(text) and depth > 0:
-                        if text[i] == '{':
+                        if text[i] == "{":
                             depth += 1
-                        elif text[i] == '}':
+                        elif text[i] == "}":
                             depth -= 1
                         i += 1
-                    args.append(text[start:i-1])
+                    args.append(text[start : i - 1])
                 else:
                     i += 1
             return args
-        
-        # Track multirow cells: {col_idx: {'remaining': int, 'content': str}}
-        multirow_tracker: dict = {}
 
         def finish_cell(col_span: int = 1, row_span: int = 1):
             """Finish current cell with optional spanning"""
@@ -859,11 +1016,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 end_col_offset_idx=0,
             )
             # Store span info temporarily (will be set properly later)
-            cell._col_span = col_span
-            cell._row_span = row_span
+            cell._col_span = col_span  # type: ignore[attr-defined]
+            cell._row_span = row_span  # type: ignore[attr-defined]
             current_row.append(cell)
             current_cell_nodes.clear()
-            
+
             # Add placeholder cells for column span
             for _ in range(col_span - 1):
                 placeholder = TableCell(
@@ -873,7 +1030,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     start_col_offset_idx=0,
                     end_col_offset_idx=0,
                 )
-                placeholder._is_placeholder = True
+                placeholder._is_placeholder = True  # type: ignore[attr-defined]
                 current_row.append(placeholder)
 
         def finish_row():
@@ -890,74 +1047,14 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         for n in node.nodelist:
             if isinstance(n, LatexMacroNode):
-                if n.macroname == "\\":  # Row break
-                    finish_row()
-                    
-                elif n.macroname == "multicolumn":
-                    # \multicolumn{num_cols}{alignment}{content}
-                    # Extract from source using node position
-                    if hasattr(n, 'pos') and n.pos is not None:
-                        remaining = source_latex[n.pos:]
-                        args = parse_brace_args(remaining)
-                        if len(args) >= 3:
-                            try:
-                                num_cols = int(args[0])
-                            except (ValueError, TypeError):
-                                num_cols = 1
-                            content_text = args[2]  # Skip alignment arg[1]
-                            if content_text:
-                                current_cell_nodes.append(LatexCharsNode(chars=content_text))
-                            finish_cell(col_span=num_cols)
-                        else:
-                            # Fallback
-                            current_cell_nodes.append(n)
-                    else:
-                        current_cell_nodes.append(n)
-                    
-                elif n.macroname == "multirow":
-                    # \multirow{num_rows}{width}{content}
-                    if hasattr(n, 'pos') and n.pos is not None:
-                        remaining = source_latex[n.pos:]
-                        args = parse_brace_args(remaining)
-                        if len(args) >= 3:
-                            try:
-                                num_rows = int(args[0])
-                            except (ValueError, TypeError):
-                                num_rows = 1
-                            content_text = args[2]  # Skip width arg[1]
-                            if content_text:
-                                current_cell_nodes.append(LatexCharsNode(chars=content_text))
-                            finish_cell(row_span=num_rows)
-                        else:
-                            # Fallback
-                            current_cell_nodes.append(n)
-                    else:
-                        current_cell_nodes.append(n)
-                    
-                elif n.macroname in [
-                    "hline", "cline", "toprule", "midrule", "bottomrule",
-                    "cmidrule", "specialrule"
-                ]:
-                    # Ignore rule lines for data extraction
-                    pass
-                    
-                elif n.macroname in [
-                    "rule", "vspace", "hspace", "vskip", "hskip",
-                    "smallskip", "medskip", "bigskip", "strut",
-                    "phantom", "hphantom", "vphantom", "noalign"
-                ]:
-                    # Ignore formatting commands - don't add to cell content
-                    pass
-                    
-                elif n.macroname == "&":  # Cell break (if parsed as macro)
-                    finish_cell()
-                    
-                elif n.macroname in ["%", "$", "#", "_", "{", "}"]:
-                    # Escaped characters - add to current cell
-                    current_cell_nodes.append(n)
-                    
-                else:
-                    current_cell_nodes.append(n)
+                self._process_table_macro_node(
+                    n,
+                    source_latex,
+                    current_cell_nodes,
+                    finish_cell,
+                    finish_row,
+                    parse_brace_args,
+                )
 
             elif isinstance(n, LatexCharsNode):
                 text = n.chars
@@ -995,7 +1092,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 if j < len(row):
                     cell = row[j]
                     # Skip placeholder cells created by multicolumn
-                    if hasattr(cell, '_is_placeholder') and cell._is_placeholder:
+                    if getattr(cell, "_is_placeholder", False):
                         continue
                 else:
                     cell = TableCell(
@@ -1009,10 +1106,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                 # Set row/col indices
                 cell.start_row_offset_idx = i
                 cell.start_col_offset_idx = j
-                
+
                 # Apply spans if stored
-                col_span = getattr(cell, '_col_span', 1)
-                row_span = getattr(cell, '_row_span', 1)
+                col_span = getattr(cell, "_col_span", 1)
+                row_span = getattr(cell, "_row_span", 1)
                 cell.end_row_offset_idx = i + row_span
                 cell.end_col_offset_idx = j + col_span
 
@@ -1243,7 +1340,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             latex_str = re.sub(
                 rf"\\{re.escape(macro_name)}(?![a-zA-Z])",
                 lambda m: macro_def,
-                latex_str
+                latex_str,
             )
         return latex_str
 
