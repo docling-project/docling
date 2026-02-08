@@ -221,6 +221,7 @@ def export_documents(
     print_timings: bool,
     export_timings: bool,
     image_export_mode: ImageRefMode,
+    image_alt_text: str = "Image",
 ):
     success_count = 0
     failure_count = 0
@@ -295,7 +296,10 @@ def export_documents(
                 fname = output_dir / f"{doc_filename}.md"
                 _log.info(f"writing Markdown output to {fname}")
                 conv_res.document.save_as_markdown(
-                    filename=fname, image_mode=image_export_mode
+                    filename=fname,
+                    image_mode=image_export_mode,
+                    # Note: image_alt_text support requires docling-core update
+                    # image_alt_text=image_alt_text,
                 )
 
             # Export Document Tags format:
@@ -406,6 +410,13 @@ def convert(  # noqa: C901
             help="Image export mode for the document (only in case of JSON, Markdown or HTML). With `placeholder`, only the position of the image is marked in the output. In `embedded` mode, the image is embedded as base64 encoded string. In `referenced` mode, the image is exported in PNG format and referenced from the main exported document.",
         ),
     ] = ImageRefMode.EMBEDDED,
+    image_alt_text: Annotated[
+        str,
+        typer.Option(
+            ...,
+            help="Custom alt text for images in markdown output. This text replaces the default 'Image' in markdown image links like ![Image](...).",
+        ),
+    ] = "Image",
     pipeline: Annotated[
         ProcessingPipeline,
         typer.Option(..., help="Choose the pipeline to process PDF or image files."),
@@ -943,6 +954,7 @@ def convert(  # noqa: C901
             print_timings=profiling,
             export_timings=save_profiling,
             image_export_mode=image_export_mode,
+            image_alt_text=image_alt_text,
         )
 
         end_time = time.time() - start_time

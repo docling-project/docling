@@ -18,6 +18,7 @@
 # - `IMAGE_RESOLUTION_SCALE`: increase to render higher-resolution images (e.g., 2.0).
 # - `PdfPipelineOptions.generate_page_images`/`generate_picture_images`: preserve images for export.
 # - `ImageRefMode`: choose `EMBEDDED` or `REFERENCED` when saving Markdown/HTML.
+# - `ImageAltTextMode`: choose `STATIC`, `CAPTION`, or `DESCRIPTION` for image alt text in Markdown.
 #
 # Input document
 # - Defaults to `tests/data/pdf/2206.01062.pdf`. Change `input_doc_path` as needed.
@@ -28,6 +29,7 @@ import logging
 import time
 from pathlib import Path
 
+from docling_core.transforms.serializer.markdown import ImageAltTextMode
 from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
 
 from docling.datamodel.base_models import InputFormat
@@ -101,6 +103,14 @@ def main():
     # Save markdown with externally referenced pictures
     md_filename = output_dir / f"{doc_filename}-with-image-refs.md"
     conv_res.document.save_as_markdown(md_filename, image_mode=ImageRefMode.REFERENCED)
+
+    # Save markdown with captions as alt text (uses image captions instead of static "Image")
+    md_filename = output_dir / f"{doc_filename}-with-caption-alt.md"
+    conv_res.document.save_as_markdown(
+        md_filename,
+        image_mode=ImageRefMode.EMBEDDED,
+        image_alt_mode=ImageAltTextMode.CAPTION,
+    )
 
     # Save HTML with externally referenced pictures
     html_filename = output_dir / f"{doc_filename}-with-image-refs.html"
