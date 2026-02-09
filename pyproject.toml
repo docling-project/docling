@@ -71,6 +71,7 @@ dependencies = [
   'scipy (>=1.6.0,<2.0.0)',
   "accelerate>=1.0.0,<2",
   "polyfactory>=2.22.2",
+  "playwright>=1.58.0",
 ]
 
 [project.urls]
