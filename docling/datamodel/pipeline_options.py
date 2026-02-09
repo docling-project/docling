@@ -1114,7 +1114,7 @@ class LayoutObjectDetectionOptions(ObjectDetectionStagePresetMixin, BaseLayoutOp
                 "elements are grouped into their own clusters. Recommended for complete document coverage."
             )
         ),
-    ] = True
+    ] = False
 
     model_spec: ObjectDetectionModelSpec = Field(
         default_factory=lambda: stage_model_specs.OBJECT_DETECTION_LAYOUT_HERON.model_spec.model_copy(

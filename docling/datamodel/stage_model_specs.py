@@ -764,8 +764,14 @@ OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
         name="layout_heron",
         repo_id="docling-project/docling-layout-heron",
         revision="main",
+        engine_overrides={
+            ObjectDetectionEngineType.ONNXRUNTIME: EngineModelConfig(
+                repo_id="docling-project/docling-layout-heron-onnx",
+                extra_config={"model_filename": "model.onnx"},
+            )
+        },
     ),
-    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+    default_engine_type=ObjectDetectionEngineType.ONNXRUNTIME,
 )
 
 

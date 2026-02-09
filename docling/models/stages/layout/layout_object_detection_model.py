@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 import numpy as np
 from docling_core.types.doc import CoordOrigin, DocItemLabel
@@ -28,23 +28,7 @@ _log = logging.getLogger(__name__)
 
 
 class LayoutObjectDetectionModel(BaseLayoutModel):
-    """Layout detection using the generic object-detection inference engines.
-
-    Warning: This implementation is unchecked and WIP. It is certainly broken."""
-
-    LABEL_MAP = {
-        0: DocItemLabel.TEXT,
-        1: DocItemLabel.SECTION_HEADER,
-        2: DocItemLabel.TABLE,
-        3: DocItemLabel.PICTURE,
-        4: DocItemLabel.CAPTION,
-        5: DocItemLabel.PAGE_HEADER,
-        6: DocItemLabel.PAGE_FOOTER,
-        7: DocItemLabel.FOOTNOTE,
-        8: DocItemLabel.FORMULA,
-        9: DocItemLabel.LIST_ITEM,
-        10: DocItemLabel.CODE,
-    }
+    """Layout detection using the generic object-detection inference engines."""
 
     def __init__(
         self,
@@ -61,6 +45,31 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
             accelerator_options=accelerator_options,
         )
         self.engine.initialize()
+
+        # Convert engine's string labels to DocItemLabel enums
+        self._label_map = self._build_label_map()
+
+    def _build_label_map(self) -> Dict[int, DocItemLabel]:
+        """Build label mapping from engine's label names to DocItemLabel enums.
+
+        Raises:
+            RuntimeError: If labels don't match DocItemLabel enum.
+        """
+        id_to_label_str = self.engine.get_label_mapping()
+        label_map = {}
+
+        for label_id, label_name in id_to_label_str.items():
+            # Convert label name to uppercase to match DocItemLabel enum convention
+            label_enum_name = label_name.upper()
+            try:
+                label_map[label_id] = DocItemLabel[label_enum_name]
+            except KeyError:
+                raise RuntimeError(
+                    f"Label '{label_name}' (ID {label_id}) from model config "
+                    f"does not match any DocItemLabel enum value."
+                )
+
+        return label_map
 
     @classmethod
     def get_options_type(cls) -> type[LayoutObjectDetectionOptions]:
@@ -144,7 +153,7 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
         for idx, (label_id, score, bbox_coords) in enumerate(
             zip(engine_output.label_ids, engine_output.scores, engine_output.bboxes)
         ):
-            label = self.LABEL_MAP.get(label_id, DocItemLabel.TEXT)
+            label = self._label_map.get(label_id, DocItemLabel.TEXT)
             bbox = BoundingBox(
                 l=bbox_coords[0] * scale_x,
                 t=bbox_coords[1] * scale_y,

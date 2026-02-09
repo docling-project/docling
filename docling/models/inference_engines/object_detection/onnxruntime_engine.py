@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
 import onnxruntime as ort
-from transformers import RTDetrImageProcessor
+from transformers import AutoConfig, RTDetrImageProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
@@ -61,7 +61,6 @@ class OnnxRuntimeObjectDetectionEngine(
             )
 
         repo_id = model_config.repo_id
-        assert repo_id is not None
 
         super().__init__(options, model_config=model_config)
         self.options: OnnxRuntimeObjectDetectionEngineOptions = options
@@ -74,6 +73,7 @@ class OnnxRuntimeObjectDetectionEngine(
         self._session: Optional[ort.InferenceSession] = None
         self._processor: Optional[RTDetrImageProcessor] = None
         self._model_path: Optional[Path] = None
+        self._id_to_label: Dict[int, str] = {}
 
     def _resolve_model_artifacts(self) -> tuple[Path, Path]:
         """Resolve model artifacts from artifacts_path or HF download.
@@ -155,6 +155,37 @@ class OnnxRuntimeObjectDetectionEngine(
                 f"Failed to load RTDetrImageProcessor from local model folder {model_folder}: {e}"
             )
 
+    def _load_label_mapping(self, model_folder: Path) -> Dict[int, str]:
+        """Load label mapping from HuggingFace model config.
+
+        Args:
+            model_folder: Path to model folder containing config.json
+
+        Returns:
+            Dictionary mapping label IDs to label names
+
+        Raises:
+            RuntimeError: If config cannot be loaded
+        """
+        try:
+            config = AutoConfig.from_pretrained(str(model_folder))
+            return {
+                int(label_id): label_name
+                for label_id, label_name in config.id2label.items()
+            }
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to load label mapping from model config at {model_folder}: {e}"
+            )
+
+    def get_label_mapping(self) -> Dict[int, str]:
+        """Get the label mapping for this model.
+
+        Returns:
+            Dictionary mapping label IDs to label names
+        """
+        return self._id_to_label
+
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
         _log.info("Initializing ONNX Runtime object-detection engine")
@@ -167,6 +198,10 @@ class OnnxRuntimeObjectDetectionEngine(
         # Load preprocessor (source of truth for preprocessing)
         self._processor = self._load_preprocessor(model_folder)
         _log.debug(f"Loaded preprocessor with size: {self._processor.size}")
+
+        # Load label mapping from config
+        self._id_to_label = self._load_label_mapping(model_folder)
+        _log.debug(f"Loaded label mapping with {len(self._id_to_label)} labels")
 
         # Create ONNX session
         sess_options = ort.SessionOptions()
@@ -249,15 +284,25 @@ class OnnxRuntimeObjectDetectionEngine(
 
         batch_outputs: List[ObjectDetectionEngineOutput] = []
         for idx, input_item in enumerate(input_batch):
-            labels = [int(label) for label in labels_batch[idx]]
-            boxes = [[float(v) for v in box] for box in boxes_batch[idx]]
-            scores = [float(score) for score in scores_batch[idx]]
+            # Filter detections by score threshold
+            filtered_labels = []
+            filtered_boxes = []
+            filtered_scores = []
+
+            for label, box, score in zip(
+                labels_batch[idx], boxes_batch[idx], scores_batch[idx]
+            ):
+                score_float = float(score)
+                if score_float >= self.options.score_threshold:
+                    filtered_labels.append(int(label))
+                    filtered_boxes.append([float(v) for v in box])
+                    filtered_scores.append(score_float)
 
             batch_outputs.append(
                 ObjectDetectionEngineOutput(
-                    label_ids=labels,
-                    scores=scores,
-                    bboxes=boxes,
+                    label_ids=filtered_labels,
+                    scores=filtered_scores,
+                    bboxes=filtered_boxes,
                     metadata=input_item.metadata.copy(),
                 )
             )

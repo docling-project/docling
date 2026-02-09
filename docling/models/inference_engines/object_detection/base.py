@@ -94,6 +94,14 @@ class BaseObjectDetectionEngine(ABC):
     ) -> List[ObjectDetectionEngineOutput]:
         """Run inference on a batch of inputs."""
 
+    @abstractmethod
+    def get_label_mapping(self) -> Dict[int, str]:
+        """Get the label mapping for this model.
+
+        Returns:
+            Dictionary mapping label IDs to label names
+        """
+
     def predict(
         self, input_data: ObjectDetectionEngineInput
     ) -> ObjectDetectionEngineOutput:

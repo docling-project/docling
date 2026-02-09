@@ -43,6 +43,11 @@ class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
         description="Name of the tensor input that receives the input sizes",
     )
 
+    score_threshold: float = Field(
+        default=0.3,
+        description="Minimum confidence score to keep a detection (0.0 to 1.0)",
+    )
+
 
 class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
     """Placeholder for future Transformers engine support."""
