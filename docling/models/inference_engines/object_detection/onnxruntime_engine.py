@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
 import onnxruntime as ort
 from transformers import RTDetrImageProcessor
 
-from docling.datamodel.accelerator_options import AcceleratorOptions
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
     OnnxRuntimeObjectDetectionEngineOptions,
 )
@@ -19,7 +19,9 @@ from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineInput,
     ObjectDetectionEngineOutput,
 )
-from docling.models.utils.hf_model_download import download_hf_model
+from docling.models.inference_engines.vlm._utils import resolve_model_artifacts_path
+from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -27,7 +29,9 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
+class OnnxRuntimeObjectDetectionEngine(
+    BaseObjectDetectionEngine, HuggingFaceModelDownloadMixin
+):
     """ONNX Runtime engine for RT-DETR detectors.
 
     Uses HuggingFace RTDetrImageProcessor for preprocessing to ensure
@@ -40,8 +44,8 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
         options: OnnxRuntimeObjectDetectionEngineOptions,
         model_config: Optional[EngineModelConfig] = None,
         *,
-        artifacts_path: Optional[Path] = None,
-        accelerator_options: Optional[AcceleratorOptions] = None,
+        accelerator_options: AcceleratorOptions,
+        artifacts_path: Optional[Union[Path, str]] = None,
     ):
         """Initialize the ONNX Runtime engine.
 
@@ -51,69 +55,79 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
             artifacts_path: Path to cached model artifacts
             model_config: Model configuration (repo_id, revision, extra_config)
         """
+        if model_config is None or model_config.repo_id is None:
+            raise ValueError(
+                "OnnxRuntimeObjectDetectionEngine requires model_config with repo_id"
+            )
+
+        repo_id = model_config.repo_id
+        assert repo_id is not None
+
         super().__init__(options, model_config=model_config)
         self.options: OnnxRuntimeObjectDetectionEngineOptions = options
+        self._model_config: EngineModelConfig = model_config
+        self._repo_id: str = repo_id
         self._accelerator_options = accelerator_options
-        self._artifacts_path = artifacts_path
+        self._artifacts_path = (
+            artifacts_path if artifacts_path is None else Path(artifacts_path)
+        )
         self._session: Optional[ort.InferenceSession] = None
         self._processor: Optional[RTDetrImageProcessor] = None
         self._model_path: Optional[Path] = None
 
-    def _resolve_model_path(self) -> Path:
-        """Resolve model path from artifacts_path or HF download.
+    def _resolve_model_artifacts(self) -> tuple[Path, Path]:
+        """Resolve model artifacts from artifacts_path or HF download.
 
         Returns:
-            Path to ONNX model file
+            Tuple of (model_folder, model_path)
         """
-        if self.model_config is None:
-            raise ValueError("model_config is required for ONNX engine")
-
-        repo_id = self.model_config.repo_id
-        revision = self.model_config.revision or "main"
-
-        if repo_id is None:
-            raise ValueError("model_config must provide repo_id")
+        repo_id = self._repo_id
+        revision = self._model_config.revision or "main"
 
         model_filename = self._resolve_model_filename()
-
-        artifacts_root = self._artifacts_path
-        if artifacts_root is not None:
-            model_folder = artifacts_root / repo_id.replace("/", "--")
-            candidate = model_folder / model_filename
-            if candidate.exists():
-                _log.info(f"Using ONNX model from artifacts_path: {candidate}")
-                return candidate
-            _log.warning(
-                "Model not found in artifacts_path (%s), will download from HuggingFace",
-                candidate,
-            )
-
-        # Download from HuggingFace
-        _log.info(f"Downloading model from HuggingFace: {repo_id}@{revision}")
-        base_path = download_hf_model(
+        model_folder = self._resolve_model_folder(
             repo_id=repo_id,
             revision=str(revision),
-            local_dir=None,
-            force=False,
-            progress=False,
         )
+        model_path = model_folder / model_filename
 
-        candidate = base_path / model_filename
-        if not candidate.exists():
+        if not model_path.exists():
             raise FileNotFoundError(
-                f"Expected ONNX file '{model_filename}' not found in repo '{repo_id}'. "
-                f"Searched in: {base_path}"
+                f"ONNX model file '{model_filename}' not found: {model_path}"
             )
 
-        return candidate
+        return model_folder, model_path
+
+    def _resolve_model_folder(self, repo_id: str, revision: str) -> Path:
+        """Resolve model folder from artifacts_path or HF download."""
+
+        def download_wrapper(download_repo_id: str, download_revision: str) -> Path:
+            _log.info(
+                "Downloading ONNX model from HuggingFace: %s@%s",
+                download_repo_id,
+                download_revision,
+            )
+            return self.download_models(
+                repo_id=download_repo_id,
+                revision=download_revision,
+                local_dir=None,
+                force=False,
+                progress=False,
+            )
+
+        return resolve_model_artifacts_path(
+            repo_id=repo_id,
+            revision=revision,
+            artifacts_path=self._artifacts_path,
+            download_fn=download_wrapper,
+        )
 
     def _resolve_model_filename(self) -> str:
         """Determine which ONNX filename to load."""
         filename = self.options.model_filename
-        if self.model_config is not None:
-            extra_filename = self.model_config.extra_config.get("model_filename")
-            if isinstance(extra_filename, str) and extra_filename:
-                filename = extra_filename
+        extra_filename = self._model_config.extra_config.get("model_filename")
+        if extra_filename and isinstance(extra_filename, str):
+            filename = extra_filename
         return filename
 
     def _load_preprocessor(self, model_folder: Path) -> RTDetrImageProcessor:
@@ -127,38 +141,26 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
         Returns:
             RTDetrImageProcessor instance
         """
-        # Try loading from local folder first
-        if (model_folder / "preprocessor_config.json").exists():
-            try:
-                _log.debug(f"Loading preprocessor from {model_folder}")
-                return RTDetrImageProcessor.from_pretrained(str(model_folder))
-            except Exception as e:
-                _log.debug(f"Could not load preprocessor from local: {e}")
+        preprocessor_config = model_folder / "preprocessor_config.json"
+        if not preprocessor_config.exists():
+            raise FileNotFoundError(
+                f"RTDetrImageProcessor config not found: {preprocessor_config}"
+            )
 
-        # Fall back to repo_id if available
-        if self.model_config is not None and self.model_config.repo_id:
-            repo_id = self.model_config.repo_id
-            try:
-                _log.debug(f"Loading preprocessor from HuggingFace: {repo_id}")
-                return RTDetrImageProcessor.from_pretrained(repo_id)
-            except Exception as e:
-                _log.warning(
-                    "Could not load preprocessor from %s: %s. Using default configuration.",
-                    repo_id,
-                    e,
-                )
-
-        # Last resort: use default preprocessor
-        _log.warning("Using default RTDetrImageProcessor configuration")
-        return RTDetrImageProcessor()
+        try:
+            _log.debug(f"Loading preprocessor from {model_folder}")
+            return RTDetrImageProcessor.from_pretrained(str(model_folder))
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to load RTDetrImageProcessor from local model folder {model_folder}: {e}"
+            )
 
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
         _log.info("Initializing ONNX Runtime object-detection engine")
 
-        # Resolve model path
-        self._model_path = self._resolve_model_path()
-        model_folder = self._model_path.parent
+        # Resolve model folder and model path in one step
+        model_folder, self._model_path = self._resolve_model_artifacts()
 
         _log.debug(f"Using ONNX model at {self._model_path}")
 
@@ -168,7 +170,8 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
 
         # Create ONNX session
         sess_options = ort.SessionOptions()
-        providers = self.options.providers or ["CPUExecutionProvider"]
+        sess_options.intra_op_num_threads = self._accelerator_options.num_threads
+        providers = self._resolve_providers()
 
         self._session = ort.InferenceSession(
             str(self._model_path),
@@ -180,6 +183,27 @@ class OnnxRuntimeObjectDetectionEngine(BaseObjectDetectionEngine):
         _log.info(
             f"ONNX Runtime engine ready (providers={self._session.get_providers()})"
         )
+
+    def _resolve_providers(self) -> List[str]:
+        """Resolve ONNX Runtime providers from accelerator and engine options."""
+        configured_providers = self.options.providers or ["CPUExecutionProvider"]
+        if configured_providers != ["CPUExecutionProvider"]:
+            return configured_providers
+
+        device = decide_device(
+            self._accelerator_options.device,
+            supported_devices=[AcceleratorDevice.CPU, AcceleratorDevice.CUDA],
+        )
+
+        if device.startswith("cuda"):
+            return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+
+        if device != AcceleratorDevice.CPU.value:
+            _log.warning(
+                "Unsupported ONNX device '%s' for object detection. Falling back to CPU provider.",
+                device,
+            )
+        return ["CPUExecutionProvider"]
 
     def predict_batch(
         self, input_batch: List[ObjectDetectionEngineInput]

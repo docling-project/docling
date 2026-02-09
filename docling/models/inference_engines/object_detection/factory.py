@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.models.inference_engines.object_detection.base import (
@@ -26,14 +26,16 @@ def create_object_detection_engine(
     options: BaseObjectDetectionEngineOptions,
     model_spec: Optional[ObjectDetectionModelSpec] = None,
     *,
-    artifacts_path: Optional[Path] = None,
-    accelerator_options: Optional[AcceleratorOptions] = None,
+    accelerator_options: AcceleratorOptions,
+    artifacts_path: Optional[Union[Path, str]] = None,
 ) -> BaseObjectDetectionEngine:
     """Factory to create object detection engines.
 
     Args:
         options: Engine-specific options
         model_spec: Model specification used to derive engine configuration
+        accelerator_options: Hardware accelerator configuration
+        artifacts_path: Optional path to local model artifacts root
 
     Returns:
         Initialized engine instance (call .initialize() before use)
