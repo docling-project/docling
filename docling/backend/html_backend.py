@@ -820,6 +820,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         is_rich: bool = True
 
         children = table_cell.find_all(recursive=True)  # all descendants of type Tag
+        has_input = any(child.name == "input" for child in children)
         if not children:
             content = [
                 item
@@ -832,10 +833,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 table_cell, find_parent_annotation=True
             )
             if not annotations:
-                is_rich = bool(item for item in children if item.name == "img")
+                is_rich = bool(
+                    item for item in children if item.name in {"img", "input"}
+                )
             elif len(annotations) == 1:
                 anno: AnnotatedText = annotations[0]
-                is_rich = bool(anno.formatting) or bool(anno.hyperlink) or anno.code
+                is_rich = (
+                    bool(anno.formatting)
+                    or bool(anno.hyperlink)
+                    or anno.code
+                    or has_input
+                )
 
         return is_rich
 
@@ -1026,6 +1034,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     im_ref3 = self._emit_image(node, doc)
                     if im_ref3:
                         added_refs.append(im_ref3)
+                elif name == "input":
+                    _flush_buffer()
+                    input_ref = self._emit_input(node, doc)
+                    if input_ref:
+                        added_refs.append(input_ref)
                 elif name in _FORMAT_TAG_MAP:
                     _flush_buffer()
                     with self._use_format([name]):
@@ -1039,7 +1052,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     _flush_buffer()
                     blk = self._handle_block(node, doc)
                     added_refs.extend(blk)
-                elif node.find(_BLOCK_TAGS):
+                elif node.find(_BLOCK_TAGS) or node.find("input"):
                     _flush_buffer()
                     wk3 = self._walk(node, doc)
                     added_refs.extend(wk3)
@@ -1422,9 +1435,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 li_text = re.sub(
                     r"\s+|\n+", " ", "".join([el.text for el in min_parts])
                 ).strip()
+                inputs_in_li = [
+                    input_tag
+                    for input_tag in li.find_all("input")
+                    if input_tag.find_parent("li") is li
+                ]
 
                 # 3) add the list item
-                if li_text:
+                if li_text or inputs_in_li:
                     if len(min_parts) > 1:
                         li_prov = self._make_prov(text=li_text, tag=li)
                         # create an empty list element in order to hook the inline group onto that one
@@ -1468,6 +1486,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                         prov=prov,
                                     )
 
+                        for input_tag in inputs_in_li:
+                            if isinstance(input_tag, Tag):
+                                self._emit_input(input_tag, doc)
+
                         # 4) recurse into any nested lists, attaching them to this <li> item
                         for sublist in li({"ul", "ol"}, recursive=False):
                             if isinstance(sublist, Tag):
@@ -1476,7 +1498,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         # now the list element with inline group is not a parent anymore
                         self.parents[self.level] = None
                         self.level -= 1
-                    else:
+                    elif li_text:
                         annotated_text = min_parts[0]
                         li_text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
                         li_clean = HTMLDocumentBackend._clean_unicode(li_text)
@@ -1497,6 +1519,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             prov=prov,
                         )
 
+                        if inputs_in_li:
+                            self.level += 1
+                            for input_tag in inputs_in_li:
+                                if isinstance(input_tag, Tag):
+                                    self._emit_input(input_tag, doc)
+                            self.level -= 1
+
                         # 4) recurse into any nested lists, attaching them to this <li> item
                         for sublist in li({"ul", "ol"}, recursive=False):
                             if isinstance(sublist, Tag):
@@ -1504,6 +1533,25 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 self._handle_block(sublist, doc)
                                 self.parents[self.level + 1] = None
                                 self.level -= 1
+                    else:
+                        li_prov = self._make_prov(text="", tag=li)
+                        self.parents[self.level + 1] = doc.add_list_item(
+                            text="",
+                            enumerated=is_ordered,
+                            marker=marker,
+                            parent=list_group,
+                            content_layer=self.content_layer,
+                            prov=li_prov,
+                        )
+                        self.level += 1
+                        for input_tag in inputs_in_li:
+                            if isinstance(input_tag, Tag):
+                                self._emit_input(input_tag, doc)
+                        for sublist in li({"ul", "ol"}, recursive=False):
+                            if isinstance(sublist, Tag):
+                                self._handle_block(sublist, doc)
+                        self.parents[self.level] = None
+                        self.level -= 1
                 else:
                     for sublist in li({"ul", "ol"}, recursive=False):
                         if isinstance(sublist, Tag):
@@ -1602,6 +1650,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for img_tag in tag("img"):
                 if isinstance(img_tag, Tag):
                     self._emit_image(img_tag, doc)
+            for input_tag in tag("input"):
+                if isinstance(input_tag, Tag):
+                    input_ref = self._emit_input(input_tag, doc)
+                    if input_ref is not None:
+                        added_refs.append(input_ref)
 
         elif tag_name == "table":
             num_rows, num_cols = self.get_html_table_row_col(tag)
@@ -1734,6 +1787,38 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             prov=pic_prov,
         )
         return docling_pic.get_ref()
+
+    def _emit_input(self, input_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
+        input_type = self._get_attr_as_string(input_tag, "type").lower()
+        if input_type == "hidden":
+            return None
+
+        label = DocItemLabel.TEXT
+        if input_type == "checkbox":
+            label = (
+                DocItemLabel.CHECKBOX_SELECTED
+                if input_tag.has_attr("checked")
+                else DocItemLabel.CHECKBOX_UNSELECTED
+            )
+
+        text = self._get_attr_as_string(input_tag, "value").strip()
+        if not text:
+            text = self._get_attr_as_string(input_tag, "placeholder").strip()
+        if not text:
+            text = self._get_attr_as_string(input_tag, "name").strip()
+
+        text_clean = HTMLDocumentBackend._clean_unicode(text) if text else ""
+        prov = self._make_prov(text=text_clean, tag=input_tag)
+        input_item = doc.add_text(
+            parent=self.parents[self.level],
+            label=label,
+            text=text_clean,
+            content_layer=self.content_layer,
+            formatting=self._formatting,
+            hyperlink=self.hyperlink,
+            prov=prov,
+        )
+        return input_item.get_ref()
 
     def _create_image_ref(self, src_url: str) -> Optional[ImageRef]:
         try:
