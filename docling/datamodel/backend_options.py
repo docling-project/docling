@@ -28,6 +28,42 @@ class HTMLBackendOptions(BaseBackendOptions):
     """
 
     kind: Literal["html"] = Field("html", exclude=True, repr=False)
+    render_page: bool = Field(
+        False,
+        description=(
+            "Render HTML in a headless browser to capture page images and "
+            "element bounding boxes."
+        ),
+    )
+    render_page_width: int = Field(
+        794, description="Render page width in CSS pixels (A4 @ 96 DPI)."
+    )
+    render_page_height: int = Field(
+        1123, description="Render page height in CSS pixels (A4 @ 96 DPI)."
+    )
+    render_page_orientation: Literal["portrait", "landscape"] = Field(
+        "portrait", description="Render page orientation."
+    )
+    render_print_media: bool = Field(
+        True, description="Use print media emulation when rendering."
+    )
+    render_wait_until: Literal["load", "domcontentloaded", "networkidle"] = Field(
+        "networkidle",
+        description="Playwright wait condition before extracting the DOM.",
+    )
+    render_wait_ms: int = Field(
+        0, description="Extra delay in milliseconds after load."
+    )
+    render_device_scale: float = Field(
+        1.0, description="Device scale factor for rendering."
+    )
+    render_full_page: bool = Field(
+        False,
+        description=("Capture a single full-height page image instead of paginating."),
+    )
+    render_dpi: int = Field(
+        96, description="DPI used for page images created from rendering."
+    )
     fetch_images: bool = Field(
         False,
         description=(

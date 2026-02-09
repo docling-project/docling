@@ -1,10 +1,12 @@
 import base64
 import logging
+import math
 import os
 import re
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Final, Iterator, Optional, Union, cast
@@ -14,6 +16,8 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, PageElement, Tag
 from bs4.element import PreformattedString
 from docling_core.types.doc import (
+    BoundingBox,
+    CoordOrigin,
     DocItem,
     DocItemLabel,
     DoclingDocument,
@@ -21,8 +25,10 @@ from docling_core.types.doc import (
     GroupItem,
     GroupLabel,
     PictureItem,
+    ProvenanceItem,
     RefItem,
     RichTableCell,
+    Size,
     TableCell,
     TableData,
     TableItem,
@@ -123,6 +129,14 @@ _FORMAT_TAG_MAP: Final = {
     **{k: {} for k in _CODE_TAG_SET},
 }
 
+_DATA_DOCLING_ID_ATTR: Final = "data-docling-id"
+
+
+@dataclass(frozen=True)
+class _RenderedBBox:
+    page_no: int
+    bbox: BoundingBox
+
 
 class _Context(BaseModel):
     list_ordered_flag_by_ref: dict[str, bool] = {}
@@ -134,6 +148,7 @@ class AnnotatedText(BaseModel):
     hyperlink: Union[AnyUrl, Path, None] = None
     formatting: Union[Formatting, None] = None
     code: bool = False
+    source_tag_id: Optional[str] = None
 
 
 class AnnotatedTextList(list):
@@ -142,11 +157,13 @@ class AnnotatedTextList(list):
         current_text = ""
         current_f = None
         current_code = False
+        current_source_tag_id = None
         for at in self:
             t = at.text
             h = at.hyperlink
             f = at.formatting
             c = at.code
+            s = at.source_tag_id
             current_text += t.strip() + " "
             if f is not None and current_f is None:
                 current_f = f
@@ -160,6 +177,18 @@ class AnnotatedTextList(list):
                 _log.warning(
                     f"Clashing hyperlinks: '{h}' and '{current_h}'! Chose '{current_h}'"
                 )
+            if s is not None and current_source_tag_id is None:
+                current_source_tag_id = s
+            elif (
+                s is not None
+                and current_source_tag_id is not None
+                and s != current_source_tag_id
+            ):
+                _log.warning(
+                    "Clashing provenance tags: "
+                    f"'{s}' and '{current_source_tag_id}'! "
+                    f"Chose '{current_source_tag_id}'"
+                )
             current_code = c if c else current_code
 
         return AnnotatedText(
@@ -167,6 +196,7 @@ class AnnotatedTextList(list):
             hyperlink=current_h,
             formatting=current_f,
             code=current_code,
+            source_tag_id=current_source_tag_id,
         )
 
     def simplify_text_elements(self) -> "AnnotatedTextList":
@@ -177,12 +207,14 @@ class AnnotatedTextList(list):
         hyperlink = self[0].hyperlink
         formatting = self[0].formatting
         code = self[0].code
+        source_tag_id = self[0].source_tag_id
         last_elm = text
         for i in range(1, len(self)):
             if (
                 hyperlink == self[i].hyperlink
                 and formatting == self[i].formatting
                 and code == self[i].code
+                and source_tag_id == self[i].source_tag_id
             ):
                 sep = " "
                 if not self[i].text.strip() or not last_elm.strip():
@@ -192,7 +224,11 @@ class AnnotatedTextList(list):
             else:
                 simplified.append(
                     AnnotatedText(
-                        text=text, hyperlink=hyperlink, formatting=formatting, code=code
+                        text=text,
+                        hyperlink=hyperlink,
+                        formatting=formatting,
+                        code=code,
+                        source_tag_id=source_tag_id,
                     )
                 )
                 text = self[i].text
@@ -200,10 +236,15 @@ class AnnotatedTextList(list):
                 hyperlink = self[i].hyperlink
                 formatting = self[i].formatting
                 code = self[i].code
+                source_tag_id = self[i].source_tag_id
         if text:
             simplified.append(
                 AnnotatedText(
-                    text=text, hyperlink=hyperlink, formatting=formatting, code=code
+                    text=text,
+                    hyperlink=hyperlink,
+                    formatting=formatting,
+                    code=code,
+                    source_tag_id=source_tag_id,
                 )
             )
         return simplified
@@ -239,7 +280,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.options: HTMLBackendOptions
         self.soup: Optional[BeautifulSoup] = None
         self.path_or_stream: Union[BytesIO, Path] = path_or_stream
-        self.base_path: Optional[str] = str(options.source_uri)
+        self.base_path: Optional[str] = (
+            str(options.source_uri) if options.source_uri is not None else None
+        )
 
         # Initialize the parents for the hierarchy
         self.max_levels = 10
@@ -250,6 +293,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self.parents[i] = None
         self.hyperlink: Union[AnyUrl, Path, None] = None
         self.format_tags: list[str] = []
+        self._raw_html_bytes: Optional[bytes] = None
+        self._rendered_html: Optional[str] = None
+        self._rendered_bbox_by_id: dict[str, _RenderedBBox] = {}
+        self._rendered_page_images: list[Image.Image] = []
+        self._rendered_page_size: Optional[Size] = None
 
         try:
             raw = (
@@ -257,6 +305,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if isinstance(path_or_stream, BytesIO)
                 else Path(path_or_stream).read_bytes()
             )
+            self._raw_html_bytes = raw
             self.soup = BeautifulSoup(raw, "html.parser")
         except Exception as e:
             raise RuntimeError(
@@ -296,6 +345,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             binary_hash=self.document_hash,
         )
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
+
+        if cast(HTMLBackendOptions, self.options).render_page:
+            self._render_with_browser()
+            if self._rendered_html:
+                self.soup = BeautifulSoup(self._rendered_html, "html.parser")
+
+        if self._rendered_page_images and self._rendered_page_size:
+            render_dpi = cast(HTMLBackendOptions, self.options).render_dpi
+            for page_no, page_image in enumerate(self._rendered_page_images, start=1):
+                doc.add_page(
+                    page_no=page_no,
+                    size=self._rendered_page_size,
+                    image=ImageRef.from_pil(image=page_image, dpi=render_dpi),
+                )
 
         assert self.soup is not None
         # set the title as furniture, since it is part of the document metadata
@@ -343,6 +406,264 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._walk(content, doc)
         return doc
 
+    def _get_render_page_size(self) -> tuple[int, int]:
+        options = cast(HTMLBackendOptions, self.options)
+        width = options.render_page_width
+        height = options.render_page_height
+        if options.render_page_orientation == "landscape":
+            width, height = height, width
+        return width, height
+
+    def _coerce_base_url(self, value: str) -> str:
+        if HTMLDocumentBackend._is_remote_url(value) or value.startswith("file://"):
+            return value
+        return Path(value).resolve().as_uri()
+
+    def _get_render_html_text(self) -> str:
+        if self._raw_html_bytes is None:
+            return ""
+        return self._raw_html_bytes.decode("utf-8", errors="replace")
+
+    def _inject_base_tag(self, html_text: str, base_url: Optional[str]) -> str:
+        if not base_url:
+            return html_text
+        soup = BeautifulSoup(html_text, "html.parser")
+        if soup.head is None:
+            return html_text
+        if soup.head.find("base") is not None:
+            return html_text
+        base_tag = soup.new_tag("base", href=base_url)
+        soup.head.insert(0, base_tag)
+        return str(soup)
+
+    def _pad_image(self, image: Image.Image, width: int, height: int) -> Image.Image:
+        if image.width == width and image.height == height:
+            return image
+        canvas = Image.new("RGB", (width, height), color=(255, 255, 255))
+        canvas.paste(image, (0, 0))
+        return canvas
+
+    def _render_with_browser(self) -> None:
+        options = cast(HTMLBackendOptions, self.options)
+        if not options.render_page:
+            return
+
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError as exc:
+            raise RuntimeError(
+                "Playwright is required for HTML rendering. "
+                "Install it with 'pip install playwright' and run "
+                "'playwright install'."
+            ) from exc
+
+        width, height = self._get_render_page_size()
+        self._rendered_page_size = Size(width=width, height=height)
+
+        render_url: Optional[str] = None
+        render_html = self._get_render_html_text()
+
+        if isinstance(self.path_or_stream, Path):
+            render_url = self.path_or_stream.resolve().as_uri()
+        elif self.base_path:
+            render_html = self._inject_base_tag(
+                render_html, self._coerce_base_url(self.base_path)
+            )
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            context = browser.new_context(
+                viewport={"width": width, "height": height},
+                device_scale_factor=options.render_device_scale,
+            )
+            page = context.new_page()
+            if options.render_print_media:
+                page.emulate_media(media="print")
+
+            if render_url:
+                page.goto(render_url, wait_until=options.render_wait_until)
+            else:
+                page.set_content(render_html, wait_until=options.render_wait_until)
+
+            if options.render_wait_ms:
+                page.wait_for_timeout(options.render_wait_ms)
+
+            render_data = page.evaluate(
+                """
+                () => {
+                  const nodes = Array.from(document.querySelectorAll('*'));
+                  const boxes = {};
+                  let idx = 0;
+                  for (const node of nodes) {
+                    idx += 1;
+                    const id = String(idx);
+                    node.setAttribute('data-docling-id', id);
+                    const rect = node.getBoundingClientRect();
+                    if (!rect) {
+                      continue;
+                    }
+                    const width = rect.width || 0;
+                    const height = rect.height || 0;
+                    if (width <= 0 && height <= 0) {
+                      continue;
+                    }
+                    const x = rect.left + window.scrollX;
+                    const y = rect.top + window.scrollY;
+                    boxes[id] = { x, y, width, height };
+                  }
+                  const doc = document.documentElement;
+                  const body = document.body;
+                  const scrollWidth = Math.max(
+                    doc ? doc.scrollWidth : 0,
+                    body ? body.scrollWidth : 0
+                  );
+                  const scrollHeight = Math.max(
+                    doc ? doc.scrollHeight : 0,
+                    body ? body.scrollHeight : 0
+                  );
+                  return { boxes, scrollWidth, scrollHeight };
+                }
+                """
+            )
+
+            self._rendered_html = page.content()
+            scroll_height = int(render_data.get("scrollHeight", height))
+            self._rendered_page_images = self._capture_page_images(
+                page=page,
+                render_data=render_data,
+                page_width=width,
+                page_height=height,
+                full_page=options.render_full_page,
+            )
+            if self._rendered_page_images and self._rendered_page_size:
+                if options.render_full_page:
+                    self._rendered_page_size = Size(width=width, height=scroll_height)
+
+            self._rendered_bbox_by_id = self._build_bbox_mapping(
+                render_data=render_data,
+                page_height=int(self._rendered_page_size.height)
+                if self._rendered_page_size
+                else height,
+                full_page=options.render_full_page,
+            )
+
+            context.close()
+            browser.close()
+
+    def _capture_page_images(
+        self,
+        page,
+        render_data: dict,
+        page_width: int,
+        page_height: int,
+        full_page: bool,
+    ) -> list[Image.Image]:
+        scroll_height = int(render_data.get("scrollHeight", page_height))
+        if scroll_height <= 0:
+            return []
+
+        screenshot_bytes = page.screenshot(full_page=True)
+        full_image = Image.open(BytesIO(screenshot_bytes)).convert("RGB")
+
+        if full_page:
+            return [full_image]
+
+        page_images: list[Image.Image] = []
+        page_count = max(1, math.ceil(scroll_height / page_height))
+        scale_y = full_image.height / float(scroll_height)
+        target_height = round(page_height * scale_y)
+
+        for page_idx in range(page_count):
+            top_css = page_idx * page_height
+            bottom_css = min(top_css + page_height, scroll_height)
+            top_px = round(top_css * scale_y)
+            bottom_px = round(bottom_css * scale_y)
+            if bottom_px <= top_px:
+                continue
+            cropped = full_image.crop((0, top_px, full_image.width, bottom_px))
+            cropped = self._pad_image(
+                image=cropped, width=full_image.width, height=target_height
+            )
+            page_images.append(cropped)
+
+        return page_images
+
+    def _build_bbox_mapping(
+        self, render_data: dict, page_height: int, full_page: bool
+    ) -> dict[str, _RenderedBBox]:
+        boxes = render_data.get("boxes", {}) or {}
+        scroll_height = float(render_data.get("scrollHeight", page_height))
+
+        if full_page:
+            page_count = 1
+        else:
+            page_count = max(1, math.ceil(scroll_height / page_height))
+
+        mapping: dict[str, _RenderedBBox] = {}
+        for tag_id, rect in boxes.items():
+            left = float(rect.get("x", 0.0))
+            top = float(rect.get("y", 0.0))
+            width = float(rect.get("width", 0.0))
+            height = float(rect.get("height", 0.0))
+            if width <= 0 and height <= 0:
+                continue
+            right = left + width
+            bottom = top + height
+            if full_page:
+                page_no = 1
+                offset = 0.0
+            else:
+                page_no = int(top // page_height) + 1
+                page_no = min(max(page_no, 1), page_count)
+                offset = (page_no - 1) * page_height
+            bbox = BoundingBox(
+                l=left,
+                t=top - offset,
+                r=right,
+                b=bottom - offset,
+                coord_origin=CoordOrigin.TOPLEFT,
+            )
+            mapping[str(tag_id)] = _RenderedBBox(page_no=page_no, bbox=bbox)
+
+        return mapping
+
+    def _get_tag_id(self, tag: Optional[Tag]) -> Optional[str]:
+        if tag is None:
+            return None
+        tag_id = tag.get(_DATA_DOCLING_ID_ATTR)
+        if not tag_id:
+            return None
+        return str(tag_id)
+
+    def _get_rendered_bbox_for_tag(self, tag: Optional[Tag]) -> Optional[_RenderedBBox]:
+        tag_id = self._get_tag_id(tag)
+        if tag_id is None:
+            return None
+        return self._rendered_bbox_by_id.get(tag_id)
+
+    def _make_prov(
+        self,
+        text: str,
+        tag: Optional[Tag] = None,
+        source_tag_id: Optional[str] = None,
+    ) -> Optional[ProvenanceItem]:
+        if not self._rendered_bbox_by_id:
+            return None
+
+        render_box: Optional[_RenderedBBox] = None
+        if source_tag_id:
+            render_box = self._rendered_bbox_by_id.get(source_tag_id)
+        if render_box is None:
+            render_box = self._get_rendered_bbox_for_tag(tag)
+        if render_box is None:
+            return None
+
+        return ProvenanceItem(
+            page_no=render_box.page_no,
+            bbox=render_box.bbox,
+            charspan=(0, len(text)),
+        )
+
     @staticmethod
     def _fix_invalid_paragraph_structure(soup: BeautifulSoup) -> None:
         """Rewrite <p> elements that contain block-level breakers.
@@ -361,6 +682,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             nonlocal current_p
             if current_p is None:
                 current_p = soup.new_tag("p")
+                if p.get(_DATA_DOCLING_ID_ATTR):
+                    current_p[_DATA_DOCLING_ID_ATTR] = p.get(_DATA_DOCLING_ID_ATTR)
                 new_nodes.append(current_p)
 
         def _flush_para_if_empty():
@@ -591,6 +914,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     self.get_text(html_cell).strip()
                 )
                 col_span, row_span = self._get_cell_spans(html_cell)
+                cell_bbox = None
+                rendered_cell = self._get_rendered_bbox_for_tag(html_cell)
+                if rendered_cell is not None:
+                    cell_bbox = rendered_cell.bbox
                 if row_header:
                     row_span -= 1
                 while (
@@ -606,6 +933,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if rich_table_cell:
                     rich_cell = RichTableCell(
                         text=text,
+                        bbox=cell_bbox,
                         row_span=row_span,
                         col_span=col_span,
                         start_row_offset_idx=start_row_span + row_idx,
@@ -620,6 +948,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     simple_cell = TableCell(
                         text=text,
+                        bbox=cell_bbox,
                         row_span=row_span,
                         col_span=col_span,
                         start_row_offset_idx=start_row_span + row_idx,
@@ -662,6 +991,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             seg_clean = HTMLDocumentBackend._clean_unicode(
                                 annotated_text.text.strip()
                             )
+                            prov = self._make_prov(
+                                text=seg_clean,
+                                tag=element,
+                                source_tag_id=annotated_text.source_tag_id,
+                            )
                             if annotated_text.code:
                                 docling_code2 = doc.add_code(
                                     parent=self.parents[self.level],
@@ -669,6 +1003,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
+                                    prov=prov,
                                 )
                                 if inline_ref is None:
                                     added_refs.append(docling_code2.get_ref())
@@ -680,6 +1015,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
+                                    prov=prov,
                                 )
                                 if inline_ref is None:
                                     added_refs.append(docling_text2.get_ref())
@@ -783,6 +1119,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if isinstance(item, NavigableString):
             text = item.strip()
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
+            source_tag_id = (
+                self._get_tag_id(item.parent) if isinstance(item.parent, Tag) else None
+            )
             if text:
                 return AnnotatedTextList(
                     [
@@ -791,6 +1130,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             hyperlink=self.hyperlink,
                             formatting=self._formatting,
                             code=code,
+                            source_tag_id=source_tag_id,
                         )
                     ]
                 )
@@ -802,6 +1142,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             hyperlink=self.hyperlink,
                             formatting=self._formatting,
                             code=code,
+                            source_tag_id=source_tag_id,
                         )
                     ]
                 )
@@ -978,6 +1319,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         annotated_text = annotated_text_list.to_single_text_element()
         text_clean = HTMLDocumentBackend._clean_unicode(annotated_text.text)
+        prov = self._make_prov(
+            text=text_clean,
+            tag=tag,
+            source_tag_id=annotated_text.source_tag_id,
+        )
         # the first level is for the title item
         if level == 1:
             for key in self.parents.keys():
@@ -988,6 +1334,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
                 formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
+                prov=prov,
             )
             p1 = self.parents[self.level + 1]
             if p1 is not None:
@@ -1021,6 +1368,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
                 formatting=annotated_text.formatting,
                 hyperlink=annotated_text.hyperlink,
+                prov=prov,
             )
             p2 = self.parents[self.level + 1]
             if p2 is not None:
@@ -1086,6 +1434,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 # 3) add the list item
                 if li_text:
                     if len(min_parts) > 1:
+                        li_prov = self._make_prov(text=li_text, tag=li)
                         # create an empty list element in order to hook the inline group onto that one
                         self.parents[self.level + 1] = doc.add_list_item(
                             text="",
@@ -1093,6 +1442,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             marker=marker,
                             parent=list_group,
                             content_layer=self.content_layer,
+                            prov=li_prov,
                         )
                         self.level += 1
                         with self._use_inline_group(min_parts, doc):
@@ -1101,6 +1451,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     r"\s+|\n+", " ", annotated_text.text
                                 ).strip()
                                 li_clean = HTMLDocumentBackend._clean_unicode(li_text)
+                                prov = self._make_prov(
+                                    text=li_clean,
+                                    tag=li,
+                                    source_tag_id=annotated_text.source_tag_id,
+                                )
                                 if annotated_text.code:
                                     doc.add_code(
                                         parent=self.parents[self.level],
@@ -1108,6 +1463,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                         content_layer=self.content_layer,
                                         formatting=annotated_text.formatting,
                                         hyperlink=annotated_text.hyperlink,
+                                        prov=prov,
                                     )
                                 else:
                                     doc.add_text(
@@ -1117,6 +1473,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                         content_layer=self.content_layer,
                                         formatting=annotated_text.formatting,
                                         hyperlink=annotated_text.hyperlink,
+                                        prov=prov,
                                     )
 
                         # 4) recurse into any nested lists, attaching them to this <li> item
@@ -1131,6 +1488,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         annotated_text = min_parts[0]
                         li_text = re.sub(r"\s+|\n+", " ", annotated_text.text).strip()
                         li_clean = HTMLDocumentBackend._clean_unicode(li_text)
+                        prov = self._make_prov(
+                            text=li_clean,
+                            tag=li,
+                            source_tag_id=annotated_text.source_tag_id,
+                        )
                         self.parents[self.level + 1] = doc.add_list_item(
                             text=li_clean,
                             enumerated=is_ordered,
@@ -1140,6 +1502,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             content_layer=self.content_layer,
                             formatting=annotated_text.formatting,
                             hyperlink=annotated_text.hyperlink,
+                            prov=prov,
                         )
 
                         # 4) recurse into any nested lists, attaching them to this <li> item
@@ -1217,6 +1580,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     for annotated_text in part:
                         if seg := annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(seg)
+                            prov = self._make_prov(
+                                text=seg_clean,
+                                tag=tag,
+                                source_tag_id=annotated_text.source_tag_id,
+                            )
                             if annotated_text.code:
                                 docling_code = doc.add_code(
                                     parent=self.parents[self.level],
@@ -1224,6 +1592,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
+                                    prov=prov,
                                 )
                                 if inline_ref is None:
                                     added_refs.append(docling_code.get_ref())
@@ -1235,6 +1604,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                     content_layer=self.content_layer,
                                     formatting=annotated_text.formatting,
                                     hyperlink=annotated_text.hyperlink,
+                                    prov=prov,
                                 )
                                 if inline_ref is None:
                                     added_refs.append(docling_text.get_ref())
@@ -1248,9 +1618,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif tag_name == "table":
             num_rows, num_cols = self.get_html_table_row_col(tag)
             data_e = TableData(num_rows=num_rows, num_cols=num_cols)
+            table_prov = self._make_prov(text="", tag=tag)
             docling_table = doc.add_table(
                 data=data_e,
                 parent=self.parents[self.level],
+                prov=table_prov,
                 content_layer=self.content_layer,
             )
             added_refs.append(docling_table.get_ref())
@@ -1267,12 +1639,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     text_clean = HTMLDocumentBackend._clean_unicode(
                         annotated_text.text.strip()
                     )
+                    prov = self._make_prov(
+                        text=text_clean,
+                        tag=tag,
+                        source_tag_id=annotated_text.source_tag_id,
+                    )
                     docling_code2 = doc.add_code(
                         parent=self.parents[self.level],
                         text=text_clean,
                         content_layer=self.content_layer,
                         formatting=annotated_text.formatting,
                         hyperlink=annotated_text.hyperlink,
+                        prov=prov,
                     )
                     if inline_ref is None:
                         added_refs.append(docling_code2.get_ref())
@@ -1291,6 +1669,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
         figure = img_tag.find_parent("figure")
         caption: AnnotatedTextList = AnnotatedTextList()
+        caption_prov_tag: Optional[Tag] = None
 
         parent = self.parents[self.level]
 
@@ -1306,6 +1685,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if img_hyperlink := get_img_hyperlink(img_tag):
             img_text = img_tag.get("alt") or ""
             caption.append(AnnotatedText(text=img_text, hyperlink=img_hyperlink))
+            caption_prov_tag = img_tag
 
         if isinstance(figure, Tag):
             caption_tag = figure.find("figcaption", recursive=False)
@@ -1313,8 +1693,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 caption = self._extract_text_and_hyperlink_recursively(
                     caption_tag, find_parent_annotation=True
                 )
+                caption_prov_tag = caption_tag
         if not caption and img_tag.get("alt"):
             caption = AnnotatedTextList([AnnotatedText(text=img_tag.get("alt"))])
+            caption_prov_tag = img_tag
 
         caption_anno_text = caption.to_single_text_element()
 
@@ -1323,6 +1705,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             text_clean = HTMLDocumentBackend._clean_unicode(
                 caption_anno_text.text.strip()
             )
+            prov = self._make_prov(
+                text=text_clean,
+                tag=caption_prov_tag or img_tag,
+                source_tag_id=caption_anno_text.source_tag_id,
+            )
             caption_item = doc.add_text(
                 label=DocItemLabel.CAPTION,
                 text=text_clean,
@@ -1330,15 +1717,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 content_layer=self.content_layer,
                 formatting=caption_anno_text.formatting,
                 hyperlink=caption_anno_text.hyperlink,
+                prov=prov,
             )
 
         src_loc: str = self._get_attr_as_string(img_tag, "src")
+        pic_prov = self._make_prov(text="", tag=img_tag)
         if not cast(HTMLBackendOptions, self.options).fetch_images or not src_loc:
             # Do not fetch the image, just add a placeholder
             placeholder: PictureItem = doc.add_picture(
                 caption=caption_item,
                 parent=parent,
                 content_layer=self.content_layer,
+                prov=pic_prov,
             )
             return placeholder.get_ref()
 
@@ -1350,6 +1740,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             caption=caption_item,
             parent=parent,
             content_layer=self.content_layer,
+            prov=pic_prov,
         )
         return docling_pic.get_ref()
 
