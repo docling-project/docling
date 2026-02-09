@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
 from PIL.Image import Image
 
@@ -43,7 +43,7 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
     def __init__(
         self,
         options: MlxVlmEngineOptions,
-        artifacts_path: Optional[Path] = None,
+        artifacts_path: Optional[Union[Path, str]],
         model_config: Optional["EngineModelConfig"] = None,
     ):
         """Initialize the MLX engine.
@@ -55,7 +55,9 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         """
         super().__init__(options, model_config=model_config)
         self.options: MlxVlmEngineOptions = options
-        self.artifacts_path = artifacts_path
+        self.artifacts_path = (
+            artifacts_path if artifacts_path is None else Path(artifacts_path)
+        )
 
         # These will be set during initialization
         # MLX types are complex and external, using Any with type: ignore
@@ -117,7 +119,23 @@ class MlxVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
         elif (self.artifacts_path / repo_cache_folder).exists():
             artifacts_path = self.artifacts_path / repo_cache_folder
         else:
-            artifacts_path = self.artifacts_path
+            # Model not found in artifacts_path - raise clear error
+            available_models = []
+            if self.artifacts_path.exists():
+                available_models = [
+                    p.name for p in self.artifacts_path.iterdir() if p.is_dir()
+                ]
+
+            raise FileNotFoundError(
+                f"Model '{repo_id}' not found in artifacts_path.\n"
+                f"Expected location: {self.artifacts_path / repo_cache_folder}\n"
+                f"Available models in {self.artifacts_path}: "
+                f"{', '.join(available_models) if available_models else 'none'}\n\n"
+                f"To fix this issue:\n"
+                f"  1. Download the model: docling-tools models download-hf-repo {repo_id}\n"
+                f"  2. Or remove --artifacts-path to enable auto-download\n"
+                f"  3. Or use a different model that exists in your artifacts_path"
+            )
 
         # Load the model
         self.vlm_model, self.processor = load(artifacts_path)

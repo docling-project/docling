@@ -100,7 +100,10 @@ class VlmPipeline(PaginatedPipeline):
         self.build_pipe = [
             VlmConvertModel(
                 enabled=True,
+                enable_remote_services=self.pipeline_options.enable_remote_services,
+                artifacts_path=self.artifacts_path,
                 options=vlm_convert_options,
+                accelerator_options=self.pipeline_options.accelerator_options,
             ),
         ]
 
