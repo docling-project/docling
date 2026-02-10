@@ -101,6 +101,10 @@ rapidocr = [
   'rapidocr (>=3.3,<4.0.0)',
   'onnxruntime (>=1.7.0,<2.0.0) ; python_version < "3.14"',
 ]
+onnxruntime = [
+  'onnxruntime (<1.24) ; sys_platform == "darwin"',
+  'onnxruntime-gpu (<1.24) ; sys_platform == "linux" or sys_platform == "win32"',
+]
 asr = [
     'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
     'openai-whisper>=20250625',
