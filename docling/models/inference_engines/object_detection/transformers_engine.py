@@ -312,19 +312,3 @@ class TransformersObjectDetectionEngine(
             )
 
         return batch_outputs
-
-    def cleanup(self) -> None:
-        """Release GPU memory and clean up resources."""
-        import torch
-
-        if self._model is not None:
-            del self._model
-            self._model = None
-
-        if self._device is not None and self._device.type in ["cuda", "mps"]:
-            if self._device.type == "cuda":
-                torch.cuda.empty_cache()
-            elif self._device.type == "mps":
-                torch.mps.empty_cache()
-
-        _log.debug("Transformers engine cleaned up")

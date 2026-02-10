@@ -129,7 +129,3 @@ class BaseObjectDetectionEngine(ABC):
         if isinstance(input_data, list):
             return self.predict_batch(input_data)
         return self.predict(input_data)
-
-    def cleanup(self) -> None:
-        """Release resources when the engine is no longer needed."""
-        return None
