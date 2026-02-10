@@ -11,8 +11,8 @@
 5. [유틸리티 함수](#5-유틸리티-함수)
    - 5.1 [`convert_to_pdf()`](#51-convert_to_pdf)
    - 5.2 [`_get_pdf_path()`](#52-_get_pdf_path)
-6. [핵심 청커: `GenosBucketChunker`](#6-핵심-청커-genosbucketchunker)
-   - 6.1 [설계 철학](#61-설계-철학)
+6. [청커: `GenosBucketChunker`](#6-청커-genosbucketchunker)
+   - 6.1 [기존 Chunker 와의 비교](#61-기존-Chunker와의-비교)
    - 6.2 [`preprocess()` — 문서 아이템 수집](#62-preprocess--문서-아이템-수집)
    - 6.3 [`_split_document_by_tokens()` — 4단계 분할·병합 파이프라인](#63-_split_document_by_tokens--4단계-분할병합-파이프라인)
    - 6.4 [헬퍼 메서드들](#64-헬퍼-메서드들)
@@ -234,7 +234,7 @@ class GenosBucketChunker(BaseChunker):
     """토큰 제한을 고려하여 섹션별 청크를 분할하고 병합하는 청커 (v2)"""
 ```
 
-### 6.1 설계 철학
+### 6.1 기존 Chunker 와의 비교
 
 `GenosBucketChunker`는 Genos Doc Parser 전처리기에서만 활용되는 **독자 구현** Chunker 입니다. `attachment_processor`의 `HybridChunker`가 "레이아웃 구조를 존중하되 토큰 제한은 사실상 무시"하는 방식이었다면, `GenosBucketChunker`는 **섹션 헤더 기반의 의미적 분할 + 토큰 수 기반의 정밀한 크기 제어**를 동시에 수행합니다.
 - 주의
