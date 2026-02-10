@@ -972,8 +972,8 @@ ocrmac = [
     { name = "ocrmac", marker = "sys_platform == 'darwin'" },
 ]
 onnxruntime = [
-    { name = "onnxruntime", marker = "sys_platform == 'darwin'" },
-    { name = "onnxruntime-gpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin'" },
+    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux') or (python_full_version < '3.14' and sys_platform == 'win32')" },
 ]
 rapidocr = [
     { name = "onnxruntime", marker = "python_full_version < '3.14'" },
@@ -1052,8 +1052,8 @@ requires-dist = [
     { name = "ocrmac", marker = "sys_platform == 'darwin'", specifier = ">=1.0.0,<2.0.0" },
     { name = "ocrmac", marker = "sys_platform == 'darwin' and extra == 'ocrmac'", specifier = ">=1.0.0,<2.0.0" },
     { name = "onnxruntime", marker = "python_full_version < '3.14' and extra == 'rapidocr'", specifier = ">=1.7.0,<2.0.0" },
-    { name = "onnxruntime", marker = "sys_platform == 'darwin' and extra == 'onnxruntime'", specifier = "<1.24" },
-    { name = "onnxruntime-gpu", marker = "(sys_platform == 'linux' and extra == 'onnxruntime') or (sys_platform == 'win32' and extra == 'onnxruntime')", specifier = "<1.24" },
+    { name = "onnxruntime", marker = "python_full_version < '3.14' and sys_platform == 'darwin' and extra == 'onnxruntime'", specifier = "<1.24" },
+    { name = "onnxruntime-gpu", marker = "(python_full_version < '3.14' and sys_platform == 'linux' and extra == 'onnxruntime') or (python_full_version < '3.14' and sys_platform == 'win32' and extra == 'onnxruntime')", specifier = "<1.24" },
     { name = "openai-whisper", marker = "extra == 'asr'", specifier = ">=20250625" },
     { name = "openpyxl", specifier = ">=3.1.5,<4.0.0" },
     { name = "pandas", specifier = ">=2.1.4,<3.0.0" },

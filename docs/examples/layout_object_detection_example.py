@@ -17,6 +17,7 @@
 # %%
 
 import logging
+import sys
 
 from docling_core.types.doc.base import ImageRefMode
 
@@ -38,6 +39,15 @@ from docling.document_converter import (
 )
 
 _log = logging.getLogger(__name__)
+
+
+def is_onnxruntime_available() -> bool:
+    """Return True when onnxruntime can be imported in this environment."""
+    try:
+        import onnxruntime
+    except ImportError:
+        return False
+    return True
 
 
 def run_with_engine(engine_name: str, engine_options, input_doc_path: str):
@@ -93,10 +103,18 @@ def main():
     # Use a sample PDF from the test data (path relative to repo root)
     input_doc_path = "tests/data/pdf/2206.01062.pdf"
 
-    # Run 1: ONNX Runtime Engine
-    # Uses automatic device selection via pipeline accelerator options
-    onnx_options = OnnxRuntimeObjectDetectionEngineOptions()
-    run_with_engine("ONNX", onnx_options, input_doc_path)
+    # Run 1: ONNX Runtime Engine (if available in the current environment)
+    if is_onnxruntime_available():
+        # Uses automatic device selection via pipeline accelerator options
+        onnx_options = OnnxRuntimeObjectDetectionEngineOptions()
+        run_with_engine("ONNX", onnx_options, input_doc_path)
+    else:
+        _log.warning(
+            "Skipping ONNX engine run: onnxruntime is not available for Python %d.%d. "
+            "Use Python < 3.14 and install `docling[onnxruntime]`.",
+            sys.version_info.major,
+            sys.version_info.minor,
+        )
 
     # Run 2: Transformers Engine
     # Uses PyTorch with HuggingFace Transformers and automatic device selection
