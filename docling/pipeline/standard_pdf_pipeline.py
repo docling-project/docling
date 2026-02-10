@@ -46,7 +46,10 @@ from docling.datamodel.base_models import (
     Page,
 )
 from docling.datamodel.document import ConversionResult
-from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    ThreadedPdfPipelineOptions,
+)
 from docling.datamodel.settings import settings
 from docling.models.base_model import (
     GenericEnrichmentModel,
@@ -480,9 +483,9 @@ class RunContext:
 class StandardPdfPipeline(ConvertPipeline):
     """High-performance PDF pipeline with multi-threaded stages."""
 
-    def __init__(self, pipeline_options: ThreadedPdfPipelineOptions) -> None:
+    def __init__(self, pipeline_options: PdfPipelineOptions) -> None:
         super().__init__(pipeline_options)
-        self.pipeline_options: ThreadedPdfPipelineOptions = pipeline_options
+        self.pipeline_options: PdfPipelineOptions = pipeline_options
         self._run_seq = itertools.count(1)  # deterministic, monotonic run ids
 
         # initialise heavy models once
@@ -569,7 +572,7 @@ class StandardPdfPipeline(ConvertPipeline):
         self,
     ) -> Iterable[GenericEnrichmentModel[Any]]:
         effective_options = self.get_effective_options()
-        assert isinstance(effective_options, ThreadedPdfPipelineOptions)
+        assert isinstance(effective_options, PdfPipelineOptions)
 
         for model in super()._get_enrichment_pipe_for_execution():
             if isinstance(model, CodeFormulaVlmModel):
@@ -604,7 +607,7 @@ class StandardPdfPipeline(ConvertPipeline):
     def _create_run_ctx(self) -> RunContext:
         opts = self.pipeline_options
         effective_options = self.get_effective_options()
-        assert isinstance(effective_options, ThreadedPdfPipelineOptions)
+        assert isinstance(effective_options, PdfPipelineOptions)
 
         ocr_model: Any = (
             self.ocr_model if effective_options.do_ocr else _PassthroughPageModel()
