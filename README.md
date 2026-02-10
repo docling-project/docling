@@ -30,7 +30,7 @@ Docling simplifies document processing, parsing diverse formats — including ad
 
 ## Features
 
-* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, wWbVTT, images (PNG, TIFF, JPEG, ...), LaTeX, and more
+* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, and more
 * 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 * 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
 * ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
