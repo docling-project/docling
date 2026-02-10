@@ -71,7 +71,8 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        enable_remote_services: bool,
+        artifacts_path: Optional[Union[Path, str]],
         options: CodeFormulaVlmOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -88,37 +89,29 @@ class CodeFormulaVlmModel(BaseItemAndImageEnrichmentModel):
         self.engine: Optional[BaseVlmEngine] = None
 
         if self.enabled:
-            # Check if using new runtime system
-            if (
-                self.options.model_spec is not None
-                and self.options.engine_options is not None
-            ):
-                # New runtime system path
-                engine_type = self.options.engine_options.engine_type
+            # New runtime system path
+            engine_type = self.options.engine_options.engine_type
 
-                # Get model configuration for this engine
-                self.repo_id = self.options.model_spec.get_repo_id(engine_type)
-                self.revision = self.options.model_spec.get_revision(engine_type)
+            # Get model configuration for this engine
+            self.repo_id = self.options.model_spec.get_repo_id(engine_type)
+            self.revision = self.options.model_spec.get_revision(engine_type)
 
-                _log.info(
-                    f"Initializing CodeFormulaVlmModel with runtime system: "
-                    f"model={self.repo_id}, "
-                    f"engine={engine_type.value}"
-                )
+            _log.info(
+                f"Initializing CodeFormulaVlmModel with runtime system: "
+                f"model={self.repo_id}, "
+                f"engine={engine_type.value}"
+            )
 
-                # Create engine using factory
-                self.engine = create_vlm_engine(
-                    self.options.engine_options, model_spec=self.options.model_spec
-                )
+            # Create engine using factory
+            self.engine = create_vlm_engine(
+                options=self.options.engine_options,
+                model_spec=self.options.model_spec,
+                accelerator_options=accelerator_options,
+                artifacts_path=artifacts_path,
+                enable_remote_services=enable_remote_services,
+            )
 
-                _log.info("CodeFormulaVlmModel initialized successfully")
-
-            else:
-                # Legacy path - fall back to old implementation
-                raise ValueError(
-                    "CodeFormulaVlmModel requires model_spec and engine_options. "
-                    "Use CodeFormulaVlmOptions.from_preset() to create options."
-                )
+            _log.info("CodeFormulaVlmModel initialized successfully")
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """Determine if an element can be processed by this stage.

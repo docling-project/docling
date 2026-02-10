@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, List, Optional
 from PIL.Image import Image
 
 from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+from docling.exceptions import OperationNotAllowed
 from docling.models.inference_engines.vlm._utils import (
     extract_generation_stoppers,
     preprocess_image_batch,
@@ -42,6 +43,7 @@ class ApiVlmEngine(BaseVlmEngine):
 
     def __init__(
         self,
+        enable_remote_services: bool,
         options: ApiVlmEngineOptions,
         model_config: Optional["EngineModelConfig"] = None,
     ):
@@ -52,7 +54,14 @@ class ApiVlmEngine(BaseVlmEngine):
             model_config: Model configuration (repo_id, revision, extra_config)
         """
         super().__init__(options, model_config=model_config)
+        self.enable_remote_services = enable_remote_services
         self.options: ApiVlmEngineOptions = options
+
+        if not self.enable_remote_services:
+            raise OperationNotAllowed(
+                "Connections to remote services is only allowed when set explicitly. "
+                "pipeline_options.enable_remote_services=True."
+            )
 
         # Merge model_config extra_config (which contains API params from model spec)
         # with runtime options params. Runtime options take precedence.
