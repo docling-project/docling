@@ -26,7 +26,15 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, cast
 
 import numpy as np
-from docling_core.types.doc import DocItem, ImageRef, PictureItem, TableItem
+from docling_core.types.doc import (
+    CodeItem,
+    DocItem,
+    DocItemLabel,
+    ImageRef,
+    PictureItem,
+    TableItem,
+    TextItem,
+)
 
 from docling.backend.abstract_backend import AbstractDocumentBackend
 from docling.backend.pdf_backend import PdfDocumentBackend
@@ -40,6 +48,10 @@ from docling.datamodel.base_models import (
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import ThreadedPdfPipelineOptions
 from docling.datamodel.settings import settings
+from docling.models.base_model import (
+    GenericEnrichmentModel,
+    ItemAndImageEnrichmentElement,
+)
 from docling.models.factories import (
     get_layout_factory,
     get_ocr_factory,
@@ -106,6 +118,46 @@ class ProcessingResult:
     @property
     def is_complete_failure(self) -> bool:
         return self.success_count == 0 and self.failure_count > 0
+
+
+class _PassthroughPageModel:
+    def __call__(
+        self, conv_res: ConversionResult, page_batch: Iterable[Page]
+    ) -> Iterable[Page]:
+        yield from page_batch
+
+
+class _RuntimeCodeFormulaModel(GenericEnrichmentModel[ItemAndImageEnrichmentElement]):
+    def __init__(
+        self,
+        model: CodeFormulaVlmModel,
+        *,
+        do_code_enrichment: bool,
+        do_formula_enrichment: bool,
+    ) -> None:
+        self._model = model
+        self._do_code_enrichment = do_code_enrichment
+        self._do_formula_enrichment = do_formula_enrichment
+        self.elements_batch_size = model.elements_batch_size
+
+    def is_processable(self, doc: Any, element: Any) -> bool:
+        if isinstance(element, CodeItem):
+            return self._do_code_enrichment
+        if isinstance(element, TextItem):
+            return self._do_formula_enrichment and element.label == DocItemLabel.FORMULA
+        return False
+
+    def prepare_element(
+        self, conv_res: ConversionResult, element: Any
+    ) -> Optional[ItemAndImageEnrichmentElement]:
+        if not self.is_processable(conv_res.document, element):
+            return None
+        return self._model.prepare_element(conv_res, element)
+
+    def __call__(
+        self, doc: Any, element_batch: Iterable[ItemAndImageEnrichmentElement]
+    ) -> Iterable[Any]:
+        yield from self._model(doc, element_batch)
 
 
 class ThreadedQueue:
@@ -464,14 +516,9 @@ class StandardPdfPipeline(ConvertPipeline):
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
-        # When force_all_model_init is True, enable all models regardless of do_* values
-        effective_do_table_structure = (
-            self.pipeline_options.do_table_structure
-            or self.pipeline_options.force_all_model_init
-        )
         self.table_model = table_factory.create_instance(
             options=self.pipeline_options.table_structure_options,
-            enabled=effective_do_table_structure,
+            enabled=self.pipeline_options.do_table_structure,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
@@ -484,16 +531,11 @@ class StandardPdfPipeline(ConvertPipeline):
         code_formula_opts.extract_code = self.pipeline_options.do_code_enrichment
         code_formula_opts.extract_formulas = self.pipeline_options.do_formula_enrichment
 
-        # When force_all_model_init is True, enable all models regardless of do_* values
-        effective_do_code_or_formula = (
-            self.pipeline_options.do_code_enrichment
-            or self.pipeline_options.do_formula_enrichment
-            or self.pipeline_options.force_all_model_init
-        )
         self.enrichment_pipe = [
             # Code Formula Enrichment Model (using new VLM runtime system)
             CodeFormulaVlmModel(
-                enabled=effective_do_code_or_formula,
+                enabled=self.pipeline_options.do_code_enrichment
+                or self.pipeline_options.do_formula_enrichment,
                 artifacts_path=self.artifacts_path,
                 options=code_formula_opts,
                 accelerator_options=self.pipeline_options.accelerator_options,
@@ -516,16 +558,32 @@ class StandardPdfPipeline(ConvertPipeline):
         factory = get_ocr_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
-        # When force_all_model_init is True, enable all models regardless of do_* values
-        effective_do_ocr = (
-            self.pipeline_options.do_ocr or self.pipeline_options.force_all_model_init
-        )
         return factory.create_instance(
             options=self.pipeline_options.ocr_options,
-            enabled=effective_do_ocr,
+            enabled=self.pipeline_options.do_ocr,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
+
+    def _get_enrichment_pipe_for_execution(
+        self,
+    ) -> Iterable[GenericEnrichmentModel[Any]]:
+        effective_options = self.get_effective_options()
+        assert isinstance(effective_options, ThreadedPdfPipelineOptions)
+
+        for model in super()._get_enrichment_pipe_for_execution():
+            if isinstance(model, CodeFormulaVlmModel):
+                if (
+                    effective_options.do_code_enrichment
+                    or effective_options.do_formula_enrichment
+                ):
+                    yield _RuntimeCodeFormulaModel(
+                        model,
+                        do_code_enrichment=effective_options.do_code_enrichment,
+                        do_formula_enrichment=effective_options.do_formula_enrichment,
+                    )
+            else:
+                yield model
 
     def _release_page_resources(self, item: ThreadedItem) -> None:
         page = item.payload
@@ -545,6 +603,18 @@ class StandardPdfPipeline(ConvertPipeline):
 
     def _create_run_ctx(self) -> RunContext:
         opts = self.pipeline_options
+        effective_options = self.get_effective_options()
+        assert isinstance(effective_options, ThreadedPdfPipelineOptions)
+
+        ocr_model: Any = (
+            self.ocr_model if effective_options.do_ocr else _PassthroughPageModel()
+        )
+        table_model: Any = (
+            self.table_model
+            if effective_options.do_table_structure
+            else _PassthroughPageModel()
+        )
+
         timed_out_run_ids: set[int] = set()
         preprocess = PreprocessThreadedStage(
             batch_timeout=opts.batch_polling_interval_seconds,
@@ -554,7 +624,7 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         ocr = ThreadedPipelineStage(
             name="ocr",
-            model=self.ocr_model,
+            model=ocr_model,
             batch_size=opts.ocr_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,
@@ -570,7 +640,7 @@ class StandardPdfPipeline(ConvertPipeline):
         )
         table = ThreadedPipelineStage(
             name="table",
-            model=self.table_model,
+            model=table_model,
             batch_size=opts.table_batch_size,
             batch_timeout=opts.batch_polling_interval_seconds,
             queue_max_size=opts.queue_max_size,

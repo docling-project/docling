@@ -136,7 +136,7 @@ class BasePipeline(ABC):
                     yield prepared_element
 
         with TimeRecorder(conv_res, "doc_enrich", scope=ProfilingScope.DOCUMENT):
-            for model in self.enrichment_pipe:
+            for model in self._get_enrichment_pipe_for_execution():
                 for element_batch in chunkify(
                     _prepare_elements(conv_res, model),
                     model.elements_batch_size,
@@ -147,6 +147,11 @@ class BasePipeline(ABC):
                         pass
 
         return conv_res
+
+    def _get_enrichment_pipe_for_execution(
+        self,
+    ) -> Iterable[GenericEnrichmentModel[Any]]:
+        return self.enrichment_pipe
 
     @abstractmethod
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
@@ -187,20 +192,10 @@ class ConvertPipeline(BasePipeline):
                 f"The specified picture description kind is not supported: {pipeline_options.picture_description_options.kind}."
             )
 
-        # When force_all_model_init is True, enable all models regardless of do_* values
-        effective_do_picture_classification = (
-            pipeline_options.do_picture_classification
-            or pipeline_options.force_all_model_init
-        )
-        effective_do_chart_extraction = (
-            pipeline_options.do_chart_extraction
-            or pipeline_options.force_all_model_init
-        )
-
         self.enrichment_pipe = [
             # Document Picture Classifier
             DocumentPictureClassifier(
-                enabled=effective_do_picture_classification,
+                enabled=pipeline_options.do_picture_classification,
                 artifacts_path=self.artifacts_path,
                 options=DocumentPictureClassifierOptions(),
                 accelerator_options=pipeline_options.accelerator_options,
@@ -209,7 +204,7 @@ class ConvertPipeline(BasePipeline):
             picture_description_model,
             # Document Chart Extraction
             ChartExtractionModelGraniteVision(
-                enabled=effective_do_chart_extraction,
+                enabled=pipeline_options.do_chart_extraction,
                 artifacts_path=self.artifacts_path,
                 options=ChartExtractionModelOptions(),
                 accelerator_options=pipeline_options.accelerator_options,
@@ -222,18 +217,39 @@ class ConvertPipeline(BasePipeline):
         factory = get_picture_description_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
         )
-        # When force_all_model_init is True, enable all models regardless of do_* values
-        effective_do_picture_description = (
-            self.pipeline_options.do_picture_description
-            or self.pipeline_options.force_all_model_init
-        )
         return factory.create_instance(
             options=self.pipeline_options.picture_description_options,
-            enabled=effective_do_picture_description,
+            enabled=self.pipeline_options.do_picture_description,
             enable_remote_services=self.pipeline_options.enable_remote_services,
             artifacts_path=artifacts_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
+
+    def _get_enrichment_pipe_for_execution(
+        self,
+    ) -> Iterable[GenericEnrichmentModel[Any]]:
+        effective_options = self.get_effective_options()
+        assert isinstance(effective_options, ConvertPipelineOptions)
+
+        do_picture_classification = (
+            effective_options.do_picture_classification
+            or effective_options.do_chart_extraction
+        )
+        do_picture_description = effective_options.do_picture_description
+        do_chart_extraction = effective_options.do_chart_extraction
+
+        for model in self.enrichment_pipe:
+            if isinstance(model, DocumentPictureClassifier):
+                if do_picture_classification:
+                    yield model
+            elif isinstance(model, PictureDescriptionBaseModel):
+                if do_picture_description:
+                    yield model
+            elif isinstance(model, ChartExtractionModelGraniteVision):
+                if do_chart_extraction:
+                    yield model
+            else:
+                yield model
 
     @classmethod
     @abstractmethod

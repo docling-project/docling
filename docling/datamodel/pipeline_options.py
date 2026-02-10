@@ -942,17 +942,6 @@ class PipelineOptions(BaseOptions):
             examples=["./artifacts", "/tmp/docling_outputs"],
         ),
     ] = None
-    force_all_model_init: Annotated[
-        bool,
-        Field(
-            description=(
-                "Initialize all optional models regardless of do_* field values. "
-                "Enables runtime override of do_* fields without re-initialization. "
-                "Increases initialization time and memory usage."
-            ),
-            examples=[False],
-        ),
-    ] = False
 
     def _get_compatibility_payload(self) -> dict[str, Any]:
         """Get payload for compatibility hashing.
@@ -964,6 +953,10 @@ class PipelineOptions(BaseOptions):
             Dictionary suitable for compatibility hashing
         """
         return self.model_dump(serialize_as_any=True)
+
+    def _get_runtime_toggle_payload(self) -> dict[str, bool]:
+        """Get payload with runtime-togglable do_* fields."""
+        return {}
 
 
 class ConvertPipelineOptions(PipelineOptions):
@@ -1003,12 +996,20 @@ class ConvertPipelineOptions(PipelineOptions):
     )
 
     def _get_compatibility_payload(self) -> dict[str, Any]:
-        """Override to exclude do_picture_* fields from compatibility check."""
+        """Override to exclude do_* fields from compatibility check."""
         payload = super()._get_compatibility_payload()
         # Explicitly exclude do_* fields owned by this class
         payload.pop("do_picture_classification", None)
         payload.pop("do_picture_description", None)
+        payload.pop("do_chart_extraction", None)
         return payload
+
+    def _get_runtime_toggle_payload(self) -> dict[str, bool]:
+        return {
+            "do_picture_classification": self.do_picture_classification,
+            "do_picture_description": self.do_picture_description,
+            "do_chart_extraction": self.do_chart_extraction,
+        }
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
@@ -1371,6 +1372,18 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
         payload.pop("do_ocr", None)
         payload.pop("do_code_enrichment", None)
         payload.pop("do_formula_enrichment", None)
+        return payload
+
+    def _get_runtime_toggle_payload(self) -> dict[str, bool]:
+        payload = super()._get_runtime_toggle_payload()
+        payload.update(
+            {
+                "do_table_structure": self.do_table_structure,
+                "do_ocr": self.do_ocr,
+                "do_code_enrichment": self.do_code_enrichment,
+                "do_formula_enrichment": self.do_formula_enrichment,
+            }
+        )
         return payload
 
 

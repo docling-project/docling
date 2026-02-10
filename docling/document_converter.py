@@ -282,6 +282,7 @@ class DocumentConverter:
         Compatible means:
         - Same options class type
         - Compatibility payloads match (non-do_* fields are identical)
+        - Override does not enable do_* flags that were disabled at init
 
         Args:
             initialized_options: Options used to initialize pipeline
@@ -302,7 +303,18 @@ class DocumentConverter:
             override_options, for_compatibility=True
         )
 
-        return init_compat_hash == override_compat_hash
+        if init_compat_hash != override_compat_hash:
+            return False
+
+        initialized_toggles = initialized_options._get_runtime_toggle_payload()
+        override_toggles = override_options._get_runtime_toggle_payload()
+
+        for toggle_name, override_value in override_toggles.items():
+            init_value = initialized_toggles[toggle_name]
+            if override_value and not init_value:
+                return False
+
+        return True
 
     def initialize_pipeline(self, format: InputFormat):
         """Initialize the conversion pipeline for the selected format.
@@ -352,7 +364,8 @@ class DocumentConverter:
             max_file_size: Maximum file size to convert.
             page_range: Range of pages to convert.
             format_options: Optional mapping of formats to pipeline options to override
-                initialized options. Must be compatible (same class, only do_* fields differ).
+                initialized options. Must be compatible: same options class, identical
+                non-do_* fields, and do_* flags may only change from True to False.
 
         Returns:
             The conversion result, which contains a `DoclingDocument` in the `document`
@@ -396,7 +409,8 @@ class DocumentConverter:
                 exceeding this number will be skipped.
             page_range: Range of pages to convert in each document.
             format_options: Optional mapping of formats to pipeline options to override
-                initialized options. Must be compatible (same class, only do_* fields differ).
+                initialized options. Must be compatible: same options class, identical
+                non-do_* fields, and do_* flags may only change from True to False.
 
         Yields:
             The conversion results, each containing a `DoclingDocument` in the
@@ -564,57 +578,6 @@ class DocumentConverter:
 
             return self.initialized_pipelines[cache_key]
 
-    def _get_or_create_pipeline(
-        self,
-        doc_format: InputFormat,
-        pipeline_options: Optional[PipelineOptions] = None,
-    ) -> Optional[BasePipeline]:
-        """Get or create pipeline with specific options.
-
-        This method creates and caches a new pipeline instance but does NOT
-        update self.format_to_options.
-
-        Args:
-            doc_format: The document format
-            pipeline_options: Options to use (if None, use format_to_options)
-
-        Returns:
-            Pipeline instance or None
-        """
-        fopt = self.format_to_options.get(doc_format)
-
-        if fopt is None:
-            return None
-
-        # Use override options if provided, else use format default
-        effective_options = (
-            pipeline_options if pipeline_options is not None else fopt.pipeline_options
-        )
-
-        if effective_options is None:
-            return None
-
-        pipeline_class = fopt.pipeline_cls
-        options_hash = self._get_pipeline_options_hash(effective_options)
-        cache_key = (pipeline_class, options_hash)
-
-        with _PIPELINE_CACHE_LOCK:
-            if cache_key not in self.initialized_pipelines:
-                _log.info(
-                    f"Initializing new pipeline for {pipeline_class.__name__} "
-                    f"with options hash {options_hash}"
-                )
-                self.initialized_pipelines[cache_key] = pipeline_class(
-                    pipeline_options=effective_options
-                )
-            else:
-                _log.debug(
-                    f"Reusing cached pipeline for {pipeline_class.__name__} "
-                    f"with options hash {options_hash}"
-                )
-
-            return self.initialized_pipelines[cache_key]
-
     def _process_document(
         self,
         in_doc: InputDocument,
@@ -666,29 +629,26 @@ class DocumentConverter:
                     pipeline.pipeline_options, override_options
                 )
 
-                if is_compatible:
-                    # Compatible but check if initialized with force_all_model_init
-                    if not pipeline.pipeline_options.force_all_model_init:
-                        # Warn and create new pipeline instance
-                        _log.warning(
-                            "Override options are compatible but pipeline was not "
-                            "initialized with force_all_model_init=True. Creating new "
-                            "pipeline instance. Consider using force_all_model_init=True "
-                            "for better performance."
-                        )
-                        # Get new pipeline with override options
-                        pipeline = self._get_or_create_pipeline(
-                            doc_format=in_doc.format, pipeline_options=override_options
-                        )
-                else:
-                    # Incompatible - create new pipeline instance
-                    _log.warning(
-                        "Override options are incompatible with initialized pipeline "
-                        "(type or non-do_* fields differ). Creating new pipeline instance."
+                if not is_compatible:
+                    error_message = (
+                        "Pipeline override options are incompatible with the "
+                        "initialized pipeline. Overrides may only change do_* "
+                        "flags from True to False while keeping all non-do_* "
+                        "fields unchanged."
                     )
-                    # Get new pipeline with override options
-                    pipeline = self._get_or_create_pipeline(
-                        doc_format=in_doc.format, pipeline_options=override_options
+                    if raises_on_error:
+                        raise ConversionError(error_message)
+
+                    return ConversionResult(
+                        input=in_doc,
+                        status=ConversionStatus.FAILURE,
+                        errors=[
+                            ErrorItem(
+                                component_type=DoclingComponentType.USER_INPUT,
+                                module_name=self.__class__.__name__,
+                                error_message=error_message,
+                            )
+                        ],
                     )
 
             if pipeline is not None:
