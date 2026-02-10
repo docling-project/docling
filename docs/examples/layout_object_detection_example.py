@@ -8,7 +8,7 @@
 #
 # Requirements
 # - Python 3.10+
-# - Install Docling: `pip install docling`
+# - Install Docling: `pip install docling[onnxruntime]`
 #
 # How to run (from repo root)
 # - `python docs/examples/layout_object_detection_example.py`
