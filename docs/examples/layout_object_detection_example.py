@@ -1,14 +1,14 @@
 # %% [markdown]
 #
 # What this example does
-# - Run layout detection using the object-detection runtime with ONNX
-# - Demonstrates the OBJECT_DETECTION_LAYOUT_HERON preset with ONNX Runtime
+# - Demonstrates runtime abstraction for object detection engines
+# - Runs the same layout detection task with both ONNX Runtime and Transformers engines
+# - Shows how to easily switch between inference engines while using the same model
 # - Detects document structure elements (text blocks, tables, figures, etc.)
 #
 # Requirements
-# - Python 3.9+
+# - Python 3.10+
 # - Install Docling: `pip install docling`
-# - ONNX Runtime (automatically installed with docling)
 #
 # How to run (from repo root)
 # - `python docs/examples/layout_object_detection_example.py`
@@ -20,7 +20,12 @@ import logging
 
 from docling_core.types.doc.base import ImageRefMode
 
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.base_models import InputFormat
+from docling.datamodel.object_detection_engine_options import (
+    OnnxRuntimeObjectDetectionEngineOptions,
+    TransformersObjectDetectionEngineOptions,
+)
 from docling.datamodel.pipeline_options import (
     LayoutObjectDetectionOptions,
     PdfPipelineOptions,
@@ -35,16 +40,11 @@ from docling.document_converter import (
 _log = logging.getLogger(__name__)
 
 
-def main():
-    # Configure logging to display info messages
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    logging.getLogger("docling").setLevel(logging.INFO)
-
-    # Use a sample PDF from the test data (path relative to repo root)
-    input_doc_path = "tests/data/pdf/2206.01062.pdf"
+def run_with_engine(engine_name: str, engine_options, input_doc_path: str):
+    """Run layout detection with the specified engine."""
+    _log.info(f"{'=' * 80}")
+    _log.info(f"Running layout detection with {engine_name} engine")
+    _log.info(f"{'=' * 80}\n")
 
     # Configure pipeline options
     pipeline_options = PdfPipelineOptions()
@@ -52,23 +52,14 @@ def main():
     pipeline_options.do_table_structure = True
     pipeline_options.generate_page_images = True
     pipeline_options.generate_picture_images = True
+    pipeline_options.images_scale = 2.0
+    pipeline_options.accelerator_options = AcceleratorOptions(
+        device=AcceleratorDevice.AUTO
+    )
 
-    # Enable debug visualization
-    settings.debug.visualize_layout = True
-
-    # Create layout options using the ONNX Runtime preset
-    # The "layout_heron_default" preset is configured to use ONNX Runtime
-    # with the model file "model.onnx" from the HuggingFace repository
+    # Create layout options with the specified engine
     layout_options = LayoutObjectDetectionOptions.from_preset("layout_heron_default")
-
-    # The preset already configures ONNX Runtime as the default engine,
-    # but you can override engine options if needed:
-    # from docling.datamodel.object_detection_engine_options import (
-    #     OnnxRuntimeObjectDetectionEngineOptions,
-    # )
-    # layout_options.engine_options = OnnxRuntimeObjectDetectionEngineOptions(
-    #     providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
-    # )
+    layout_options.engine_options = engine_options
 
     pipeline_options.layout_options = layout_options
 
@@ -82,14 +73,35 @@ def main():
 
     # Convert the document
     result = converter.convert(input_doc_path)
-    if False:
-        viz = result.document.get_visualization()
-        for k, v in viz.items():
-            v.show()
-    # Save output
-    result.document.save_as_html(
-        "layout_object_detection_example.html", image_mode=ImageRefMode.EMBEDDED
+
+    # Save output with engine-specific filename
+    output_filename = f"layout_object_detection_{engine_name.lower()}.html"
+    result.document.save_as_html(output_filename, image_mode=ImageRefMode.EMBEDDED)
+    _log.info(f"✓ Saved output to {output_filename}")
+
+    return result
+
+
+def main():
+    # Configure logging to display info messages
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
+    logging.getLogger("docling").setLevel(logging.INFO)
+
+    # Use a sample PDF from the test data (path relative to repo root)
+    input_doc_path = "tests/data/pdf/2206.01062.pdf"
+
+    # Run 1: ONNX Runtime Engine
+    # Uses automatic device selection via pipeline accelerator options
+    onnx_options = OnnxRuntimeObjectDetectionEngineOptions()
+    run_with_engine("ONNX", onnx_options, input_doc_path)
+
+    # Run 2: Transformers Engine
+    # Uses PyTorch with HuggingFace Transformers and automatic device selection
+    transformers_options = TransformersObjectDetectionEngineOptions()
+    run_with_engine("Transformers", transformers_options, input_doc_path)
 
 
 if __name__ == "__main__":

@@ -7,8 +7,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
-import onnxruntime as ort
-from transformers import AutoConfig, RTDetrImageProcessor
+
+if TYPE_CHECKING:
+    import onnxruntime as ort
+    from transformers import AutoConfig, AutoImageProcessor
+    from transformers.image_processing_utils import BaseImageProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
@@ -32,9 +35,9 @@ _log = logging.getLogger(__name__)
 class OnnxRuntimeObjectDetectionEngine(
     BaseObjectDetectionEngine, HuggingFaceModelDownloadMixin
 ):
-    """ONNX Runtime engine for RT-DETR detectors.
+    """ONNX Runtime engine for object detection models.
 
-    Uses HuggingFace RTDetrImageProcessor for preprocessing to ensure
+    Uses HuggingFace AutoImageProcessor for preprocessing to ensure
     consistency with transformers-based models. This is the source of truth
     for preprocessing parameters.
     """
@@ -71,7 +74,7 @@ class OnnxRuntimeObjectDetectionEngine(
             artifacts_path if artifacts_path is None else Path(artifacts_path)
         )
         self._session: Optional[ort.InferenceSession] = None
-        self._processor: Optional[RTDetrImageProcessor] = None
+        self._processor: Optional[BaseImageProcessor] = None
         self._model_path: Optional[Path] = None
         self._id_to_label: Dict[int, str] = {}
 
@@ -130,8 +133,8 @@ class OnnxRuntimeObjectDetectionEngine(
             filename = extra_filename
         return filename
 
-    def _load_preprocessor(self, model_folder: Path) -> RTDetrImageProcessor:
-        """Load HuggingFace preprocessor from model folder.
+    def _load_preprocessor(self, model_folder: Path) -> BaseImageProcessor:
+        """Load HuggingFace image processor from model folder.
 
         This is the source of truth for preprocessing parameters.
 
@@ -139,20 +142,22 @@ class OnnxRuntimeObjectDetectionEngine(
             model_folder: Path to model folder
 
         Returns:
-            RTDetrImageProcessor instance
+            BaseImageProcessor instance (architecture-specific processor)
         """
         preprocessor_config = model_folder / "preprocessor_config.json"
         if not preprocessor_config.exists():
             raise FileNotFoundError(
-                f"RTDetrImageProcessor config not found: {preprocessor_config}"
+                f"Image processor config not found: {preprocessor_config}"
             )
 
         try:
-            _log.debug(f"Loading preprocessor from {model_folder}")
-            return RTDetrImageProcessor.from_pretrained(str(model_folder))
+            from transformers import AutoImageProcessor
+
+            _log.debug(f"Loading image processor from {model_folder}")
+            return AutoImageProcessor.from_pretrained(str(model_folder))
         except Exception as e:
             raise RuntimeError(
-                f"Failed to load RTDetrImageProcessor from local model folder {model_folder}: {e}"
+                f"Failed to load image processor from {model_folder}: {e}"
             )
 
     def _load_label_mapping(self, model_folder: Path) -> Dict[int, str]:
@@ -168,6 +173,8 @@ class OnnxRuntimeObjectDetectionEngine(
             RuntimeError: If config cannot be loaded
         """
         try:
+            from transformers import AutoConfig
+
             config = AutoConfig.from_pretrained(str(model_folder))
             return {
                 int(label_id): label_name
@@ -188,6 +195,8 @@ class OnnxRuntimeObjectDetectionEngine(
 
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
+        import onnxruntime as ort
+
         _log.info("Initializing ONNX Runtime object-detection engine")
 
         # Resolve model folder and model path in one step
@@ -197,7 +206,7 @@ class OnnxRuntimeObjectDetectionEngine(
 
         # Load preprocessor (source of truth for preprocessing)
         self._processor = self._load_preprocessor(model_folder)
-        _log.debug(f"Loaded preprocessor with size: {self._processor.size}")
+        _log.debug(f"Loaded preprocessor with size: {self._processor.size}")  # type: ignore[attr-defined]
 
         # Load label mapping from config
         self._id_to_label = self._load_label_mapping(model_folder)
@@ -269,8 +278,8 @@ class OnnxRuntimeObjectDetectionEngine(
         output_tensors = self._session.run(
             None,
             {
-                self.options.image_input_name: inputs["pixel_values"],
-                self.options.sizes_input_name: orig_sizes,
+                "images": inputs["pixel_values"],
+                "orig_target_sizes": orig_sizes,
             },
         )
 

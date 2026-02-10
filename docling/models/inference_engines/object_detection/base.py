@@ -32,6 +32,11 @@ class BaseObjectDetectionEngineOptions(BaseModel):
         description="Type of inference engine to use",
     )
 
+    score_threshold: float = Field(
+        default=0.3,
+        description="Minimum confidence score to keep a detection (0.0 to 1.0)",
+    )
+
 
 class ObjectDetectionEngineInput(BaseModel):
     """Generic input accepted by every object-detection engine."""

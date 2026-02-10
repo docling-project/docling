@@ -33,32 +33,12 @@ class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
         description="Ordered list of ONNX Runtime execution providers to try",
     )
 
-    image_input_name: str = Field(
-        default="images",
-        description="Name of the tensor input that receives the image batch",
-    )
-
-    sizes_input_name: str = Field(
-        default="orig_target_sizes",
-        description="Name of the tensor input that receives the input sizes",
-    )
-
-    score_threshold: float = Field(
-        default=0.3,
-        description="Minimum confidence score to keep a detection (0.0 to 1.0)",
-    )
-
 
 class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
     """Runtime configuration for Transformers-based object-detection models."""
 
     engine_type: Literal[ObjectDetectionEngineType.TRANSFORMERS] = (
         ObjectDetectionEngineType.TRANSFORMERS
-    )
-
-    score_threshold: float = Field(
-        default=0.3,
-        description="Minimum confidence score to keep a detection (0.0 to 1.0)",
     )
 
     torch_dtype: str | None = Field(
