@@ -4,24 +4,23 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 if TYPE_CHECKING:
     import torch
-    from transformers import AutoConfig, AutoImageProcessor, AutoModelForObjectDetection
-    from transformers.image_processing_utils import BaseImageProcessor
+    from transformers import AutoModelForObjectDetection
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
     TransformersObjectDetectionEngineOptions,
 )
 from docling.models.inference_engines.object_detection.base import (
-    BaseObjectDetectionEngine,
     ObjectDetectionEngineInput,
     ObjectDetectionEngineOutput,
 )
-from docling.models.inference_engines.vlm._utils import resolve_model_artifacts_path
-from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.models.inference_engines.object_detection.hf_base import (
+    HfObjectDetectionEngineBase,
+)
 from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
@@ -30,9 +29,7 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-class TransformersObjectDetectionEngine(
-    BaseObjectDetectionEngine, HuggingFaceModelDownloadMixin
-):
+class TransformersObjectDetectionEngine(HfObjectDetectionEngineBase):
     """Transformers engine for object detection models.
 
     Uses HuggingFace Transformers and PyTorch for inference.
@@ -55,99 +52,15 @@ class TransformersObjectDetectionEngine(
             accelerator_options: Hardware accelerator configuration
             artifacts_path: Path to cached model artifacts
         """
-        if model_config is None or model_config.repo_id is None:
-            raise ValueError(
-                "TransformersObjectDetectionEngine requires model_config with repo_id"
-            )
-
-        repo_id = model_config.repo_id
-
-        super().__init__(options, model_config=model_config)
+        super().__init__(
+            options=options,
+            model_config=model_config,
+            accelerator_options=accelerator_options,
+            artifacts_path=artifacts_path,
+        )
         self.options: TransformersObjectDetectionEngineOptions = options
-        self._model_config: EngineModelConfig = model_config
-        self._repo_id: str = repo_id
-        self._accelerator_options = accelerator_options
-        self._artifacts_path = (
-            artifacts_path if artifacts_path is None else Path(artifacts_path)
-        )
         self._model: Optional[AutoModelForObjectDetection] = None
-        self._processor: Optional[BaseImageProcessor] = None
         self._device: Optional[torch.device] = None
-        self._id_to_label: Dict[int, str] = {}
-
-    def _resolve_model_folder(self, repo_id: str, revision: str) -> Path:
-        """Resolve model folder from artifacts_path or HF download."""
-
-        def download_wrapper(download_repo_id: str, download_revision: str) -> Path:
-            _log.info(
-                "Downloading model from HuggingFace: %s@%s",
-                download_repo_id,
-                download_revision,
-            )
-            return self.download_models(
-                repo_id=download_repo_id,
-                revision=download_revision,
-                local_dir=None,
-                force=False,
-                progress=False,
-            )
-
-        return resolve_model_artifacts_path(
-            repo_id=repo_id,
-            revision=revision,
-            artifacts_path=self._artifacts_path,
-            download_fn=download_wrapper,
-        )
-
-    def _load_preprocessor(self, model_folder: Path) -> BaseImageProcessor:
-        """Load HuggingFace image processor from model folder.
-
-        Args:
-            model_folder: Path to model folder
-
-        Returns:
-            BaseImageProcessor instance (architecture-specific processor)
-        """
-        preprocessor_config = model_folder / "preprocessor_config.json"
-        if not preprocessor_config.exists():
-            raise FileNotFoundError(
-                f"Image processor config not found: {preprocessor_config}"
-            )
-
-        try:
-            from transformers import AutoImageProcessor
-
-            _log.debug(f"Loading image processor from {model_folder}")
-            return AutoImageProcessor.from_pretrained(str(model_folder))
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to load image processor from {model_folder}: {e}"
-            )
-
-    def _load_label_mapping(self, model_folder: Path) -> Dict[int, str]:
-        """Load label mapping from HuggingFace model config.
-
-        Args:
-            model_folder: Path to model folder containing config.json
-
-        Returns:
-            Dictionary mapping label IDs to label names
-
-        Raises:
-            RuntimeError: If config cannot be loaded
-        """
-        try:
-            from transformers import AutoConfig
-
-            config = AutoConfig.from_pretrained(str(model_folder))
-            return {
-                int(label_id): label_name
-                for label_id, label_name in config.id2label.items()
-            }
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to load label mapping from model config at {model_folder}: {e}"
-            )
 
     def _resolve_device(self) -> torch.device:
         """Resolve PyTorch device from accelerator options."""
@@ -192,14 +105,6 @@ class TransformersObjectDetectionEngine(
                 f"Unknown torch_dtype '{dtype_str}', using auto dtype detection"
             )
         return dtype
-
-    def get_label_mapping(self) -> Dict[int, str]:
-        """Get the label mapping for this model.
-
-        Returns:
-            Dictionary mapping label IDs to label names
-        """
-        return self._id_to_label
 
     def initialize(self) -> None:
         """Initialize PyTorch model and preprocessor."""
@@ -289,25 +194,13 @@ class TransformersObjectDetectionEngine(
 
         # Convert to our output format
         batch_outputs: List[ObjectDetectionEngineOutput] = []
-        for idx, (input_item, result) in enumerate(zip(input_batch, results)):
-            label_ids = []
-            scores = []
-            bboxes = []
-
-            for label_id, score, box in zip(
-                result["labels"], result["scores"], result["boxes"]
-            ):
-                label_ids.append(int(label_id.item()))
-                scores.append(float(score.item()))
-                # Box format: [x_min, y_min, x_max, y_max]
-                bboxes.append([float(v.item()) for v in box])
-
+        for input_item, result in zip(input_batch, results):
             batch_outputs.append(
-                ObjectDetectionEngineOutput(
-                    label_ids=label_ids,
-                    scores=scores,
-                    bboxes=bboxes,
-                    metadata=input_item.metadata.copy(),
+                self._build_output(
+                    input_item=input_item,
+                    labels=result["labels"],
+                    scores=result["scores"],
+                    boxes=result["boxes"],
                 )
             )
 

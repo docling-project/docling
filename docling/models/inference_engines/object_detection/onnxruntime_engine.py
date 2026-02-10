@@ -4,26 +4,24 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
 
 if TYPE_CHECKING:
     import onnxruntime as ort
-    from transformers import AutoConfig, AutoImageProcessor
-    from transformers.image_processing_utils import BaseImageProcessor
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from docling.datamodel.object_detection_engine_options import (
     OnnxRuntimeObjectDetectionEngineOptions,
 )
 from docling.models.inference_engines.object_detection.base import (
-    BaseObjectDetectionEngine,
     ObjectDetectionEngineInput,
     ObjectDetectionEngineOutput,
 )
-from docling.models.inference_engines.vlm._utils import resolve_model_artifacts_path
-from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
+from docling.models.inference_engines.object_detection.hf_base import (
+    HfObjectDetectionEngineBase,
+)
 from docling.utils.accelerator_utils import decide_device
 
 if TYPE_CHECKING:
@@ -32,9 +30,7 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-class OnnxRuntimeObjectDetectionEngine(
-    BaseObjectDetectionEngine, HuggingFaceModelDownloadMixin
-):
+class OnnxRuntimeObjectDetectionEngine(HfObjectDetectionEngineBase):
     """ONNX Runtime engine for object detection models.
 
     Uses HuggingFace AutoImageProcessor for preprocessing to ensure
@@ -58,25 +54,15 @@ class OnnxRuntimeObjectDetectionEngine(
             artifacts_path: Path to cached model artifacts
             model_config: Model configuration (repo_id, revision, extra_config)
         """
-        if model_config is None or model_config.repo_id is None:
-            raise ValueError(
-                "OnnxRuntimeObjectDetectionEngine requires model_config with repo_id"
-            )
-
-        repo_id = model_config.repo_id
-
-        super().__init__(options, model_config=model_config)
-        self.options: OnnxRuntimeObjectDetectionEngineOptions = options
-        self._model_config: EngineModelConfig = model_config
-        self._repo_id: str = repo_id
-        self._accelerator_options = accelerator_options
-        self._artifacts_path = (
-            artifacts_path if artifacts_path is None else Path(artifacts_path)
+        super().__init__(
+            options=options,
+            model_config=model_config,
+            accelerator_options=accelerator_options,
+            artifacts_path=artifacts_path,
         )
+        self.options: OnnxRuntimeObjectDetectionEngineOptions = options
         self._session: Optional[ort.InferenceSession] = None
-        self._processor: Optional[BaseImageProcessor] = None
         self._model_path: Optional[Path] = None
-        self._id_to_label: Dict[int, str] = {}
 
     def _resolve_model_artifacts(self) -> tuple[Path, Path]:
         """Resolve model artifacts from artifacts_path or HF download.
@@ -101,30 +87,6 @@ class OnnxRuntimeObjectDetectionEngine(
 
         return model_folder, model_path
 
-    def _resolve_model_folder(self, repo_id: str, revision: str) -> Path:
-        """Resolve model folder from artifacts_path or HF download."""
-
-        def download_wrapper(download_repo_id: str, download_revision: str) -> Path:
-            _log.info(
-                "Downloading ONNX model from HuggingFace: %s@%s",
-                download_repo_id,
-                download_revision,
-            )
-            return self.download_models(
-                repo_id=download_repo_id,
-                revision=download_revision,
-                local_dir=None,
-                force=False,
-                progress=False,
-            )
-
-        return resolve_model_artifacts_path(
-            repo_id=repo_id,
-            revision=revision,
-            artifacts_path=self._artifacts_path,
-            download_fn=download_wrapper,
-        )
-
     def _resolve_model_filename(self) -> str:
         """Determine which ONNX filename to load."""
         filename = self.options.model_filename
@@ -132,66 +94,6 @@ class OnnxRuntimeObjectDetectionEngine(
         if extra_filename and isinstance(extra_filename, str):
             filename = extra_filename
         return filename
-
-    def _load_preprocessor(self, model_folder: Path) -> BaseImageProcessor:
-        """Load HuggingFace image processor from model folder.
-
-        This is the source of truth for preprocessing parameters.
-
-        Args:
-            model_folder: Path to model folder
-
-        Returns:
-            BaseImageProcessor instance (architecture-specific processor)
-        """
-        preprocessor_config = model_folder / "preprocessor_config.json"
-        if not preprocessor_config.exists():
-            raise FileNotFoundError(
-                f"Image processor config not found: {preprocessor_config}"
-            )
-
-        try:
-            from transformers import AutoImageProcessor
-
-            _log.debug(f"Loading image processor from {model_folder}")
-            return AutoImageProcessor.from_pretrained(str(model_folder))
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to load image processor from {model_folder}: {e}"
-            )
-
-    def _load_label_mapping(self, model_folder: Path) -> Dict[int, str]:
-        """Load label mapping from HuggingFace model config.
-
-        Args:
-            model_folder: Path to model folder containing config.json
-
-        Returns:
-            Dictionary mapping label IDs to label names
-
-        Raises:
-            RuntimeError: If config cannot be loaded
-        """
-        try:
-            from transformers import AutoConfig
-
-            config = AutoConfig.from_pretrained(str(model_folder))
-            return {
-                int(label_id): label_name
-                for label_id, label_name in config.id2label.items()
-            }
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to load label mapping from model config at {model_folder}: {e}"
-            )
-
-    def get_label_mapping(self) -> Dict[int, str]:
-        """Get the label mapping for this model.
-
-        Returns:
-            Dictionary mapping label IDs to label names
-        """
-        return self._id_to_label
 
     def initialize(self) -> None:
         """Initialize ONNX session and preprocessor."""
@@ -293,26 +195,13 @@ class OnnxRuntimeObjectDetectionEngine(
 
         batch_outputs: List[ObjectDetectionEngineOutput] = []
         for idx, input_item in enumerate(input_batch):
-            # Filter detections by score threshold
-            filtered_labels = []
-            filtered_boxes = []
-            filtered_scores = []
-
-            for label, box, score in zip(
-                labels_batch[idx], boxes_batch[idx], scores_batch[idx]
-            ):
-                score_float = float(score)
-                if score_float >= self.options.score_threshold:
-                    filtered_labels.append(int(label))
-                    filtered_boxes.append([float(v) for v in box])
-                    filtered_scores.append(score_float)
-
             batch_outputs.append(
-                ObjectDetectionEngineOutput(
-                    label_ids=filtered_labels,
-                    scores=filtered_scores,
-                    bboxes=filtered_boxes,
-                    metadata=input_item.metadata.copy(),
+                self._build_output(
+                    input_item=input_item,
+                    labels=labels_batch[idx],
+                    scores=scores_batch[idx],
+                    boxes=boxes_batch[idx],
+                    apply_score_threshold=True,
                 )
             )
 
