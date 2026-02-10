@@ -41,9 +41,9 @@ class OnnxRuntimeObjectDetectionEngine(
 
     def __init__(
         self,
+        *,
         options: OnnxRuntimeObjectDetectionEngineOptions,
         model_config: Optional[EngineModelConfig] = None,
-        *,
         accelerator_options: AcceleratorOptions,
         artifacts_path: Optional[Union[Path, str]] = None,
     ):

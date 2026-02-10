@@ -50,10 +50,18 @@ class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
 
 
 class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
-    """Placeholder for future Transformers engine support."""
+    """Runtime configuration for Transformers-based object-detection models."""
 
     engine_type: Literal[ObjectDetectionEngineType.TRANSFORMERS] = (
         ObjectDetectionEngineType.TRANSFORMERS
     )
 
-    # TBD: Add transformers-specific options when implemented
+    score_threshold: float = Field(
+        default=0.3,
+        description="Minimum confidence score to keep a detection (0.0 to 1.0)",
+    )
+
+    torch_dtype: str | None = Field(
+        default=None,
+        description="PyTorch dtype for model inference (e.g., 'float32', 'float16', 'bfloat16')",
+    )

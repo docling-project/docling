@@ -36,6 +36,11 @@ _log = logging.getLogger(__name__)
 
 
 def main():
+    # Configure logging to display info messages
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
     logging.getLogger("docling").setLevel(logging.INFO)
 
     # Use a sample PDF from the test data (path relative to repo root)

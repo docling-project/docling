@@ -771,7 +771,7 @@ OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
             )
         },
     ),
-    default_engine_type=ObjectDetectionEngineType.ONNXRUNTIME,
+    default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
 )
 
 

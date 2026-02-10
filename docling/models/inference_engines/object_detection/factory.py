@@ -23,9 +23,9 @@ _log = logging.getLogger(__name__)
 
 
 def create_object_detection_engine(
+    *,
     options: BaseObjectDetectionEngineOptions,
     model_spec: Optional[ObjectDetectionModelSpec] = None,
-    *,
     accelerator_options: AcceleratorOptions,
     artifacts_path: Optional[Union[Path, str]] = None,
 ) -> BaseObjectDetectionEngine:
@@ -58,15 +58,30 @@ def create_object_detection_engine(
             )
 
         return OnnxRuntimeObjectDetectionEngine(
-            options,
+            options=options,
             model_config=model_config,
             artifacts_path=artifacts_path,
             accelerator_options=accelerator_options,
         )
 
     elif options.engine_type == ObjectDetectionEngineType.TRANSFORMERS:
-        raise NotImplementedError(
-            "Transformers engine for object detection not yet implemented"
+        from docling.datamodel.object_detection_engine_options import (
+            TransformersObjectDetectionEngineOptions,
+        )
+        from docling.models.inference_engines.object_detection.transformers_engine import (
+            TransformersObjectDetectionEngine,
+        )
+
+        if not isinstance(options, TransformersObjectDetectionEngineOptions):
+            raise ValueError(
+                f"Expected TransformersObjectDetectionEngineOptions, got {type(options)}"
+            )
+
+        return TransformersObjectDetectionEngine(
+            options=options,
+            model_config=model_config,
+            accelerator_options=accelerator_options,
+            artifacts_path=artifacts_path,
         )
 
     else:
