@@ -44,6 +44,7 @@ FULL_IMAGE_NAME="${REGISTRY_NAME}${IMAGE_NAME}:${IMAGE_TAG}"
 
 echo "📦 대상 이미지 : ${FULL_IMAGE_NAME}"
 echo "📝 설명         : ${DESCRIPTION:-N/A}"
+echo "🔎 IMAGE_NAME='${IMAGE_NAME}' IMAGE_TAG='${IMAGE_TAG}' REGISTRY='${REGISTRY_NAME}'"
 
 # DB 계정(Enter=기본값)
 read -rp "MySQL 사용자명 [${DEFAULT_MYSQL_USER:-}]: " MYSQL_USER_IN
@@ -119,18 +120,39 @@ fi
 # ────────────────────────────────────────────────────────────
 step "DB 등록 확인"
 echo "2. DB 등록 확인 중..."
-EXISTING_ID=$(
-  kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-    mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
-    "SELECT id FROM system_docker_image_tb WHERE name='${IMAGE_NAME}' AND tag='${IMAGE_TAG}';" \
-    | tr -d '\r\n' | grep -o '[0-9]*' || true
-)
+mysql_query() {
+  local sql="$1"
+  local out=""
+  # Prefer mariadb binary if present (Bitnami)
+  if out=$(kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
+      /opt/bitnami/mariadb/bin/mariadb -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
+      "${sql}" 2>&1); then
+    printf '%s' "${out}"
+    return 0
+  fi
+  # Fallback to mysql
+  out=$(kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
+      mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
+      "${sql}" 2>&1)
+  local rc=$?
+  printf '%s' "${out}"
+  return "${rc}"
+}
+
+SQL_EXISTING="SELECT id FROM system_docker_image_tb WHERE name='${IMAGE_NAME}' AND tag='${IMAGE_TAG}';"
+MYSQL_OUT=""
+if ! MYSQL_OUT="$(mysql_query "${SQL_EXISTING}")"; then
+  fail "DB 조회 실패. 아래 로그 확인 필요."
+  echo "${MYSQL_OUT}"
+  exit 1
+fi
+echo "DB 조회 결과(raw): ${MYSQL_OUT}"
+EXISTING_ID="$(printf '%s' "${MYSQL_OUT}" | tr -d '\r\n' | grep -Eo '^[0-9]+$' || true)"
 
 if [ -z "${EXISTING_ID}" ]; then
   echo "새로운 이미지 등록 중..."
   TYPE_LIST_JSON='["IT0301"]'
-  kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-    mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -e --show-warnings "
+  SQL_INSERT="
       INSERT INTO llmops.system_docker_image_tb
         (name, tag, description, type, status, is_active, reg_date, mod_date, reg_user_id, mod_user_id)
       VALUES
@@ -139,14 +161,20 @@ if [ -z "${EXISTING_ID}" ]; then
         (resource_id, resource_type, resource_group_id, is_active, reg_date, mod_date, reg_user_id, mod_user_id)
       VALUES
         (LAST_INSERT_ID(), 'DOCKER_IMAGE', 2, 1, NOW(), NOW(), 1, 1);
-    " || { fail "DB 등록 실패. 로그 확인 필요: ${LOG_FILE}"; exit 1; }
+  "
+  if ! MYSQL_OUT="$(mysql_query "${SQL_INSERT}")"; then
+    fail "DB 등록 실패. 아래 로그 확인 필요."
+    echo "${MYSQL_OUT}"
+    exit 1
+  fi
 
-  IMAGE_ID=$(
-    kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-      mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
-      "SELECT id FROM system_docker_image_tb WHERE name='${IMAGE_NAME}' AND tag='${IMAGE_TAG}';" \
-      | tr -d '\r\n' | grep -o '[0-9]*' || true
-  )
+  MYSQL_OUT=""
+  if ! MYSQL_OUT="$(mysql_query "${SQL_EXISTING}")"; then
+    fail "DB 조회 실패(등록 후). 아래 로그 확인 필요."
+    echo "${MYSQL_OUT}"
+    exit 1
+  fi
+  IMAGE_ID="$(printf '%s' "${MYSQL_OUT}" | tr -d '\r\n' | grep -Eo '^[0-9]+$' || true)"
   ok "DB 등록 완료. 이미지 ID: ${IMAGE_ID}"
 else
   ok "이미 등록된 이미지입니다. ID: ${EXISTING_ID}"
