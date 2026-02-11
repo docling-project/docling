@@ -125,15 +125,15 @@ mysql_query() {
   local out=""
   # Prefer mariadb binary if present (Bitnami)
   if out=$(kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-      /opt/bitnami/mariadb/bin/mariadb -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
-      "${sql}" 2>&1); then
+      /opt/bitnami/mariadb/bin/mariadb -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops \
+      --batch --skip-column-names --silent --raw --show-warnings --execute "${sql}" 2>&1); then
     printf '%s' "${out}"
     return 0
   fi
   # Fallback to mysql
   out=$(kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-      mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
-      "${sql}" 2>&1)
+      mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops \
+      --batch --skip-column-names --silent --raw --show-warnings --execute "${sql}" 2>&1)
   local rc=$?
   printf '%s' "${out}"
   return "${rc}"
