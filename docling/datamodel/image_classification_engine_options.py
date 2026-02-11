@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
+from typing import List, Literal
 
 from pydantic import Field
 
@@ -22,16 +22,6 @@ class OnnxRuntimeImageClassificationEngineOptions(BaseImageClassificationEngineO
     model_filename: str = Field(
         default="model.onnx",
         description="Filename of the ONNX export inside the model repository",
-    )
-
-    input_name: Optional[str] = Field(
-        default=None,
-        description="Optional ONNX input tensor name. Uses first model input when omitted.",
-    )
-
-    output_name: Optional[str] = Field(
-        default=None,
-        description="Optional ONNX output tensor name for logits. Uses first output when omitted.",
     )
 
     providers: List[str] = Field(

@@ -51,8 +51,8 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
         self.options: OnnxRuntimeImageClassificationEngineOptions = options
         self._session: Optional[ort.InferenceSession] = None
         self._model_path: Optional[Path] = None
-        self._input_name: Optional[str] = options.input_name
-        self._output_name: Optional[str] = options.output_name
+        self._input_name: Optional[str] = None
+        self._output_name: Optional[str] = None
 
     def _resolve_model_artifacts(self) -> tuple[Path, Path]:
         """Resolve model artifacts from artifacts_path or HF download."""
@@ -81,58 +81,18 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
             filename = extra_filename
         return filename
 
-    def _resolve_configured_input_name(self) -> Optional[str]:
-        """Determine configured ONNX input name from options/model overrides."""
-        input_name = self.options.input_name
-        extra_input_name = self._model_config.extra_config.get("input_name")
-        if extra_input_name and isinstance(extra_input_name, str):
-            input_name = extra_input_name
-        return input_name
-
-    def _resolve_configured_output_name(self) -> Optional[str]:
-        """Determine configured ONNX output name from options/model overrides."""
-        output_name = self.options.output_name
-        extra_output_name = self._model_config.extra_config.get("output_name")
-        if extra_output_name and isinstance(extra_output_name, str):
-            output_name = extra_output_name
-        return output_name
-
     def _resolve_input_name(self, session: ort.InferenceSession) -> str:
-        """Resolve ONNX input name, with session introspection fallback."""
+        """Resolve ONNX input name from the loaded model graph."""
         input_nodes = session.get_inputs()
         if not input_nodes:
             raise RuntimeError("ONNX model exposes no inputs")
-
-        available_input_names = {node.name for node in input_nodes}
-        configured_input_name = self._resolve_configured_input_name()
-        if configured_input_name is not None:
-            if configured_input_name in available_input_names:
-                return configured_input_name
-            raise RuntimeError(
-                "Configured ONNX input name "
-                f"'{configured_input_name}' not found in model inputs "
-                f"{sorted(available_input_names)}"
-            )
-
         return input_nodes[0].name
 
     def _resolve_output_name(self, session: ort.InferenceSession) -> str:
-        """Resolve ONNX output name, with session introspection fallback."""
+        """Resolve ONNX output name from the loaded model graph."""
         output_nodes = session.get_outputs()
         if not output_nodes:
             raise RuntimeError("ONNX model exposes no outputs")
-
-        available_output_names = {node.name for node in output_nodes}
-        configured_output_name = self._resolve_configured_output_name()
-        if configured_output_name is not None:
-            if configured_output_name in available_output_names:
-                return configured_output_name
-            raise RuntimeError(
-                "Configured ONNX output name "
-                f"'{configured_output_name}' not found in model outputs "
-                f"{sorted(available_output_names)}"
-            )
-
         return output_nodes[0].name
 
     def initialize(self) -> None:
