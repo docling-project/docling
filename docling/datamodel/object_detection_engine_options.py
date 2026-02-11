@@ -45,3 +45,8 @@ class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions)
         default=None,
         description="PyTorch dtype for model inference (e.g., 'float32', 'float16', 'bfloat16')",
     )
+
+    compile_model: bool = Field(
+        default=False,
+        description="Whether to compile the model with torch.compile() for better performance.",
+    )

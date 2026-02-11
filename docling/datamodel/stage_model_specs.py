@@ -1,4 +1,4 @@
-"""Model specifications and presets for VLM stages.
+"""Model specifications and presets for stage models.
 
 This module defines:
 1. VlmModelSpec - Model configuration with engine-specific overrides
@@ -17,12 +17,18 @@ from docling.datamodel.pipeline_options_vlm_model import (
     TransformersPromptStyle,
 )
 from docling.datamodel.vlm_engine_options import BaseVlmEngineOptions
+from docling.models.inference_engines.image_classification.base import (
+    ImageClassificationEngineType,
+)
 from docling.models.inference_engines.object_detection.base import (
     ObjectDetectionEngineType,
 )
 from docling.models.inference_engines.vlm.base import VlmEngineType
 
 if TYPE_CHECKING:
+    from docling.datamodel.image_classification_engine_options import (
+        BaseImageClassificationEngineOptions,
+    )
     from docling.datamodel.object_detection_engine_options import (
         BaseObjectDetectionEngineOptions,
     )
@@ -370,6 +376,49 @@ class ObjectDetectionModelSpec(BaseModel):
 
 
 # =============================================================================
+# IMAGE CLASSIFICATION MODEL SPECIFICATION
+# =============================================================================
+
+
+class ImageClassificationModelSpec(BaseModel):
+    """Specification for an image-classification model."""
+
+    name: str = Field(description="Human-readable model name")
+
+    repo_id: str = Field(description="Default HuggingFace repository ID")
+
+    revision: str = Field(default="main", description="Default model revision")
+
+    engine_overrides: Dict["ImageClassificationEngineType", EngineModelConfig] = Field(
+        default_factory=dict,
+        description="Engine-specific configuration overrides",
+    )
+
+    def get_engine_config(
+        self, engine_type: "ImageClassificationEngineType"
+    ) -> EngineModelConfig:
+        """Get EngineModelConfig for a specific image-classification engine."""
+        override = self.engine_overrides.get(engine_type)
+        if override is not None:
+            return override.merge_with(self.repo_id, self.revision)
+        return EngineModelConfig(repo_id=self.repo_id, revision=self.revision)
+
+    def get_repo_id(self, engine_type: "ImageClassificationEngineType") -> str:
+        """Get repository ID for specific engine."""
+        override = self.engine_overrides.get(engine_type)
+        if override and override.repo_id:
+            return override.repo_id
+        return self.repo_id
+
+    def get_revision(self, engine_type: "ImageClassificationEngineType") -> str:
+        """Get revision for specific engine."""
+        override = self.engine_overrides.get(engine_type)
+        if override and override.revision:
+            return override.revision
+        return self.revision
+
+
+# =============================================================================
 # STAGE PRESET SYSTEM
 # =============================================================================
 
@@ -681,6 +730,110 @@ class ObjectDetectionStagePresetMixin:
         return instance
 
 
+class ImageClassificationStagePreset(BaseModel):
+    """Preset definition for image classification-powered stages."""
+
+    preset_id: str = Field(description="Preset identifier")
+    name: str = Field(description="Human-readable preset name")
+    description: str = Field(description="Description of this preset")
+    model_spec: ImageClassificationModelSpec = Field(
+        description="Image classification model specification"
+    )
+    default_engine_type: ImageClassificationEngineType = Field(
+        default=ImageClassificationEngineType.TRANSFORMERS,
+        description="Default inference engine to use",
+    )
+    stage_options: Dict[str, Any] = Field(
+        default_factory=dict, description="Additional stage-specific defaults"
+    )
+
+
+class ImageClassificationStagePresetMixin:
+    """Mixin to enable preset loading for image-classification stages."""
+
+    _presets: ClassVar[Dict[str, ImageClassificationStagePreset]]
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._presets = {}
+
+    @classmethod
+    def register_preset(cls, preset: ImageClassificationStagePreset) -> None:
+        if preset.preset_id not in cls._presets:
+            cls._presets[preset.preset_id] = preset
+        else:
+            _log.error(
+                f"Preset '{preset.preset_id}' already registered for {cls.__name__}"
+            )
+
+    @classmethod
+    def get_preset(cls, preset_id: str) -> ImageClassificationStagePreset:
+        if preset_id not in cls._presets:
+            raise KeyError(
+                f"Preset '{preset_id}' not found for {cls.__name__}. "
+                f"Available presets: {list(cls._presets.keys())}"
+            )
+        return cls._presets[preset_id]
+
+    @classmethod
+    def list_presets(cls) -> List[ImageClassificationStagePreset]:
+        return list(cls._presets.values())
+
+    @classmethod
+    def list_preset_ids(cls) -> List[str]:
+        return list(cls._presets.keys())
+
+    @classmethod
+    def get_preset_info(cls) -> List[Dict[str, str]]:
+        return [
+            {
+                "preset_id": p.preset_id,
+                "name": p.name,
+                "description": p.description,
+                "model": p.model_spec.name,
+                "default_engine": p.default_engine_type.value,
+            }
+            for p in cls._presets.values()
+        ]
+
+    @classmethod
+    def from_preset(
+        cls,
+        preset_id: str,
+        engine_options: Optional["BaseImageClassificationEngineOptions"] = None,
+        **overrides: Any,
+    ):
+        from docling.datamodel.image_classification_engine_options import (
+            OnnxRuntimeImageClassificationEngineOptions,
+            TransformersImageClassificationEngineOptions,
+        )
+
+        preset = cls.get_preset(preset_id)
+
+        if engine_options is None:
+            if preset.default_engine_type == ImageClassificationEngineType.ONNXRUNTIME:
+                engine_options = OnnxRuntimeImageClassificationEngineOptions()
+            elif (
+                preset.default_engine_type == ImageClassificationEngineType.TRANSFORMERS
+            ):
+                engine_options = TransformersImageClassificationEngineOptions()
+            else:
+                raise ValueError(
+                    f"Unsupported engine type {preset.default_engine_type} for presets"
+                )
+
+        instance = cls(  # type: ignore[call-arg]
+            model_spec=preset.model_spec,
+            engine_options=engine_options,
+            **preset.stage_options,
+        )
+
+        for key, value in overrides.items():
+            setattr(instance, key, value)
+
+        return instance
+
+
 # =============================================================================
 # PRESET DEFINITIONS
 # =============================================================================
@@ -772,6 +925,23 @@ OBJECT_DETECTION_LAYOUT_HERON = ObjectDetectionStagePreset(
         },
     ),
     default_engine_type=ObjectDetectionEngineType.TRANSFORMERS,
+)
+
+
+# -----------------------------------------------------------------------------
+# IMAGE CLASSIFICATION PRESETS
+# -----------------------------------------------------------------------------
+
+IMAGE_CLASSIFICATION_DOCUMENT_FIGURE = ImageClassificationStagePreset(
+    preset_id="document_figure_classifier_v2",
+    name="Document Figure Classifier v2",
+    description="EfficientNet model for classifying document pictures",
+    model_spec=ImageClassificationModelSpec(
+        name="document_figure_classifier_v2",
+        repo_id="docling-project/DocumentFigureClassifier-v2.0",
+        revision="main",
+    ),
+    default_engine_type=ImageClassificationEngineType.TRANSFORMERS,
 )
 
 

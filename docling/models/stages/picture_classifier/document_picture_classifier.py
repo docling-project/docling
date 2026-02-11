@@ -1,8 +1,6 @@
-import sys
-import threading
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import List, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -16,30 +14,19 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
-from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.picture_classification_options import (
+    DocumentPictureClassifierOptions,
+)
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
+from docling.models.inference_engines.image_classification import (
+    BaseImageClassificationEngine,
+    ImageClassificationEngineInput,
+    create_image_classification_engine,
+)
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
-from docling.utils.accelerator_utils import decide_device
-
-# Global lock for model initialization to prevent threading issues
-_model_init_lock = threading.Lock()
-
-
-class DocumentPictureClassifierOptions(BaseModel):
-    """
-    Options for configuring the DocumentPictureClassifier.
-    """
-
-    kind: Literal["document_picture_classifier"] = "document_picture_classifier"
-    repo_id: str = "docling-project/DocumentFigureClassifier-v2.0"
-    revision: str = "main"
-
-    @property
-    def repo_cache_folder(self) -> str:
-        return self.repo_id.replace("/", "--")
 
 
 class DocumentPictureClassifier(
@@ -95,40 +82,18 @@ class DocumentPictureClassifier(
         """
         self.enabled = enabled
         self.options = options
+        self.engine: Optional[BaseImageClassificationEngine] = None
+        self._classes: dict[int, str] = {}
 
         if self.enabled:
-            self._device = decide_device(accelerator_options.device)
-
-            repo_cache_folder = self.options.repo_cache_folder
-
-            if artifacts_path is None:
-                artifacts_path = self.download_models(
-                    self.options.repo_id, revision=self.options.revision
-                )
-            elif (artifacts_path / repo_cache_folder).exists():
-                artifacts_path = artifacts_path / repo_cache_folder
-
-            import torch
-            from transformers import AutoImageProcessor, AutoModelForImageClassification
-
-            with _model_init_lock:
-                # Image processor
-                self._processor = AutoImageProcessor.from_pretrained(
-                    artifacts_path, use_fast=True
-                )
-
-                # Model
-                self._model = AutoModelForImageClassification.from_pretrained(
-                    artifacts_path,
-                    device_map=self._device,
-                )
-
-                if sys.version_info < (3, 14):
-                    self._model = torch.compile(self._model)  # type: ignore
-                else:
-                    self._model.eval()
-
-            self._classes = self._model.config.id2label
+            self.engine = create_image_classification_engine(
+                options=self.options.engine_options,
+                model_spec=self.options.model_spec,
+                artifacts_path=artifacts_path,
+                accelerator_options=accelerator_options,
+            )
+            self.engine.initialize()
+            self._classes = self.engine.get_label_mapping()
 
     def is_processable(self, doc: DoclingDocument, element: NodeItem) -> bool:
         """
@@ -174,7 +139,8 @@ class DocumentPictureClassifier(
                 yield element.item
             return
 
-        import torch
+        if self.engine is None:
+            raise RuntimeError("Picture classifier engine is not initialized.")
 
         images: List[Union[Image.Image, np.ndarray]] = []
         elements: List[PictureItem] = []
@@ -193,28 +159,18 @@ class DocumentPictureClassifier(
                 )
             images.append(raw_image)
 
-        inputs = self._processor(images=images, return_tensors="pt")
-        # move inputs to the same device as the model
-        inputs = {k: v.to(self._device) for k, v in inputs.items()}
+        engine_input_batch = [
+            ImageClassificationEngineInput(image=image) for image in images
+        ]
+        engine_output_batch = self.engine.predict_batch(engine_input_batch)
 
-        with torch.no_grad():
-            logits = self._model(**inputs).logits  # (batch_size, num_classes)
-            probs_batch = logits.softmax(dim=1)  # (batch_size, num_classes)
-            probs_batch = probs_batch.cpu().numpy().tolist()
-
-        predictions_batch = []
-        for probs_image in probs_batch:
-            preds = [(self._classes[i], prob) for i, prob in enumerate(probs_image)]
-            preds.sort(key=lambda t: t[1], reverse=True)
-            predictions_batch.append(preds)
-
-        for item, output in zip(elements, predictions_batch):
+        for item, output in zip(elements, engine_output_batch):
             predicted_classes = [
                 PictureClassificationClass(
-                    class_name=pred[0],
-                    confidence=pred[1],
+                    class_name=self._classes[label_id],
+                    confidence=score,
                 )
-                for pred in output
+                for label_id, score in zip(output.label_ids, output.scores)
             ]
 
             # FIXME: annotations is deprecated, remove once all consumers use meta.classification
