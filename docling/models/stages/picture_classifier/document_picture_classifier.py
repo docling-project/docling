@@ -28,6 +28,11 @@ from docling.models.inference_engines.image_classification import (
 )
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 
+__all__ = [
+    "DocumentPictureClassifier",
+    "DocumentPictureClassifierOptions",  # Re-exported for backward compatibility
+]
+
 
 class DocumentPictureClassifier(
     BaseItemAndImageEnrichmentModel, HuggingFaceModelDownloadMixin
