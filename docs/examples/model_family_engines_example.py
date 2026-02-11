@@ -89,14 +89,14 @@ def run_with_engine(engine_kind: str, input_doc_path: str):
 
     # Configure pipeline options
     pipeline_options = PdfPipelineOptions()
-    pipeline_options.do_ocr = True
+    pipeline_options.do_ocr = False
     pipeline_options.do_table_structure = True
     pipeline_options.do_picture_classification = True
     pipeline_options.generate_page_images = True
     pipeline_options.generate_picture_images = True
     pipeline_options.images_scale = 2.0
     pipeline_options.accelerator_options = AcceleratorOptions(
-        device=AcceleratorDevice.AUTO
+        device=AcceleratorDevice.CPU
     )
 
     # Create layout options with the specified engine
