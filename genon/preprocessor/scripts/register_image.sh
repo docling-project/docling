@@ -59,22 +59,50 @@ fi
 
 # ── 로컬 이미지 확인 ────────────────────────────────────────
 step "로컬 Docker 이미지 확인"
-if docker images | awk '{print $1":"$2}' | grep -qx "${FULL_IMAGE_NAME}"; then
+if docker image inspect "${FULL_IMAGE_NAME}" >/dev/null 2>&1; then
   ok "로컬 이미지 존재"
+  HAS_LOCAL_IMAGE="yes"
 else
-  fail "로컬에 ${FULL_IMAGE_NAME} 없음. 먼저 build/push 하세요."
-  exit 1
+  echo "⚠️ 로컬에 ${FULL_IMAGE_NAME} 없음."
+  HAS_LOCAL_IMAGE="no"
 fi
 
 # ── docker push (포그라운드 / 재시도) ───────────────────────
 step "docker push"
-PUSH_MAX_RETRY="${PUSH_MAX_RETRY:-3}"
-for i in $(seq 1 "${PUSH_MAX_RETRY}"); do
-  echo "push ${i}/${PUSH_MAX_RETRY}: ${FULL_IMAGE_NAME}"
-  if docker push "${FULL_IMAGE_NAME}"; then ok "docker push 성공"; break; fi
-  [[ $i -lt ${PUSH_MAX_RETRY} ]] || { fail "docker push 실패"; exit 1; }
-  echo "10초 대기 후 재시도..."; sleep 10
-done
+SKIP_PUSH="no"
+if [[ "${HAS_LOCAL_IMAGE}" != "yes" ]]; then
+  if [[ -n "${REGISTRY_API_URL:-}" ]]; then
+    step "레지스트리 존재 확인 (${REGISTRY_API_URL})"
+    if curl -fsS "${REGISTRY_API_URL}/v2/${IMAGE_NAME}/manifests/${IMAGE_TAG}" >/dev/null 2>&1; then
+      ok "레지스트리에 동일 태그 존재, push 스킵"
+      SKIP_PUSH="yes"
+    else
+      fail "로컬 이미지 없음 + 레지스트리에도 태그 없음. build/push 필요"
+      exit 1
+    fi
+  else
+    read -rp "로컬 이미지 없음. 레지스트리에 이미 푸쉬된 상태면 y 입력 (y/N): " _SKIP
+    if [[ "${_SKIP:-N}" =~ ^[Yy]$ ]]; then
+      ok "사용자 확인으로 push 스킵"
+      SKIP_PUSH="yes"
+    else
+      fail "로컬 이미지 없음. build/push 필요"
+      exit 1
+    fi
+  fi
+fi
+
+if [[ "${SKIP_PUSH}" != "yes" ]]; then
+  PUSH_MAX_RETRY="${PUSH_MAX_RETRY:-3}"
+  for i in $(seq 1 "${PUSH_MAX_RETRY}"); do
+    echo "push ${i}/${PUSH_MAX_RETRY}: ${FULL_IMAGE_NAME}"
+    if docker push "${FULL_IMAGE_NAME}"; then ok "docker push 성공"; break; fi
+    [[ $i -lt ${PUSH_MAX_RETRY} ]] || { fail "docker push 실패"; exit 1; }
+    echo "10초 대기 후 재시도..."; sleep 10
+  done
+else
+  echo "⏩ docker push 스킵"
+fi
 
 # (옵션) 레지스트리 API 확인
 if [[ -n "${REGISTRY_API_URL:-}" ]]; then
@@ -89,19 +117,20 @@ fi
 # ────────────────────────────────────────────────────────────
 # ⬇⬇⬇ 여기부터 DB 파트 *원하신 형태 그대로* (유저/패스/설정만 치환)
 # ────────────────────────────────────────────────────────────
+step "DB 등록 확인"
 echo "2. DB 등록 확인 중..."
 EXISTING_ID=$(
-  kubectl exec -it "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-    mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se \
+  kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
+    mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
     "SELECT id FROM system_docker_image_tb WHERE name='${IMAGE_NAME}' AND tag='${IMAGE_TAG}';" \
-    2>/dev/null | tr -d '\r\n' | grep -o '[0-9]*' || true
+    | tr -d '\r\n' | grep -o '[0-9]*' || true
 )
 
 if [ -z "${EXISTING_ID}" ]; then
   echo "새로운 이미지 등록 중..."
   TYPE_LIST_JSON='["IT0301"]'
-  kubectl exec -it "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-    mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -e "
+  kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
+    mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -e --show-warnings "
       INSERT INTO llmops.system_docker_image_tb
         (name, tag, description, type, status, is_active, reg_date, mod_date, reg_user_id, mod_user_id)
       VALUES
@@ -110,17 +139,17 @@ if [ -z "${EXISTING_ID}" ]; then
         (resource_id, resource_type, resource_group_id, is_active, reg_date, mod_date, reg_user_id, mod_user_id)
       VALUES
         (LAST_INSERT_ID(), 'DOCKER_IMAGE', 2, 1, NOW(), NOW(), 1, 1);
-    " 2>/dev/null
+    " || { fail "DB 등록 실패. 로그 확인 필요: ${LOG_FILE}"; exit 1; }
 
   IMAGE_ID=$(
-    kubectl exec -it "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
-      mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se \
+    kubectl exec -i "${MARIADB_POD}" -n "${K8S_NAMESPACE}" -- \
+      mysql -u "${MYSQL_USER}" -p"${MYSQL_PASS}" llmops -se --show-warnings \
       "SELECT id FROM system_docker_image_tb WHERE name='${IMAGE_NAME}' AND tag='${IMAGE_TAG}';" \
-      2>/dev/null | tr -d '\r\n' | grep -o '[0-9]*' || true
+      | tr -d '\r\n' | grep -o '[0-9]*' || true
   )
-  echo "✅ DB 등록 완료. 이미지 ID: ${IMAGE_ID}"
+  ok "DB 등록 완료. 이미지 ID: ${IMAGE_ID}"
 else
-  echo "✅ 이미 등록된 이미지입니다. ID: ${EXISTING_ID}"
+  ok "이미 등록된 이미지입니다. ID: ${EXISTING_ID}"
   IMAGE_ID="${EXISTING_ID}"
 fi
 # ────────────────────────────────────────────────────────────
@@ -131,12 +160,13 @@ fi
 step "Redis 캐시 초기화 여부"
 read -rp "Redis 캐시 FLUSHALL 할까요? (y/N): " REDIS_FLUSH
 if [[ "${REDIS_FLUSH:-N}" =~ ^[Yy]$ ]]; then
+  step "Redis FLUSHALL 실행"
   REDIS_POD="$(kubectl get pods -n "${K8S_NAMESPACE}" -l app=llmops-redis -o jsonpath='{.items[0].metadata.name}')"
   if [[ -n "${REDIS_POD}" ]]; then
     kubectl exec -n "${K8S_NAMESPACE}" "${REDIS_POD}" -- redis-cli FLUSHALL
     ok "Redis FLUSHALL 완료"
   else
-    echo "⚠️ Redis Pod를 찾지 못함(건너뜀)"
+    fail "Redis Pod를 찾지 못함(건너뜀)"
   fi
 else
   echo "⏩ Redis 초기화 건너뜀"
