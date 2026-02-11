@@ -20,6 +20,11 @@ DOCKER_REGISTRY="${DOCKER_REGISTRY:-localhost:5000}"
 IMAGE_NAME="${IMAGE_NAME:-doc-parser-preprocessor}"
 IMAGE_VERSION="${IMAGE_VERSION:-latest}"
 DOCKERFILE_PATH="${DOCKERFILE_PATH:-genon/preprocessor/docker/Dockerfile}"
+APP_UID="${APP_UID:-1000}"
+APP_GID="${APP_GID:-1000}"
+APP_UNAME="${APP_UNAME:-genos}"
+APP_GNAME="${APP_GNAME:-genos}"
+APP_NLTK_PACKAGES="${APP_NLTK_PACKAGES:-all}"
 
 # 최종 이미지 태그
 IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
@@ -27,11 +32,18 @@ IMAGE_TAG="${DOCKER_REGISTRY}/mnc/${IMAGE_NAME}:${IMAGE_VERSION}"
 echo "[INFO] ROOT_DIR        = ${ROOT_DIR}"
 echo "[INFO] DOCKERFILE_PATH = ${DOCKERFILE_PATH}"
 echo "[INFO] IMAGE_TAG       = ${IMAGE_TAG}"
+echo "[INFO] UID:GID         = ${APP_UID}:${APP_GID} (${APP_UNAME}:${APP_GNAME})"
+echo "[INFO] NLTK_PACKAGES  = ${APP_NLTK_PACKAGES}"
 
 # BuildKit plain 로그로 보기 + 루트(.)를 컨텍스트로 빌드
 DOCKER_BUILDKIT=1 docker build \
   -f "${ROOT_DIR}/${DOCKERFILE_PATH}" \
   -t "${IMAGE_TAG}" \
+  --build-arg UID="${APP_UID}" \
+  --build-arg GID="${APP_GID}" \
+  --build-arg UNAME="${APP_UNAME}" \
+  --build-arg GNAME="${APP_GNAME}" \
+  --build-arg NLTK_PACKAGES="${APP_NLTK_PACKAGES}" \
   "${ROOT_DIR}"
 
 echo "[INFO] Build done: ${IMAGE_TAG}"
