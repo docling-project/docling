@@ -1,6 +1,6 @@
 from io import BytesIO
 from pathlib import Path, PurePath
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 from bs4 import BeautifulSoup
@@ -250,7 +250,7 @@ def test_e2e_html_conversions(html_paths):
         assert verify_document(doc, str(gt_path) + ".json", GENERATE)
 
 
-@patch("docling.backend.html_backend.requests.get")
+@patch("docling.backend.html_backend.request_with_retry")
 @patch("docling.backend.html_backend.open", new_callable=mock_open)
 def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     source = "tests/data/html/example_01.html"
@@ -280,9 +280,11 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     assert num_pic == 1, "No embedded picture was found in the converted file"
 
     # fetching image remotely
-    mock_resp = Mock()
+    mock_resp = MagicMock()
     mock_resp.status_code = 200
     mock_resp.content = img_bytes
+    mock_resp.__enter__.return_value = mock_resp
+    mock_resp.__exit__.return_value = False
     mock_remote.return_value = mock_resp
     source_location = "https://example.com/example_01.html"
 
@@ -297,7 +299,7 @@ def test_e2e_html_conversion_with_images(mock_local, mock_remote):
     )
     res_remote = converter.convert(source)
     mock_remote.assert_called_once_with(
-        "https://example.com/example_image_01.png", stream=True
+        "GET", "https://example.com/example_image_01.png", stream=True
     )
     assert res_remote.document
     num_pic = 0
