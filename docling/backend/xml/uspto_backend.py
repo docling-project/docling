@@ -147,6 +147,10 @@ class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
                 f"Cannot convert doc (hash={self.document_hash}, "
                 f"name={self.file.name}) because the backend failed to init."
             )
+    
+    @override
+    def extract_metadata(self) -> Dict[str, Any]:
+        return {}
 
 
 class PatentUspto(ABC):
