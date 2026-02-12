@@ -1,0 +1,292 @@
+\begin{thebibliography}{26}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\href}[2]{#2}
+\providecommand{\path}[1]{#1}
+\providecommand{\DOIprefix}{doi:}
+\providecommand{\ArXivprefix}{arXiv:}
+\providecommand{\URLprefix}{URL: }
+\providecommand{\Pubmedprefix}{pmid:}
+\providecommand{\doi}[1]{\href{http://dx.doi.org/#1}{\path{#1}}}
+\providecommand{\Pubmed}[1]{\href{pmid:#1}{\path{#1}}}
+\providecommand{\bibinfo}[2]{#2}
+\ifx\xfnm\relax \def\xfnm[#1]{\unskip,\space#1}\fi
+%Type = Article
+\bibitem[{Aaij et~al.(2017a)}]{LHCb:2017uwr}
+\bibinfo{author}{Aaij, R.}, et~al. (\bibinfo{collaboration}{LHCb}),
+  \bibinfo{year}{2017}a.
+\newblock \bibinfo{title}{{Observation of five new narrow $\Omega_c^0$ states
+  decaying to $\Xi_c^+ K^-$}}.
+\newblock \bibinfo{journal}{Phys. Rev. Lett.} \bibinfo{volume}{118},
+  \bibinfo{pages}{182001}.
+\newblock \DOIprefix\doi{10.1103/PhysRevLett.118.182001},
+  \href{http://arxiv.org/abs/1703.04639}{\tt arXiv:1703.04639}.
+%Type = Article
+\bibitem[{Aaij et~al.(2017b)}]{LHCb:2017jym}
+\bibinfo{author}{Aaij, R.}, et~al. (\bibinfo{collaboration}{LHCb}),
+  \bibinfo{year}{2017}b.
+\newblock \bibinfo{title}{{Study of the $D^0 p$ amplitude in $\Lambda_b^0\to
+  D^0 p \pi^-$ decays}}.
+\newblock \bibinfo{journal}{JHEP} \bibinfo{volume}{05}, \bibinfo{pages}{030}.
+\newblock \DOIprefix\doi{10.1007/JHEP05(2017)030},
+  \href{http://arxiv.org/abs/1701.07873}{\tt arXiv:1701.07873}.
+%Type = Article
+\bibitem[{Allton et~al.(2005)Allton, Doring, Ejiri, Hands, Kaczmarek, Karsch,
+  Laermann and Redlich}]{Allton:2005gk}
+\bibinfo{author}{Allton, C.R.}, \bibinfo{author}{Doring, M.},
+  \bibinfo{author}{Ejiri, S.}, \bibinfo{author}{Hands, S.J.},
+  \bibinfo{author}{Kaczmarek, O.}, \bibinfo{author}{Karsch, F.},
+  \bibinfo{author}{Laermann, E.}, \bibinfo{author}{Redlich, K.},
+  \bibinfo{year}{2005}.
+\newblock \bibinfo{title}{{Thermodynamics of two flavor QCD to sixth order in
+  quark chemical potential}} \bibinfo{volume}{71}, \bibinfo{pages}{054508}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.71.054508},
+  \href{http://arxiv.org/abs/hep-lat/0501030}{\tt arXiv:hep-lat/0501030}.
+%Type = Article
+\bibitem[{Andronic et~al.(2019)Andronic, Braun-Munzinger, K\"ohler and
+  Stachel}]{ANDRONIC2019759}
+\bibinfo{author}{Andronic, A.}, \bibinfo{author}{Braun-Munzinger, P.},
+  \bibinfo{author}{K\"ohler, M.}, \bibinfo{author}{Stachel, J.},
+  \bibinfo{year}{2019}.
+\newblock \bibinfo{title}{Testing charm quark thermalisation within the
+  statistical hadronisation model}.
+\newblock \bibinfo{journal}{Nuclear Physics A} \bibinfo{volume}{982},
+  \bibinfo{pages}{759--762}.
+\newblock \URLprefix
+  \url{https://www.sciencedirect.com/science/article/pii/S0375947418301921},
+  \DOIprefix\doi{https://doi.org/10.1016/j.nuclphysa.2018.09.004}.
+  \bibinfo{note}{the 27th International Conference on Ultrarelativistic
+  Nucleus-Nucleus Collisions: Quark Matter 2018}.
+%Type = Article
+\bibitem[{Bazavov et~al.(2024)Bazavov, Bollweg, Kaczmarek, Karsch, Mukherjee,
+  Petreczky, Schmidt and Sharma}]{Bazavov:2023xzm}
+\bibinfo{author}{Bazavov, A.}, \bibinfo{author}{Bollweg, D.},
+  \bibinfo{author}{Kaczmarek, O.}, \bibinfo{author}{Karsch, F.},
+  \bibinfo{author}{Mukherjee, S.}, \bibinfo{author}{Petreczky, P.},
+  \bibinfo{author}{Schmidt, C.}, \bibinfo{author}{Sharma, S.},
+  \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{{Charm degrees of freedom in hot matter from lattice
+  QCD}}.
+\newblock \bibinfo{journal}{Phys. Lett. B} \bibinfo{volume}{850},
+  \bibinfo{pages}{138520}.
+\newblock \DOIprefix\doi{10.1016/j.physletb.2024.138520},
+  \href{http://arxiv.org/abs/2312.12857}{\tt arXiv:2312.12857}.
+%Type = Article
+\bibitem[{Bazavov et~al.(2014)Bazavov, Ding, Hegde, Kaczmarek, Karsch,
+  Laermann, Maezawa, Mukherjee, Ohno, Petreczky, Schmidt, Sharma, Soeldner and
+  Wagner}]{BAZAVOV2014210}
+\bibinfo{author}{Bazavov, A.}, \bibinfo{author}{Ding, H.T.},
+  \bibinfo{author}{Hegde, P.}, \bibinfo{author}{Kaczmarek, O.},
+  \bibinfo{author}{Karsch, F.}, \bibinfo{author}{Laermann, E.},
+  \bibinfo{author}{Maezawa, Y.}, \bibinfo{author}{Mukherjee, S.},
+  \bibinfo{author}{Ohno, H.}, \bibinfo{author}{Petreczky, P.},
+  \bibinfo{author}{Schmidt, C.}, \bibinfo{author}{Sharma, S.},
+  \bibinfo{author}{Soeldner, W.}, \bibinfo{author}{Wagner, M.},
+  \bibinfo{year}{2014}.
+\newblock \bibinfo{title}{The melting and abundance of open charm hadrons}.
+\newblock \bibinfo{journal}{Physics Letters B} \bibinfo{volume}{737},
+  \bibinfo{pages}{210--215}.
+\newblock \URLprefix
+  \url{https://www.sciencedirect.com/science/article/pii/S0370269314006017},
+  \DOIprefix\doi{https://doi.org/10.1016/j.physletb.2014.08.034}.
+%Type = Article
+\bibitem[{Bazavov et~al.(2015)Bazavov, Karsch, Maezawa, Mukherjee and
+  Petreczky}]{Bazavov:2014cta}
+\bibinfo{author}{Bazavov, A.}, \bibinfo{author}{Karsch, F.},
+  \bibinfo{author}{Maezawa, Y.}, \bibinfo{author}{Mukherjee, S.},
+  \bibinfo{author}{Petreczky, P.}, \bibinfo{year}{2015}.
+\newblock \bibinfo{title}{{In-medium modifications of open and hidden
+  strange-charm mesons from spatial correlation functions}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{91},
+  \bibinfo{pages}{054503}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.91.054503},
+  \href{http://arxiv.org/abs/1411.3018}{\tt arXiv:1411.3018}.
+%Type = Article
+\bibitem[{Bazavov et~al.(2010)}]{MILC:2010pul}
+\bibinfo{author}{Bazavov, A.}, et~al. (\bibinfo{collaboration}{MILC}),
+  \bibinfo{year}{2010}.
+\newblock \bibinfo{title}{{Scaling studies of QCD with the dynamical HISQ
+  action}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{82},
+  \bibinfo{pages}{074501}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.82.074501},
+  \href{http://arxiv.org/abs/1004.0342}{\tt arXiv:1004.0342}.
+%Type = Article
+\bibitem[{Bazavov et~al.(2019)}]{HotQCD:2018pds}
+\bibinfo{author}{Bazavov, A.}, et~al. (\bibinfo{collaboration}{HotQCD}),
+  \bibinfo{year}{2019}.
+\newblock \bibinfo{title}{{Chiral crossover in QCD at zero and non-zero
+  chemical potentials}}.
+\newblock \bibinfo{journal}{Phys. Lett. B} \bibinfo{volume}{795},
+  \bibinfo{pages}{15--21}.
+\newblock \DOIprefix\doi{10.1016/j.physletb.2019.05.013},
+  \href{http://arxiv.org/abs/1812.08235}{\tt arXiv:1812.08235}.
+%Type = Article
+\bibitem[{Bollweg et~al.(2021)Bollweg, Goswami, Kaczmarek, Karsch, Mukherjee,
+  Petreczky, Schmidt and Scior}]{Bollweg:2021vqf}
+\bibinfo{author}{Bollweg, D.}, \bibinfo{author}{Goswami, J.},
+  \bibinfo{author}{Kaczmarek, O.}, \bibinfo{author}{Karsch, F.},
+  \bibinfo{author}{Mukherjee, S.}, \bibinfo{author}{Petreczky, P.},
+  \bibinfo{author}{Schmidt, C.}, \bibinfo{author}{Scior, P.}
+  (\bibinfo{collaboration}{HotQCD}), \bibinfo{year}{2021}.
+\newblock \bibinfo{title}{{Second order cumulants of conserved charge
+  fluctuations revisited: Vanishing chemical potentials}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{104}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.104.074512},
+  \href{http://arxiv.org/abs/2107.10011}{\tt arXiv:2107.10011}.
+%Type = Article
+\bibitem[{Borsanyi et~al.()Borsanyi, Fodor, Guenther, Kara, Katz, Parotto,
+  Pasztor, Ratti and Szabo}]{Borsanyi:2020fev}
+\bibinfo{author}{Borsanyi, S.}, \bibinfo{author}{Fodor, Z.},
+  \bibinfo{author}{Guenther, J.N.}, \bibinfo{author}{Kara, R.},
+  \bibinfo{author}{Katz, S.D.}, \bibinfo{author}{Parotto, P.},
+  \bibinfo{author}{Pasztor, A.}, \bibinfo{author}{Ratti, C.},
+  \bibinfo{author}{Szabo, K.K.}, .
+\newblock \bibinfo{title}{{QCD Crossover at Finite Chemical Potential from
+  Lattice Simulations}} \bibinfo{volume}{125}, \bibinfo{pages}{052001}.
+\newblock \DOIprefix\doi{10.1103/PhysRevLett.125.052001},
+  \href{http://arxiv.org/abs/2002.02821}{\tt arXiv:2002.02821}.
+%Type = Article
+\bibitem[{Braun-Munzinger et~al.(2024)Braun-Munzinger, Redlich, Sharma and
+  Stachel}]{Braun-Munzinger:2024ybd}
+\bibinfo{author}{Braun-Munzinger, P.}, \bibinfo{author}{Redlich, K.},
+  \bibinfo{author}{Sharma, N.}, \bibinfo{author}{Stachel, J.},
+  \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{{Emergence of New Systematics for Open Charm
+  Production in High Energy Collisions}}
+  \href{http://arxiv.org/abs/2408.07496}{\tt arXiv:2408.07496}.
+%Type = Article
+\bibitem[{Chen and Liu(2017)}]{Chen:2017gnu}
+\bibinfo{author}{Chen, B.}, \bibinfo{author}{Liu, X.}, \bibinfo{year}{2017}.
+\newblock \bibinfo{title}{{New $\Omega_c^0$ baryons discovered by LHCb as the
+  members of $1P$ and $2S$ states}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{96},
+  \bibinfo{pages}{094015}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.96.094015},
+  \href{http://arxiv.org/abs/1704.02583}{\tt arXiv:1704.02583}.
+%Type = Article
+\bibitem[{Chen et~al.(2023)Chen, Chen, Liu, Liu and Zhu}]{Chen:2022asf}
+\bibinfo{author}{Chen, H.X.}, \bibinfo{author}{Chen, W.}, \bibinfo{author}{Liu,
+  X.}, \bibinfo{author}{Liu, Y.R.}, \bibinfo{author}{Zhu, S.L.},
+  \bibinfo{year}{2023}.
+\newblock \bibinfo{title}{{An updated review of the new hadron states}}.
+\newblock \bibinfo{journal}{Rept. Prog. Phys.} \bibinfo{volume}{86},
+  \bibinfo{pages}{026201}.
+\newblock \DOIprefix\doi{10.1088/1361-6633/aca3b6},
+  \href{http://arxiv.org/abs/2204.02649}{\tt arXiv:2204.02649}.
+%Type = Article
+\bibitem[{Clarke et~al.(2024)Clarke, Altenkort, Goswami and
+  Sandmeyer}]{Clarke:2023sfy}
+\bibinfo{author}{Clarke, D.A.}, \bibinfo{author}{Altenkort, L.},
+  \bibinfo{author}{Goswami, J.}, \bibinfo{author}{Sandmeyer, H.},
+  \bibinfo{year}{2024}.
+\newblock \bibinfo{title}{{Streamlined data analysis in Python}}.
+\newblock \bibinfo{journal}{PoS} \bibinfo{volume}{LATTICE2023},
+  \bibinfo{pages}{136}.
+\newblock \DOIprefix\doi{10.22323/1.453.0136},
+  \href{http://arxiv.org/abs/2308.06652}{\tt arXiv:2308.06652}.
+%Type = Article
+\bibitem[{Ebert et~al.(2010)Ebert, Faustov and Galkin}]{Ebert:2009ua}
+\bibinfo{author}{Ebert, D.}, \bibinfo{author}{Faustov, R.N.},
+  \bibinfo{author}{Galkin, V.O.}, \bibinfo{year}{2010}.
+\newblock \bibinfo{title}{{Heavy-light meson spectroscopy and Regge
+  trajectories in the relativistic quark model}}.
+\newblock \bibinfo{journal}{Eur. Phys. J. C} \bibinfo{volume}{66},
+  \bibinfo{pages}{197--206}.
+\newblock \DOIprefix\doi{10.1140/epjc/s10052-010-1233-6},
+  \href{http://arxiv.org/abs/0910.5612}{\tt arXiv:0910.5612}.
+%Type = Article
+\bibitem[{Ebert et~al.(2011)Ebert, Faustov and Galkin}]{Ebert:2011kk}
+\bibinfo{author}{Ebert, D.}, \bibinfo{author}{Faustov, R.N.},
+  \bibinfo{author}{Galkin, V.O.}, \bibinfo{year}{2011}.
+\newblock \bibinfo{title}{{Spectroscopy and Regge trajectories of heavy baryons
+  in the relativistic quark-diquark picture}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{84},
+  \bibinfo{pages}{014025}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.84.014025},
+  \href{http://arxiv.org/abs/1105.0583}{\tt arXiv:1105.0583}.
+%Type = Article
+\bibitem[{Follana et~al.(2007)Follana, Mason, Davies, Hornbostel, Lepage,
+  Shigemitsu, Trottier and Wong}]{Follana:2006rc}
+\bibinfo{author}{Follana, E.}, \bibinfo{author}{Mason, Q.},
+  \bibinfo{author}{Davies, C.}, \bibinfo{author}{Hornbostel, K.},
+  \bibinfo{author}{Lepage, G.}, \bibinfo{author}{Shigemitsu, J.},
+  \bibinfo{author}{Trottier, H.}, \bibinfo{author}{Wong, K.}
+  (\bibinfo{collaboration}{HPQCD, UKQCD}), \bibinfo{year}{2007}.
+\newblock \bibinfo{title}{{Highly improved staggered quarks on the lattice,
+  with applications to charm physics}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{75},
+  \bibinfo{pages}{054502}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.75.054502},
+  \href{http://arxiv.org/abs/hep-lat/0610092}{\tt arXiv:hep-lat/0610092}.
+%Type = Article
+\bibitem[{Kato et~al.(2016)}]{Belle:2016tai}
+\bibinfo{author}{Kato, Y.}, et~al. (\bibinfo{collaboration}{Belle}),
+  \bibinfo{year}{2016}.
+\newblock \bibinfo{title}{{Studies of charmed strange baryons in the $\Lambda$D
+  final state at Belle}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{94},
+  \bibinfo{pages}{032002}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.94.032002},
+  \href{http://arxiv.org/abs/1605.09103}{\tt arXiv:1605.09103}.
+%Type = Article
+\bibitem[{Mazur et~al.(2023)}]{HotQCD:2023ghu}
+\bibinfo{author}{Mazur, L.}, et~al. (\bibinfo{collaboration}{HotQCD}),
+  \bibinfo{year}{2023}.
+\newblock \bibinfo{title}{{SIMULATeQCD: A simple multi-GPU lattice code for QCD
+  calculations}} \href{http://arxiv.org/abs/2306.01098}{\tt arXiv:2306.01098}.
+%Type = Article
+\bibitem[{Mitra et~al.(2022)Mitra, Hegde and Schmidt}]{Mitra:2022vtf}
+\bibinfo{author}{Mitra, S.}, \bibinfo{author}{Hegde, P.},
+  \bibinfo{author}{Schmidt, C.}, \bibinfo{year}{2022}.
+\newblock \bibinfo{title}{{New way to resum the lattice QCD Taylor series
+  equation of state at finite chemical potential}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{106},
+  \bibinfo{pages}{034504}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.106.034504},
+  \href{http://arxiv.org/abs/2205.08517}{\tt arXiv:2205.08517}.
+%Type = Article
+\bibitem[{Mukherjee et~al.(2016)Mukherjee, Petreczky and
+  Sharma}]{Mukherjee:2015mxc}
+\bibinfo{author}{Mukherjee, S.}, \bibinfo{author}{Petreczky, P.},
+  \bibinfo{author}{Sharma, S.}, \bibinfo{year}{2016}.
+\newblock \bibinfo{title}{{Charm degrees of freedom in the quark gluon
+  plasma}}.
+\newblock \bibinfo{journal}{Phys. Rev. D} \bibinfo{volume}{93},
+  \bibinfo{pages}{014502}.
+\newblock \DOIprefix\doi{10.1103/PhysRevD.93.014502},
+  \href{http://arxiv.org/abs/1509.08887}{\tt arXiv:1509.08887}.
+%Type = Article
+\bibitem[{Sharma(2023)}]{Sharma:2022ztl}
+\bibinfo{author}{Sharma, S.}, \bibinfo{year}{2023}.
+\newblock \bibinfo{title}{{Charm fluctuations in (2+1)-flavor QCD at high
+  temperature}}.
+\newblock \bibinfo{journal}{PoS} \bibinfo{volume}{LATTICE2022},
+  \bibinfo{pages}{191}.
+\newblock \DOIprefix\doi{10.22323/1.430.0191},
+  \href{http://arxiv.org/abs/2212.11148}{\tt arXiv:2212.11148}.
+%Type = Article
+\bibitem[{Sharma(2024a)}]{Sharma:2024ucs}
+\bibinfo{author}{Sharma, S.} (\bibinfo{collaboration}{HotQCD}),
+  \bibinfo{year}{2024}a.
+\newblock \bibinfo{title}{{Charm Fluctuations and Deconfinement}}.
+\newblock \bibinfo{journal}{PoS} \bibinfo{volume}{LATTICE2023},
+  \bibinfo{pages}{200}.
+\newblock \DOIprefix\doi{10.22323/1.453.0200},
+  \href{http://arxiv.org/abs/2401.01194}{\tt arXiv:2401.01194}.
+%Type = Inproceedings
+\bibitem[{Sharma(2024b)}]{Sharma:2024edf}
+\bibinfo{author}{Sharma, S.}, \bibinfo{year}{2024}b.
+\newblock \bibinfo{title}{{Persistence of charmed hadrons in QGP from lattice
+  QCD}}, in: \bibinfo{booktitle}{{23rd Zimanyi School Winter Workshop}}.
+\newblock \href{http://arxiv.org/abs/2410.04222}{\tt arXiv:2410.04222}.
+%Type = Article
+\bibitem[{Workman et~al.(2022)}]{ParticleDataGroup:2022pth}
+\bibinfo{author}{Workman, R.L.}, et~al. (\bibinfo{collaboration}{Particle Data
+  Group}), \bibinfo{year}{2022}.
+\newblock \bibinfo{title}{{Review of Particle Physics}}.
+\newblock \bibinfo{journal}{PTEP} \bibinfo{volume}{2022},
+  \bibinfo{pages}{083C01}.
+\newblock \DOIprefix\doi{10.1093/ptep/ptac097}.
+
+\end{thebibliography}

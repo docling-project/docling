@@ -1,3 +1,35 @@
+## [v2.73.0](https://github.com/docling-project/docling/releases/tag/v2.73.0) - 2026-02-11
+
+### Feature
+
+* Inference engines abstraction for object detection model family with HF Transformers and ONNX runtime ([#2959](https://github.com/docling-project/docling/issues/2959)) ([`14e474c`](https://github.com/docling-project/docling/commit/14e474c95555f04e5c4ac55351ad802d372858fc))
+* Added support for parsing LaTeX (.tex) documents ([#2890](https://github.com/docling-project/docling/issues/2890)) ([`e6ccb8b`](https://github.com/docling-project/docling/commit/e6ccb8b2c1d99fa6e2660d7c4bb866af7960bc2d))
+* Introduce pluggable VLM runtime system with preset-based configuration ([#2919](https://github.com/docling-project/docling/issues/2919)) ([`d4c8713`](https://github.com/docling-project/docling/commit/d4c87133f3f4dcfc8c7619d533bac31cc297350d))
+
+### Fix
+
+* Restore expected behavior for artifacts_path and accelerator_options in VLM engines ([#2961](https://github.com/docling-project/docling/issues/2961)) ([`9721321`](https://github.com/docling-project/docling/commit/9721321c4604da9334e84f7942b41222b580ae96))
+* Allow offline chart extraction model artifacts ([#2957](https://github.com/docling-project/docling/issues/2957)) ([`ae4fdbb`](https://github.com/docling-project/docling/commit/ae4fdbbb09fd377bb271e9b2efe541873eeb2990))
+
+### Documentation
+
+* Add LaTeX and WebVTT as supported types ([#2974](https://github.com/docling-project/docling/issues/2974)) ([`704ef0a`](https://github.com/docling-project/docling/commit/704ef0afbaca782d35454b66b26e3cb931c79653))
+
+## [v2.72.0](https://github.com/docling-project/docling/releases/tag/v2.72.0) - 2026-02-03
+
+### Feature
+
+* Add chart extraction models ([#2848](https://github.com/docling-project/docling/issues/2848)) ([`fe45c71`](https://github.com/docling-project/docling/commit/fe45c71fe7ad137088e3719dc99e337860120d33))
+
+### Fix
+
+* **backend:** Improve Excel table bounds detection and flatten merged cells ([#2778](https://github.com/docling-project/docling/issues/2778)) ([`3110c43`](https://github.com/docling-project/docling/commit/3110c439da48fe215379492a29a310e64e9d67e7))
+* **pptx:** Handle picture shapes with external image references ([#2914](https://github.com/docling-project/docling/issues/2914)) ([`5e452a2`](https://github.com/docling-project/docling/commit/5e452a2e8fcb5ea43a8a7666320998604279c152))
+
+### Documentation
+
+* Add granite vision for charts ([#2946](https://github.com/docling-project/docling/issues/2946)) ([`a5ad8f2`](https://github.com/docling-project/docling/commit/a5ad8f24ff0fe9bcb0b915a26b4132b6dbb65f93))
+
 ## [v2.71.0](https://github.com/docling-project/docling/releases/tag/v2.71.0) - 2026-01-30
 
 ### Feature
