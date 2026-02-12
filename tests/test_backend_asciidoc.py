@@ -39,14 +39,16 @@ def test_parse_picture():
     assert "height" not in res
     assert res.get("uri", "") == "renamed-bookmark.png"
 
-
     line = "image::images/screenshot.png[A screenshot showing a dialog box, containing text fields, buttons, and validation errors, width=604, height=422]"
     res = AsciiDocBackend._parse_picture(line)
     assert res
     assert res.get("width", 0) == "604"
     assert res.get("height", 0) == "422"
     assert res.get("uri", "") == "images/screenshot.png"
-    assert res.get("alt", "") == "A screenshot showing a dialog box, containing text fields, buttons, and validation errors"
+    assert (
+        res.get("alt", "")
+        == "A screenshot showing a dialog box, containing text fields, buttons, and validation errors"
+    )
 
 
 def test_asciidocs_examples():
