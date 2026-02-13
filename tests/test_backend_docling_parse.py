@@ -1,13 +1,12 @@
 from pathlib import Path
 
 import pytest
-from docling_core.types.doc import BoundingBox
 
 from docling.backend.docling_parse_backend import (
     DoclingParseDocumentBackend,
     DoclingParsePageBackend,
 )
-from docling.datamodel.base_models import InputFormat
+from docling.datamodel.base_models import BoundingBox, InputFormat
 from docling.datamodel.document import InputDocument
 
 
@@ -47,6 +46,12 @@ def test_text_cell_counts():
                 )
             last_cell_count = len(cells)
 
+            # Clean up page backend after each iteration
+            page_backend.unload()
+
+    # Explicitly clean up document backend to prevent race conditions in CI
+    doc_backend.unload()
+
 
 def test_get_text_from_rect(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
@@ -60,6 +65,10 @@ def test_get_text_from_rect(test_doc_path):
 
     assert textpiece.strip() == ref
 
+    # Explicitly clean up resources
+    page_backend.unload()
+    doc_backend.unload()
+
 
 def test_crop_page_image(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
@@ -71,7 +80,14 @@ def test_crop_page_image(test_doc_path):
     )
     # im.show()
 
+    # Explicitly clean up resources
+    page_backend.unload()
+    doc_backend.unload()
+
 
 def test_num_pages(test_doc_path):
     doc_backend = _get_backend(test_doc_path)
     doc_backend.page_count() == 9
+
+    # Explicitly clean up resources to prevent race conditions in CI
+    doc_backend.unload()
