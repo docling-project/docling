@@ -97,10 +97,9 @@ def test_failed_pages_added_to_document_1page(skipped_1page_path):
     result = converter.convert(skipped_1page_path, raises_on_error=False)
 
     # Document should have partial success due to failed page(s)
-    assert result.status in [
-        ConversionStatus.SUCCESS,
-        ConversionStatus.PARTIAL_SUCCESS,
-    ], f"Unexpected status: {result.status}"
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+        f"Unexpected status: {result.status}"
+    )
 
     # Get expected page count from input
     expected_page_count = result.input.page_count
@@ -141,10 +140,9 @@ def test_failed_pages_added_to_document_2pages(skipped_2pages_path):
     result = converter.convert(skipped_2pages_path, raises_on_error=False)
 
     # Document should have partial success due to failed page(s)
-    assert result.status in [
-        ConversionStatus.SUCCESS,
-        ConversionStatus.PARTIAL_SUCCESS,
-    ], f"Unexpected status: {result.status}"
+    assert result.status == ConversionStatus.PARTIAL_SUCCESS, (
+        f"Unexpected status: {result.status}"
+    )
 
     # Get expected page count from input
     expected_page_count = result.input.page_count
