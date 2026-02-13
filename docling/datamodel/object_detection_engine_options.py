@@ -6,6 +6,7 @@ from typing import List, Literal
 
 from pydantic import Field
 
+from docling.datamodel.settings import default_compile_model
 from docling.models.inference_engines.object_detection.base import (
     BaseObjectDetectionEngineOptions,
     ObjectDetectionEngineType,
@@ -44,4 +45,9 @@ class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions)
     torch_dtype: str | None = Field(
         default=None,
         description="PyTorch dtype for model inference (e.g., 'float32', 'float16', 'bfloat16')",
+    )
+
+    compile_model: bool = Field(
+        default_factory=default_compile_model,
+        description="Whether to compile the model with torch.compile() for better performance.",
     )
