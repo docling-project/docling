@@ -55,7 +55,9 @@ class TimeRecorder:
     def __enter__(self):
         if settings.debug.profile_pipeline_timings:
             self.start = time.monotonic()
-            self.conv_res.timings[self.key].start_timestamps.append(datetime.now(timezone.utc))
+            self.conv_res.timings[self.key].start_timestamps.append(
+                datetime.now(timezone.utc)
+            )
         return self
 
     def __exit__(self, *args):
