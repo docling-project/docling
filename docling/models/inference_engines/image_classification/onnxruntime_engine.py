@@ -186,35 +186,7 @@ class OnnxRuntimeImageClassificationEngine(HfImageClassificationEngineBase):
             )
 
         probs_batch = self._softmax(logits_batch)
-
-        batch_outputs: List[ImageClassificationEngineOutput] = []
-        for idx, input_item in enumerate(input_batch):
-            probs = probs_batch[idx]
-
-            # Use argpartition for efficiency when top_k is specified
-            if self.options.top_k is not None:
-                k = min(self.options.top_k, len(probs))
-                # argpartition finds top k elements (unsorted), then we sort just those
-                top_k_indices = np.argpartition(-probs, k - 1)[:k]
-                top_k_indices_sorted = top_k_indices[np.argsort(-probs[top_k_indices])]
-                labels = top_k_indices_sorted
-                scores = probs[labels]
-            else:
-                labels = np.argsort(-probs)
-                scores = probs[labels]
-
-            batch_outputs.append(
-                self._build_output(
-                    input_item=input_item,
-                    labels=labels,
-                    scores=scores,
-                )
-            )
-
-        return batch_outputs
-
-    @staticmethod
-    def _softmax(logits: np.ndarray) -> np.ndarray:
-        shifted = logits - np.max(logits, axis=1, keepdims=True)
-        exp_values = np.exp(shifted)
-        return exp_values / np.sum(exp_values, axis=1, keepdims=True)
+        return self._build_batch_outputs_from_probabilities(
+            input_batch=input_batch,
+            probs_batch=probs_batch,
+        )

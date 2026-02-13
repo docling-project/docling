@@ -460,6 +460,7 @@ class StandardPdfPipeline(ConvertPipeline):
             options=self.pipeline_options.layout_options,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins

@@ -26,6 +26,7 @@ def create_object_detection_engine(
     *,
     options: BaseObjectDetectionEngineOptions,
     model_spec: Optional[ObjectDetectionModelSpec] = None,
+    enable_remote_services: bool = False,
     accelerator_options: AcceleratorOptions,
     artifacts_path: Optional[Union[Path, str]] = None,
 ) -> BaseObjectDetectionEngine:
@@ -34,6 +35,7 @@ def create_object_detection_engine(
     Args:
         options: Engine-specific options
         model_spec: Model specification used to derive engine configuration
+        enable_remote_services: Whether external remote inference calls are allowed
         accelerator_options: Hardware accelerator configuration
         artifacts_path: Optional path to local model artifacts root
 
@@ -78,6 +80,27 @@ def create_object_detection_engine(
             )
 
         return TransformersObjectDetectionEngine(
+            options=options,
+            model_config=model_config,
+            accelerator_options=accelerator_options,
+            artifacts_path=artifacts_path,
+        )
+
+    elif options.engine_type == ObjectDetectionEngineType.API_KSERVE_V2:
+        from docling.datamodel.object_detection_engine_options import (
+            ApiKserveV2ObjectDetectionEngineOptions,
+        )
+        from docling.models.inference_engines.object_detection.api_kserve_v2_engine import (
+            ApiKserveV2ObjectDetectionEngine,
+        )
+
+        if not isinstance(options, ApiKserveV2ObjectDetectionEngineOptions):
+            raise ValueError(
+                f"Expected ApiKserveV2ObjectDetectionEngineOptions, got {type(options)}"
+            )
+
+        return ApiKserveV2ObjectDetectionEngine(
+            enable_remote_services=enable_remote_services,
             options=options,
             model_config=model_config,
             accelerator_options=accelerator_options,

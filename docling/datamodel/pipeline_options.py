@@ -977,7 +977,7 @@ class ConvertPipelineOptions(PipelineOptions):
         Field(
             description=(
                 "Configuration for picture classification model/runtime. "
-                "Supports selecting transformers or onnxruntime inference engines."
+                "Supports selecting transformers, onnxruntime, or remote api_kserve_v2 inference engines."
             )
         ),
     ] = _default_picture_classification_options

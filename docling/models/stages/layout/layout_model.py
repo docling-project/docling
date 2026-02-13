@@ -51,9 +51,11 @@ class LayoutModel(BaseLayoutModel):
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
         options: LayoutOptions,
+        enable_remote_services: bool = False,
     ):
         from docling_ibm_models.layoutmodel.layout_predictor import LayoutPredictor
 
+        _ = enable_remote_services
         self.options = options
 
         device = decide_device(accelerator_options.device)

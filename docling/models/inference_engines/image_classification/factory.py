@@ -23,6 +23,7 @@ def create_image_classification_engine(
     *,
     options: BaseImageClassificationEngineOptions,
     model_spec: Optional[ImageClassificationModelSpec] = None,
+    enable_remote_services: bool = False,
     accelerator_options: AcceleratorOptions,
     artifacts_path: Optional[Union[Path, str]] = None,
 ) -> BaseImageClassificationEngine:
@@ -67,6 +68,28 @@ def create_image_classification_engine(
             )
 
         return TransformersImageClassificationEngine(
+            options=options,
+            model_config=model_config,
+            artifacts_path=artifacts_path,
+            accelerator_options=accelerator_options,
+        )
+
+    if options.engine_type == ImageClassificationEngineType.API_KSERVE_V2:
+        from docling.datamodel.image_classification_engine_options import (
+            ApiKserveV2ImageClassificationEngineOptions,
+        )
+        from docling.models.inference_engines.image_classification.api_kserve_v2_engine import (
+            ApiKserveV2ImageClassificationEngine,
+        )
+
+        if not isinstance(options, ApiKserveV2ImageClassificationEngineOptions):
+            raise ValueError(
+                "Expected ApiKserveV2ImageClassificationEngineOptions, "
+                f"got {type(options)}"
+            )
+
+        return ApiKserveV2ImageClassificationEngine(
+            enable_remote_services=enable_remote_services,
             options=options,
             model_config=model_config,
             artifacts_path=artifacts_path,

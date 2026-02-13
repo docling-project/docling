@@ -21,6 +21,12 @@ class ObjectDetectionEngineType(str, Enum):
 
     ONNXRUNTIME = "onnxruntime"
     TRANSFORMERS = "transformers"
+    API_KSERVE_V2 = "api_kserve_v2"
+
+    @classmethod
+    def is_remote_variant(cls, engine_type: ObjectDetectionEngineType) -> bool:
+        """Check if an engine type is a remote API variant."""
+        return engine_type in {cls.API_KSERVE_V2}
 
 
 class BaseObjectDetectionEngineOptions(BaseModel):
