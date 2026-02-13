@@ -1,0 +1,130 @@
+
+/* Dark mode styles - only apply when Material theme is in dark mode (slate scheme) */
+[data-md-color-scheme="slate"] .md-header {
+    background-color: #02030C !important;
+}
+[data-md-color-scheme="slate"] .md-search__input {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+[data-md-color-scheme="slate"] .md-search__input::placeholder {
+    color: rgba(233, 219, 189, 0.60) !important; 
+    opacity: 1;
+}
+[data-md-color-scheme="slate"] .md-tabs {
+    background-color: #02030C !important;
+}
+[data-md-color-scheme="slate"] .md-ellipsis{
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+[data-md-color-scheme="slate"] .md-footer {
+    background-color: #02030C !important;
+}
+[data-md-color-scheme="slate"] .md-footer-meta{
+    background-color: #02030C !important;
+}
+/* General Markdown background and text colors */
+[data-md-color-scheme="slate"] body {
+    background-color: #02030C !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Main content area background */
+[data-md-color-scheme="slate"] .md-main {
+    background-color: #02030C !important;
+}
+
+[data-md-color-scheme="slate"] .md-content {
+    background-color: #02030C !important;
+}
+
+[data-md-color-scheme="slate"] .md-content__inner {
+    background-color: #02030C !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset {
+    background-color: #02030C !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+/* Headings */
+[data-md-color-scheme="slate"] h1, 
+[data-md-color-scheme="slate"] h2, 
+[data-md-color-scheme="slate"] h3, 
+[data-md-color-scheme="slate"] h4, 
+[data-md-color-scheme="slate"] h5, 
+[data-md-color-scheme="slate"] h6 {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+/* Links */
+[data-md-color-scheme="slate"] a {
+    color: rgba(88, 166, 255, 0.90) !important;
+}
+[data-md-color-scheme="slate"] a:hover {
+    color: rgba(121, 192, 255, 0.90) !important;
+}
+
+/* Code blocks */
+[data-md-color-scheme="slate"] pre, 
+[data-md-color-scheme="slate"] code {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+/* Blockquotes */
+[data-md-color-scheme="slate"] blockquote {
+    border-left: 4px solid rgba(233, 219, 189, 0.90);
+    background-color: #02030C !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+/* Tables */
+[data-md-color-scheme="slate"] table {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+[data-md-color-scheme="slate"] th, 
+[data-md-color-scheme="slate"] td {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+    border: 1px solid rgba(210, 198, 172, 0.08) !important; 
+}
+/* Horizontal rules */
+[data-md-color-scheme="slate"] hr {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+}
+[data-md-color-scheme="slate"] .md-search__icon.md-icon {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+
+[data-md-color-scheme="slate"] .md-search__icon.md-icon:hover {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+[data-md-color-scheme="slate"] .card {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    border: 1px solid rgba(210, 198, 172, 0.08) !important; 
+}
+
+[data-md-color-scheme="slate"] details {
+    border: 1.65px solid rgba(210, 198, 172, 0.08) !important; 
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+[data-md-color-scheme="slate"] summary {
+    background-color: rgba(22, 18, 48, 0.40) !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+[data-md-color-scheme="slate"] .md-header__button {
+    color: rgba(233, 219, 189, 0.90) !important;
+}
+[data-md-color-scheme="slate"] .md-nav--lifted > .md-nav__list > .md-nav__item--active > .md-nav__link {
+    background: none !important;
+    box-shadow: none !important;
+}
+[data-md-color-scheme="slate"] .md-nav--secondary .md-nav__title {
+    background: #02030C !important; 
+    box-shadow: none !important;
+    color: rgba(233, 219, 189, 0.90) !important;
+}
