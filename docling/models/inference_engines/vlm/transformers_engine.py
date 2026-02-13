@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
 import torch
+from packaging import version
 from PIL.Image import Image
 from transformers import (
     AutoModel,
@@ -210,11 +211,21 @@ class TransformersVlmEngine(BaseVlmEngine, HuggingFaceModelDownloadMixin):
             quantization_config=quantization_config,
         )
 
-        # Compile model (Python < 3.14)
-        if sys.version_info < (3, 14):
-            self.vlm_model = torch.compile(self.vlm_model)  # type: ignore[assignment]
-        else:
-            self.vlm_model.eval()
+        self.vlm_model.eval()
+
+        # Optionally compile model for better performance (model must be in eval mode first)
+        # Works for Python < 3.14 with any torch 2.x
+        # Works for Python >= 3.14 with torch >= 2.10
+        if self.options.compile_model:
+            if sys.version_info < (3, 14):
+                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore[assignment]
+            elif version.parse(torch.__version__) >= version.parse("2.10"):
+                self.vlm_model = torch.compile(self.vlm_model)  # type: ignore[assignment]
+            else:
+                _log.warning(
+                    "Model compilation requested but not available "
+                    "(requires Python < 3.14 or torch >= 2.10 for Python 3.14+)"
+                )
 
         # Load generation config
         self.generation_config = GenerationConfig.from_pretrained(

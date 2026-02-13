@@ -50,6 +50,10 @@ class DebugSettings(BaseModel):
     debug_output_path: str = str(Path.cwd() / "debug")
 
 
+class InferenceSettings(BaseModel):
+    compile_torch_models: bool = True
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="DOCLING_", env_nested_delimiter="_", env_nested_max_split=1
@@ -57,9 +61,14 @@ class AppSettings(BaseSettings):
 
     perf: BatchConcurrencySettings = BatchConcurrencySettings()
     debug: DebugSettings = DebugSettings()
+    inference: InferenceSettings = InferenceSettings()
 
     cache_dir: Path = Path.home() / ".cache" / "docling"
     artifacts_path: Optional[Path] = None
 
 
 settings = AppSettings()
+
+
+def default_compile_model() -> bool:
+    return settings.inference.compile_torch_models

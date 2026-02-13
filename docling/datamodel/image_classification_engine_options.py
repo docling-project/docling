@@ -6,6 +6,7 @@ from typing import List, Literal
 
 from pydantic import Field
 
+from docling.datamodel.settings import default_compile_model
 from docling.models.inference_engines.image_classification.base import (
     BaseImageClassificationEngineOptions,
     ImageClassificationEngineType,
@@ -45,6 +46,6 @@ class TransformersImageClassificationEngineOptions(
     )
 
     compile_model: bool = Field(
-        default=False,
+        default_factory=default_compile_model,
         description="Whether to compile the model with torch.compile() for better performance.",
     )
