@@ -16,7 +16,7 @@ class BaseExtractionPipeline(ABC):
     def __init__(self, pipeline_options: PipelineOptions):
         self.pipeline_options = pipeline_options
 
-        self.artifacts_path: Optional[Path] = None
+        self.artifacts_path: Path | None = None
         if pipeline_options.artifacts_path is not None:
             self.artifacts_path = Path(pipeline_options.artifacts_path).expanduser()
         elif settings.artifacts_path is not None:
@@ -32,7 +32,7 @@ class BaseExtractionPipeline(ABC):
         self,
         in_doc: InputDocument,
         raises_on_error: bool,
-        template: Optional[ExtractionTemplateType] = None,
+        template: ExtractionTemplateType | None = None,
     ) -> ExtractionResult:
         ext_res = ExtractionResult(input=in_doc)
 
@@ -56,7 +56,7 @@ class BaseExtractionPipeline(ABC):
     def _extract_data(
         self,
         ext_res: ExtractionResult,
-        template: Optional[ExtractionTemplateType] = None,
+        template: ExtractionTemplateType | None = None,
     ) -> ExtractionResult:
         """Subclass must populate ext_res.pages/errors and return the result."""
         raise NotImplementedError

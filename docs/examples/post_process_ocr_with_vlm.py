@@ -270,7 +270,7 @@ class PostOcrApiEnrichmentModel(
 
     def prepare_element(
         self, conv_res: ConversionResult, element: NodeItem
-    ) -> Optional[list[PostOcrEnrichmentElement]]:
+    ) -> list[PostOcrEnrichmentElement] | None:
         if not self.is_processable(doc=conv_res.document, element=element):
             return None
 
@@ -442,7 +442,7 @@ class PostOcrApiEnrichmentModel(
         *,
         enabled: bool,
         enable_remote_services: bool,
-        artifacts_path: Optional[Union[Path, str]],
+        artifacts_path: Union[Path, str] | None,
         options: PictureDescriptionApiOptions,
         accelerator_options: AcceleratorOptions,
     ):

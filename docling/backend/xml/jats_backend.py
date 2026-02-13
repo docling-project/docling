@@ -94,7 +94,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self.path_or_stream = path_or_stream
 
         # Initialize the root of the document hierarchy
-        self.root: Optional[NodeItem] = None
+        self.root: NodeItem | None = None
         self.hlevel: int = 0
         self.valid: bool = False
         try:
@@ -172,7 +172,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return doc
 
     @staticmethod
-    def _get_text(node: etree._Element, sep: Optional[str] = None) -> str:
+    def _get_text(node: etree._Element, sep: str | None = None) -> str:
         skip_tags = ["term", "disp-formula", "inline-formula"]
         text: str = (
             node.text.replace("\n", " ")
@@ -189,9 +189,9 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         return text
 
-    def _find_metadata(self) -> Optional[etree._Element]:
+    def _find_metadata(self) -> etree._Element | None:
         meta_names: list[str] = ["article-meta", "book-part-meta"]
-        meta: Optional[etree._Element] = None
+        meta: etree._Element | None = None
         for name in meta_names:
             node = self.tree.xpath(f".//{name}")
             if len(node) > 0:
@@ -222,7 +222,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
     def _parse_authors(self) -> list[Author]:
         # Get mapping between affiliation ids and names
         authors: list[Author] = []
-        meta: Optional[etree._Element] = self._find_metadata()
+        meta: etree._Element | None = self._find_metadata()
         if meta is None:
             return authors
 
@@ -390,7 +390,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             "part-title",
             "trans-title",
         ]
-        title_node: Optional[etree._Element] = None
+        title_node: etree._Element | None = None
         for name in titles:
             name_node = node.xpath(name)
             if len(name_node) > 0:
@@ -493,12 +493,12 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         self, doc: DoclingDocument, parent: NodeItem, node: etree._Element
     ) -> None:
         label_node = node.xpath("label")
-        label: Optional[str] = (
+        label: str | None = (
             JatsDocumentBackend._get_text(label_node[0]).strip() if label_node else ""
         )
 
         caption_node = node.xpath("caption")
-        caption: Optional[str]
+        caption: str | None
         if len(caption_node) > 0:
             caption = ""
             for caption_par in list(caption_node[0]):
@@ -511,7 +511,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # TODO: format label vs caption once styling is supported
         fig_text: str = f"{label}{' ' if label and caption else ''}{caption}"
-        fig_caption: Optional[TextItem] = (
+        fig_caption: TextItem | None = (
             doc.add_text(label=DocItemLabel.CAPTION, text=fig_text)
             if fig_text
             else None
@@ -538,7 +538,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         return
 
     @staticmethod
-    def parse_table_data(element: Tag) -> Optional[TableData]:
+    def parse_table_data(element: Tag) -> TableData | None:
         # TODO, see how to implement proper support for rich tables from HTML backend
         nested_tables = element.find("table")
         if nested_tables is not None:
@@ -654,7 +654,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         label = table_xml_component["label"]
         caption = table_xml_component["caption"]
         table_text: str = f"{label}{' ' if label and caption else ''}{caption}"
-        table_caption: Optional[TextItem] = (
+        table_caption: TextItem | None = (
             doc.add_text(label=DocItemLabel.CAPTION, text=table_text)
             if table_text
             else None
@@ -681,7 +681,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
 
         # Caption
         caption_node = node.xpath("caption")
-        caption: Optional[str]
+        caption: str | None
         if caption_node:
             caption = ""
             for caption_par in list(caption_node[0]):
@@ -738,7 +738,7 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
             # add elements and decide whether to stop walking
             if child.tag in ("sec", "ack"):
                 header = child.xpath("title|label")
-                text: Optional[str] = None
+                text: str | None = None
                 if len(header) > 0:
                     text = JatsDocumentBackend._get_text(header[0])
                 elif child.tag == "ack":

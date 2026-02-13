@@ -88,7 +88,7 @@ class BaseFactory(Generic[A], metaclass=ABCMeta):
         )
 
     def load_from_plugins(
-        self, plugin_name: Optional[str] = None, allow_external_plugins: bool = False
+        self, plugin_name: str | None = None, allow_external_plugins: bool = False
     ):
         plugin_name = plugin_name or self.plugin_name
 

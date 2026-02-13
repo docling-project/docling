@@ -35,7 +35,7 @@ class HTMLBackendOptions(BaseBackendOptions):
             "images in an HTML document."
         ),
     )
-    source_uri: Optional[Union[AnyUrl, PurePath]] = Field(
+    source_uri: Union[AnyUrl, PurePath] | None = Field(
         None,
         description=(
             "The URI that originates the HTML document. If provided, the backend "
@@ -61,7 +61,7 @@ class MarkdownBackendOptions(BaseBackendOptions):
             "images in the markdown document."
         ),
     )
-    source_uri: Optional[Union[AnyUrl, PurePath]] = Field(
+    source_uri: Union[AnyUrl, PurePath] | None = Field(
         None,
         description=(
             "The URI that originates the markdown document. If provided, the backend "
@@ -74,7 +74,7 @@ class PdfBackendOptions(BaseBackendOptions):
     """Backend options for pdf document backends."""
 
     kind: Literal["pdf"] = Field("pdf", exclude=True, repr=False)
-    password: Optional[SecretStr] = None
+    password: SecretStr | None = None
 
 
 class MsExcelBackendOptions(BaseBackendOptions):

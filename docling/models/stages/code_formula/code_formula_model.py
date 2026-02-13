@@ -72,7 +72,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: CodeFormulaModelOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -121,7 +121,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
 
     @staticmethod
     def download_models(
-        local_dir: Optional[Path] = None,
+        local_dir: Path | None = None,
         force: bool = False,
         progress: bool = False,
     ) -> Path:
@@ -158,7 +158,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
             )
         )
 
-    def _extract_code_language(self, input_string: str) -> Tuple[str, Optional[str]]:
+    def _extract_code_language(self, input_string: str) -> Tuple[str, str | None]:
         """Extracts a programming language from the beginning of a string.
 
         This function checks if the input string starts with a pattern of the form
@@ -188,7 +188,7 @@ class CodeFormulaModel(BaseItemAndImageEnrichmentModel):
         else:
             return input_string, None
 
-    def _get_code_language_enum(self, value: Optional[str]) -> CodeLanguageLabel:
+    def _get_code_language_enum(self, value: str | None) -> CodeLanguageLabel:
         """
         Converts a string to a corresponding `CodeLanguageLabel` enum member.
 

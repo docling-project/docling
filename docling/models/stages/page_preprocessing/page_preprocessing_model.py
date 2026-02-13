@@ -16,7 +16,7 @@ from docling.utils.profiling import TimeRecorder
 
 
 class PagePreprocessingOptions(BaseModel):
-    images_scale: Optional[float]
+    images_scale: float | None
     skip_cell_extraction: bool = (
         False  # Skip text cell extraction for VLM-only processing
     )

@@ -26,7 +26,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
         self,
         *,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: OcrOptions,
         accelerator_options: AcceleratorOptions,
     ):

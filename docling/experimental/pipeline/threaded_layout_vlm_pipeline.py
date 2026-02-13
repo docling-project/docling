@@ -84,9 +84,9 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         class LayoutAwareVlmOptions(type(base_vlm_options)):  # type: ignore[misc]
             def build_prompt(
                 self,
-                page: Optional[SegmentedPage],
+                page: SegmentedPage | None,
                 *,
-                _internal_page: Optional[Page] = None,
+                _internal_page: Page | None = None,
             ) -> str:
                 base_prompt = self.prompt
                 augmented_prompt = base_prompt
@@ -177,7 +177,7 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         else:
             raise ValueError(f"Unsupported VLM options type: {type(base_vlm_options)}")
 
-    def _resolve_artifacts_path(self) -> Optional[Path]:
+    def _resolve_artifacts_path(self) -> Path | None:
         """Resolve artifacts path from options or settings."""
         if self.pipeline_options.artifacts_path:
             p = Path(self.pipeline_options.artifacts_path).expanduser()

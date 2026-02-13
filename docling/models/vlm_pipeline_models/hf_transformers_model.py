@@ -38,7 +38,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         accelerator_options: AcceleratorOptions,
         vlm_options: InlineVlmOptions,
     ):
@@ -104,7 +104,7 @@ class HuggingFaceTransformersVlmModel(BaseVlmPageModel, HuggingFaceModelDownload
                     f"  3. Or use a different model that exists in your artifacts_path"
                 )
 
-            self.param_quantization_config: Optional[BitsAndBytesConfig] = None
+            self.param_quantization_config: BitsAndBytesConfig | None = None
             if vlm_options.quantized:
                 self.param_quantization_config = BitsAndBytesConfig(
                     load_in_8bit=vlm_options.load_in_8bit,

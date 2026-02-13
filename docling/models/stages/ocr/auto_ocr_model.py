@@ -26,7 +26,7 @@ class OcrAutoModel(BaseOcrModel):
     def __init__(
         self,
         enabled: bool,
-        artifacts_path: Optional[Path],
+        artifacts_path: Path | None,
         options: OcrAutoOptions,
         accelerator_options: AcceleratorOptions,
     ):
@@ -38,7 +38,7 @@ class OcrAutoModel(BaseOcrModel):
         )
         self.options: OcrAutoOptions
 
-        self._engine: Optional[BaseOcrModel] = None
+        self._engine: BaseOcrModel | None = None
         if self.enabled:
             if "darwin" == sys.platform:
                 try:

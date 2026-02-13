@@ -214,11 +214,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def _create_list_item(
         self,
         doc: DoclingDocument,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         text: str,
         enumerated: bool,
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        formatting: Formatting | None = None,
+        hyperlink: Union[AnyUrl, Path] | None = None,
     ):
         item = doc.add_list_item(
             text=text,
@@ -232,11 +232,11 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
     def _create_heading_item(
         self,
         doc: DoclingDocument,
-        parent_item: Optional[NodeItem],
+        parent_item: NodeItem | None,
         text: str,
         level: int,
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        formatting: Formatting | None = None,
+        hyperlink: Union[AnyUrl, Path] | None = None,
     ):
         if level == 1:
             item = doc.add_title(
@@ -267,9 +267,9 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
         ],  # stack for lazy item creation triggered deep in marko's AST (on RawText)
         list_ordered_flag_by_ref: dict[str, bool],
         list_last_item_by_ref: dict[str, ListItem],
-        parent_item: Optional[NodeItem] = None,
-        formatting: Optional[Formatting] = None,
-        hyperlink: Optional[Union[AnyUrl, Path]] = None,
+        parent_item: NodeItem | None = None,
+        formatting: Formatting | None = None,
+        hyperlink: Union[AnyUrl, Path] | None = None,
     ):
         if element in visited:
             return
@@ -330,9 +330,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
                 if not isinstance(item, marko.block.ListItem)
             ]
             if len(non_list_children) > 1:  # inline group will be created further down
-                parent_ref: Optional[str] = (
-                    parent_item.self_ref if parent_item else None
-                )
+                parent_ref: str | None = parent_item.self_ref if parent_item else None
                 parent_item = self._create_list_item(
                     doc=doc,
                     parent_item=parent_item,
@@ -350,7 +348,7 @@ class MarkdownDocumentBackend(DeclarativeDocumentBackend):
             self._close_table(doc)
             _log.debug(f" - Image with alt: {element.title}, url: {element.dest}")
 
-            fig_caption: Optional[TextItem] = None
+            fig_caption: TextItem | None = None
             if element.title is not None and element.title != "":
                 title = unescape(element.title)
                 fig_caption = doc.add_text(
