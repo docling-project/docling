@@ -1057,7 +1057,7 @@ requires-dist = [
     { name = "openai-whisper", marker = "extra == 'asr'", specifier = ">=20250625" },
     { name = "openpyxl", specifier = ">=3.1.5,<4.0.0" },
     { name = "pandas", specifier = ">=2.1.4,<3.0.0" },
-    { name = "pillow", specifier = ">=10.0.0,<12.0.0" },
+    { name = "pillow", specifier = ">=10.0.0,<13.0.0" },
     { name = "pluggy", specifier = ">=1.0.0,<2.0.0" },
     { name = "polyfactory", specifier = ">=2.22.2" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },

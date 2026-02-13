@@ -64,7 +64,7 @@ dependencies = [
   'marko (>=2.1.2,<3.0.0)',
   'openpyxl (>=3.1.5,<4.0.0)',
   'lxml (>=4.0.0,<7.0.0)',
-  'pillow (>=10.0.0,<12.0.0)',
+  'pillow (>=10.0.0,<13.0.0)',
   'tqdm (>=4.65.0,<5.0.0)',
   'pluggy (>=1.0.0,<2.0.0)',
   'pylatexenc (>=2.10,<3.0)',
@@ -108,6 +108,7 @@ onnxruntime = [
 asr = [
     'mlx-whisper>=0.4.3 ; python_version >= "3.10" and sys_platform == "darwin" and platform_machine == "arm64"',
     'openai-whisper>=20250625',
+    'numba>=0.63.0',  # Ensure Python 3.11+ compatibility (llvmlite constraint)
 ]
 
 [dependency-groups]
