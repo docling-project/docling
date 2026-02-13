@@ -11,6 +11,7 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 from docling.datamodel.base_models import ConversionStatus, InputFormat, QualityGrade
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import (
+    ConvertPipelineOptions,
     PdfPipelineOptions,
     TableFormerMode,
 )
@@ -201,3 +202,56 @@ def test_confidence(test_doc_path):
 
     assert doc_result.confidence.mean_grade == QualityGrade.EXCELLENT
     assert doc_result.confidence.low_grade == QualityGrade.EXCELLENT
+
+
+def test_override_compatibility_allows_disabling_do_flags():
+    converter = DocumentConverter()
+    initialized = PdfPipelineOptions(
+        do_ocr=True,
+        do_table_structure=True,
+        do_code_enrichment=True,
+        do_formula_enrichment=True,
+    )
+    override = initialized.model_copy(deep=True)
+    override.do_ocr = False
+    override.do_table_structure = False
+    override.do_code_enrichment = False
+    override.do_formula_enrichment = False
+
+    assert converter._check_options_compatibility(initialized, override)
+
+
+def test_override_compatibility_rejects_enabling_do_flags():
+    converter = DocumentConverter()
+    initialized = PdfPipelineOptions(
+        do_ocr=False,
+        do_table_structure=False,
+        do_code_enrichment=False,
+        do_formula_enrichment=False,
+    )
+    override = initialized.model_copy(deep=True)
+    override.do_ocr = True
+
+    assert not converter._check_options_compatibility(initialized, override)
+
+
+def test_override_compatibility_rejects_non_do_changes():
+    converter = DocumentConverter()
+    initialized = PdfPipelineOptions()
+    override = initialized.model_copy(deep=True)
+    override.ocr_options.bitmap_area_threshold = 0.12
+
+    assert not converter._check_options_compatibility(initialized, override)
+
+
+def test_override_compatibility_rejects_enabling_chart_extraction():
+    converter = DocumentConverter()
+    initialized = ConvertPipelineOptions(
+        do_picture_classification=False,
+        do_picture_description=False,
+        do_chart_extraction=False,
+    )
+    override = initialized.model_copy(deep=True)
+    override.do_chart_extraction = True
+
+    assert not converter._check_options_compatibility(initialized, override)

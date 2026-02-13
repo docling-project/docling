@@ -1,3 +1,4 @@
+import contextvars
 import functools
 import logging
 import time
@@ -42,6 +43,11 @@ from docling.utils.utils import chunkify
 
 _log = logging.getLogger(__name__)
 
+# Thread-local context for override options
+_override_options_context: contextvars.ContextVar[Optional[PipelineOptions]] = (
+    contextvars.ContextVar("override_options", default=None)
+)
+
 
 class BasePipeline(ABC):
     def __init__(self, pipeline_options: PipelineOptions):
@@ -62,11 +68,27 @@ class BasePipeline(ABC):
                 "When defined, it must point to a folder containing all models required by the pipeline."
             )
 
-    def execute(self, in_doc: InputDocument, raises_on_error: bool) -> ConversionResult:
+    def get_effective_options(self) -> PipelineOptions:
+        """Get effective options for current execution context.
+
+        Returns override options if set in context, else initialized options.
+        """
+        override = _override_options_context.get()
+        return override if override is not None else self.pipeline_options
+
+    def execute(
+        self,
+        in_doc: InputDocument,
+        raises_on_error: bool,
+        override_options: Optional[PipelineOptions] = None,
+    ) -> ConversionResult:
         conv_res = ConversionResult(input=in_doc)
 
-        _log.info(f"Processing document {in_doc.file.name}")
+        # Set override options in thread-local context
+        token = _override_options_context.set(override_options)
+
         try:
+            _log.info(f"Processing document {in_doc.file.name}")
             with TimeRecorder(
                 conv_res, "pipeline_total", scope=ProfilingScope.DOCUMENT
             ):
@@ -89,6 +111,8 @@ class BasePipeline(ABC):
             else:
                 raise RuntimeError(f"Pipeline {self.__class__.__name__} failed") from e
         finally:
+            # Reset context
+            _override_options_context.reset(token)
             self._unload(conv_res)
 
         return conv_res
@@ -112,7 +136,7 @@ class BasePipeline(ABC):
                     yield prepared_element
 
         with TimeRecorder(conv_res, "doc_enrich", scope=ProfilingScope.DOCUMENT):
-            for model in self.enrichment_pipe:
+            for model in self._get_enrichment_pipe_for_execution():
                 for element_batch in chunkify(
                     _prepare_elements(conv_res, model),
                     model.elements_batch_size,
@@ -123,6 +147,11 @@ class BasePipeline(ABC):
                         pass
 
         return conv_res
+
+    def _get_enrichment_pipe_for_execution(
+        self,
+    ) -> Iterable[GenericEnrichmentModel[Any]]:
+        return self.enrichment_pipe
 
     @abstractmethod
     def _determine_status(self, conv_res: ConversionResult) -> ConversionStatus:
@@ -195,6 +224,32 @@ class ConvertPipeline(BasePipeline):
             artifacts_path=artifacts_path,
             accelerator_options=self.pipeline_options.accelerator_options,
         )
+
+    def _get_enrichment_pipe_for_execution(
+        self,
+    ) -> Iterable[GenericEnrichmentModel[Any]]:
+        effective_options = self.get_effective_options()
+        assert isinstance(effective_options, ConvertPipelineOptions)
+
+        do_picture_classification = (
+            effective_options.do_picture_classification
+            or effective_options.do_chart_extraction
+        )
+        do_picture_description = effective_options.do_picture_description
+        do_chart_extraction = effective_options.do_chart_extraction
+
+        for model in self.enrichment_pipe:
+            if isinstance(model, DocumentPictureClassifier):
+                if do_picture_classification:
+                    yield model
+            elif isinstance(model, PictureDescriptionBaseModel):
+                if do_picture_description:
+                    yield model
+            elif isinstance(model, ChartExtractionModelGraniteVision):
+                if do_chart_extraction:
+                    yield model
+            else:
+                yield model
 
     @classmethod
     @abstractmethod

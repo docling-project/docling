@@ -950,6 +950,21 @@ class PipelineOptions(BaseOptions):
         ),
     ] = None
 
+    def _get_compatibility_payload(self) -> dict[str, Any]:
+        """Get payload for compatibility hashing.
+
+        Base implementation returns full model dump. Subclasses with do_* fields
+        should override to exclude them.
+
+        Returns:
+            Dictionary suitable for compatibility hashing
+        """
+        return self.model_dump(serialize_as_any=True)
+
+    def _get_runtime_toggle_payload(self) -> dict[str, bool]:
+        """Get payload with runtime-togglable do_* fields."""
+        return {}
+
 
 class ConvertPipelineOptions(PipelineOptions):
     """Base configuration for document conversion pipelines."""
@@ -986,6 +1001,22 @@ class ConvertPipelineOptions(PipelineOptions):
     do_chart_extraction: bool = (
         False  # True: extract data in tabular format from bar-, pie and line-charts
     )
+
+    def _get_compatibility_payload(self) -> dict[str, Any]:
+        """Override to exclude do_* fields from compatibility check."""
+        payload = super()._get_compatibility_payload()
+        # Explicitly exclude do_* fields owned by this class
+        payload.pop("do_picture_classification", None)
+        payload.pop("do_picture_description", None)
+        payload.pop("do_chart_extraction", None)
+        return payload
+
+    def _get_runtime_toggle_payload(self) -> dict[str, bool]:
+        return {
+            "do_picture_classification": self.do_picture_classification,
+            "do_picture_description": self.do_picture_description,
+            "do_chart_extraction": self.do_chart_extraction,
+        }
 
 
 class PaginatedPipelineOptions(ConvertPipelineOptions):
@@ -1371,6 +1402,28 @@ class PdfPipelineOptions(PaginatedPipelineOptions):
             )
         ),
     ] = 100
+
+    def _get_compatibility_payload(self) -> dict[str, Any]:
+        """Override to exclude do_* fields from compatibility check."""
+        payload = super()._get_compatibility_payload()
+        # Explicitly exclude do_* fields owned by this class
+        payload.pop("do_table_structure", None)
+        payload.pop("do_ocr", None)
+        payload.pop("do_code_enrichment", None)
+        payload.pop("do_formula_enrichment", None)
+        return payload
+
+    def _get_runtime_toggle_payload(self) -> dict[str, bool]:
+        payload = super()._get_runtime_toggle_payload()
+        payload.update(
+            {
+                "do_table_structure": self.do_table_structure,
+                "do_ocr": self.do_ocr,
+                "do_code_enrichment": self.do_code_enrichment,
+                "do_formula_enrichment": self.do_formula_enrichment,
+            }
+        )
+        return payload
 
 
 class ProcessingPipeline(str, Enum):
