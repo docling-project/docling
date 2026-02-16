@@ -76,6 +76,7 @@ class LegacyStandardPdfPipeline(PaginatedPipeline):
             enabled=pipeline_options.do_table_structure,
             artifacts_path=self.artifacts_path,
             accelerator_options=pipeline_options.accelerator_options,
+            enable_remote_services=pipeline_options.enable_remote_services,
         )
 
         self.build_pipe = [

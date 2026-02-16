@@ -470,6 +470,7 @@ class StandardPdfPipeline(ConvertPipeline):
             enabled=self.pipeline_options.do_table_structure,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())
