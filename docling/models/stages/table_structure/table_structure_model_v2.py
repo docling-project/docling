@@ -77,11 +77,13 @@ class TableStructureModelV2(BaseTableStructureModel):
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
 
             # Image preprocessing
-            self.transform = T.Compose([
-                T.Resize((448, 448)),
-                T.ToTensor(),
-                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-            ])
+            self.transform = T.Compose(
+                [
+                    T.Resize((448, 448)),
+                    T.ToTensor(),
+                    T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ]
+            )
 
             self.scale = 2.0  # Scale up table input images to 144 dpi
 
@@ -147,9 +149,7 @@ class TableStructureModelV2(BaseTableStructureModel):
         """
         # Split into rows by "nl" token
         rows = [
-            list(group)
-            for k, group in groupby(otsl_seq, lambda x: x == "nl")
-            if not k
+            list(group) for k, group in groupby(otsl_seq, lambda x: x == "nl") if not k
         ]
 
         if not rows:
@@ -305,7 +305,8 @@ class TableStructureModelV2(BaseTableStructureModel):
                         ],
                     )
                     for cluster in page.predictions.layout.clusters
-                    if cluster.label in [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
+                    if cluster.label
+                    in [DocItemLabel.TABLE, DocItemLabel.DOCUMENT_INDEX]
                 ]
 
                 if not in_tables:
@@ -321,7 +322,9 @@ class TableStructureModelV2(BaseTableStructureModel):
 
                     # Convert to PIL and preprocess
                     pil_image = Image.fromarray(table_image).convert("RGB")
-                    image_tensor = self.transform(pil_image).unsqueeze(0).to(self.device)
+                    image_tensor = (
+                        self.transform(pil_image).unsqueeze(0).to(self.device)
+                    )
 
                     # Run inference
                     with torch.no_grad():
