@@ -120,13 +120,14 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
         """Run inference on a batch of images against a KServe v2 endpoint."""
         if not input_batch:
             return []
-        if (
-            self._processor is None
-            or self._kserve_client is None
-            or self._input_name is None
-            or self._output_name is None
-        ):
+        if not self._initialized:
             raise RuntimeError("Engine not initialized. Call initialize() first.")
+
+        # Type narrowing: _initialized guarantees these are non-None
+        assert self._processor is not None
+        assert self._kserve_client is not None
+        assert self._input_name is not None
+        assert self._output_name is not None
 
         images = [item.image.convert("RGB") for item in input_batch]
         processed_inputs = self._processor(images=images, return_tensors="np")
