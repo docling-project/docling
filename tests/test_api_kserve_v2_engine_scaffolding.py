@@ -60,7 +60,11 @@ def test_object_detection_preset_supports_api_kserve_v2_engine_default() -> None
     )
     _DummyObjectDetectionStageOptions.register_preset(preset)
 
-    options = _DummyObjectDetectionStageOptions.from_preset("od_api_kserve_v2_test")
+    # API_KSERVE_V2 presets require explicit engine_options with URL
+    engine_opts = ApiKserveV2ObjectDetectionEngineOptions(url="http://localhost:8000")
+    options = _DummyObjectDetectionStageOptions.from_preset(
+        "od_api_kserve_v2_test", engine_options=engine_opts
+    )
     assert isinstance(options.engine_options, ApiKserveV2ObjectDetectionEngineOptions)
 
 
@@ -74,14 +78,23 @@ def test_image_classification_preset_supports_api_kserve_v2_engine_default() -> 
     )
     _DummyImageClassificationStageOptions.register_preset(preset)
 
-    options = _DummyImageClassificationStageOptions.from_preset("ic_api_kserve_v2_test")
+    # API_KSERVE_V2 presets require explicit engine_options with URL
+    engine_opts = ApiKserveV2ImageClassificationEngineOptions(
+        url="http://localhost:8000"
+    )
+    options = _DummyImageClassificationStageOptions.from_preset(
+        "ic_api_kserve_v2_test", engine_options=engine_opts
+    )
     assert isinstance(
         options.engine_options, ApiKserveV2ImageClassificationEngineOptions
     )
 
 
 def test_object_detection_factory_requires_remote_enablement() -> None:
-    options = ApiKserveV2ObjectDetectionEngineOptions(model_name="od_model")
+    options = ApiKserveV2ObjectDetectionEngineOptions(
+        url="http://localhost:8000",
+        model_name="od_model",
+    )
     spec = ObjectDetectionModelSpec(name="od", repo_id="org/od")
 
     with pytest.raises(OperationNotAllowed):
@@ -102,7 +115,10 @@ def test_object_detection_factory_requires_remote_enablement() -> None:
 
 
 def test_image_classification_factory_requires_remote_enablement() -> None:
-    options = ApiKserveV2ImageClassificationEngineOptions(model_name="ic_model")
+    options = ApiKserveV2ImageClassificationEngineOptions(
+        url="http://localhost:8000",
+        model_name="ic_model",
+    )
     spec = ImageClassificationModelSpec(name="ic", repo_id="org/ic")
 
     with pytest.raises(OperationNotAllowed):

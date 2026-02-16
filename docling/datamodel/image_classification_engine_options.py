@@ -59,8 +59,7 @@ class ApiKserveV2ImageClassificationEngineOptions(BaseImageClassificationEngineO
     )
 
     url: AnyUrl = Field(
-        default=AnyUrl("http://localhost:8000"),
-        description="Base URL for Triton/KServe inference endpoint.",
+        description="Base URL for KServe v2 inference endpoint (e.g., 'http://localhost:8000').",
     )
 
     model_name: Optional[str] = Field(

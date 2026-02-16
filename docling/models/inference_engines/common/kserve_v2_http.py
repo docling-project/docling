@@ -1,4 +1,9 @@
-"""Utilities for calling KServe v2 REST inference endpoints."""
+"""Utilities for calling KServe v2 REST inference endpoints.
+
+Note: This is a minimal synchronous implementation. The official KServe Python SDK
+(https://github.com/kserve/kserve) provides an async InferenceRESTClient with similar
+functionality, but is currently in alpha and requires async/await support.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +14,8 @@ import numpy as np
 import requests
 from pydantic import BaseModel
 
-TRITON_NUMPY_DATATYPES: Dict[str, np.dtype[Any]] = {
+# KServe v2 protocol uses the same data type names as Triton Inference Server
+KSERVE_V2_NUMPY_DATATYPES: Dict[str, np.dtype[Any]] = {
     "BOOL": np.dtype(np.bool_),
     "UINT8": np.dtype(np.uint8),
     "UINT16": np.dtype(np.uint16),
@@ -24,20 +30,23 @@ TRITON_NUMPY_DATATYPES: Dict[str, np.dtype[Any]] = {
     "FP64": np.dtype(np.float64),
 }
 
-NUMPY_TRITON_DATATYPES: Dict[np.dtype[Any], str] = {
-    dtype: name for name, dtype in TRITON_NUMPY_DATATYPES.items()
+NUMPY_KSERVE_V2_DATATYPES: Dict[np.dtype[Any], str] = {
+    dtype: name for name, dtype in KSERVE_V2_NUMPY_DATATYPES.items()
 }
 
 
 def _encode_input_tensor(name: str, tensor: np.ndarray) -> Dict[str, Any]:
-    triton_dtype = NUMPY_TRITON_DATATYPES.get(tensor.dtype)
-    if triton_dtype is None:
-        raise ValueError(f"Unsupported numpy dtype for Triton input: {tensor.dtype!s}")
+    kserve_dtype = NUMPY_KSERVE_V2_DATATYPES.get(tensor.dtype)
+    if kserve_dtype is None:
+        raise ValueError(
+            f"Unsupported numpy dtype for KServe v2 input: {tensor.dtype!s}. "
+            f"Supported types: {list(NUMPY_KSERVE_V2_DATATYPES.keys())}"
+        )
 
     return {
         "name": name,
         "shape": list(tensor.shape),
-        "datatype": triton_dtype,
+        "datatype": kserve_dtype,
         "data": tensor.reshape(-1).tolist(),
     }
 
@@ -76,13 +85,16 @@ class KserveV2ModelMetadataResponse(BaseModel):
 
 
 def _decode_output_tensor(raw_output: KserveV2OutputTensor) -> np.ndarray:
-    np_dtype = TRITON_NUMPY_DATATYPES.get(raw_output.datatype)
+    np_dtype = KSERVE_V2_NUMPY_DATATYPES.get(raw_output.datatype)
     if np_dtype is None:
-        raise RuntimeError(f"Unsupported Triton output datatype: {raw_output.datatype}")
+        raise RuntimeError(
+            f"Unsupported KServe v2 output datatype: {raw_output.datatype}. "
+            f"Supported types: {list(KSERVE_V2_NUMPY_DATATYPES.keys())}"
+        )
 
     if raw_output.data is None:
         raise RuntimeError(
-            "Triton binary output mode is not supported by this scaffold. "
+            "KServe v2 binary output mode is not supported. "
             "Configure server/client for JSON outputs with inline data."
         )
 
@@ -101,47 +113,88 @@ class KserveV2HttpClient:
     timeout: float
     headers: Mapping[str, str]
 
-    @property
-    def infer_url(self) -> str:
+    def _build_model_url(self, *, include_infer_suffix: bool) -> str:
+        """Build URL for model metadata or inference endpoint.
+
+        Args:
+            include_infer_suffix: If True, append '/infer' to the URL
+
+        Returns:
+            Fully constructed URL for the requested endpoint
+        """
         root = self.base_url.rstrip("/")
+
+        # Remove trailing /v2 if present
         if root.endswith("/v2"):
             root = root[: -len("/v2")]
 
+        # If URL already contains the full model path, use it directly
         if "/v2/models/" in root:
             if root.endswith("/infer"):
-                return root
-            return f"{root}/infer"
+                # Already points to infer endpoint
+                return root if include_infer_suffix else root[: -len("/infer")]
+            # Points to model path
+            return f"{root}/infer" if include_infer_suffix else root
 
+        # Build URL from scratch using model name and optional version
         if self.model_version:
-            return (
-                f"{root}/v2/models/{self.model_name}/versions/"
-                f"{self.model_version}/infer"
+            model_path = (
+                f"{root}/v2/models/{self.model_name}/versions/{self.model_version}"
             )
-        return f"{root}/v2/models/{self.model_name}/infer"
+        else:
+            model_path = f"{root}/v2/models/{self.model_name}"
+
+        return f"{model_path}/infer" if include_infer_suffix else model_path
+
+    @property
+    def infer_url(self) -> str:
+        """Get the inference endpoint URL."""
+        return self._build_model_url(include_infer_suffix=True)
 
     @property
     def model_metadata_url(self) -> str:
-        root = self.base_url.rstrip("/")
-        if root.endswith("/v2"):
-            root = root[: -len("/v2")]
-
-        if "/v2/models/" in root:
-            if root.endswith("/infer"):
-                return root[: -len("/infer")]
-            return root
-
-        if self.model_version:
-            return f"{root}/v2/models/{self.model_name}/versions/{self.model_version}"
-        return f"{root}/v2/models/{self.model_name}"
+        """Get the model metadata endpoint URL."""
+        return self._build_model_url(include_infer_suffix=False)
 
     def get_model_metadata(self) -> KserveV2ModelMetadataResponse:
-        response = requests.get(
-            self.model_metadata_url,
-            headers=dict(self.headers),
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
-        return KserveV2ModelMetadataResponse.model_validate(response.json())
+        """Fetch model metadata from KServe v2 endpoint.
+
+        Returns:
+            Validated model metadata including inputs/outputs schema
+
+        Raises:
+            requests.exceptions.Timeout: If request exceeds timeout
+            requests.exceptions.ConnectionError: If cannot connect to server
+            requests.exceptions.HTTPError: If server returns error status
+            RuntimeError: If response format is invalid
+        """
+        try:
+            response = requests.get(
+                self.model_metadata_url,
+                headers=dict(self.headers),
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except requests.exceptions.Timeout as exc:
+            raise requests.exceptions.Timeout(
+                f"Timeout fetching model metadata from {self.model_metadata_url}"
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise requests.exceptions.ConnectionError(
+                f"Failed to connect to KServe endpoint at {self.model_metadata_url}"
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            raise requests.exceptions.HTTPError(
+                f"HTTP error {response.status_code} from {self.model_metadata_url}: "
+                f"{response.text}"
+            ) from exc
+
+        try:
+            return KserveV2ModelMetadataResponse.model_validate(response.json())
+        except Exception as exc:
+            raise RuntimeError(
+                f"Invalid metadata response from {self.model_metadata_url}: {exc}"
+            ) from exc
 
     def infer(
         self,
@@ -150,6 +203,22 @@ class KserveV2HttpClient:
         output_names: list[str],
         request_parameters: Optional[Mapping[str, Any]] = None,
     ) -> Dict[str, np.ndarray]:
+        """Execute inference request against KServe v2 endpoint.
+
+        Args:
+            inputs: Mapping of input tensor names to numpy arrays
+            output_names: List of expected output tensor names
+            request_parameters: Optional KServe v2 request-level parameters
+
+        Returns:
+            Mapping of output tensor names to numpy arrays
+
+        Raises:
+            requests.exceptions.Timeout: If request exceeds timeout
+            requests.exceptions.ConnectionError: If cannot connect to server
+            requests.exceptions.HTTPError: If server returns error status
+            RuntimeError: If response format is invalid
+        """
         payload: Dict[str, Any] = {
             "inputs": [
                 _encode_input_tensor(name=input_name, tensor=tensor)
@@ -163,15 +232,34 @@ class KserveV2HttpClient:
         if request_parameters:
             payload["parameters"] = dict(request_parameters)
 
-        response = requests.post(
-            self.infer_url,
-            json=payload,
-            headers=dict(self.headers),
-            timeout=self.timeout,
-        )
-        response.raise_for_status()
+        try:
+            response = requests.post(
+                self.infer_url,
+                json=payload,
+                headers=dict(self.headers),
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except requests.exceptions.Timeout as exc:
+            raise requests.exceptions.Timeout(
+                f"Timeout during inference request to {self.infer_url}"
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise requests.exceptions.ConnectionError(
+                f"Failed to connect to KServe inference endpoint at {self.infer_url}"
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            raise requests.exceptions.HTTPError(
+                f"HTTP error {response.status_code} from {self.infer_url}: "
+                f"{response.text}"
+            ) from exc
 
-        body = KserveV2InferResponse.model_validate(response.json())
+        try:
+            body = KserveV2InferResponse.model_validate(response.json())
+        except Exception as exc:
+            raise RuntimeError(
+                f"Invalid inference response from {self.infer_url}: {exc}"
+            ) from exc
 
         decoded_outputs: Dict[str, np.ndarray] = {}
         for output in body.outputs:

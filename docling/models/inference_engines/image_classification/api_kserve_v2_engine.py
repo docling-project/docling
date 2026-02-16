@@ -73,11 +73,13 @@ class ApiKserveV2ImageClassificationEngine(HfImageClassificationEngineBase):
         metadata = self._kserve_client.get_model_metadata()
         if not metadata.inputs:
             raise RuntimeError(
-                "Expected image-classification model metadata to expose at least 1 input."
+                f"Expected image-classification model metadata to expose at least 1 input, "
+                f"got {len(metadata.inputs)} inputs."
             )
         if not metadata.outputs:
             raise RuntimeError(
-                "Expected image-classification model metadata to expose at least 1 output."
+                f"Expected image-classification model metadata to expose at least 1 output, "
+                f"got {len(metadata.outputs)} outputs."
             )
 
         input_name = metadata.inputs[0].name
