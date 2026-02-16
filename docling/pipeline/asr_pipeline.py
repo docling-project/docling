@@ -37,6 +37,56 @@ from docling.utils.profiling import ProfilingScope, TimeRecorder
 _log = logging.getLogger(__name__)
 
 
+def _process_conversation(
+    conversation: list["_ConversationItem"], conv_res: ConversionResult
+) -> None:
+    """
+    Process the conversation items and add them to the document.
+    """
+    # Ensure we have a proper DoclingDocument
+    origin = DocumentOrigin(
+        filename=conv_res.input.file.name or "audio.wav",
+        mimetype="audio/x-wav",
+        binary_hash=conv_res.input.document_hash,
+    )
+    conv_res.document = DoclingDocument(
+        name=conv_res.input.file.stem or "audio.wav", origin=origin
+    )
+
+    EPS = 0.001  # Minimal duration for zero-duration segments
+
+    for citem in conversation:
+        # Fix zero-duration segments (end_time <= start_time) with non-empty text
+        if (
+            citem.start_time is not None
+            and citem.end_time is not None
+            and citem.end_time <= citem.start_time
+            and citem.text.strip()
+        ):
+            _log.warning(
+                f"Zero-duration ASR segment at {citem.start_time}s: '{citem.text}' - adjusting end_time"
+            )
+            citem.end_time = citem.start_time + EPS
+
+        # Add all segments with valid timestamps and non-empty text to the document
+        if (
+            citem.start_time is not None
+            and citem.end_time is not None
+            and citem.text.strip()
+        ):
+            track: TrackSource = TrackSource(
+                start_time=citem.start_time,
+                end_time=citem.end_time,
+                voice=citem.speaker,
+            )
+            _ = conv_res.document.add_text(
+                label=DocItemLabel.TEXT,
+                text=citem.text,
+                content_layer=ContentLayer.BODY,
+                source=track,
+            )
+
+
 class _ConversationWord(BaseModel):
     text: str
     start_time: Optional[float] = Field(
@@ -166,30 +216,7 @@ class _NativeWhisperModel:
 
         try:
             conversation = self.transcribe(audio_path)
-
-            # Ensure we have a proper DoclingDocument
-            origin = DocumentOrigin(
-                filename=conv_res.input.file.name or "audio.wav",
-                mimetype="audio/x-wav",
-                binary_hash=conv_res.input.document_hash,
-            )
-            conv_res.document = DoclingDocument(
-                name=conv_res.input.file.stem or "audio.wav", origin=origin
-            )
-
-            for citem in conversation:
-                track: TrackSource = TrackSource(
-                    start_time=citem.start_time,
-                    end_time=citem.end_time,
-                    voice=citem.speaker,
-                )
-                conv_res.document.add_text(
-                    label=DocItemLabel.TEXT,
-                    text=citem.text,
-                    content_layer=ContentLayer.BODY,
-                    source=track,
-                )
-
+            _process_conversation(conversation, conv_res)
             return conv_res
 
         except Exception as exc:
@@ -283,30 +310,7 @@ class _MlxWhisperModel:
 
         try:
             conversation = self.transcribe(audio_path)
-
-            # Ensure we have a proper DoclingDocument
-            origin = DocumentOrigin(
-                filename=conv_res.input.file.name or "audio.wav",
-                mimetype="audio/x-wav",
-                binary_hash=conv_res.input.document_hash,
-            )
-            conv_res.document = DoclingDocument(
-                name=conv_res.input.file.stem or "audio.wav", origin=origin
-            )
-
-            for citem in conversation:
-                track: TrackSource = TrackSource(
-                    start_time=citem.start_time,
-                    end_time=citem.end_time,
-                    voice=citem.speaker,
-                )
-                conv_res.document.add_text(
-                    label=DocItemLabel.TEXT,
-                    text=citem.text,
-                    content_layer=ContentLayer.BODY,
-                    source=track,
-                )
-
+            _process_conversation(conversation, conv_res)
             conv_res.status = ConversionStatus.SUCCESS
             return conv_res
 
