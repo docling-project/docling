@@ -64,6 +64,11 @@ class BaseOptions(BaseModel):
 
     kind: ClassVar[str]
 
+    # TODO: default should become False in a future release, and this field
+    # may be removed entirely once docling-core drops the deprecated
+    # `annotations` attribute from DoclingDocument items.
+    keep_deprecated_annotations: bool = True
+
 
 class TableFormerMode(str, Enum):
     """Operating modes for TableFormer table structure extraction model.

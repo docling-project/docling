@@ -78,6 +78,7 @@ class DocumentPictureClassifier(
         artifacts_path: Optional[Path],
         options: DocumentPictureClassifierOptions,
         accelerator_options: AcceleratorOptions,
+        keep_deprecated_annotations: bool = True,
     ):
         """
         Initializes the DocumentPictureClassifier.
@@ -95,6 +96,7 @@ class DocumentPictureClassifier(
         """
         self.enabled = enabled
         self.options = options
+        self.keep_deprecated_annotations = keep_deprecated_annotations
 
         if self.enabled:
             self._device = decide_device(accelerator_options.device)
@@ -218,12 +220,13 @@ class DocumentPictureClassifier(
             ]
 
             # FIXME: annotations is deprecated, remove once all consumers use meta.classification
-            item.annotations.append(
-                PictureClassificationData(
-                    provenance="DocumentPictureClassifier",
-                    predicted_classes=predicted_classes,
+            if self.keep_deprecated_annotations:
+                item.annotations.append(
+                    PictureClassificationData(
+                        provenance="DocumentPictureClassifier",
+                        predicted_classes=predicted_classes,
+                    )
                 )
-            )
 
             # Store classification in the new meta field
             predictions = [
