@@ -113,48 +113,76 @@ class KserveV2HttpClient:
     timeout: float
     headers: Mapping[str, str]
 
-    def _build_model_url(self, *, include_infer_suffix: bool) -> str:
-        """Build URL for model metadata or inference endpoint.
+    def _execute_http_request(
+        self,
+        url: str,
+        method: str = "GET",
+        **kwargs: Any,
+    ) -> requests.Response:
+        """Execute HTTP request with consistent error handling.
 
         Args:
-            include_infer_suffix: If True, append '/infer' to the URL
+            url: Target URL
+            method: HTTP method (GET or POST)
+            **kwargs: Additional arguments passed to requests
 
         Returns:
-            Fully constructed URL for the requested endpoint
+            HTTP response object
+
+        Raises:
+            requests.exceptions.Timeout: If request exceeds timeout
+            requests.exceptions.ConnectionError: If cannot connect to server
+            requests.exceptions.HTTPError: If server returns error status
         """
-        root = self.base_url.rstrip("/")
-
-        # Remove trailing /v2 if present
-        if root.endswith("/v2"):
-            root = root[: -len("/v2")]
-
-        # If URL already contains the full model path, use it directly
-        if "/v2/models/" in root:
-            if root.endswith("/infer"):
-                # Already points to infer endpoint
-                return root if include_infer_suffix else root[: -len("/infer")]
-            # Points to model path
-            return f"{root}/infer" if include_infer_suffix else root
-
-        # Build URL from scratch using model name and optional version
-        if self.model_version:
-            model_path = (
-                f"{root}/v2/models/{self.model_name}/versions/{self.model_version}"
-            )
-        else:
-            model_path = f"{root}/v2/models/{self.model_name}"
-
-        return f"{model_path}/infer" if include_infer_suffix else model_path
-
-    @property
-    def infer_url(self) -> str:
-        """Get the inference endpoint URL."""
-        return self._build_model_url(include_infer_suffix=True)
+        try:
+            if method == "GET":
+                response = requests.get(
+                    url, headers=dict(self.headers), timeout=self.timeout, **kwargs
+                )
+            else:  # POST
+                response = requests.post(
+                    url, headers=dict(self.headers), timeout=self.timeout, **kwargs
+                )
+            response.raise_for_status()
+            return response
+        except requests.exceptions.Timeout as exc:
+            raise requests.exceptions.Timeout(
+                f"Timeout during {method} request to {url}"
+            ) from exc
+        except requests.exceptions.ConnectionError as exc:
+            raise requests.exceptions.ConnectionError(
+                f"Failed to connect to {url}"
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            raise requests.exceptions.HTTPError(
+                f"HTTP error {response.status_code} from {url}: {response.text}"
+            ) from exc
 
     @property
     def model_metadata_url(self) -> str:
-        """Get the model metadata endpoint URL."""
-        return self._build_model_url(include_infer_suffix=False)
+        """Get the model metadata endpoint URL.
+
+        Expects base_url to be exactly the base URL without any path components
+        (e.g., 'http://localhost:8000', not 'http://localhost:8000/v2').
+
+        Returns:
+            Model metadata URL following KServe v2 protocol:
+            - {base_url}/v2/models/{model_name}[/versions/{version}]
+        """
+        base = self.base_url.rstrip("/")
+        if self.model_version:
+            return f"{base}/v2/models/{self.model_name}/versions/{self.model_version}"
+        return f"{base}/v2/models/{self.model_name}"
+
+    @property
+    def infer_url(self) -> str:
+        """Get the inference endpoint URL.
+
+        Returns:
+            Inference URL following KServe v2 protocol:
+            - {base_url}/v2/models/{model_name}[/versions/{version}]/infer
+        """
+        return f"{self.model_metadata_url}/infer"
 
     def get_model_metadata(self) -> KserveV2ModelMetadataResponse:
         """Fetch model metadata from KServe v2 endpoint.
@@ -168,26 +196,7 @@ class KserveV2HttpClient:
             requests.exceptions.HTTPError: If server returns error status
             RuntimeError: If response format is invalid
         """
-        try:
-            response = requests.get(
-                self.model_metadata_url,
-                headers=dict(self.headers),
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
-        except requests.exceptions.Timeout as exc:
-            raise requests.exceptions.Timeout(
-                f"Timeout fetching model metadata from {self.model_metadata_url}"
-            ) from exc
-        except requests.exceptions.ConnectionError as exc:
-            raise requests.exceptions.ConnectionError(
-                f"Failed to connect to KServe endpoint at {self.model_metadata_url}"
-            ) from exc
-        except requests.exceptions.HTTPError as exc:
-            raise requests.exceptions.HTTPError(
-                f"HTTP error {response.status_code} from {self.model_metadata_url}: "
-                f"{response.text}"
-            ) from exc
+        response = self._execute_http_request(self.model_metadata_url, method="GET")
 
         try:
             return KserveV2ModelMetadataResponse.model_validate(response.json())
@@ -232,27 +241,9 @@ class KserveV2HttpClient:
         if request_parameters:
             payload["parameters"] = dict(request_parameters)
 
-        try:
-            response = requests.post(
-                self.infer_url,
-                json=payload,
-                headers=dict(self.headers),
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
-        except requests.exceptions.Timeout as exc:
-            raise requests.exceptions.Timeout(
-                f"Timeout during inference request to {self.infer_url}"
-            ) from exc
-        except requests.exceptions.ConnectionError as exc:
-            raise requests.exceptions.ConnectionError(
-                f"Failed to connect to KServe inference endpoint at {self.infer_url}"
-            ) from exc
-        except requests.exceptions.HTTPError as exc:
-            raise requests.exceptions.HTTPError(
-                f"HTTP error {response.status_code} from {self.infer_url}: "
-                f"{response.text}"
-            ) from exc
+        response = self._execute_http_request(
+            self.infer_url, method="POST", json=payload
+        )
 
         try:
             body = KserveV2InferResponse.model_validate(response.json())

@@ -61,7 +61,11 @@ class ApiKserveV2ObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
     )
 
     url: AnyUrl = Field(
-        description="Base URL for KServe v2 inference endpoint (e.g., 'http://localhost:8000').",
+        description=(
+            "Base URL of the KServe v2 server (e.g., 'http://localhost:8000'). "
+            "The full endpoint path is constructed automatically as "
+            "/v2/models/{model_name}[/versions/{version}]/infer."
+        ),
     )
 
     model_name: Optional[str] = Field(

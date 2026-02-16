@@ -152,9 +152,9 @@ def test_kserve_v2_client_infer_url_with_version() -> None:
     )
 
 
-def test_kserve_v2_client_base_url_with_v2_suffix() -> None:
+def test_kserve_v2_client_infer_url_without_version() -> None:
     client = KserveV2HttpClient(
-        base_url="http://localhost:8000/v2",
+        base_url="http://localhost:8000",
         model_name="layout_model",
         model_version=None,
         timeout=30.0,
