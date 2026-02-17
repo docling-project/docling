@@ -1826,11 +1826,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for key_id in key_order:
             key_tag = key_tags[key_id]
             value_entries = values_by_key.get(key_id, [])
-            # value_entries = [
-            #     entry
-            #     for entry in value_entries
-            #     if self._is_value_in_key_scope(key_tag, entry[2])
-            # ]
+            in_scope_entries = [
+                entry
+                for entry in value_entries
+                if self._is_value_in_key_scope(key_tag, entry[2])
+            ]
+            if in_scope_entries:
+                value_entries = in_scope_entries
             value_entries.sort(
                 key=lambda entry: (
                     entry[0] is None,
