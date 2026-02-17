@@ -3,10 +3,10 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Type
 
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -61,6 +61,39 @@ class BaseVlmEngineOptions(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     engine_type: VlmEngineType = Field(description="Type of inference engine to use")
+
+    # registry: engine_type → subclass
+    _registry: ClassVar[Dict[VlmEngineType, Type["BaseVlmEngineOptions"]]] = {}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        # only register concrete subclasses that fix engine_type via Literal
+        engine_type_field = cls.model_fields.get("engine_type")
+        if engine_type_field and engine_type_field.default is not None:
+            BaseVlmEngineOptions._registry[engine_type_field.default] = cls
+
+
+class VlmEngineOptionsMixin(BaseModel):
+    engine_options: BaseVlmEngineOptions = Field(
+        description="Runtime configuration (transformers, mlx, api, etc.)"
+    )
+
+    @field_validator("engine_options", mode="before")
+    @classmethod
+    def resolve_engine_options(cls, value):
+        # already concrete
+        if isinstance(value, BaseVlmEngineOptions):
+            return value
+
+        # dict / JSON case
+        if isinstance(value, dict):
+            engine_type = value.get("engine_type")
+            model_cls = BaseVlmEngineOptions._registry.get(engine_type)
+            if model_cls:
+                return model_cls.model_validate(value)
+
+        return value
 
 
 class VlmEngineInput(BaseModel):
