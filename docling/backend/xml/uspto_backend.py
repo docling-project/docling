@@ -8,7 +8,7 @@ Security Note:
     This module uses defusedxml.sax.make_parser() with customized security settings
     to protect against XML External Entity (XXE) attacks while allowing USPTO XML files
     to be parsed. In addition, it includes safeguards against entity expansion attacks
-    or entity nesting depth. USPTO files contain DTD declarations that defusedxml
+    and entity nesting depth. USPTO files contain DTD declarations that defusedxml
     blocks by default, so we configure the parser with:
 
     - feature_external_ges: False (blocks external general entities)
@@ -30,7 +30,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, unique
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Final, Optional, Union
+from typing import Final
 from xml.sax import SAXParseException
 from xml.sax.handler import ContentHandler, feature_external_ges, feature_external_pes
 from xml.sax.xmlreader import AttributesImpl
@@ -57,7 +57,7 @@ from docling.datamodel.document import InputDocument
 
 _log = logging.getLogger(__name__)
 
-XML_DECLARATION: Final = '<?xml version="1.0" encoding="UTF-8"?>'
+XML_DECLARATION: Final[str] = '<?xml version="1.0" encoding="UTF-8"?>'
 
 
 @unique
@@ -80,13 +80,11 @@ class PatentHeading(Enum):
 
 class PatentUsptoDocumentBackend(DeclarativeDocumentBackend):
     @override
-    def __init__(
-        self, in_doc: InputDocument, path_or_stream: Union[BytesIO, Path]
-    ) -> None:
+    def __init__(self, in_doc: InputDocument, path_or_stream: BytesIO | Path) -> None:
         super().__init__(in_doc, path_or_stream)
 
         self.patent_content: str = ""
-        self.parser: Optional[PatentUspto] = None
+        self.parser: PatentUspto | None = None
 
         try:
             if isinstance(self.path_or_stream, BytesIO):
@@ -174,7 +172,7 @@ class PatentUspto(ABC):
     """Parser of patent documents from the US Patent Office."""
 
     @abstractmethod
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         """Parse a USPTO patent.
 
         Parameters:
@@ -198,7 +196,7 @@ class PatentUsptoIce(PatentUspto):
         self.handler = PatentUsptoIce.PatentHandler()
         self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
             parser = make_parser()
             parser.setFeature(feature_external_ges, False)
@@ -247,8 +245,8 @@ class PatentUsptoIce(PatentUspto):
     class PatentHandler(ContentHandler):
         """SAX ContentHandler for patent documents."""
 
-        APP_DOC_ELEMENT: Final = "us-patent-application"
-        GRANT_DOC_ELEMENT: Final = "us-patent-grant"
+        APP_DOC_ELEMENT: Final[str] = "us-patent-application"
+        GRANT_DOC_ELEMENT: Final[str] = "us-patent-grant"
 
         @unique
         class Element(Enum):
@@ -282,11 +280,11 @@ class PatentUsptoIce(PatentUspto):
         def __init__(self) -> None:
             """Build an instance of the patent handler."""
             # Current patent being parsed
-            self.doc: Optional[DoclingDocument] = None
+            self.doc: DoclingDocument | None = None
             # Keep track of docling hierarchy level
             self.level: LevelNumber = 1
             # Keep track of docling parents by level
-            self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+            self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
             self.claim: str
@@ -549,7 +547,7 @@ class PatentUsptoGrantV2(PatentUspto):
         self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
     @override
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
             parser = make_parser()
             parser.setFeature(feature_external_ges, False)
@@ -598,8 +596,8 @@ class PatentUsptoGrantV2(PatentUspto):
     class PatentHandler(ContentHandler):
         """SAX ContentHandler for patent documents."""
 
-        GRANT_DOC_ELEMENT: Final = "PATDOC"
-        CLAIM_STATEMENT: Final = "What is claimed is:"
+        GRANT_DOC_ELEMENT: Final[str] = "PATDOC"
+        CLAIM_STATEMENT: Final[str] = "What is claimed is:"
 
         @unique
         class Element(Enum):
@@ -634,11 +632,11 @@ class PatentUsptoGrantV2(PatentUspto):
         def __init__(self) -> None:
             """Build an instance of the patent handler."""
             # Current patent being parsed
-            self.doc: Optional[DoclingDocument] = None
+            self.doc: DoclingDocument | None = None
             # Keep track of docling hierarchy level
             self.level: LevelNumber = 1
             # Keep track of docling parents by level
-            self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+            self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
             self.claim: str
@@ -936,13 +934,13 @@ class PatentUsptoGrantAps(PatentUspto):
     @override
     def __init__(self) -> None:
         """Build an instance of PatentUsptoGrantAps class."""
-        self.doc: Optional[DoclingDocument] = None
+        self.doc: DoclingDocument | None = None
         # Keep track of docling hierarchy level
         self.level: LevelNumber = 1
         # Keep track of docling parents by level
-        self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+        self.parents: dict[LevelNumber, DocItem | None] = {1: None}
 
-    def get_last_text_item(self) -> Optional[TextItem]:
+    def get_last_text_item(self) -> TextItem | None:
         """Get the last text item at the current document level.
 
         Returns:
@@ -1079,7 +1077,7 @@ class PatentUsptoGrantAps(PatentUspto):
                 parent=self.parents[self.level],
             )
 
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         self.doc = self.doc = DoclingDocument(name="file")
         section: str = ""
         key: str = ""
@@ -1124,7 +1122,7 @@ class PatentUsptoAppV1(PatentUspto):
         self.pattern = re.compile(r"^(<table .*?</table>)", re.MULTILINE | re.DOTALL)
 
     @override
-    def parse(self, patent_content: str) -> Optional[DoclingDocument]:
+    def parse(self, patent_content: str) -> DoclingDocument | None:
         try:
             parser = make_parser()
             parser.setFeature(feature_external_ges, False)
@@ -1173,7 +1171,7 @@ class PatentUsptoAppV1(PatentUspto):
     class PatentHandler(ContentHandler):
         """SAX ContentHandler for patent documents."""
 
-        APP_DOC_ELEMENT: Final = "patent-application-publication"
+        APP_DOC_ELEMENT: Final[str] = "patent-application-publication"
 
         @unique
         class Element(Enum):
@@ -1209,11 +1207,11 @@ class PatentUsptoAppV1(PatentUspto):
         def __init__(self) -> None:
             """Build an instance of the patent handler."""
             # Current patent being parsed
-            self.doc: Optional[DoclingDocument] = None
+            self.doc: DoclingDocument | None = None
             # Keep track of docling hierarchy level
             self.level: LevelNumber = 1
             # Keep track of docling parents by level
-            self.parents: dict[LevelNumber, Optional[DocItem]] = {1: None}
+            self.parents: dict[LevelNumber, DocItem | None] = {1: None}
             # Content to retain for the current patent
             self.property: list[str]
             self.claim: str
@@ -1747,7 +1745,7 @@ class XmlTable:
 
         return dl_table
 
-    def parse(self) -> Optional[TableData]:
+    def parse(self) -> TableData | None:
         """Parse the first table from an xml content.
 
         Returns:
