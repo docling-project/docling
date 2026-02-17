@@ -1,3 +1,22 @@
+"""Backend to parse articles in JATS (Journal Article Tag Suite) XML format.
+
+JATS is a standard XML format used by publishers and journal archives including
+PubMed Central (PMC), bioRxiv, and medRxiv for representing journal articles.
+
+Security Note:
+    This module uses lxml.etree.XMLParser with secure configuration to protect
+    against XML External Entity (XXE) attacks and XML bombs. The parser is
+    configured with:
+
+    - resolve_entities: False (prevents entity resolution attacks)
+    - no_network: True (blocks all network access)
+    - dtd_validation: False (disables DTD validation)
+    - load_dtd: False (prevents loading external DTDs)
+
+    This configuration ensures safe parsing of JATS XML files while blocking
+    external entity fetching and preventing XXE attacks.
+"""
+
 import logging
 import traceback
 from io import BytesIO
@@ -100,7 +119,15 @@ class JatsDocumentBackend(DeclarativeDocumentBackend):
         try:
             if isinstance(self.path_or_stream, BytesIO):
                 self.path_or_stream.seek(0)
-            self.tree: etree._ElementTree = etree.parse(self.path_or_stream)
+            parser = etree.XMLParser(
+                resolve_entities=False,
+                load_dtd=False,
+                no_network=True,
+                dtd_validation=False,
+            )
+            self.tree: etree._ElementTree = etree.parse(
+                self.path_or_stream, parser=parser
+            )
 
             doc_info: etree.DocInfo = self.tree.docinfo
             if doc_info.system_url and any(
