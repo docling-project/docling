@@ -1,3 +1,11 @@
+## [v2.73.1](https://github.com/docling-project/docling/releases/tag/v2.73.1) - 2026-02-13
+
+### Fix
+
+* **asciidoc:** Handle commas in image alt text ([#2983](https://github.com/docling-project/docling/issues/2983)) ([`86b6912`](https://github.com/docling-project/docling/commit/86b691204d2e4c2a54c99d80063e2dd5b5428168))
+* Use timezone-aware datetime ([#2947](https://github.com/docling-project/docling/issues/2947)) ([`e2870f9`](https://github.com/docling-project/docling/commit/e2870f94ed78caeb6db9d735b5a73fa80e5e2104))
+* Add failed pages to DoclingDocument for page break consistency ([#2939](https://github.com/docling-project/docling/issues/2939)) ([`1f91482`](https://github.com/docling-project/docling/commit/1f914826bb07c32766e7db37f86baec3ea772a11))
+
 ## [v2.73.0](https://github.com/docling-project/docling/releases/tag/v2.73.0) - 2026-02-11
 
 ### Feature
