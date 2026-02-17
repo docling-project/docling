@@ -306,6 +306,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._raw_html_bytes: Optional[bytes] = None
         self._rendered_html: Optional[str] = None
         self._rendered_bbox_by_id: dict[str, _RenderedBBox] = {}
+        self._rendered_text_bbox_by_id: dict[str, _RenderedBBox] = {}
         self._rendered_page_images: list[Image.Image] = []
         self._rendered_page_size: Optional[Size] = None
 
@@ -517,6 +518,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 () => {
                   const nodes = Array.from(document.querySelectorAll('*'));
                   const boxes = {};
+                  const textBoxes = {};
                   let idx = 0;
                   for (const node of nodes) {
                     idx += 1;
@@ -534,6 +536,59 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     const x = rect.left + window.scrollX;
                     const y = rect.top + window.scrollY;
                     boxes[id] = { x, y, width, height };
+
+                    const walker = document.createTreeWalker(
+                      node,
+                      NodeFilter.SHOW_TEXT,
+                      {
+                        acceptNode: (textNode) => {
+                          if (!textNode || !textNode.textContent) {
+                            return NodeFilter.FILTER_REJECT;
+                          }
+                          return textNode.textContent.trim()
+                            ? NodeFilter.FILTER_ACCEPT
+                            : NodeFilter.FILTER_REJECT;
+                        }
+                      }
+                    );
+                    let textLeft = null;
+                    let textTop = null;
+                    let textRight = null;
+                    let textBottom = null;
+                    while (walker.nextNode()) {
+                      const range = document.createRange();
+                      range.selectNodeContents(walker.currentNode);
+                      const rects = Array.from(range.getClientRects());
+                      for (const tRect of rects) {
+                        const tWidth = tRect.width || 0;
+                        const tHeight = tRect.height || 0;
+                        if (tWidth <= 0 && tHeight <= 0) {
+                          continue;
+                        }
+                        const tX = tRect.left + window.scrollX;
+                        const tY = tRect.top + window.scrollY;
+                        const tR = tX + tWidth;
+                        const tB = tY + tHeight;
+                        textLeft = textLeft === null ? tX : Math.min(textLeft, tX);
+                        textTop = textTop === null ? tY : Math.min(textTop, tY);
+                        textRight = textRight === null ? tR : Math.max(textRight, tR);
+                        textBottom = textBottom === null ? tB : Math.max(textBottom, tB);
+                      }
+                      range.detach();
+                    }
+                    if (
+                      textLeft !== null &&
+                      textTop !== null &&
+                      textRight !== null &&
+                      textBottom !== null
+                    ) {
+                      textBoxes[id] = {
+                        x: textLeft,
+                        y: textTop,
+                        width: textRight - textLeft,
+                        height: textBottom - textTop
+                      };
+                    }
                   }
                   const doc = document.documentElement;
                   const body = document.body;
@@ -545,7 +600,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     doc ? doc.scrollHeight : 0,
                     body ? body.scrollHeight : 0
                   );
-                  return { boxes, scrollWidth, scrollHeight };
+                  return { boxes, textBoxes, scrollWidth, scrollHeight };
                 }
                 """
             )
@@ -565,6 +620,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             self._rendered_bbox_by_id = self._build_bbox_mapping(
                 render_data=render_data,
+                page_height=int(self._rendered_page_size.height)
+                if self._rendered_page_size
+                else height,
+                full_page=options.render_full_page,
+            )
+            self._rendered_text_bbox_by_id = self._build_bbox_mapping(
+                render_data={
+                    "boxes": render_data.get("textBoxes", {}),
+                    "scrollHeight": render_data.get("scrollHeight"),
+                },
                 page_height=int(self._rendered_page_size.height)
                 if self._rendered_page_size
                 else height,
@@ -665,6 +730,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return None
         return self._rendered_bbox_by_id.get(tag_id)
 
+    def _get_rendered_text_bbox_for_tag(
+        self, tag: Optional[Tag]
+    ) -> Optional[_RenderedBBox]:
+        tag_id = self._get_tag_id(tag)
+        if tag_id is None:
+            return None
+        return self._rendered_text_bbox_by_id.get(tag_id)
+
     def _make_prov(
         self,
         text: str,
@@ -681,6 +754,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             render_box = self._get_rendered_bbox_for_tag(tag)
         if render_box is None:
             return None
+
+        return ProvenanceItem(
+            page_no=render_box.page_no,
+            bbox=render_box.bbox,
+            charspan=(0, len(text)),
+        )
+
+    def _make_text_prov(
+        self,
+        text: str,
+        tag: Optional[Tag] = None,
+        source_tag_id: Optional[str] = None,
+    ) -> Optional[ProvenanceItem]:
+        if not self._rendered_text_bbox_by_id:
+            return self._make_prov(text=text, tag=tag, source_tag_id=source_tag_id)
+
+        render_box: Optional[_RenderedBBox] = None
+        if source_tag_id:
+            render_box = self._rendered_text_bbox_by_id.get(source_tag_id)
+        if render_box is None:
+            render_box = self._get_rendered_text_bbox_for_tag(tag)
+        if render_box is None:
+            return self._make_prov(text=text, tag=tag, source_tag_id=source_tag_id)
 
         return ProvenanceItem(
             page_no=render_box.page_no,
@@ -1799,13 +1895,13 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     ) -> bool:
         key_table = key_tag.find_parent("table")
         value_table = value_tag.find_parent("table")
-        if key_table is None and value_table is not None:
-            return True
-
         key_cell = self._get_table_cell(key_tag)
         value_cell = self._get_table_cell(value_tag)
-        if key_cell is not None and value_cell is not None and key_cell is not value_cell:
-            return True
+        if key_table is not None or value_table is not None:
+            if key_cell is None or value_cell is None:
+                return True
+            if key_cell is not value_cell:
+                return True
 
         if key_table is None and value_table is None and table_bboxes:
             value_rendered = self._get_rendered_bbox_for_tag(value_tag)
@@ -1921,7 +2017,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 label=GraphCellLabel.KEY,
                 text=key_text,
                 orig=key_orig,
-                prov=self._make_prov(text=key_text, tag=key_tag),
+                prov=self._make_text_prov(text=key_text, tag=key_tag),
             )
             cells.append(key_cell)
             cell_id_seq += 1
@@ -1934,7 +2030,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     label=GraphCellLabel.VALUE,
                     text=value_text,
                     orig=value_orig,
-                    prov=self._make_prov(text=value_text, tag=value_tag),
+                    prov=self._make_text_prov(text=value_text, tag=value_tag),
                 )
                 cells.append(value_cell)
                 links.append(
