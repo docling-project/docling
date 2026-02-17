@@ -495,6 +495,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             else:
                 page.set_content(render_html, wait_until=options.render_wait_until)
 
+            if options.page_padding > 0:
+                page.evaluate(
+                    """
+                    (padding) => {
+                      if (!document || !document.body) {
+                        return;
+                      }
+                      document.body.style.padding = `${padding}px`;
+                      document.body.style.boxSizing = "border-box";
+                    }
+                    """,
+                    options.page_padding,
+                )
+
             if options.render_wait_ms:
                 page.wait_for_timeout(options.render_wait_ms)
 
@@ -1767,6 +1781,42 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return False
 
     @staticmethod
+    def _get_table_cell(tag: Tag) -> Optional[Tag]:
+        parent_cell = tag.find_parent(["td", "th"])
+        return parent_cell if isinstance(parent_cell, Tag) else None
+
+    @staticmethod
+    def _is_bbox_within_any_table(
+        value_bbox: BoundingBox, table_bboxes: list[BoundingBox], threshold: float = 0.9
+    ) -> bool:
+        for table_bbox in table_bboxes:
+            if value_bbox.intersection_over_self(table_bbox) >= threshold:
+                return True
+        return False
+
+    def _should_ignore_table_kv_link(
+        self, key_tag: Tag, value_tag: Tag, table_bboxes: list[BoundingBox]
+    ) -> bool:
+        key_table = key_tag.find_parent("table")
+        value_table = value_tag.find_parent("table")
+        if key_table is None and value_table is not None:
+            return True
+
+        key_cell = self._get_table_cell(key_tag)
+        value_cell = self._get_table_cell(value_tag)
+        if key_cell is not None and value_cell is not None and key_cell is not value_cell:
+            return True
+
+        if key_table is None and value_table is None and table_bboxes:
+            value_rendered = self._get_rendered_bbox_for_tag(value_tag)
+            if value_rendered and self._is_bbox_within_any_table(
+                value_rendered.bbox, table_bboxes
+            ):
+                return True
+
+        return False
+
+    @staticmethod
     def _extract_text_excluding_ids(tag: Tag, excluded_ids: set[str]) -> str:
         def _extract(node: PageElement) -> list[str]:
             if isinstance(node, NavigableString):
@@ -1823,9 +1873,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         links: list[GraphLink] = []
         cell_id_seq = 0
 
+        table_bboxes: list[BoundingBox] = []
+        if self._rendered_bbox_by_id:
+            for table_tag in form_tag.find_all("table"):
+                if isinstance(table_tag, Tag):
+                    rendered = self._get_rendered_bbox_for_tag(table_tag)
+                    if rendered is not None:
+                        table_bboxes.append(rendered.bbox)
+
         for key_id in key_order:
             key_tag = key_tags[key_id]
             value_entries = values_by_key.get(key_id, [])
+            value_entries = [
+                entry
+                for entry in value_entries
+                if not self._should_ignore_table_kv_link(
+                    key_tag, entry[2], table_bboxes
+                )
+            ]
             in_scope_entries = [
                 entry
                 for entry in value_entries

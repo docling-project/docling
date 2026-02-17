@@ -57,6 +57,12 @@ class HTMLBackendOptions(BaseBackendOptions):
     render_device_scale: float = Field(
         1.0, description="Device scale factor for rendering."
     )
+    page_padding: int = Field(
+        0,
+        description=(
+            "Padding in CSS pixels applied to the HTML body before rendering."
+        ),
+    )
     render_full_page: bool = Field(
         False,
         description=("Capture a single full-height page image instead of paginating."),
