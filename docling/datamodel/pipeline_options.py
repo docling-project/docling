@@ -10,6 +10,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_validator,
 )
 from typing_extensions import deprecated
 
@@ -58,6 +59,10 @@ from docling.datamodel.vlm_model_specs import (
     SMOLDOCLING_TRANSFORMERS as smoldocling_vlm_conversion_options,
     VlmModelType,
 )
+from docling.models.inference_engines.object_detection.base import (
+    ObjectDetectionEngineOptionsMixin,
+)
+from docling.models.inference_engines.vlm.base import VlmEngineOptionsMixin
 
 _log = logging.getLogger(__name__)
 
@@ -639,7 +644,7 @@ class PictureDescriptionVlmOptions(PictureDescriptionBaseOptions):
 
 
 class PictureDescriptionVlmEngineOptions(
-    StagePresetMixin, PictureDescriptionBaseOptions
+    StagePresetMixin, VlmEngineOptionsMixin, PictureDescriptionBaseOptions
 ):
     """Configuration for VLM runtime-based picture description.
 
@@ -666,9 +671,6 @@ class PictureDescriptionVlmEngineOptions(
 
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
-    )
-    engine_options: BaseVlmEngineOptions = Field(
-        description="Runtime configuration (transformers, mlx, api, etc.)"
     )
     prompt: Annotated[
         str,
@@ -715,7 +717,7 @@ detailed descriptions of image content.
 """
 
 
-class VlmConvertOptions(StagePresetMixin, BaseModel):
+class VlmConvertOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based document conversion.
 
     This stage uses vision-language models to convert document pages to
@@ -738,10 +740,6 @@ class VlmConvertOptions(StagePresetMixin, BaseModel):
         description="Model specification with runtime-specific overrides"
     )
 
-    engine_options: BaseVlmEngineOptions = Field(
-        description="Runtime configuration (transformers, mlx, api, etc.)"
-    )
-
     scale: float = Field(
         default=2.0, description="Image scaling factor for preprocessing"
     )
@@ -759,7 +757,7 @@ class VlmConvertOptions(StagePresetMixin, BaseModel):
     )
 
 
-class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
+class CodeFormulaVlmOptions(StagePresetMixin, VlmEngineOptionsMixin, BaseModel):
     """Configuration for VLM-based code and formula extraction.
 
     This stage uses vision-language models to extract code blocks and
@@ -776,10 +774,6 @@ class CodeFormulaVlmOptions(StagePresetMixin, BaseModel):
 
     model_spec: VlmModelSpec = Field(
         description="Model specification with runtime-specific overrides"
-    )
-
-    engine_options: BaseVlmEngineOptions = Field(
-        description="Runtime configuration (transformers, mlx, api, etc.)"
     )
 
     scale: float = Field(
@@ -1119,7 +1113,11 @@ class LayoutOptions(BaseLayoutOptions):
     ] = DOCLING_LAYOUT_HERON
 
 
-class LayoutObjectDetectionOptions(ObjectDetectionStagePresetMixin, BaseLayoutOptions):
+class LayoutObjectDetectionOptions(
+    ObjectDetectionStagePresetMixin,
+    ObjectDetectionEngineOptionsMixin,
+    BaseLayoutOptions,
+):
     """Options for layout detection using object-detection runtimes."""
 
     kind: ClassVar[str] = "layout_object_detection"
@@ -1139,10 +1137,6 @@ class LayoutObjectDetectionOptions(ObjectDetectionStagePresetMixin, BaseLayoutOp
             deep=True
         ),
         description="Object-detection model specification for layout analysis",
-    )
-
-    engine_options: BaseObjectDetectionEngineOptions = Field(
-        description="Runtime configuration for the object-detection engine",
     )
 
 
