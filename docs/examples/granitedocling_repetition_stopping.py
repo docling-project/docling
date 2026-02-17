@@ -1,5 +1,9 @@
 # %% [markdown]
-# Experimental VLM pipeline with custom repetition stopping criteria.
+# Experimental VLM pipeline with custom repetition stopping criteria (LEGACY).
+#
+# **NOTE:** This example uses the LEGACY vlm_model_specs approach because
+# custom_stopping_criteria is a feature of the old InlineVlmOptions system.
+# This feature is not yet migrated to the new preset/runtime system.
 #
 # This script demonstrates the use of custom stopping criteria that detect
 # repetitive location coordinate patterns in generated text and stop generation
@@ -35,7 +39,7 @@ logging.basicConfig(level=logging.INFO)
 source = "tests/data_scanned/old_newspaper.png"  # Example that creates repetitions.
 print(f"Processing document: {source}")
 
-###### USING GRANITEDOCLING WITH CUSTOM REPETITION STOPPING
+###### USING GRANITEDOCLING WITH CUSTOM REPETITION STOPPING (LEGACY)
 
 ## Using standard Huggingface Transformers (most portable, slowest)
 custom_vlm_options = vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.model_copy()
@@ -66,34 +70,34 @@ doc = converter.convert(source=source).document
 
 print(doc.export_to_markdown())
 
-## Using a remote VLM inference service (for example VLLM) - uncomment to use
 
+###### ALTERNATIVE: USING A REMOTE VLM INFERENCE SERVICE (e.g., VLLM) - LEGACY
+
+# from docling.datamodel.pipeline_options_vlm_model import ApiVlmOptions, ResponseFormat
+#
 # custom_vlm_options = ApiVlmOptions(
 #     url="http://localhost:8000/v1/chat/completions",  # LM studio defaults to port 1234, VLLM to 8000
 #     params=dict(
 #         model=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.repo_id,
 #         max_tokens=8192,
-#         skip_special_tokens=True,  # needed for VLLM
+#         seed=42,
 #     ),
+#     response_format=ResponseFormat.DOCTAGS,
 #     headers={
-#         "Authorization": "Bearer YOUR_API_KEY",
+#         # "Authorization": "Bearer YOUR_API_KEY",  # if needed
 #     },
 #     prompt=vlm_model_specs.GRANITEDOCLING_TRANSFORMERS.prompt,
 #     timeout=90,
-#     scale=2.0,
-#     temperature=0.0,
-#     response_format=ResponseFormat.DOCTAGS,
-#     custom_stopping_criteria=[
-#         DocTagsRepetitionStopper(N=1)
-#     ],  # check for repetitions for every new chunk of the response stream
+#     # Note: Custom stopping criteria work differently with API runtimes
+#     # They are applied client-side after receiving tokens from the API
+#     custom_stopping_criteria=[DocTagsRepetitionStopper(N=32)],
 # )
-
-
+#
 # pipeline_options = VlmPipelineOptions(
 #     vlm_options=custom_vlm_options,
 #     enable_remote_services=True, # required when using a remote inference service.
 # )
-
+#
 # converter = DocumentConverter(
 #     format_options={
 #         InputFormat.IMAGE: PdfFormatOption(
@@ -102,7 +106,6 @@ print(doc.export_to_markdown())
 #         ),
 #     }
 # )
-
+#
 # doc = converter.convert(source=source).document
-
 # print(doc.export_to_markdown())

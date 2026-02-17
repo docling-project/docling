@@ -8,7 +8,10 @@ from docling_core.types.doc.page import TextCell
 from rtree import index
 
 from docling.datamodel.base_models import BoundingBox, Cluster, Page
-from docling.datamodel.pipeline_options import LayoutOptions
+from docling.datamodel.pipeline_options import (
+    LayoutObjectDetectionOptions,
+    LayoutOptions,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -195,7 +198,10 @@ class LayoutPostprocessor:
     }
 
     def __init__(
-        self, page: Page, clusters: list[Cluster], options: LayoutOptions
+        self,
+        page: Page,
+        clusters: list[Cluster],
+        options: LayoutOptions | LayoutObjectDetectionOptions,
     ) -> None:
         """Initialize processor with page and clusters."""
 

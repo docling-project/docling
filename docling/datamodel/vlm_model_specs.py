@@ -37,7 +37,7 @@ GRANITEDOCLING_TRANSFORMERS = InlineVlmOptions(
     stop_strings=["</doctag>", "<|end_of_text|>"],
 )
 
-GRANITEDOCLING_VLLM = GRANITEDOCLING_TRANSFORMERS.model_copy()
+GRANITEDOCLING_VLLM = GRANITEDOCLING_TRANSFORMERS.model_copy(deep=True)
 GRANITEDOCLING_VLLM.inference_framework = InferenceFramework.VLLM
 
 GRANITEDOCLING_MLX = InlineVlmOptions(
@@ -68,7 +68,7 @@ GRANITEDOCLING_VLLM_API = ApiVlmOptions(
     response_format=ResponseFormat.DOCTAGS,
 )
 
-GRANITEDOCLING_OLLAMA = GRANITEDOCLING_VLLM_API.model_copy()
+GRANITEDOCLING_OLLAMA = GRANITEDOCLING_VLLM_API.model_copy(deep=True)
 GRANITEDOCLING_OLLAMA.url = AnyUrl("http://localhost:11434/v1/chat/completions")
 GRANITEDOCLING_OLLAMA.params["model"] = "ibm/granite-docling:258m"
 

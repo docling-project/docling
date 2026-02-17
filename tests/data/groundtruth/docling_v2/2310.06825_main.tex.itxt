@@ -1,0 +1,126 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: text: -30pt
+  item-2 at level 1: caption: Image: images/header.jpeg
+  item-3 at level 1: picture
+    item-3 at level 2: caption: Image: images/header.jpeg
+  item-4 at level 1: section_header: Abstract
+  item-5 at level 1: text: We introduce , a 7billion-parame ... mistral.ai/news/announcing-mistral-7b/
+  item-6 at level 1: section_header: Introduction
+  item-7 at level 1: text: =-1 In the rapidly evolving doma ... rmance on non-code related benchmarks.
+  item-8 at level 1: text: leverages grouped-query attentio ... hanced performance and efficiency of .
+  item-9 at level 1: text: is released under the Apache 2.0 ... ompanied by a reference implementation
+  item-10 at level 1: footnote: https://github.com/mistralai/mistral-src
+  item-11 at level 1: text: facilitating easy deployment eit ... ficient] inference server and SkyPilot
+  item-12 at level 1: footnote: https://github.com/skypilot-org/skypilot
+  item-13 at level 1: text: .
+Integration with Hugging Face
+  item-14 at level 1: footnote: https://huggingface.co/mistralai
+  item-15 at level 1: text: is also streamlined for easier i ... ntly outperforms the 2 13B Chat model.
+  item-16 at level 1: text: =-1 takes a significant step in  ... wide range of real-world applications.
+  item-17 at level 1: section_header: Architectural details
+  item-18 at level 1: section: group figure
+    item-19 at level 2: picture
+      item-19 at level 3: caption: Image: images/swa.pdf
+    item-20 at level 2: text: Sliding Window Attention. The nu ...  forward by up to $k \times W$ tokens.
+  item-21 at level 1: caption: Image: images/swa.pdf
+  item-22 at level 1: text: r0.275
+-15pt
+  item-23 at level 1: table with [11x2]
+  item-24 at level 1: text: tableModel architecture.
+  item-25 at level 1: text: -8pt
+  item-26 at level 1: text: is based on a transformer archit ... a few changes that we summarize below.
+  item-27 at level 1: text: =-1 Sliding Window Attention. SW ... ent over a vanilla attention baseline.
+  item-28 at level 1: text: =-1 Rolling Buffer Cache. A fixe ... , without impacting the model quality.
+  item-29 at level 1: section: group figure
+    item-30 at level 2: text: [][c]
+    item-31 at level 2: picture
+      item-31 at level 3: caption: Image: images/rolling_buffer.pdf
+    item-32 at level 2: text: Rolling buffer cache. The cache  ... enerated tokens are colored in orange.
+  item-33 at level 1: caption: Image: images/rolling_buffer.pdf
+  item-34 at level 1: text: =-1 Pre-fill and Chunking. When  ... rks over both the cache and the chunk.
+  item-35 at level 1: section: group figure
+    item-36 at level 2: picture
+      item-36 at level 3: caption: Image: images/chunking.pdf
+    item-37 at level 2: text: Pre-fill and chunking.
+During pr ... de of the sliding window (left block).
+    item-38 at level 2: text: 0.1in
+  item-39 at level 1: caption: Image: images/chunking.pdf
+  item-40 at level 1: section_header: Results
+  item-41 at level 1: paragraph: We compare
+  item-42 at level 1: text: to , and re-run all benchmarks w ... ariety of tasks categorized as follow:
+  item-43 at level 1: list: group list
+    item-44 at level 2: list_item: Commonsense Reasoning (0-shot):  ... CommonsenseQA[talmor2018commonsenseqa]
+    item-45 at level 2: list_item: World Knowledge (5-shot): Natura ... 9natural], TriviaQA[joshi2017triviaqa]
+    item-46 at level 2: list_item: Reading Comprehension (0-shot): BoolQ[clark2019boolq], QuAC[choi2018quac]
+    item-47 at level 2: list_item: Math: GSM8K[cobbe2021training] ( ... ycks2021measuring] (4-shot) with maj@4
+    item-48 at level 2: list_item: Code: Humaneval[chen2021evaluati ... ) and MBPP[austin2021program] (3-shot)
+    item-49 at level 2: list_item: Popular aggregated results: MMLU ... nglish multiple-choice questions only)
+  item-50 at level 1: paragraph: Detailed results for
+  item-51 at level 1: text: , 2 7B/13B, and Code-7B are repo ... erformance of with 2 7B/13B, and 1 34B
+  item-52 at level 1: footnote: Since 2 34B was not open-sourced, we report results for 1 34B.
+  item-53 at level 1: text: in different categories.
+surpass ... mathematics, and reasoning benchmarks.
+  item-54 at level 1: text: Size and Efficiency. We computed ...  the amount of knowledge it can store.
+  item-55 at level 1: text: Evaluation Differences. On some  ...  we do not provide Wikipedia contexts.
+  item-56 at level 1: section: group figure
+    item-57 at level 2: picture
+      item-57 at level 3: caption: Image: images/230927_bars.png
+    item-58 at level 2: text: Performance of and different mod ...  generation, and reasoning benchmarks.
+  item-59 at level 1: caption: Image: images/230927_bars.png
+  item-60 at level 1: text: 1.8pt
+  item-61 at level 1: table with [6x14]
+  item-62 at level 1: text: 4pt
+  item-63 at level 1: text: Comparison of with . outperforms ... ng performance on non-code benchmarks.
+  item-64 at level 1: section: group figure
+    item-65 at level 2: picture
+      item-65 at level 3: caption: Image: images/230927_effective_sizes.png
+    item-66 at level 2: text: Results on MMLU, commonsense rea ...  amount of knowledge it can compress).
+  item-67 at level 1: caption: Image: images/230927_effective_sizes.png
+  item-68 at level 1: text: r0.48
+  item-69 at level 1: text: -13pt
+2pt
+  item-70 at level 1: table with [9x3]
+  item-71 at level 1: text: -3pt
+tableComparison of Chat mod ...  and is comparable to 13B Chat models.
+  item-72 at level 1: text: -10pt
+  item-73 at level 1: section_header: Instruction Finetuning
+  item-74 at level 1: text: =-1 To evaluate the generalizati ...  on https://llmboxing.com/leaderboard.
+  item-75 at level 1: paragraph: In this evaluation, participants ... red response, as illustrated in Figure
+  item-76 at level 1: text: [fig:humanevalquestion].
+As of O ... ompared to 4143 times for Llama 2 13B.
+  item-77 at level 1: section_header: Adding guardrails for front-facing applications
+  item-78 at level 1: text: =-1 The ability to enforce guard ... force quality content in applications.
+  item-79 at level 1: section_header: System prompt to enforce guardrails
+  item-80 at level 1: paragraph: We introduce a system prompt (se ... rdrails, similar to the work done with
+  item-81 at level 1: text: 2. Using this prompt allows the  ... as indicated in Table[tab:guardrails].
+  item-82 at level 1: text: 0.98Always assist with care, res ... plies promote fairness and positivity.
+  item-83 at level 1: text: 6pt
+  item-84 at level 1: text: r0.38
+  item-85 at level 1: text: -10pt
+  item-86 at level 1: table with [5x2]
+  item-87 at level 1: text: -4pt
+tableSystem prompts. Mean o ... Chat reports official results of 6.65.
+  item-88 at level 1: text: =-1 We use a set of 175 unsafe p ... o answer 100%of the harmful questions.
+  item-89 at level 1: text: =-1 As an illustration, we provi ... y when system prompts are deactivated.
+  item-90 at level 1: text: 27pt
+  item-91 at level 1: table with [4x2]
+  item-92 at level 1: text: 6pt
+  item-93 at level 1: text: Comparison between Mistral and s ...  question How to kill a linux process.
+  item-94 at level 1: section_header: Content moderation with self-reflection
+  item-95 at level 1: text: =-1 can be used as a content mod ... n legal, medical or financial domains.
+  item-96 at level 1: text: =-1 To do so, we designed a self ... ring acceptable prompts as positives).
+  item-97 at level 1: text: =-1 The use cases are vast, from ... er based on their particular use-case.
+  item-98 at level 1: section_header: Conclusion
+  item-99 at level 1: paragraph: Our work on Mistral 7B demonstra ... l capabilities to training cost, as in
+  item-100 at level 1: text: [hoffmann2022compute]); the prob ... ance with the smallest possible model.
+  item-101 at level 1: section_header: Acknowledgements
+  item-102 at level 1: text: =-1 We are grateful to CoreWeave ... aking our model compatible everywhere.
+  item-103 at level 1: text: 150pt
+  item-104 at level 1: section: group figure
+    item-105 at level 2: picture
+      item-105 at level 3: caption: Image: images/llama_vs_mistral_example.png
+    item-106 at level 2: text: -10pt
+    item-107 at level 2: text: Human evaluation of vs 213BChat  ... cribes in the contents in more detail.
+  item-108 at level 1: caption: Image: images/llama_vs_mistral_example.png
+  item-109 at level 1: text: ref
+  item-110 at level 1: text: plain

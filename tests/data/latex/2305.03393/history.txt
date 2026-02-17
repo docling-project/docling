@@ -1,0 +1,148 @@
+Version history for the LLNCS LaTeX2e class
+
+ date     filename      version   action/reason/acknowledgements
+----------------------------------------------------------------------------
+ 29.5.96  letter.txt      beta    naming problems (subject index file)
+                                  thanks to Dr. Martin Held, Salzburg, AT
+
+          subjindx.ind            renamed to subjidx.ind as required
+                                  by llncs.dem
+
+          history.txt             introducing this file
+
+ 30.5.96  llncs.cls               incompatibility with new article.cls of
+                                  1995/12/20 v1.3q Standard LaTeX document class,
+                                  \if@openbib is no longer defined,
+                                  reported by Ralf Heckmann and Graham Gough
+                                  solution by David Carlisle
+
+ 10.6.96  llncs.cls               problems with fragile commands in \author field
+                                  reported by Michael Gschwind, TU Wien
+
+ 25.7.96  llncs.cls               revision a corrects:
+                                  wrong size of text area, floats not \small,
+                                  some LaTeX generated texts
+                                  reported by Michael Sperber, Uni Tuebingen
+
+ 16.4.97  all files        2.1    leaving beta state,
+                                  raising version counter to 2.1
+
+  8.6.97  llncs.cls        2.1a   revision a corrects:
+                                  unbreakable citation lists, reported by
+                                  Sergio Antoy of Portland State University
+
+11.12.97  llncs.cls        2.2    "general" headings centered; two new elements
+                                  for the article header: \email and \homedir;
+                                  complete revision of special environments:
+                                  \newtheorem replaced with \spnewtheorem,
+                                  introduced the theopargself environment;
+                                  two column parts made with multicol package;
+                                  add ons to work with the hyperref package
+
+07.01.98  llncs.cls        2.2    changed \email to simply switch to \tt
+
+25.03.98  llncs.cls        2.3    new class option "oribibl" to suppress
+                                  changes to the thebibliograpy environment
+                                  and retain pure LaTeX codes - useful
+                                  for most BibTeX applications
+
+16.04.98  llncs.cls        2.3    if option "oribibl" is given, extend the
+                                  thebibliograpy hook with "\small", suggested
+                                  by Clemens Ballarin, University of Cambridge
+
+20.11.98  llncs.cls        2.4    pagestyle "titlepage" - useful for
+                                  compilation of whole LNCS volumes
+
+12.01.99  llncs.cls        2.5    counters of orthogonal numbered special
+                                  environments are reset each new contribution
+
+27.04.99  llncs.cls        2.6    new command \thisbottomragged for the
+                                  actual page; indention of the footnote
+                                  made variable with \fnindent (default 1em);
+                                  new command \url that copys its argument
+
+ 2.03.00  llncs.cls        2.7    \figurename and \tablename made compatible
+                                  to babel, suggested by Jo Hereth, TU Darmstadt;
+                                  definition of \url moved \AtBeginDocument
+                                  (allows for url package of Donald Arseneau),
+                                  suggested by Manfred Hauswirth, TU of Vienna;
+                                  \large for part entries in the TOC
+
+16.04.00  llncs.cls        2.8    new option "orivec" to preserve the original
+                                  vector definition, read "arrow" accent
+
+17.01.01  llncs.cls        2.9    hardwired texts made polyglot,
+                                  available languages: english (default),
+                                  french, german - all are "babel-proof"
+
+20.06.01  splncs.bst              public release of a BibTeX style for LNCS,
+                                  nobly provided by Jason Noble
+
+14.08.01  llncs.cls        2.10   TOC: authors flushleft,
+                                  entries without hyphenation; suggested
+                                  by Wiro Niessen, Imaging Center - Utrecht
+
+23.01.02  llncs.cls        2.11   fixed footnote number confusion with
+                                  \thanks, numbered institutes, and normal
+                                  footnote entries; error reported by
+                                  Saverio Cittadini, Istituto Tecnico
+                                  Industriale "Tito Sarrocchi" - Siena
+
+28.01.02  llncs.cls        2.12   fixed footnote fix; error reported by
+                                  Chris Mesterharm, CS Dept. Rutgers - NJ
+
+28.01.02  llncs.cls        2.13   fixed the fix (programmer needs vacation)
+
+17.08.04  llncs.cls        2.14   TOC: authors indented, smart \and handling
+                                  for the TOC suggested by Thomas Gabel
+                                  University of Osnabrueck
+
+07.03.06  splncs.bst              fix for BibTeX entries without year; patch
+                                  provided by Jerry James, Utah State University
+
+14.06.06  splncs_srt.bst          a sorting BibTeX style for LNCS, feature
+                                  provided by Tobias Heindel, FMI Uni-Stuttgart
+
+16.10.06  llncs.dem        2.3    removed affiliations from \tocauthor demo
+
+11.12.07  llncs.doc               note on online visibility of given e-mail address
+
+15.06.09  splncs03.bst            new BibTeX style compliant with the current
+                                  requirements, provided by Maurizio "Titto"
+                                  Patrignani of Universita' Roma Tre
+
+30.03.10  llncs.cls        2.15   fixed broken hyperref interoperability;
+                                  patch provided by Sven Koehler,
+                                  Hamburg University of Technology
+
+15.04.10  llncs.cls        2.16   fixed hyperref warning for informatory TOC entries;
+                                  introduced \keywords command - finally;
+                                  blank removed from \keywordname, flaw reported
+                                  by Armin B. Wagner, IGW TU Vienna
+
+15.04.10  llncs.cls        2.17   fixed missing switch "openright" used by \backmatter;
+                                  flaw reported by Tobias Pape, University of Potsdam
+
+27.09.13  llncs.cls        2.18   fixed "ngerman" incompatibility; solution provided
+                                  by Bastian Pfleging, University of Stuttgart
+
+04.09.17  llncs.cls        2.19   introduced \orcidID command
+
+10.03.18  llncs.cls        2.20   adjusted \doi according to CrossRef requirements;
+                                  TOC: removed affiliation numbers
+
+          splncs04.bst            added doi field;
+                                  bold journal numbers
+
+          samplepaper.tex         new sample paper
+
+          llncsdoc.pdf            new LaTeX class documentation
+
+12.01.22  llncs.cls        2.21   fixed German and French \maketitle, bug reported by
+                                  Alexander Malkis, Technical University of Munich;
+                                  use detokenized argument in the definition of \doi
+                                  to allow underscores in DOIs
+
+05.09.22  llncs.cls        2.22   robust redefinition of \vec (bold italics), bug 
+                                  reported by Alexander Malkis, TUM
+

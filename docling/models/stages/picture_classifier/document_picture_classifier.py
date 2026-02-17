@@ -238,7 +238,7 @@ class DocumentPictureClassifier(
                 predictions=predictions,
             )
 
-            if item.meta is not None:
+            if item.meta is not None and isinstance(item.meta, PictureMeta):
                 item.meta.classification = classification_data
             else:
                 item.meta = PictureMeta(classification=classification_data)
