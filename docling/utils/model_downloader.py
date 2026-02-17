@@ -76,7 +76,9 @@ def download_models(
 
     if with_picture_classifier:
         _log.info("Downloading picture classifier model...")
-        pic_opts = DocumentPictureClassifierOptions()
+        pic_opts = DocumentPictureClassifierOptions.from_preset(
+            "document_figure_classifier_v2"
+        )
         DocumentPictureClassifier.download_models(
             repo_id=pic_opts.repo_id,
             revision=pic_opts.revision,
