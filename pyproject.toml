@@ -71,6 +71,7 @@ dependencies = [
   'scipy (>=1.6.0,<2.0.0)',
   "accelerate>=1.0.0,<2",
   "polyfactory>=2.22.2",
+  "defusedxml (>=0.7.1, <0.8.0)",
 ]
 
 [project.urls]
@@ -132,6 +133,7 @@ dev = [
     "ipywidgets~=8.1",
     "nbqa~=1.9",
     "python-semantic-release~=7.32",
+    "types-defusedxml (>=0.7.0.20250822, <0.8.0)",
 ]
 docs = [
   "mkdocs-material~=9.5",

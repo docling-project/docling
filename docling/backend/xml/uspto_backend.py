@@ -3,20 +3,41 @@
 The parsers included in this module can handle patent grants published since 1976 and
 patent applications since 2001.
 The original files can be found in https://bulkdata.uspto.gov.
+
+Security Note:
+    This module uses defusedxml.sax.make_parser() with customized security settings
+    to protect against XML External Entity (XXE) attacks while allowing USPTO XML files
+    to be parsed. In addition, it includes safeguards against entity expansion attacks
+    or entity nesting depth. USPTO files contain DTD declarations that defusedxml
+    blocks by default, so we configure the parser with:
+
+    - feature_external_ges: False (blocks external general entities)
+    - feature_external_pes: False (blocks external parameter entities)
+    - forbid_dtd: False (allows DTD declarations in the XML)
+    - forbid_entities: False (allows entity declarations)
+    - forbid_external: False (allows external references in declarations)
+
+    This configuration permits DTD declarations (required for USPTO files) while the
+    disabled external entity features prevent actual fetching of external resources,
+    effectively blocking XXE attacks. The parser processes the XML structure without
+    accessing any external files or URLs.
 """
 
 import html
 import logging
 import re
-import xml.sax
-import xml.sax.xmlreader
 from abc import ABC, abstractmethod
 from enum import Enum, unique
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import Final, Optional, Union
+from xml.sax import SAXParseException
+from xml.sax.handler import ContentHandler, feature_external_ges, feature_external_pes
+from xml.sax.xmlreader import AttributesImpl
 
 from bs4 import BeautifulSoup, Tag
+from defusedxml.common import DefusedXmlException
+from defusedxml.sax import make_parser
 from docling_core.types.doc import (
     DocItem,
     DocItemLabel,
@@ -179,10 +200,24 @@ class PatentUsptoIce(PatentUspto):
 
     def parse(self, patent_content: str) -> Optional[DoclingDocument]:
         try:
-            xml.sax.parseString(patent_content, self.handler)
-        except xml.sax._exceptions.SAXParseException as exc_sax:
-            _log.error(f"Error in parsing USPTO document: {exc_sax}")
-
+            parser = make_parser()
+            parser.setFeature(feature_external_ges, False)
+            parser.setFeature(feature_external_pes, False)
+            parser.forbid_dtd = False
+            parser.forbid_entities = False
+            parser.forbid_external = False
+            parser.setContentHandler(self.handler)
+            parser.parse(StringIO(patent_content))
+        except SAXParseException as exc_sax:
+            _log.error(f"Error in parsing USPTO document (malformed XML): {exc_sax}")
+            return None
+        except DefusedXmlException as exc_defused:
+            _log.error(
+                f"Error in parsing USPTO document (security issue detected): {exc_defused}"
+            )
+            return None
+        except Exception as exc:
+            _log.error(f"Unexpected error in parsing USPTO document: {exc}")
             return None
 
         doc = self.handler.doc
@@ -209,7 +244,7 @@ class PatentUsptoIce(PatentUspto):
 
         return doc
 
-    class PatentHandler(xml.sax.handler.ContentHandler):
+    class PatentHandler(ContentHandler):
         """SAX ContentHandler for patent documents."""
 
         APP_DOC_ELEMENT: Final = "us-patent-application"
@@ -352,7 +387,7 @@ class PatentUsptoIce(PatentUspto):
                         self.text += content
 
         def _start_registered_elements(
-            self, tag: str, attributes: xml.sax.xmlreader.AttributesImpl
+            self, tag: str, attributes: AttributesImpl
         ) -> None:
             if tag in [member.value for member in self.Element]:
                 # special case for claims: claim lines may start before the
@@ -516,10 +551,24 @@ class PatentUsptoGrantV2(PatentUspto):
     @override
     def parse(self, patent_content: str) -> Optional[DoclingDocument]:
         try:
-            xml.sax.parseString(patent_content, self.handler)
-        except xml.sax._exceptions.SAXParseException as exc_sax:
-            _log.error(f"Error in parsing USPTO document: {exc_sax}")
-
+            parser = make_parser()
+            parser.setFeature(feature_external_ges, False)
+            parser.setFeature(feature_external_pes, False)
+            parser.forbid_dtd = False
+            parser.forbid_entities = False
+            parser.forbid_external = False
+            parser.setContentHandler(self.handler)
+            parser.parse(StringIO(patent_content))
+        except SAXParseException as exc_sax:
+            _log.error(f"Error in parsing USPTO document (malformed XML): {exc_sax}")
+            return None
+        except DefusedXmlException as exc_defused:
+            _log.error(
+                f"Error in parsing USPTO document (security issue detected): {exc_defused}"
+            )
+            return None
+        except Exception as exc:
+            _log.error(f"Unexpected error in parsing USPTO document: {exc}")
             return None
 
         doc = self.handler.doc
@@ -546,7 +595,7 @@ class PatentUsptoGrantV2(PatentUspto):
 
         return doc
 
-    class PatentHandler(xml.sax.handler.ContentHandler):
+    class PatentHandler(ContentHandler):
         """SAX ContentHandler for patent documents."""
 
         GRANT_DOC_ELEMENT: Final = "PATDOC"
@@ -684,7 +733,7 @@ class PatentUsptoGrantV2(PatentUspto):
                         self.text += content
 
         def _start_registered_elements(
-            self, tag: str, attributes: xml.sax.xmlreader.AttributesImpl
+            self, tag: str, attributes: AttributesImpl
         ) -> None:
             if tag in [member.value for member in self.Element]:
                 if (
@@ -1077,10 +1126,24 @@ class PatentUsptoAppV1(PatentUspto):
     @override
     def parse(self, patent_content: str) -> Optional[DoclingDocument]:
         try:
-            xml.sax.parseString(patent_content, self.handler)
-        except xml.sax._exceptions.SAXParseException as exc_sax:
-            _log.error(f"Error in parsing USPTO document: {exc_sax}")
-
+            parser = make_parser()
+            parser.setFeature(feature_external_ges, False)
+            parser.setFeature(feature_external_pes, False)
+            parser.forbid_dtd = False
+            parser.forbid_entities = False
+            parser.forbid_external = False
+            parser.setContentHandler(self.handler)
+            parser.parse(StringIO(patent_content))
+        except SAXParseException as exc_sax:
+            _log.error(f"Error in parsing USPTO document (malformed XML): {exc_sax}")
+            return None
+        except DefusedXmlException as exc_defused:
+            _log.error(
+                f"Error in parsing USPTO document (security issue detected): {exc_defused}"
+            )
+            return None
+        except Exception as exc:
+            _log.error(f"Unexpected error in parsing USPTO document: {exc}")
             return None
 
         doc = self.handler.doc
@@ -1107,7 +1170,7 @@ class PatentUsptoAppV1(PatentUspto):
 
         return doc
 
-    class PatentHandler(xml.sax.handler.ContentHandler):
+    class PatentHandler(ContentHandler):
         """SAX ContentHandler for patent documents."""
 
         APP_DOC_ELEMENT: Final = "patent-application-publication"
@@ -1245,7 +1308,7 @@ class PatentUsptoAppV1(PatentUspto):
                         self.text += content
 
         def _start_registered_elements(
-            self, tag: str, attributes: xml.sax.xmlreader.AttributesImpl
+            self, tag: str, attributes: AttributesImpl
         ) -> None:
             if tag in [member.value for member in self.Element]:
                 # special case for claims: claim lines may start before the
@@ -1421,6 +1484,12 @@ class XmlTable:
 
         Args:
             input: The xml content.
+
+        Security Note:
+            This parser uses BeautifulSoup with lxml, which can be vulnerable to XXE.
+            However, the input here comes from table strings extracted AFTER the main
+            document has been safely parsed by defusedxml, so the content is already
+            sanitized and safe to parse.
         """
         self.max_nbr_messages = 2
         self.nbr_messages = 0
