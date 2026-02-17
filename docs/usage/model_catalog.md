@@ -279,7 +279,7 @@ from docling.models.stages.picture_classifier.document_picture_classifier import
 )
 
 # Use default picture classifier
-classifier_options = DocumentPictureClassifierOptions()
+classifier_options = DocumentPictureClassifierOptions.from_preset("document_figure_classifier_v2")
 ```
 
 ### OCR
