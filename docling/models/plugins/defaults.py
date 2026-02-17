@@ -22,14 +22,18 @@ def picture_description():
     from docling.models.stages.picture_description.picture_description_api_model import (
         PictureDescriptionApiModel,
     )
+    from docling.models.stages.picture_description.picture_description_vlm_engine_model import (
+        PictureDescriptionVlmEngineModel,
+    )
     from docling.models.stages.picture_description.picture_description_vlm_model import (
         PictureDescriptionVlmModel,
     )
 
     return {
         "picture_description": [
-            PictureDescriptionVlmModel,
-            PictureDescriptionApiModel,
+            PictureDescriptionVlmEngineModel,  # New engine-based (preferred)
+            PictureDescriptionVlmModel,  # Legacy direct transformers
+            PictureDescriptionApiModel,  # API-based
         ]
     }
 
@@ -39,9 +43,13 @@ def layout_engines():
         TableCropsLayoutModel,
     )
     from docling.models.stages.layout.layout_model import LayoutModel
+    from docling.models.stages.layout.layout_object_detection_model import (
+        LayoutObjectDetectionModel,
+    )
 
     return {
         "layout_engines": [
+            LayoutObjectDetectionModel,
             LayoutModel,
             TableCropsLayoutModel,
         ]

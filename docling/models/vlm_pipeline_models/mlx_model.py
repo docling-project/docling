@@ -72,6 +72,24 @@ class HuggingFaceMlxModel(BaseVlmPageModel, HuggingFaceModelDownloadMixin):
                 )
             elif (artifacts_path / repo_cache_folder).exists():
                 artifacts_path = artifacts_path / repo_cache_folder
+            else:
+                # Model not found in artifacts_path - raise clear error
+                available_models = []
+                if artifacts_path.exists():
+                    available_models = [
+                        p.name for p in artifacts_path.iterdir() if p.is_dir()
+                    ]
+
+                raise FileNotFoundError(
+                    f"Model '{self.vlm_options.repo_id}' not found in artifacts_path.\n"
+                    f"Expected location: {artifacts_path / repo_cache_folder}\n"
+                    f"Available models in {artifacts_path}: "
+                    f"{', '.join(available_models) if available_models else 'none'}\n\n"
+                    f"To fix this issue:\n"
+                    f"  1. Download the model: docling-tools models download-hf-repo {self.vlm_options.repo_id}\n"
+                    f"  2. Or remove --artifacts-path to enable auto-download\n"
+                    f"  3. Or use a different model that exists in your artifacts_path"
+                )
 
             ## Load the model
             self.vlm_model, self.processor = load(artifacts_path)

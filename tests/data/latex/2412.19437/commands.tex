@@ -1,0 +1,354 @@
+\newcommand{\lstm}{\textsc{LSTM}}
+\newcommand{\ffw} {\textsc{Ffw}}
+\newcommand{\attn}{\textsc{Attn}}
+\newcommand{\encoder} {\textsc{Encoder}}
+\newcommand{\key} {\textsc{Key}}
+\newcommand{\query} {\textsc{Query}}
+\newcommand{\ccca}{\textsc{Cca}}
+\newcommand{\crossattention}{\textsc{Ca}}
+\newcommand{\softmax}{\textrm{softmax}}
+\newcommand{\ret}{\textsc{Ret}}
+\newcommand{\block}{\textsc{Block}}
+\newcommand{\MassiveText} {Massive Text}
+\newcommand{\bert}{\textsc{Bert}\xspace}
+\newcommand{\model}{\textsc{Model}}
+\renewcommand{\encoder}{\textsc{Encoder}}
+\newcommand{\knnlm}{k\textrm{NN-LM}}
+\newcommand{\knn}{k\textrm{NN}}
+\newcommand{\spalm}{\textsc{Spalm}}
+\newcommand{\dpr}{\textsc{Dpr}}
+\newcommand{\rag}{\textsc{RAG}}
+\newcommand{\realm}{\textsc{Realm}}
+\newcommand{\fid}{\textsc{FiD}}
+\newcommand{\emdr}{\textsc{Emdr}^2}
+\newcommand{\retro}{\textsc{Retro}\xspace}
+\newcommand{\retroon}{\textsc{Retro[On]}\xspace}
+\newcommand{\retrooff}{\textsc{Retro[Off]}\xspace}
+\newcommand{\retrofit}{\textsc{Retro}fit\xspace}
+\newcommand{\retrofitting}{\textsc{Retro}fitting\xspace}
+\newcommand{\lm}{\textsc{Lm}}
+\newcommand{\lmc}{\textsc{Lmc}}
+\newcommand{\emb}{\textsc{Emb}}
+\newcommand{\readout}{\textsc{Read}}
+\newcommand{\spli}{\textsc{Split}}
+\newcommand{\bpb}{\textrm{bpb}}
+\newcommand{\dmodel}{d}
+\newcommand{\dffw}{d_{\textrm{ffw}}}
+\newcommand{\lcp}{\textrm{LCP}}
+
+\newcommand{\datavisheader}[0]{
+$C_u$ colored by loss difference & $C_u$ colored by LCP with $\ret(C_u{-1})$  & $[N_u^1, F_u^1]$ colored by LCP with $C_{u+1}$ & $[N_u^2, F_u^2]$ colored by LCP with $C_{u+1}$\\ 
+$L_{\textsc{\retrooff}} - L_{\retro}\colorbox{cm_0!40}{$ \leq -0.5$}, \colorbox{cm_31!40}{$=0 $},\colorbox{cm_63!40}{$ \geq 0.5$}$
+& $ \lcp = $ \colorbox{cm_0!40}{$0$}, \colorbox{cm_12!40}{$1 $}, \colorbox{cm_25!40}{$2 $}, \colorbox{cm_38!40}{$3 $},\colorbox{cm_51!40}{$4 $},\colorbox{cm_63!40}{$ \geq 5 $} & $ \lcp = $  \colorbox{cm_0!40}{$0$}, \colorbox{cm_12!40}{$1 $}, \colorbox{cm_25!40}{$2 $}, \colorbox{cm_38!40}{$3 $},\colorbox{cm_51!40}{$4 $},\colorbox{cm_63!40}{$ \geq 5 $} &
+$ \lcp = $ \colorbox{cm_0!40}{$0$}, \colorbox{cm_12!40}{$1 $}, \colorbox{cm_25!40}{$2 $}, \colorbox{cm_38!40}{$3 $},\colorbox{cm_51!40}{$4 $},\colorbox{cm_63!40}{$ \geq 5 $} \\
+\toprule}
+
+\newcommand{\samplevisheader}[0]{
+Prompt and sample of $\retrooff$  & Prompt and sample of $\retroon$ & $[N_u^1, F_u^1]$ colored by LCP with $C_{u+1}$ & $[N_u^2, F_u^2]$ colored by LCP with $C_{u+1}$\\ 
+
+& 
+colored by LCP with $\ret(C_u{-1})$ 
+& & \\
+
+&$ \lcp = $ \colorbox{cm_0!40}{$0$}, \colorbox{cm_12!40}{$1 $}, \colorbox{cm_25!40}{$2 $}, \colorbox{cm_38!40}{$3 $},\colorbox{cm_51!40}{$4 $},\colorbox{cm_63!40}{$ \geq 5 $} & $ \lcp = $  \colorbox{cm_0!40}{$0$}, \colorbox{cm_12!40}{$1 $}, \colorbox{cm_25!40}{$2 $}, \colorbox{cm_38!40}{$3 $},\colorbox{cm_51!40}{$4 $},\colorbox{cm_63!40}{$ \geq 5 $}  &$ \lcp = $ \colorbox{cm_0!40}{$0$}, \colorbox{cm_12!40}{$1 $}, \colorbox{cm_25!40}{$2 $}, \colorbox{cm_38!40}{$3 $},\colorbox{cm_51!40}{$4 $},\colorbox{cm_63!40}{$ \geq 5 $} \\ 
+
+\toprule}
+
+
+%% Symboles avec double lignes
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\GG}{\mathbb{G}}
+\newcommand{\LL}{\mathbb{L}}
+\newcommand{\PP}{\mathbb{P}}
+\renewcommand{\SS}{\mathbb{S}}
+\newcommand{\QQ}{\mathbb{Q}}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\VV}{\mathbb{V}}
+\newcommand{\ZZ}{\mathbb{Z}}
+\newcommand{\FF}{\mathbb{F}}
+\newcommand{\KK}{\mathbb{K}}
+\newcommand{\TT}{\mathbb{T}}
+\newcommand{\UU}{\mathbb{U}}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\XX}{\mathbb{X}}
+\newcommand{\YY}{\mathbb{Y}}
+%% Symboles arrondis
+\newcommand{\Aa}{\mathcal{A}}
+\newcommand{\Bb}{\mathcal{B}}
+\newcommand{\Cc}{\mathcal{C}}
+\newcommand{\Dd}{\mathcal{D}}
+\newcommand{\Ee}{\mathcal{E}}
+\newcommand{\Ff}{\mathcal{F}}
+\newcommand{\Gg}{\mathcal{G}}
+\newcommand{\Hh}{\mathcal{H}}
+\newcommand{\Ii}{\mathcal{I}}
+\newcommand{\Jj}{\mathcal{J}}
+\newcommand{\Kk}{\mathcal{K}}
+\newcommand{\Ll}{\mathcal{L}}
+\newcommand{\Mm}{\mathcal{M}}
+\newcommand{\Nn}{\mathcal{N}}
+\newcommand{\Oo}{\mathcal{O}}
+\newcommand{\Pp}{\mathcal{P}}
+\newcommand{\Qq}{\mathcal{Q}}
+\newcommand{\Rr}{\mathcal{R}}
+\newcommand{\Ss}{\mathcal{S}}
+\newcommand{\Tt}{\mathcal{T}}
+\newcommand{\Uu}{\mathcal{U}}
+\newcommand{\Vv}{\mathcal{V}}
+\newcommand{\Ww}{\mathcal{W}}
+\newcommand{\Xx}{\mathcal{X}}
+\newcommand{\Yy}{\mathcal{Y}}
+\newcommand{\Zz}{\mathcal{Z}}
+
+% matrices
+% \newcommand{\A}{\bm{A}}
+% \newcommand{\B}{\bm{B}}
+% \newcommand{\Cz}{\bm{C}}
+% \newcommand{\D}{\bm{D}}
+% \newcommand{\E}{\bm{E}}
+% \newcommand{\F}{\bm{F}}
+% \newcommand{\G}{\bm{G}}
+% \newcommand{\Hz}{\bm{H}}
+% \newcommand{\I}{\bm{I}}
+% \newcommand{\J}{\bm{J}}
+% \newcommand{\K}{\bm{K}}
+% \newcommand{\Lz}{\bm{L}}
+% \newcommand{\M}{\bm{M}}
+% \newcommand{\N}{\bm{N}}
+% \newcommand{\Oz}{\bm{O}}
+% \newcommand{\Pz}{\bm{P}}
+% \newcommand{\Q}{\bm{Q}}
+% \newcommand{\R}{\bm{R}}
+% \newcommand{\Sz}{\bm{S}}
+% \newcommand{\T}{\bm{T}}
+% \newcommand{\Uz}{\bm{U}}
+% \newcommand{\V}{\bm{V}}
+% \newcommand{\W}{\bm{W}}
+% \newcommand{\X}{\bm{X}}
+% \newcommand{\Y}{\bm{Y}}
+% \newcommand{\Z}{\bm{Z}}
+
+% Vectors
+% \renewcommand{\a}{\bm{a}}
+% \renewcommand{\b}{\bm{b}}
+% \newcommand{\cz}{\bm{c}}
+% \renewcommand{\d}{\bm{d}}
+% \newcommand{\e}{\bm{e}}
+% \newcommand{\fz}{\bm{f}}
+% \newcommand{\g}{\bm{g}}
+% \newcommand{\h}{\bm{h}}
+% \newcommand{\iz}{\bm{i}}
+% \renewcommand{\j}{\bm{j}}
+% \renewcommand{\k}{\bm{k}}
+% \renewcommand{\l}{\bm{l}}
+% \newcommand{\m}{\bm{m}}
+% \newcommand{\n}{\bm{n}}
+% \renewcommand{\o}{\bm{o}}
+% \newcommand{\p}{\bm{p}}
+% \newcommand{\q}{\bm{q}}
+% \renewcommand{\r}{\bm{r}}
+% \newcommand{\s}{\bm{s}}
+% \renewcommand{\t}{\bm{t}}
+% \renewcommand{\uz}{\bm{u}}
+% \renewcommand{\v}{\bm{v}}
+% \newcommand{\w}{\bm{w}}
+% \newcommand{\x}{\bm{x}}
+% \newcommand{\y}{\bm{y}}
+% \newcommand{\z}{\bm{z}}
+
+% greek
+\newcommand{\al}{\alpha}
+\newcommand{\la}{\lambda}
+\newcommand{\ga}{\gamma}
+\newcommand{\Ga}{\Gamma}
+\newcommand{\La}{\Lambda}
+\newcommand{\si}{\sigma}
+%\newcommand{\Si}{\Sigma}
+\newcommand{\be}{\beta}
+\newcommand{\de}{\delta}
+\newcommand{\De}{\Delta}
+\renewcommand{\phi}{\varphi}
+\renewcommand{\th}{\theta}
+\newcommand{\om}{\omega}
+\newcommand{\Om}{\Omega}
+
+% hat, tilde
+\newcommand{\hf}{\hat f}
+\newcommand{\wtf}{\tilde f}
+\newcommand{\tx}{\tilde x}
+\newcommand{\ta}{\tilde a}
+\newcommand{\tb}{\tilde b}
+\newcommand{\ty}{\tilde y}
+\newcommand{\tu}{\tilde u}
+\newcommand{\tv}{\tilde v}
+\newcommand{\tga}{\tilde \ga}
+\newcommand{\tf}{\wt{f}}
+
+
+
+%%%%%%%%%%%%%%% MATHS OPERATORS %%%%%%%%%%%%%%%%%
+\newcommand{\ins}[1]{\mathrm{#1}}
+\let\Re\relax
+
+\DeclareMathOperator{\Re}{\Rr e}
+\DeclareMathOperator{\Imag}{\Ii m}
+\DeclareMathOperator{\Ker}{Ker}
+\DeclareMathOperator{\Hom}{Hom}
+\DeclareMathOperator{\End}{End}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\Supp}{Supp}
+\DeclareMathOperator{\Sign}{Sign}
+\let\Im\relax
+\DeclareMathOperator{\Im}{Im}
+\DeclareMathOperator{\Corr}{Corr}
+\DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\supp}{supp}
+
+\DeclareMathOperator{\cas}{cas}
+\DeclareMathOperator{\sinc}{sinc}
+\DeclareMathOperator{\cotan}{cotan}
+\DeclareMathOperator{\Card}{Card}
+\DeclareMathOperator{\GCD}{GCD}
+\DeclareMathOperator{\grad}{grad}
+\DeclareMathOperator{\Diag}{Diag}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\conv}{conv}
+\DeclareMathOperator{\interop}{int}
+
+\newcommand{\ps}[2]{\langle #1,#2\rangle}
+
+% regularity
+\newcommand{\Calpha}{\mathrm{C}^\al}
+\newcommand{\Cbeta}{\mathrm{C}^\be}
+\newcommand{\Cal}{\text{C}^\al}
+\newcommand{\Ctwo}{\text{C}^{2}}
+\newcommand{\Calt}[1]{\text{C}^{#1}}
+\newcommand{\Cder}[1]{\mathscr{C}^{#1}}
+% Lp spaces
+\newcommand{\lone}{\ell^1}
+\newcommand{\ltwo}{\ell^2}
+\newcommand{\linf}{\ell^\infty}
+\newcommand{\Lone}{\text{\upshape L}^1}
+\newcommand{\Ltwo}{\text{\upshape L}^2}
+\newcommand{\Linf}{\text{\upshape L}^\infty}
+\newcommand{\lzero}{\ell^0}
+\newcommand{\lp}{\ell^p}
+% circle
+\newcommand{\Sun}{\text{S}^1}
+% little space after forall
+\newcommand{\foralls}{\forall \,}
+%% for derivatives
+\newcommand{\dd}{\ins{d}}
+%% Use french comparaison operator
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+
+
+%%%%%%%%%%%%%%% MATHS CONSTRUCTS %%%%%%%%%%%%%%%
+
+%% over-symbols
+\newcommand{\ol}[1]{\overline{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\whwh}[1]{\hat{\hat{#1}}}
+\newcommand{\wt}[1]{\widetilde{#1}}
+%% partial derivatives
+\newcommand{\pd}[2]{ \frac{ \partial #1}{\partial #2} }
+\newcommand{\pdd}[2]{ \frac{ \partial^2 #1}{\partial #2^2} }
+%% nice epsilon
+\renewcommand{\epsilon}{\varepsilon}
+%% Pour avoir un joli i pour les complexes
+\renewcommand{\imath}{\mathrm{i}}
+\newcommand{\interior}[1]{\ensuremath{\overset{\circ}{#1}}}
+
+%% Legendre symbol
+\newcommand{\legsymb}[2]{ \genfrac{(}{)}{}{}{#1}{#2} }
+%% exposant pour les ordinaux
+\newcommand{\ordin}[2]{ ${#1}^{ \text{#2} }$ }
+%% Dot product and cross product
+% \newcommand{\dotp}[2]{ \left\langle #1,\,#2 \right\rangle }
+\newcommand{\dotp}[2]{\langle #1,\,#2\rangle}
+\newcommand{\dotps}[2]{\langle #1,\,#2\rangle}
+\newcommand{\crossp}[2]{ #1 \hat #2 }
+\newcommand{\seg}[2]{\llbracket #1,\,#2 \rrbracket}
+\newcommand{\brac}[1]{\left[#1\right]}
+%\newcommand{\norm}[1]{|\!| #1 |\!|}
+\newcommand{\norm}[1]{\left\| #1 \right\|}
+\newcommand{\snorm}[1]{\| #1 \|}
+\newcommand{\normb}[1]{\Big|\!\Big| #1 \Big |\!\Big|}
+\newcommand{\normB}[1]{\left|\!\left| #1 \right|\!\right|}
+\DeclareMathOperator{\diverg}{div}
+\DeclareMathOperator{\Prox}{Prox}
+\newcommand{\normT}[1]{\norm{#1}_{\text{T}}}
+\newcommand{\normu}[1]{\norm{#1}_{1}}
+\newcommand{\normi}[1]{\norm{#1}_{\infty}}
+\newcommand{\normd}[1]{\norm{#1}_{2}}
+\newcommand{\normz}[1]{\norm{#1}_{0}}
+\newcommand{\abs}[1]{\left\lvert#1\right\rvert} % modified by Vincent
+\newcommand{\absb}[1]{\Big| #1 \Big|}
+
+%% Function definition
+\newcommand{\func}[4]{ {\left\{  \begin{array}{ccc} #1 & \longrightarrow & #2 \\ #3 & \longmapsto & #4 \end{array}  \right.} }
+% transpose
+% \newcommand{\transp}[1]{ {#1}^{\ins{T}} }
+% l'identit�
+\newcommand{\Id}{\ins{Id}}
+% egal par d�finition
+\newcommand{\eqdef}{\triangleq}
+
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\argmax}{argmax}
+% \DeclareMathOperator*{\sup}{sup}
+
+%% parenthesis
+\newcommand{\pa}[1]{\left( #1 \right)}
+\newcommand{\bpa}[1]{\big( #1 \big)}
+\newcommand{\choice}[1]{ %
+	\left\{ %
+		\begin{array}{l} #1 \end{array} %
+	\right. }
+% ensembles
+\newcommand{\set}[1]{ \{ #1 \} }
+\newcommand{\condset}[2]{ \left\{ #1 \;;\; #2 \right\} }
+
+
+%%%%%%%%%%%%%%% SPACES %%%%%%%%%%%%%%%%%
+\newcommand{\qandq}{ \quad \text{and} \quad }
+\newcommand{\qqandqq}{ \qquad \text{and} \qquad }
+\newcommand{\qifq}{ \quad \text{if} \quad }
+\newcommand{\qqifqq}{ \qquad \text{if} \qquad }
+\newcommand{\qwhereq}{ \quad \text{where} \quad }
+\newcommand{\qqwhereqq}{ \qquad \text{where} \qquad }
+\newcommand{\qwithq}{ \quad \text{with} \quad }
+\newcommand{\qqwithqq}{ \qquad \text{with} \qquad }
+\newcommand{\qforq}{ \quad \text{for} \quad }
+\newcommand{\qqforqq}{ \qquad \text{for} \qquad }
+\newcommand{\qqsinceqq}{ \qquad \text{since} \qquad }
+\newcommand{\qsinceq}{ \quad \text{since} \quad }
+\newcommand{\qarrq}{\quad\Longrightarrow\quad}
+\newcommand{\qqarrqq}{\quad\Longrightarrow\quad}
+\newcommand{\qiffq}{\quad\Longleftrightarrow\quad}
+\newcommand{\qqiffqq}{\qquad\Longleftrightarrow\qquad}
+\newcommand{\qsubjq}{ \quad \text{subject to} \quad }
+\newcommand{\qqsubjqq}{ \qquad \text{subject to} \qquad }
+\newcommand{\qobjq}[1]{\quad \text{#1} \quad}
+\newcommand{\qqobjqq}[1]{\quad \text{#1} \quad}
+
+
+
+
+% Restrictions
+% Exemple: $ \rest{f}{ \Z } $
+
+\newlength{\restsubwidth}
+\newlength{\restsubheight}
+\newlength{\restsubmoreheight}
+\setlength{\restsubmoreheight}{4pt}
+\newcommand{\rest}[2]{%
+        \settowidth{\restsubwidth}{\ensuremath{#2}}
+        \settoheight{\restsubheight}{\ensuremath{{}_{#2}}}
+        \ensuremath{{#1\hskip 0.5pt}_{\vrule\kern2pt\parbox[b][%
+        4pt][b]{\the\restsubwidth}{%
+                        \ensuremath{{}_{#2}}}}}
+        }

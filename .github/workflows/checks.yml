@@ -287,6 +287,114 @@ jobs:
       - name: Grant permissions to APT cache directory # allows backup
         run: sudo chown -R $USER:$USER /var/cache/apt/archives
 
+  test-pip-install-no-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Test pip install across Python versions
+        run: |
+          for py_version in 3.10 3.11 3.12 3.13 3.14; do
+            echo "=========================================="
+            echo "Testing Python $py_version"
+            echo "=========================================="
+            
+            # Create virtual environment with uv
+            uv venv /tmp/venv-${py_version} --python=${py_version}
+            source /tmp/venv-${py_version}/bin/activate
+            
+            # Install package with pip (no lock file)
+            uv pip install --torch-backend=cpu -e .[easyocr,tesserocr,vlm,rapidocr,asr]
+            
+            # Run basic import test
+            python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version}')"
+            
+            # Cleanup
+            deactivate
+            rm -rf /tmp/venv-${py_version}
+            
+            echo "Python $py_version: PASSED"
+            echo ""
+          done
+
+  test-pip-install-no-dev-headers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Test pip install without dev headers across Python versions
+        run: |
+          for py_version in 3.10 3.11 3.12 3.13 3.14; do
+            echo "=========================================="
+            echo "Testing Python $py_version (no dev headers)"
+            echo "=========================================="
+            
+            # Create virtual environment with uv
+            uv venv /tmp/venv-nodev-${py_version} --python=${py_version}
+            source /tmp/venv-nodev-${py_version}/bin/activate
+            
+            # Find and remove Python.h from the Python installation
+            echo "Removing Python development headers from Python installation..."
+            python_include_dir=$(python -c "import sysconfig; print(sysconfig.get_path('include'))")
+            echo "Python include directory: $python_include_dir"
+            
+            if [ -f "$python_include_dir/Python.h" ]; then
+              echo "Found Python.h, removing it and other headers..."
+              # Use sudo if the directory is system-owned
+              if [ -w "$python_include_dir" ]; then
+                rm -rf "$python_include_dir"/*
+              else
+                sudo rm -rf "$python_include_dir"/*
+              fi
+              echo "✓ Headers removed"
+            else
+              echo "Warning: Python.h not found at expected location"
+            fi
+            
+            # Verify that compilation fails without dev headers
+            # Try to install numpy from source (sdist) - this should fail
+            echo "Verifying compilation fails without dev headers..."
+            set +e  # Temporarily allow command to fail
+            uv pip install --no-binary=:all: numpy==1.26.4 > /tmp/numpy-install-${py_version}.log 2>&1
+            numpy_exit_code=$?
+            set -e  # Re-enable exit on error
+            
+            if [ $numpy_exit_code -eq 0 ]; then
+              echo "ERROR: numpy installation from source succeeded, but it should have failed without dev headers!"
+              cat /tmp/numpy-install-${py_version}.log
+              exit 1
+            else
+              echo "✓ Compilation correctly failed without dev headers (expected behavior)"
+              # Check that the error mentions missing Python.h or similar
+              if grep -qi "Python.h\|fatal error.*\.h" /tmp/numpy-install-${py_version}.log; then
+                echo "✓ Error message confirms missing development headers"
+              else
+                echo "Warning: Error message doesn't explicitly mention missing headers, but compilation failed as expected"
+              fi
+            fi
+            
+            # Install package with pip (no lock file, no compilation)
+            # Install without extras that require compilation (tesserocr requires dev headers)
+            # Note: Not using --only-binary since some packages are sdist-only but don't require compilation
+            uv pip install --torch-backend=cpu -e .[easyocr,vlm,rapidocr,asr]
+            
+            # Run basic import test
+            python -c "import docling; from docling.document_converter import DocumentConverter; print('Import successful for Python ${py_version} without dev headers')"
+            
+            # Cleanup
+            deactivate
+            rm -rf /tmp/venv-nodev-${py_version}
+            
+            echo "Python $py_version (no dev headers): PASSED"
+            echo ""
+          done
+
   build-package:
     runs-on: ubuntu-latest
     strategy:

@@ -590,8 +590,8 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                 caption=None,
                 prov=prov,
             )
-        except (UnidentifiedImageError, OSError) as e:
-            _log.warning(f"Warning: image cannot be loaded by Pillow: {e}")
+        except (UnidentifiedImageError, OSError, ValueError) as e:
+            _log.warning(f"Warning: image cannot be loaded: {e}")
         return
 
     def _handle_tables(self, shape, parent_slide, slide_ind, doc, slide_size):
@@ -687,10 +687,9 @@ class MsPowerpointDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentB
                     self._handle_tables(shape, parent_slide, slide_ind, doc, slide_size)
                 if shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                     # Handle Pictures
-                    if hasattr(shape, "image"):
-                        self._handle_pictures(
-                            shape, parent_slide, slide_ind, doc, slide_size
-                        )
+                    self._handle_pictures(
+                        shape, parent_slide, slide_ind, doc, slide_size
+                    )
                 # If shape doesn't have any text, move on to the next shape
                 if not hasattr(shape, "text"):
                     return
