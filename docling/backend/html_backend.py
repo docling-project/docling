@@ -22,6 +22,11 @@ from docling_core.types.doc import (
     DocItemLabel,
     DoclingDocument,
     DocumentOrigin,
+    GraphCell,
+    GraphCellLabel,
+    GraphData,
+    GraphLink,
+    GraphLinkLabel,
     GroupItem,
     GroupLabel,
     PictureItem,
@@ -130,6 +135,11 @@ _FORMAT_TAG_MAP: Final = {
 }
 
 _DATA_DOCLING_ID_ATTR: Final = "data-docling-id"
+_FORM_CONTAINER_CLASS: Final = "form_region"
+_FORM_KEY_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)$")
+_FORM_VALUE_ID_RE: Final = re.compile(
+    r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
+)
 
 
 @dataclass(frozen=True)
@@ -1033,6 +1043,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         for node in element.contents:
             if isinstance(node, Tag):
                 name = node.name.lower()
+                if self._is_form_container(node):
+                    _flush_buffer()
+                    form_refs = self._handle_form_container(node, doc)
+                    added_refs.extend(form_refs)
+                    continue
                 if name == "img":
                     _flush_buffer()
                     im_ref3 = self._emit_image(node, doc)
@@ -1272,6 +1287,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             parent=self.parents[self.level],
             content_layer=self.content_layer,
         )
+        self.level += 1
+        try:
+            yield None
+        finally:
+            self.parents[self.level + 1] = None
+            self.level -= 1
+
+    @contextmanager
+    def _use_form_container(self, form_item: DocItem):
+        """Create a form container group and set it as the current parent."""
+        self.parents[self.level + 1] = form_item
         self.level += 1
         try:
             yield None
@@ -1717,6 +1743,170 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         elif tag_name == "details":
             with self._use_details(tag, doc):
                 self._walk(tag, doc)
+        return added_refs
+
+    @staticmethod
+    def _is_form_container(tag: Tag) -> bool:
+        classes = tag.get("class")
+        if not classes:
+            return False
+        if isinstance(classes, str):
+            classes = [classes]
+        return _FORM_CONTAINER_CLASS in classes
+
+    @staticmethod
+    def _is_value_in_key_scope(key_tag: Tag, value_tag: Tag) -> bool:
+        if key_tag is value_tag:
+            return True
+        if any(parent is key_tag for parent in value_tag.parents):
+            return True
+        key_parent = key_tag.parent
+        value_parent = value_tag.parent
+        if key_parent is not None and key_parent is value_parent:
+            return True
+        return False
+
+    @staticmethod
+    def _extract_text_excluding_ids(tag: Tag, excluded_ids: set[str]) -> str:
+        def _extract(node: PageElement) -> list[str]:
+            if isinstance(node, NavigableString):
+                return [str(node)]
+            if isinstance(node, Tag):
+                node_id = node.get("id")
+                if node_id and node_id in excluded_ids:
+                    return []
+                parts: list[str] = []
+                for child in node:
+                    parts.extend(_extract(child))
+                if node.name in {"p", "li"}:
+                    parts.append(" ")
+                return parts
+            return []
+
+        return "".join(_extract(tag))
+
+    @staticmethod
+    def _normalize_form_text(text: str) -> tuple[str, str]:
+        raw = re.sub(r"\s+", " ", text).strip()
+        return raw, HTMLDocumentBackend._clean_unicode(raw)
+
+    def _extract_form_graph(self, form_tag: Tag) -> Optional[GraphData]:
+        key_tags: dict[str, Tag] = {}
+        key_order: list[str] = []
+        values_by_key: dict[str, list[tuple[Optional[int], int, Tag]]] = {}
+        value_order = 0
+
+        for tag in form_tag.find_all(id=True):
+            tag_id = tag.get("id")
+            if not isinstance(tag_id, str):
+                continue
+
+            value_match = _FORM_VALUE_ID_RE.match(tag_id)
+            if value_match:
+                key_id = value_match.group("key_id")
+                value_id = value_match.group("value_id")
+                value_index = int(value_id) if value_id.isdigit() else None
+                value_order += 1
+                values_by_key.setdefault(key_id, []).append(
+                    (value_index, value_order, tag)
+                )
+                continue
+
+            key_match = _FORM_KEY_ID_RE.match(tag_id)
+            if key_match:
+                key_id = key_match.group("key_id")
+                if key_id not in key_tags:
+                    key_tags[key_id] = tag
+                    key_order.append(key_id)
+
+        cells: list[GraphCell] = []
+        links: list[GraphLink] = []
+        cell_id_seq = 0
+
+        for key_id in key_order:
+            key_tag = key_tags[key_id]
+            value_entries = values_by_key.get(key_id, [])
+            # value_entries = [
+            #     entry
+            #     for entry in value_entries
+            #     if self._is_value_in_key_scope(key_tag, entry[2])
+            # ]
+            value_entries.sort(
+                key=lambda entry: (
+                    entry[0] is None,
+                    entry[0] if entry[0] is not None else entry[1],
+                    entry[1],
+                )
+            )
+            value_tags = [entry[2] for entry in value_entries]
+            excluded_ids = {
+                tag_id
+                for tag_id in (tag.get("id") for tag in value_tags)
+                if isinstance(tag_id, str)
+            }
+            key_text_raw = self._extract_text_excluding_ids(key_tag, excluded_ids)
+            key_orig, key_text = self._normalize_form_text(key_text_raw)
+            if not key_text and not value_tags:
+                continue
+
+            key_cell = GraphCell(
+                cell_id=cell_id_seq,
+                label=GraphCellLabel.KEY,
+                text=key_text,
+                orig=key_orig,
+                prov=self._make_prov(text=key_text, tag=key_tag),
+            )
+            cells.append(key_cell)
+            cell_id_seq += 1
+
+            for value_tag in value_tags:
+                value_text_raw = HTMLDocumentBackend.get_text(value_tag)
+                value_orig, value_text = self._normalize_form_text(value_text_raw)
+                value_cell = GraphCell(
+                    cell_id=cell_id_seq,
+                    label=GraphCellLabel.VALUE,
+                    text=value_text,
+                    orig=value_orig,
+                    prov=self._make_prov(text=value_text, tag=value_tag),
+                )
+                cells.append(value_cell)
+                links.append(
+                    GraphLink(
+                        label=GraphLinkLabel.TO_VALUE,
+                        source_cell_id=key_cell.cell_id,
+                        target_cell_id=value_cell.cell_id,
+                    )
+                )
+                cell_id_seq += 1
+
+        if not cells:
+            return None
+        return GraphData(cells=cells, links=links)
+
+    def _handle_form_container(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
+        added_refs: list[RefItem] = []
+        form_graph = self._extract_form_graph(tag)
+        form_data = form_graph if form_graph is not None else GraphData()
+        form_prov = self._make_prov(text="", tag=tag)
+        form_item = doc.add_form(
+            graph=deepcopy(form_data),
+            prov=form_prov,
+            parent=self.parents[self.level],
+        )
+        form_item.content_layer = self.content_layer
+        added_refs.append(form_item.get_ref())
+
+        if form_graph is not None:
+            kv_item = doc.add_key_values(
+                graph=form_graph,
+                prov=None,
+                parent=form_item,
+            )
+            kv_item.content_layer = self.content_layer
+            added_refs.append(kv_item.get_ref())
+
+        with self._use_form_container(form_item):
+            added_refs.extend(self._walk(tag, doc))
         return added_refs
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
