@@ -64,8 +64,10 @@ class DoclingParsePageBackend(PdfPageBackend):
         config.keep_char_cells = (
             True  # we need to set this to True, otherwhise we have no lines
         )
-        config.keep_shapes = self._keep_lines
-        config.keep_bitmaps = self._keep_images
+        config.keep_shapes = False  # we dont need this, self._keep_lines
+        config.keep_bitmaps = (
+            True  # we need to set this to True, otherwhise OCR will not work
+        )
         config.create_word_cells = self._create_words
         config.create_line_cells = self._create_textlines
         config.enforce_same_font = True
@@ -212,6 +214,7 @@ class DoclingParseDocumentBackend(PdfDocumentBackend):
         with pypdfium2_lock:
             self._pdoc = pdfium.PdfDocument(self.path_or_stream, password=password)
         self.parser = DoclingPdfParser(loglevel="fatal")
+
         self.dp_doc: PdfDocument = self.parser.load(
             path_or_stream=self.path_or_stream, password=password
         )
