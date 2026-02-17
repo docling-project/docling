@@ -70,6 +70,7 @@ class DocumentPictureClassifier(
         artifacts_path: Optional[Path],
         options: DocumentPictureClassifierOptions,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: bool = False,
     ):
         """
         Initializes the DocumentPictureClassifier.
@@ -95,6 +96,7 @@ class DocumentPictureClassifier(
                 options=self.options.engine_options,
                 model_spec=self.options.model_spec,
                 artifacts_path=artifacts_path,
+                enable_remote_services=enable_remote_services,
                 accelerator_options=accelerator_options,
             )
             self.engine.initialize()

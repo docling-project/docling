@@ -5,10 +5,22 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    get_args,
+    get_origin,
+)
 
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic_core import PydanticUndefined
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -21,6 +33,12 @@ class ImageClassificationEngineType(str, Enum):
 
     ONNXRUNTIME = "onnxruntime"
     TRANSFORMERS = "transformers"
+    API_KSERVE_V2 = "api_kserve_v2"
+
+    @classmethod
+    def is_remote_variant(cls, engine_type: ImageClassificationEngineType) -> bool:
+        """Check if an engine type is a remote API variant."""
+        return engine_type in {cls.API_KSERVE_V2}
 
 
 class BaseImageClassificationEngineOptions(BaseModel):
@@ -37,6 +55,55 @@ class BaseImageClassificationEngineOptions(BaseModel):
         ge=1,
         description="Maximum number of classes to return. If None, all classes are returned.",
     )
+
+    _registry: ClassVar[
+        Dict[ImageClassificationEngineType, Type[BaseImageClassificationEngineOptions]]
+    ] = {}
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs):
+        super().__pydantic_init_subclass__(**kwargs)
+
+        if cls is BaseImageClassificationEngineOptions:
+            return
+
+        field = cls.model_fields.get("engine_type")
+        if not field:
+            return
+
+        engine_type = None
+
+        ann = field.annotation
+        if get_origin(ann) is Literal:
+            values = get_args(ann)
+            if len(values) == 1:
+                engine_type = values[0]
+
+        if engine_type is None and field.default is not PydanticUndefined:
+            engine_type = field.default
+
+        if engine_type is not None:
+            BaseImageClassificationEngineOptions._registry[engine_type] = cls
+
+
+class ImageClassificationEngineOptionsMixin(BaseModel):
+    engine_options: BaseImageClassificationEngineOptions = Field(
+        description="Runtime configuration for the image-classification engine.",
+    )
+
+    @field_validator("engine_options", mode="before")
+    @classmethod
+    def resolve_engine_options(cls, value):
+        if isinstance(value, BaseImageClassificationEngineOptions):
+            return value
+
+        if isinstance(value, dict):
+            engine_type = value.get("engine_type")
+            model_cls = BaseImageClassificationEngineOptions._registry.get(engine_type)
+            if model_cls:
+                return model_cls.model_validate(value)
+
+        return value
 
 
 class ImageClassificationEngineInput(BaseModel):

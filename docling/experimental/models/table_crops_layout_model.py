@@ -33,7 +33,9 @@ class TableCropsLayoutModel(BaseLayoutModel):
         artifacts_path: Optional[Path],
         accelerator_options: AcceleratorOptions,
         options: TableCropsLayoutOptions,
+        enable_remote_services: bool = False,
     ):
+        _ = enable_remote_services
         self.options = options
         self.artifacts_path = artifacts_path
         self.accelerator_options = accelerator_options

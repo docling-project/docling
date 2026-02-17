@@ -7,17 +7,20 @@ from typing import ClassVar
 from pydantic import BaseModel, Field
 
 from docling.datamodel import stage_model_specs
-from docling.datamodel.image_classification_engine_options import (
-    BaseImageClassificationEngineOptions,
-    TransformersImageClassificationEngineOptions,
-)
 from docling.datamodel.stage_model_specs import (
     ImageClassificationModelSpec,
     ImageClassificationStagePresetMixin,
 )
+from docling.models.inference_engines.image_classification.base import (
+    ImageClassificationEngineOptionsMixin,
+)
 
 
-class DocumentPictureClassifierOptions(ImageClassificationStagePresetMixin, BaseModel):
+class DocumentPictureClassifierOptions(
+    ImageClassificationStagePresetMixin,
+    ImageClassificationEngineOptionsMixin,
+    BaseModel,
+):
     """Options for configuring the DocumentPictureClassifier stage."""
 
     kind: ClassVar[str] = "document_picture_classifier"
@@ -27,11 +30,6 @@ class DocumentPictureClassifierOptions(ImageClassificationStagePresetMixin, Base
             deep=True
         ),
         description="Image-classification model specification for picture classification.",
-    )
-
-    engine_options: BaseImageClassificationEngineOptions = Field(
-        default_factory=TransformersImageClassificationEngineOptions,
-        description="Runtime configuration for the image-classification engine.",
     )
 
     @property

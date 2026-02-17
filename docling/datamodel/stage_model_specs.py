@@ -702,6 +702,7 @@ class ObjectDetectionStagePresetMixin:
         **overrides: Any,
     ):
         from docling.datamodel.object_detection_engine_options import (
+            ApiKserveV2ObjectDetectionEngineOptions,
             OnnxRuntimeObjectDetectionEngineOptions,
             TransformersObjectDetectionEngineOptions,
         )
@@ -713,6 +714,13 @@ class ObjectDetectionStagePresetMixin:
                 engine_options = OnnxRuntimeObjectDetectionEngineOptions()
             elif preset.default_engine_type == ObjectDetectionEngineType.TRANSFORMERS:
                 engine_options = TransformersObjectDetectionEngineOptions()
+            elif preset.default_engine_type == ObjectDetectionEngineType.API_KSERVE_V2:
+                raise ValueError(
+                    f"Preset '{preset_id}' uses API_KSERVE_V2 engine which requires explicit "
+                    "engine_options with a 'url' parameter. Please provide "
+                    "engine_options=ApiKserveV2ObjectDetectionEngineOptions(url='...') "
+                    "when calling from_preset()."
+                )
             else:
                 raise ValueError(
                     f"Unsupported engine type {preset.default_engine_type} for presets"
@@ -804,6 +812,7 @@ class ImageClassificationStagePresetMixin:
         **overrides: Any,
     ):
         from docling.datamodel.image_classification_engine_options import (
+            ApiKserveV2ImageClassificationEngineOptions,
             OnnxRuntimeImageClassificationEngineOptions,
             TransformersImageClassificationEngineOptions,
         )
@@ -817,6 +826,16 @@ class ImageClassificationStagePresetMixin:
                 preset.default_engine_type == ImageClassificationEngineType.TRANSFORMERS
             ):
                 engine_options = TransformersImageClassificationEngineOptions()
+            elif (
+                preset.default_engine_type
+                == ImageClassificationEngineType.API_KSERVE_V2
+            ):
+                raise ValueError(
+                    f"Preset '{preset_id}' uses API_KSERVE_V2 engine which requires explicit "
+                    "engine_options with a 'url' parameter. Please provide "
+                    "engine_options=ApiKserveV2ImageClassificationEngineOptions(url='...') "
+                    "when calling from_preset()."
+                )
             else:
                 raise ValueError(
                     f"Unsupported engine type {preset.default_engine_type} for presets"
