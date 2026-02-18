@@ -90,6 +90,7 @@ class BaseOcrModel(BasePageModel, BaseModelWithOptions):
             bitmap_rects = page._backend.get_bitmap_rects()
         else:
             bitmap_rects = []
+
         coverage, ocr_rects = find_ocr_rects(page.size, bitmap_rects)
 
         # return full-page rectangle if page is dominantly covered with bitmaps

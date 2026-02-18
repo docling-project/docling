@@ -1,3 +1,15 @@
+## [v2.74.0](https://github.com/docling-project/docling/releases/tag/v2.74.0) - 2026-02-17
+
+### Feature
+
+* Introduce docling-parse v5 and deprecate old docling-parse backends ([#2872](https://github.com/docling-project/docling/issues/2872)) ([`bf417e6`](https://github.com/docling-project/docling/commit/bf417e6d264ebaf93bda7f53534e2cc50ccb2284))
+
+### Fix
+
+* Security vulnerabilities with XML External Entity and related attacks ([#3009](https://github.com/docling-project/docling/issues/3009)) ([`576bada`](https://github.com/docling-project/docling/commit/576bada7b7d542ea308778a053bc3c4d49086f20))
+* **csv:** Set default delimiter by default ([#3005](https://github.com/docling-project/docling/issues/3005)) ([`a1b0e3f`](https://github.com/docling-project/docling/commit/a1b0e3fd6bde26466399ea477ae5624d72d24781))
+* Improved deserialization of engine_options ([#3008](https://github.com/docling-project/docling/issues/3008)) ([`dbba6ea`](https://github.com/docling-project/docling/commit/dbba6ea27fd92e2dfcf79e136a96cea5784edf8a))
+
 ## [v2.73.1](https://github.com/docling-project/docling/releases/tag/v2.73.1) - 2026-02-13
 
 ### Fix
