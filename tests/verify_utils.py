@@ -59,6 +59,13 @@ def levenshtein(str1: str, str2: str) -> int:
 
 def verify_text(gt: str, pred: str, fuzzy: bool, fuzzy_threshold: float = 0.4):
     if len(gt) == 0 or not fuzzy:
+        # get a better view where it goes wrong ...
+        lines_gt = gt.split("\n")
+        lines_pr = pred.split("\n")
+        for i, line_gt in enumerate(lines_gt):
+            if i < len(lines_pr):
+                assert line_gt == lines_pr[i], f"{line_gt}!={lines_pr[i]}"
+
         assert gt == pred, f"{gt}!={pred}"
     else:
         dist = levenshtein(gt, pred)
@@ -214,11 +221,22 @@ def verify_picture_image_v2(
 #     return True
 
 
-def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy: bool):
-    assert len(doc_pred.texts) == len(doc_true.texts), "Text lengths do not match."
+def verify_docitems(
+    *,
+    doc_pred: DoclingDocument,
+    doc_true: DoclingDocument,
+    fuzzy: bool,
+    pdf_filename: str = "",
+):
+    print(doc_pred.texts)
+    print(doc_true.texts)
+
+    assert len(doc_pred.texts) == len(doc_true.texts), (
+        f"[{pdf_filename}] Text lengths do not match: {len(doc_pred.texts)} != {len(doc_true.texts)}"
+    )
 
     assert len(doc_true.tables) == len(doc_pred.tables), (
-        "document has different count of tables than expected."
+        f"[{pdf_filename}] document has different count of tables than expected."
     )
 
     for (true_item, _true_level), (pred_item, _pred_level) in zip(
@@ -226,18 +244,26 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
     ):
         if not isinstance(true_item, DocItem):
             continue
-        assert isinstance(pred_item, DocItem), "Test item is not a DocItem"
+        assert isinstance(pred_item, DocItem), (
+            f"[{pdf_filename}] Test item is not a DocItem"
+        )
 
         # Validate type
-        assert true_item.label == pred_item.label, "Object label does not match."
+        assert true_item.label == pred_item.label, (
+            f"[{pdf_filename}] Object label does not match."
+        )
 
         # Validate provenance
-        assert len(true_item.prov) == len(pred_item.prov), "Length of prov mismatch"
+        assert len(true_item.prov) == len(pred_item.prov), (
+            f"[{pdf_filename}] Length of prov mismatch"
+        )
         if len(true_item.prov) > 0:
             true_prov = true_item.prov[0]
             pred_prov = pred_item.prov[0]
 
-            assert true_prov.page_no == pred_prov.page_no, "Page provenance mistmatch"
+            assert true_prov.page_no == pred_prov.page_no, (
+                f"[{pdf_filename}] Page provenance mistmatch"
+            )
 
             # TODO: add bbox check with tolerance
 
@@ -258,41 +284,47 @@ def verify_docitems(doc_pred: DoclingDocument, doc_true: DoclingDocument, fuzzy:
         # Validate text content
         if isinstance(true_item, TextItem):
             assert isinstance(pred_item, TextItem), (
-                f"Test item should be a TextItem {true_item=} {pred_item=} "
+                f"[{pdf_filename}] Test item should be a TextItem {true_item=} {pred_item=} "
             )
 
             assert verify_text(true_item.text, pred_item.text, fuzzy=fuzzy)
 
         # Validate table content
         if isinstance(true_item, TableItem):
-            assert isinstance(pred_item, TableItem), "Test item should be a TableItem"
+            assert isinstance(pred_item, TableItem), (
+                f"[{pdf_filename}] Test item should be a TableItem"
+            )
             assert verify_table_v2(true_item, pred_item, fuzzy=fuzzy), (
-                "Tables not matching"
+                f"[{pdf_filename}] Tables not matching"
             )
 
         # Validate picture content
         if isinstance(true_item, PictureItem):
             assert isinstance(pred_item, PictureItem), (
-                "Test item should be a PictureItem"
+                f"[{pdf_filename}] Test item should be a PictureItem"
             )
 
             true_image = true_item.get_image(doc=doc_true)
             pred_image = true_item.get_image(doc=doc_pred)
             if true_image is not None:
                 assert verify_picture_image_v2(true_image, pred_image), (
-                    "Picture image mismatch"
+                    f"[{pdf_filename}] Picture image mismatch"
                 )
         # TODO: check picture annotations
 
         # Validate code content
         if isinstance(true_item, CodeItem):
-            assert isinstance(pred_item, CodeItem), "Test item should be a CodeItem"
-            assert true_item.code_language == pred_item.code_language
+            assert isinstance(pred_item, CodeItem), (
+                f"[{pdf_filename}] Test item should be a CodeItem"
+            )
+            assert true_item.code_language == pred_item.code_language, (
+                f"[{pdf_filename}] Code language mismatch"
+            )
 
         # Validate formula content
         if isinstance(true_item, FormulaItem):
             assert isinstance(pred_item, FormulaItem), (
-                "Test item should be a FormulaItem"
+                f"[{pdf_filename}] Test item should be a FormulaItem"
             )
 
     return True
@@ -306,6 +338,7 @@ def verify_dt(doc_pred_dt: str, doc_true_dt: str, fuzzy: bool):
     return verify_text(doc_true_dt, doc_pred_dt, fuzzy)
 
 
+"""
 def verify_conversion_result_v1(
     input_path: Path,
     doc_result: ConversionResult,
@@ -372,6 +405,7 @@ def verify_conversion_result_v1(
         assert verify_dt(doc_pred_dt, doc_true_dt, fuzzy=fuzzy), (
             f"Mismatch in DocTags prediction for {input_path}"
         )
+"""
 
 
 def verify_conversion_result_v2(
@@ -410,6 +444,7 @@ def verify_conversion_result_v2(
     md_path = gt_subpath.with_suffix(f"{engine_suffix}.md")
     dt_path = gt_subpath.with_suffix(f"{engine_suffix}.doctags.txt")
 
+    # print("generate: ", generate)
     if generate:  # only used when re-generating truth
         pages_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -447,9 +482,12 @@ def verify_conversion_result_v2(
                 f"Mismatch in PDF cell prediction for {input_path}"
             )
 
-        assert verify_docitems(doc_pred, doc_true, fuzzy=fuzzy), (
-            f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
-        )
+        assert verify_docitems(
+            doc_pred=doc_pred,
+            doc_true=doc_true,
+            fuzzy=fuzzy,
+            pdf_filename=input_path.name,
+        ), f"verify_docling_document(doc_pred, doc_true) mismatch for {input_path}"
 
         assert verify_md(doc_pred_md, doc_true_md, fuzzy=fuzzy), (
             f"Mismatch in Markdown prediction for {input_path}"
@@ -475,7 +513,9 @@ def verify_document(pred_doc: DoclingDocument, gtfile: str, generate: bool = Fal
         with open(gtfile, encoding="utf-8") as fr:
             true_doc = DoclingDocument.model_validate_json(fr.read())
 
-        return verify_docitems(pred_doc, true_doc, fuzzy=False)
+        return verify_docitems(
+            doc_pred=pred_doc, doc_true=true_doc, fuzzy=False, pdf_filename=gtfile
+        )
 
 
 def verify_export(pred_text: str, gtfile: str, generate: bool = False) -> bool:

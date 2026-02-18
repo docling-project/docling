@@ -5,10 +5,22 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    get_args,
+    get_origin,
+)
 
 from PIL.Image import Image
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic_core import PydanticUndefined
 
 if TYPE_CHECKING:
     from docling.datamodel.stage_model_specs import EngineModelConfig
@@ -36,6 +48,61 @@ class BaseObjectDetectionEngineOptions(BaseModel):
         default=0.3,
         description="Minimum confidence score to keep a detection (0.0 to 1.0)",
     )
+
+    _registry: ClassVar[
+        dict[ObjectDetectionEngineType, Type[BaseObjectDetectionEngineOptions]]
+    ] = {}
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs):
+        super().__pydantic_init_subclass__(**kwargs)
+
+        # Skip base class itself
+        if cls is BaseObjectDetectionEngineOptions:
+            return
+
+        # only register concrete subclasses that fix engine_type via Literal
+        field = cls.model_fields.get("engine_type")
+        if not field:
+            return
+
+        engine_type = None
+
+        # 1. Literal[...] annotation
+        ann = field.annotation
+        if get_origin(ann) is Literal:
+            values = get_args(ann)
+            if len(values) == 1:
+                engine_type = values[0]
+
+        # 2. Explicit default
+        if engine_type is None and field.default is not PydanticUndefined:
+            engine_type = field.default
+
+        if engine_type is not None:
+            BaseObjectDetectionEngineOptions._registry[engine_type] = cls
+
+
+class ObjectDetectionEngineOptionsMixin(BaseModel):
+    engine_options: BaseObjectDetectionEngineOptions = Field(
+        description="Runtime configuration for the object-detection engine",
+    )
+
+    @field_validator("engine_options", mode="before")
+    @classmethod
+    def resolve_engine_options(cls, value):
+        # already concrete
+        if isinstance(value, BaseObjectDetectionEngineOptions):
+            return value
+
+        # dict / JSON case
+        if isinstance(value, dict):
+            engine_type = value.get("engine_type")
+            model_cls = BaseObjectDetectionEngineOptions._registry.get(engine_type)
+            if model_cls:
+                return model_cls.model_validate(value)
+
+        return value
 
 
 class ObjectDetectionEngineInput(BaseModel):
