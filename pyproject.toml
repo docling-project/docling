@@ -72,6 +72,7 @@ dependencies = [
   "accelerate>=1.0.0,<2",
   "polyfactory>=2.22.2",
   "defusedxml (>=0.7.1, <0.8.0)",
+  "arelle-release (>=2.38.13,<3.0.0)",
 ]
 
 [project.urls]
