@@ -168,9 +168,10 @@ class ConvertPipeline(BasePipeline):
             DocumentPictureClassifier(
                 enabled=pipeline_options.do_picture_classification,
                 artifacts_path=self.artifacts_path,
-                options=DocumentPictureClassifierOptions(),
+                options=DocumentPictureClassifierOptions(
+                    keep_deprecated_annotations=pipeline_options.keep_deprecated_annotations
+                ),
                 accelerator_options=pipeline_options.accelerator_options,
-                keep_deprecated_annotations=pipeline_options.keep_deprecated_annotations,
             ),
             # Document Picture description
             picture_description_model,

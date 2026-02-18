@@ -2,7 +2,7 @@ import sys
 import threading
 from collections.abc import Iterable
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import ClassVar, List, Literal, Optional, Union
 
 import numpy as np
 from docling_core.types.doc import (
@@ -16,10 +16,10 @@ from docling_core.types.doc import (
 )
 from docling_core.types.doc.document import PictureClassificationPrediction
 from PIL import Image
-from pydantic import BaseModel
 
 from docling.datamodel.accelerator_options import AcceleratorOptions
 from docling.datamodel.base_models import ItemAndImageEnrichmentElement
+from docling.datamodel.pipeline_options import BaseOptions
 from docling.models.base_model import BaseItemAndImageEnrichmentModel
 from docling.models.utils.hf_model_download import HuggingFaceModelDownloadMixin
 from docling.utils.accelerator_utils import decide_device
@@ -28,12 +28,14 @@ from docling.utils.accelerator_utils import decide_device
 _model_init_lock = threading.Lock()
 
 
-class DocumentPictureClassifierOptions(BaseModel):
+class DocumentPictureClassifierOptions(BaseOptions):
     """
     Options for configuring the DocumentPictureClassifier.
     """
 
-    kind: Literal["document_picture_classifier"] = "document_picture_classifier"
+    kind: ClassVar[Literal["document_picture_classifier"]] = (
+        "document_picture_classifier"
+    )
     repo_id: str = "docling-project/DocumentFigureClassifier-v2.0"
     revision: str = "main"
 
@@ -78,7 +80,6 @@ class DocumentPictureClassifier(
         artifacts_path: Optional[Path],
         options: DocumentPictureClassifierOptions,
         accelerator_options: AcceleratorOptions,
-        keep_deprecated_annotations: bool = True,
     ):
         """
         Initializes the DocumentPictureClassifier.
@@ -96,7 +97,6 @@ class DocumentPictureClassifier(
         """
         self.enabled = enabled
         self.options = options
-        self.keep_deprecated_annotations = keep_deprecated_annotations
 
         if self.enabled:
             self._device = decide_device(accelerator_options.device)
@@ -220,7 +220,7 @@ class DocumentPictureClassifier(
             ]
 
             # FIXME: annotations is deprecated, remove once all consumers use meta.classification
-            if self.keep_deprecated_annotations:
+            if self.options.keep_deprecated_annotations:
                 item.annotations.append(
                     PictureClassificationData(
                         provenance="DocumentPictureClassifier",
