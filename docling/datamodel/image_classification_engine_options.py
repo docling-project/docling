@@ -1,4 +1,4 @@
-"""Engine option helpers for object-detection runtimes."""
+"""Engine option helpers for image-classification runtimes."""
 
 from __future__ import annotations
 
@@ -7,21 +7,17 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import AnyUrl, Field
 
 from docling.datamodel.settings import default_compile_model
-from docling.models.inference_engines.object_detection.base import (
-    BaseObjectDetectionEngineOptions,
-    ObjectDetectionEngineType,
+from docling.models.inference_engines.image_classification.base import (
+    BaseImageClassificationEngineOptions,
+    ImageClassificationEngineType,
 )
 
 
-class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
-    """Runtime configuration for ONNX Runtime based object-detection models.
+class OnnxRuntimeImageClassificationEngineOptions(BaseImageClassificationEngineOptions):
+    """Runtime configuration for ONNX Runtime based image-classification models."""
 
-    Preprocessing parameters come from HuggingFace preprocessor configs,
-    not from these options.
-    """
-
-    engine_type: Literal[ObjectDetectionEngineType.ONNXRUNTIME] = (
-        ObjectDetectionEngineType.ONNXRUNTIME
+    engine_type: Literal[ImageClassificationEngineType.ONNXRUNTIME] = (
+        ImageClassificationEngineType.ONNXRUNTIME
     )
 
     model_filename: str = Field(
@@ -35,11 +31,13 @@ class OnnxRuntimeObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
     )
 
 
-class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
-    """Runtime configuration for Transformers-based object-detection models."""
+class TransformersImageClassificationEngineOptions(
+    BaseImageClassificationEngineOptions
+):
+    """Runtime configuration for Transformers-based image-classification models."""
 
-    engine_type: Literal[ObjectDetectionEngineType.TRANSFORMERS] = (
-        ObjectDetectionEngineType.TRANSFORMERS
+    engine_type: Literal[ImageClassificationEngineType.TRANSFORMERS] = (
+        ImageClassificationEngineType.TRANSFORMERS
     )
 
     torch_dtype: str | None = Field(
@@ -53,11 +51,11 @@ class TransformersObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions)
     )
 
 
-class ApiKserveV2ObjectDetectionEngineOptions(BaseObjectDetectionEngineOptions):
+class ApiKserveV2ImageClassificationEngineOptions(BaseImageClassificationEngineOptions):
     """Runtime configuration for remote KServe v2 inference."""
 
-    engine_type: Literal[ObjectDetectionEngineType.API_KSERVE_V2] = (
-        ObjectDetectionEngineType.API_KSERVE_V2
+    engine_type: Literal[ImageClassificationEngineType.API_KSERVE_V2] = (
+        ImageClassificationEngineType.API_KSERVE_V2
     )
 
     url: AnyUrl = Field(

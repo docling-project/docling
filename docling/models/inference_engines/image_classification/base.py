@@ -1,4 +1,4 @@
-"""Base classes for object-detection inference engines."""
+"""Base classes for image-classification inference engines."""
 
 from __future__ import annotations
 
@@ -28,91 +28,86 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 
-class ObjectDetectionEngineType(str, Enum):
-    """Supported inference engine types for object-detection models."""
+class ImageClassificationEngineType(str, Enum):
+    """Supported inference engine types for image-classification models."""
 
     ONNXRUNTIME = "onnxruntime"
     TRANSFORMERS = "transformers"
     API_KSERVE_V2 = "api_kserve_v2"
 
     @classmethod
-    def is_remote_variant(cls, engine_type: ObjectDetectionEngineType) -> bool:
+    def is_remote_variant(cls, engine_type: ImageClassificationEngineType) -> bool:
         """Check if an engine type is a remote API variant."""
         return engine_type in {cls.API_KSERVE_V2}
 
 
-class BaseObjectDetectionEngineOptions(BaseModel):
-    """Base configuration shared across object-detection engines."""
+class BaseImageClassificationEngineOptions(BaseModel):
+    """Base configuration shared across image-classification engines."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    engine_type: ObjectDetectionEngineType = Field(
+    engine_type: ImageClassificationEngineType = Field(
         description="Type of inference engine to use",
     )
 
-    score_threshold: float = Field(
-        default=0.3,
-        description="Minimum confidence score to keep a detection (0.0 to 1.0)",
+    top_k: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description="Maximum number of classes to return. If None, all classes are returned.",
     )
 
     _registry: ClassVar[
-        dict[ObjectDetectionEngineType, Type[BaseObjectDetectionEngineOptions]]
+        Dict[ImageClassificationEngineType, Type[BaseImageClassificationEngineOptions]]
     ] = {}
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs):
         super().__pydantic_init_subclass__(**kwargs)
 
-        # Skip base class itself
-        if cls is BaseObjectDetectionEngineOptions:
+        if cls is BaseImageClassificationEngineOptions:
             return
 
-        # only register concrete subclasses that fix engine_type via Literal
         field = cls.model_fields.get("engine_type")
         if not field:
             return
 
         engine_type = None
 
-        # 1. Literal[...] annotation
         ann = field.annotation
         if get_origin(ann) is Literal:
             values = get_args(ann)
             if len(values) == 1:
                 engine_type = values[0]
 
-        # 2. Explicit default
         if engine_type is None and field.default is not PydanticUndefined:
             engine_type = field.default
 
         if engine_type is not None:
-            BaseObjectDetectionEngineOptions._registry[engine_type] = cls
+            BaseImageClassificationEngineOptions._registry[engine_type] = cls
 
 
-class ObjectDetectionEngineOptionsMixin(BaseModel):
-    engine_options: BaseObjectDetectionEngineOptions = Field(
-        description="Runtime configuration for the object-detection engine",
+class ImageClassificationEngineOptionsMixin(BaseModel):
+    engine_options: BaseImageClassificationEngineOptions = Field(
+        description="Runtime configuration for the image-classification engine.",
     )
 
     @field_validator("engine_options", mode="before")
     @classmethod
     def resolve_engine_options(cls, value):
-        # already concrete
-        if isinstance(value, BaseObjectDetectionEngineOptions):
+        if isinstance(value, BaseImageClassificationEngineOptions):
             return value
 
-        # dict / JSON case
         if isinstance(value, dict):
             engine_type = value.get("engine_type")
-            model_cls = BaseObjectDetectionEngineOptions._registry.get(engine_type)
+            model_cls = BaseImageClassificationEngineOptions._registry.get(engine_type)
             if model_cls:
                 return model_cls.model_validate(value)
 
         return value
 
 
-class ObjectDetectionEngineInput(BaseModel):
-    """Generic input accepted by every object-detection engine."""
+class ImageClassificationEngineInput(BaseModel):
+    """Generic input accepted by every image-classification engine."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -123,20 +118,16 @@ class ObjectDetectionEngineInput(BaseModel):
     )
 
 
-class ObjectDetectionEngineOutput(BaseModel):
-    """Output returned by object-detection engines."""
+class ImageClassificationEngineOutput(BaseModel):
+    """Output returned by image-classification engines."""
 
     label_ids: List[int] = Field(
         default_factory=list,
-        description="Predicted class indices",
+        description="Predicted class indices sorted by confidence descending",
     )
     scores: List[float] = Field(
         default_factory=list,
-        description="Confidence scores for the predictions",
-    )
-    bboxes: List[List[float]] = Field(
-        default_factory=list,
-        description="Bounding boxes as [x_min, y_min, x_max, y_max] in pixels",
+        description="Confidence scores sorted descending",
     )
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
@@ -144,12 +135,12 @@ class ObjectDetectionEngineOutput(BaseModel):
     )
 
 
-class BaseObjectDetectionEngine(ABC):
-    """Abstract base-class for object-detection engines."""
+class BaseImageClassificationEngine(ABC):
+    """Abstract base-class for image-classification engines."""
 
     def __init__(
         self,
-        options: BaseObjectDetectionEngineOptions,
+        options: BaseImageClassificationEngineOptions,
         model_config: Optional[EngineModelConfig] = None,
     ) -> None:
         """Initialize the engine.
@@ -168,8 +159,8 @@ class BaseObjectDetectionEngine(ABC):
 
     @abstractmethod
     def predict_batch(
-        self, input_batch: List[ObjectDetectionEngineInput]
-    ) -> List[ObjectDetectionEngineOutput]:
+        self, input_batch: List[ImageClassificationEngineInput]
+    ) -> List[ImageClassificationEngineOutput]:
         """Run inference on a batch of inputs."""
 
     @abstractmethod
@@ -181,8 +172,8 @@ class BaseObjectDetectionEngine(ABC):
         """
 
     def predict(
-        self, input_data: ObjectDetectionEngineInput
-    ) -> ObjectDetectionEngineOutput:
+        self, input_data: ImageClassificationEngineInput
+    ) -> ImageClassificationEngineOutput:
         """Helper to run inference on a single input."""
         if not self._initialized:
             _log.debug("Initializing %s for single prediction", type(self).__name__)
@@ -193,8 +184,9 @@ class BaseObjectDetectionEngine(ABC):
 
     def __call__(
         self,
-        input_data: ObjectDetectionEngineInput | List[ObjectDetectionEngineInput],
-    ) -> ObjectDetectionEngineOutput | List[ObjectDetectionEngineOutput]:
+        input_data: ImageClassificationEngineInput
+        | List[ImageClassificationEngineInput],
+    ) -> ImageClassificationEngineOutput | List[ImageClassificationEngineOutput]:
         if not self._initialized:
             _log.debug("Initializing %s for call", type(self).__name__)
             self.initialize()

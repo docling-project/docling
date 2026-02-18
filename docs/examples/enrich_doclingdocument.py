@@ -138,7 +138,9 @@ def main():
     model = DocumentPictureClassifier(
         enabled=True,
         artifacts_path=None,
-        options=DocumentPictureClassifierOptions(),
+        options=DocumentPictureClassifierOptions.from_preset(
+            "document_figure_classifier_v2"
+        ),
         accelerator_options=AcceleratorOptions(),
     )
 

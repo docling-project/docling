@@ -465,6 +465,7 @@ class StandardPdfPipeline(ConvertPipeline):
             options=self.pipeline_options.layout_options,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         table_factory = get_table_structure_factory(
             allow_external_plugins=self.pipeline_options.allow_external_plugins
@@ -474,6 +475,7 @@ class StandardPdfPipeline(ConvertPipeline):
             enabled=self.pipeline_options.do_table_structure,
             artifacts_path=art_path,
             accelerator_options=self.pipeline_options.accelerator_options,
+            enable_remote_services=self.pipeline_options.enable_remote_services,
         )
         self.assemble_model = PageAssembleModel(options=PageAssembleOptions())
         self.reading_order_model = ReadingOrderModel(options=ReadingOrderOptions())

@@ -64,10 +64,12 @@ class TestRuntimeOptions:
             load_in_8bit=False,
             trust_remote_code=True,
             torch_dtype="float16",
+            compile_model=True,
         )
         assert custom_options.load_in_8bit is False
         assert custom_options.trust_remote_code is True
         assert custom_options.torch_dtype == "float16"
+        assert custom_options.compile_model is True
 
     def test_mlx_engine_options(self):
         """Test MlxVlmEngineOptions creation."""

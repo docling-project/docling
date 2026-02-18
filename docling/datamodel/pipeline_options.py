@@ -34,6 +34,9 @@ from docling.datamodel.layout_model_specs import (
 from docling.datamodel.object_detection_engine_options import (
     BaseObjectDetectionEngineOptions,
 )
+from docling.datamodel.picture_classification_options import (
+    DocumentPictureClassifierOptions,
+)
 from docling.datamodel.pipeline_options_asr_model import InlineAsrOptions
 from docling.datamodel.pipeline_options_vlm_model import (
     ApiVlmOptions,
@@ -842,6 +845,12 @@ _default_picture_description_options = PictureDescriptionVlmEngineOptions.from_p
 )
 """Default picture description options using smolvlm preset with AUTO_INLINE runtime."""
 
+# Default picture classification options using document figure classifier preset
+_default_picture_classification_options = DocumentPictureClassifierOptions.from_preset(
+    "document_figure_classifier_v2"
+)
+"""Default picture classification options using document_figure_classifier_v2 preset."""
+
 # Default CodeFormulaVlmOptions using codeformulav2 preset
 _default_code_formula_options = CodeFormulaVlmOptions.from_preset("codeformulav2")
 """Default code/formula options using codeformulav2 preset with AUTO_INLINE runtime."""
@@ -996,6 +1005,15 @@ class ConvertPipelineOptions(PipelineOptions):
             )
         ),
     ] = False
+    picture_classification_options: Annotated[
+        DocumentPictureClassifierOptions,
+        Field(
+            description=(
+                "Configuration for picture classification model/runtime. "
+                "Supports selecting transformers, onnxruntime, or remote api_kserve_v2 inference engines."
+            )
+        ),
+    ] = _default_picture_classification_options
     do_picture_description: Annotated[
         bool,
         Field(

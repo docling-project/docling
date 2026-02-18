@@ -126,6 +126,12 @@ class VlmEngineOptionsMixin(BaseModel):
             if model_cls:
                 return model_cls.model_validate(value)
 
+            # Minimal fallback: API variants share one options class
+            if VlmEngineType.is_api_variant(engine_type):
+                from docling.datamodel.vlm_engine_options import ApiVlmEngineOptions
+
+                return ApiVlmEngineOptions.model_validate(value)
+
         return value
 
 

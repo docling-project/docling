@@ -35,7 +35,6 @@ from docling.models.stages.chart_extraction.granite_vision import (
 )
 from docling.models.stages.picture_classifier.document_picture_classifier import (
     DocumentPictureClassifier,
-    DocumentPictureClassifierOptions,
 )
 from docling.utils.profiling import ProfilingScope, TimeRecorder
 from docling.utils.utils import chunkify
@@ -168,10 +167,13 @@ class ConvertPipeline(BasePipeline):
             DocumentPictureClassifier(
                 enabled=pipeline_options.do_picture_classification,
                 artifacts_path=self.artifacts_path,
-                options=DocumentPictureClassifierOptions(
-                    keep_deprecated_annotations=pipeline_options.keep_deprecated_annotations
+                options=pipeline_options.picture_classification_options.model_copy(
+                    update={
+                        "keep_deprecated_annotations": pipeline_options.keep_deprecated_annotations
+                    }
                 ),
                 accelerator_options=pipeline_options.accelerator_options,
+                enable_remote_services=pipeline_options.enable_remote_services,
             ),
             # Document Picture description
             picture_description_model,

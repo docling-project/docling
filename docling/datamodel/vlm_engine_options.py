@@ -10,6 +10,7 @@ from typing import Any, Dict, Literal, Optional
 from pydantic import AnyUrl, Field
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
+from docling.datamodel.settings import default_compile_model
 from docling.models.inference_engines.vlm.base import (
     BaseVlmEngineOptions,
     VlmEngineType,
@@ -76,6 +77,11 @@ class TransformersVlmEngineOptions(BaseVlmEngineOptions):
 
     use_kv_cache: bool = Field(
         default=True, description="Enable key-value caching for attention"
+    )
+
+    compile_model: bool = Field(
+        default_factory=default_compile_model,
+        description="Whether to compile the model with torch.compile() for better performance.",
     )
 
 
