@@ -89,7 +89,7 @@ class PictureDescriptionBaseModel(
 
         for item, output in zip(elements, outputs):
             # FIXME: annotations is deprecated, remove once all consumers use meta.classification
-            if self.options.keep_deprecated_annotations:
+            if self.options._keep_deprecated_annotations:
                 item.annotations.append(
                     PictureDescriptionData(text=output, provenance=self.provenance)
                 )

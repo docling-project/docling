@@ -181,7 +181,7 @@ class DocumentPictureClassifier(
             ]
 
             # FIXME: annotations is deprecated, remove once all consumers use meta.classification
-            if self.options.keep_deprecated_annotations:
+            if self.options._keep_deprecated_annotations:
                 item.annotations.append(
                     PictureClassificationData(
                         provenance="DocumentPictureClassifier",

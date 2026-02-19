@@ -28,7 +28,7 @@ class DocumentPictureClassifierOptions(
     # TODO: default should become False in a future release, and this field
     # may be removed entirely once docling-core drops the deprecated
     # `annotations` attribute from DoclingDocument items.
-    keep_deprecated_annotations: bool = True
+    _keep_deprecated_annotations: bool = True
 
     model_spec: ImageClassificationModelSpec = Field(
         default_factory=lambda: stage_model_specs.IMAGE_CLASSIFICATION_DOCUMENT_FIGURE.model_spec.model_copy(
