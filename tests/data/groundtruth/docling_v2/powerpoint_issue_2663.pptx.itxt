@@ -1,0 +1,14 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: chapter: group slide-0
+    item-2 at level 2: title: Open-Source Software
+    item-3 at level 2: paragraph: Key Benefits:
+    item-4 at level 2: list: group list
+      item-5 at level 3: list_item: Open-source software is cost-eff ... cense fees, reducing overall expenses.
+      item-6 at level 3: list_item: Ehnhances security and transpare ...  allowing public access to source code
+      item-7 at level 3: list_item: Strong global community improves and maintains open-source projects.
+      item-8 at level 3: list_item: Offers flexibility, allowing users to customize and adapt the software
+      item-9 at level 3: list_item: 
+    item-10 at level 2: paragraph: Considerations When Using Open-Source Software:
+    item-11 at level 2: list: group list
+      item-12 at level 3: list_item: Open-source projects often rely  ... eliable as dedicated customer service.
+      item-13 at level 3: list_item: Some open-source solutions may r ... se for implementation and maintenance.

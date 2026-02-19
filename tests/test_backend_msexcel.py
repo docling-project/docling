@@ -312,3 +312,102 @@ def test_bytesio_stream():
     assert doc.pages.get(2).size.as_tuple() == (9.0, 18.0)
     assert doc.pages.get(3).size.as_tuple() == (13.0, 36.0)
     assert doc.pages.get(4).size.as_tuple() == (0.0, 0.0)
+
+
+def test_edge_cases_merging() -> None:
+    """Test that split tables are correctly merged using the region growing algorithm.
+
+    Verifies:
+    - Sheet 1 (missing_header): 1 table (Standard case)
+    - Sheet 2 (Attached_left): 1 MERGED table (The critical fix!)
+    - Sheet 3 (Diagonal): 2 separate tables (Correctly separated)
+    """
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_06_edge_cases_"
+    )
+
+    if not path.exists():
+        pytest.skip(f"Test file {path} not found.")
+
+    converter = DocumentConverter(allowed_formats=[InputFormat.XLSX])
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    # Organize tables by Page Number (1-based index)
+    tables_by_page = {}
+    for table in doc.tables:
+        p_no = table.prov[0].page_no
+        if p_no not in tables_by_page:
+            tables_by_page[p_no] = []
+        tables_by_page[p_no].append(table)
+
+    # Page 1: Standard table
+    assert len(tables_by_page.get(1, [])) == 1, "Page 1 should have 1 table"
+
+    # Page 2: The 'Attached left' case.
+    # SUCCESS CONDITION: It is 1 single table.
+    # (If the fix failed, this would be 2 tables).
+    assert len(tables_by_page.get(2, [])) == 1, (
+        f"Page 2 (Attached Left) should be 1 merged table, but found {len(tables_by_page.get(2, []))}"
+    )
+
+    # Page 3: Diagonal case.
+    # These are physically separated by empty space, so they should remain 2 tables.
+    assert len(tables_by_page.get(3, [])) == 2, (
+        "Page 3 (Diagonal) should have 2 separate tables"
+    )
+
+
+def test_gap_tolerance_comparison() -> None:
+    """Test the effect of gap_tolerance on table detection.
+
+    Target: excel-tests.xlsx (Page 1), 'Power system' table.
+    Structure: Col A ("1") | Col B (Empty) | Col C ("Rated system voltage")
+
+    Verifies:
+    1. Tolerance 0 (Default): The gap causes a split. The main data table starts at Col C.
+    2. Tolerance 1: The gap is bridged. The table merges with Col A, starting at Col A.
+    """
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_07_gap_tolerance_"
+    )
+    if not path.exists():
+        pytest.skip("Test file not found")
+
+    # --- Helper to get the start column of the "Rated system voltage" table ---
+    def get_table_start_col(tolerance: int) -> int:
+        options = MsExcelBackendOptions(gap_tolerance=tolerance)
+        format_options = {InputFormat.XLSX: ExcelFormatOption(backend_options=options)}
+
+        converter = DocumentConverter(
+            allowed_formats=[InputFormat.XLSX], format_options=format_options
+        )
+        doc = converter.convert(path).document
+        print(doc)
+
+        for table in doc.tables:
+            # Check for unique text in the main body of the table
+            texts = {cell.text for cell in table.data.table_cells}
+            if "Rated system voltage" in texts:
+                # Return the leftmost column index (0-based)
+                return table.prov[0].bbox.l
+
+        pytest.fail(f"Could not find 'Power system' table with tolerance={tolerance}")
+
+    # --- ASSERTION 1: Strict Behavior (gap_tolerance=0) ---
+    # The empty Col B should split the table.
+    # The text "Rated system voltage" is in Col C (Index 2).
+    start_col_strict = get_table_start_col(0)
+    assert start_col_strict == 2, (
+        f"Default (0) tolerance should split the table. "
+        f"Expected start at Col C (2), got {start_col_strict}"
+    )
+
+    # --- ASSERTION 2: Merged Behavior (gap_tolerance=1) ---
+    # The empty Col B should be ignored.
+    # The table should merge left to include "1" in Col A (Index 0).
+    start_col_merged = get_table_start_col(1)
+    assert start_col_merged == 0, (
+        f"Tolerance 1 should merge the table. "
+        f"Expected start at Col A (0), got {start_col_merged}"
+    )

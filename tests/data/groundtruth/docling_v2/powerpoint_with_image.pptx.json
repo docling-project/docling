@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "name": "powerpoint_with_image",
   "origin": {
     "mimetype": "application/vnd.ms-powerpoint",
-    "binary_hash": 8405570356673823665,
+    "binary_hash": 8326374439777439720,
     "filename": "powerpoint_with_image.pptx"
   },
   "furniture": {
@@ -40,6 +40,9 @@
         },
         {
           "$ref": "#/pictures/0"
+        },
+        {
+          "$ref": "#/texts/2"
         }
       ],
       "content_layer": "body",
@@ -101,6 +104,33 @@
       ],
       "orig": "Image test",
       "text": "Image test"
+    },
+    {
+      "self_ref": "#/texts/2",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "paragraph",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 4965460.0,
+            "t": 4937617.0,
+            "r": 7612655.0,
+            "b": 4503683.0,
+            "coord_origin": "BOTTOMLEFT"
+          },
+          "charspan": [
+            0,
+            20
+          ]
+        }
+      ],
+      "orig": "Image linked to file",
+      "text": "Image linked to file"
     }
   ],
   "pictures": [

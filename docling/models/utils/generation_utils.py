@@ -1,3 +1,4 @@
+import itertools
 import logging
 import re
 import sys
@@ -56,7 +57,7 @@ class DocTagsRepetitionStopper(GenerationStopper):
         """3+ strictly increasing values with ~regular spacing (±20%)."""
         if len(vals) < 3:
             return False
-        diffs = [b - a for a, b in zip(vals, vals[1:])]
+        diffs = [b - a for a, b in itertools.pairwise(vals)]
         if any(d <= 0 for d in diffs):
             return False
         mean = sum(diffs) / len(diffs)

@@ -2,7 +2,7 @@ import copy
 import warnings
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
@@ -36,6 +36,7 @@ class TableStructureModel(BaseTableStructureModel):
         artifacts_path: Optional[Path],
         options: TableStructureOptions,
         accelerator_options: AcceleratorOptions,
+        enable_remote_services: Literal[False] = False,
     ):
         self.options = options
         self.do_cell_matching = self.options.do_cell_matching

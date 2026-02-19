@@ -88,6 +88,19 @@ class MsExcelBackendOptions(BaseBackendOptions):
             "cells) as TextItem instead of TableItem."
         ),
     )
+    gap_tolerance: int = Field(
+        0,
+        description=(
+            "The tolerance (in number of empty rows/columns) for merging nearby "
+            "data clusters into a single table. Default is 0 (strict)."
+        ),
+    )
+
+
+class LatexBackendOptions(BaseBackendOptions):
+    """Options specific to the LaTeX backend."""
+
+    kind: Literal["latex"] = Field("latex", exclude=True, repr=False)
 
 
 BackendOptions = Annotated[
@@ -97,6 +110,7 @@ BackendOptions = Annotated[
         MarkdownBackendOptions,
         PdfBackendOptions,
         MsExcelBackendOptions,
+        LatexBackendOptions,
     ],
     Field(discriminator="kind"),
 ]

@@ -414,10 +414,14 @@ class AsciiDocBackend(DeclarativeDocumentBackend):
 
             # Extract optional attributes (alt text, width, height, alignment)
             if attributes:
-                picture_info["alt"] = attributes[0].strip() if attributes[0] else ""
+                alt_parts = [attributes[0].strip()] if attributes[0] else [""]
                 for attr in attributes[1:]:
-                    key, value = attr.split("=")
-                    picture_info[key.strip()] = value.strip()
+                    if "=" in attr:
+                        key, value = attr.split("=", 1)
+                        picture_info[key.strip()] = value.strip()
+                    else:
+                        alt_parts.append(attr.strip())
+                picture_info["alt"] = ", ".join(alt_parts)
 
             return picture_info
 

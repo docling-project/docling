@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "name": "webvtt_example_01",
   "origin": {
     "mimetype": "text/vtt",
@@ -18,1000 +18,287 @@
     "self_ref": "#/body",
     "children": [
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/0"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/texts/2"
       },
       {
-        "$ref": "#/groups/6"
+        "$ref": "#/texts/3"
       },
       {
-        "$ref": "#/groups/8"
+        "$ref": "#/texts/4"
       },
       {
-        "$ref": "#/groups/10"
+        "$ref": "#/texts/5"
       },
       {
-        "$ref": "#/groups/12"
+        "$ref": "#/texts/6"
       },
       {
-        "$ref": "#/groups/14"
+        "$ref": "#/texts/7"
       },
       {
-        "$ref": "#/groups/16"
+        "$ref": "#/texts/8"
       },
       {
-        "$ref": "#/groups/18"
+        "$ref": "#/texts/9"
       },
       {
-        "$ref": "#/groups/20"
+        "$ref": "#/texts/10"
       },
       {
-        "$ref": "#/groups/22"
+        "$ref": "#/texts/11"
       },
       {
-        "$ref": "#/groups/24"
+        "$ref": "#/texts/12"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [
-    {
-      "self_ref": "#/groups/0",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/0"
-        },
-        {
-          "$ref": "#/groups/1"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/1",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/1"
-        },
-        {
-          "$ref": "#/texts/2"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/2",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/3"
-        },
-        {
-          "$ref": "#/groups/3"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/3",
-      "parent": {
-        "$ref": "#/groups/2"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/4"
-        },
-        {
-          "$ref": "#/texts/5"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/4",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/6"
-        },
-        {
-          "$ref": "#/groups/5"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/5",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/7"
-        },
-        {
-          "$ref": "#/texts/8"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/9"
-        },
-        {
-          "$ref": "#/groups/7"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/7",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/10"
-        },
-        {
-          "$ref": "#/texts/11"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/8",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/12"
-        },
-        {
-          "$ref": "#/groups/9"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/9",
-      "parent": {
-        "$ref": "#/groups/8"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/13"
-        },
-        {
-          "$ref": "#/texts/14"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/10",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/15"
-        },
-        {
-          "$ref": "#/groups/11"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/11",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/16"
-        },
-        {
-          "$ref": "#/texts/17"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/12",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/18"
-        },
-        {
-          "$ref": "#/groups/13"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/13",
-      "parent": {
-        "$ref": "#/groups/12"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/19"
-        },
-        {
-          "$ref": "#/texts/20"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/14",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/21"
-        },
-        {
-          "$ref": "#/groups/15"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/15",
-      "parent": {
-        "$ref": "#/groups/14"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/22"
-        },
-        {
-          "$ref": "#/texts/23"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/16",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/24"
-        },
-        {
-          "$ref": "#/groups/17"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/17",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/25"
-        },
-        {
-          "$ref": "#/texts/26"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/18",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/27"
-        },
-        {
-          "$ref": "#/groups/19"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/19",
-      "parent": {
-        "$ref": "#/groups/18"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/28"
-        },
-        {
-          "$ref": "#/texts/29"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/20",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/30"
-        },
-        {
-          "$ref": "#/groups/21"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/21",
-      "parent": {
-        "$ref": "#/groups/20"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/31"
-        },
-        {
-          "$ref": "#/texts/32"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/22",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/33"
-        },
-        {
-          "$ref": "#/groups/23"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/23",
-      "parent": {
-        "$ref": "#/groups/22"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/34"
-        },
-        {
-          "$ref": "#/texts/35"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    },
-    {
-      "self_ref": "#/groups/24",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/36"
-        },
-        {
-          "$ref": "#/groups/25"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue block",
-      "label": "section"
-    },
-    {
-      "self_ref": "#/groups/25",
-      "parent": {
-        "$ref": "#/groups/24"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/37"
-        },
-        {
-          "$ref": "#/texts/38"
-        }
-      ],
-      "content_layer": "body",
-      "name": "WebVTT cue voice span",
-      "label": "inline"
-    }
-  ],
+  "groups": [],
   "texts": [
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "00:11.000 --> 00:13.000",
-      "text": "00:11.000 --> 00:13.000"
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 11.0,
+          "end_time": 13.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "We are in New York City",
+      "text": "We are in New York City"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 13.0,
+          "end_time": 16.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "We’re actually at the Lucern Hotel, just down the street",
+      "text": "We’re actually at the Lucern Hotel, just down the street"
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "We are in New York City",
-      "text": "We are in New York City",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 16.0,
+          "end_time": 18.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "from the American Museum of Natural History",
+      "text": "from the American Museum of Natural History"
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "00:13.000 --> 00:16.000",
-      "text": "00:13.000 --> 00:16.000"
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 18.0,
+          "end_time": 20.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "And with me is Neil deGrasse Tyson",
+      "text": "And with me is Neil deGrasse Tyson"
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 20.0,
+          "end_time": 22.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "Astrophysicist, Director of the Hayden Planetarium",
+      "text": "Astrophysicist, Director of the Hayden Planetarium"
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
-      "prov": [],
-      "orig": "We’re actually at the Lucern Hotel, just down the street",
-      "text": "We’re actually at the Lucern Hotel, just down the street",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 22.0,
+          "end_time": 24.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "at the AMNH.",
+      "text": "at the AMNH."
     },
     {
       "self_ref": "#/texts/6",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "00:16.000 --> 00:18.000",
-      "text": "00:16.000 --> 00:18.000"
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 24.0,
+          "end_time": 26.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "Thank you for walking down here.",
+      "text": "Thank you for walking down here."
     },
     {
       "self_ref": "#/texts/7",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 27.0,
+          "end_time": 30.0,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "And I want to do a follow-up on the last conversation we did.",
+      "text": "And I want to do a follow-up on the last conversation we did."
     },
     {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/groups/5"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "from the American Museum of Natural History",
-      "text": "from the American Museum of Natural History",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 30.0,
+          "end_time": 31.5,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "When we e-mailed—",
+      "text": "When we e-mailed—"
     },
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "00:18.000 --> 00:20.000",
-      "text": "00:18.000 --> 00:20.000"
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 30.5,
+          "end_time": 32.5,
+          "voice": "Neil deGrasse Tyson"
+        }
+      ],
+      "orig": "Didn’t we talk about enough in that conversation?",
+      "text": "Didn’t we talk about enough in that conversation?"
     },
     {
       "self_ref": "#/texts/10",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 32.0,
+          "end_time": 35.5,
+          "voice": "Roger Bingham"
+        }
+      ],
+      "orig": "No! No no no no; 'cos 'cos obviously 'cos",
+      "text": "No! No no no no; 'cos 'cos obviously 'cos"
     },
     {
       "self_ref": "#/texts/11",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And with me is Neil deGrasse Tyson",
-      "text": "And with me is Neil deGrasse Tyson",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "$ref": "#/groups/8"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:20.000 --> 00:22.000",
-      "text": "00:20.000 --> 00:22.000"
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
-    },
-    {
-      "self_ref": "#/texts/14",
-      "parent": {
-        "$ref": "#/groups/9"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Astrophysicist, Director of the Hayden Planetarium",
-      "text": "Astrophysicist, Director of the Hayden Planetarium",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/15",
-      "parent": {
-        "$ref": "#/groups/10"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:22.000 --> 00:24.000",
-      "text": "00:22.000 --> 00:24.000"
-    },
-    {
-      "self_ref": "#/texts/16",
-      "parent": {
-        "$ref": "#/groups/11"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
-    },
-    {
-      "self_ref": "#/texts/17",
-      "parent": {
-        "$ref": "#/groups/11"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "at the AMNH.",
-      "text": "at the AMNH.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/18",
-      "parent": {
-        "$ref": "#/groups/12"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:24.000 --> 00:26.000",
-      "text": "00:24.000 --> 00:26.000"
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/groups/13"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Thank you for walking down here.",
-      "text": "Thank you for walking down here.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/groups/14"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:27.000 --> 00:30.000",
-      "text": "00:27.000 --> 00:30.000"
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/groups/15"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "And I want to do a follow-up on the last conversation we did.",
-      "text": "And I want to do a follow-up on the last conversation we did.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/groups/16"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:30.000 --> 00:31.500",
-      "text": "00:30.000 --> 00:31.500"
-    },
-    {
-      "self_ref": "#/texts/25",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
-    },
-    {
-      "self_ref": "#/texts/26",
-      "parent": {
-        "$ref": "#/groups/17"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "When we e-mailed—",
-      "text": "When we e-mailed—",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/27",
-      "parent": {
-        "$ref": "#/groups/18"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:30.500 --> 00:32.500",
-      "text": "00:30.500 --> 00:32.500"
-    },
-    {
-      "self_ref": "#/texts/28",
-      "parent": {
-        "$ref": "#/groups/19"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Neil deGrasse Tyson: ",
-      "text": "Neil deGrasse Tyson: "
-    },
-    {
-      "self_ref": "#/texts/29",
-      "parent": {
-        "$ref": "#/groups/19"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Didn’t we talk about enough in that conversation?",
-      "text": "Didn’t we talk about enough in that conversation?",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/30",
-      "parent": {
-        "$ref": "#/groups/20"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:32.000 --> 00:35.500",
-      "text": "00:32.000 --> 00:35.500"
-    },
-    {
-      "self_ref": "#/texts/31",
-      "parent": {
-        "$ref": "#/groups/21"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
-    },
-    {
-      "self_ref": "#/texts/32",
-      "parent": {
-        "$ref": "#/groups/21"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "No! No no no no; 'cos 'cos obviously 'cos",
-      "text": "No! No no no no; 'cos 'cos obviously 'cos",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
-    },
-    {
-      "self_ref": "#/texts/33",
-      "parent": {
-        "$ref": "#/groups/22"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "00:32.500 --> 00:33.500",
-      "text": "00:32.500 --> 00:33.500"
-    },
-    {
-      "self_ref": "#/texts/34",
-      "parent": {
-        "$ref": "#/groups/23"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Neil deGrasse Tyson: ",
-      "text": "Neil deGrasse Tyson: "
-    },
-    {
-      "self_ref": "#/texts/35",
-      "parent": {
-        "$ref": "#/groups/23"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 32.5,
+          "end_time": 33.5,
+          "voice": "Neil deGrasse Tyson"
+        }
+      ],
       "orig": "Laughs",
       "text": "Laughs",
       "formatting": {
@@ -1023,47 +310,24 @@
       }
     },
     {
-      "self_ref": "#/texts/36",
+      "self_ref": "#/texts/12",
       "parent": {
-        "$ref": "#/groups/24"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "00:35.500 --> 00:38.000",
-      "text": "00:35.500 --> 00:38.000"
-    },
-    {
-      "self_ref": "#/texts/37",
-      "parent": {
-        "$ref": "#/groups/25"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "Roger Bingham: ",
-      "text": "Roger Bingham: "
-    },
-    {
-      "self_ref": "#/texts/38",
-      "parent": {
-        "$ref": "#/groups/25"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
+      "source": [
+        {
+          "kind": "track",
+          "start_time": 35.5,
+          "end_time": 38.0,
+          "voice": "Roger Bingham"
+        }
+      ],
       "orig": "You know I’m so excited my glasses are falling off here.",
-      "text": "You know I’m so excited my glasses are falling off here.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "You know I’m so excited my glasses are falling off here."
     }
   ],
   "pictures": [],

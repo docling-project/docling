@@ -20,7 +20,7 @@ from docling_core.types.doc import (
     TableData,
     TableItem,
 )
-from docling_core.types.doc.document import Formatting, Script
+from docling_core.types.doc.document import FineRef, Formatting, Script
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.oxml.table import CT_Tc
@@ -107,11 +107,20 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             "indents": [None],
         }
 
+        # Track comment mappings: comment_id -> comment object
+        self.comment_map: dict[str, Any] = {}
+        # Track paragraph elements to their comment IDs
+        self.paragraph_comment_map: dict[int, list[str]] = {}
+        # Track text items created from each paragraph element
+        self.paragraph_to_items: dict[int, list[RefItem]] = {}
+
         self.docx_obj = self.load_msword_file(
             path_or_stream=self.path_or_stream, document_hash=self.document_hash
         )
         if self.docx_obj:
             self.valid = True
+            # Build comment mappings after loading document
+            self._extract_comment_ranges()
 
     @override
     def is_valid(self) -> bool:
@@ -151,8 +160,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         doc = DoclingDocument(name=self.file.stem or "file", origin=origin)
         if self.is_valid():
             assert self.docx_obj is not None
+            # Reset mappings for a fresh conversion pass
+            self.paragraph_comment_map.clear()
+            self.paragraph_to_items.clear()
             doc, _ = self._walk_linear(self.docx_obj.element.body, doc)
             self._add_header_footer(self.docx_obj, doc)
+            # Add comments and link them to annotated paragraphs
+            self._add_comments(self.docx_obj, doc)
 
             return doc
         else:
@@ -897,6 +911,10 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return elem_ref
         text = text.strip()
 
+        # Track the paragraph element ID for comment linking
+        para_element_id = id(element)
+        comment_ids = self._get_comment_ids_for_element(element)
+
         # Common styles for bullet and numbered lists.
         # "List Bullet", "List Number", "List Paragraph"
         # Identify whether list is a numbered list or not
@@ -1066,6 +1084,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 elem_ref.append(t3.get_ref())
 
         self._update_history(p_style_id, p_level, numid, ilevel)
+
+        # Store mapping of paragraph element to created items for comment linking
+        if elem_ref and para_element_id:
+            self.paragraph_to_items[para_element_id] = elem_ref
+            if comment_ids:
+                self.paragraph_comment_map[para_element_id] = list(comment_ids)
+
         return elem_ref
 
     def _add_heading(
@@ -1661,3 +1686,173 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         self.content_layer = current_layer
         self.parents[0] = base_parent
+
+    def _add_comments(self, docx_obj: DocxDocument, doc: DoclingDocument) -> None:
+        """Add document comments (reviewer annotations) and link to annotated items.
+
+        Comments are added in the NOTES content layer using the add_comment API.
+        Comments are linked to their annotated text items via the comments field
+        (FineRef references).
+
+        The comment text format is:
+            [author: Name (initials), time: ISO-timestamp]: comment text
+
+        Examples:
+            [author: Jane Editor (JE), time: 2026-01-04T05:48:07+00:00]: Review this.
+            [author: John Doe]: Simple comment without timestamp.
+
+        Args:
+            docx_obj: A docx Document object to be parsed.
+            doc: A DoclingDocument object to add the comments from docx_obj.
+        """
+        # Check if document has any comments
+        if not hasattr(docx_obj, "comments") or len(docx_obj.comments) == 0:
+            return
+
+        # Process each comment and link to target items
+        for comment in docx_obj.comments:
+            # Build comment text with metadata prefix
+            metadata_parts = []
+            if comment.author:
+                author_str = f"author: {comment.author}"
+                if comment.initials:
+                    author_str += f" ({comment.initials})"
+                metadata_parts.append(author_str)
+            if comment.timestamp:
+                metadata_parts.append(f"time: {comment.timestamp.isoformat()}")
+
+            metadata_prefix = ", ".join(metadata_parts)
+            comment_text = comment.text.strip() if comment.text else ""
+
+            if metadata_prefix and comment_text:
+                full_text = f"[{metadata_prefix}]: {comment_text}"
+            elif metadata_prefix:
+                full_text = f"[{metadata_prefix}]"
+            elif comment_text:
+                full_text = comment_text
+            else:
+                # Skip empty comments
+                continue
+
+            # Collect target items for this comment
+            targets: list[Any] = []
+            comment_id = str(comment.comment_id)
+
+            # Find paragraphs that have this comment
+            for para_id, comment_ids in self.paragraph_comment_map.items():
+                if comment_id in comment_ids:
+                    # Get the text items created from this paragraph
+                    if para_id in self.paragraph_to_items:
+                        for item_ref in self.paragraph_to_items[para_id]:
+                            try:
+                                item = item_ref.resolve(doc)
+                                if item not in targets:
+                                    targets.append(item)
+                            except Exception as e:
+                                _log.debug(f"Error resolving item ref: {e}")
+
+            # Create a group for this comment in NOTES and add the comment there
+            comment_group = doc.add_group(
+                label=GroupLabel.COMMENT_SECTION,
+                name=f"comment-{comment_id}",
+                content_layer=ContentLayer.NOTES,
+            )
+            # Add the comment text without targets first
+            doc.add_comment(
+                text=full_text,
+                targets=None,
+                parent=comment_group,
+            )
+
+            # Manually link targets to the comment GROUP (not the text item)
+            # This allows multiple comment replies to be grouped together
+            if targets:
+                group_ref = FineRef(cref=comment_group.self_ref)
+                for target in targets:
+                    target.comments.append(group_ref)
+
+            _log.debug(
+                f"Added comment {comment_id} in group with {len(targets)} linked item(s)"
+            )
+
+    def _extract_comment_ranges(self) -> None:
+        """Extract comment range markers from the document.
+
+        Parses the DOCX XML to find commentRangeStart and commentRangeEnd markers
+        and builds a map of paragraph elements to their associated comment IDs.
+        """
+        if not self.docx_obj or not hasattr(self.docx_obj, "element"):
+            return
+
+        # Parse the document body for comment range markers
+        namespaces = {
+            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        }
+
+        try:
+            # Find all paragraphs with comment ranges
+            body = self.docx_obj.element.body
+            for paragraph in body.findall(".//w:p", namespaces):
+                para_id = id(paragraph)
+
+                # Find comment range start markers in this paragraph
+                comment_starts = paragraph.findall(".//w:commentRangeStart", namespaces)
+                comment_ends = paragraph.findall(".//w:commentRangeEnd", namespaces)
+
+                # Collect comment IDs from both start and end markers
+                comment_ids = set()
+
+                for start_marker in comment_starts:
+                    comment_id = start_marker.get(
+                        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+                    )
+                    if comment_id:
+                        comment_ids.add(comment_id)
+
+                for end_marker in comment_ends:
+                    comment_id = end_marker.get(
+                        "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+                    )
+                    if comment_id:
+                        comment_ids.add(comment_id)
+
+                # Store the mapping if comments were found
+                if comment_ids:
+                    self.paragraph_comment_map[para_id] = list(comment_ids)
+                    _log.debug(
+                        f"Found {len(comment_ids)} comment(s) for paragraph {para_id}"
+                    )
+
+        except Exception as e:
+            _log.debug(f"Error extracting comment ranges: {e}")
+
+    def _get_comment_ids_for_element(self, element: BaseOxmlElement) -> set[str]:
+        """Return the set of comment IDs attached to a paragraph element."""
+        namespaces = {
+            "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        }
+        comment_ids: set[str] = set()
+
+        for marker in element.findall(".//w:commentRangeStart", namespaces):
+            comment_id = marker.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+            )
+            if comment_id:
+                comment_ids.add(comment_id)
+
+        for marker in element.findall(".//w:commentRangeEnd", namespaces):
+            comment_id = marker.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+            )
+            if comment_id:
+                comment_ids.add(comment_id)
+
+        # Some documents only contain commentReference nodes without range markers
+        for marker in element.findall(".//w:commentReference", namespaces):
+            comment_id = marker.get(
+                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+            )
+            if comment_id:
+                comment_ids.add(comment_id)
+
+        return comment_ids

@@ -1,0 +1,6 @@
+item-0 at level 0: unspecified: group _root_
+  item-1 at level 1: title: Document with Comments
+    item-2 at level 2: text: This is the first paragraph that has a comment attached to it.
+    item-3 at level 2: text: This second paragraph also has a reviewer annotation.
+    item-4 at level 2: text: This third paragraph has no comments attached to it.
+    item-5 at level 2: text: This paragraph has an anonymous comment.

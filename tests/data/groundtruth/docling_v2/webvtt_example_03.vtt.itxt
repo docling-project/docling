@@ -1,77 +1,18 @@
 item-0 at level 0: unspecified: group _root_
-  item-1 at level 1: section: group WebVTT cue block
-    item-2 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-0
-    item-3 at level 2: text: 00:00:04.963 --> 00:00:08.571
-    item-4 at level 2: inline: group WebVTT cue voice span
-      item-5 at level 3: text: Speaker A: 
-      item-6 at level 3: text: OK, I think now we should be recording
-  item-7 at level 1: section: group WebVTT cue block
-    item-8 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/15-1
-    item-9 at level 2: text: 00:00:08.571 --> 00:00:09.403
-    item-10 at level 2: inline: group WebVTT cue voice span
-      item-11 at level 3: text: Speaker A: 
-      item-12 at level 3: text: properly.
-  item-13 at level 1: section: group WebVTT cue block
-    item-14 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/16-0
-    item-15 at level 2: text: 00:00:10.683 --> 00:00:11.563
-    item-16 at level 2: text: Good.
-  item-17 at level 1: section: group WebVTT cue block
-    item-18 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/17-0
-    item-19 at level 2: text: 00:00:13.363 --> 00:00:13.803
-    item-20 at level 2: inline: group WebVTT cue voice span
-      item-21 at level 3: text: Speaker A: 
-      item-22 at level 3: text: Yeah.
-  item-23 at level 1: section: group WebVTT cue block
-    item-24 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/78-0
-    item-25 at level 2: text: 00:00:49.603 --> 00:00:53.363
-    item-26 at level 2: inline: group WebVTT cue voice span
-      item-27 at level 3: text: Speaker B: 
-      item-28 at level 3: text: I was also thinking.
-  item-29 at level 1: section: group WebVTT cue block
-    item-30 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-0
-    item-31 at level 2: text: 00:00:54.963 --> 00:01:02.072
-    item-32 at level 2: inline: group WebVTT cue voice span
-      item-33 at level 3: text: Speaker B: 
-      item-34 at level 3: text: Would be maybe good to create items,
-  item-35 at level 1: section: group WebVTT cue block
-    item-36 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/113-1
-    item-37 at level 2: text: 00:01:02.072 --> 00:01:06.811
-    item-38 at level 2: inline: group WebVTT cue voice span
-      item-39 at level 3: text: Speaker B: 
-      item-40 at level 3: text: some metadata, some options that can be specific.
-  item-41 at level 1: section: group WebVTT cue block
-    item-42 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-0
-    item-43 at level 2: text: 00:01:10.243 --> 00:01:13.014
-    item-44 at level 2: inline: group WebVTT cue voice span
-      item-45 at level 3: text: Speaker A: 
-      item-46 at level 3: text: Yeah, I mean I think you went even more than
-  item-47 at level 1: section: group WebVTT cue block
-    item-48 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/119-0
-    item-49 at level 2: text: 00:01:10.563 --> 00:01:12.643
-    item-50 at level 2: inline: group WebVTT cue voice span
-      item-51 at level 3: text: Speaker B: 
-      item-52 at level 3: text: But we preserved the atoms.
-  item-53 at level 1: section: group WebVTT cue block
-    item-54 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/150-1
-    item-55 at level 2: text: 00:01:13.014 --> 00:01:15.907
-    item-56 at level 2: inline: group WebVTT cue voice span
-      item-57 at level 3: text: Speaker A: 
-      item-58 at level 3: text: than me. I just opened the format.
-  item-59 at level 1: section: group WebVTT cue block
-    item-60 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/197-1
-    item-61 at level 2: text: 00:01:50.222 --> 00:01:51.643
-    item-62 at level 2: inline: group WebVTT cue voice span
-      item-63 at level 3: text: Speaker A: 
-      item-64 at level 3: text: give it a try, yeah.
-  item-65 at level 1: section: group WebVTT cue block
-    item-66 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/200-0
-    item-67 at level 2: text: 00:01:52.043 --> 00:01:55.043
-    item-68 at level 2: inline: group WebVTT cue voice span
-      item-69 at level 3: text: Speaker B: 
-      item-70 at level 3: text: Okay, talk to you later.
-  item-71 at level 1: section: group WebVTT cue block
-    item-72 at level 2: text: 62357a1d-d250-41d5-a1cf-6cc0eeceffcc/202-0
-    item-73 at level 2: text: 00:01:54.603 --> 00:01:55.283
-    item-74 at level 2: inline: group WebVTT cue voice span
-      item-75 at level 3: text: Speaker A: 
-      item-76 at level 3: text: See you.
+  item-1 at level 1: text: OK,
+  item-2 at level 1: text: I think now we should be recording
+  item-3 at level 1: text: properly.
+  item-4 at level 1: text: Good.
+  item-5 at level 1: text: Yeah.
+  item-6 at level 1: text: I was also thinking.
+  item-7 at level 1: text: Would be maybe good to create items,
+  item-8 at level 1: text: some metadata,
+  item-9 at level 1: text: some options that can be specific.
+  item-10 at level 1: text: Yeah,
+  item-11 at level 1: text: I mean I think you went even more than
+  item-12 at level 1: text: But we preserved the atoms.
+  item-13 at level 1: text: than me.
+  item-14 at level 1: text: I just opened the format.
+  item-15 at level 1: text: give it a try, yeah.
+  item-16 at level 1: text: Okay, talk to you later.
+  item-17 at level 1: text: See you.

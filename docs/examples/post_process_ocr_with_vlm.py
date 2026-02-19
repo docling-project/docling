@@ -277,7 +277,7 @@ class PostOcrApiEnrichmentModel(
         allowed = (DocItem, TableItem, GraphCell)
         assert isinstance(element, allowed)
 
-        if isinstance(element, (KeyValueItem, FormItem)):
+        if isinstance(element, KeyValueItem | FormItem):
             # Yield from the graphCells inside here.
             result = []
             for c in element.graph.cells:
@@ -545,7 +545,7 @@ class PostOcrApiEnrichmentModel(
                         print(f"\nOLD TEXT: {item.text}")
 
                 # Re-populate text
-                if isinstance(item, (TextItem, GraphCell)):
+                if isinstance(item, TextItem | GraphCell):
                     if img_ind > 0:
                         # Concat texts across several provenances
                         item.text += " " + output
@@ -553,7 +553,7 @@ class PostOcrApiEnrichmentModel(
                     else:
                         item.text = output
                         # item.orig = output
-                elif isinstance(item, (TableCell, RichTableCell)):
+                elif isinstance(item, TableCell | RichTableCell):
                     item.text = output
                 elif isinstance(item, PictureItem):
                     pass

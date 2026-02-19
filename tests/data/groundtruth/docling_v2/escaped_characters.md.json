@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "escaped_characters",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 10682185258371912110,
+    "binary_hash": 16267961676187053150,
     "filename": "escaped_characters.md"
   },
   "furniture": {
@@ -33,7 +33,7 @@
         "$ref": "#/texts/10"
       },
       {
-        "$ref": "#/texts/11"
+        "$ref": "#/texts/14"
       }
     ],
     "content_layer": "body",
@@ -68,6 +68,26 @@
       "content_layer": "body",
       "name": "list",
       "label": "list"
+    },
+    {
+      "self_ref": "#/groups/2",
+      "parent": {
+        "$ref": "#/texts/10"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/11"
+        },
+        {
+          "$ref": "#/texts/12"
+        },
+        {
+          "$ref": "#/texts/13"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
     }
   ],
   "texts": [
@@ -235,6 +255,9 @@
       "children": [
         {
           "$ref": "#/tables/0"
+        },
+        {
+          "$ref": "#/groups/2"
         }
       ],
       "content_layer": "body",
@@ -246,14 +269,54 @@
     {
       "self_ref": "#/texts/11",
       "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "The pipe symbol (| or",
+      "text": "The pipe symbol (| or"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "code",
+      "prov": [],
+      "orig": "|",
+      "text": "|",
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "code_language": "unknown"
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": ") only needs to be escaped in tables.",
+      "text": ") only needs to be escaped in tables."
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
         "$ref": "#/body"
       },
       "children": [
         {
-          "$ref": "#/texts/12"
+          "$ref": "#/texts/15"
         },
         {
-          "$ref": "#/texts/13"
+          "$ref": "#/texts/16"
         }
       ],
       "content_layer": "body",
@@ -263,9 +326,9 @@
       "text": "Raw HTML"
     },
     {
-      "self_ref": "#/texts/12",
+      "self_ref": "#/texts/15",
       "parent": {
-        "$ref": "#/texts/11"
+        "$ref": "#/texts/14"
       },
       "children": [],
       "content_layer": "body",
@@ -275,13 +338,13 @@
       "text": "& < > \" '/div>"
     },
     {
-      "self_ref": "#/texts/13",
+      "self_ref": "#/texts/16",
       "parent": {
-        "$ref": "#/texts/11"
+        "$ref": "#/texts/14"
       },
       "children": [
         {
-          "$ref": "#/texts/14"
+          "$ref": "#/texts/17"
         }
       ],
       "content_layer": "body",
@@ -292,9 +355,9 @@
       "level": 1
     },
     {
-      "self_ref": "#/texts/14",
+      "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/texts/13"
+        "$ref": "#/texts/16"
       },
       "children": [],
       "content_layer": "body",
@@ -476,9 +539,35 @@
             "row_header": false,
             "row_section": false,
             "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 6,
+            "end_row_offset_idx": 7,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Pipe",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 6,
+            "end_row_offset_idx": 7,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "| | |",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
           }
         ],
-        "num_rows": 6,
+        "num_rows": 7,
         "num_cols": 2,
         "grid": [
           [
@@ -643,6 +732,34 @@
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
               "text": "'",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 6,
+              "end_row_offset_idx": 7,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Pipe",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 6,
+              "end_row_offset_idx": 7,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "",
               "column_header": false,
               "row_header": false,
               "row_section": false,
