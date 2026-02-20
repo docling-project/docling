@@ -10,13 +10,14 @@ import torchvision.transforms as T
 from docling_core.types.doc import BoundingBox, DocItemLabel, TableCell
 from docling_core.types.doc.page import (
     BoundingRectangle,
+    TextCell,
     TextCellUnit,
 )
 from PIL import Image, ImageDraw
 from transformers import AutoTokenizer
 
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
-from docling.datamodel.base_models import Page, Table, TableStructurePrediction
+from docling.datamodel.base_models import Cluster, Page, Table, TableStructurePrediction
 from docling.datamodel.document import ConversionResult
 from docling.datamodel.pipeline_options import TableStructureV2Options
 from docling.datamodel.settings import settings
@@ -107,20 +108,18 @@ class TableStructureModelV2(BaseTableStructureModel):
     def _do_prediction_on_image_to_table(
         self,
         *,
-        table_image: Image.Image, # table image cropped out of the page
-        table_cluster: Cluster, # contains the bbox and its text-cells on the page in page-coordinates
+        table_image: Image.Image,  # table image cropped out of the page
+        table_cluster: Cluster,  # contains the bbox and its text-cells on the page in page-coordinates
         page_no: int,
-        textcell_overlap:float = 0.3
+        textcell_overlap: float = 0.3,
     ) -> Table:
         # Convert to PIL and preprocess
-        pil_image = crop_image.convert("RGB")
+        pil_image = table_image.convert("RGB")
         image_tensor = self.transform(pil_image).unsqueeze(0).to(self.device)
 
         # Run inference
         with torch.no_grad():
-            output = self.model.generate(
-                image_tensor, self.tokenizer, max_length=512
-            )
+            output = self.model.generate(image_tensor, self.tokenizer, max_length=512)
 
         # Decode tokens to OTSL sequence
         generated_ids = output["generated_ids"][0]
@@ -136,7 +135,12 @@ class TableStructureModelV2(BaseTableStructureModel):
             pred_bboxes = torch.empty(0, 4)
 
         # Build table cells; table_bbox is already in page coordinates
-        tbl_box = [table_cluster.bbox.l, table_cluster.bbox.t, table_cluster.bbox.r, table_cluster.bbox.b]
+        tbl_box = [
+            table_cluster.bbox.l,
+            table_cluster.bbox.t,
+            table_cluster.bbox.r,
+            table_cluster.bbox.b,
+        ]
         cell_data, num_rows, num_cols = self._build_table_cells(
             otsl_seq, pred_bboxes, tbl_box
         )
@@ -146,7 +150,9 @@ class TableStructureModelV2(BaseTableStructureModel):
         for element in cell_data:
             if element["bbox"] is not None:
                 bbox = BoundingBox.model_validate(element["bbox"])
-                element["text"] = self._match_text(bbox, table_cluster.cells)
+                element["text"] = self._match_text(
+                    bbox, table_cluster.cells, textcell_overlap
+                )
             tc = TableCell.model_validate(element)
             table_cells.append(tc)
 
@@ -159,18 +165,20 @@ class TableStructureModelV2(BaseTableStructureModel):
             page_no=page_no,
             cluster=table_cluster,
             label=table_cluster.label,
-        )        
+        )
 
-    def _match_text(self, bbox: BoundingBox, text_cells: list[TextCell], textcell_overlap:float ) -> str:
+    def _match_text(
+        self, bbox: BoundingBox, text_cells: list[TextCell], textcell_overlap: float
+    ) -> str:
         """Return text from text_cells whose bboxes overlap sufficiently with bbox."""
         overlapping = []
         for tc in text_cells:
             tc_bbox = tc.rect.to_bounding_box()
             if tc_bbox.get_intersection_bbox(bbox) is not None:
-                if tc_bbox.intersection_over_self(bbox)>textcell_overlap:
+                if tc_bbox.intersection_over_self(bbox) > textcell_overlap:
                     overlapping.append(tc.text.strip())
         return " ".join(overlapping)
-    
+
     def _decode_otsl_sequence(self, token_ids: torch.Tensor) -> list[str]:
         """
         Decode token IDs to OTSL tag sequence.

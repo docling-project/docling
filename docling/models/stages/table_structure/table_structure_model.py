@@ -375,11 +375,7 @@ class TableStructureModel(BaseTableStructureModel):
 
         num_rows = table_out["predict_details"].get("num_rows", 0)
         num_cols = table_out["predict_details"].get("num_cols", 0)
-        otsl_seq = (
-            table_out["predict_details"]
-            .get("prediction", {})
-            .get("rs_seq", [])
-        )
+        otsl_seq = table_out["predict_details"].get("prediction", {}).get("rs_seq", [])
 
         return Table(
             otsl_seq=otsl_seq,
