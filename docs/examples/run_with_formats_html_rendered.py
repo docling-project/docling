@@ -2,7 +2,9 @@ import json
 import logging
 import time
 from pathlib import Path
+
 from docling_core.types.doc import ImageRefMode
+
 from docling.datamodel.backend_options import HTMLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.document_converter import DocumentConverter, HTMLFormatOption
@@ -12,15 +14,14 @@ _log = logging.getLogger(__name__)
 
 # Requires Playwright to be installed locally.
 
-def main() -> None:
-    directory_path = Path("example_html_forms_500/")
-    out_dir = Path("scratch/html_rendered/json")
-    out_dir_png = Path("scratch/html_rendered/png")
-    out_dir_viz = Path("scratch/html_rendered/viz")
 
-    input_paths = sorted(
-        [file for file in directory_path.iterdir() if file.is_file()]
-    )
+def main() -> None:
+    input_html_path = Path("input_dir_to_html/")
+    out_dir = Path("ouput_dir/json")
+    out_dir_png = Path("ouput_dir/png")
+    out_dir_viz = Path("ouput_dir/viz")
+
+    input_paths = sorted([file for file in input_html_path.iterdir() if file.is_file()])
 
     html_options = HTMLBackendOptions(
         render_page=True,
@@ -62,26 +63,22 @@ def main() -> None:
 
         doc = res.document
         viz_pages = doc.get_visualization()
-        viz_pages2 = doc.get_visualization(viz_mode='key_value')
+        viz_pages2 = doc.get_visualization(viz_mode="key_value")
         print(len(viz_pages))
         with (out_dir / f"{res.input.file.stem}.json").open("w") as fp:
             fp.write(json.dumps(doc.export_to_dict()))
 
         page = doc.pages[1]
         if page.image and page.image.pil_image:
-                page.image.pil_image.save(
-                    out_dir_png / f"{res.input.file.stem}_page_{1}.png"
-                )
+            page.image.pil_image.save(
+                out_dir_png / f"{res.input.file.stem}_page_{1}.png"
+            )
 
         page_viz = viz_pages[1]
-        page_viz.save(
-            out_dir_viz / f"{res.input.file.stem}_page_{1}_viz.png"
-        )
+        page_viz.save(out_dir_viz / f"{res.input.file.stem}_page_{1}_viz.png")
 
         page_viz = viz_pages2[1]
-        page_viz.save(
-            out_dir_viz / f"{res.input.file.stem}_page_{1}_viz_kvp.png"
-        )
+        page_viz.save(out_dir_viz / f"{res.input.file.stem}_page_{1}_viz_kvp.png")
 
     if timings:
         avg_time = sum(timings) / len(timings)
