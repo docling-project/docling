@@ -304,3 +304,90 @@ class TableStructureModel(BaseTableStructureModel):
                 predictions.append(table_prediction)
 
         return predictions
+
+    def _do_prediction_on_image_to_table(
+        self,
+        *,
+        table_image,  # PIL.Image.Image - table image cropped out of the page
+        table_cluster,  # Cluster - contains bbox and text-cells in page coordinates
+        page_no: int,
+    ) -> Table:
+        img_width = table_image.width
+        img_height = table_image.height
+
+        bbox_width = table_cluster.bbox.r - table_cluster.bbox.l
+        # Infer scale from the ratio of image width to table bbox width
+        scale = img_width / bbox_width if bbox_width > 0 else self.scale
+
+        # The table box spans the entire cropped image
+        tbl_box = [0.0, 0.0, float(img_width), float(img_height)]
+
+        # Translate cell coordinates from page space to image-local space
+        tokens = []
+        for c in table_cluster.cells:
+            if len(c.text.strip()) > 0:
+                new_cell = copy.deepcopy(c)
+                cell_bbox = new_cell.rect.to_bounding_box()
+                local_bbox = BoundingBox(
+                    l=(cell_bbox.l - table_cluster.bbox.l) * scale,
+                    t=(cell_bbox.t - table_cluster.bbox.t) * scale,
+                    r=(cell_bbox.r - table_cluster.bbox.l) * scale,
+                    b=(cell_bbox.b - table_cluster.bbox.t) * scale,
+                    coord_origin=cell_bbox.coord_origin,
+                )
+                new_cell.rect = BoundingRectangle.from_bounding_box(local_bbox)
+                tokens.append(
+                    {
+                        "id": new_cell.index,
+                        "text": new_cell.text,
+                        "bbox": new_cell.rect.to_bounding_box().model_dump(),
+                    }
+                )
+
+        page_input = {
+            "width": img_width,
+            "height": img_height,
+            "image": numpy.asarray(table_image),
+            "tokens": tokens,
+        }
+
+        tf_output = self.tf_predictor.multi_table_predict(
+            page_input, [tbl_box], do_matching=self.do_cell_matching
+        )
+        table_out = tf_output[0]
+        table_cells = []
+        for element in table_out["tf_responses"]:
+            if not self.do_cell_matching:
+                # No page backend available to retrieve text; leave token empty
+                element["bbox"]["token"] = ""
+
+            tc = TableCell.model_validate(element)
+            if tc.bbox is not None:
+                # Convert bbox from image-local space back to page coordinates
+                tc.bbox = BoundingBox(
+                    l=tc.bbox.l / scale + table_cluster.bbox.l,
+                    t=tc.bbox.t / scale + table_cluster.bbox.t,
+                    r=tc.bbox.r / scale + table_cluster.bbox.l,
+                    b=tc.bbox.b / scale + table_cluster.bbox.t,
+                    coord_origin=tc.bbox.coord_origin,
+                )
+            table_cells.append(tc)
+
+        num_rows = table_out["predict_details"].get("num_rows", 0)
+        num_cols = table_out["predict_details"].get("num_cols", 0)
+        otsl_seq = (
+            table_out["predict_details"]
+            .get("prediction", {})
+            .get("rs_seq", [])
+        )
+
+        return Table(
+            otsl_seq=otsl_seq,
+            table_cells=table_cells,
+            num_rows=num_rows,
+            num_cols=num_cols,
+            id=table_cluster.id,
+            page_no=page_no,
+            cluster=table_cluster,
+            label=table_cluster.label,
+        )
