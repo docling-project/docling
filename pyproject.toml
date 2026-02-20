@@ -269,6 +269,7 @@ module = [
   "pylatexenc.*",
   "vllm.*",
   "qwen_vl_utils.*",
+  "arelle.*",
 ]
 ignore_missing_imports = true
 

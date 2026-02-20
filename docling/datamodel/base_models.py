@@ -66,6 +66,7 @@ class InputFormat(str, Enum):
     XLSX = "xlsx"
     XML_USPTO = "xml_uspto"
     XML_JATS = "xml_jats"
+    XML_XBRL = "xml_xbrl"
     METS_GBS = "mets_gbs"
     JSON_DOCLING = "json_docling"
     AUDIO = "audio"
@@ -90,6 +91,7 @@ FormatToExtensions: dict[InputFormat, list[str]] = {
     InputFormat.MD: ["md"],
     InputFormat.HTML: ["html", "htm", "xhtml"],
     InputFormat.XML_JATS: ["xml", "nxml"],
+    InputFormat.XML_XBRL: ["xml", "xbrl"],
     InputFormat.IMAGE: ["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp"],
     InputFormat.ASCIIDOC: ["adoc", "asciidoc", "asc"],
     InputFormat.CSV: ["csv"],
@@ -114,6 +116,7 @@ FormatToMimeType: dict[InputFormat, list[str]] = {
     ],
     InputFormat.HTML: ["text/html", "application/xhtml+xml"],
     InputFormat.XML_JATS: ["application/xml"],
+    InputFormat.XML_XBRL: ["application/xml", "application/xhtml+xml"],
     InputFormat.IMAGE: [
         "image/png",
         "image/jpeg",
