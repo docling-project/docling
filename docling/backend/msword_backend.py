@@ -48,9 +48,7 @@ _log = logging.getLogger(__name__)
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
-    _W_NS: Final[str] = (
-        "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-    )
+    _W_NS: Final[str] = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
     _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
 
     _BLIP_NAMESPACES: Final = {
