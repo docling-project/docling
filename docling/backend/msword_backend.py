@@ -48,10 +48,15 @@ _log = logging.getLogger(__name__)
 
 
 class MsWordDocumentBackend(DeclarativeDocumentBackend):
+    _W_NS: Final[str] = (
+        "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+    )
+    _W_NS_CLARK: Final[str] = f"{{{_W_NS}}}"
+
     _BLIP_NAMESPACES: Final = {
         "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
         "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-        "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+        "w": _W_NS,
         "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
         "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
         "v": "urn:schemas-microsoft-com:vml",
@@ -65,9 +70,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         self, in_doc: "InputDocument", path_or_stream: Union[BytesIO, Path]
     ) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.XML_KEY = (
-            "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-        )
+        self.XML_KEY = f"{self._W_NS_CLARK}val"
         self.xml_namespaces = {
             "w": "http://schemas.microsoft.com/office/word/2003/wordml"
         }
@@ -437,9 +440,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
             # Parse the numbering XML
             numbering_root = numbering_part.element
-            namespaces = {
-                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-            }
+            namespaces = {"w": self._W_NS}
 
             # Find the numbering definition with the given numId
             num_xpath = f".//w:num[@w:numId='{numId}']"
@@ -455,9 +456,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if abstract_num_id_elem is None:
                 return False
 
-            abstract_num_id = abstract_num_id_elem.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-            )
+            abstract_num_id = abstract_num_id_elem.get(f"{self._W_NS_CLARK}val")
             if abstract_num_id is None:
                 return False
 
@@ -484,9 +483,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             if num_fmt_element is None:
                 return False
 
-            num_fmt = num_fmt_element.get(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
-            )
+            num_fmt = num_fmt_element.get(f"{self._W_NS_CLARK}val")
 
             # Numbered formats include: decimal, lowerRoman, upperRoman, lowerLetter, upperLetter
             # Bullet formats include: bullet
@@ -519,10 +516,9 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         # Look for outlineLvl in the style's paragraph properties
-        W_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
-        outline_elem = style_elem.find(f".//{W_NS}outlineLvl")
+        outline_elem = style_elem.find(f".//{self._W_NS_CLARK}outlineLvl")
         if outline_elem is not None:
-            val = outline_elem.get(f"{W_NS}val")
+            val = outline_elem.get(f"{self._W_NS_CLARK}val")
             if val is not None:
                 try:
                     # Convert 0-indexed outlineLvl to 1-indexed heading level
@@ -1549,11 +1545,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
         tc = cell._tc
 
         # must contain only one paragraph
-        paragraphs = list(
-            tc.iterchildren(
-                "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"
-            )
-        )
+        paragraphs = list(tc.iterchildren(f"{self._W_NS_CLARK}p"))
         if len(paragraphs) > 1:
             return True
 
@@ -1568,11 +1560,7 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
 
         # paragraph must contain runs with no run-properties
         for para in paragraphs:
-            runs = list(
-                para.iterchildren(
-                    "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r"
-                )
-            )
+            runs = list(para.iterchildren(f"{self._W_NS_CLARK}r"))
             for rn in runs:
                 item: Run = Run(rn, self.docx_obj)
                 if item is not None:
