@@ -464,7 +464,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         except ImportError as exc:
             raise RuntimeError(
                 "Playwright is required for HTML rendering. "
-                "Install it with 'pip install playwright' and run "
+                "Install it with 'pip install \"docling[htmlrender]\"' and run "
                 "'playwright install'."
             ) from exc
 

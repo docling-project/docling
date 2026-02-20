@@ -55,6 +55,7 @@ The following table summarizes the extras available in the `docling` package. Th
 | `easyocr` | Installs the [EasyOCR](https://github.com/JaidedAI/EasyOCR) OCR engine. |
 | `tesserocr` | Installs the Tesseract binding for using it as OCR engine. |
 | `ocrmac` | Installs the OcrMac OCR engine. |
+| `htmlrender` | Installs dependencies for HTML page rendering in the HTML backend. |
 | `rapidocr` | Installs the [RapidOCR](https://github.com/RapidAI/RapidOCR) OCR engine with [onnxruntime](https://github.com/microsoft/onnxruntime/) backend. |
 
 

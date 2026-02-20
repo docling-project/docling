@@ -1084,7 +1084,6 @@ dependencies = [
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pillow" },
-    { name = "playwright" },
     { name = "pluggy" },
     { name = "polyfactory" },
     { name = "pydantic" },
@@ -1112,6 +1111,9 @@ asr = [
 ]
 easyocr = [
     { name = "easyocr" },
+]
+htmlrender = [
+    { name = "playwright" },
 ]
 ocrmac = [
     { name = "ocrmac", marker = "sys_platform == 'darwin'" },
@@ -1215,7 +1217,7 @@ requires-dist = [
     { name = "openpyxl", specifier = ">=3.1.5,<4.0.0" },
     { name = "pandas", specifier = ">=2.1.4,<4.0.0" },
     { name = "pillow", specifier = ">=10.0.0,<13.0.0" },
-    { name = "playwright", specifier = ">=1.58.0" },
+    { name = "playwright", marker = "extra == 'htmlrender'", specifier = ">=1.58.0" },
     { name = "pluggy", specifier = ">=1.0.0,<2.0.0" },
     { name = "polyfactory", specifier = ">=2.22.2" },
     { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
@@ -1238,7 +1240,7 @@ requires-dist = [
     { name = "tritonclient", extras = ["grpc"], marker = "extra == 'remote-serving'", specifier = ">=2.65.0,<3.0.0" },
     { name = "typer", specifier = ">=0.12.5,<0.22.0" },
 ]
-provides-extras = ["easyocr", "tesserocr", "ocrmac", "vlm", "rapidocr", "onnxruntime", "asr", "xbrl", "remote-serving"]
+provides-extras = ["easyocr", "tesserocr", "ocrmac", "htmlrender", "vlm", "rapidocr", "onnxruntime", "asr", "xbrl", "remote-serving"]
 
 [package.metadata.requires-dev]
 constraints = [
