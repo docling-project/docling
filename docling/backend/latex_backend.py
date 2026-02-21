@@ -135,7 +135,7 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
     def convert(self) -> DoclingDocument:
         doc = DoclingDocument(name=self.file.stem)
-        timeout: Optional[float] = self.options.parse_timeout  # type: ignore[union-attr]
+        timeout: Optional[float] = getattr(self.options, "parse_timeout", None)
 
         if timeout is None:
             # Timeout disabled — run synchronously

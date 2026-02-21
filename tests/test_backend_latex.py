@@ -1375,14 +1375,15 @@ This is \\myterm and the value is \\myvalue.
     ],
 )
 def test_latex_timeout_fires(latex_file):
-
     """
-       parse_timeout should interrupt a document that makes the parser hang.
-       This will take the files from test/data/latex/ and parse them with a timeout of 10s.
-       It will return a raw latex files in an .md file each.
+    parse_timeout should interrupt a document that makes the parser hang.
+    This will take the files from test/data/latex/ and parse them with a timeout of 10s.
+    It will return a raw latex files in an .md file each.
     """
 
-    print("This test will take 10s to parse 3 faulty latex files and return a raw latex files in an .md file each,")
+    print(
+        "This test will take 10s to parse 3 faulty latex files and return a raw latex files in an .md file each,"
+    )
     print("Don't worry, it's normal")
 
     file_path = LATEX_DATA_DIR / latex_file
