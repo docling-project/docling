@@ -1,5 +1,6 @@
 import logging
 import re
+import threading
 from copy import deepcopy
 from io import BytesIO
 from pathlib import Path
@@ -89,7 +90,6 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
     def _preprocess_custom_macros(self, latex_text: str) -> str:
         """Pre-process LaTeX to expand common problematic macros before parsing"""
-        # Common equation shortcuts that cause parsing issues
         latex_text = re.sub(r"\\be\b", r"\\begin{equation}", latex_text)
         latex_text = re.sub(r"\\ee\b", r"\\end{equation}", latex_text)
         latex_text = re.sub(r"\\bea\b", r"\\begin{eqnarray}", latex_text)
@@ -99,8 +99,10 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         return latex_text
 
-    def convert(self) -> DoclingDocument:
-        doc = DoclingDocument(name=self.file.stem)
+    def _do_parse_and_process(self, doc: DoclingDocument) -> DoclingDocument:
+        """Parse and process LaTeX nodes into *doc*. May block for a long time on
+        pathological legacy documents; call via :meth:`convert` to enforce a
+        wall-clock timeout."""
 
         # Pre-process: expand common custom equation macros
         preprocessed_text = self._preprocess_custom_macros(self.latex_text)
@@ -128,6 +130,47 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
 
         except Exception as e:
             _log.error(f"Error processing LaTeX nodes: {e}")
+
+        return doc
+
+    def convert(self) -> DoclingDocument:
+        doc = DoclingDocument(name=self.file.stem)
+        timeout: Optional[float] = self.options.parse_timeout  # type: ignore[union-attr]
+
+        if timeout is None:
+            # Timeout disabled — run synchronously
+            return self._do_parse_and_process(doc)
+
+        result_container: list[DoclingDocument] = []
+        error_container: list[Exception] = []
+
+        def _worker_fn():
+            try:
+                res = self._do_parse_and_process(doc)
+                result_container.append(res)
+            except Exception as e:
+                error_container.append(e)
+
+        thread = threading.Thread(target=_worker_fn, daemon=True)
+        thread.start()
+        thread.join(timeout=timeout)
+
+        if thread.is_alive():
+            _log.warning(
+                f"LaTeX parsing timed out after {timeout}s for "
+                f"'{self.file.name}'. "
+                "Returning partial document with raw text fallback."
+            )
+            fallback = DoclingDocument(name=self.file.stem)
+            fallback.add_text(label=DocItemLabel.TEXT, text=self.latex_text)
+            return fallback
+
+        if error_container:
+            _log.error(f"Error during LaTeX parsing: {error_container[0]}")
+            return doc
+
+        if result_container:
+            return result_container[0]
 
         return doc
 

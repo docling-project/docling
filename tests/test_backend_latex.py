@@ -5,6 +5,7 @@ import pytest
 from docling_core.types.doc import DocItemLabel, GroupLabel
 
 from docling.backend.latex_backend import LatexDocumentBackend
+from docling.datamodel.backend_options import LatexBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import ConversionResult, DoclingDocument, InputDocument
 from docling.document_converter import DocumentConverter
@@ -1363,3 +1364,47 @@ This is \\myterm and the value is \\myvalue.
     # Check if they were expanded
     assert "special term" in md, f"'special term' not in output: {md!r}"
     assert "42" in md, f"'42' not in output: {md!r}"
+
+
+@pytest.mark.parametrize(
+    "latex_file",
+    [
+        "0005057/diss.tex",
+        "0106220/more-ss.tex",
+        "9802040/13.tex",
+    ],
+)
+def test_latex_timeout_fires(latex_file):
+
+    """
+       parse_timeout should interrupt a document that makes the parser hang.
+       This will take the files from test/data/latex/ and parse them with a timeout of 10s.
+       It will return a raw latex files in an .md file each.
+    """
+
+    print("This test will take 10s to parse 3 faulty latex files and return a raw latex files in an .md file each,")
+    print("Don't worry, it's normal")
+
+    file_path = LATEX_DATA_DIR / latex_file
+    if not file_path.exists():
+        pytest.skip(f"Test file {file_path} not found")
+
+    in_doc = InputDocument(
+        path_or_stream=file_path,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename=file_path.name,
+    )
+    options = LatexBackendOptions(parse_timeout=10.0)
+    backend = LatexDocumentBackend(
+        in_doc=in_doc, path_or_stream=file_path, options=options
+    )
+
+    import time
+
+    t0 = time.monotonic()
+    doc = backend.convert()
+    elapsed = time.monotonic() - t0
+
+    assert elapsed < 20.0, f"Timeout did not fire in time ({elapsed:.1f}s elapsed)"
+    assert len(doc.texts) > 0, "Fallback document should have at least one text node"

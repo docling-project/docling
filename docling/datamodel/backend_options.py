@@ -101,6 +101,13 @@ class LatexBackendOptions(BaseBackendOptions):
     """Options specific to the LaTeX backend."""
 
     kind: Literal["latex"] = Field("latex", exclude=True, repr=False)
+    parse_timeout: Optional[float] = Field(
+        30.0,
+        description=(
+            "Maximum time allowed for parsing a LaTeX document. "
+            "Set to None to disable the timeout. Defaults to 30 s."
+        ),
+    )
 
 
 BackendOptions = Annotated[
