@@ -1,6 +1,6 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "html_rich_table_cells",
   "origin": {
     "mimetype": "text/html",
@@ -329,9 +329,6 @@
         },
         {
           "$ref": "#/tables/4"
-        },
-        {
-          "$ref": "#/pictures/1"
         }
       ],
       "content_layer": "body",
@@ -749,20 +746,6 @@
           "$ref": "#/texts/27"
         }
       ],
-      "references": [],
-      "footnotes": [],
-      "annotations": []
-    },
-    {
-      "self_ref": "#/pictures/1",
-      "parent": {
-        "$ref": "#/texts/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "picture",
-      "prov": [],
-      "captions": [],
       "references": [],
       "footnotes": [],
       "annotations": []
@@ -1594,7 +1577,7 @@
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "TypeSound\n\n\n\nShort\n\"quak\"\n\n\nLong\n\"quaaaaaack\"",
+            "text": "Type Sound \n\n\n\nShort \n\"quak\" \n\n\nLong \n\"quaaaaaack\"",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -1712,7 +1695,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "TypeSound\n\n\n\nShort\n\"quak\"\n\n\nLong\n\"quaaaaaack\"",
+              "text": "Type Sound \n\n\n\nShort \n\"quak\" \n\n\nLong \n\"quaaaaaack\"",
               "column_header": false,
               "row_header": false,
               "row_section": false,

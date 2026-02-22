@@ -1,11 +1,11 @@
 {
   "schema_name": "DoclingDocument",
   "version": "1.9.0",
-  "name": "html_heading_in_p",
+  "name": "html_inline_group_in_table_cell",
   "origin": {
     "mimetype": "text/html",
-    "binary_hash": 6321020421104590329,
-    "filename": "html_heading_in_p.html"
+    "binary_hash": 15090656220016325703,
+    "filename": "html_inline_group_in_table_cell.html"
   },
   "furniture": {
     "self_ref": "#/furniture",
@@ -24,7 +24,10 @@
         "$ref": "#/texts/1"
       },
       {
-        "$ref": "#/texts/8"
+        "$ref": "#/tables/0"
+      },
+      {
+        "$ref": "#/texts/16"
       }
     ],
     "content_layer": "body",
@@ -35,16 +38,28 @@
     {
       "self_ref": "#/groups/0",
       "parent": {
-        "$ref": "#/tables/0"
+        "$ref": "#/groups/1"
       },
       "children": [
         {
+          "$ref": "#/texts/2"
+        },
+        {
           "$ref": "#/texts/3"
+        },
+        {
+          "$ref": "#/texts/4"
+        },
+        {
+          "$ref": "#/texts/5"
+        },
+        {
+          "$ref": "#/texts/6"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_1_0_0",
-      "label": "unspecified"
+      "name": "group",
+      "label": "inline"
     },
     {
       "self_ref": "#/groups/1",
@@ -53,11 +68,11 @@
       },
       "children": [
         {
-          "$ref": "#/texts/4"
+          "$ref": "#/groups/0"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_1_0_0",
+      "name": "rich_cell_group_1_0_1",
       "label": "unspecified"
     },
     {
@@ -67,11 +82,20 @@
       },
       "children": [
         {
-          "$ref": "#/texts/5"
+          "$ref": "#/texts/7"
+        },
+        {
+          "$ref": "#/texts/8"
+        },
+        {
+          "$ref": "#/texts/9"
+        },
+        {
+          "$ref": "#/texts/10"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_1_1_0",
+      "name": "rich_cell_group_1_0_3",
       "label": "unspecified"
     },
     {
@@ -81,14 +105,59 @@
       },
       "children": [
         {
-          "$ref": "#/texts/6"
-        },
-        {
-          "$ref": "#/texts/7"
+          "$ref": "#/texts/11"
         }
       ],
       "content_layer": "body",
-      "name": "rich_cell_group_1_1_5",
+      "name": "rich_cell_group_1_0_4",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/4",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/12"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_5",
+      "label": "unspecified"
+    },
+    {
+      "self_ref": "#/groups/5",
+      "parent": {
+        "$ref": "#/groups/6"
+      },
+      "children": [
+        {
+          "$ref": "#/texts/13"
+        },
+        {
+          "$ref": "#/texts/14"
+        },
+        {
+          "$ref": "#/texts/15"
+        }
+      ],
+      "content_layer": "body",
+      "name": "group",
+      "label": "inline"
+    },
+    {
+      "self_ref": "#/groups/6",
+      "parent": {
+        "$ref": "#/tables/0"
+      },
+      "children": [
+        {
+          "$ref": "#/groups/5"
+        }
+      ],
+      "content_layer": "body",
+      "name": "rich_cell_group_1_0_6",
       "label": "unspecified"
     }
   ],
@@ -102,39 +171,32 @@
       "content_layer": "furniture",
       "label": "title",
       "prov": [],
-      "orig": "Headings inside paragraphs in HTML",
-      "text": "Headings inside paragraphs in HTML"
+      "orig": "InlineGroup in table cell",
+      "text": "InlineGroup in table cell"
     },
     {
       "self_ref": "#/texts/1",
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/2"
-        },
-        {
-          "$ref": "#/tables/0"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
-      "label": "title",
+      "label": "text",
       "prov": [],
-      "orig": "1",
-      "text": "1"
+      "orig": "Intro paragraph.",
+      "text": "Intro paragraph."
     },
     {
       "self_ref": "#/texts/2",
       "parent": {
-        "$ref": "#/texts/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "1st paragraph",
-      "text": "1st paragraph"
+      "orig": "See",
+      "text": "See"
     },
     {
       "self_ref": "#/texts/3",
@@ -145,37 +207,49 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "2",
-      "text": "2",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "Page A",
+      "text": "Page A",
+      "hyperlink": "https://example.com/a"
     },
     {
       "self_ref": "#/texts/4",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/groups/0"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "3",
-      "text": "3",
-      "formatting": {
-        "bold": true,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "and",
+      "text": "and"
     },
     {
       "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Page B",
+      "text": "Page B",
+      "hyperlink": "https://example.com/b"
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/groups/0"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "for details.",
+      "text": "for details."
+    },
+    {
+      "self_ref": "#/texts/7",
       "parent": {
         "$ref": "#/groups/2"
       },
@@ -183,8 +257,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "4",
-      "text": "4",
+      "orig": "Bold",
+      "text": "Bold",
       "formatting": {
         "bold": true,
         "italic": false,
@@ -194,56 +268,140 @@
       }
     },
     {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "19",
-      "text": "19"
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": "20",
-      "text": "20"
-    },
-    {
       "self_ref": "#/texts/8",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/2"
       },
-      "children": [
-        {
-          "$ref": "#/texts/9"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
-      "label": "title",
+      "label": "text",
       "prov": [],
-      "orig": "21",
-      "text": "21"
+      "orig": "and",
+      "text": "and"
     },
     {
       "self_ref": "#/texts/9",
       "parent": {
-        "$ref": "#/texts/8"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "2nd paragraph",
-      "text": "2nd paragraph"
+      "orig": "italic",
+      "text": "italic",
+      "formatting": {
+        "bold": false,
+        "italic": true,
+        "underline": false,
+        "strikethrough": false,
+        "script": "baseline"
+      }
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "text",
+      "text": "text"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/groups/3"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "code",
+      "prov": [],
+      "orig": "inline_fn()",
+      "text": "inline_fn()",
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "code_language": "unknown"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/groups/4"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "code",
+      "prov": [],
+      "orig": "do_thing()",
+      "text": "do_thing()",
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "code_language": "unknown"
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "code",
+      "prov": [],
+      "orig": "See",
+      "text": "See",
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "code_language": "unknown"
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "code",
+      "prov": [],
+      "orig": "the docs",
+      "text": "the docs",
+      "hyperlink": "https://example.com/docs",
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "code_language": "unknown"
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/groups/5"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "code",
+      "prov": [],
+      "orig": "first",
+      "text": "first",
+      "captions": [],
+      "references": [],
+      "footnotes": [],
+      "code_language": "unknown"
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "Outro paragraph.",
+      "text": "Outro paragraph."
     }
   ],
   "pictures": [],
@@ -251,12 +409,9 @@
     {
       "self_ref": "#/tables/0",
       "parent": {
-        "$ref": "#/texts/1"
+        "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/groups/0"
-        },
         {
           "$ref": "#/groups/1"
         },
@@ -265,6 +420,12 @@
         },
         {
           "$ref": "#/groups/3"
+        },
+        {
+          "$ref": "#/groups/4"
+        },
+        {
+          "$ref": "#/groups/6"
         }
       ],
       "content_layer": "body",
@@ -282,14 +443,11 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2",
-            "column_header": false,
+            "text": "Name",
+            "column_header": true,
             "row_header": false,
             "row_section": false,
-            "fillable": false,
-            "ref": {
-              "$ref": "#/groups/0"
-            }
+            "fillable": false
           },
           {
             "row_span": 1,
@@ -298,7 +456,33 @@
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "3",
+            "text": "Links",
+            "column_header": true,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Multi-link cell",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "See Page A and Page B for details.",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -310,11 +494,50 @@
           {
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 0,
-            "end_row_offset_idx": 1,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "4",
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Plain cell",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 2,
+            "end_row_offset_idx": 3,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Just text",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Formatted cell",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "Bold and italic text",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -326,128 +549,11 @@
           {
             "row_span": 1,
             "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "5",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "6",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 1,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "7",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "8",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "9",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "10",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "11",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "12",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "13",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
             "start_row_offset_idx": 4,
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "14",
+            "text": "Inline code cell",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -460,59 +566,7 @@
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "15",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "16",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 0,
-            "end_col_offset_idx": 1,
-            "text": "17",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 1,
-            "end_col_offset_idx": 2,
-            "text": "18",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
-            "text": "19 \n20",
+            "text": "inline_fn()",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -520,10 +574,68 @@
             "ref": {
               "$ref": "#/groups/3"
             }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Block code cell",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "do_thing()",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/4"
+            }
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 6,
+            "end_row_offset_idx": 7,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "Pre with link",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 6,
+            "end_row_offset_idx": 7,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "See the docs first",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false,
+            "ref": {
+              "$ref": "#/groups/6"
+            }
           }
         ],
-        "num_rows": 6,
-        "num_cols": 3,
+        "num_rows": 7,
+        "num_cols": 2,
         "grid": [
           [
             {
@@ -533,8 +645,8 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2",
-              "column_header": false,
+              "text": "Name",
+              "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -546,21 +658,8 @@
               "end_row_offset_idx": 1,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "3",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "4",
-              "column_header": false,
+              "text": "Links",
+              "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -574,7 +673,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "5",
+              "text": "Multi-link cell",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -587,20 +686,7 @@
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "6",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "7",
+              "text": "See Page A and Page B for details.",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -615,7 +701,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "8",
+              "text": "Plain cell",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -628,20 +714,7 @@
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "9",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "10",
+              "text": "Just text",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -656,7 +729,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "11",
+              "text": "Formatted cell",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -669,20 +742,7 @@
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "12",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "13",
+              "text": "Bold and italic text",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -697,7 +757,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "14",
+              "text": "Inline code cell",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -710,20 +770,7 @@
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "15",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "16",
+              "text": "inline_fn()",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -738,7 +785,7 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "17",
+              "text": "Block code cell",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -751,7 +798,22 @@
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "18",
+              "text": "do_thing()",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            }
+          ],
+          [
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 6,
+              "end_row_offset_idx": 7,
+              "start_col_offset_idx": 0,
+              "end_col_offset_idx": 1,
+              "text": "Pre with link",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -760,11 +822,11 @@
             {
               "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
-              "text": "19 \n20",
+              "start_row_offset_idx": 6,
+              "end_row_offset_idx": 7,
+              "start_col_offset_idx": 1,
+              "end_col_offset_idx": 2,
+              "text": "See the docs first",
               "column_header": false,
               "row_header": false,
               "row_section": false,

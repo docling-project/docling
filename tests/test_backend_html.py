@@ -1,3 +1,5 @@
+import threading
+import time
 from io import BytesIO
 from pathlib import Path, PurePath
 from unittest.mock import Mock, mock_open, patch
@@ -559,3 +561,272 @@ def test_fix_invalid_paragraph_structure(html, expected):
     soup = BeautifulSoup(html, "html.parser")
     HTMLDocumentBackend._fix_invalid_paragraph_structure(soup)
     assert str(soup) == expected
+
+
+def test_e2e_rich_table_cells_markdown(html_paths):
+    """Full conversion + export_to_markdown for the rich-table-cell fixture.
+
+    Regression test for the InlineGroup orphan bug: cells processed via
+    _use_table_cell_context() + _walk() used to leave orphaned InlineGroups in
+    body.children, causing double-iteration and OOM / infinite recursion on large pages.
+    """
+    name = "html_rich_table_cells.html"
+    path = next(item for item in html_paths if item.name == name)
+
+    converter = DocumentConverter()
+    result = converter.convert(path)
+    assert result.document is not None
+
+    md = result.document.export_to_markdown()
+    assert isinstance(md, str)
+    assert len(md) > 0
+
+    # Spot-check that content from rich cells made it into the output.
+    assert "Donald Duck" in md
+    assert "White-headed duck" in md
+    assert "Mandarin Duck" in md
+
+
+def test_e2e_inline_group_in_table_cell(html_paths):
+    """Regression test: table cell with <p> containing multiple hyperlinks.
+
+    This forces _use_inline_group() to create an InlineGroup during
+    _use_table_cell_context().  Before the fix the InlineGroup was orphaned in
+    body.children while its text children were reparented elsewhere, producing
+    an inconsistent document tree.  export_to_markdown() must complete without
+    error and the text content must appear exactly once.
+    """
+    name = "html_inline_group_in_table_cell.html"
+    path = next(item for item in html_paths if item.name == name)
+
+    converter = DocumentConverter()
+    result = converter.convert(path)
+    assert result.document is not None
+
+    md = result.document.export_to_markdown()
+    assert isinstance(md, str)
+    assert len(md) > 0
+
+    # The hyperlink texts must appear in the output.
+    assert "Page A" in md
+    assert "Page B" in md
+
+    # Each link text should appear exactly once — the orphan bug caused
+    # double-serialization of items shared between InlineGroup and the outer group.
+    assert md.count("Page A") == 1
+    assert md.count("Page B") == 1
+
+
+def _build_large_rich_table_html(
+    num_tables: int = 10, rows_per_table: int = 20
+) -> bytes:
+    """Build a synthetic HTML page with many tables containing rich cells.
+
+    Each cell contains a <p> with multiple hyperlinks, which forces
+    _use_inline_group() to fire inside _use_table_cell_context().
+    This is the same code path triggered by Wikipedia pages that contain
+    large tables with hyperlink-rich cells (e.g. taxobox or classification tables).
+
+    Parameters
+    ----------
+    num_tables:
+        Number of independent tables to generate.
+    rows_per_table:
+        Rows (each with two rich cells) per table.
+    """
+    parts = ["<html><body>"]
+    for t in range(num_tables):
+        parts.append(
+            f"<h2>Table {t}</h2><table><thead><tr><th>Name</th><th>Links</th></tr></thead><tbody>"
+        )
+        for r in range(rows_per_table):
+            # Two rich cells per row - each contains a <p> with 3 <a> tags so
+            # that _use_inline_group() is triggered (len(annotated_text_list) > 1).
+            cell_a = (
+                f"<td><p>"
+                f'<a href="https://example.com/{t}-{r}-0">Link {t}-{r}-0</a>, '
+                f'<a href="https://example.com/{t}-{r}-1">Link {t}-{r}-1</a>, '
+                f'<a href="https://example.com/{t}-{r}-2">Link {t}-{r}-2</a>'
+                f"</p></td>"
+            )
+            cell_b = (
+                f"<td><p>"
+                f'<a href="https://example.com/b-{t}-{r}-0">B-Link {t}-{r}-0</a> and '
+                f'<a href="https://example.com/b-{t}-{r}-1">B-Link {t}-{r}-1</a>'
+                f"</p></td>"
+            )
+            parts.append(f"<tr>{cell_a}{cell_b}</tr>")
+        parts.append("</tbody></table>")
+    parts.append("</body></html>")
+    return "\n".join(parts).encode()
+
+
+def test_e2e_rich_table_oom_regression():
+    """Regression test: conversion + markdown export must complete within resource bounds.
+
+    Before the fix, HTML pages with many tables whose cells contain multiple
+    inline elements (hyperlinks, formatted text) caused runaway memory usage due
+    to orphaned InlineGroups creating broken parent/child relationships in the
+    document tree, leading to content being traversed multiple times during
+    serialization.  This pattern is common on Wikipedia pages with large
+    reference or taxobox tables.
+
+    This test builds a synthetic page that exercises exactly the same code path:
+    many tables with rich cells where each cell's <p> contains multiple <a> tags,
+    forcing _use_inline_group() inside _use_table_cell_context().
+
+    Assertions:
+    * Markdown output is not pathologically large (content-duplication sentinel).
+    """
+    # 30 tables x 20 rows x 2 rich cells = 1200 rich cells
+    # Each cell: <p> with 2-3 <a> tags -> triggers _use_inline_group() + _use_table_cell_context()
+    num_tables, rows_per_table = 30, 20
+    html_bytes = _build_large_rich_table_html(
+        num_tables=num_tables, rows_per_table=rows_per_table
+    )
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html_bytes),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="rich_table_oom_test.html",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(html_bytes),
+    )
+    doc: DoclingDocument = backend.convert()
+
+    assert doc is not None, "Conversion returned None"
+
+    result: list[str] = []
+
+    def _run() -> None:
+        result.append(doc.export_to_markdown())
+
+    t = threading.Thread(target=_run, daemon=True)
+    t0 = time.monotonic()
+    t.start()
+    t.join(timeout=15.0)
+    elapsed = time.monotonic() - t0
+
+    assert not t.is_alive(), (
+        f"export_to_markdown() hung after {elapsed:.1f}s on a page with many rich "
+        "table cells.  The InlineGroup ref-tracking fix may have been reverted."
+    )
+    assert result, "export_to_markdown() produced no output"
+    md = result[0]
+    assert isinstance(md, str) and len(md) > 0, (
+        "export_to_markdown() returned empty string"
+    )
+
+    # Content-duplication sentinel: pre-fix code double-counted text items
+    # (each item appeared in both InlineGroup.children and the RichTableCell
+    # group's children), bloating output.  Allow 3x the expected base size;
+    # a 2x duplication per item would produce output well above this threshold
+    # at this fixture scale.
+    # num_tables x rows x 2 cells x ~128 chars/cell (observed) x 3 = upper bound
+    max_expected_chars = num_tables * rows_per_table * 2 * 128 * 3
+    assert len(md) <= max_expected_chars, (
+        f"Markdown output is suspiciously large ({len(md):,} chars > {max_expected_chars:,}); "
+        f"possible content-duplication regression."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Regression test: nested-table images must not create quadratic PictureItems
+# ---------------------------------------------------------------------------
+
+
+def _build_nested_clade_html(depth: int) -> bytes:
+    """Build a Wikipedia-style cladogram chain of *depth* nested tables.
+
+    Each level has one ``<img>`` leaf cell and one cell that holds the
+    next nested table.  This mirrors Wikipedia's ``class="clade"`` tables.
+
+        depth=3  produces:
+        <table>
+          <tr>
+            <td><img src="level_0.png"></td>
+            <td>
+              <table>
+                <tr>
+                  <td><img src="level_1.png"></td>
+                  <td>
+                    <table>
+                      <tr><td><img src="level_2.png"></td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+    """
+
+    def _inner(lvl: int) -> str:
+        img = f'<img src="level_{lvl}.png" width="16" height="16">'
+        if lvl == depth - 1:
+            return f"<table><tr><td>{img}</td></tr></table>"
+        return f"<table><tr><td>{img}</td><td>{_inner(lvl + 1)}</td></tr></table>"
+
+    return f"<html><body><h2>Cladogram</h2>{_inner(0)}</body></html>".encode()
+
+
+def test_nested_table_images_no_quadratic_pictures():
+    """Regression test: images in deeply-nested tables must not produce quadratic PictureItems.
+
+    Before the fix, ``_handle_block()`` for ``tag_name == "table"`` called
+    ``_emit_image(tag, doc)`` (passing the *table* element, not ``img_tag``)
+    inside ``for img_tag in tag("img")``.  ``tag("img")`` returns ALL image
+    descendants, including those in nested tables, so at nesting level *k*
+    the loop fired *k* times and created *k* extra placeholder PictureItems
+    (the table element has no ``src`` attribute, so ``_emit_image`` returned
+    a placeholder).  For a chain of *N* levels this gives N*(N+1)/2 extra
+    items — quadratic growth — on top of the *N* legitimate ones.
+
+    After the fix (outer loop removed entirely), only the *N* images created
+    by ``parse_table_data() → _walk() → _emit_image(img_tag, doc)`` exist.
+    """
+    DEPTH = 15  # 15 real <img> tags
+
+    html_bytes = _build_nested_clade_html(DEPTH)
+
+    # Count how many <img> tags the HTML actually contains
+    from bs4 import BeautifulSoup as _BS
+
+    soup = _BS(html_bytes, "html.parser")
+    num_img_tags = len(soup.find_all("img"))
+    assert num_img_tags == DEPTH, "fixture sanity check"
+
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(html_bytes),
+        format=InputFormat.HTML,
+        backend=HTMLDocumentBackend,
+        filename="nested_clade_imgs.html",
+    )
+    backend = HTMLDocumentBackend(
+        in_doc=in_doc,
+        path_or_stream=BytesIO(html_bytes),
+    )
+    doc: DoclingDocument = backend.convert()
+
+    num_pictures = sum(
+        1 for item, _ in doc.iterate_items() if isinstance(item, PictureItem)
+    )
+
+    # Pre-fix count: DEPTH + DEPTH*(DEPTH+1)//2 = 15 + 120 = 135
+    # Post-fix count: DEPTH = 15
+    pre_fix_count = DEPTH + DEPTH * (DEPTH + 1) // 2
+    assert num_pictures == DEPTH, (
+        f"Expected {DEPTH} PictureItems (one per <img>), "
+        f"got {num_pictures}. "
+        f"Quadratic regression would give {pre_fix_count}."
+    )
+
+    t0 = time.time()
+    md = doc.export_to_markdown()
+    elapsed = time.time() - t0
+
+    assert isinstance(md, str) and len(md) > 0
+    assert elapsed < 5.0, f"export_to_markdown() took {elapsed:.2f}s; should be < 5s"
