@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 from typing import Optional
 
-import pytest
 from docling_core.types.doc import (
     CodeItem,
     DocItem,
@@ -16,7 +15,6 @@ from docling_core.types.doc import (
 from docling_core.types.legacy_doc.document import ExportedCCSDocument as DsDocument
 from PIL import Image as PILImage
 from pydantic import BaseModel, TypeAdapter
-from pydantic.json import pydantic_encoder
 
 from docling.datamodel.base_models import ConversionStatus, Page
 from docling.datamodel.document import ConversionResult
@@ -144,8 +142,8 @@ def verify_tables_v1(doc_pred: DsDocument, doc_true: DsDocument, fuzzy: bool):
         assert true_item.data is not None, "documents are expected to have table data"
         assert pred_item.data is not None, "documents are expected to have table data"
 
-        print("True: \n", true_item.export_to_dataframe().to_markdown())
-        print("Pred: \n", true_item.export_to_dataframe().to_markdown())
+        # print("True: \n", true_item.export_to_dataframe().to_markdown())
+        # print("Pred: \n", true_item.export_to_dataframe().to_markdown())
 
         for i, row in enumerate(true_item.data):
             for j, col in enumerate(true_item.data[i]):
@@ -228,8 +226,8 @@ def verify_docitems(
     fuzzy: bool,
     pdf_filename: str = "",
 ):
-    print(doc_pred.texts)
-    print(doc_true.texts)
+    # print(doc_pred.texts)
+    # print(doc_true.texts)
 
     assert len(doc_pred.texts) == len(doc_true.texts), (
         f"[{pdf_filename}] Text lengths do not match: {len(doc_pred.texts)} != {len(doc_true.texts)}"
