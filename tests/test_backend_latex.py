@@ -62,12 +62,12 @@ def test_latex_preamble_filter():
     backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
     doc = backend.convert()
 
-    # Title in preamble should be ignored by the backend (unless we explicitly parse it, which current logic doesn't for simplistic Document extraction)
-    # The current logic filters for 'document' environment, so "Real Content" should be there, "Ignored Title" should not (if inside structure but outside document env)
+    # Preamble metadata (\title, \author, \date) is now extracted
+    # following pandoc's approach. Only package commands should be filtered.
 
     full_text = doc.export_to_markdown()
     assert "Real Content" in full_text
-    assert "Ignored Title" not in full_text
+    assert "Ignored Title" in full_text
     assert "usepackage" not in full_text
 
 
@@ -145,7 +145,7 @@ def test_latex_math_parsing():
     # Check delimiters
     assert "$E=mc^2$" in md or r"\( E=mc^2 \)" in md
     assert r"\frac" in md
-    assert r"\begin{align}" in md  # Should preserve align tag for proper rendering
+    assert r"\begin{align}" in md
 
 
 def test_latex_escaped_chars():
@@ -1409,3 +1409,198 @@ def test_latex_timeout_fires(latex_file):
 
     assert elapsed < 20.0, f"Timeout did not fire in time ({elapsed:.1f}s elapsed)"
     assert len(doc.texts) > 0, "Fallback document should have at least one text node"
+
+
+def test_latex_theorem_environment():
+    """Test theorem/proof/lemma environments emit bold labels + body"""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{theorem}
+    Every even integer greater than 2 is the sum of two primes.
+    \end{theorem}
+    \begin{proof}
+    Left as an exercise.
+    \end{proof}
+    \begin{lemma}
+    A helper result.
+    \end{lemma}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "**Theorem.**" in md
+    assert "two primes" in md
+    assert "*Proof.*" in md
+    assert "exercise" in md
+    assert "◻" in md  # QED symbol
+    assert "**Lemma.**" in md
+
+
+def test_latex_subparagraph_heading():
+    """Test \\subparagraph emits heading level 5"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\paragraph{Para Level}
+    Content A.
+    \\subparagraph{Subpara Level}
+    Content B.
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    headers = [t for t in doc.texts if t.label == DocItemLabel.SECTION_HEADER]
+    # \\subparagraph should produce a heading
+    assert any("Subpara Level" in h.text for h in headers)
+    # Content should be present
+    md = doc.export_to_markdown()
+    assert "Content A" in md
+    assert "Content B" in md
+
+
+def test_latex_split_cases_math():
+    """Test split/cases inner math environments produce FORMULA labels"""
+    latex_content = rb"""
+    \documentclass{article}
+    \begin{document}
+    \begin{equation}
+    \begin{cases}
+    x & \text{if } x > 0 \\
+    -x & \text{otherwise}
+    \end{cases}
+    \end{equation}
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    formulas = [t for t in doc.texts if t.label == DocItemLabel.FORMULA]
+    assert len(formulas) >= 1
+    # The cases content should be in the formula
+    formula_text = " ".join(f.text for f in formulas)
+    assert "cases" in formula_text or "otherwise" in formula_text
+
+
+def test_latex_renewcommand():
+    """Test \\renewcommand and \\providecommand macros are expanded"""
+    latex_content = rb"""
+    \documentclass{article}
+    \newcommand{\foo}{original}
+    \renewcommand{\foo}{replaced}
+    \providecommand{\bar}{provided}
+    \begin{document}
+    Value is \foo{} and \bar{}.
+    \end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    backend.convert()
+
+    # renewcommand should have overwritten the original
+    assert "foo" in backend._custom_macros
+    assert backend._custom_macros["foo"] == "replaced"
+    assert "bar" in backend._custom_macros
+    assert backend._custom_macros["bar"] == "provided"
+
+
+def test_latex_input_cycle_detection(tmp_path):
+    """Test that circular \\input doesn't stack overflow"""
+    # Create two files that reference each other
+    file_a = tmp_path / "a.tex"
+    file_b = tmp_path / "b.tex"
+
+    file_a.write_text(
+        "\\documentclass{article}\\begin{document}A content\\input{b}\\end{document}"
+    )
+    file_b.write_text("B content\\input{a}")
+
+    in_doc = InputDocument(
+        path_or_stream=file_a,
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="a.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=file_a)
+    # Should not crash / stack overflow
+    doc = backend.convert()
+    md = doc.export_to_markdown()
+    assert "A content" in md
+
+
+def test_latex_author_date():
+    """Test \\author and \\date text is preserved"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\title{My Paper}
+    \\author{Jane Doe}
+    \\date{January 2025}
+    Some content.
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "Jane Doe" in md
+    assert "January 2025" in md
+
+
+def test_latex_quote_environment():
+    """Test quote/quotation environments produce text output"""
+    latex_content = b"""
+    \\documentclass{article}
+    \\begin{document}
+    \\begin{quote}
+    This is a quoted passage.
+    \\end{quote}
+    \\begin{quotation}
+    This is a longer quotation.
+    \\end{quotation}
+    \\end{document}
+    """
+    in_doc = InputDocument(
+        path_or_stream=BytesIO(latex_content),
+        format=InputFormat.LATEX,
+        backend=LatexDocumentBackend,
+        filename="test.tex",
+    )
+    backend = LatexDocumentBackend(in_doc=in_doc, path_or_stream=BytesIO(latex_content))
+    doc = backend.convert()
+
+    md = doc.export_to_markdown()
+    assert "quoted passage" in md
+    assert "longer quotation" in md
