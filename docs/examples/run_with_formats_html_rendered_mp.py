@@ -1,7 +1,7 @@
-import multiprocessing as mp
-import os
 import json
 import logging
+import multiprocessing as mp
+import os
 import time
 import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -53,9 +53,10 @@ def _done_marker_path(input_path: Path, out_dir: Path) -> Path:
 
 def _is_already_converted(input_path: Path, out_dir: Path) -> bool:
     # Keep legacy JSON-only skip behavior and add a dedicated completion marker for MT runs.
-    return _done_marker_path(input_path, out_dir).exists() or (
-        out_dir / f"{input_path.stem}.json"
-    ).exists()
+    return (
+        _done_marker_path(input_path, out_dir).exists()
+        or (out_dir / f"{input_path.stem}.json").exists()
+    )
 
 
 def _init_worker(
@@ -163,7 +164,9 @@ def main() -> None:
 
     timings: list[float] = []
     failed_files: list[Path] = []
-    max_workers = min(4, max(1, int(os.environ.get("DOCLING_HTML_WORKERS", os.cpu_count() or 1))))
+    max_workers = min(
+        4, max(1, int(os.environ.get("DOCLING_HTML_WORKERS", os.cpu_count() or 1)))
+    )
     print(f"Using {max_workers} worker process(es)")
 
     mp_ctx = mp.get_context("spawn")
