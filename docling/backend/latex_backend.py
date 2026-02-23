@@ -87,7 +87,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         text = self.latex_text.strip()
         if not text:
             return False
-        return "\\begin{document}" in text or "\\documentclass" in text
+        return (
+            "\\begin{document}" in text
+            or "\\documentclass" in text
+            or "\\documentstyle" in text
+        )
 
     @classmethod
     def supports_pagination(cls) -> bool:
@@ -733,6 +737,28 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
             "NeedsTeXFormat",
             "ProvidesClass",
             "DeclareRobustCommand",
+            "newtheorem",
+            "theoremstyle",
+            "newtheoremstyle",
+            "documentstyle",  # for LaTeX 2.09
+            "pagestyle",
+            "thispagestyle",
+            "pagenumbering",
+            "tableofcontents",
+            "listoffigures",
+            "listoftables",
+            "appendix",
+            "cleardoublepage",
+            "clearpage",
+            "newpage",
+            "markboth",
+            "markright",
+            "lhead",
+            "rhead",
+            "cfoot",
+            "hyphenation",
+            "overfullrule",
+            "protect",
         ]:
             pass
 
@@ -840,7 +866,20 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                         formatting=formatting,
                     )
 
-        elif node.macroname in ["newline", "hfill", "break", "centering"]:
+        elif node.macroname in [
+            "newline",
+            "hfill",
+            "break",
+            "centering",
+            "noindent",
+            "par",
+            "smallskip",
+            "medskip",
+            "bigskip",
+            "vfill",
+            "vskip",
+            "hskip",
+        ]:
             if node.macroname == "newline":
                 doc.add_text(
                     parent=parent,
