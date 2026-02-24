@@ -79,19 +79,13 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
                     break
 
     def is_valid(self) -> bool:
-        """Check if this looks like a full LaTeX document (not a fragment or .sty).
-
-        Requires ``\\begin{document}`` or ``\\documentclass`` to be present.
-        Standalone math snippets and preamble-only fragments are rejected.
+        """Check if this looks like valid LaTeX content.
+        Permits standalone snippets and partial documents.
         """
         text = self.latex_text.strip()
         if not text:
             return False
-        return (
-            "\\begin{document}" in text
-            or "\\documentclass" in text
-            or "\\documentstyle" in text
-        )
+        return True
 
     @classmethod
     def supports_pagination(cls) -> bool:
