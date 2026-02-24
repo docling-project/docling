@@ -23,9 +23,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Final
 
-from arelle import Cntlr
-from arelle.ModelDocument import Type
-from arelle.ModelXbrl import ModelXbrl
 from docling_core.types.doc import (
     DoclingDocument,
     DocumentOrigin,
@@ -43,6 +40,17 @@ from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOpt
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import OperationNotAllowed
+
+_XBRL_AVAILABLE: bool = False
+_XBRL_IMPORT_ERROR: ImportError | None = None
+try:
+    from arelle import Cntlr  # type: ignore
+    from arelle.ModelDocument import Type  # type: ignore
+    from arelle.ModelXbrl import ModelXbrl  # type: ignore
+
+    _XBRL_AVAILABLE = True
+except ImportError as e:
+    _XBRL_IMPORT_ERROR = e
 
 _log = logging.getLogger(__name__)
 
@@ -74,6 +82,13 @@ class XBRLDocumentBackend(DeclarativeDocumentBackend):
         path_or_stream: BytesIO | Path,
         options: XBRLBackendOptions = XBRLBackendOptions(),
     ) -> None:
+        # Check if arelle is available before proceeding
+        if not _XBRL_AVAILABLE:
+            raise ImportError(
+                "The 'arelle-release' package is required to process XBRL documents. "
+                "Please install it using `pip install 'docling[xbrl]'`"
+            ) from _XBRL_IMPORT_ERROR
+
         super().__init__(in_doc, path_or_stream)
         self.options: XBRLBackendOptions = options
         self.model_xbrl: ModelXbrl | None = None
