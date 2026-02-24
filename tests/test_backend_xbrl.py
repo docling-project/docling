@@ -12,10 +12,10 @@ from pathlib import Path
 import pytest
 from docling_core.types.doc import DoclingDocument
 
-from docling.datamodel.backend_options import XbrlBackendOptions
+from docling.datamodel.backend_options import XBRLBackendOptions
 from docling.datamodel.base_models import DocumentStream, InputFormat
 from docling.datamodel.document import ConversionResult
-from docling.document_converter import DocumentConverter, XbrlFormatOption
+from docling.document_converter import DocumentConverter, XBRLFormatOption
 
 from .test_data_gen_flag import GEN_TEST_DATA
 from .verify_utils import verify_document, verify_export
@@ -53,13 +53,13 @@ def test_e2e_xbrl_conversions(xbrl_paths, use_stream=False):
     for report, taxonomy in xbrl_paths:
         gt_path = report.parent.parent / "groundtruth" / "docling_v2" / report.name
 
-        backend_options = XbrlBackendOptions(enable_local_fetch=True, taxonomy=taxonomy)
+        backend_options = XBRLBackendOptions(enable_local_fetch=True, taxonomy=taxonomy)
         # set enable_remote_fetch to download the necessary external taxonomy files in web cache
-        # backend_options = XbrlBackendOptions(enable_local_fetch=True, enable_remote_fetch=True, taxonomy=taxonomy)
+        # backend_options = XBRLBackendOptions(enable_local_fetch=True, enable_remote_fetch=True, taxonomy=taxonomy)
         converter = DocumentConverter(
             allowed_formats=[InputFormat.XML_XBRL],
             format_options={
-                InputFormat.XML_XBRL: XbrlFormatOption(backend_options=backend_options)
+                InputFormat.XML_XBRL: XBRLFormatOption(backend_options=backend_options)
             },
         )
 

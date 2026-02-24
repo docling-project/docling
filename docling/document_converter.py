@@ -34,14 +34,14 @@ from docling.backend.noop_backend import NoOpBackend
 from docling.backend.webvtt_backend import WebVTTDocumentBackend
 from docling.backend.xml.jats_backend import JatsDocumentBackend
 from docling.backend.xml.uspto_backend import PatentUsptoDocumentBackend
-from docling.backend.xml.xbrl_backend import XbrlDocumentBackend
+from docling.backend.xml.xbrl_backend import XBRLDocumentBackend
 from docling.datamodel.backend_options import (
     BackendOptions,
     HTMLBackendOptions,
     LatexBackendOptions,
     MarkdownBackendOptions,
     PdfBackendOptions,
-    XbrlBackendOptions,
+    XBRLBackendOptions,
 )
 from docling.datamodel.base_models import (
     BaseFormatOption,
@@ -133,10 +133,10 @@ class XMLJatsFormatOption(FormatOption):
     backend: Type[AbstractDocumentBackend] = JatsDocumentBackend
 
 
-class XbrlFormatOption(FormatOption):
+class XBRLFormatOption(FormatOption):
     pipeline_cls: Type = SimplePipeline
-    backend: Type[AbstractDocumentBackend] = XbrlDocumentBackend
-    backend_options: XbrlBackendOptions | None = None
+    backend: Type[AbstractDocumentBackend] = XBRLDocumentBackend
+    backend_options: XBRLBackendOptions | None = None
 
 
 class ImageFormatOption(FormatOption):
@@ -174,7 +174,7 @@ def _get_default_option(format: InputFormat) -> FormatOption:
         InputFormat.HTML: HTMLFormatOption(),
         InputFormat.XML_USPTO: PatentUsptoFormatOption(),
         InputFormat.XML_JATS: XMLJatsFormatOption(),
-        InputFormat.XML_XBRL: XbrlFormatOption(),
+        InputFormat.XML_XBRL: XBRLFormatOption(),
         InputFormat.METS_GBS: FormatOption(
             pipeline_cls=StandardPdfPipeline, backend=MetsGbsDocumentBackend
         ),

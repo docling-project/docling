@@ -39,7 +39,7 @@ from typing_extensions import override
 
 from docling.backend.abstract_backend import DeclarativeDocumentBackend
 from docling.backend.html_backend import HTMLDocumentBackend
-from docling.datamodel.backend_options import HTMLBackendOptions, XbrlBackendOptions
+from docling.datamodel.backend_options import HTMLBackendOptions, XBRLBackendOptions
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.document import InputDocument
 from docling.exceptions import OperationNotAllowed
@@ -50,7 +50,7 @@ _log = logging.getLogger(__name__)
 _WEB_CACHE_TIMEOUT: Final[int] = 10
 
 
-class XbrlDocumentBackend(DeclarativeDocumentBackend):
+class XBRLDocumentBackend(DeclarativeDocumentBackend):
     """Backend to parse XBRL (eXtensible Business Reporting Language) documents.
 
     XBRL is a standard XML-based format for business and financial reporting.
@@ -72,10 +72,10 @@ class XbrlDocumentBackend(DeclarativeDocumentBackend):
         self,
         in_doc: "InputDocument",
         path_or_stream: BytesIO | Path,
-        options: XbrlBackendOptions = XbrlBackendOptions(),
+        options: XBRLBackendOptions = XBRLBackendOptions(),
     ) -> None:
         super().__init__(in_doc, path_or_stream)
-        self.options: XbrlBackendOptions = options
+        self.options: XBRLBackendOptions = options
         self.model_xbrl: ModelXbrl | None = None
 
         try:

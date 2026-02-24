@@ -103,7 +103,7 @@ class LatexBackendOptions(BaseBackendOptions):
     kind: Literal["latex"] = Field("latex", exclude=True, repr=False)
 
 
-class XbrlBackendOptions(BaseBackendOptions):
+class XBRLBackendOptions(BaseBackendOptions):
     """Options specific to the XBRL backend."""
 
     kind: Annotated[Literal["xbrl"], Field("xbrl", exclude=True, repr=False)] = "xbrl"
@@ -130,7 +130,7 @@ BackendOptions = Annotated[
         PdfBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,
-        XbrlBackendOptions,
+        XBRLBackendOptions,
     ],
     Field(discriminator="kind"),
 ]
