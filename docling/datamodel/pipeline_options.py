@@ -464,6 +464,11 @@ class OcrMacOptions(OcrOptions):
 class PictureDescriptionBaseOptions(BaseOptions):
     """Base configuration for picture description models."""
 
+    # TODO: default should become False in a future release, and this field
+    # may be removed entirely once docling-core drops the deprecated
+    # `annotations` attribute from DoclingDocument items.
+    _keep_deprecated_annotations: bool = True
+
     batch_size: Annotated[
         int,
         Field(

@@ -24,6 +24,7 @@ Schema-specific support:
 |--------|-------------|
 | USPTO XML | XML format followed by [USPTO](https://www.uspto.gov/patents) patents |
 | JATS XML | XML format followed by [JATS](https://jats.nlm.nih.gov/) articles |
+| XBRL XML | XML format for business and financial reporting following [XBRL](https://www.xbrl.org/) standard |
 | Docling JSON | JSON-serialized [Docling Document](../concepts/docling_document.md) |
 
 ## Supported output formats

@@ -196,6 +196,12 @@ def test_guess_format(tmp_path):
     doc_path = Path("./tests/data/jats/elife-56337.txt")
     assert dci._guess_format(doc_path) == InputFormat.XML_JATS
 
+    buf = BytesIO(Path("./tests/data/xbrl/mlac-20251231.xml").open("rb").read())
+    stream = DocumentStream(name="mlac-20251231.xml", stream=buf)
+    assert dci._guess_format(stream) == InputFormat.XML_XBRL
+    doc_path = Path("./tests/data/xbrl/mlac-20251231.xml")
+    assert dci._guess_format(doc_path) == InputFormat.XML_XBRL
+
     # Valid XML, non-supported flavor
     xml_content = (
         '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE docling_test SYSTEM '
