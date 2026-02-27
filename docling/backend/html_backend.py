@@ -9,7 +9,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Final, Iterator, Optional, Union, cast
+from typing import Any, Final, Iterator, Literal, Optional, Union, cast
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -146,6 +146,30 @@ _FORM_VALUE_ID_RE: Final = re.compile(
 class _RenderedBBox:
     page_no: int
     bbox: BoundingBox
+
+
+@dataclass
+class _ExtractedFormValue:
+    tag: Tag
+    orig: str
+    text: str
+    prov: Optional[ProvenanceItem]
+    kind: Literal["read_only", "fillable"] = "read_only"
+
+
+@dataclass
+class _ExtractedFormField:
+    key_tag: Tag
+    key_orig: str
+    key_text: str
+    key_prov: Optional[ProvenanceItem]
+    values: list[_ExtractedFormValue]
+
+
+@dataclass
+class _ExtractedFormRegion:
+    fields: list[_ExtractedFormField]
+    consumed_tag_ids: set[str]
 
 
 class _Context(BaseModel):
@@ -309,6 +333,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._rendered_text_bbox_by_id: dict[str, _RenderedBBox] = {}
         self._rendered_page_images: list[Image.Image] = []
         self._rendered_page_size: Optional[Size] = None
+        self._suppressed_tag_ids_stack: list[set[str]] = []
+        self._form_fields_by_key_id_stack: list[dict[str, _ExtractedFormField]] = []
 
         try:
             raw = (
@@ -723,6 +749,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if not tag_id:
             return None
         return str(tag_id)
+
+    @staticmethod
+    def _get_html_id(tag: Optional[Tag]) -> Optional[str]:
+        if tag is None:
+            return None
+        tag_id = tag.get("id")
+        if not isinstance(tag_id, str) or not tag_id:
+            return None
+        return tag_id
 
     def _get_rendered_bbox_for_tag(self, tag: Optional[Tag]) -> Optional[_RenderedBBox]:
         tag_id = self._get_tag_id(tag)
@@ -1157,7 +1192,31 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         for node in element.contents:
             if isinstance(node, Tag):
+                if form_field := self._consume_form_field_for_tag(node):
+                    _flush_buffer()
+                    added_refs.extend(
+                        self._add_field_item_from_extracted(
+                            field=form_field,
+                            doc=doc,
+                            parent=self.parents[self.level],
+                        )
+                    )
+                    continue
+                if self._is_suppressed_tag(node):
+                    continue
                 name = node.name.lower()
+                has_block_descendants = bool(node.find(_BLOCK_TAGS) or node.find("input"))
+                is_atomic_node = name in _BLOCK_TAGS or not has_block_descendants
+                if is_atomic_node:
+                    for field in self._consume_form_fields_in_subtree(node):
+                        _flush_buffer()
+                        added_refs.extend(
+                            self._add_field_item_from_extracted(
+                                field=field,
+                                doc=doc,
+                                parent=self.parents[self.level],
+                            )
+                        )
                 if self._is_form_container(node):
                     _flush_buffer()
                     form_refs = self._handle_form_container(node, doc)
@@ -1186,7 +1245,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     _flush_buffer()
                     blk = self._handle_block(node, doc)
                     added_refs.extend(blk)
-                elif node.find(_BLOCK_TAGS) or node.find("input"):
+                elif has_block_descendants:
                     _flush_buffer()
                     wk3 = self._walk(node, doc)
                     added_refs.extend(wk3)
@@ -1260,6 +1319,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
 
         if isinstance(item, NavigableString):
+            if isinstance(item.parent, Tag) and self._is_suppressed_tag(item.parent):
+                return AnnotatedTextList()
             text = item.strip()
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
@@ -1292,6 +1353,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
 
         tag = cast(Tag, item)
+        if self._is_suppressed_tag(tag):
+            return AnnotatedTextList()
         if not ignore_list or (tag.name not in ["ul", "ol"]):
             for child in tag:
                 if isinstance(child, Tag) and child.name in _FORMAT_TAG_MAP:
@@ -1950,7 +2013,131 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         raw = re.sub(r"\s+", " ", text).strip()
         return raw, HTMLDocumentBackend._clean_unicode(raw)
 
-    def _extract_form_graph(self, form_tag: Tag) -> Optional[GraphData]:
+    @staticmethod
+    def _infer_form_value_kind(value_tag: Tag) -> Literal["read_only", "fillable"]:
+        if value_tag.name in {"input", "select", "textarea"}:
+            return "fillable"
+        if value_tag.find(["input", "select", "textarea"]) is not None:
+            return "fillable"
+        return "read_only"
+
+    @contextmanager
+    def _suppress_tag_ids(self, tag_ids: set[str]):
+        if not tag_ids:
+            yield None
+            return
+        self._suppressed_tag_ids_stack.append(tag_ids)
+        try:
+            yield None
+        finally:
+            self._suppressed_tag_ids_stack.pop()
+
+    def _is_suppressed_tag(self, tag: Tag) -> bool:
+        tag_ids = set()
+        if html_id := self._get_html_id(tag):
+            tag_ids.add(html_id)
+        if docling_id := self._get_tag_id(tag):
+            tag_ids.add(docling_id)
+        if not tag_ids:
+            return False
+        return any(bool(ids & tag_ids) for ids in self._suppressed_tag_ids_stack)
+
+    @contextmanager
+    def _use_form_fields_by_key_id(self, fields_by_key_id: dict[str, _ExtractedFormField]):
+        self._form_fields_by_key_id_stack.append(dict(fields_by_key_id))
+        try:
+            yield None
+        finally:
+            self._form_fields_by_key_id_stack.pop()
+
+    def _consume_form_field_for_tag(self, tag: Tag) -> Optional[_ExtractedFormField]:
+        tag_id = self._get_html_id(tag)
+        if tag_id is None:
+            return None
+        for field_map in reversed(self._form_fields_by_key_id_stack):
+            field = field_map.pop(tag_id, None)
+            if field is not None:
+                return field
+        return None
+
+    def _consume_form_fields_in_subtree(self, tag: Tag) -> list[_ExtractedFormField]:
+        if not self._form_fields_by_key_id_stack:
+            return []
+        field_map = self._form_fields_by_key_id_stack[-1]
+        extracted_fields: list[_ExtractedFormField] = []
+        for key_id, field in list(field_map.items()):
+            key_tag = field.key_tag
+            if key_tag is tag or any(parent is tag for parent in key_tag.parents):
+                extracted_fields.append(field)
+                field_map.pop(key_id, None)
+        return extracted_fields
+
+    def _is_lonely_key_covered_by_table(self, key_tag: Tag) -> bool:
+        key_tag_id = self._get_html_id(key_tag)
+        if key_tag_id is None:
+            return False
+
+        table_cell = self._get_table_cell(key_tag)
+        if table_cell is None:
+            return False
+
+        remaining_raw = self._extract_text_excluding_ids(table_cell, {key_tag_id})
+        _, remaining_clean = self._normalize_form_text(remaining_raw)
+        if remaining_clean:
+            return False
+
+        for descendant in table_cell.descendants:
+            if descendant is key_tag:
+                continue
+            if isinstance(descendant, Tag):
+                if any(parent is key_tag for parent in descendant.parents):
+                    continue
+                return False
+            if isinstance(descendant, NavigableString):
+                if any(parent is key_tag for parent in descendant.parents):
+                    continue
+                if str(descendant).strip():
+                    return False
+
+        return True
+
+    def _add_field_item_from_extracted(
+        self,
+        field: _ExtractedFormField,
+        doc: DoclingDocument,
+        parent: Optional[Union[DocItem, GroupItem]],
+    ) -> list[RefItem]:
+        refs: list[RefItem] = []
+        doc_with_fields = cast(Any, doc)
+        field_item = doc_with_fields.add_field_item(
+            parent=parent,
+            content_layer=self.content_layer,
+        )
+        refs.append(field_item.get_ref())
+
+        field_key = doc_with_fields.add_field_key(
+            text=field.key_text,
+            orig=field.key_orig,
+            prov=field.key_prov,
+            parent=field_item,
+            content_layer=self.content_layer,
+        )
+        refs.append(field_key.get_ref())
+
+        for value in field.values:
+            field_value = doc_with_fields.add_field_value(
+                text=value.text,
+                orig=value.orig,
+                prov=value.prov,
+                parent=field_item,
+                content_layer=self.content_layer,
+                kind=value.kind,
+            )
+            refs.append(field_value.get_ref())
+
+        return refs
+
+    def _extract_form_region(self, form_tag: Tag) -> Optional[_ExtractedFormRegion]:
         key_tags: dict[str, Tag] = {}
         key_order: list[str] = []
         values_by_key: dict[str, list[tuple[Optional[int], int, Tag]]] = {}
@@ -1967,9 +2154,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 value_id = value_match.group("value_id")
                 value_index = int(value_id) if value_id.isdigit() else None
                 value_order += 1
-                values_by_key.setdefault(key_id, []).append(
-                    (value_index, value_order, tag)
-                )
+                values_by_key.setdefault(key_id, []).append((value_index, value_order, tag))
                 continue
 
             key_match = _FORM_KEY_ID_RE.match(tag_id)
@@ -1979,9 +2164,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     key_tags[key_id] = tag
                     key_order.append(key_id)
 
-        cells: list[GraphCell] = []
-        links: list[GraphLink] = []
-        cell_id_seq = 0
+        fields: list[_ExtractedFormField] = []
+        consumed_tag_ids: set[str] = set()
 
         table_bboxes: list[BoundingBox] = []
         if self._rendered_bbox_by_id:
@@ -1997,9 +2181,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             value_entries = [
                 entry
                 for entry in value_entries
-                if not self._should_ignore_table_kv_link(
-                    key_tag, entry[2], table_bboxes
-                )
+                if not self._should_ignore_table_kv_link(key_tag, entry[2], table_bboxes)
             ]
             in_scope_entries = [
                 entry
@@ -2026,25 +2208,66 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if not key_text and not value_tags:
                 continue
 
+            values: list[_ExtractedFormValue] = []
+            for value_tag in value_tags:
+                value_text_raw = HTMLDocumentBackend.get_text(value_tag)
+                value_orig, value_text = self._normalize_form_text(value_text_raw)
+                values.append(
+                    _ExtractedFormValue(
+                        tag=value_tag,
+                        orig=value_orig,
+                        text=value_text,
+                        prov=self._make_text_prov(text=value_text, tag=value_tag),
+                        kind=self._infer_form_value_kind(value_tag),
+                    )
+                )
+                value_tag_id = self._get_html_id(value_tag)
+                if value_tag_id is not None:
+                    consumed_tag_ids.add(value_tag_id)
+
+            fields.append(
+                _ExtractedFormField(
+                    key_tag=key_tag,
+                    key_orig=key_orig,
+                    key_text=key_text,
+                    key_prov=self._make_text_prov(text=key_text, tag=key_tag),
+                    values=values,
+                )
+            )
+            key_tag_id = self._get_html_id(key_tag)
+            if key_tag_id is not None:
+                consumed_tag_ids.add(key_tag_id)
+
+        if not fields:
+            return None
+        return _ExtractedFormRegion(fields=fields, consumed_tag_ids=consumed_tag_ids)
+
+    def _extract_form_graph(self, form_tag: Tag) -> Optional[GraphData]:
+        extracted = self._extract_form_region(form_tag)
+        if extracted is None:
+            return None
+
+        cells: list[GraphCell] = []
+        links: list[GraphLink] = []
+        cell_id_seq = 0
+        for field in extracted.fields:
             key_cell = GraphCell(
                 cell_id=cell_id_seq,
                 label=GraphCellLabel.KEY,
-                text=key_text,
-                orig=key_orig,
-                prov=self._make_text_prov(text=key_text, tag=key_tag),
+                text=field.key_text,
+                orig=field.key_orig,
+                prov=field.key_prov,
             )
             cells.append(key_cell)
             cell_id_seq += 1
 
-            for value_tag in value_tags:
-                value_text_raw = HTMLDocumentBackend.get_text(value_tag)
-                value_orig, value_text = self._normalize_form_text(value_text_raw)
+            for value in field.values:
                 value_cell = GraphCell(
                     cell_id=cell_id_seq,
                     label=GraphCellLabel.VALUE,
-                    text=value_text,
-                    orig=value_orig,
-                    prov=self._make_text_prov(text=value_text, tag=value_tag),
+                    text=value.text,
+                    orig=value.orig,
+                    prov=value.prov,
                 )
                 cells.append(value_cell)
                 links.append(
@@ -2062,6 +2285,51 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def _handle_form_container(self, tag: Tag, doc: DoclingDocument) -> list[RefItem]:
         added_refs: list[RefItem] = []
+        supports_field_kv = all(
+            hasattr(doc, method_name)
+            for method_name in (
+                "add_field_region",
+                "add_field_item",
+                "add_field_key",
+                "add_field_value",
+            )
+        )
+
+        if supports_field_kv:
+            doc_with_fields = cast(Any, doc)
+            form_region = self._extract_form_region(tag)
+            region_prov = self._make_prov(text="", tag=tag)
+            field_region = doc_with_fields.add_field_region(
+                prov=region_prov,
+                parent=self.parents[self.level],
+            )
+            field_region.content_layer = self.content_layer
+            added_refs.append(field_region.get_ref())
+
+            consumed_tag_ids: set[str] = set()
+            fields_by_key_id: dict[str, _ExtractedFormField] = {}
+            if form_region is not None:
+                for field in form_region.fields:
+                    key_tag_id = self._get_html_id(field.key_tag)
+                    if key_tag_id is None:
+                        continue
+                    if not field.values:
+                        if self._is_lonely_key_covered_by_table(field.key_tag):
+                            consumed_tag_ids.add(key_tag_id)
+                        continue
+                    fields_by_key_id[key_tag_id] = field
+                    consumed_tag_ids.add(key_tag_id)
+                    for value in field.values:
+                        value_tag_id = self._get_html_id(value.tag)
+                        if value_tag_id is not None:
+                            consumed_tag_ids.add(value_tag_id)
+
+            with self._use_form_container(field_region):
+                with self._use_form_fields_by_key_id(fields_by_key_id):
+                    with self._suppress_tag_ids(consumed_tag_ids):
+                        added_refs.extend(self._walk(tag, doc))
+            return added_refs
+
         form_graph = self._extract_form_graph(tag)
         form_data = form_graph if form_graph is not None else GraphData()
         form_prov = self._make_prov(text="", tag=tag)
@@ -2165,6 +2433,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return docling_pic.get_ref()
 
     def _emit_input(self, input_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
+        if self._is_suppressed_tag(input_tag):
+            return None
         input_type = self._get_attr_as_string(input_tag, "type").lower()
         if input_type == "hidden":
             return None
