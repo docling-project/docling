@@ -91,3 +91,22 @@ def test_num_pages(test_doc_path):
 
     # Explicitly clean up resources to prevent race conditions in CI
     doc_backend.unload()
+
+
+def test_page_count_fallback_when_docling_parse_returns_negative(test_doc_path):
+    """Test that page_count() falls back to pypdfium2 when docling-parse returns -1."""
+    from unittest.mock import patch
+
+    doc_backend = _get_backend(test_doc_path)
+
+    # Simulate docling-parse C++ layer returning -1 (QPDF parse failure)
+    with patch.object(doc_backend.dp_doc, "number_of_pages", return_value=-1):
+        count = doc_backend.page_count()
+
+    # Should fall back to pypdfium2 count (9 pages for 2206.01062.pdf)
+    assert count > 0, "page_count() must not return a negative value"
+    assert count == len(doc_backend._pdoc), (
+        "page_count() should match pypdfium2 count when docling-parse returns -1"
+    )
+
+    doc_backend.unload()
