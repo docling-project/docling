@@ -3,7 +3,7 @@ import sys
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Final
+from typing import Callable, Final
 
 from docling_core.types.doc import (
     ContentLayer,
@@ -30,6 +30,7 @@ from docling.datamodel.pipeline_options_asr_model import (
     InlineAsrMlxWhisperOptions,
     InlineAsrNativeWhisperOptions,
 )
+from docling.datamodel.progress_event import ProgressEvent
 from docling.pipeline.base_pipeline import BasePipeline
 from docling.utils.accelerator_utils import decide_device
 from docling.utils.profiling import ProfilingScope, TimeRecorder
@@ -441,7 +442,11 @@ class AsrPipeline(BasePipeline):
     def get_default_options(cls) -> AsrPipelineOptions:
         return AsrPipelineOptions()
 
-    def _build_document(self, conv_res: ConversionResult) -> ConversionResult:
+    def _build_document(
+        self,
+        conv_res: ConversionResult,
+        progress_callback: Callable[[ProgressEvent], None] | None = None,
+    ) -> ConversionResult:
         _log.info(f"start _build_document in AsrPipeline: {conv_res.input.file}")
         with TimeRecorder(conv_res, "doc_build", scope=ProfilingScope.DOCUMENT):
             self._model.run(conv_res=conv_res)

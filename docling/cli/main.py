@@ -79,6 +79,12 @@ from docling.datamodel.pipeline_options import (
     VlmPipelineOptions,
     normalize_pdf_backend,
 )
+from docling.datamodel.progress_event import (
+    DocumentProgressEvent,
+    PageProgressEvent,
+    ProgressEvent,
+    ProgressEventType,
+)
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import VlmModelType
 from docling.document_converter import (
@@ -613,6 +619,13 @@ def convert(  # noqa: C901
             help="If enabled, it saves the profiling summaries to json.",
         ),
     ] = False,
+    progress: Annotated[
+        bool,
+        typer.Option(
+            ...,
+            help="If enabled, a progress bar is displayed during conversion.",
+        ),
+    ] = False,
 ):
     log_format = "%(asctime)s\t%(levelname)s\t%(name)s: %(message)s"
 
@@ -917,9 +930,36 @@ def convert(  # noqa: C901
             pipeline_options.artifacts_path = artifacts_path
             asr_pipeline_options.artifacts_path = artifacts_path
 
+        # Build progress callback for CLI
+        progress_callback = None
+        if progress:
+
+            def _cli_progress_callback(event: ProgressEvent) -> None:
+                if event.event_type == ProgressEventType.DOCUMENT_START and isinstance(
+                    event, DocumentProgressEvent
+                ):
+                    total = event.page_count
+                    if total:
+                        print(f"Converting {event.document_name} ({total} pages)")
+                    else:
+                        print(f"Converting {event.document_name}")
+                elif event.event_type == ProgressEventType.PAGE_COMPLETE and isinstance(
+                    event, PageProgressEvent
+                ):
+                    print(
+                        f"  Page {event.page_no}/{event.total_pages}",
+                        end="\r",
+                        flush=True,
+                    )
+                elif event.event_type == ProgressEventType.DOCUMENT_COMPLETE:
+                    print()
+
+            progress_callback = _cli_progress_callback
+
         doc_converter = DocumentConverter(
             allowed_formats=from_formats,
             format_options=format_options,
+            progress_callback=progress_callback,
         )
 
         start_time = time.time()
