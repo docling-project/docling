@@ -2012,6 +2012,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return "fillable"
         return "read_only"
 
+    @staticmethod
+    def _extract_form_value_text(value_tag: Tag) -> str:
+        # Input elements carry their user-visible content in attributes, not inner text.
+        if value_tag.name == "input":
+            for attr in ("value", "placeholder", "name"):
+                val = value_tag.get(attr)
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+            return ""
+
+        return HTMLDocumentBackend.get_text(value_tag)
+
     @contextmanager
     def _suppress_tag_ids(self, tag_ids: set[str]):
         if not tag_ids:
@@ -2201,7 +2213,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             values: list[_ExtractedFormValue] = []
             for value_tag in value_tags:
-                value_text_raw = HTMLDocumentBackend.get_text(value_tag)
+                value_text_raw = self._extract_form_value_text(value_tag)
                 value_orig, value_text = self._normalize_form_text(value_text_raw)
                 values.append(
                     _ExtractedFormValue(
@@ -2318,7 +2330,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             with self._use_form_container(field_region):
                 with self._use_form_fields_by_key_id(fields_by_key_id):
                     with self._suppress_tag_ids(consumed_tag_ids):
-                        added_refs.extend(self._walk(tag, doc))
+                        if tag.name.lower() == "table":
+                            added_refs.extend(self._handle_block(tag, doc))
+                        else:
+                            added_refs.extend(self._walk(tag, doc))
             return added_refs
 
         form_graph = self._extract_form_graph(tag)
@@ -2342,7 +2357,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             added_refs.append(kv_item.get_ref())
 
         with self._use_form_container(form_item):
-            added_refs.extend(self._walk(tag, doc))
+            if tag.name.lower() == "table":
+                added_refs.extend(self._handle_block(tag, doc))
+            else:
+                added_refs.extend(self._walk(tag, doc))
         return added_refs
 
     def _emit_image(self, img_tag: Tag, doc: DoclingDocument) -> Optional[RefItem]:
