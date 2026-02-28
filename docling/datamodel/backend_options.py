@@ -1,4 +1,4 @@
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import Annotated, Literal, Optional, Union
 
 from pydantic import AnyUrl, BaseModel, Field, SecretStr
@@ -110,6 +110,25 @@ class LatexBackendOptions(BaseBackendOptions):
     )
 
 
+class XBRLBackendOptions(BaseBackendOptions):
+    """Options specific to the XBRL backend."""
+
+    kind: Annotated[Literal["xbrl"], Field("xbrl", exclude=True, repr=False)] = "xbrl"
+    taxonomy: Annotated[
+        Path | None,
+        Field(
+            description=(
+                "Path to a folder with the taxonomy required by the XBRL instance"
+                " reports. It should include schemas (`.xsd`) and linkbases (`.xml`)"
+                " referenced by the XBRL reports in their relative locations."
+                " Optionally, it can also include taxonomy packages (`.zip`)"
+                " referenced by the reports with absolute URLs and mapped to files"
+                " with a taxonomy catalog (`catalog.xml`) for offline parsing."
+            )
+        ),
+    ] = None
+
+
 BackendOptions = Annotated[
     Union[
         DeclarativeBackendOptions,
@@ -118,6 +137,7 @@ BackendOptions = Annotated[
         PdfBackendOptions,
         MsExcelBackendOptions,
         LatexBackendOptions,
+        XBRLBackendOptions,
     ],
     Field(discriminator="kind"),
 ]

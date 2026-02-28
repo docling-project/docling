@@ -554,8 +554,16 @@ class _DocumentConversionInput(BaseModel):
         """Guess the input format of a document by checking part of its content."""
         input_format: Optional[InputFormat] = None
 
-        if mime == "application/xml":
+        if mime in {"application/xml", "application/xhtml+xml"}:
             content_str = content.decode("utf-8")
+
+            if (
+                InputFormat.XML_XBRL in formats
+                and "http://www.xbrl.org/2003/instance" in content_str
+                and "<xbrl" in content_str.lower()
+            ):
+                return InputFormat.XML_XBRL
+
             match_doctype = re.search(r"<!DOCTYPE [^>]+>", content_str)
             if match_doctype:
                 xml_doctype = match_doctype.group()
@@ -570,7 +578,7 @@ class _DocumentConversionInput(BaseModel):
                 ):
                     input_format = InputFormat.XML_USPTO
 
-                if InputFormat.XML_JATS in formats and (
+                elif InputFormat.XML_JATS in formats and (
                     "JATS-journalpublishing" in xml_doctype
                     or "JATS-archive" in xml_doctype
                 ):

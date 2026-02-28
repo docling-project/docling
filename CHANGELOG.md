@@ -1,3 +1,15 @@
+## [v2.75.0](https://github.com/docling-project/docling/releases/tag/v2.75.0) - 2026-02-24
+
+### Feature
+
+* Create a backend parser for XBRL instance reports ([#3017](https://github.com/docling-project/docling/issues/3017)) ([`334ba6e`](https://github.com/docling-project/docling/commit/334ba6e51fa7feb5f2ae15fce4612c7b3fad67d6))
+* Unified model-family inference engines (including image-classification) and KServe v2 API support ([#2979](https://github.com/docling-project/docling/issues/2979)) ([`0353293`](https://github.com/docling-project/docling/commit/03532938b52fb1513e2ea3afffc6da6a7ded7cc7))
+
+### Fix
+
+* Skip ASR segments when length is zero ([#2998](https://github.com/docling-project/docling/issues/2998)) ([`6b824f8`](https://github.com/docling-project/docling/commit/6b824f844b698eb015c28b69addfbaca169ec8d4))
+* **docx:** Guard against None hyperlink address in _get_paragraph_elements (#2367) ([#3022](https://github.com/docling-project/docling/issues/3022)) ([`236216e`](https://github.com/docling-project/docling/commit/236216ed4e2b7c4b627a81b6b77dd8bac01428a5))
+
 ## [v2.74.0](https://github.com/docling-project/docling/releases/tag/v2.74.0) - 2026-02-17
 
 ### Feature

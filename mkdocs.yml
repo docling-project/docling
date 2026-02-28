@@ -100,6 +100,7 @@ nav:
       - "Simple translation": examples/translate.py
       - examples/backend_csv.ipynb
       - examples/backend_xml_rag.ipynb
+      - examples/xbrl_conversion.ipynb
     - ✂️ Serialization & chunking:
       - examples/serialization.ipynb
       - examples/hybrid_chunking.ipynb
