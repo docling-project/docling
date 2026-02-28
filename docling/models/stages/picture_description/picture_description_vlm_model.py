@@ -103,6 +103,10 @@ class PictureDescriptionVlmModel(
         # TODO: do batch generation
 
         for image in images:
+            # Ensure RGB mode for compatibility with transformers models
+            if image.mode != "RGB":
+                image = image.convert("RGB")
+
             # Prepare inputs
             prompt = self.processor.apply_chat_template(
                 messages, add_generation_prompt=True
