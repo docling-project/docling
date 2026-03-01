@@ -38,12 +38,8 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, and more
 * 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
 * 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-<<<<<<< HEAD
 * ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
-=======
-* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
-* 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
->>>>>>> 7afa96ca (docs(xbrl): add notebook for XBRL parsing)
+* 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports
 * 🔒 Local execution capabilities for sensitive data and air-gapped environments
 * 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
 * 🔍 Extensive OCR support for scanned PDFs and images
@@ -56,12 +52,8 @@ Docling simplifies document processing, parsing diverse formats — including ad
 * 📤 Structured [information extraction][extraction] \[🧪 beta\]
 * 📑 New layout model (**Heron**) by default, for faster PDF parsing
 * 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
-<<<<<<< HEAD
-* 💬 Parsing of WebVTT (Web Video Text Tracks) files and export to WebVTT format
-=======
 * 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
 * 💬 Parsing of WebVTT (Web Video Text Tracks) files
->>>>>>> 7afa96ca (docs(xbrl): add notebook for XBRL parsing)
 * 💬 Parsing of LaTeX files
 
 ### Coming soon
