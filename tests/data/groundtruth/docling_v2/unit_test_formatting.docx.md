@@ -4,11 +4,11 @@
 
 underline
 
-[hyperlink](https:/github.com/DS4SD/docling)
+[hyperlink](https://github.com/DS4SD/docling)
 
-[***italic and bold hyperlink***](https:/github.com/DS4SD/docling)
+[***italic and bold hyperlink***](https://github.com/DS4SD/docling)
 
-Normal *italic* **bold** underline and [hyperlink](https:/github.com/DS4SD/docling) on the same line
+Normal *italic* **bold** underline and [hyperlink](https://github.com/DS4SD/docling) on the same line
 
 - *Italic bullet 1*
 - **Bold bullet 2**
