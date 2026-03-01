@@ -322,18 +322,14 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
         text = node.chars
 
         if "\n\n" in text:
-            # Split by paragraph breaks, keeping any content before first break
             parts = text.split("\n\n")
 
-            # First part goes into current buffer (e.g., "." before a paragraph break)
             first_part = parts[0].strip()
             if first_part:
                 text_buffer.append(first_part)
 
-            # Flush buffer (now includes content before the break)
             flush_fn()
 
-            # Remaining parts are separate paragraphs
             for part in parts[1:]:
                 part_stripped = part.strip()
                 if part_stripped:
@@ -358,12 +354,11 @@ class LatexDocumentBackend(DeclarativeDocumentBackend):
     ):
         if node.macroname in ["%", "$", "&", "#", "_", "{", "}", "~"]:
             if node.macroname == "~":
-                text_buffer.append(" ")  # Non-breaking space
+                text_buffer.append(" ")
             else:
                 text_buffer.append(node.macroname)
         elif node.macroname == " ":
             text_buffer.append(" ")
-        # Handle inline formatting macros - keep in buffer
         elif node.macroname in [
             "textbf",
             "textit",
