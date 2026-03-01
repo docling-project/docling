@@ -77,11 +77,14 @@ def api_image_request(
             api_resp = OpenAiApiResponse.model_validate_json(r.text)
             generated_text = api_resp.choices[0].message.content.strip()
             num_tokens = api_resp.usage.total_tokens
-            stop_reason = (
-                VlmStopReason.LENGTH
-                if api_resp.choices[0].finish_reason == "length"
-                else VlmStopReason.END_OF_SEQUENCE
-            )
+            finish_reason = api_resp.choices[0].finish_reason
+            if finish_reason == "content_filter":
+                _log.warning("API response was filtered due to content safety policy.")
+                stop_reason = VlmStopReason.CONTENT_FILTERED
+            elif finish_reason == "length":
+                stop_reason = VlmStopReason.LENGTH
+            else:
+                stop_reason = VlmStopReason.END_OF_SEQUENCE
 
             return generated_text, num_tokens, stop_reason
         except Exception as e:
