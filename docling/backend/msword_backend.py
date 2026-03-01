@@ -1454,7 +1454,13 @@ class MsWordDocumentBackend(DeclarativeDocumentBackend):
                 rich_table_cell: bool = self._is_rich_table_cell(cell)
 
                 if rich_table_cell:
+                    saved_parents = dict(self.parents)
+                    saved_level = self.level
+                    saved_level_at_new_list = self.level_at_new_list
                     _, provs_in_cell = self._walk_linear(cell._element, doc)
+                    self.parents = saved_parents
+                    self.level = saved_level
+                    self.level_at_new_list = saved_level_at_new_list
                 _log.debug(f"Table cell {row_idx},{col_idx} rich? {rich_table_cell}")
 
                 if len(provs_in_cell) > 0:

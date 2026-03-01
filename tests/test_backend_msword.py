@@ -211,7 +211,29 @@ def test_is_rich_table_cell(docx_paths):
                 )
 
 
-def test_add_header_footer(documents):
+def test_rich_table_cell_parent_stack_preserved(documents):
+    """After a table with rich cells, section headers must not be nested under cell content."""
+
+    name = "table_bold_header.docx"
+    doc = next(item[1] for item in documents if item[0].name == name)
+
+    # Verify that "Second Section" is not a child of any table cell content
+    for item, _ in doc.iterate_items():
+        if isinstance(item, SectionHeaderItem) and item.text == "Second Section":
+            # The parent should be a top-level group (body section), not a
+            # cell group or cell heading
+            parent_ref = str(item.parent)
+            assert "tables" not in parent_ref, (
+                f"Section header 'Second Section' is incorrectly parented under a table: {parent_ref}"
+            )
+            assert "texts" not in parent_ref or "section_header" not in parent_ref, (
+                f"Section header 'Second Section' is incorrectly parented under another text: {parent_ref}"
+            )
+            break
+    else:
+        pytest.fail("Section header 'Second Section' not found in document")
+
+
     """Test the funciton _add_header_footer."""
 
     name = "unit_test_formatting.docx"
