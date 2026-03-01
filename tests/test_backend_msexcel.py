@@ -411,3 +411,28 @@ def test_gap_tolerance_comparison() -> None:
         f"Tolerance 1 should merge the table. "
         f"Expected start at Col A (0), got {start_col_merged}"
     )
+
+
+def test_one_cell_anchor_image():
+    """Test that images with OneCellAnchor are positioned correctly.
+
+    OneCellAnchor images (the default when inserting images in Excel) should
+    use the anchor cell as the bounding box origin, not default to (0,0,0,0).
+    """
+    path = next(
+        item for item in get_excel_paths() if item.stem == "xlsx_08_one_cell_anchor"
+    )
+
+    converter = get_converter()
+    conv_result = converter.convert(path)
+    doc = conv_result.document
+
+    pictures = list(doc.pictures)
+    assert len(pictures) == 1, f"Should have 1 picture, got {len(pictures)}"
+
+    prov = pictures[0].prov[0]
+    # Image was placed at cell D2 (col=3, row=1 in 0-based)
+    assert prov.bbox.l == 3.0, f"Image left should be 3.0 (col D), got {prov.bbox.l}"
+    assert prov.bbox.t == 1.0, f"Image top should be 1.0 (row 2), got {prov.bbox.t}"
+    assert prov.bbox.r == 4.0, f"Image right should be 4.0, got {prov.bbox.r}"
+    assert prov.bbox.b == 2.0, f"Image bottom should be 2.0, got {prov.bbox.b}"
