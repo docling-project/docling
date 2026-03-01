@@ -206,7 +206,7 @@ class RapidOcrModel(BaseOcrModel):
                 "EngineConfig.paddle.use_cuda": use_cuda,
                 "EngineConfig.paddle.gpu_id": gpu_id,
                 "EngineConfig.torch.use_cuda": use_cuda,
-                "EngineConfig.torch.gpu_id": gpu_id,
+                "EngineConfig.torch.cuda_ep_cfg.device_id": gpu_id,
             }
 
             if self.options.rec_font_path is not None:
