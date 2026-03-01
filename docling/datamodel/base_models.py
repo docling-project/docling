@@ -180,6 +180,7 @@ class VlmStopReason(str, Enum):
     LENGTH = "length"  # max tokens reached
     STOP_SEQUENCE = "stop_sequence"  # Custom stopping criteria met
     END_OF_SEQUENCE = "end_of_sequence"  # Model generated end-of-text token
+    CONTENT_FILTERED = "content_filter"  # Content filtered by API provider
     UNSPECIFIED = "unspecified"  # Defaul none value
 
 
