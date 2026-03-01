@@ -152,15 +152,17 @@ class ConvertPipeline(BasePipeline):
 
         # ------ Common enrichment models working on all backends
 
-        # Picture description model
-        if (
-            picture_description_model := self._get_picture_description_model(
+        # Picture description model (only instantiate when enabled to avoid
+        # requiring optional VLM dependencies for simple conversions)
+        picture_description_model = None
+        if pipeline_options.do_picture_description:
+            picture_description_model = self._get_picture_description_model(
                 artifacts_path=self.artifacts_path
             )
-        ) is None:
-            raise RuntimeError(
-                f"The specified picture description kind is not supported: {pipeline_options.picture_description_options.kind}."
-            )
+            if picture_description_model is None:
+                raise RuntimeError(
+                    f"The specified picture description kind is not supported: {pipeline_options.picture_description_options.kind}."
+                )
 
         self.enrichment_pipe = [
             # Document Picture Classifier
@@ -171,8 +173,10 @@ class ConvertPipeline(BasePipeline):
                 accelerator_options=pipeline_options.accelerator_options,
                 enable_remote_services=pipeline_options.enable_remote_services,
             ),
-            # Document Picture description
-            picture_description_model,
+        ]
+        if picture_description_model is not None:
+            self.enrichment_pipe.append(picture_description_model)
+        self.enrichment_pipe.append(
             # Document Chart Extraction
             ChartExtractionModelGraniteVision(
                 enabled=pipeline_options.do_chart_extraction,
@@ -180,7 +184,7 @@ class ConvertPipeline(BasePipeline):
                 options=ChartExtractionModelOptions(),
                 accelerator_options=pipeline_options.accelerator_options,
             ),
-        ]
+        )
 
     def _get_picture_description_model(
         self, artifacts_path: Optional[Path] = None
