@@ -1,7 +1,7 @@
 import logging
 import re
 from collections.abc import Iterable
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 from pydantic import BaseModel
@@ -22,6 +22,21 @@ from docling.utils.profiling import TimeRecorder
 
 _log = logging.getLogger(__name__)
 
+# Ligature normalization map (Unicode Alphabetic Presentation Forms block U+FB00-U+FB06)
+_LIGATURE_MAP: Dict[str, str] = {
+    "\ufb00": "ff",  # ﬀ Latin small ligature ff
+    "\ufb01": "fi",  # ﬁ Latin small ligature fi
+    "\ufb02": "fl",  # ﬂ Latin small ligature fl
+    "\ufb03": "ffi",  # ﬃ Latin small ligature ffi
+    "\ufb04": "ffl",  # ﬄ Latin small ligature ffl
+    "\ufb05": "st",  # ﬅ Latin small ligature long s t
+    "\ufb06": "st",  # ﬆ Latin small ligature st
+}
+# Matches a ligature character optionally followed by a space before a word character
+# (to absorb spurious spaces inserted by PDF parsers between a ligature glyph and the
+# rest of the word, e.g. "ﬁ eld" → "field")
+_LIGATURE_RE = re.compile(r"([\ufb00-\ufb06])( (?=\w))?")
+
 
 class PageAssembleOptions(BaseModel):
     pass
@@ -32,8 +47,8 @@ class PageAssembleModel(BasePageModel):
         self.options = options
 
     def sanitize_text(self, lines):
-        if len(lines) <= 1:
-            return " ".join(lines)
+        if len(lines) == 0:
+            return ""
 
         for ix, line in enumerate(lines[1:]):
             prev_line = lines[ix]
@@ -61,6 +76,12 @@ class PageAssembleModel(BasePageModel):
         sanitized_text = sanitized_text.replace("“", '"')
         sanitized_text = sanitized_text.replace("”", '"')
         sanitized_text = sanitized_text.replace("•", "·")
+        # Ligature expansion: replace ligature characters with their ASCII equivalents,
+        # absorbing any spurious space inserted by the PDF parser between the ligature
+        # glyph and the following word characters (e.g. "ﬁ eld" → "field").
+        sanitized_text = _LIGATURE_RE.sub(
+            lambda m: _LIGATURE_MAP[m.group(1)], sanitized_text
+        )
 
         return sanitized_text.strip()  # Strip any leading or trailing whitespace
 
