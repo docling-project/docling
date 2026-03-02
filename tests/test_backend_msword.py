@@ -415,7 +415,9 @@ def test_mislabeled_headings(documents):
         if isinstance(item, TextItem) and item.text == mislabeled_text:
             found_mislabeled_as_text = True
 
-    assert found_real_heading, "Real heading 'Introduction' should be a SectionHeaderItem"
+    assert found_real_heading, (
+        "Real heading 'Introduction' should be a SectionHeaderItem"
+    )
     assert found_mislabeled_as_text, (
         "Long paragraph styled as heading should be relabeled as TextItem"
     )
