@@ -72,7 +72,12 @@ class ThreadedLayoutVlmPipeline(BasePipeline):
         """Initialize layout and VLM models."""
         art_path = self._resolve_artifacts_path()
 
-        # Layout model
+        # The layout model is forced to run on CPU.
+        # In this threaded pipeline, the VLM exclusively owns the GPU.
+        # Allowing multiple models to use the GPU concurrently can cause
+        # device contention, memory spikes, and unstable inference behavior.
+        # Since the layout model is lightweight, running it on CPU avoids
+        # cross-thread GPU contention without significantly impacting latency.
         self.layout_model = LayoutModel(
             artifacts_path=art_path,
             accelerator_options=AcceleratorOptions(device="cpu"),
