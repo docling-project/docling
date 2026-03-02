@@ -17,3 +17,4 @@ By combining Docling-based document processing with Metaxy, teams can save compu
 [metaxy_walkthrough]: https://georgheiler.com/2026/02/22/metaxy-dagster-slurm-multimodal/
 [docling_metaxy_example]: https://github.com/ascii-supply-networks/dagster-slurm/blob/main/examples/projects/dagster-slurm-example-hpc-workload/dagster_slurm_example_hpc_workload/ray/process_documents_docling_metaxy.py
 [slide_deck]: https://dagster-slurm.geoheil.com/slides-multimodal/index.html#/18?clicks=1
+
