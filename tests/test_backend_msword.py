@@ -234,6 +234,7 @@ def test_rich_table_cell_parent_stack_preserved(documents):
         pytest.fail("Section header 'Second Section' not found in document")
 
 
+def test_add_header_footer(documents):
     """Test the funciton _add_header_footer."""
 
     name = "unit_test_formatting.docx"
