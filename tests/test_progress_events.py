@@ -170,3 +170,47 @@ def test_multi_page_event_count():
 
     page_events = [e for e in events if isinstance(e, PageProgressEvent)]
     assert len(page_events) == len(result.pages)
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for progress emission helpers
+# ---------------------------------------------------------------------------
+
+
+def test_emit_progress_swallows_callback_exception():
+    from docling.pipeline.base_pipeline import BasePipeline
+
+    call_count = 0
+
+    def _failing_callback(event: ProgressEvent) -> None:
+        nonlocal call_count
+        call_count += 1
+        raise ValueError("intentional")
+
+    event = ProgressEvent(
+        event_type=ProgressEventType.DOCUMENT_START,
+        document_name="test.pdf",
+    )
+    BasePipeline._emit_progress(_failing_callback, event)
+    assert call_count == 1
+
+
+def test_emit_progress_skips_when_callback_is_none():
+    from docling.pipeline.base_pipeline import BasePipeline
+
+    event = ProgressEvent(
+        event_type=ProgressEventType.DOCUMENT_START,
+        document_name="test.pdf",
+    )
+    BasePipeline._emit_progress(None, event)
+
+
+def test_threaded_pipeline_build_document_accepts_progress_callback():
+    import inspect
+
+    from docling.experimental.pipeline.threaded_layout_vlm_pipeline import (
+        ThreadedLayoutVlmPipeline,
+    )
+
+    sig = inspect.signature(ThreadedLayoutVlmPipeline._build_document)
+    assert "progress_callback" in sig.parameters
