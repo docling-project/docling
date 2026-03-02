@@ -1124,7 +1124,7 @@ examples = [
 [[package]]
 name = "docling-core"
 version = "2.65.1"
-source = { git = "https://github.com/docling-project/docling-core.git?rev=new-kv#3bdb8e9341c4cfff008cca8e18d3c43cb907e8af" }
+source = { git = "https://github.com/docling-project/docling-core.git?rev=new-kv#c5f3266235a663473ab9ff04afe55e9acc9a510b" }
 dependencies = [
     { name = "defusedxml" },
     { name = "jsonref" },
