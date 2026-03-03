@@ -412,7 +412,7 @@ def _get_whisper_turbo_model():
     4. Native Whisper (fallback)
 
     Note: Turbo is a distilled model optimized for speed. For S2T, we use
-    distil-large-v3 as the closest equivalent to turbo's speed/quality tradeoff.
+    large-v3-turbo which is the native turbo model supported by whisper-s2t-reborn.
     """
     has_mps, has_cuda, has_mlx_whisper, has_whisper_s2t = (
         _detect_hardware_and_libraries()
@@ -431,10 +431,10 @@ def _get_whisper_turbo_model():
             compression_ratio_threshold=2.4,
         )
 
-    # Priority 2: WhisperS2T on CUDA (using distil-large-v3 for turbo-like performance)
+    # Priority 2: WhisperS2T on CUDA (using large-v3-turbo)
     if has_cuda and has_whisper_s2t:
         return InlineAsrWhisperS2TOptions(
-            repo_id="distil-large-v3",
+            repo_id="large-v3-turbo",
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
@@ -446,7 +446,7 @@ def _get_whisper_turbo_model():
     # Priority 3: WhisperS2T on CPU
     if has_whisper_s2t:
         return InlineAsrWhisperS2TOptions(
-            repo_id="distil-large-v3",
+            repo_id="large-v3-turbo",
             inference_framework=InferenceAsrFramework.WHISPER_S2T,
             language="en",
             task="transcribe",
@@ -740,6 +740,16 @@ WHISPER_DISTIL_LARGE_V3_S2T = InlineAsrWhisperS2TOptions(
     beam_size=1,
 )
 
+WHISPER_LARGE_V3_TURBO_S2T = InlineAsrWhisperS2TOptions(
+    repo_id="large-v3-turbo",
+    inference_framework=InferenceAsrFramework.WHISPER_S2T,
+    language="en",
+    task="transcribe",
+    compute_type="float16",
+    batch_size=6,
+    beam_size=1,
+)
+
 # =============================================================================
 # Note on auto-selecting models
 # =============================================================================
@@ -795,3 +805,4 @@ class AsrModelType(str, Enum):
     WHISPER_DISTIL_MEDIUM_EN_S2T = "whisper_distil_medium_en_s2t"
     WHISPER_LARGE_V3_S2T = "whisper_large_v3_s2t"
     WHISPER_DISTIL_LARGE_V3_S2T = "whisper_distil_large_v3_s2t"
+    WHISPER_LARGE_V3_TURBO_S2T = "whisper_large_v3_turbo_s2t"

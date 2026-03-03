@@ -403,7 +403,7 @@ class _WhisperS2TModel:
             except ImportError:
                 raise ImportError(
                     "whisper_s2t is not installed. Please install it via "
-                    "`pip install whisper-s2t-reborn`."
+                    "`pip install 'whisper-s2t-reborn[pyav]>=1.5.0'`."
                 )
 
             self.whisper_s2t = whisper_s2t
@@ -438,8 +438,8 @@ class _WhisperS2TModel:
                 "asr_options": asr_opts,
             }
 
-            # large-v3 and distil-large-v3 models require n_mels=128
-            if self.model_identifier in ["large-v3", "distil-large-v3"]:
+            # large-v3, distil-large-v3, and large-v3-turbo models require n_mels=128
+            if self.model_identifier in ["large-v3", "distil-large-v3", "large-v3-turbo"]:
                 model_kwargs["n_mels"] = 128
 
             self.model = whisper_s2t.load_model(

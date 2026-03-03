@@ -59,6 +59,7 @@ from docling.datamodel.asr_model_specs import (
     WHISPER_DISTIL_MEDIUM_EN_S2T,
     WHISPER_LARGE_V3_S2T,
     WHISPER_DISTIL_LARGE_V3_S2T,
+    WHISPER_LARGE_V3_TURBO_S2T,
     AsrModelType,
 )
 from docling.datamodel.backend_options import PdfBackendOptions
@@ -935,6 +936,8 @@ def convert(  # noqa: C901
             asr_pipeline_options.asr_options = WHISPER_LARGE_V3_S2T
         elif asr_model == AsrModelType.WHISPER_DISTIL_LARGE_V3_S2T:
             asr_pipeline_options.asr_options = WHISPER_DISTIL_LARGE_V3_S2T
+        elif asr_model == AsrModelType.WHISPER_LARGE_V3_TURBO_S2T:
+            asr_pipeline_options.asr_options = WHISPER_LARGE_V3_TURBO_S2T
         else:
             _log.error(f"{asr_model} is not known")
             raise ValueError(f"{asr_model} is not known")
