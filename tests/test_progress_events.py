@@ -1,4 +1,7 @@
-"""Tests for the progress event callback system."""
+"""Tests for the progress event callback system.
+
+Validates progress callback lifecycle, event types, and pipeline integration.
+"""
 
 from pathlib import Path
 
