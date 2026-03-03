@@ -19,6 +19,7 @@ from docling.utils.visualization import draw_clusters
 _log = logging.getLogger(__name__)
 _WORKER_CONVERTER: DocumentConverter | None = None
 _WORKER_OUT_DIR: Path | None = None
+_WORKER_OUT_DIR_HTML: Path | None = None
 _WORKER_OUT_DIR_PNG: Path | None = None
 _WORKER_OUT_DIR_VIZ: Path | None = None
 
@@ -47,24 +48,26 @@ def _build_html_options(sample_source_uri: Path) -> HTMLBackendOptions:
     )
 
 
-def _done_marker_path(input_path: Path, out_dir: Path) -> Path:
-    return out_dir / f"{input_path.stem}.done"
-
-
 def _is_already_converted(input_path: Path, out_dir: Path) -> bool:
-    # Keep legacy JSON-only skip behavior and add a dedicated completion marker for MT runs.
-    return (
-        _done_marker_path(input_path, out_dir).exists()
-        or (out_dir / f"{input_path.stem}.json").exists()
-    )
+    return (out_dir / f"{input_path.stem}.json").exists()
 
 
 def _init_worker(
-    sample_source_uri: str, out_dir: str, out_dir_png: str, out_dir_viz: str
+    sample_source_uri: str,
+    out_dir: str,
+    out_dir_html: str,
+    out_dir_png: str,
+    out_dir_viz: str,
 ) -> None:
-    global _WORKER_CONVERTER, _WORKER_OUT_DIR, _WORKER_OUT_DIR_PNG, _WORKER_OUT_DIR_VIZ
+    global \
+        _WORKER_CONVERTER, \
+        _WORKER_OUT_DIR, \
+        _WORKER_OUT_DIR_HTML, \
+        _WORKER_OUT_DIR_PNG, \
+        _WORKER_OUT_DIR_VIZ
 
     _WORKER_OUT_DIR = Path(out_dir)
+    _WORKER_OUT_DIR_HTML = Path(out_dir_html)
     _WORKER_OUT_DIR_PNG = Path(out_dir_png)
     _WORKER_OUT_DIR_VIZ = Path(out_dir_viz)
     html_options = _build_html_options(Path(sample_source_uri))
@@ -86,6 +89,7 @@ def _convert_one(input_path_str: str) -> dict[str, Any]:
     if (
         _WORKER_CONVERTER is None
         or _WORKER_OUT_DIR is None
+        or _WORKER_OUT_DIR_HTML is None
         or _WORKER_OUT_DIR_PNG is None
         or _WORKER_OUT_DIR_VIZ is None
     ):
@@ -104,6 +108,9 @@ def _convert_one(input_path_str: str) -> dict[str, Any]:
         json_path = _WORKER_OUT_DIR / f"{stem}.json"
         _write_text_atomic(json_path, json.dumps(doc.export_to_dict()))
 
+        html_path = _WORKER_OUT_DIR_HTML / f"{stem}.html"
+        doc.save_as_html(html_path)
+
         page = doc.pages[1]
         if page.image and page.image.pil_image:
             page.image.pil_image.save(_WORKER_OUT_DIR_PNG / f"{stem}_page_{1}.png")
@@ -114,7 +121,6 @@ def _convert_one(input_path_str: str) -> dict[str, Any]:
         page_viz = viz_pages2[1]
         page_viz.save(_WORKER_OUT_DIR_VIZ / f"{stem}_page_{1}_viz_kvp.png")
 
-        _write_text_atomic(_done_marker_path(input_path, _WORKER_OUT_DIR), "ok\n")
         return {
             "ok": True,
             "file": input_path.name,
@@ -133,12 +139,14 @@ def _convert_one(input_path_str: str) -> dict[str, Any]:
 def main() -> None:
     input_html_path = Path("input_dir_to_html/")
     out_dir = Path("ouput_dir/json")
+    out_dir_html = Path("ouput_dir/html")
     out_dir_png = Path("ouput_dir/png")
     out_dir_viz = Path("ouput_dir/viz")
 
     input_paths = sorted([file for file in input_html_path.iterdir() if file.is_file()])
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir_html.mkdir(parents=True, exist_ok=True)
     out_dir_png.mkdir(parents=True, exist_ok=True)
     out_dir_viz.mkdir(parents=True, exist_ok=True)
 
@@ -165,7 +173,7 @@ def main() -> None:
     timings: list[float] = []
     failed_files: list[Path] = []
     max_workers = min(
-        4, max(1, int(os.environ.get("DOCLING_HTML_WORKERS", os.cpu_count() or 1)))
+        8, max(1, int(os.environ.get("DOCLING_HTML_WORKERS", os.cpu_count() or 1)))
     )
     print(f"Using {max_workers} worker process(es)")
 
@@ -177,6 +185,7 @@ def main() -> None:
         initargs=(
             str(pending_input_paths[0]),
             str(out_dir),
+            str(out_dir_html),
             str(out_dir_png),
             str(out_dir_viz),
         ),

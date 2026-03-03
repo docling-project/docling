@@ -2414,14 +2414,6 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         if supports_field_kv:
             doc_with_fields = cast(Any, doc)
             form_region = self._extract_form_region(tag)
-            region_prov = self._make_prov(text="", tag=tag)
-            field_region = doc_with_fields.add_field_region(
-                prov=region_prov,
-                parent=self.parents[self.level],
-            )
-            field_region.content_layer = self.content_layer
-            added_refs.append(field_region.get_ref())
-
             consumed_tag_ids: set[str] = set()
             fields_by_key_id: dict[str, _ExtractedFormField] = {}
             if form_region is not None:
@@ -2446,12 +2438,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             consumed_tag_ids.add(value_tag_id)
                             fields_by_key_id[value_tag_id] = field
 
+            if not fields_by_key_id:
+                if tag.name.lower() == "table":
+                    added_refs.extend(self._handle_block(tag, doc))
+                else:
+                    with self._suppress_tag_ids(consumed_tag_ids):
+                        added_refs.extend(self._walk(tag, doc))
+                return added_refs
+
+            region_prov = self._make_prov(text="", tag=tag)
+            field_region = doc_with_fields.add_field_region(
+                prov=region_prov,
+                parent=self.parents[self.level],
+            )
+            field_region.content_layer = self.content_layer
+            added_refs.append(field_region.get_ref())
+
             with self._use_form_container(field_region):
                 with self._use_form_fields_by_key_id(fields_by_key_id):
-                    with self._suppress_tag_ids(consumed_tag_ids):
-                        if tag.name.lower() == "table":
-                            added_refs.extend(self._handle_block(tag, doc))
-                        else:
+                    if tag.name.lower() == "table":
+                        # For table-form containers, keep cell content visible to rich-cell parsing.
+                        added_refs.extend(self._handle_block(tag, doc))
+                    else:
+                        with self._suppress_tag_ids(consumed_tag_ids):
                             added_refs.extend(self._walk(tag, doc))
             return added_refs
 
