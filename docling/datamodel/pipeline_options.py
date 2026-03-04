@@ -257,6 +257,17 @@ class RapidOcrOptions(OcrOptions):
             description="Custom path to font file for text rendering in visualization."
         ),
     ] = None
+    use_bundled_models: Annotated[
+        bool,
+        Field(
+            description=(
+                "Use RapidOCR's bundled models (shipped with the package) instead of artifacts_path. "
+                "When True, ignores artifacts_path and uses models from site-packages/rapidocr/models. "
+                "When False (default), follows Docling's standard behavior using artifacts_path when set. "
+                "Note: Explicitly set model paths (det_model_path, etc.) always take precedence."
+            )
+        ),
+    ] = False
     rapidocr_params: Annotated[
         dict[str, Any],
         Field(
