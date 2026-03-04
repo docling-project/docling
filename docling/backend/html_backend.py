@@ -6,7 +6,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_field
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Final, Iterator, Literal, Optional, Union, cast
@@ -169,6 +169,15 @@ class _ExtractedFormMarker:
 
 
 @dataclass
+class _ExtractedFormText:
+    tag: Tag
+    order: int
+    orig: str
+    text: str
+    prov: Optional[ProvenanceItem]
+
+
+@dataclass
 class _ExtractedFormField:
     key_tag: Tag
     key_order: int
@@ -177,6 +186,7 @@ class _ExtractedFormField:
     key_prov: Optional[ProvenanceItem]
     marker: Optional[_ExtractedFormMarker]
     values: list[_ExtractedFormValue]
+    extra_texts: list[_ExtractedFormText] = dataclass_field(default_factory=list)
 
 
 @dataclass
@@ -347,6 +357,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self._rendered_page_images: list[Image.Image] = []
         self._rendered_page_size: Optional[Size] = None
         self._suppressed_tag_ids_stack: list[set[str]] = []
+        self._suppressed_tag_obj_ids_stack: list[set[int]] = []
         self._form_fields_by_key_id_stack: list[dict[str, _ExtractedFormField]] = []
 
         try:
@@ -2063,7 +2074,21 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         finally:
             self._suppressed_tag_ids_stack.pop()
 
+    @contextmanager
+    def _suppress_tag_obj_ids(self, tag_obj_ids: set[int]):
+        if not tag_obj_ids:
+            yield None
+            return
+        self._suppressed_tag_obj_ids_stack.append(tag_obj_ids)
+        try:
+            yield None
+        finally:
+            self._suppressed_tag_obj_ids_stack.pop()
+
     def _is_suppressed_tag(self, tag: Tag) -> bool:
+        tag_obj_id = id(tag)
+        if any(tag_obj_id in obj_ids for obj_ids in self._suppressed_tag_obj_ids_stack):
+            return True
         tag_ids = set()
         if html_id := self._get_html_id(tag):
             tag_ids.add(html_id)
@@ -2164,13 +2189,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         )
         refs.append(field_item.get_ref())
 
-        parts: list[tuple[int, Literal["key", "marker", "value"], Any]] = [
+        parts: list[tuple[int, Literal["key", "marker", "value", "text"], Any]] = [
             (field.key_order, "key", field)
         ]
         if field.marker is not None:
             parts.append((field.marker.order, "marker", field.marker))
         for value in field.values:
             parts.append((value.order, "value", value))
+        for extra_text in field.extra_texts:
+            parts.append((extra_text.order, "text", extra_text))
 
         for _, part_type, payload in sorted(parts, key=lambda part: part[0]):
             if part_type == "key":
@@ -2193,6 +2220,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     content_layer=self.content_layer,
                 )
                 refs.append(marker_item.get_ref())
+            elif part_type == "text":
+                extra_text = cast(_ExtractedFormText, payload)
+                text_item = doc.add_text(
+                    label=DocItemLabel.TEXT,
+                    text=extra_text.text,
+                    orig=extra_text.orig,
+                    prov=extra_text.prov,
+                    parent=field_item,
+                    content_layer=self.content_layer,
+                )
+                refs.append(text_item.get_ref())
             else:
                 value = cast(_ExtractedFormValue, payload)
                 field_value = doc_with_fields.add_field_value(
@@ -2207,19 +2245,22 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         return refs
 
-    def _extract_form_region(self, form_tag: Tag) -> Optional[_ExtractedFormRegion]:
+    def _extract_form_region(self, form_tag: Tag) -> Optional[_ExtractedFormRegion]:  # noqa: C901
         key_tags: dict[str, Tag] = {}
         key_orders: dict[str, int] = {}
         key_order: list[str] = []
         markers_by_key: dict[str, list[tuple[int, Tag]]] = {}
         values_by_key: dict[str, list[tuple[Optional[int], int, Tag]]] = {}
-        dom_order = 0
+        all_tags = cast(list[Tag], form_tag.find_all(True))
+        tag_order_by_obj_id: dict[int, int] = {
+            id(tag): idx for idx, tag in enumerate(all_tags, start=1)
+        }
 
-        for tag in form_tag.find_all(id=True):
+        for tag in all_tags:
             tag_id = tag.get("id")
             if not isinstance(tag_id, str):
                 continue
-            dom_order += 1
+            dom_order = tag_order_by_obj_id[id(tag)]
 
             value_match = _FORM_VALUE_ID_RE.match(tag_id)
             if value_match:
@@ -2339,6 +2380,48 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 if value_tag_id is not None:
                     consumed_tag_ids.add(value_tag_id)
 
+            component_tag_obj_ids: set[int] = {
+                id(key_tag),
+                *(id(value.tag) for value in values),
+            }
+            if marker is not None:
+                component_tag_obj_ids.add(id(marker.tag))
+            seen_extra_tag_obj_ids: set[int] = set()
+            extra_texts: list[_ExtractedFormText] = []
+            for value in values:
+                value_parent = value.tag.parent
+                if not isinstance(value_parent, Tag):
+                    continue
+                for sibling_tag in value_parent.find_all(recursive=False):
+                    sibling_obj_id = id(sibling_tag)
+                    if sibling_obj_id in component_tag_obj_ids:
+                        continue
+                    if sibling_obj_id in seen_extra_tag_obj_ids:
+                        continue
+                    if self._get_html_id(sibling_tag) is not None:
+                        continue
+                    sibling_text_raw = self.get_text(sibling_tag)
+                    sibling_orig, sibling_text = self._normalize_form_text(
+                        sibling_text_raw
+                    )
+                    if not sibling_text:
+                        continue
+                    sibling_order = tag_order_by_obj_id.get(sibling_obj_id)
+                    if sibling_order is None:
+                        continue
+                    extra_texts.append(
+                        _ExtractedFormText(
+                            tag=sibling_tag,
+                            order=sibling_order,
+                            orig=sibling_orig,
+                            text=sibling_text,
+                            prov=self._make_text_prov(
+                                text=sibling_text, tag=sibling_tag
+                            ),
+                        )
+                    )
+                    seen_extra_tag_obj_ids.add(sibling_obj_id)
+
             fields.append(
                 _ExtractedFormField(
                     key_tag=key_tag,
@@ -2348,6 +2431,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     key_prov=self._make_text_prov(text=key_text, tag=key_tag),
                     marker=marker,
                     values=values,
+                    extra_texts=extra_texts,
                 )
             )
             key_tag_id = self._get_html_id(key_tag)
@@ -2415,6 +2499,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             doc_with_fields = cast(Any, doc)
             form_region = self._extract_form_region(tag)
             consumed_tag_ids: set[str] = set()
+            consumed_tag_obj_ids: set[int] = set()
             fields_by_key_id: dict[str, _ExtractedFormField] = {}
             if form_region is not None:
                 for field in form_region.fields:
@@ -2437,13 +2522,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         if value_tag_id is not None:
                             consumed_tag_ids.add(value_tag_id)
                             fields_by_key_id[value_tag_id] = field
+                    for extra_text in field.extra_texts:
+                        consumed_tag_obj_ids.add(id(extra_text.tag))
 
             if not fields_by_key_id:
                 if tag.name.lower() == "table":
                     added_refs.extend(self._handle_block(tag, doc))
                 else:
                     with self._suppress_tag_ids(consumed_tag_ids):
-                        added_refs.extend(self._walk(tag, doc))
+                        with self._suppress_tag_obj_ids(consumed_tag_obj_ids):
+                            added_refs.extend(self._walk(tag, doc))
                 return added_refs
 
             region_prov = self._make_prov(text="", tag=tag)
@@ -2461,7 +2549,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         added_refs.extend(self._handle_block(tag, doc))
                     else:
                         with self._suppress_tag_ids(consumed_tag_ids):
-                            added_refs.extend(self._walk(tag, doc))
+                            with self._suppress_tag_obj_ids(consumed_tag_obj_ids):
+                                added_refs.extend(self._walk(tag, doc))
             return added_refs
 
         form_graph = self._extract_form_graph(tag)
