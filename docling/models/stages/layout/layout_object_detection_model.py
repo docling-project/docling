@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
@@ -54,15 +55,22 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
     def _build_label_map(self) -> Dict[int, DocItemLabel]:
         """Build label mapping from engine's label names to DocItemLabel enums.
 
-        Raises:
-            RuntimeError: If labels don't match DocItemLabel enum.
+        Normalizes label names so that hyphens and spaces (e.g. from Egret
+        id2label like "List-item", "Key-Value Region") become underscores
+        before enum lookup, matching DocItemLabel (e.g. LIST_ITEM, KEY_VALUE_REGION).
         """
-        id_to_label_str = self.engine.get_label_mapping()
-        label_map = {}
+        return self._build_label_map_from_mapping(self.engine.get_label_mapping())
 
+    @staticmethod
+    def _build_label_map_from_mapping(
+        id_to_label_str: Dict[int, str],
+    ) -> Dict[int, DocItemLabel]:
+        """Build label map from id->label name dict. Normalizes names (hyphens/spaces -> underscores)."""
+        label_map = {}
         for label_id, label_name in id_to_label_str.items():
-            # Convert label name to uppercase to match DocItemLabel enum convention
-            label_enum_name = label_name.upper()
+            # Uppercase and normalize separators: hyphens and spaces -> underscore
+            # (DocItemLabel uses UPPER_SNAKE; Egret uses "List-item", "Key-Value Region", etc.)
+            label_enum_name = re.sub(r"[-\s]+", "_", label_name).upper()
             try:
                 label_map[label_id] = DocItemLabel[label_enum_name]
             except KeyError:
@@ -70,7 +78,6 @@ class LayoutObjectDetectionModel(BaseLayoutModel):
                     f"Label '{label_name}' (ID {label_id}) from model config "
                     f"does not match any DocItemLabel enum value."
                 )
-
         return label_map
 
     @classmethod
