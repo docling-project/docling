@@ -83,7 +83,7 @@ class PictureDescriptionBaseModel(
                 describe_image = False
             if describe_image:
                 elements.append(el.item)
-                images.append(el.image)
+                images.append(el.image.convert("RGB"))
 
         outputs = self._annotate_images(images)
 

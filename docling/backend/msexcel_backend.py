@@ -22,7 +22,7 @@ from docling_core.types.doc import (
 from openpyxl import load_workbook
 from openpyxl.chartsheet.chartsheet import Chartsheet
 from openpyxl.drawing.image import Image
-from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor
+from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, TwoCellAnchor
 from openpyxl.styles import PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 from PIL import Image as PILImage
@@ -632,6 +632,13 @@ class MsExcelDocumentBackend(DeclarativeDocumentBackend, PaginatedDocumentBacken
                             image.anchor._from.row,
                             image.anchor.to.col + 1,
                             image.anchor.to.row + 1,
+                        )
+                    elif isinstance(image.anchor, OneCellAnchor):
+                        anchor = (
+                            image.anchor._from.col,
+                            image.anchor._from.row,
+                            image.anchor._from.col + 1,
+                            image.anchor._from.row + 1,
                         )
                     doc.add_picture(
                         parent=self.parents[0],

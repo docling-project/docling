@@ -61,6 +61,7 @@ nav:
     - Usage:
       - Advanced options: usage/advanced_options.md
       - Supported formats: usage/supported_formats.md
+      - Audio & video: usage/processing_audio_media.md
       - Enrichment features: usage/enrichments.md
       - Vision models: usage/vision_models.md
       - Model catalog: usage/model_catalog.md
