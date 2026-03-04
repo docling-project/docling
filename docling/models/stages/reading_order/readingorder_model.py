@@ -45,6 +45,18 @@ class ReadingOrderModel:
         self.ro_model = ReadingOrderPredictor()
         self.list_item_processor = ListItemMarkerProcessor()
 
+    @staticmethod
+    def _resolve_content_layer(label: DocItemLabel) -> ContentLayer:
+        """Resolve the content layer based on the element's label.
+
+        Elements labeled as PAGE_HEADER or PAGE_FOOTER are page furniture
+        and should be placed in the FURNITURE layer so they are excluded
+        from body exports (markdown, HTML, iterate_items).
+        """
+        if label in (DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER):
+            return ContentLayer.FURNITURE
+        return ContentLayer.BODY
+
     def _assembled_to_readingorder_elements(
         self, conv_res: ConversionResult
     ) -> list[ReadingOrderPageElement]:
@@ -94,14 +106,31 @@ class ReadingOrderModel:
             c_prov = ProvenanceItem(
                 page_no=element.page_no, charspan=(0, len(c_text)), bbox=c_bbox
             )
+            content_layer = self._resolve_content_layer(c_label)
             if c_label == DocItemLabel.LIST_ITEM:
                 # TODO: Infer if this is a numbered or a bullet list item
-                l_item = doc.add_list_item(parent=doc_item, text=c_text, prov=c_prov)
+                l_item = doc.add_list_item(
+                    parent=doc_item,
+                    text=c_text,
+                    prov=c_prov,
+                    content_layer=content_layer,
+                )
                 self.list_item_processor.process_list_item(l_item)
             elif c_label == DocItemLabel.SECTION_HEADER:
-                doc.add_heading(parent=doc_item, text=c_text, prov=c_prov)
+                doc.add_heading(
+                    parent=doc_item,
+                    text=c_text,
+                    prov=c_prov,
+                    content_layer=content_layer,
+                )
             else:
-                doc.add_text(parent=doc_item, label=c_label, text=c_text, prov=c_prov)
+                doc.add_text(
+                    parent=doc_item,
+                    label=c_label,
+                    text=c_text,
+                    prov=c_prov,
+                    content_layer=content_layer,
+                )
 
     def _create_rich_cell_group(
         self, element: BasePageElement, doc: DoclingDocument, table_item: NodeItem
@@ -371,15 +400,11 @@ class ReadingOrderModel:
         else:
             current_list = None
 
-            content_layer = ContentLayer.BODY
-            if element.label in [DocItemLabel.PAGE_HEADER, DocItemLabel.PAGE_FOOTER]:
-                content_layer = ContentLayer.FURNITURE
-
             new_item = out_doc.add_text(
                 label=element.label,
                 text=cap_text,
                 prov=prov,
-                content_layer=content_layer,
+                content_layer=self._resolve_content_layer(element.label),
             )
         return new_item, current_list
 
