@@ -499,11 +499,12 @@ class _DocumentConversionInput(BaseModel):
                     content = f.read(1024)  # Read first 1KB
             if mime is not None and mime.lower() == "application/zip":
                 mime_root = "application/vnd.openxmlformats-officedocument"
-                if obj.suffixes[-1].lower() == ".xlsx":
+                suffix = obj.suffix.lower()
+                if suffix == ".xlsx":
                     mime = mime_root + ".spreadsheetml.sheet"
-                elif obj.suffixes[-1].lower() == ".docx":
+                elif suffix == ".docx":
                     mime = mime_root + ".wordprocessingml.document"
-                elif obj.suffixes[-1].lower() == ".pptx":
+                elif suffix == ".pptx":
                     mime = mime_root + ".presentationml.presentation"
                 else:
                     office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
