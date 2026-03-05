@@ -505,6 +505,12 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif obj.suffixes[-1].lower() == ".pptx":
                     mime = mime_root + ".presentationml.presentation"
+                else:
+                    office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
+                        obj
+                    )
+                    if office_mime is not None:
+                        mime = office_mime
 
         elif isinstance(obj, DocumentStream):
             content = obj.stream.read(8192)
@@ -526,6 +532,12 @@ class _DocumentConversionInput(BaseModel):
                     mime = mime_root + ".wordprocessingml.document"
                 elif objname.endswith(".pptx"):
                     mime = mime_root + ".presentationml.presentation"
+                else:
+                    office_mime = _DocumentConversionInput._detect_office_mime_from_zip(
+                        obj.stream
+                    )
+                    if office_mime is not None:
+                        mime = office_mime
 
         if mime is not None and mime.lower() == "application/gzip":
             if detected_mime := _DocumentConversionInput._detect_mets_gbs(obj):
@@ -546,6 +558,32 @@ class _DocumentConversionInput(BaseModel):
                 )
         else:
             return None
+
+    @staticmethod
+    def _detect_office_mime_from_zip(
+        source: Union[Path, BytesIO],
+    ) -> Optional[str]:
+        """Detect Office Open XML format by inspecting ZIP archive contents.
+
+        Useful when the filename has no extension (e.g. pre-signed URLs)
+        and filetype only reports ``application/zip``.
+        """
+        try:
+            with zipfile.ZipFile(source) as zf:
+                names = set(zf.namelist())
+            mime_root = "application/vnd.openxmlformats-officedocument"
+            if "word/document.xml" in names:
+                return mime_root + ".wordprocessingml.document"
+            elif "xl/workbook.xml" in names:
+                return mime_root + ".spreadsheetml.sheet"
+            elif "ppt/presentation.xml" in names:
+                return mime_root + ".presentationml.presentation"
+        except (zipfile.BadZipFile, OSError):
+            pass
+        finally:
+            if isinstance(source, BytesIO):
+                source.seek(0)
+        return None
 
     @staticmethod
     def _guess_from_content(
