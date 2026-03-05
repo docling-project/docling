@@ -167,6 +167,7 @@ class _ExtractedFormValue:
     kind: Literal["read_only", "fillable"] = "read_only"
     checkbox_label: Optional[DocItemLabel] = None
     consumed_label_tag_obj_ids: set[int] = dataclass_field(default_factory=set)
+    checkbox_label_tags: list[Tag] = dataclass_field(default_factory=list)
 
 
 @dataclass
@@ -854,6 +855,121 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             charspan=(0, len(text)),
         )
 
+    def _make_text_prov_for_source_tag_ids(
+        self, text: str, tag: Optional[Tag], source_tag_ids: list[str]
+    ) -> Optional[ProvenanceItem]:
+        unique_ids = list(dict.fromkeys(source_tag_ids))
+        if not unique_ids:
+            return self._make_text_prov(text=text, tag=tag)
+
+        boxes: list[BoundingBox] = []
+        page_no: Optional[int] = None
+        for source_id in unique_ids:
+            rendered = None
+            if self._rendered_text_bbox_by_id:
+                rendered = self._rendered_text_bbox_by_id.get(source_id)
+            if rendered is None and self._rendered_bbox_by_id:
+                rendered = self._rendered_bbox_by_id.get(source_id)
+            if rendered is None:
+                continue
+            if page_no is None:
+                page_no = rendered.page_no
+            if rendered.page_no != page_no:
+                continue
+            boxes.append(rendered.bbox)
+
+        if not boxes:
+            return self._make_text_prov(text=text, tag=tag, source_tag_id=unique_ids[0])
+
+        bbox = boxes[0] if len(boxes) == 1 else BoundingBox.enclosing_bbox(boxes)
+        return ProvenanceItem(
+            page_no=page_no if page_no is not None else 1,
+            bbox=bbox,
+            charspan=(0, len(text)),
+        )
+
+    def _compact_adjacent_single_char_parts(
+        self, parts: AnnotatedTextList
+    ) -> list[tuple[AnnotatedText, list[str]]]:
+        compacted: list[tuple[AnnotatedText, list[str]]] = []
+        idx = 0
+        while idx < len(parts):
+            current = parts[idx]
+            current_text = HTMLDocumentBackend._clean_unicode(current.text.strip())
+
+            if len(current_text) == 1:
+                run_chars: list[str] = []
+                run_source_ids: list[str] = []
+                run_end = idx
+                while run_end < len(parts):
+                    candidate = parts[run_end]
+                    candidate_text = HTMLDocumentBackend._clean_unicode(
+                        candidate.text.strip()
+                    )
+                    if (
+                        len(candidate_text) != 1
+                        or candidate.hyperlink != current.hyperlink
+                        or candidate.formatting != current.formatting
+                        or candidate.code != current.code
+                    ):
+                        break
+                    run_chars.append(candidate_text)
+                    if candidate.source_tag_id is not None:
+                        run_source_ids.append(candidate.source_tag_id)
+                    run_end += 1
+
+                if len(run_chars) > 1:
+                    compacted.append(
+                        (
+                            AnnotatedText(
+                                text="".join(run_chars),
+                                hyperlink=current.hyperlink,
+                                formatting=current.formatting,
+                                code=current.code,
+                                source_tag_id=(
+                                    run_source_ids[0] if run_source_ids else None
+                                ),
+                            ),
+                            run_source_ids,
+                        )
+                    )
+                    idx = run_end
+                    continue
+
+            source_tag_ids = [current.source_tag_id] if current.source_tag_id else []
+            compacted.append((current, source_tag_ids))
+            idx += 1
+        return compacted
+
+    def _make_checkbox_with_label_prov(
+        self, text: str, checkbox_tag: Tag, label_tags: list[Tag]
+    ) -> Optional[ProvenanceItem]:
+        checkbox_rendered = self._get_rendered_bbox_for_tag(checkbox_tag)
+        if checkbox_rendered is None:
+            return self._make_prov(text=text, tag=checkbox_tag)
+
+        boxes: list[BoundingBox] = [checkbox_rendered.bbox]
+        for label_tag in label_tags:
+            rendered = self._get_rendered_text_bbox_for_tag(
+                label_tag
+            ) or self._get_rendered_bbox_for_tag(label_tag)
+            if rendered is None:
+                continue
+            if rendered.page_no != checkbox_rendered.page_no:
+                continue
+            boxes.append(rendered.bbox)
+
+        bbox = (
+            checkbox_rendered.bbox
+            if len(boxes) == 1
+            else BoundingBox.enclosing_bbox(boxes)
+        )
+        return ProvenanceItem(
+            page_no=checkbox_rendered.page_no,
+            bbox=bbox,
+            charspan=(0, len(text)),
+        )
+
     @staticmethod
     def _fix_invalid_paragraph_structure(soup: BeautifulSoup) -> None:
         """Rewrite <p> elements that contain block-level breakers.
@@ -1187,17 +1303,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 return
 
             for annotated_text_list in parts:
+                compacted_parts = self._compact_adjacent_single_char_parts(
+                    annotated_text_list
+                )
                 with self._use_inline_group(annotated_text_list, doc) as inline_ref:
-                    for annotated_text in annotated_text_list:
+                    for annotated_text, source_tag_ids in compacted_parts:
                         if annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(
                                 annotated_text.text.strip()
                             )
                             if annotated_text.code:
-                                prov = self._make_prov(
+                                prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
                                     tag=element,
-                                    source_tag_id=annotated_text.source_tag_id,
+                                    source_tag_ids=source_tag_ids,
                                 )
                                 docling_code2 = doc.add_code(
                                     parent=self.parents[self.level],
@@ -1210,10 +1329,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 if inline_ref is None:
                                     added_refs.append(docling_code2.get_ref())
                             else:
-                                prov = self._make_text_prov(
+                                prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
                                     tag=element,
-                                    source_tag_id=annotated_text.source_tag_id,
+                                    source_tag_ids=source_tag_ids,
                                 )
                                 docling_text2 = doc.add_text(
                                     parent=self.parents[self.level],
@@ -1304,18 +1423,18 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 else:
                     buffer.extend(
                         self._extract_text_and_hyperlink_recursively(
-                            node, find_parent_annotation=True, keep_newlines=True
+                            node, find_parent_annotation=True, keep_newlines=False
                         )
                     )
             elif isinstance(node, NavigableString) and not isinstance(
                 node, PreformattedString
             ):
                 if str(node).strip("\n\r") == "":
-                    _flush_buffer()
+                    continue
                 else:
                     buffer.extend(
                         self._extract_text_and_hyperlink_recursively(
-                            node, find_parent_annotation=True, keep_newlines=True
+                            node, find_parent_annotation=True, keep_newlines=False
                         )
                     )
 
@@ -1735,16 +1854,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         )
                         self.level += 1
                         with self._use_inline_group(min_parts, doc):
-                            for annotated_text in min_parts:
+                            compacted_parts = self._compact_adjacent_single_char_parts(
+                                min_parts
+                            )
+                            for annotated_text, source_tag_ids in compacted_parts:
                                 li_text = re.sub(
                                     r"\s+|\n+", " ", annotated_text.text
                                 ).strip()
                                 li_clean = HTMLDocumentBackend._clean_unicode(li_text)
                                 if annotated_text.code:
-                                    prov = self._make_prov(
+                                    prov = self._make_text_prov_for_source_tag_ids(
                                         text=li_clean,
                                         tag=li,
-                                        source_tag_id=annotated_text.source_tag_id,
+                                        source_tag_ids=source_tag_ids,
                                     )
                                     doc.add_code(
                                         parent=self.parents[self.level],
@@ -1755,10 +1877,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                         prov=prov,
                                     )
                                 else:
-                                    prov = self._make_text_prov(
+                                    prov = self._make_text_prov_for_source_tag_ids(
                                         text=li_clean,
                                         tag=li,
-                                        source_tag_id=annotated_text.source_tag_id,
+                                        source_tag_ids=source_tag_ids,
                                     )
                                     doc.add_text(
                                         parent=self.parents[self.level],
@@ -1909,15 +2031,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
             annotated_texts: AnnotatedTextList = text_list.simplify_text_elements()
             for part in annotated_texts.split_by_newline():
+                compacted_part = self._compact_adjacent_single_char_parts(part)
                 with self._use_inline_group(part, doc) as inline_ref:
-                    for annotated_text in part:
+                    for annotated_text, source_tag_ids in compacted_part:
                         if seg := annotated_text.text.strip():
                             seg_clean = HTMLDocumentBackend._clean_unicode(seg)
                             if annotated_text.code:
-                                prov = self._make_prov(
+                                prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
                                     tag=tag,
-                                    source_tag_id=annotated_text.source_tag_id,
+                                    source_tag_ids=source_tag_ids,
                                 )
                                 docling_code = doc.add_code(
                                     parent=self.parents[self.level],
@@ -1930,10 +2053,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                                 if inline_ref is None:
                                     added_refs.append(docling_code.get_ref())
                             else:
-                                prov = self._make_text_prov(
+                                prov = self._make_text_prov_for_source_tag_ids(
                                     text=seg_clean,
                                     tag=tag,
-                                    source_tag_id=annotated_text.source_tag_id,
+                                    source_tag_ids=source_tag_ids,
                                 )
                                 docling_text = doc.add_text(
                                     parent=self.parents[self.level],
@@ -2222,8 +2345,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
     def _extract_checkbox_text_and_consumed_label_obj_ids(
         self, checkbox_tag: Tag
-    ) -> tuple[str, set[int]]:
+    ) -> tuple[str, set[int], list[Tag]]:
         consumed_tag_obj_ids: set[int] = set()
+        consumed_label_tags: list[Tag] = []
         parent = checkbox_tag.parent if isinstance(checkbox_tag.parent, Tag) else None
 
         # Native checkbox/radio with explicit <label for="..."> in the same option container.
@@ -2236,8 +2360,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     raw = self.get_text(sibling)
                     text = self._normalize_checkbox_text(raw)
                     consumed_tag_obj_ids.add(id(sibling))
+                    consumed_label_tags.append(sibling)
                     if text:
-                        return text, consumed_tag_obj_ids
+                        return text, consumed_tag_obj_ids, consumed_label_tags
 
         if parent is not None:
             parent_classes = self._get_tag_classes(parent)
@@ -2253,34 +2378,47 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     raw = self.get_text(sibling)
                     text = self._normalize_checkbox_text(raw)
                     consumed_tag_obj_ids.add(id(sibling))
+                    consumed_label_tags.append(sibling)
                     if text:
                         label_texts.append(text)
                 if label_texts:
-                    return " ".join(label_texts), consumed_tag_obj_ids
+                    return (
+                        " ".join(label_texts),
+                        consumed_tag_obj_ids,
+                        consumed_label_tags,
+                    )
 
             # Pattern: checkbox + neighbour text in .checkbox-item or parent text in .checkbox-option/.option
             if parent_classes & {"checkbox-item", "checkbox-option", "option"}:
+                has_direct_label_text = any(
+                    isinstance(child, NavigableString)
+                    and bool(self._normalize_checkbox_text(str(child)))
+                    for child in parent.contents
+                )
                 for sibling in parent.find_all(recursive=False):
                     if not isinstance(sibling, Tag) or sibling is checkbox_tag:
                         continue
                     if self._is_checkbox_like_tag(sibling):
                         continue
                     consumed_tag_obj_ids.add(id(sibling))
+                    consumed_label_tags.append(sibling)
                 raw = self._extract_text_excluding_tag_obj_ids(
                     parent, {id(checkbox_tag)}
                 )
                 text = self._normalize_checkbox_text(raw)
                 if text:
-                    return text, consumed_tag_obj_ids
+                    if has_direct_label_text:
+                        consumed_label_tags.append(parent)
+                    return text, consumed_tag_obj_ids, consumed_label_tags
 
         # Last fallback: custom checkbox text inside the element itself.
         if checkbox_tag.name != "input":
             raw = self.get_text(checkbox_tag)
             text = self._normalize_checkbox_text(raw)
             if text:
-                return text, consumed_tag_obj_ids
+                return text, consumed_tag_obj_ids, consumed_label_tags
 
-        return "", consumed_tag_obj_ids
+        return "", consumed_tag_obj_ids, consumed_label_tags
 
     @staticmethod
     def _extract_form_value_text(value_tag: Tag) -> str:
@@ -2306,10 +2444,16 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         checkbox_label = self._get_checkbox_label_for_tag(checkbox_tag)
         if checkbox_label is None:
             return None
-        checkbox_text, _ = self._extract_checkbox_text_and_consumed_label_obj_ids(
-            checkbox_tag
+        (
+            checkbox_text,
+            _,
+            checkbox_label_tags,
+        ) = self._extract_checkbox_text_and_consumed_label_obj_ids(checkbox_tag)
+        prov = self._make_checkbox_with_label_prov(
+            text=checkbox_text,
+            checkbox_tag=checkbox_tag,
+            label_tags=checkbox_label_tags,
         )
-        prov = self._make_text_prov(text=checkbox_text, tag=checkbox_tag)
         checkbox_item = doc.add_text(
             parent=self.parents[self.level],
             label=checkbox_label,
@@ -2635,10 +2779,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             for _, value_order, value_tag in value_entries:
                 checkbox_label = self._get_checkbox_label_for_tag(value_tag)
                 consumed_label_tag_obj_ids: set[int] = set()
+                checkbox_label_tags: list[Tag] = []
                 if checkbox_label is not None:
                     (
                         value_text,
                         consumed_label_tag_obj_ids,
+                        checkbox_label_tags,
                     ) = self._extract_checkbox_text_and_consumed_label_obj_ids(
                         value_tag
                     )
@@ -2652,10 +2798,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         order=value_order,
                         orig=value_orig,
                         text=value_text,
-                        prov=self._make_text_prov(text=value_text, tag=value_tag),
+                        prov=(
+                            self._make_checkbox_with_label_prov(
+                                text=value_text,
+                                checkbox_tag=value_tag,
+                                label_tags=checkbox_label_tags,
+                            )
+                            if checkbox_label is not None
+                            else self._make_text_prov(text=value_text, tag=value_tag)
+                        ),
                         kind=self._infer_form_value_kind(value_tag),
                         checkbox_label=checkbox_label,
                         consumed_label_tag_obj_ids=consumed_label_tag_obj_ids,
+                        checkbox_label_tags=checkbox_label_tags,
                     )
                 )
                 value_tag_id = self._get_html_id(value_tag)
@@ -2963,9 +3118,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         checkbox_label = self._get_checkbox_label_for_tag(input_tag)
         if checkbox_label is not None:
             label = checkbox_label
-            text_clean, _ = self._extract_checkbox_text_and_consumed_label_obj_ids(
-                input_tag
-            )
+            (
+                text_clean,
+                _,
+                checkbox_label_tags,
+            ) = self._extract_checkbox_text_and_consumed_label_obj_ids(input_tag)
         else:
             text = self._get_attr_as_string(input_tag, "value").strip()
             if not text:
@@ -2973,7 +3130,15 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if not text:
                 text = self._get_attr_as_string(input_tag, "name").strip()
             text_clean = HTMLDocumentBackend._clean_unicode(text) if text else ""
-        prov = self._make_prov(text=text_clean, tag=input_tag)
+        prov = (
+            self._make_checkbox_with_label_prov(
+                text=text_clean,
+                checkbox_tag=input_tag,
+                label_tags=checkbox_label_tags,
+            )
+            if checkbox_label is not None
+            else self._make_prov(text=text_clean, tag=input_tag)
+        )
         input_item = doc.add_text(
             parent=self.parents[self.level],
             label=label,
