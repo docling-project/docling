@@ -141,6 +141,14 @@ _FORM_MARKER_ID_RE: Final = re.compile(r"^key(?P<key_id>[A-Za-z0-9]+)_marker$")
 _FORM_VALUE_ID_RE: Final = re.compile(
     r"^key(?P<key_id>[A-Za-z0-9]+)_value(?P<value_id>[A-Za-z0-9]+)$"
 )
+_CUSTOM_CHECKBOX_CLASSES: Final = {"checkbox", "checkbox-box", "checkbox-input"}
+_CHECKBOX_MARK_TEXTS: Final = {"x", "✓", "✔", "☑"}
+_CHECKBOX_CONTAINER_CLASSES: Final = {
+    "checkbox-container",
+    "checkbox-item",
+    "checkbox-option",
+    "option",
+}
 
 
 @dataclass(frozen=True)
@@ -157,6 +165,8 @@ class _ExtractedFormValue:
     text: str
     prov: Optional[ProvenanceItem]
     kind: Literal["read_only", "fillable"] = "read_only"
+    checkbox_label: Optional[DocItemLabel] = None
+    consumed_label_tag_obj_ids: set[int] = dataclass_field(default_factory=set)
 
 
 @dataclass
@@ -175,6 +185,7 @@ class _ExtractedFormText:
     orig: str
     text: str
     prov: Optional[ProvenanceItem]
+    label: DocItemLabel = DocItemLabel.TEXT
 
 
 @dataclass
@@ -1000,6 +1011,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         children = table_cell.find_all(recursive=True)  # all descendants of type Tag
         has_input = any(child.name == "input" for child in children)
+        has_custom_checkbox = any(
+            self._is_custom_checkbox_tag(child) for child in children
+        )
         if not children:
             content = [
                 item
@@ -1022,6 +1036,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     or bool(anno.hyperlink)
                     or anno.code
                     or has_input
+                    or has_custom_checkbox
                 )
 
         return is_rich
@@ -1226,7 +1241,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     continue
                 name = node.name.lower()
                 has_block_descendants = bool(
-                    node.find(_BLOCK_TAGS) or node.find("input")
+                    node.find(_BLOCK_TAGS)
+                    or node.find("input")
+                    or node.find(
+                        lambda item: isinstance(item, Tag)
+                        and self._is_custom_checkbox_tag(item)
+                    )
                 )
                 is_atomic_node = name in _BLOCK_TAGS or not has_block_descendants
                 if is_atomic_node:
@@ -1243,6 +1263,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     _flush_buffer()
                     form_refs = self._handle_form_container(node, doc)
                     added_refs.extend(form_refs)
+                    continue
+                if self._is_custom_checkbox_tag(node):
+                    _flush_buffer()
+                    checkbox_ref = self._emit_custom_checkbox(node, doc)
+                    if checkbox_ref is not None:
+                        added_refs.append(checkbox_ref)
                     continue
                 if name == "img":
                     _flush_buffer()
@@ -1341,8 +1367,11 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return AnnotatedTextList()
 
         if isinstance(item, NavigableString):
-            if isinstance(item.parent, Tag) and self._is_suppressed_tag(item.parent):
-                return AnnotatedTextList()
+            if isinstance(item.parent, Tag):
+                if self._is_suppressed_tag(item.parent):
+                    return AnnotatedTextList()
+                if self._is_checkbox_label_container(item.parent):
+                    return AnnotatedTextList()
             text = item.strip()
             code = any(code_tag in self.format_tags for code_tag in _CODE_TAG_SET)
             source_tag_id = (
@@ -1376,6 +1405,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
         tag = cast(Tag, item)
         if self._is_suppressed_tag(tag):
+            return AnnotatedTextList()
+        if self._is_checkbox_like_tag(tag):
+            return AnnotatedTextList()
+        if self._is_checkbox_label_tag(tag):
             return AnnotatedTextList()
         if not ignore_list or (tag.name not in ["ul", "ol"]):
             for child in tag:
@@ -1616,7 +1649,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     added_ref.append(im_ref)
         return added_ref
 
-    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:
+    def _handle_list(self, tag: Tag, doc: DoclingDocument) -> RefItem:  # noqa: C901
         tag_name = tag.name.lower()
         start: Optional[int] = None
         name: str = ""
@@ -1670,9 +1703,17 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     for input_tag in li.find_all("input")
                     if input_tag.find_parent("li") is li
                 ]
+                custom_checkboxes_in_li = [
+                    checkbox_tag
+                    for checkbox_tag in li.find_all(
+                        lambda item: isinstance(item, Tag)
+                        and self._is_custom_checkbox_tag(item)
+                    )
+                    if checkbox_tag.find_parent("li") is li
+                ]
 
                 # 3) add the list item
-                if li_text or inputs_in_li:
+                if li_text or inputs_in_li or custom_checkboxes_in_li:
                     if len(min_parts) > 1:
                         li_prov = self._make_text_prov(text=li_text, tag=li)
                         # create an empty list element in order to hook the inline group onto that one
@@ -1724,6 +1765,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         for input_tag in inputs_in_li:
                             if isinstance(input_tag, Tag):
                                 self._emit_input(input_tag, doc)
+                        for checkbox_tag in custom_checkboxes_in_li:
+                            if isinstance(checkbox_tag, Tag):
+                                self._emit_custom_checkbox(checkbox_tag, doc)
 
                         # 4) recurse into any nested lists, attaching them to this <li> item
                         for sublist in li({"ul", "ol"}, recursive=False):
@@ -1754,11 +1798,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             prov=prov,
                         )
 
-                        if inputs_in_li:
+                        if inputs_in_li or custom_checkboxes_in_li:
                             self.level += 1
                             for input_tag in inputs_in_li:
                                 if isinstance(input_tag, Tag):
                                     self._emit_input(input_tag, doc)
+                            for checkbox_tag in custom_checkboxes_in_li:
+                                if isinstance(checkbox_tag, Tag):
+                                    self._emit_custom_checkbox(checkbox_tag, doc)
                             self.level -= 1
 
                         # 4) recurse into any nested lists, attaching them to this <li> item
@@ -1782,6 +1829,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         for input_tag in inputs_in_li:
                             if isinstance(input_tag, Tag):
                                 self._emit_input(input_tag, doc)
+                        for checkbox_tag in custom_checkboxes_in_li:
+                            if isinstance(checkbox_tag, Tag):
+                                self._emit_custom_checkbox(checkbox_tag, doc)
                         for sublist in li({"ul", "ol"}, recursive=False):
                             if isinstance(sublist, Tag):
                                 self._handle_block(sublist, doc)
@@ -1895,6 +1945,14 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     input_ref = self._emit_input(input_tag, doc)
                     if input_ref is not None:
                         added_refs.append(input_ref)
+            for checkbox_tag in tag.find_all(
+                lambda item: isinstance(item, Tag)
+                and self._is_custom_checkbox_tag(item)
+            ):
+                if isinstance(checkbox_tag, Tag):
+                    checkbox_ref = self._emit_custom_checkbox(checkbox_tag, doc)
+                    if checkbox_ref is not None:
+                        added_refs.append(checkbox_ref)
 
         elif tag_name == "table":
             num_rows, num_cols = self.get_html_table_row_col(tag)
@@ -2039,6 +2097,183 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         return "read_only"
 
     @staticmethod
+    def _get_tag_classes(tag: Tag) -> set[str]:
+        classes = tag.get("class")
+        if not classes:
+            return set()
+        if isinstance(classes, str):
+            return {classes}
+        return {str(value) for value in classes if isinstance(value, str)}
+
+    @staticmethod
+    def _is_input_checkbox_or_radio_tag(tag: Tag) -> bool:
+        if tag.name != "input":
+            return False
+        input_type = str(tag.get("type", "")).strip().lower()
+        return input_type in {"checkbox", "radio"}
+
+    @staticmethod
+    def _is_custom_checkbox_tag(tag: Tag) -> bool:
+        return bool(
+            HTMLDocumentBackend._get_tag_classes(tag) & _CUSTOM_CHECKBOX_CLASSES
+        )
+
+    @staticmethod
+    def _is_checkbox_like_tag(tag: Tag) -> bool:
+        return HTMLDocumentBackend._is_input_checkbox_or_radio_tag(
+            tag
+        ) or HTMLDocumentBackend._is_custom_checkbox_tag(tag)
+
+    @staticmethod
+    def _extract_text_excluding_tag_obj_ids(
+        tag: Tag, excluded_obj_ids: set[int]
+    ) -> str:
+        def _extract(node: PageElement) -> list[str]:
+            if isinstance(node, NavigableString):
+                return [str(node)]
+            if isinstance(node, Tag):
+                if id(node) in excluded_obj_ids:
+                    return []
+                parts: list[str] = []
+                for child in node.contents:
+                    parts.extend(_extract(child))
+                if node.name in {"p", "li", "div", "label", "span", "td", "th"}:
+                    parts.append(" ")
+                return parts
+            return []
+
+        return "".join(_extract(tag))
+
+    @staticmethod
+    def _has_direct_checkbox_like_child(tag: Tag) -> bool:
+        for child in tag.find_all(recursive=False):
+            if isinstance(child, Tag) and HTMLDocumentBackend._is_checkbox_like_tag(
+                child
+            ):
+                return True
+        return False
+
+    def _is_checkbox_label_container(self, tag: Tag) -> bool:
+        classes = self._get_tag_classes(tag)
+        if not (classes & _CHECKBOX_CONTAINER_CLASSES):
+            return False
+        return self._has_direct_checkbox_like_child(tag)
+
+    def _is_checkbox_label_tag(self, tag: Tag) -> bool:
+        if self._is_checkbox_like_tag(tag):
+            return False
+        if "checkbox-label" in self._get_tag_classes(tag):
+            return True
+        parent = tag.parent
+        if isinstance(parent, Tag) and self._is_checkbox_label_container(parent):
+            return True
+        return False
+
+    @staticmethod
+    def _normalize_checkbox_text(text: str) -> str:
+        compact = re.sub(r"\s+", " ", text).strip()
+        if not compact:
+            return ""
+        if compact.lower() in _CHECKBOX_MARK_TEXTS:
+            return ""
+        return HTMLDocumentBackend._clean_unicode(compact)
+
+    @staticmethod
+    def _is_checkbox_checked(tag: Tag) -> bool:
+        if HTMLDocumentBackend._is_input_checkbox_or_radio_tag(tag):
+            if tag.has_attr("checked"):
+                return True
+            aria_checked = str(tag.get("aria-checked", "")).strip().lower()
+            return aria_checked in {"true", "1", "yes", "on"}
+
+        classes = HTMLDocumentBackend._get_tag_classes(tag)
+        if "checked" in classes:
+            return True
+
+        aria_checked = str(tag.get("aria-checked", "")).strip().lower()
+        if aria_checked in {"true", "1", "yes", "on"}:
+            return True
+
+        data_checked = str(tag.get("data-checked", "")).strip().lower()
+        if data_checked in {"true", "1", "yes", "on"}:
+            return True
+
+        text = re.sub(r"\s+", "", HTMLDocumentBackend.get_text(tag))
+        return text.lower() in _CHECKBOX_MARK_TEXTS
+
+    @staticmethod
+    def _get_checkbox_label_for_tag(tag: Tag) -> Optional[DocItemLabel]:
+        if not HTMLDocumentBackend._is_checkbox_like_tag(tag):
+            return None
+        return (
+            DocItemLabel.CHECKBOX_SELECTED
+            if HTMLDocumentBackend._is_checkbox_checked(tag)
+            else DocItemLabel.CHECKBOX_UNSELECTED
+        )
+
+    def _extract_checkbox_text_and_consumed_label_obj_ids(
+        self, checkbox_tag: Tag
+    ) -> tuple[str, set[int]]:
+        consumed_tag_obj_ids: set[int] = set()
+        parent = checkbox_tag.parent if isinstance(checkbox_tag.parent, Tag) else None
+
+        # Native checkbox/radio with explicit <label for="..."> in the same option container.
+        if checkbox_tag.name == "input" and parent is not None:
+            input_id = self._get_html_id(checkbox_tag)
+            if input_id:
+                for sibling in parent.find_all("label", recursive=False):
+                    if sibling.get("for") != input_id:
+                        continue
+                    raw = self.get_text(sibling)
+                    text = self._normalize_checkbox_text(raw)
+                    consumed_tag_obj_ids.add(id(sibling))
+                    if text:
+                        return text, consumed_tag_obj_ids
+
+        if parent is not None:
+            parent_classes = self._get_tag_classes(parent)
+
+            # Pattern: checkbox + sibling span.checkbox-label inside .checkbox-container
+            if "checkbox-container" in parent_classes:
+                label_texts: list[str] = []
+                for sibling in parent.find_all(recursive=False):
+                    if not isinstance(sibling, Tag) or sibling is checkbox_tag:
+                        continue
+                    if "checkbox-label" not in self._get_tag_classes(sibling):
+                        continue
+                    raw = self.get_text(sibling)
+                    text = self._normalize_checkbox_text(raw)
+                    consumed_tag_obj_ids.add(id(sibling))
+                    if text:
+                        label_texts.append(text)
+                if label_texts:
+                    return " ".join(label_texts), consumed_tag_obj_ids
+
+            # Pattern: checkbox + neighbour text in .checkbox-item or parent text in .checkbox-option/.option
+            if parent_classes & {"checkbox-item", "checkbox-option", "option"}:
+                for sibling in parent.find_all(recursive=False):
+                    if not isinstance(sibling, Tag) or sibling is checkbox_tag:
+                        continue
+                    if self._is_checkbox_like_tag(sibling):
+                        continue
+                    consumed_tag_obj_ids.add(id(sibling))
+                raw = self._extract_text_excluding_tag_obj_ids(
+                    parent, {id(checkbox_tag)}
+                )
+                text = self._normalize_checkbox_text(raw)
+                if text:
+                    return text, consumed_tag_obj_ids
+
+        # Last fallback: custom checkbox text inside the element itself.
+        if checkbox_tag.name != "input":
+            raw = self.get_text(checkbox_tag)
+            text = self._normalize_checkbox_text(raw)
+            if text:
+                return text, consumed_tag_obj_ids
+
+        return "", consumed_tag_obj_ids
+
+    @staticmethod
     def _extract_form_value_text(value_tag: Tag) -> str:
         # Input elements carry their user-visible content in attributes, not inner text.
         if value_tag.name == "input":
@@ -2053,6 +2288,29 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @staticmethod
     def _extract_form_marker_text(marker_tag: Tag) -> str:
         return HTMLDocumentBackend.get_text(marker_tag)
+
+    def _emit_custom_checkbox(
+        self, checkbox_tag: Tag, doc: DoclingDocument
+    ) -> Optional[RefItem]:
+        if self._is_suppressed_tag(checkbox_tag):
+            return None
+        checkbox_label = self._get_checkbox_label_for_tag(checkbox_tag)
+        if checkbox_label is None:
+            return None
+        checkbox_text, _ = self._extract_checkbox_text_and_consumed_label_obj_ids(
+            checkbox_tag
+        )
+        prov = self._make_text_prov(text=checkbox_text, tag=checkbox_tag)
+        checkbox_item = doc.add_text(
+            parent=self.parents[self.level],
+            label=checkbox_label,
+            text=checkbox_text,
+            content_layer=self.content_layer,
+            formatting=self._formatting,
+            hyperlink=self.hyperlink,
+            prov=prov,
+        )
+        return checkbox_item.get_ref()
 
     @contextmanager
     def _suppress_tag_ids(self, tag_ids: set[str]):
@@ -2214,7 +2472,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             elif part_type == "text":
                 extra_text = cast(_ExtractedFormText, payload)
                 text_item = doc.add_text(
-                    label=DocItemLabel.TEXT,
+                    label=extra_text.label,
                     text=extra_text.text,
                     orig=extra_text.orig,
                     prov=extra_text.prov,
@@ -2224,15 +2482,26 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 refs.append(text_item.get_ref())
             else:
                 value = cast(_ExtractedFormValue, payload)
-                field_value = doc_with_fields.add_field_value(
-                    text=value.text,
-                    orig=value.orig,
-                    prov=value.prov,
-                    parent=field_item,
-                    content_layer=self.content_layer,
-                    kind=value.kind,
-                )
-                refs.append(field_value.get_ref())
+                if value.checkbox_label is not None:
+                    checkbox_item = doc.add_text(
+                        label=value.checkbox_label,
+                        text=value.text,
+                        orig=value.orig,
+                        prov=value.prov,
+                        parent=field_item,
+                        content_layer=self.content_layer,
+                    )
+                    refs.append(checkbox_item.get_ref())
+                else:
+                    field_value = doc_with_fields.add_field_value(
+                        text=value.text,
+                        orig=value.orig,
+                        prov=value.prov,
+                        parent=field_item,
+                        content_layer=self.content_layer,
+                        kind=value.kind,
+                    )
+                    refs.append(field_value.get_ref())
 
         return refs
 
@@ -2355,8 +2624,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
 
             values: list[_ExtractedFormValue] = []
             for _, value_order, value_tag in value_entries:
-                value_text_raw = self._extract_form_value_text(value_tag)
-                value_orig, value_text = self._normalize_form_text(value_text_raw)
+                checkbox_label = self._get_checkbox_label_for_tag(value_tag)
+                consumed_label_tag_obj_ids: set[int] = set()
+                if checkbox_label is not None:
+                    (
+                        value_text,
+                        consumed_label_tag_obj_ids,
+                    ) = self._extract_checkbox_text_and_consumed_label_obj_ids(
+                        value_tag
+                    )
+                    value_orig = value_text
+                else:
+                    value_text_raw = self._extract_form_value_text(value_tag)
+                    value_orig, value_text = self._normalize_form_text(value_text_raw)
                 values.append(
                     _ExtractedFormValue(
                         tag=value_tag,
@@ -2365,6 +2645,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         text=value_text,
                         prov=self._make_text_prov(text=value_text, tag=value_tag),
                         kind=self._infer_form_value_kind(value_tag),
+                        checkbox_label=checkbox_label,
+                        consumed_label_tag_obj_ids=consumed_label_tag_obj_ids,
                     )
                 )
                 value_tag_id = self._get_html_id(value_tag)
@@ -2389,13 +2671,24 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         continue
                     if sibling_obj_id in seen_extra_tag_obj_ids:
                         continue
+                    if sibling_obj_id in value.consumed_label_tag_obj_ids:
+                        continue
                     if self._get_html_id(sibling_tag) is not None:
                         continue
                     sibling_text_raw = self.get_text(sibling_tag)
                     sibling_orig, sibling_text = self._normalize_form_text(
                         sibling_text_raw
                     )
-                    if not sibling_text:
+                    sibling_label = DocItemLabel.TEXT
+                    if self._is_custom_checkbox_tag(sibling_tag):
+                        sibling_label = (
+                            DocItemLabel.CHECKBOX_SELECTED
+                            if self._is_checkbox_checked(sibling_tag)
+                            else DocItemLabel.CHECKBOX_UNSELECTED
+                        )
+                        sibling_text = self._normalize_checkbox_text(sibling_text_raw)
+                        sibling_orig = sibling_text
+                    if not sibling_text and sibling_label == DocItemLabel.TEXT:
                         continue
                     sibling_order = tag_order_by_obj_id.get(sibling_obj_id)
                     if sibling_order is None:
@@ -2409,6 +2702,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                             prov=self._make_text_prov(
                                 text=sibling_text, tag=sibling_tag
                             ),
+                            label=sibling_label,
                         )
                     )
                     seen_extra_tag_obj_ids.add(sibling_obj_id)
@@ -2657,20 +2951,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return None
 
         label = DocItemLabel.TEXT
-        if input_type == "checkbox":
-            label = (
-                DocItemLabel.CHECKBOX_SELECTED
-                if input_tag.has_attr("checked")
-                else DocItemLabel.CHECKBOX_UNSELECTED
+        checkbox_label = self._get_checkbox_label_for_tag(input_tag)
+        if checkbox_label is not None:
+            label = checkbox_label
+            text_clean, _ = self._extract_checkbox_text_and_consumed_label_obj_ids(
+                input_tag
             )
-
-        text = self._get_attr_as_string(input_tag, "value").strip()
-        if not text:
-            text = self._get_attr_as_string(input_tag, "placeholder").strip()
-        if not text:
-            text = self._get_attr_as_string(input_tag, "name").strip()
-
-        text_clean = HTMLDocumentBackend._clean_unicode(text) if text else ""
+        else:
+            text = self._get_attr_as_string(input_tag, "value").strip()
+            if not text:
+                text = self._get_attr_as_string(input_tag, "placeholder").strip()
+            if not text:
+                text = self._get_attr_as_string(input_tag, "name").strip()
+            text_clean = HTMLDocumentBackend._clean_unicode(text) if text else ""
         prov = self._make_prov(text=text_clean, tag=input_tag)
         input_item = doc.add_text(
             parent=self.parents[self.level],
