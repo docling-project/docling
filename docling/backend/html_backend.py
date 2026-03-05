@@ -358,6 +358,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         self.level = 0
         self.parents: dict[int, Optional[Union[DocItem, GroupItem]]] = {}
         self.ctx = _Context()
+        self._disable_inline_group_depth: int = 0
         for i in range(self.max_levels):
             self.parents[i] = None
         self.hyperlink: Union[AnyUrl, Path, None] = None
@@ -575,6 +576,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             if options.render_wait_ms:
                 page.wait_for_timeout(options.render_wait_ms)
 
+            # Some pages settle to their final layout only after first full-page capture.
+            # Warm up with a throwaway screenshot so bbox extraction and saved image align.
+            page.screenshot(full_page=True)
+
             render_data = page.evaluate(
                 """
                 () => {
@@ -599,27 +604,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                     const y = rect.top + window.scrollY;
                     boxes[id] = { x, y, width, height };
 
-                    const walker = document.createTreeWalker(
-                      node,
-                      NodeFilter.SHOW_TEXT,
-                      {
-                        acceptNode: (textNode) => {
-                          if (!textNode || !textNode.textContent) {
-                            return NodeFilter.FILTER_REJECT;
-                          }
-                          return textNode.textContent.trim()
-                            ? NodeFilter.FILTER_ACCEPT
-                            : NodeFilter.FILTER_REJECT;
-                        }
-                      }
-                    );
                     let textLeft = null;
                     let textTop = null;
                     let textRight = null;
                     let textBottom = null;
-                    while (walker.nextNode()) {
+                    const textNodes = Array.from(node.childNodes).filter(
+                      (child) =>
+                        child &&
+                        child.nodeType === Node.TEXT_NODE &&
+                        child.textContent &&
+                        child.textContent.trim()
+                    );
+                    for (const textNode of textNodes) {
                       const range = document.createRange();
-                      range.selectNodeContents(walker.currentNode);
+                      range.selectNodeContents(textNode);
                       const rects = Array.from(range.getClientRects());
                       for (const tRect of rects) {
                         const tWidth = tRect.width || 0;
@@ -668,6 +666,7 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             )
 
             self._rendered_html = page.content()
+            scroll_width = int(render_data.get("scrollWidth", width))
             scroll_height = int(render_data.get("scrollHeight", height))
             self._rendered_page_images = self._capture_page_images(
                 page=page,
@@ -677,8 +676,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                 full_page=options.render_full_page,
             )
             if self._rendered_page_images and self._rendered_page_size:
-                if options.render_full_page:
-                    self._rendered_page_size = Size(width=width, height=scroll_height)
+                self._rendered_page_size = Size(
+                    width=scroll_width,
+                    height=scroll_height if options.render_full_page else height,
+                )
 
             self._rendered_bbox_by_id = self._build_bbox_mapping(
                 render_data=render_data,
@@ -809,6 +810,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             return None
         return self._rendered_text_bbox_by_id.get(tag_id)
 
+    @staticmethod
+    def _has_negative_bbox_coordinates(rendered_bbox: Optional[_RenderedBBox]) -> bool:
+        if rendered_bbox is None:
+            return False
+        bbox = rendered_bbox.bbox
+        return bbox.l < 0 or bbox.t < 0 or bbox.r < 0 or bbox.b < 0
+
+    def _is_tag_outside_capture_area(self, tag: Tag) -> bool:
+        rendered = self._get_rendered_text_bbox_for_tag(
+            tag
+        ) or self._get_rendered_bbox_for_tag(tag)
+        return self._has_negative_bbox_coordinates(rendered)
+
     def _make_prov(
         self,
         text: str,
@@ -888,6 +902,39 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             charspan=(0, len(text)),
         )
 
+    def _get_rendered_bbox_for_source_tag_id(
+        self, source_tag_id: str
+    ) -> Optional[_RenderedBBox]:
+        rendered = None
+        if self._rendered_text_bbox_by_id:
+            rendered = self._rendered_text_bbox_by_id.get(source_tag_id)
+        if rendered is None and self._rendered_bbox_by_id:
+            rendered = self._rendered_bbox_by_id.get(source_tag_id)
+        return rendered
+
+    def _are_source_tag_ids_inline_neighbors(
+        self, left_source_tag_id: str, right_source_tag_id: str
+    ) -> bool:
+        left = self._get_rendered_bbox_for_source_tag_id(left_source_tag_id)
+        right = self._get_rendered_bbox_for_source_tag_id(right_source_tag_id)
+        if left is None or right is None:
+            return False
+        if left.page_no != right.page_no:
+            return False
+
+        left_box = left.bbox
+        right_box = right.bbox
+        min_height = max(1.0, min(left_box.height, right_box.height))
+        max_height = max(1.0, max(left_box.height, right_box.height))
+        vertical_overlap = min(left_box.b, right_box.b) - max(left_box.t, right_box.t)
+        if vertical_overlap <= 0 or (vertical_overlap / min_height) < 0.6:
+            return False
+
+        horizontal_gap = right_box.l - left_box.r
+        max_gap = max(8.0, 1.5 * max_height)
+        min_gap = -0.5 * min(left_box.width, right_box.width)
+        return min_gap <= horizontal_gap <= max_gap
+
     def _compact_adjacent_single_char_parts(
         self, parts: AnnotatedTextList
     ) -> list[tuple[AnnotatedText, list[str]]]:
@@ -897,9 +944,10 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             current = parts[idx]
             current_text = HTMLDocumentBackend._clean_unicode(current.text.strip())
 
-            if len(current_text) == 1:
+            if len(current_text) == 1 and current.source_tag_id is not None:
                 run_chars: list[str] = []
                 run_source_ids: list[str] = []
+                prev_source_id: Optional[str] = None
                 run_end = idx
                 while run_end < len(parts):
                     candidate = parts[run_end]
@@ -913,9 +961,19 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
                         or candidate.code != current.code
                     ):
                         break
+                    candidate_source_id = candidate.source_tag_id
+                    if candidate_source_id is None:
+                        break
+                    if (
+                        prev_source_id is not None
+                        and not self._are_source_tag_ids_inline_neighbors(
+                            prev_source_id, candidate_source_id
+                        )
+                    ):
+                        break
                     run_chars.append(candidate_text)
-                    if candidate.source_tag_id is not None:
-                        run_source_ids.append(candidate.source_tag_id)
+                    run_source_ids.append(candidate_source_id)
+                    prev_source_id = candidate_source_id
                     run_end += 1
 
                 if len(run_chars) > 1:
@@ -1610,6 +1668,9 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             The RefItem of the created InlineGroup, or None when the list has only one
                 element and no group is created.
         """
+        if self._disable_inline_group_depth > 0 or len(annotated_text_list) <= 1:
+            yield None
+            return
         if len(annotated_text_list) > 1:
             inline_fmt = doc.add_group(
                 label=GroupLabel.INLINE,
@@ -1697,9 +1758,12 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
         """
         original_level = self.level
         original_parents = self.parents.copy()
+        original_disable_inline_group_depth = self._disable_inline_group_depth
+        self._disable_inline_group_depth += 1
         try:
             yield
         finally:
+            self._disable_inline_group_depth = original_disable_inline_group_depth
             self.level = original_level
             self.parents = original_parents
 
@@ -2488,6 +2552,8 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
             self._suppressed_tag_obj_ids_stack.pop()
 
     def _is_suppressed_tag(self, tag: Tag) -> bool:
+        if self._is_tag_outside_capture_area(tag):
+            return True
         tag_obj_id = id(tag)
         if any(tag_obj_id in obj_ids for obj_ids in self._suppressed_tag_obj_ids_stack):
             return True
