@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import warnings
+from collections.abc import Generator
 from contextlib import contextmanager
 from copy import deepcopy
 from io import BytesIO
@@ -870,19 +871,20 @@ class HTMLDocumentBackend(DeclarativeDocumentBackend):
     @contextmanager
     def _use_inline_group(
         self, annotated_text_list: AnnotatedTextList, doc: DoclingDocument
-    ):
+    ) -> Generator[RefItem | None, None, None]:
         """Create an inline group for annotated texts.
 
         Checks if annotated_text_list has more than one item and if so creates an inline
         group in which the text elements can then be generated. While the context manager
         is active the inline group is set as the current parent.
 
-        Yields the RefItem of the created InlineGroup (or None when no group is created),
-        so callers can track the group in added_refs instead of tracking individual children.
-
         Args:
             annotated_text_list (AnnotatedTextList): Annotated text
             doc (DoclingDocument): Currently used document
+
+        Yields:
+            RefItem | None: The RefItem of the created InlineGroup, or None when the
+                list has only one element and no group is created.
         """
         if len(annotated_text_list) > 1:
             inline_fmt = doc.add_group(
