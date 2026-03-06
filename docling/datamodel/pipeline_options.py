@@ -149,6 +149,15 @@ class OcrOptions(BaseOptions):
         `RapidOcrOptions`, `OcrMacOptions`: Engine-specific configurations.
     """
 
+    kind: Annotated[
+        str,
+        Field(
+            default="auto",
+            description="OCR engine kind identifier for BaseFactory compatibility.",
+            examples=["auto"],
+        ),
+    ] = "auto"
+
     lang: Annotated[
         list[str],
         Field(
@@ -156,21 +165,6 @@ class OcrOptions(BaseOptions):
             examples=[["deu", "eng"]],
         ),
     ]
-    force_full_page_ocr: Annotated[
-        bool,
-        Field(
-            description="If enabled, a full-page OCR is always applied.",
-            examples=[False],
-        ),
-    ] = False
-    bitmap_area_threshold: Annotated[
-        float,
-        Field(
-            description="Percentage of the page area for a bitmap to be processed with OCR.",
-            examples=[0.05, 0.1],
-        ),
-    ] = 0.05
-
 
 class OcrAutoOptions(OcrOptions):
     """Automatic OCR engine selection based on system availability.
