@@ -4,7 +4,7 @@
   "name": "multi_page",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 11164038604600048225,
+    "binary_hash": 10765932710676322771,
     "filename": "multi_page.pdf"
   },
   "furniture": {
@@ -54,6 +54,9 @@
         "$ref": "#/groups/1"
       },
       {
+        "$ref": "#/texts/13"
+      },
+      {
         "$ref": "#/texts/14"
       },
       {
@@ -63,7 +66,13 @@
         "$ref": "#/texts/16"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/17"
+      },
+      {
+        "$ref": "#/texts/18"
+      },
+      {
+        "$ref": "#/texts/19"
       },
       {
         "$ref": "#/texts/20"
@@ -75,13 +84,19 @@
         "$ref": "#/texts/22"
       },
       {
-        "$ref": "#/texts/23"
+        "$ref": "#/groups/2"
       },
       {
         "$ref": "#/texts/24"
       },
       {
-        "$ref": "#/groups/3"
+        "$ref": "#/texts/25"
+      },
+      {
+        "$ref": "#/texts/26"
+      },
+      {
+        "$ref": "#/texts/27"
       },
       {
         "$ref": "#/texts/28"
@@ -90,37 +105,28 @@
         "$ref": "#/texts/29"
       },
       {
-        "$ref": "#/groups/4"
+        "$ref": "#/texts/30"
+      },
+      {
+        "$ref": "#/texts/31"
+      },
+      {
+        "$ref": "#/texts/32"
+      },
+      {
+        "$ref": "#/groups/3"
+      },
+      {
+        "$ref": "#/texts/34"
       },
       {
         "$ref": "#/texts/35"
       },
       {
-        "$ref": "#/texts/36"
+        "$ref": "#/groups/4"
       },
       {
-        "$ref": "#/groups/5"
-      },
-      {
-        "$ref": "#/texts/40"
-      },
-      {
-        "$ref": "#/texts/41"
-      },
-      {
-        "$ref": "#/groups/6"
-      },
-      {
-        "$ref": "#/texts/47"
-      },
-      {
-        "$ref": "#/texts/48"
-      },
-      {
-        "$ref": "#/groups/7"
-      },
-      {
-        "$ref": "#/texts/52"
+        "$ref": "#/texts/38"
       }
     ],
     "content_layer": "body",
@@ -153,9 +159,6 @@
       "children": [
         {
           "$ref": "#/texts/12"
-        },
-        {
-          "$ref": "#/texts/13"
         }
       ],
       "content_layer": "body",
@@ -169,13 +172,7 @@
       },
       "children": [
         {
-          "$ref": "#/texts/17"
-        },
-        {
-          "$ref": "#/texts/18"
-        },
-        {
-          "$ref": "#/texts/19"
+          "$ref": "#/texts/23"
         }
       ],
       "content_layer": "body",
@@ -189,18 +186,12 @@
       },
       "children": [
         {
-          "$ref": "#/texts/25"
-        },
-        {
-          "$ref": "#/texts/26"
-        },
-        {
-          "$ref": "#/texts/27"
+          "$ref": "#/texts/33"
         }
       ],
       "content_layer": "body",
       "name": "list",
-      "label": "list"
+      "label": "ordered_list"
     },
     {
       "self_ref": "#/groups/4",
@@ -209,85 +200,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/30"
+          "$ref": "#/texts/36"
         },
-        {
-          "$ref": "#/texts/31"
-        },
-        {
-          "$ref": "#/texts/32"
-        },
-        {
-          "$ref": "#/texts/33"
-        },
-        {
-          "$ref": "#/texts/34"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/5",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
         {
           "$ref": "#/texts/37"
-        },
-        {
-          "$ref": "#/texts/38"
-        },
-        {
-          "$ref": "#/texts/39"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/42"
-        },
-        {
-          "$ref": "#/texts/43"
-        },
-        {
-          "$ref": "#/texts/44"
-        },
-        {
-          "$ref": "#/texts/45"
-        },
-        {
-          "$ref": "#/texts/46"
-        }
-      ],
-      "content_layer": "body",
-      "name": "list",
-      "label": "list"
-    },
-    {
-      "self_ref": "#/groups/7",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/49"
-        },
-        {
-          "$ref": "#/texts/50"
-        },
-        {
-          "$ref": "#/texts/51"
         }
       ],
       "content_layer": "body",
@@ -308,11 +224,11 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 766.58,
-            "r": 262.99,
-            "b": 756.71,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -322,7 +238,7 @@
       ],
       "orig": "The Evolution of the Word Processor",
       "text": "The Evolution of the Word Processor",
-      "level": 1
+      "level": 2
     },
     {
       "self_ref": "#/texts/1",
@@ -336,20 +252,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 738.98,
-            "r": 497.52,
-            "b": 715.19,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            117
+            118
           ]
         }
       ],
-      "orig": "The concept of the word processor predates modern computers and has evolved through several technological milestones.",
-      "text": "The concept of the word processor predates modern computers and has evolved through several technological milestones."
+      "orig": "The concept of the word processor predates modern computers and has evolved through \nseveral technological milestones.",
+      "text": "The concept of the word processor predates modern computers and has evolved through \nseveral technological milestones."
     },
     {
       "self_ref": "#/texts/2",
@@ -363,21 +279,21 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 696.74,
-            "r": 325.82,
-            "b": 685.68,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            43
+            45
           ]
         }
       ],
-      "orig": "Pre-Digital Era (19th - Early 20th Century)",
-      "text": "Pre-Digital Era (19th - Early 20th Century)",
-      "level": 1
+      "orig": "Pre - Digital Era (19th - Early 20th Century)",
+      "text": "Pre - Digital Era (19th - Early 20th Century)",
+      "level": 2
     },
     {
       "self_ref": "#/texts/3",
@@ -391,20 +307,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 667.94,
-            "r": 508.18,
-            "b": 616.31,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            305
+            311
           ]
         }
       ],
-      "orig": "The origins of word processing can be traced back to the invention of the typewriter in the mid-19th century. Patented in 1868 by Christopher Latham Sholes, the typewriter revolutionized written communication by enabling people to produce legible, professional documents more efficiently than handwriting.",
-      "text": "The origins of word processing can be traced back to the invention of the typewriter in the mid-19th century. Patented in 1868 by Christopher Latham Sholes, the typewriter revolutionized written communication by enabling people to produce legible, professional documents more efficiently than handwriting."
+      "orig": "The origins of word processing can be traced back to the invention of the typewriter in the \nmid - 19th century. Patented in 1868 by Christopher Latham Sholes, the typewriter \nrevolutionized written communication by enabling people to produce legible, professi onal \ndocuments more efficiently than handwriting.",
+      "text": "The origins of word processing can be traced back to the invention of the typewriter in the \nmid - 19th century. Patented in 1868 by Christopher Latham Sholes, the typewriter \nrevolutionized written communication by enabling people to produce legible, professi onal \ndocuments more efficiently than handwriting."
     },
     {
       "self_ref": "#/texts/4",
@@ -418,20 +334,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 598.82,
-            "r": 504.5,
-            "b": 547.19,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            295
+            299
           ]
         }
       ],
-      "orig": "During this period, the term \"word processing\" didn't exist, but the typewriter laid the groundwork for future developments. Over time, advancements such as carbon paper (for copies) and the electric typewriter (introduced by IBM in 1935) improved the speed and convenience of document creation.",
-      "text": "During this period, the term \"word processing\" didn't exist, but the typewriter laid the groundwork for future developments. Over time, advancements such as carbon paper (for copies) and the electric typewriter (introduced by IBM in 1935) improved the speed and convenience of document creation."
+      "orig": "During this period, the term \"word processing\" didn't exist, but the typewriter laid the \ngroundwork for future developments. Over time, advancements such as carbon paper (for \ncopies) and the electric typewriter (introduced by IBM in 1935) improved the spee d and \nconvenience of document creation.",
+      "text": "During this period, the term \"word processing\" didn't exist, but the typewriter laid the \ngroundwork for future developments. Over time, advancements such as carbon paper (for \ncopies) and the electric typewriter (introduced by IBM in 1935) improved the spee d and \nconvenience of document creation."
     },
     {
       "self_ref": "#/texts/5",
@@ -445,11 +361,11 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 501.14,
-            "r": 336.72,
-            "b": 490.08,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -459,7 +375,7 @@
       ],
       "orig": "The Birth of Word Processing (1960s - 1970s)",
       "text": "The Birth of Word Processing (1960s - 1970s)",
-      "level": 1
+      "level": 2
     },
     {
       "self_ref": "#/texts/6",
@@ -473,20 +389,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 472.1,
-            "r": 523.19,
-            "b": 434.39,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            230
+            232
           ]
         }
       ],
-      "orig": "The term \"word processor\" first emerged in the 1960s and referred to any system designed to streamline written communication and document production. Early word processors were not software programs but rather standalone machines.",
-      "text": "The term \"word processor\" first emerged in the 1960s and referred to any system designed to streamline written communication and document production. Early word processors were not software programs but rather standalone machines."
+      "orig": "The term \"word processor\" first emerged in the 1960s and referred to any system designed to \nstreamline written communication and document production. Early word processors were not \nsoftware programs but rather standalone machines.",
+      "text": "The term \"word processor\" first emerged in the 1960s and referred to any system designed to \nstreamline written communication and document production. Early word processors were not \nsoftware programs but rather standalone machines."
     },
     {
       "self_ref": "#/texts/7",
@@ -500,22 +416,22 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 90.0,
-            "t": 416.9,
-            "r": 518.01,
-            "b": 365.51,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            248
+            257
           ]
         }
       ],
-      "orig": "\u00b7 IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
-      "text": "IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this machine combined IBM's Selectric typewriter with magnetic tape storage. It allowed users to record, edit, and replay typed content-an early example of digital text storage.",
+      "orig": "• IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this \nmachine combined IBM's Selectric typewriter with magnetic tape storage. It allowed \nusers to record, edit, and replay typed content — an early example of digital text \nstorage.",
+      "text": "• IBM MT/ST (Magnetic Tape/Selectric Typewriter) : Introduced in 1964, this \nmachine combined IBM's Selectric typewriter with magnetic tape storage. It allowed \nusers to record, edit, and replay typed content — an early example of digital text \nstorage.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "•"
     },
     {
       "self_ref": "#/texts/8",
@@ -529,22 +445,22 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 90.0,
-            "t": 361.7,
-            "r": 497.52,
-            "b": 323.99,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            205
+            209
           ]
         }
       ],
-      "orig": "\u00b7 Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
-      "text": "Wang Laboratories : In the 1970s, Wang introduced dedicated word processing machines. These devices, like the Wang 1200, featured small screens and floppy disks, making them revolutionary for their time.",
+      "orig": "• Wang Laboratories : In the 1970s, Wang introduced dedicated word processing \nmachines. These devices, like the Wang 1200, featured small screens and floppy \ndisks, making them revolutionary for their time.",
+      "text": "• Wang Laboratories : In the 1970s, Wang introduced dedicated word processing \nmachines. These devices, like the Wang 1200, featured small screens and floppy \ndisks, making them revolutionary for their time.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "•"
     },
     {
       "self_ref": "#/texts/9",
@@ -558,20 +474,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 306.26,
-            "r": 514.47,
-            "b": 282.23,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            152
+            153
           ]
         }
       ],
-      "orig": "These machines were primarily used in offices, where secretarial pools benefited from their ability to make revisions without retyping entire documents.",
-      "text": "These machines were primarily used in offices, where secretarial pools benefited from their ability to make revisions without retyping entire documents."
+      "orig": "These machines were primarily used in offices, where secretarial pools benefited from their \nability to make revisions without retyping entire documents.",
+      "text": "These machines were primarily used in offices, where secretarial pools benefited from their \nability to make revisions without retyping entire documents."
     },
     {
       "self_ref": "#/texts/10",
@@ -585,11 +501,11 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 236.18,
-            "r": 306.71,
-            "b": 225.12,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -599,7 +515,7 @@
       ],
       "orig": "The Rise of Personal Computers (1980s)",
       "text": "The Rise of Personal Computers (1980s)",
-      "level": 1
+      "level": 2
     },
     {
       "self_ref": "#/texts/11",
@@ -613,20 +529,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 72.0,
-            "t": 207.38,
-            "r": 515.57,
-            "b": 183.35,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            177
+            178
           ]
         }
       ],
-      "orig": "The advent of personal computers in the late 1970s and early 1980s transformed word processing from a niche tool to an essential technology for businesses and individuals alike.",
-      "text": "The advent of personal computers in the late 1970s and early 1980s transformed word processing from a niche tool to an essential technology for businesses and individuals alike."
+      "orig": "The advent of personal computers in the late 1970s and early 1980s transformed word \nprocessing from a niche tool to an essential technology for businesses and individuals alike.",
+      "text": "The advent of personal computers in the late 1970s and early 1980s transformed word \nprocessing from a niche tool to an essential technology for businesses and individuals alike."
     },
     {
       "self_ref": "#/texts/12",
@@ -640,54 +556,25 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 90.0,
-            "t": 165.62,
-            "r": 522.53,
-            "b": 128.15,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            201
+            426
           ]
         }
       ],
-      "orig": "\u00b7 WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
-      "text": "WordStar (1978) : Developed for the CP/M operating system, WordStar was one of the first widely used word processing programs. It featured early examples of modern features like cut, copy, and paste.",
+      "orig": "• WordStar (1978) : Developed for the CP/M operating system, WordStar was one of \nthe first widely used word processing programs. It featured early examples of modern \nfeatures like cut, copy, and paste.\n• Microsoft Word (1983) : Microsoft launched Word for MS - DOS in 1983, introducing \na graphical user interface (GUI) and mouse support. Over the years, Microsoft Word \nbecame the industry standard for word processing.",
+      "text": "• WordStar (1978) : Developed for the CP/M operating system, WordStar was one of \nthe first widely used word processing programs. It featured early examples of modern \nfeatures like cut, copy, and paste.\n• Microsoft Word (1983) : Microsoft launched Word for MS - DOS in 1983, introducing \na graphical user interface (GUI) and mouse support. Over the years, Microsoft Word \nbecame the industry standard for word processing.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "•"
     },
     {
       "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 90.0,
-            "t": 124.34,
-            "r": 525.26,
-            "b": 86.63,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            214
-          ]
-        }
-      ],
-      "orig": "\u00b7 Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
-      "text": "Microsoft Word (1983) : Microsoft launched Word for MS-DOS in 1983, introducing a graphical user interface (GUI) and mouse support. Over the years, Microsoft Word became the industry standard for word processing.",
-      "enumerated": false,
-      "marker": "\u00b7"
-    },
-    {
-      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/body"
       },
@@ -698,23 +585,23 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 72.0,
-            "t": 766.82,
-            "r": 516.5,
-            "b": 729.11,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            181
+            187
           ]
         }
       ],
-      "orig": "Other notable software from this era included WordPerfect, which was popular among legal professionals, and Apple's MacWrite, which leveraged the Macintosh's graphical capabilities.",
-      "text": "Other notable software from this era included WordPerfect, which was popular among legal professionals, and Apple's MacWrite, which leveraged the Macintosh's graphical capabilities."
+      "orig": "Other notable software from this era included WordPerfect, which was popular among legal \nprofessionals, and Apple’s MacWrite, which leveraged the Macintosh’s graphical \ncapabilities.",
+      "text": "Other notable software from this era included WordPerfect, which was popular among legal \nprofessionals, and Apple’s MacWrite, which leveraged the Macintosh’s graphical \ncapabilities."
     },
     {
-      "self_ref": "#/texts/15",
+      "self_ref": "#/texts/14",
       "parent": {
         "$ref": "#/body"
       },
@@ -725,11 +612,11 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 72.0,
-            "t": 683.06,
-            "r": 272.2,
-            "b": 672.0,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -739,7 +626,34 @@
       ],
       "orig": "The Modern Era (1990s - Present)",
       "text": "The Modern Era (1990s - Present)",
-      "level": 1
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 2,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            153
+          ]
+        }
+      ],
+      "orig": "By the 1990s, word processing software had become more sophisticated, with features like \nspell check, grammar check, templates, and collaborative tools.",
+      "text": "By the 1990s, word processing software had become more sophisticated, with features like \nspell check, grammar check, templates, and collaborative tools."
     },
     {
       "self_ref": "#/texts/16",
@@ -753,107 +667,102 @@
         {
           "page_no": 2,
           "bbox": {
-            "l": 72.0,
-            "t": 654.02,
-            "r": 510.87,
-            "b": 630.23,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            152
+            505
           ]
         }
       ],
-      "orig": "By the 1990s, word processing software had become more sophisticated, with features like spell check, grammar check, templates, and collaborative tools.",
-      "text": "By the 1990s, word processing software had become more sophisticated, with features like spell check, grammar check, templates, and collaborative tools."
+      "orig": "• Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, \nintegrating Word with other productivity tools like Excel and PowerPoint.\n• OpenOffice and LibreOffice : Open - source alternatives emerged in the early 2000s, \noffering free and flexible word processing options.\n• Google Docs (2006) : The introduction of cloud - based word processing revolutionized \ncollaboration. Google Docs enabled real - time editing and sharing, making it a staple \nfor teams and remote work.",
+      "text": "• Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, \nintegrating Word with other productivity tools like Excel and PowerPoint.\n• OpenOffice and LibreOffice : Open - source alternatives emerged in the early 2000s, \noffering free and flexible word processing options.\n• Google Docs (2006) : The introduction of cloud - based word processing revolutionized \ncollaboration. Google Docs enabled real - time editing and sharing, making it a staple \nfor teams and remote work."
     },
     {
       "self_ref": "#/texts/17",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "section_header",
       "prov": [
         {
           "page_no": 2,
           "bbox": {
-            "l": 90.0,
-            "t": 612.5,
-            "r": 491.24,
-            "b": 588.95,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            155
+            25
           ]
         }
       ],
-      "orig": "\u00b7 Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
-      "text": "Microsoft Office Suite : Microsoft continued to dominate with its Office Suite, integrating Word with other productivity tools like Excel and PowerPoint.",
-      "enumerated": false,
-      "marker": "\u00b7"
+      "orig": "Future of Word Processing",
+      "text": "Future of Word Processing",
+      "level": 2
     },
     {
       "self_ref": "#/texts/18",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 2,
           "bbox": {
-            "l": 90.0,
-            "t": 584.9,
-            "r": 517.54,
-            "b": 561.35,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            135
+            394
           ]
         }
       ],
-      "orig": "\u00b7 OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
-      "text": "OpenOffice and LibreOffice : Open-source alternatives emerged in the early 2000s, offering free and flexible word processing options.",
-      "enumerated": false,
-      "marker": "\u00b7"
+      "orig": "Today, word processors are more than just tools for typing. They integrate artificial \nintelligence for grammar and style suggestions (e.g., Grammarly), voice - to - text features, and \nadvanced layout options. As AI continues to advance, word processors may evo lve into even \nmore intuitive tools that predict user needs, automate repetitive tasks, and support richer \nmultimedia integration.",
+      "text": "Today, word processors are more than just tools for typing. They integrate artificial \nintelligence for grammar and style suggestions (e.g., Grammarly), voice - to - text features, and \nadvanced layout options. As AI continues to advance, word processors may evo lve into even \nmore intuitive tools that predict user needs, automate repetitive tasks, and support richer \nmultimedia integration."
     },
     {
       "self_ref": "#/texts/19",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 2,
           "bbox": {
-            "l": 90.0,
-            "t": 557.3,
-            "r": 524.56,
-            "b": 519.59,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            197
+            232
           ]
         }
       ],
-      "orig": "\u00b7 Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
-      "text": "Google Docs (2006) : The introduction of cloud-based word processing revolutionized collaboration. Google Docs enabled real-time editing and sharing, making it a staple for teams and remote work.",
-      "enumerated": false,
-      "marker": "\u00b7"
+      "orig": "From the clunky typewriters of the 19th century to the AI - powered cloud tools of today, the \nword processor has come a long way. It remains an essential tool for communication and \ncreativity, shaping how we write and share ideas.",
+      "text": "From the clunky typewriters of the 19th century to the AI - powered cloud tools of today, the \nword processor has come a long way. It remains an essential tool for communication and \ncreativity, shaping how we write and share ideas."
     },
     {
       "self_ref": "#/texts/20",
@@ -865,23 +774,23 @@
       "label": "section_header",
       "prov": [
         {
-          "page_no": 2,
+          "page_no": 3,
           "bbox": {
-            "l": 72.0,
-            "t": 473.54,
-            "r": 231.71,
-            "b": 462.48,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            25
+            33
           ]
         }
       ],
-      "orig": "Future of Word Processing",
-      "text": "Future of Word Processing",
-      "level": 1
+      "orig": "Specialized Word Processing Tools",
+      "text": "Specialized Word Processing Tools",
+      "level": 2
     },
     {
       "self_ref": "#/texts/21",
@@ -893,22 +802,22 @@
       "label": "text",
       "prov": [
         {
-          "page_no": 2,
+          "page_no": 3,
           "bbox": {
-            "l": 72.0,
-            "t": 444.5,
-            "r": 520.54,
-            "b": 379.19,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            385
+            201
           ]
         }
       ],
-      "orig": "Today, word processors are more than just tools for typing. They integrate artificial intelligence for grammar and style suggestions (e.g., Grammarly), voice-to-text features, and advanced layout options. As AI continues to advance, word processors may evolve into even more intuitive tools that predict user needs, automate repetitive tasks, and support richer multimedia integration.",
-      "text": "Today, word processors are more than just tools for typing. They integrate artificial intelligence for grammar and style suggestions (e.g., Grammarly), voice-to-text features, and advanced layout options. As AI continues to advance, word processors may evolve into even more intuitive tools that predict user needs, automate repetitive tasks, and support richer multimedia integration."
+      "orig": "In addition to general - purpose word processors, specialized tools have emerged to cater to \nspecific industries and needs. These tools incorporate unique features tailored to their users' \nworkflows:",
+      "text": "In addition to general - purpose word processors, specialized tools have emerged to cater to \nspecific industries and needs. These tools incorporate unique features tailored to their users' \nworkflows:"
     },
     {
       "self_ref": "#/texts/22",
@@ -920,25 +829,54 @@
       "label": "text",
       "prov": [
         {
-          "page_no": 2,
+          "page_no": 3,
           "bbox": {
-            "l": 72.0,
-            "t": 333.62,
-            "r": 515.56,
-            "b": 296.15,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            228
+            630
           ]
         }
       ],
-      "orig": "From the clunky typewriters of the 19th century to the AI-powered cloud tools of today, the word processor has come a long way. It remains an essential tool for communication and creativity, shaping how we write and share ideas.",
-      "text": "From the clunky typewriters of the 19th century to the AI-powered cloud tools of today, the word processor has come a long way. It remains an essential tool for communication and creativity, shaping how we write and share ideas."
+      "orig": "• Academic and Technical Writing : Tools like LaTeX gained popularity among \nacademics, scientists, and engineers. Unlike traditional word processors, LaTeX \nfocuses on precise formatting, particularly for complex mathematical equations, \nscientific papers, and technical documents. It relies on a markup language to produce \npolished documents suitable for publishing.\n• Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are \nspecialized to handle scripts for film and television. These programs automate the \nformatting of dialogue, scene descriptions, and other elements unique to \nscreenwriting.",
+      "text": "• Academic and Technical Writing : Tools like LaTeX gained popularity among \nacademics, scientists, and engineers. Unlike traditional word processors, LaTeX \nfocuses on precise formatting, particularly for complex mathematical equations, \nscientific papers, and technical documents. It relies on a markup language to produce \npolished documents suitable for publishing.\n• Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are \nspecialized to handle scripts for film and television. These programs automate the \nformatting of dialogue, scene descriptions, and other elements unique to \nscreenwriting."
     },
     {
       "self_ref": "#/texts/23",
+      "parent": {
+        "$ref": "#/groups/2"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "list_item",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            306
+          ]
+        }
+      ],
+      "orig": "• Legal Document Processors : Word processors tailored for legal professionals, like \nWordPerfect, offered features such as redlining (early version tracking) and document \ncomparison. Even today, many law firms rely on these tools due to their robust \nformatting options for contracts a nd legal briefs.",
+      "text": "• Legal Document Processors : Word processors tailored for legal professionals, like \nWordPerfect, offered features such as redlining (early version tracking) and document \ncomparison. Even today, many law firms rely on these tools due to their robust \nformatting options for contracts a nd legal briefs.",
+      "enumerated": false,
+      "marker": "•"
+    },
+    {
+      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/body"
       },
@@ -949,24 +887,24 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 72.0,
-            "t": 766.1,
-            "r": 276.73,
-            "b": 755.04,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            33
+            41
           ]
         }
       ],
-      "orig": "Specialized Word Processing Tools",
-      "text": "Specialized Word Processing Tools",
-      "level": 1
+      "orig": "Key Features That Changed Word Processing",
+      "text": "Key Features That Changed Word Processing",
+      "level": 2
     },
     {
-      "self_ref": "#/texts/24",
+      "self_ref": "#/texts/25",
       "parent": {
         "$ref": "#/body"
       },
@@ -977,110 +915,50 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 72.0,
-            "t": 737.3,
-            "r": 514.67,
-            "b": 699.59,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            197
+            212
           ]
         }
       ],
-      "orig": "In addition to general-purpose word processors, specialized tools have emerged to cater to specific industries and needs. These tools incorporate unique features tailored to their users' workflows:",
-      "text": "In addition to general-purpose word processors, specialized tools have emerged to cater to specific industries and needs. These tools incorporate unique features tailored to their users' workflows:"
-    },
-    {
-      "self_ref": "#/texts/25",
-      "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 90.0,
-            "t": 681.86,
-            "r": 519.51,
-            "b": 616.79,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            365
-          ]
-        }
-      ],
-      "orig": "\u00b7 Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
-      "text": "Academic and Technical Writing : Tools like LaTeX gained popularity among academics, scientists, and engineers. Unlike traditional word processors, LaTeX focuses on precise formatting, particularly for complex mathematical equations, scientific papers, and technical documents. It relies on a markup language to produce polished documents suitable for publishing.",
-      "enumerated": false,
-      "marker": "\u00b7"
+      "orig": "The evolution of word processors wasn't just about hardware or software improvements — it \nwas about the features that revolutionized how people wrote and edited. Some of these \ntransformative features include:",
+      "text": "The evolution of word processors wasn't just about hardware or software improvements — it \nwas about the features that revolutionized how people wrote and edited. Some of these \ntransformative features include:"
     },
     {
       "self_ref": "#/texts/26",
       "parent": {
-        "$ref": "#/groups/3"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 3,
           "bbox": {
-            "l": 90.0,
-            "t": 612.98,
-            "r": 503.53,
-            "b": 561.59,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            253
+            698
           ]
         }
       ],
-      "orig": "\u00b7 Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
-      "text": "Screenwriting Software : For screenwriters, tools like Final Draft and Celtx are specialized to handle scripts for film and television. These programs automate the formatting of dialogue, scene descriptions, and other elements unique to screenwriting.",
-      "enumerated": false,
-      "marker": "\u00b7"
+      "orig": "1. Undo/Redo : Introduced in the 1980s, the ability to undo mistakes and redo actions \nmade experimentation and error correction much easier.\n2. Spell Check and Grammar Check : By the 1990s, these became standard, allowing \nusers to spot errors automatically.\n3. Templates : Pre - designed formats for documents, such as resumes, letters, and \ninvoices, helped users save time.\n4. Track Changes : A game - changer for collaboration, this feature allowed multiple \nusers to suggest edits while maintaining the original text.\n5. Real - Time Collaboration : Tools like Google Docs and Microsoft 365 enabled \nmultiple users to edit the same document simultaneously, forever changing teamwork \ndynamics.",
+      "text": "1. Undo/Redo : Introduced in the 1980s, the ability to undo mistakes and redo actions \nmade experimentation and error correction much easier.\n2. Spell Check and Grammar Check : By the 1990s, these became standard, allowing \nusers to spot errors automatically.\n3. Templates : Pre - designed formats for documents, such as resumes, letters, and \ninvoices, helped users save time.\n4. Track Changes : A game - changer for collaboration, this feature allowed multiple \nusers to suggest edits while maintaining the original text.\n5. Real - Time Collaboration : Tools like Google Docs and Microsoft 365 enabled \nmultiple users to edit the same document simultaneously, forever changing teamwork \ndynamics."
     },
     {
       "self_ref": "#/texts/27",
-      "parent": {
-        "$ref": "#/groups/3"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 90.0,
-            "t": 557.78,
-            "r": 524.48,
-            "b": 506.15,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            300
-          ]
-        }
-      ],
-      "orig": "\u00b7 Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
-      "text": "Legal Document Processors : Word processors tailored for legal professionals, like WordPerfect, offered features such as redlining (early version tracking) and document comparison. Even today, many law firms rely on these tools due to their robust formatting options for contracts and legal briefs.",
-      "enumerated": false,
-      "marker": "\u00b7"
-    },
-    {
-      "self_ref": "#/texts/28",
       "parent": {
         "$ref": "#/body"
       },
@@ -1091,21 +969,48 @@
         {
           "page_no": 3,
           "bbox": {
-            "l": 72.0,
-            "t": 460.1,
-            "r": 340.47,
-            "b": 449.04,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            41
+            38
           ]
         }
       ],
-      "orig": "Key Features That Changed Word Processing",
-      "text": "Key Features That Changed Word Processing",
-      "level": 1
+      "orig": "The Cultural Impact of Word Processors",
+      "text": "The Cultural Impact of Word Processors",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/28",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 3,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            270
+          ]
+        }
+      ],
+      "orig": "The word processor didn't just change workplaces — it changed culture. It democratized \nwriting, enabling anyone with access to a computer to produce professional - quality \ndocuments. This shift had profound implications for education, business, and creative fi elds:",
+      "text": "The word processor didn't just change workplaces — it changed culture. It democratized \nwriting, enabling anyone with access to a computer to produce professional - quality \ndocuments. This shift had profound implications for education, business, and creative fi elds:"
     },
     {
       "self_ref": "#/texts/29",
@@ -1117,341 +1022,54 @@
       "label": "text",
       "prov": [
         {
-          "page_no": 3,
+          "page_no": 4,
           "bbox": {
-            "l": 72.0,
-            "t": 431.3,
-            "r": 514.72,
-            "b": 393.59,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            206
+            706
           ]
         }
       ],
-      "orig": "The evolution of word processors wasn't just about hardware or software improvements-it was about the features that revolutionized how people wrote and edited. Some of these transformative features include:",
-      "text": "The evolution of word processors wasn't just about hardware or software improvements-it was about the features that revolutionized how people wrote and edited. Some of these transformative features include:"
+      "orig": "• Accessibility : Writers no longer needed expensive publishing equipment or training \nin typesetting to create polished work. This accessibility paved the way for self -\npublishing, blogging, and even fan fiction communities.\n• Education : Word processors became a cornerstone of education, teaching students \nnot only how to write essays but also how to use technology effectively. Features like \nbibliography generators and integrated research tools enhanced learning.\n• Creative Writing : Writers gained powerful tools to organize their ideas. Programs \nlike Scrivener allowed authors to manage large projects, from novels to screenplays, \nwith features like chapter outlines and character notes.",
+      "text": "• Accessibility : Writers no longer needed expensive publishing equipment or training \nin typesetting to create polished work. This accessibility paved the way for self -\npublishing, blogging, and even fan fiction communities.\n• Education : Word processors became a cornerstone of education, teaching students \nnot only how to write essays but also how to use technology effectively. Features like \nbibliography generators and integrated research tools enhanced learning.\n• Creative Writing : Writers gained powerful tools to organize their ideas. Programs \nlike Scrivener allowed authors to manage large projects, from novels to screenplays, \nwith features like chapter outlines and character notes."
     },
     {
       "self_ref": "#/texts/30",
       "parent": {
-        "$ref": "#/groups/4"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "section_header",
       "prov": [
         {
-          "page_no": 3,
+          "page_no": 4,
           "bbox": {
-            "l": 90.0,
-            "t": 375.86,
-            "r": 509.27,
-            "b": 352.07,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            140
+            39
           ]
         }
       ],
-      "orig": "1. Undo/Redo : Introduced in the 1980s, the ability to undo mistakes and redo actions made experimentation and error correction much easier.",
-      "text": "Undo/Redo : Introduced in the 1980s, the ability to undo mistakes and redo actions made experimentation and error correction much easier.",
-      "enumerated": true,
-      "marker": "1."
+      "orig": "Word Processors in a Post - Digital Era",
+      "text": "Word Processors in a Post - Digital Era",
+      "level": 2
     },
     {
       "self_ref": "#/texts/31",
       "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 90.0,
-            "t": 348.26,
-            "r": 516.6,
-            "b": 324.47,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            116
-          ]
-        }
-      ],
-      "orig": "2. Spell Check and Grammar Check : By the 1990s, these became standard, allowing users to spot errors automatically.",
-      "text": "Spell Check and Grammar Check : By the 1990s, these became standard, allowing users to spot errors automatically.",
-      "enumerated": true,
-      "marker": "2."
-    },
-    {
-      "self_ref": "#/texts/32",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 90.0,
-            "t": 320.66,
-            "r": 486.9,
-            "b": 296.87,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            114
-          ]
-        }
-      ],
-      "orig": "3. Templates : Pre-designed formats for documents, such as resumes, letters, and invoices, helped users save time.",
-      "text": "Templates : Pre-designed formats for documents, such as resumes, letters, and invoices, helped users save time.",
-      "enumerated": true,
-      "marker": "3."
-    },
-    {
-      "self_ref": "#/texts/33",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 90.0,
-            "t": 293.06,
-            "r": 502.21,
-            "b": 269.27,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            142
-          ]
-        }
-      ],
-      "orig": "4. Track Changes : A game-changer for collaboration, this feature allowed multiple users to suggest edits while maintaining the original text.",
-      "text": "Track Changes : A game-changer for collaboration, this feature allowed multiple users to suggest edits while maintaining the original text.",
-      "enumerated": true,
-      "marker": "4."
-    },
-    {
-      "self_ref": "#/texts/34",
-      "parent": {
-        "$ref": "#/groups/4"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 90.0,
-            "t": 265.46,
-            "r": 521.88,
-            "b": 227.75,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            170
-          ]
-        }
-      ],
-      "orig": "5. Real-Time Collaboration : Tools like Google Docs and Microsoft 365 enabled multiple users to edit the same document simultaneously, forever changing teamwork dynamics.",
-      "text": "Real-Time Collaboration : Tools like Google Docs and Microsoft 365 enabled multiple users to edit the same document simultaneously, forever changing teamwork dynamics.",
-      "enumerated": true,
-      "marker": "5."
-    },
-    {
-      "self_ref": "#/texts/35",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 72.0,
-            "t": 181.46,
-            "r": 311.96,
-            "b": 170.4,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            38
-          ]
-        }
-      ],
-      "orig": "The Cultural Impact of Word Processors",
-      "text": "The Cultural Impact of Word Processors",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/36",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 3,
-          "bbox": {
-            "l": 72.0,
-            "t": 152.66,
-            "r": 518.9,
-            "b": 114.95,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            261
-          ]
-        }
-      ],
-      "orig": "The word processor didn't just change workplaces-it changed culture. It democratized writing, enabling anyone with access to a computer to produce professional-quality documents. This shift had profound implications for education, business, and creative fields:",
-      "text": "The word processor didn't just change workplaces-it changed culture. It democratized writing, enabling anyone with access to a computer to produce professional-quality documents. This shift had profound implications for education, business, and creative fields:"
-    },
-    {
-      "self_ref": "#/texts/37",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 90.0,
-            "t": 766.82,
-            "r": 514.56,
-            "b": 729.35,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            222
-          ]
-        }
-      ],
-      "orig": "\u00b7 Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
-      "text": "Accessibility : Writers no longer needed expensive publishing equipment or training in typesetting to create polished work. This accessibility paved the way for selfpublishing, blogging, and even fan fiction communities.",
-      "enumerated": false,
-      "marker": "\u00b7"
-    },
-    {
-      "self_ref": "#/texts/38",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 90.0,
-            "t": 725.54,
-            "r": 521.9,
-            "b": 688.07,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            242
-          ]
-        }
-      ],
-      "orig": "\u00b7 Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
-      "text": "Education : Word processors became a cornerstone of education, teaching students not only how to write essays but also how to use technology effectively. Features like bibliography generators and integrated research tools enhanced learning.",
-      "enumerated": false,
-      "marker": "\u00b7"
-    },
-    {
-      "self_ref": "#/texts/39",
-      "parent": {
-        "$ref": "#/groups/5"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 90.0,
-            "t": 684.02,
-            "r": 515.85,
-            "b": 646.31,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            226
-          ]
-        }
-      ],
-      "orig": "\u00b7 Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
-      "text": "Creative Writing : Writers gained powerful tools to organize their ideas. Programs like Scrivener allowed authors to manage large projects, from novels to screenplays, with features like chapter outlines and character notes.",
-      "enumerated": false,
-      "marker": "\u00b7"
-    },
-    {
-      "self_ref": "#/texts/40",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 72.0,
-            "t": 600.26,
-            "r": 295.45,
-            "b": 589.2,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            37
-          ]
-        }
-      ],
-      "orig": "Word Processors in a Post-Digital Era",
-      "text": "Word Processors in a Post-Digital Era",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/41",
-      "parent": {
         "$ref": "#/body"
       },
       "children": [],
@@ -1461,11 +1079,11 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 72.0,
-            "t": 570.98,
-            "r": 521.21,
-            "b": 561.11,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -1477,38 +1095,36 @@
       "text": "As we move further into the 21st century, the role of the word processor continues to evolve:"
     },
     {
-      "self_ref": "#/texts/42",
+      "self_ref": "#/texts/32",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "list_item",
+      "label": "text",
       "prov": [
         {
           "page_no": 4,
           "bbox": {
-            "l": 90.0,
-            "t": 543.62,
-            "r": 523.84,
-            "b": 492.23,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            290
+            839
           ]
         }
       ],
-      "orig": "1. Artificial Intelligence : Modern word processors are leveraging AI to suggest content improvements. Tools like Grammarly, ProWritingAid, and even native features in Word now analyze tone, conciseness, and clarity. Some AI systems can even generate entire paragraphs or rewrite sentences.",
-      "text": "Artificial Intelligence : Modern word processors are leveraging AI to suggest content improvements. Tools like Grammarly, ProWritingAid, and even native features in Word now analyze tone, conciseness, and clarity. Some AI systems can even generate entire paragraphs or rewrite sentences.",
-      "enumerated": true,
-      "marker": "1."
+      "orig": "1. Artificial Intelligence : Modern word processors are leveraging AI to suggest content \nimprovements. Tools like Grammarly, ProWritingAid, and even native features in \nWord now analyze tone, conciseness, and clarity. Some AI systems can even generate \nentire paragraphs or rewrite sen tences.\n2. Integration with Other Tools : Word processors are no longer standalone. They \nintegrate with task managers, cloud storage, and project management platforms. For \ninstance, Google Docs syncs with Google Drive, while Microsoft Word integrates \nseamlessly with OneDrive and Teams.\n3. Voice Typing : Speech - to - text capabilities have made word processing more \naccessible, particularly for those with disabilities. Tools like Dragon \nNaturallySpeaking and built - in options in Google Docs and Microsoft Word have \nmade dictation mainstream.",
+      "text": "1. Artificial Intelligence : Modern word processors are leveraging AI to suggest content \nimprovements. Tools like Grammarly, ProWritingAid, and even native features in \nWord now analyze tone, conciseness, and clarity. Some AI systems can even generate \nentire paragraphs or rewrite sen tences.\n2. Integration with Other Tools : Word processors are no longer standalone. They \nintegrate with task managers, cloud storage, and project management platforms. For \ninstance, Google Docs syncs with Google Drive, while Microsoft Word integrates \nseamlessly with OneDrive and Teams.\n3. Voice Typing : Speech - to - text capabilities have made word processing more \naccessible, particularly for those with disabilities. Tools like Dragon \nNaturallySpeaking and built - in options in Google Docs and Microsoft Word have \nmade dictation mainstream."
     },
     {
-      "self_ref": "#/texts/43",
+      "self_ref": "#/texts/33",
       "parent": {
-        "$ref": "#/groups/6"
+        "$ref": "#/groups/3"
       },
       "children": [],
       "content_layer": "body",
@@ -1517,112 +1133,25 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 90.0,
-            "t": 488.42,
-            "r": 514.53,
-            "b": 437.03,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            278
+            428
           ]
         }
       ],
-      "orig": "2. Integration with Other Tools : Word processors are no longer standalone. They integrate with task managers, cloud storage, and project management platforms. For instance, Google Docs syncs with Google Drive, while Microsoft Word integrates seamlessly with OneDrive and Teams.",
-      "text": "Integration with Other Tools : Word processors are no longer standalone. They integrate with task managers, cloud storage, and project management platforms. For instance, Google Docs syncs with Google Drive, while Microsoft Word integrates seamlessly with OneDrive and Teams.",
-      "enumerated": true,
-      "marker": "2."
-    },
-    {
-      "self_ref": "#/texts/44",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 90.0,
-            "t": 433.22,
-            "r": 502.92,
-            "b": 381.83,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            253
-          ]
-        }
-      ],
-      "orig": "3. Voice Typing : Speech-to-text capabilities have made word processing more accessible, particularly for those with disabilities. Tools like Dragon NaturallySpeaking and built-in options in Google Docs and Microsoft Word have made dictation mainstream.",
-      "text": "Voice Typing : Speech-to-text capabilities have made word processing more accessible, particularly for those with disabilities. Tools like Dragon NaturallySpeaking and built-in options in Google Docs and Microsoft Word have made dictation mainstream.",
-      "enumerated": true,
-      "marker": "3."
-    },
-    {
-      "self_ref": "#/texts/45",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 90.0,
-            "t": 378.02,
-            "r": 516.92,
-            "b": 340.55,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            215
-          ]
-        }
-      ],
-      "orig": "4. Multimedia Documents : Word processing has expanded beyond text. Modern tools allow users to embed images, videos, charts, and interactive elements, transforming simple documents into rich multimedia experiences.",
-      "text": "Multimedia Documents : Word processing has expanded beyond text. Modern tools allow users to embed images, videos, charts, and interactive elements, transforming simple documents into rich multimedia experiences.",
+      "orig": "4. Multimedia Documents : Word processing has expanded beyond text. Modern tools \nallow users to embed images, videos, charts, and interactive elements, transforming \nsimple documents into rich multimedia experiences.\n5. Cross - Platform Accessibility : Thanks to cloud computing, documents can now be \naccessed and edited across devices. Whether you're on a desktop, tablet, or \nsmartphone, you can continue working seamlessly.",
+      "text": "4. Multimedia Documents : Word processing has expanded beyond text. Modern tools \nallow users to embed images, videos, charts, and interactive elements, transforming \nsimple documents into rich multimedia experiences.\n5. Cross - Platform Accessibility : Thanks to cloud computing, documents can now be \naccessed and edited across devices. Whether you're on a desktop, tablet, or \nsmartphone, you can continue working seamlessly.",
       "enumerated": true,
       "marker": "4."
     },
     {
-      "self_ref": "#/texts/46",
-      "parent": {
-        "$ref": "#/groups/6"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 90.0,
-            "t": 336.5,
-            "r": 510.91,
-            "b": 298.79,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            206
-          ]
-        }
-      ],
-      "orig": "5. Cross-Platform Accessibility : Thanks to cloud computing, documents can now be accessed and edited across devices. Whether you're on a desktop, tablet, or smartphone, you can continue working seamlessly.",
-      "text": "Cross-Platform Accessibility : Thanks to cloud computing, documents can now be accessed and edited across devices. Whether you're on a desktop, tablet, or smartphone, you can continue working seamlessly.",
-      "enumerated": true,
-      "marker": "5."
-    },
-    {
-      "self_ref": "#/texts/47",
+      "self_ref": "#/texts/34",
       "parent": {
         "$ref": "#/body"
       },
@@ -1633,11 +1162,11 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 72.0,
-            "t": 252.74,
-            "r": 228.36,
-            "b": 241.68,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -1647,10 +1176,10 @@
       ],
       "orig": "A Glimpse Into the Future",
       "text": "A Glimpse Into the Future",
-      "level": 1
+      "level": 2
     },
     {
-      "self_ref": "#/texts/48",
+      "self_ref": "#/texts/35",
       "parent": {
         "$ref": "#/body"
       },
@@ -1661,25 +1190,25 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 72.0,
-            "t": 223.7,
-            "r": 515.05,
-            "b": 199.91,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            103
+            104
           ]
         }
       ],
-      "orig": "The word processor's future lies in adaptability and intelligence. Some exciting possibilities include:",
-      "text": "The word processor's future lies in adaptability and intelligence. Some exciting possibilities include:"
+      "orig": "The word processor's future lies in adaptability and intelligence. Some exciting possibilities \ninclude:",
+      "text": "The word processor's future lies in adaptability and intelligence. Some exciting possibilities \ninclude:"
     },
     {
-      "self_ref": "#/texts/49",
+      "self_ref": "#/texts/36",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1688,27 +1217,27 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 90.0,
-            "t": 182.18,
-            "r": 518.27,
-            "b": 158.63,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            155
+            349
           ]
         }
       ],
-      "orig": "\u00b7 Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
-      "text": "Fully AI-Assisted Writing : Imagine a word processor that understands your writing style, drafts emails, or creates entire essays based on minimal input.",
+      "orig": "• Fully AI - Assisted Writing : Imagine a word processor that understands your writing \nstyle, drafts emails, or creates entire essays based on minimal input.\n• Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) \ntechnology advance, users may be able to write and edit in 3D spaces, collaborating in \nvirtual environments.",
+      "text": "• Fully AI - Assisted Writing : Imagine a word processor that understands your writing \nstyle, drafts emails, or creates entire essays based on minimal input.\n• Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) \ntechnology advance, users may be able to write and edit in 3D spaces, collaborating in \nvirtual environments.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "•"
     },
     {
-      "self_ref": "#/texts/50",
+      "self_ref": "#/texts/37",
       "parent": {
-        "$ref": "#/groups/7"
+        "$ref": "#/groups/4"
       },
       "children": [],
       "content_layer": "body",
@@ -1717,54 +1246,25 @@
         {
           "page_no": 4,
           "bbox": {
-            "l": 90.0,
-            "t": 154.58,
-            "r": 525.52,
-            "b": 117.11,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            184
+            165
           ]
         }
       ],
-      "orig": "\u00b7 Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
-      "text": "Immersive Interfaces : As augmented reality (AR) and virtual reality (VR) technology advance, users may be able to write and edit in 3D spaces, collaborating in virtual environments.",
+      "orig": "• Hyper - Personalization : Word processors could offer dynamic suggestions based on \nindustry - specific needs, user habits, or even regional language variations.",
+      "text": "• Hyper - Personalization : Word processors could offer dynamic suggestions based on \nindustry - specific needs, user habits, or even regional language variations.",
       "enumerated": false,
-      "marker": "\u00b7"
+      "marker": "•"
     },
     {
-      "self_ref": "#/texts/51",
-      "parent": {
-        "$ref": "#/groups/7"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 4,
-          "bbox": {
-            "l": 90.0,
-            "t": 113.3,
-            "r": 518.91,
-            "b": 89.27,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            158
-          ]
-        }
-      ],
-      "orig": "\u00b7 Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
-      "text": "Hyper-Personalization : Word processors could offer dynamic suggestions based on industry-specific needs, user habits, or even regional language variations.",
-      "enumerated": false,
-      "marker": "\u00b7"
-    },
-    {
-      "self_ref": "#/texts/52",
+      "self_ref": "#/texts/38",
       "parent": {
         "$ref": "#/body"
       },
@@ -1775,20 +1275,20 @@
         {
           "page_no": 5,
           "bbox": {
-            "l": 72.0,
-            "t": 738.98,
-            "r": 510.5,
-            "b": 673.67,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.2000122070312,
+            "b": 841.9199829101562,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            416
+            431
           ]
         }
       ],
-      "orig": "The journey of the word processor-from clunky typewriters to AI-powered platformsreflects humanity's broader technological progress. What began as a tool to simply replace handwriting has transformed into a powerful ally for creativity, communication, and collaboration. As technology continues to advance, the word processor will undoubtedly remain at the heart of how we express ideas and connect with one another.",
-      "text": "The journey of the word processor-from clunky typewriters to AI-powered platformsreflects humanity's broader technological progress. What began as a tool to simply replace handwriting has transformed into a powerful ally for creativity, communication, and collaboration. As technology continues to advance, the word processor will undoubtedly remain at the heart of how we express ideas and connect with one another."
+      "orig": "The journey of the word processor — from clunky typewriters to AI - powered platforms —\nreflects humanity’s broader technological progress. What began as a tool to simply replace \nhandwriting has transformed into a powerful ally for creativity, communication, and\ncollaboration. As technology continues to advance, the word processor will undoubtedly \nremain at the heart of how we express ideas and connect with one another.",
+      "text": "The journey of the word processor — from clunky typewriters to AI - powered platforms —\nreflects humanity’s broader technological progress. What began as a tool to simply replace \nhandwriting has transformed into a powerful ally for creativity, communication, and\ncollaboration. As technology continues to advance, the word processor will undoubtedly \nremain at the heart of how we express ideas and connect with one another."
     }
   ],
   "pictures": [],
@@ -1798,36 +1298,36 @@
   "pages": {
     "1": {
       "size": {
-        "width": 595.2,
-        "height": 841.92
+        "width": 595.2000122070312,
+        "height": 841.9199829101562
       },
       "page_no": 1
     },
     "2": {
       "size": {
-        "width": 595.2,
-        "height": 841.92
+        "width": 595.2000122070312,
+        "height": 841.9199829101562
       },
       "page_no": 2
     },
     "3": {
       "size": {
-        "width": 595.2,
-        "height": 841.92
+        "width": 595.2000122070312,
+        "height": 841.9199829101562
       },
       "page_no": 3
     },
     "4": {
       "size": {
-        "width": 595.2,
-        "height": 841.92
+        "width": 595.2000122070312,
+        "height": 841.9199829101562
       },
       "page_no": 4
     },
     "5": {
       "size": {
-        "width": 595.2,
-        "height": 841.92
+        "width": 595.2000122070312,
+        "height": 841.9199829101562
       },
       "page_no": 5
     }

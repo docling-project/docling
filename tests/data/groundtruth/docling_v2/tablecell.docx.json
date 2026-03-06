@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "name": "tablecell",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 1111850039819445035,
+    "binary_hash": 5550954865280100784,
     "filename": "tablecell.docx"
   },
   "furniture": {
@@ -34,9 +34,6 @@
       },
       {
         "$ref": "#/texts/5"
-      },
-      {
-        "$ref": "#/texts/6"
       }
     ],
     "content_layer": "body",
@@ -74,15 +71,8 @@
       "prov": [],
       "orig": "Hello world1",
       "text": "Hello world1",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      },
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/1",
@@ -95,15 +85,8 @@
       "prov": [],
       "orig": "Hello2",
       "text": "Hello2",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      },
       "enumerated": false,
-      "marker": ""
+      "marker": "-"
     },
     {
       "self_ref": "#/texts/2",
@@ -127,14 +110,7 @@
       "label": "text",
       "prov": [],
       "orig": "Some text before",
-      "text": "Some text before",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "Some text before"
     },
     {
       "self_ref": "#/texts/4",
@@ -157,27 +133,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
       "orig": "Some text after",
-      "text": "Some text after",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "Some text after"
     }
   ],
   "pictures": [],

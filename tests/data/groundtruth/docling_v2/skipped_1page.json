@@ -1,0 +1,53 @@
+{
+  "schema_name": "DoclingDocument",
+  "version": "1.9.0",
+  "name": "skipped_1page",
+  "origin": {
+    "mimetype": "application/pdf",
+    "binary_hash": 9399725217464752124,
+    "filename": "skipped_1page.pdf"
+  },
+  "furniture": {
+    "self_ref": "#/furniture",
+    "children": [],
+    "content_layer": "furniture",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "body": {
+    "self_ref": "#/body",
+    "children": [],
+    "content_layer": "body",
+    "name": "_root_",
+    "label": "unspecified"
+  },
+  "groups": [],
+  "texts": [],
+  "pictures": [],
+  "tables": [],
+  "key_value_items": [],
+  "form_items": [],
+  "pages": {
+    "1": {
+      "size": {
+        "width": 515.906005859375,
+        "height": 728.5040283203125
+      },
+      "page_no": 1
+    },
+    "2": {
+      "size": {
+        "width": 515.906005859375,
+        "height": 728.5040283203125
+      },
+      "page_no": 2
+    },
+    "3": {
+      "size": {
+        "width": 515.906005859375,
+        "height": 728.5040283203125
+      },
+      "page_no": 3
+    }
+  }
+}

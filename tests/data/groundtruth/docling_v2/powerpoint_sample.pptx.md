@@ -1,6 +1,6 @@
 # Test Table Slide
 
-With footnote
+## With footnote
 
 |    | Class1          | Class1          | Class1   | Class2   | Class2   | Class2   |
 |----|-----------------|-----------------|----------|----------|----------|----------|

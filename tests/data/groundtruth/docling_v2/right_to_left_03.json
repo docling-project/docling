@@ -4,7 +4,7 @@
   "name": "right_to_left_03",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 10326044566005236748,
+    "binary_hash": 17076356537369264688,
     "filename": "right_to_left_03.pdf"
   },
   "furniture": {
@@ -21,136 +21,74 @@
         "$ref": "#/texts/0"
       },
       {
-        "$ref": "#/pictures/0"
-      },
-      {
         "$ref": "#/texts/1"
       },
       {
         "$ref": "#/texts/2"
       },
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/3"
       },
       {
-        "$ref": "#/texts/31"
+        "$ref": "#/texts/4"
+      },
+      {
+        "$ref": "#/texts/5"
+      },
+      {
+        "$ref": "#/texts/6"
+      },
+      {
+        "$ref": "#/texts/7"
+      },
+      {
+        "$ref": "#/texts/8"
+      },
+      {
+        "$ref": "#/texts/9"
+      },
+      {
+        "$ref": "#/texts/10"
+      },
+      {
+        "$ref": "#/texts/11"
+      },
+      {
+        "$ref": "#/texts/12"
+      },
+      {
+        "$ref": "#/texts/13"
+      },
+      {
+        "$ref": "#/texts/14"
+      },
+      {
+        "$ref": "#/texts/15"
+      },
+      {
+        "$ref": "#/texts/16"
+      },
+      {
+        "$ref": "#/texts/17"
+      },
+      {
+        "$ref": "#/texts/18"
+      },
+      {
+        "$ref": "#/texts/19"
+      },
+      {
+        "$ref": "#/texts/20"
+      },
+      {
+        "$ref": "#/pictures/0"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [
-    {
-      "self_ref": "#/groups/0",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/3"
-        },
-        {
-          "$ref": "#/texts/4"
-        },
-        {
-          "$ref": "#/texts/5"
-        },
-        {
-          "$ref": "#/texts/6"
-        },
-        {
-          "$ref": "#/texts/7"
-        },
-        {
-          "$ref": "#/texts/8"
-        },
-        {
-          "$ref": "#/texts/9"
-        },
-        {
-          "$ref": "#/texts/10"
-        },
-        {
-          "$ref": "#/texts/11"
-        },
-        {
-          "$ref": "#/texts/12"
-        },
-        {
-          "$ref": "#/texts/13"
-        },
-        {
-          "$ref": "#/texts/14"
-        },
-        {
-          "$ref": "#/texts/15"
-        },
-        {
-          "$ref": "#/texts/16"
-        },
-        {
-          "$ref": "#/texts/17"
-        },
-        {
-          "$ref": "#/texts/18"
-        },
-        {
-          "$ref": "#/texts/19"
-        },
-        {
-          "$ref": "#/texts/20"
-        },
-        {
-          "$ref": "#/texts/21"
-        },
-        {
-          "$ref": "#/texts/22"
-        },
-        {
-          "$ref": "#/texts/23"
-        },
-        {
-          "$ref": "#/texts/24"
-        },
-        {
-          "$ref": "#/texts/25"
-        },
-        {
-          "$ref": "#/texts/26"
-        },
-        {
-          "$ref": "#/groups/1"
-        },
-        {
-          "$ref": "#/texts/28"
-        },
-        {
-          "$ref": "#/texts/29"
-        },
-        {
-          "$ref": "#/texts/30"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "form_area"
-    },
-    {
-      "self_ref": "#/groups/1",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/27"
-        }
-      ],
-      "content_layer": "body",
-      "name": "group",
-      "label": "list"
-    }
-  ],
+  "groups": [],
   "texts": [
     {
       "self_ref": "#/texts/0",
@@ -164,21 +102,21 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 61.7,
-            "t": 779.39,
-            "r": 267.66,
-            "b": 761.01,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            42
+            78
           ]
         }
       ],
-      "orig": "\u0627\u0645\u064a\u062f\u0646\u0627\u0645\u0647 \u067e\u0630\u064a\u0631\u0634 \u062f\u0631 \u0628\u0627\u0632\u0627\u0631 \u0627\u0635\u0644\u06cc - \u06a9\u0627\u0644\u0627\u06cc \u062f\u0627\u062e\u0644\u06cc",
-      "text": "\u0627\u0645\u064a\u062f\u0646\u0627\u0645\u0647 \u067e\u0630\u064a\u0631\u0634 \u062f\u0631 \u0628\u0627\u0632\u0627\u0631 \u0627\u0635\u0644\u06cc - \u06a9\u0627\u0644\u0627\u06cc \u062f\u0627\u062e\u0644\u06cc",
-      "level": 1
+      "orig": "یلخاد ی لااک - یلصا رازاب رد شريذپ همان ديما",
+      "text": "یلخاد ی لااک - یلصا رازاب رد شريذپ همان ديما",
+      "level": 2
     },
     {
       "self_ref": "#/texts/1",
@@ -187,26 +125,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 383.35,
-            "t": 750.25,
-            "r": 481.6,
-            "b": 736.98,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            21
+            215
           ]
         }
       ],
-      "orig": "\u0634\u0631\u06a9\u062a \u0628\u0648\u0631\u0633 \u06a9\u0627\u0644\u0627\u06cc \u0627\u064a\u0631\u0627\u0646",
-      "text": "\u0634\u0631\u06a9\u062a \u0628\u0648\u0631\u0633 \u06a9\u0627\u0644\u0627\u06cc \u0627\u064a\u0631\u0627\u0646",
-      "level": 1
+      "orig": "یرگ  هتخير  شور  هب  هدش  ديلوت  لاشمش  و  هشمش درادناتسا مان\n قباطم - یا  هزاس  یاهدلاوف  رد  فرصم  دروم  هتسويپ\nتسويپ زيلانآ",
+      "text": "یرگ  هتخير  شور  هب  هدش  ديلوت  لاشمش  و  هشمش درادناتسا مان\n قباطم - یا  هزاس  یاهدلاوف  رد  فرصم  دروم  هتسويپ\nتسويپ زيلانآ"
     },
     {
       "self_ref": "#/texts/2",
@@ -220,323 +157,26 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 366.31,
-            "t": 703.4,
-            "r": 479.53,
-            "b": 685.37,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            19
+            42
           ]
         }
       ],
-      "orig": "-2-5 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u06a9\u0627\u0644\u0627",
-      "text": "-2-5 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u06a9\u0627\u0644\u0627",
+      "orig": "20300 یلم درادناتسا هرامش",
+      "text": "20300 یلم درادناتسا هرامش",
       "level": 1
     },
     {
       "self_ref": "#/texts/3",
       "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 451.66,
-            "t": 679.62,
-            "r": 519.24,
-            "b": 662.74,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            13
-          ]
-        }
-      ],
-      "orig": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f",
-      "text": "\u0646\u0627\u0645 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f"
-    },
-    {
-      "self_ref": "#/texts/4",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 66.26,
-            "t": 681.17,
-            "r": 264.82,
-            "b": 631.54,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            110
-          ]
-        }
-      ],
-      "orig": "\u0634\u0645\u0634\u0647  \u0648  \u0634\u0645\u0634\u0627\u0644  \u062a\u0648\u0644\u064a\u062f  \u0634\u062f\u0647  \u0628\u0647  \u0631\u0648\u0634  \u0631\u064a\u062e\u062a\u0647  \u06af\u0631\u06cc \u067e\u064a\u0648\u0633\u062a\u0647 \u0645\u0648\u0631\u062f \u0645\u0635\u0631\u0641  \u062f\u0631  \u0641\u0648\u0644\u0627\u062f\u0647\u0627\u06cc  \u0633\u0627\u0632\u0647  \u0627\u06cc  - \u0645\u0637\u0627\u0628\u0642 \u0622\u0646\u0627\u0644\u064a\u0632 \u067e\u064a\u0648\u0633\u062a",
-      "text": "\u0634\u0645\u0634\u0647  \u0648  \u0634\u0645\u0634\u0627\u0644  \u062a\u0648\u0644\u064a\u062f  \u0634\u062f\u0647  \u0628\u0647  \u0631\u0648\u0634  \u0631\u064a\u062e\u062a\u0647  \u06af\u0631\u06cc \u067e\u064a\u0648\u0633\u062a\u0647 \u0645\u0648\u0631\u062f \u0645\u0635\u0631\u0641  \u062f\u0631  \u0641\u0648\u0644\u0627\u062f\u0647\u0627\u06cc  \u0633\u0627\u0632\u0647  \u0627\u06cc  - \u0645\u0637\u0627\u0628\u0642 \u0622\u0646\u0627\u0644\u064a\u0632 \u067e\u064a\u0648\u0633\u062a"
-    },
-    {
-      "self_ref": "#/texts/5",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 413.83,
-            "t": 625.74,
-            "r": 519.16,
-            "b": 608.86,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            19
-          ]
-        }
-      ],
-      "orig": "\u0634\u0645\u0627\u0631\u0647 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0645\u0644\u06cc",
-      "text": "\u0634\u0645\u0627\u0631\u0647 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0645\u0644\u06cc"
-    },
-    {
-      "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 230.69,
-            "t": 627.29,
-            "r": 265.0,
-            "b": 613.3,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            5
-          ]
-        }
-      ],
-      "orig": "20300",
-      "text": "20300"
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 399.91,
-            "t": 603.03,
-            "r": 519.14,
-            "b": 586.15,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            21
-          ]
-        }
-      ],
-      "orig": "\u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0627\u062c\u0628\u0627\u0631\u06cc \u0627\u0633\u062a\u061f",
-      "text": "\u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0627\u062c\u0628\u0627\u0631\u06cc \u0627\u0633\u062a\u061f"
-    },
-    {
-      "self_ref": "#/texts/8",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "checkbox_unselected",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 229.37,
-            "t": 604.58,
-            "r": 247.41,
-            "b": 590.59,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            3
-          ]
-        }
-      ],
-      "orig": "\u0628\u0644\u06cc",
-      "text": "\u0628\u0644\u06cc"
-    },
-    {
-      "self_ref": "#/texts/9",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "checkbox_selected",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 191.21,
-            "t": 604.58,
-            "r": 211.66,
-            "b": 590.59,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            3
-          ]
-        }
-      ],
-      "orig": "\u062e\u064a\u0631",
-      "text": "\u062e\u064a\u0631"
-    },
-    {
-      "self_ref": "#/texts/10",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 382.39,
-            "t": 580.35,
-            "r": 519.21,
-            "b": 563.47,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            24
-          ]
-        }
-      ],
-      "orig": "\u0645\u0631\u062c\u0639 \u0635\u0627\u062f\u0631\u06a9\u0646\u0646\u062f\u0647 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f",
-      "text": "\u0645\u0631\u062c\u0639 \u0635\u0627\u062f\u0631\u06a9\u0646\u0646\u062f\u0647 \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f"
-    },
-    {
-      "self_ref": "#/texts/11",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 160.46,
-            "t": 581.9,
-            "r": 264.78,
-            "b": 567.91,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            26
-          ]
-        }
-      ],
-      "orig": "\u0633\u0627\u0632\u0645\u0627\u0646 \u0645\u0644\u06cc \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0627\u064a\u0631\u0627\u0646",
-      "text": "\u0633\u0627\u0632\u0645\u0627\u0646 \u0645\u0644\u06cc \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0627\u064a\u0631\u0627\u0646"
-    },
-    {
-      "self_ref": "#/texts/12",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 292.13,
-            "t": 557.67,
-            "r": 519.24,
-            "b": 518.59,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            55
-          ]
-        }
-      ],
-      "orig": "\u0622\u064a\u0627 \u062a\u0648\u0644\u064a\u062f\u06a9\u0646\u0646\u062f\u0647 \u0645\u062d\u0635\u0648\u0644\u060c \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0645\u0630\u06a9\u0648\u0631 \u0631\u0627 \u0627\u062e\u0630 \u0646\u0645\u0648\u062f\u0647 \u0627\u0633\u062a\u061f",
-      "text": "\u0622\u064a\u0627 \u062a\u0648\u0644\u064a\u062f\u06a9\u0646\u0646\u062f\u0647 \u0645\u062d\u0635\u0648\u0644\u060c \u0627\u0633\u062a\u0627\u0646\u062f\u0627\u0631\u062f \u0645\u0630\u06a9\u0648\u0631 \u0631\u0627 \u0627\u062e\u0630 \u0646\u0645\u0648\u062f\u0647 \u0627\u0633\u062a\u061f"
-    },
-    {
-      "self_ref": "#/texts/13",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "checkbox_selected",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 191.21,
-            "t": 559.22,
-            "r": 247.35,
-            "b": 545.23,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            14
-          ]
-        }
-      ],
-      "orig": "\u0628\u0644\u06cc        \u062e\u064a\u0631",
-      "text": "\u0628\u0644\u06cc        \u062e\u064a\u0631"
-    },
-    {
-      "self_ref": "#/texts/14",
-      "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
@@ -545,473 +185,315 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 409.03,
-            "t": 490.59,
-            "r": 505.76,
-            "b": 473.71,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            16
+            54
           ]
         }
       ],
-      "orig": "-3 \u067e\u0630\u064a\u0631\u0634 \u062f\u0631 \u0628\u0648\u0631\u0633",
-      "text": "-3 \u067e\u0630\u064a\u0631\u0634 \u062f\u0631 \u0628\u0648\u0631\u0633",
-      "level": 1
+      "orig": "ريخ یلب ؟تسا یرابجا درادناتسا",
+      "text": "ريخ یلب ؟تسا یرابجا درادناتسا",
+      "level": 2
     },
     {
-      "self_ref": "#/texts/15",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 405.31,
-            "t": 467.89,
-            "r": 492.61,
-            "b": 451.01,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            17
-          ]
-        }
-      ],
-      "orig": "\u062a\u0627\u0631\u064a\u062e \u0627\u0631\u0627\u0626\u0647 \u0645\u062f\u0627\u0631\u06a9",
-      "text": "\u062a\u0627\u0631\u064a\u062e \u0627\u0631\u0627\u0626\u0647 \u0645\u062f\u0627\u0631\u06a9"
-    },
-    {
-      "self_ref": "#/texts/16",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 137.9,
-            "t": 469.46,
-            "r": 187.81,
-            "b": 455.47,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "1403/09/19",
-      "text": "1403/09/19"
-    },
-    {
-      "self_ref": "#/texts/17",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 426.31,
-            "t": 445.21,
-            "r": 492.59,
-            "b": 428.33,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            11
-          ]
-        }
-      ],
-      "orig": "\u062a\u0627\u0631\u064a\u062e \u067e\u0630\u064a\u0631\u0634",
-      "text": "\u062a\u0627\u0631\u064a\u062e \u067e\u0630\u064a\u0631\u0634"
-    },
-    {
-      "self_ref": "#/texts/18",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 137.9,
-            "t": 446.76,
-            "r": 187.81,
-            "b": 432.77,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "1403/10/04",
-      "text": "1403/10/04"
-    },
-    {
-      "self_ref": "#/texts/19",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 360.07,
-            "t": 422.53,
-            "r": 492.69,
-            "b": 405.65,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            21
-          ]
-        }
-      ],
-      "orig": "\u0634\u0645\u0627\u0631\u0647 \u062c\u0644\u0633\u0647 \u06a9\u0645\u064a\u062a\u0647 \u0639\u0631\u0636\u0647",
-      "text": "\u0634\u0645\u0627\u0631\u0647 \u062c\u0644\u0633\u0647 \u06a9\u0645\u064a\u062a\u0647 \u0639\u0631\u0636\u0647"
-    },
-    {
-      "self_ref": "#/texts/20",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 154.7,
-            "t": 423.96,
-            "r": 171.19,
-            "b": 409.97,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            3
-          ]
-        }
-      ],
-      "orig": "436",
-      "text": "436"
-    },
-    {
-      "self_ref": "#/texts/21",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 399.43,
-            "t": 399.73,
-            "r": 492.63,
-            "b": 382.85,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            18
-          ]
-        }
-      ],
-      "orig": "\u062a\u0627\u0631\u064a\u062e \u062f\u0631\u062c \u0627\u0645\u064a\u062f\u0646\u0627\u0645\u0647",
-      "text": "\u062a\u0627\u0631\u064a\u062e \u062f\u0631\u062c \u0627\u0645\u064a\u062f\u0646\u0627\u0645\u0647"
-    },
-    {
-      "self_ref": "#/texts/22",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 137.9,
-            "t": 401.28,
-            "r": 187.81,
-            "b": 387.29,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            10
-          ]
-        }
-      ],
-      "orig": "1403/10/05",
-      "text": "1403/10/05"
-    },
-    {
-      "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 422.83,
-            "t": 377.05,
-            "r": 492.68,
-            "b": 360.17,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            11
-          ]
-        }
-      ],
-      "orig": "\u0645\u0634\u0627\u0648\u0631 \u067e\u0630\u064a\u0631\u0634",
-      "text": "\u0645\u0634\u0627\u0648\u0631 \u067e\u0630\u064a\u0631\u0634"
-    },
-    {
-      "self_ref": "#/texts/24",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 122.06,
-            "t": 378.6,
-            "r": 203.65,
-            "b": 364.61,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            19
-          ]
-        }
-      ],
-      "orig": "\u06a9\u0627\u0631\u06af\u0632\u0627\u0631\u06cc \u0622\u0631\u0645\u0648\u0646 \u0628\u0648\u0631\u0633",
-      "text": "\u06a9\u0627\u0631\u06af\u0632\u0627\u0631\u06cc \u0622\u0631\u0645\u0648\u0646 \u0628\u0648\u0631\u0633"
-    },
-    {
-      "self_ref": "#/texts/25",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 281.33,
-            "t": 352.69,
-            "r": 492.71,
-            "b": 313.73,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            45
-          ]
-        }
-      ],
-      "orig": "\u0646\u062d\u0648\u0629 \u062a\u0639\u064a\u064a\u0646 \u0642\u064a\u0645\u062a \u067e\u0627\u064a\u0647 \u067e\u0633 \u0627\u0632 \u067e\u0630\u064a\u0631\u0634 \u06a9\u0627\u0644\u0627 \u062f\u0631 \u0628\u0648\u0631\u0633",
-      "text": "\u0646\u062d\u0648\u0629 \u062a\u0639\u064a\u064a\u0646 \u0642\u064a\u0645\u062a \u067e\u0627\u064a\u0647 \u067e\u0633 \u0627\u0632 \u067e\u0630\u064a\u0631\u0634 \u06a9\u0627\u0644\u0627 \u062f\u0631 \u0628\u0648\u0631\u0633"
-    },
-    {
-      "self_ref": "#/texts/26",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 109.22,
-            "t": 354.24,
-            "r": 213.67,
-            "b": 340.25,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            23
-          ]
-        }
-      ],
-      "orig": "\u0628\u0631 \u0627\u0633\u0627\u0633 \u0642\u064a\u0645\u062a \u0647\u0627\u06cc  \u062c\u0647\u0627\u0646\u06cc",
-      "text": "\u0628\u0631 \u0627\u0633\u0627\u0633 \u0642\u064a\u0645\u062a \u0647\u0627\u06cc  \u062c\u0647\u0627\u0646\u06cc"
-    },
-    {
-      "self_ref": "#/texts/27",
-      "parent": {
-        "$ref": "#/groups/1"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "list_item",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 266.57,
-            "t": 307.78,
-            "r": 492.7,
-            "b": 268.82,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            45
-          ]
-        }
-      ],
-      "orig": "\u062d\u062f\u0627\u0642\u0644 \u062f\u0631\u0635\u062f \u0639\u0631\u0636\u0647 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f/ \u06a9\u0644 \u0641\u0631\u0648\u0634/ \u0641\u0631\u0648\u0634 \u062f\u0627\u062e\u0644\u06cc",
-      "text": "\u062d\u062f\u0627\u0642\u0644 \u062f\u0631\u0635\u062f \u0639\u0631\u0636\u0647 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f/ \u06a9\u0644 \u0641\u0631\u0648\u0634/ \u0641\u0631\u0648\u0634 \u062f\u0627\u062e\u0644\u06cc",
-      "enumerated": false,
-      "marker": ""
-    },
-    {
-      "self_ref": "#/texts/28",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 85.46,
-            "t": 309.33,
-            "r": 240.36,
-            "b": 295.34,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            39
-          ]
-        }
-      ],
-      "orig": "\u062d\u062f\u0627\u0642\u0644 %50 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f \u0633\u0627\u0644\u064a\u0627\u0646\u0647 \u064a\u0627 47.500 \u062a\u0646",
-      "text": "\u062d\u062f\u0627\u0642\u0644 %50 \u0627\u0632 \u062a\u0648\u0644\u064a\u062f \u0633\u0627\u0644\u064a\u0627\u0646\u0647 \u064a\u0627 47.500 \u062a\u0646"
-    },
-    {
-      "self_ref": "#/texts/29",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 397.15,
-            "t": 262.9,
-            "r": 492.64,
-            "b": 246.02,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            15
-          ]
-        }
-      ],
-      "orig": "\u062e\u0637\u0627\u06cc \u0645\u062c\u0627\u0632 \u062a\u062d\u0648\u064a\u0644",
-      "text": "\u062e\u0637\u0627\u06cc \u0645\u062c\u0627\u0632 \u062a\u062d\u0648\u064a\u0644"
-    },
-    {
-      "self_ref": "#/texts/30",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 106.94,
-            "t": 264.45,
-            "r": 218.89,
-            "b": 250.46,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            26
-          ]
-        }
-      ],
-      "orig": "5% \u0622\u062e\u0631\u064a\u0646 \u0645\u062d\u0645\u0648\u0644\u0647 \u0642\u0627\u0628\u0644 \u062a\u062d\u0648\u064a\u0644",
-      "text": "5% \u0622\u062e\u0631\u064a\u0646 \u0645\u062d\u0645\u0648\u0644\u0647 \u0642\u0627\u0628\u0644 \u062a\u062d\u0648\u064a\u0644"
-    },
-    {
-      "self_ref": "#/texts/31",
+      "self_ref": "#/texts/4",
       "parent": {
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_footer",
+      "content_layer": "body",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 267.29,
-            "t": 61.0,
-            "r": 294.59,
-            "b": 52.36,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            96
+          ]
+        }
+      ],
+      "orig": "ناريا درادناتسا یلم نامزاس درادناتسا هدننکرداص عجرم",
+      "text": "ناريا درادناتسا یلم نامزاس درادناتسا هدننکرداص عجرم"
+    },
+    {
+      "self_ref": "#/texts/5",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            103
+          ]
+        }
+      ],
+      "orig": "ريخ        یلب ذخا ار روکذم درادناتسا ،لوصحم هدننکديلوت ايآ",
+      "text": "ريخ        یلب ذخا ار روکذم درادناتسا ،لوصحم هدننکديلوت ايآ"
+    },
+    {
+      "self_ref": "#/texts/6",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            47
+          ]
+        }
+      ],
+      "orig": "1403 / 09 / 19 کرادم هئارا خيرات",
+      "text": "1403 / 09 / 19 کرادم هئارا خيرات",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            36
+          ]
+        }
+      ],
+      "orig": "1403 / 10 / 04 شريذپ خيرات",
+      "text": "1403 / 10 / 04 شريذپ خيرات",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            43
+          ]
+        }
+      ],
+      "orig": "436 هضرع هتيمک هسلج هرامش",
+      "text": "436 هضرع هتيمک هسلج هرامش",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            49
+          ]
+        }
+      ],
+      "orig": "1403 / 10 / 05 همانديما جرد خيرات",
+      "text": "1403 / 10 / 05 همانديما جرد خيرات",
+      "level": 1
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            59
+          ]
+        }
+      ],
+      "orig": "سروب نومر آ یرازگراک شريذپ رواشم",
+      "text": "سروب نومر آ یرازگراک شريذپ رواشم",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            113
+          ]
+        }
+      ],
+      "orig": "یناهج یاه تميق ساسا رب رد لااک شريذپ زا سپ هياپ تميق نييعت ةوحن",
+      "text": "یناهج یاه تميق ساسا رب رد لااک شريذپ زا سپ هياپ تميق نييعت ةوحن"
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            137
+          ]
+        }
+      ],
+      "orig": "نت 4 7.500 اي هنايلاس ديلوت زا % 5 0 لقادح شورف / شورف لک / ديلوت زا هضرع دصرد لقادح",
+      "text": "نت 4 7.500 اي هنايلاس ديلوت زا % 5 0 لقادح شورف / شورف لک / ديلوت زا هضرع دصرد لقادح"
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            76
+          ]
+        }
+      ],
+      "orig": "ليوحت لباق هلومحم نيرخآ 5 % ليوحت زاجم یاطخ",
+      "text": "ليوحت لباق هلومحم نيرخآ 5 % ليوحت زاجم یاطخ",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/14",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -1020,7 +502,176 @@
         }
       ],
       "orig": "Page 7",
-      "text": "Page 7"
+      "text": "Page 7",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/15",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            39
+          ]
+        }
+      ],
+      "orig": "ناريا یلااک سروب تکرش",
+      "text": "ناريا یلااک سروب تکرش",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/16",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            36
+          ]
+        }
+      ],
+      "orig": "لاا ک درادناتسا - 2 - 5",
+      "text": "لاا ک درادناتسا - 2 - 5",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/17",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            19
+          ]
+        }
+      ],
+      "orig": "؟تسا هدومن",
+      "text": "؟تسا هدومن",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/18",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            28
+          ]
+        }
+      ],
+      "orig": "سروب رد شريذپ - 3",
+      "text": "سروب رد شريذپ - 3",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/19",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            8
+          ]
+        }
+      ],
+      "orig": "سروب",
+      "text": "سروب",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/20",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 595.3200073242188,
+            "b": 842.0399780273438,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
+      "orig": "یلخاد",
+      "text": "یلخاد",
+      "level": 2
     }
   ],
   "pictures": [
@@ -1036,16 +687,12 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 388.67,
-            "t": 806.32,
-            "r": 482.45,
-            "b": 739.05,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            0
-          ]
+            "l": 411.79998779296875,
+            "t": 82.989990234375,
+            "r": 458.44998931884766,
+            "b": 129.28998947143555,
+            "coord_origin": "TOPLEFT"
+          }
         }
       ],
       "captions": [],
@@ -1060,8 +707,8 @@
   "pages": {
     "1": {
       "size": {
-        "width": 595.32,
-        "height": 842.04
+        "width": 595.3200073242188,
+        "height": 842.0399780273438
       },
       "page_no": 1
     }

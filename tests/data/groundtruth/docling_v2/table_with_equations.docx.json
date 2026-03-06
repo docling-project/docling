@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "name": "table_with_equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 6528760837820727976,
+    "binary_hash": 18343810663878144842,
     "filename": "table_with_equations.docx"
   },
   "furniture": {

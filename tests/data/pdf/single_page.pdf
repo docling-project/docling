@@ -1,0 +1,35 @@
+%PDF-1.4
+%‚„œ”
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 354 >>
+stream
+BT /F1 24 Tf 72 700 Td (Test Document Title) Tj ET
+BT /F1 12 Tf 72 660 Td (This is the first paragraph of the test document. It contains some text that should be extracted correctly by the PDF backend.) Tj ET
+BT /F1 12 Tf 72 620 Td (This is the second paragraph. It provides additional content for testing paragraph splitting and text extraction.) Tj ET
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R] /Count 1 >>
+endobj
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000672 00000 n 
+0000000615 00000 n 
+0000000015 00000 n 
+0000000489 00000 n 
+0000000085 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+721
+%%EOF

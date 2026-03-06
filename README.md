@@ -1,166 +1,144 @@
-<p align="center">
-  <a href="https://github.com/docling-project/docling">
-    <img loading="lazy" alt="Docling" src="https://github.com/docling-project/docling/raw/main/docs/assets/docling_processing.png" width="100%"/>
-  </a>
-</p>
+# docling-rs
 
-# Docling
+A high-performance Rust rewrite of [Docling](https://github.com/docling-project/docling), the document conversion library. Converts DOCX, XLSX, PPTX, PDF, and many more formats into structured Markdown and JSON, with no Python runtime or ML models required.
 
-<p align="center">
-  <a href="https://trendshift.io/repositories/12132" target="_blank"><img src="https://trendshift.io/api/badge/repositories/12132" alt="DS4SD%2Fdocling | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-</p>
+## Highlights
 
-[![arXiv](https://img.shields.io/badge/arXiv-2408.09869-b31b1b.svg)](https://arxiv.org/abs/2408.09869)
-[![Docs](https://img.shields.io/badge/docs-live-brightgreen)](https://docling-project.github.io/docling/)
-[![PyPI version](https://img.shields.io/pypi/v/docling)](https://pypi.org/project/docling/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/docling)](https://pypi.org/project/docling/)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Pydantic v2](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pydantic/pydantic/main/docs/badge/v2.json)](https://pydantic.dev)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
-[![License MIT](https://img.shields.io/github/license/docling-project/docling)](https://opensource.org/licenses/MIT)
-[![PyPI Downloads](https://static.pepy.tech/badge/docling/month)](https://pepy.tech/projects/docling)
-[![Docling Actor](https://apify.com/actor-badge?actor=vancura/docling?fpr=docling)](https://apify.com/vancura/docling)
-[![Chat with Dosu](https://dosu.dev/dosu-chat-badge.svg)](https://app.dosu.dev/097760a8-135e-4789-8234-90c8837d7f1c/ask?utm_source=github)
-[![Discord](https://img.shields.io/discord/1399788921306746971?color=6A7EC2&logo=discord&logoColor=ffffff)](https://docling.ai/discord)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10101/badge)](https://www.bestpractices.dev/projects/10101)
-[![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-003778?logo=linuxfoundation&logoColor=fff&color=0094ff&labelColor=003778)](https://lfaidata.foundation/projects/)
+- **Single 8.7 MB binary** with zero external dependencies
+- **100% compatible** with Python Docling output for DOCX, XLSX, and PPTX
+- **160+ end-to-end tests** validated against Python Docling groundtruth
+- Supports 15+ input formats and 7 output formats
+- Image extraction with `--image-export-mode referenced`
 
-Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.
+## Supported Formats
 
-## Features
+### Input
 
-* 🗂️ Parsing of [multiple document formats][supported_formats] incl. PDF, DOCX, PPTX, XLSX, HTML, WAV, MP3, WebVTT, images (PNG, TIFF, JPEG, ...), LaTeX, and more
-* 📑 Advanced PDF understanding incl. page layout, reading order, table structure, code, formulas, image classification, and more
-* 🧬 Unified, expressive [DoclingDocument][docling_document] representation format
-* ↪️ Various [export formats][supported_formats] and options, including Markdown, HTML, WebVTT, [DocTags](https://arxiv.org/abs/2503.11576) and lossless JSON
-* 📜 Support of several application-specifc XML schemas incl. [USPTO](https://www.uspto.gov/patents) patents, [JATS](https://jats.nlm.nih.gov/) articles, and [XBRL](https://www.xbrl.org/) financial reports.
-* 🔒 Local execution capabilities for sensitive data and air-gapped environments
-* 🤖 Plug-and-play [integrations][integrations] incl. LangChain, LlamaIndex, Crew AI & Haystack for agentic AI
-* 🔍 Extensive OCR support for scanned PDFs and images
-* 👓 Support of several Visual Language Models ([GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M))
-* 🎙️ Audio support with Automatic Speech Recognition (ASR) models
-* 🔌 Connect to any agent using the [MCP server](https://docling-project.github.io/docling/usage/mcp/)
-* 💻 Simple and convenient CLI
+| Format | Backend | Python Compatibility |
+|--------|---------|---------------------|
+| DOCX | `quick_xml` | 100% (tables, lists, images, equations, formatting) |
+| XLSX / XLSM | `quick_xml` | 100% (tables, merged cells, images, multi-sheet) |
+| PPTX | `quick_xml` | 100% (slides, tables, images, grouped shapes) |
+| PDF | `lopdf` | Text extraction with heuristics (no ML models) |
+| CSV | Built-in parser | Full |
+| HTML | `scraper` | Full |
+| Markdown | `pulldown-cmark` | Full |
+| AsciiDoc | Custom parser | Full |
+| LaTeX | Custom parser | Full |
+| XML (JATS) | `quick_xml` | Full |
+| XML (USPTO) | `quick_xml` | Full |
+| XML (XBRL) | `quick_xml` | Full |
+| WebVTT | Custom parser | Full |
+| JSON (DoclingDocument) | `serde_json` | Full |
+| Image (PNG, JPEG, TIFF) | `image` | Metadata only (no OCR) |
 
-### What's new
-* 📤 Structured [information extraction][extraction] \[🧪 beta\]
-* 📑 New layout model (**Heron**) by default, for faster PDF parsing
-* 🔌 [MCP server](https://docling-project.github.io/docling/usage/mcp/) for agentic applications
-* 💼 Parsing of XBRL (eXtensible Business Reporting Language) documents for financial reports
-* 💬 Parsing of WebVTT (Web Video Text Tracks) files and export to WebVTT format
-* 💬 Parsing of LaTeX files
+### Output
 
-### Coming soon
-
-* 📝 Metadata extraction, including title, authors, references & language
-* 📝 Chart understanding (Barchart, Piechart, LinePlot, etc)
-* 📝 Complex chemistry understanding (Molecular structures)
+Markdown, JSON (DoclingDocument), YAML, HTML, plain text, DocTags, WebVTT
 
 ## Installation
 
-To use Docling, simply install `docling` from your package manager, e.g. pip:
-```bash
-pip install docling
-```
-
-> **Note:** Python 3.9 support was dropped in docling version 2.70.0. Please use Python 3.10 or higher.
-
-Works on macOS, Linux and Windows environments. Both x86_64 and arm64 architectures.
-
-More [detailed installation instructions](https://docling-project.github.io/docling/installation/) are available in the docs.
-
-## Getting started
-
-To convert individual documents with python, use `convert()`, for example:
-
-```python
-from docling.document_converter import DocumentConverter
-
-source = "https://arxiv.org/pdf/2408.09869"  # document per local path or URL
-converter = DocumentConverter()
-result = converter.convert(source)
-print(result.document.export_to_markdown())  # output: "## Docling Technical Report[...]"
-```
-
-More [advanced usage options](https://docling-project.github.io/docling/usage/advanced_options/) are available in
-the docs.
-
-## CLI
-
-Docling has a built-in CLI to run conversions.
+### From source
 
 ```bash
-docling https://arxiv.org/pdf/2206.01062
+git clone https://github.com/zynga/docling-rs.git
+cd docling-rs/docling-rs
+cargo build --release
+# Binary at: target/release/docling-rs
 ```
 
-You can also use 🥚[GraniteDocling](https://huggingface.co/ibm-granite/granite-docling-258M) and other VLMs via Docling CLI:
+## Usage
+
+### CLI
+
 ```bash
-docling --pipeline vlm --vlm-model granite_docling https://arxiv.org/pdf/2206.01062
+# Convert a DOCX to Markdown
+docling-rs convert document.docx
+
+# Convert with image extraction
+docling-rs convert --to md --image-export-mode referenced document.docx
+
+# Convert to JSON
+docling-rs convert --to json document.xlsx
+
+# Multiple output formats
+docling-rs convert --to md --to json document.pptx
+
+# Specify output directory
+docling-rs convert -o ./output document.pdf
+
+# Process multiple files
+docling-rs convert *.docx *.pdf
 ```
-This will use MLX acceleration on supported Apple Silicon hardware.
 
-Read more [here](https://docling-project.github.io/docling/usage/)
+### Options
 
-## Documentation
+```
+docling-rs convert [OPTIONS] <SOURCE>...
 
-Check out Docling's [documentation](https://docling-project.github.io/docling/), for details on
-installation, usage, concepts, recipes, extensions, and more.
+Arguments:
+  <SOURCE>...    Input files or directories
 
-## Examples
+Options:
+  -f, --from <FROM>                Input format (auto-detected if omitted)
+      --to <TO>                    Output format(s) [default: md]
+  -o, --output <OUTPUT>            Output directory [default: .]
+  -v, --verbose                    Verbosity level (-v info, -vv debug)
+      --image-export-mode <MODE>   placeholder | embedded | referenced
+      --abort-on-error             Stop on first error
+      --document-timeout <SECS>    Per-document timeout
+      --num-threads <N>            Thread count [default: 4]
+```
 
-Go hands-on with our [examples](https://docling-project.github.io/docling/examples/),
-demonstrating how to address different application use cases with Docling.
+## Python Compatibility
 
-## Integrations
+Verified against Python Docling with comprehensive end-to-end tests:
 
-To further accelerate your AI application development, check out Docling's native
-[integrations](https://docling-project.github.io/docling/integrations/) with popular frameworks
-and tools.
+| Format | JSON Match | Texts | Tables | Images | Groups |
+|--------|-----------|-------|--------|--------|--------|
+| **DOCX** | 100% structural | Identical | Identical | Identical | Identical |
+| **XLSX** | 100% structural | Identical | Identical | Identical | Identical |
+| **PPTX** | 100% structural | Identical | Identical | Identical | Identical |
+| **PDF** | Heuristic-based | ~20% of Python count | Ruled-line only | Extracted | List groups |
 
-## Get help and support
+### PDF Limitations
 
-Please feel free to connect with us using the [discussion section](https://github.com/docling-project/docling/discussions).
+The Rust PDF backend uses `lopdf` for direct text extraction with heuristic-based layout analysis. Python Docling uses ML models (RT-DETR, TableFormer, OCR) which provide significantly richer output. The Rust version:
+- Extracts embedded text (no OCR for scanned documents)
+- Detects tables from ruled lines only (no borderless tables)
+- Uses font-size heuristics for heading detection
+- Supports basic two-column layout reordering
+- No RTL (right-to-left) text reordering
 
-## Technical report
+## Project Structure
 
-For more details on Docling's inner workings, check out the [Docling Technical Report](https://arxiv.org/abs/2408.09869).
+```
+docling-rs/          # Main Rust crate
+  src/
+    backend/         # Format-specific parsers (docx, xlsx, pptx, pdf, ...)
+    models/          # DoclingDocument data model
+    export/          # Output formatters (markdown, json, html, ...)
+    cli.rs           # CLI entry point
+e2e/                 # End-to-end test suite (160+ tests)
+tests/data/          # Test fixtures and groundtruth
+```
 
-## Contributing
+## Testing
 
-Please read [Contributing to Docling](https://github.com/docling-project/docling/blob/main/CONTRIBUTING.md) for details.
+```bash
+# Run all 160+ E2E tests
+cd e2e && cargo test
 
-## References
+# Run format-specific tests
+cargo test test_docx
+cargo test test_xlsx
+cargo test test_pptx
+cargo test test_pdf
 
-If you use Docling in your projects, please consider citing the following:
-
-```bib
-@techreport{Docling,
-  author = {Deep Search Team},
-  month = {8},
-  title = {Docling Technical Report},
-  url = {https://arxiv.org/abs/2408.09869},
-  eprint = {2408.09869},
-  doi = {10.48550/arXiv.2408.09869},
-  version = {1.0.0},
-  year = {2024}
-}
+# Run unit tests
+cd docling-rs && cargo test
 ```
 
 ## License
 
-The Docling codebase is under MIT license.
-For individual model usage, please refer to the model licenses found in the original packages.
-
-## LF AI & Data
-
-Docling is hosted as a project in the [LF AI & Data Foundation](https://lfaidata.foundation/projects/).
-
-### IBM ❤️ Open Source AI
-
-The project was started by the AI for knowledge team at IBM Research Zurich.
-
-[supported_formats]: https://docling-project.github.io/docling/usage/supported_formats/
-[docling_document]: https://docling-project.github.io/docling/concepts/docling_document/
-[integrations]: https://docling-project.github.io/docling/integrations/
-[extraction]: https://docling-project.github.io/docling/examples/extraction/
+MIT

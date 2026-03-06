@@ -439,3 +439,21 @@ pip-selfcheck.json
 # Docs
 # docs/**/*.png
 # docs/**/*.svg
+
+
+# Added by cargo
+/target
+
+# Rust build artifacts
+docling-rs/target/
+e2e/target/
+
+# Test output files
+files_to_test/
+powerpoint_sample.json
+
+# External repos
+docsextract/
+
+# Cursor IDE
+.cursor/

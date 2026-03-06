@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.7.0",
+  "version": "1.9.0",
   "name": "word_tables",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 8379738677198259833,
+    "binary_hash": 17635682244755520663,
     "filename": "word_tables.docx"
   },
   "furniture": {
@@ -18,34 +18,19 @@
     "self_ref": "#/body",
     "children": [
       {
-        "$ref": "#/groups/0"
+        "$ref": "#/texts/0"
       }
     ],
     "content_layer": "body",
     "name": "_root_",
     "label": "unspecified"
   },
-  "groups": [
-    {
-      "self_ref": "#/groups/0",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [
-        {
-          "$ref": "#/texts/0"
-        }
-      ],
-      "content_layer": "body",
-      "name": "header-0",
-      "label": "section"
-    }
-  ],
+  "groups": [],
   "texts": [
     {
       "self_ref": "#/texts/0",
       "parent": {
-        "$ref": "#/groups/0"
+        "$ref": "#/body"
       },
       "children": [
         {
@@ -114,14 +99,7 @@
       "label": "text",
       "prov": [],
       "orig": "A uniform table",
-      "text": "A uniform table",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "A uniform table"
     },
     {
       "self_ref": "#/texts/2",
@@ -145,14 +123,7 @@
       "label": "text",
       "prov": [],
       "orig": "A non-uniform table with horizontal spans",
-      "text": "A non-uniform table with horizontal spans",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "A non-uniform table with horizontal spans"
     },
     {
       "self_ref": "#/texts/4",
@@ -176,14 +147,7 @@
       "label": "text",
       "prov": [],
       "orig": "A non-uniform table with horizontal spans in inner columns",
-      "text": "A non-uniform table with horizontal spans in inner columns",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "A non-uniform table with horizontal spans in inner columns"
     },
     {
       "self_ref": "#/texts/6",
@@ -207,14 +171,7 @@
       "label": "text",
       "prov": [],
       "orig": "A non-uniform table with vertical spans",
-      "text": "A non-uniform table with vertical spans",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "A non-uniform table with vertical spans"
     },
     {
       "self_ref": "#/texts/8",
@@ -238,14 +195,7 @@
       "label": "text",
       "prov": [],
       "orig": "A non-uniform table with all kinds of spans and empty cells",
-      "text": "A non-uniform table with all kinds of spans and empty cells",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "A non-uniform table with all kinds of spans and empty cells"
     },
     {
       "self_ref": "#/texts/10",
@@ -712,19 +662,6 @@
               "row_header": false,
               "row_section": false,
               "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 2,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 3,
-              "text": "Merged Cell 1.1 1.2",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
             }
           ],
           [
@@ -736,19 +673,6 @@
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "Cell 2.0",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 2,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 3,
-              "text": "Merged Cell 2.1 2.2",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1003,19 +927,6 @@
             },
             {
               "row_span": 1,
-              "col_span": 2,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 3,
-              "text": "Merged Cell 1.1 1.2",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
@@ -1037,19 +948,6 @@
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "Cell 2.0",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 2,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 3,
-              "text": "Merged Cell 2.1 2.2",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1370,19 +1268,6 @@
               "fillable": false
             },
             {
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "Merged Cell 1.1 2.1",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -1446,19 +1331,6 @@
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
               "text": "Cell 4.0",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "Merged Cell 3.1 4.1",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2117,19 +1989,6 @@
               "fillable": false
             },
             {
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 1,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "Merged Cell 1.1 2.1",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
@@ -2251,19 +2110,6 @@
               "fillable": false
             },
             {
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 1,
-              "end_col_offset_idx": 2,
-              "text": "Merged Cell 3.1 4.1",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -2277,19 +2123,6 @@
               "fillable": false
             },
             {
-              "row_span": 3,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
               "row_span": 2,
               "col_span": 1,
               "start_row_offset_idx": 4,
@@ -2338,32 +2171,6 @@
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
               "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 3,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
-              "text": "Merged Cell 4.4 5.4",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -2438,58 +2245,6 @@
             }
           ],
           [
-            {
-              "row_span": 1,
-              "col_span": 5,
-              "start_row_offset_idx": 7,
-              "end_row_offset_idx": 8,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 5,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 5,
-              "start_row_offset_idx": 7,
-              "end_row_offset_idx": 8,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 5,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 5,
-              "start_row_offset_idx": 7,
-              "end_row_offset_idx": 8,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 5,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "row_span": 1,
-              "col_span": 5,
-              "start_row_offset_idx": 7,
-              "end_row_offset_idx": 8,
-              "start_col_offset_idx": 0,
-              "end_col_offset_idx": 5,
-              "text": "",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
             {
               "row_span": 1,
               "col_span": 5,

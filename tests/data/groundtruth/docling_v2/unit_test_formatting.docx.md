@@ -4,18 +4,22 @@
 
 underline
 
-[hyperlink](https:/github.com/DS4SD/docling)
+[hyperlink](https://github.com/DS4SD/docling)
 
-[***italic and bold hyperlink***](https:/github.com/DS4SD/docling)
+[***italic and bold hyperlink***](https://github.com/DS4SD/docling)
 
-Normal *italic* **bold** underline and [hyperlink](https:/github.com/DS4SD/docling) on the same line
+Normal *italic* **bold** underline and [hyperlink](https://github.com/DS4SD/docling) on the same line
 
-- *Italic bullet 1*
-- **Bold bullet 2**
+- Italic bullet 1
+- Bold bullet 2
 - Underline bullet 3
-- Some *italic* **bold** underline
-    - Nested *italic* **bold**
+- 
 
-The second page of the document with same header and footer
+Some *italic* **bold** underline
+    - 
 
-The third page of the document with different header and footer
+Nested *italic* **bold**
+
+*The second page of the document with same header and footer*
+
+*The third page of the document with different header and footer*

@@ -4,7 +4,7 @@
   "name": "2305.03393v1-pg9",
   "origin": {
     "mimetype": "application/pdf",
-    "binary_hash": 3463920545297462180,
+    "binary_hash": 11565063748131201730,
     "filename": "2305.03393v1-pg9.pdf"
   },
   "furniture": {
@@ -33,7 +33,7 @@
         "$ref": "#/texts/4"
       },
       {
-        "$ref": "#/tables/0"
+        "$ref": "#/texts/5"
       },
       {
         "$ref": "#/texts/6"
@@ -43,6 +43,24 @@
       },
       {
         "$ref": "#/texts/8"
+      },
+      {
+        "$ref": "#/texts/9"
+      },
+      {
+        "$ref": "#/texts/10"
+      },
+      {
+        "$ref": "#/texts/11"
+      },
+      {
+        "$ref": "#/texts/12"
+      },
+      {
+        "$ref": "#/texts/13"
+      },
+      {
+        "$ref": "#/tables/0"
       }
     ],
     "content_layer": "body",
@@ -57,26 +75,27 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
+      "content_layer": "body",
+      "label": "section_header",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 194.48,
-            "t": 698.34,
-            "r": 447.54,
-            "b": 689.96,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            60
+            62
           ]
         }
       ],
-      "orig": "Optimized Table Tokenization for Table Structure Recognition",
-      "text": "Optimized Table Tokenization for Table Structure Recognition"
+      "orig": "Optimized Table Tokenization for Table Structure Recognition 9",
+      "text": "Optimized Table Tokenization for Table Structure Recognition 9",
+      "level": 2
     },
     {
       "self_ref": "#/texts/1",
@@ -84,26 +103,26 @@
         "$ref": "#/body"
       },
       "children": [],
-      "content_layer": "furniture",
-      "label": "page_header",
+      "content_layer": "body",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 475.98,
-            "t": 698.34,
-            "r": 480.59,
-            "b": 689.96,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            1
+            163
           ]
         }
       ],
-      "orig": "9",
-      "text": "9"
+      "orig": "order to compute the TED score. Inference timing results for all experiments\nwere obtained from the same machine on a single core with AMD EPYC 7763\nCPU @2.45 GHz.",
+      "text": "order to compute the TED score. Inference timing results for all experiments\nwere obtained from the same machine on a single core with AMD EPYC 7763\nCPU @2.45 GHz."
     },
     {
       "self_ref": "#/texts/2",
@@ -117,20 +136,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.76,
-            "t": 673.13,
-            "r": 480.6,
-            "b": 639.92,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            163
+            457
           ]
         }
       ],
-      "orig": "order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz.",
-      "text": "order to compute the TED score. Inference timing results for all experiments were obtained from the same machine on a single core with AMD EPYC 7763 CPU @2.45 GHz."
+      "orig": "5.1 Hyper Parameter Optimization\nWe have chosen the PubTabNet data set to p erform HPO, since it includes a\nhighly diverse set of tables. Also we report TED scores separately for simple and\ncomplex tables (tables with cell spans). Results are presented in Table. 1. It is\nevident that with OTSL, our model achieves the same TED score and slightly\nbetter mAP scores in comparison to HTML. However OTSL yields a 2x speed\nup in the inference runtime over HTML.",
+      "text": "5.1 Hyper Parameter Optimization\nWe have chosen the PubTabNet data set to p erform HPO, since it includes a\nhighly diverse set of tables. Also we report TED scores separately for simple and\ncomplex tables (tables with cell spans). Results are presented in Table. 1. It is\nevident that with OTSL, our model achieves the same TED score and slightly\nbetter mAP scores in comparison to HTML. However OTSL yields a 2x speed\nup in the inference runtime over HTML."
     },
     {
       "self_ref": "#/texts/3",
@@ -139,26 +158,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.76,
-            "t": 622.84,
-            "r": 318.45,
-            "b": 613.62,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            32
+            398
           ]
         }
       ],
-      "orig": "5.1 Hyper Parameter Optimization",
-      "text": "5.1 Hyper Parameter Optimization",
-      "level": 1
+      "orig": "Table 1. HPO performed in OTSL and HTML representation on the same\ntransformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that\nsmaller models trained on OTSL perform better, especially in recognizing complex\ntable structures, and maintain a much higher mAP score than the HTML counterpart.",
+      "text": "Table 1. HPO performed in OTSL and HTML representation on the same\ntransformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that\nsmaller models trained on OTSL perform better, especially in recognizing complex\ntable structures, and maintain a much higher mAP score than the HTML counterpart."
     },
     {
       "self_ref": "#/texts/4",
@@ -172,47 +190,47 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.76,
-            "t": 606.47,
-            "r": 480.6,
-            "b": 536.93,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            423
+            31
           ]
         }
       ],
-      "orig": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. 1. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a 2x speed up in the inference runtime over HTML.",
-      "text": "We have chosen the PubTabNet data set to perform HPO, since it includes a highly diverse set of tables. Also we report TED scores separately for simple and complex tables (tables with cell spans). Results are presented in Table. 1. It is evident that with OTSL, our model achieves the same TED score and slightly better mAP scores in comparison to HTML. However OTSL yields a 2x speed up in the inference runtime over HTML."
+      "orig": "# # TEDs mAP Inference\nLanguage",
+      "text": "# # TEDs mAP Inference\nLanguage"
     },
     {
       "self_ref": "#/texts/5",
       "parent": {
-        "$ref": "#/tables/0"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "caption",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.76,
-            "t": 518.26,
-            "r": 480.6,
-            "b": 464.76,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            398
+            36
           ]
         }
       ],
-      "orig": "Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart.",
-      "text": "Table 1. HPO performed in OTSL and HTML representation on the same transformer-based TableFormer [9] architecture, trained only on PubTabNet [22]. Effects of reducing the # of layers in encoder and decoder stages of the model show that smaller models trained on OTSL perform better, especially in recognizing complex table structures, and maintain a much higher mAP score than the HTML counterpart."
+      "orig": "OTSL 0.965 0.934 0.955 0.88 2.73\n6 6",
+      "text": "OTSL 0.965 0.934 0.955 0.88 2.73\n6 6"
     },
     {
       "self_ref": "#/texts/6",
@@ -221,26 +239,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.76,
-            "t": 283.88,
-            "r": 264.41,
-            "b": 274.65,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            24
+            71
           ]
         }
       ],
-      "orig": "5.2 Quantitative Results",
-      "text": "5.2 Quantitative Results",
-      "level": 1
+      "orig": "HTML 0.969 0.927 0.955 0.857 5.39\nOTSL 0.938 0.904 0.927 0.853 1.97\n4 4",
+      "text": "HTML 0.969 0.927 0.955 0.857 5.39\nOTSL 0.938 0.904 0.927 0.853 1.97\n4 4"
     },
     {
       "self_ref": "#/texts/7",
@@ -254,20 +271,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.76,
-            "t": 267.51,
-            "r": 480.72,
-            "b": 174.53,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            557
+            71
           ]
         }
       ],
-      "orig": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse and large tables.",
-      "text": "We picked the model parameter configuration that produced the best prediction quality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently trained and evaluated it on three publicly available data sets: PubTabNet (395k samples), FinTabNet (113k samples) and PubTables-1M (about 1M samples). Performance results are presented in Table. 2. It is clearly evident that the model trained on OTSL outperforms HTML across the board, keeping high TEDs and mAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse and large tables."
+      "orig": "HTML 0.952 0.909 0.938 0.843 3.77\nOTSL 0.923 0.897 0.915 0.859 1.91\n2 4",
+      "text": "HTML 0.952 0.909 0.938 0.843 3.77\nOTSL 0.923 0.897 0.915 0.859 1.91\n2 4"
     },
     {
       "self_ref": "#/texts/8",
@@ -281,11 +298,121 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 134.76,
-            "t": 171.87,
-            "r": 480.6,
-            "b": 126.71,
-            "coord_origin": "BOTTOMLEFT"
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            70
+          ]
+        }
+      ],
+      "orig": "HTML 0.945 0.901 0.931 0.834 3.81\nOTSL 0.952 0.92 0.942 0.857 1.22\n4 2",
+      "text": "HTML 0.945 0.901 0.931 0.834 3.81\nOTSL 0.952 0.92 0.942 0.857 1.22\n4 2"
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            30
+          ]
+        }
+      ],
+      "orig": "HTML 0.944 0.903 0.931 0.824 2",
+      "text": "HTML 0.944 0.903 0.931 0.824 2",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            24
+          ]
+        }
+      ],
+      "orig": "5.2 Quantitative Results",
+      "text": "5.2 Quantitative Results",
+      "level": 2
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            560
+          ]
+        }
+      ],
+      "orig": "We picked the mo del parameter configuration that pro duced the b est prediction\nquality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently\ntrained and evaluated it on three publicly available data sets: PubTabNet (395k\nsamples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).\nPerformance results are presented in Table. 2. It is clearly evident that the model\ntrained on OTSL outperforms HTML across the board, keeping high TEDs and\nmAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse\nand large tables.",
+      "text": "We picked the mo del parameter configuration that pro duced the b est prediction\nquality (enc=6, dec=6, heads=8) with PubTabNet alone, then independently\ntrained and evaluated it on three publicly available data sets: PubTabNet (395k\nsamples), FinTabNet (113k samples) and PubTables-1M (about 1M samples).\nPerformance results are presented in Table. 2. It is clearly evident that the model\ntrained on OTSL outperforms HTML across the board, keeping high TEDs and\nmAP scores even on di ffi cult financial tables (FinTabNet) that contain sparse\nand large tables."
+    },
+    {
+      "self_ref": "#/texts/12",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
@@ -293,8 +420,36 @@
           ]
         }
       ],
-      "orig": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation.",
-      "text": "Additionally, the results show that OTSL has an advantage over HTML when applied on a bigger data set like PubTables-1M and achieves significantly improved scores. Finally, OTSL achieves faster inference due to fewer decoding steps which is a result of the reduced sequence representation."
+      "orig": "Additionally, the results show that OTSL has an advantage over HTML\nwhen applied on a bigger data set like PubTables-1M and achieves significantly\nimproved scores. Finally, OTSL achieves faster inference due to fewer decoding\nsteps which is a result of the reduced sequence representation.",
+      "text": "Additionally, the results show that OTSL has an advantage over HTML\nwhen applied on a bigger data set like PubTables-1M and achieves significantly\nimproved scores. Finally, OTSL achieves faster inference due to fewer decoding\nsteps which is a result of the reduced sequence representation."
+    },
+    {
+      "self_ref": "#/texts/13",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 0.0,
+            "t": 0.0,
+            "r": 612.0,
+            "b": 792.0,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            59
+          ]
+        }
+      ],
+      "orig": "(0.75) time (secs) enc-layers dec-layers simple complex all",
+      "text": "(0.75) time (secs) enc-layers dec-layers simple complex all",
+      "level": 2
     }
   ],
   "pictures": [],
@@ -304,112 +459,72 @@
       "parent": {
         "$ref": "#/body"
       },
-      "children": [
-        {
-          "$ref": "#/texts/5"
-        }
-      ],
+      "children": [],
       "content_layer": "body",
       "label": "table",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 139.31,
-            "t": 455.08,
-            "r": 475.05,
-            "b": 322.12,
-            "coord_origin": "BOTTOMLEFT"
-          },
-          "charspan": [
-            0,
-            0
-          ]
+            "l": 140.6060028076172,
+            "t": 337.9960021972656,
+            "r": 474.74900817871094,
+            "b": 469.50299072265625,
+            "coord_origin": "TOPLEFT"
+          }
         }
       ],
-      "captions": [
-        {
-          "$ref": "#/texts/5"
-        }
-      ],
+      "captions": [],
       "references": [],
       "footnotes": [],
       "data": {
         "table_cells": [
           {
-            "bbox": {
-              "l": 144.59,
-              "t": 341.63,
-              "r": 183.83,
-              "b": 362.95,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 2,
+            "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
-            "end_row_offset_idx": 2,
+            "end_row_offset_idx": 1,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "# enc-layers",
+            "text": "# # Language Inference",
             "column_header": true,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 192.19,
-              "t": 341.63,
-              "r": 231.42,
-              "b": 362.95,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 2,
+            "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
-            "end_row_offset_idx": 2,
+            "end_row_offset_idx": 1,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "# dec-layers",
+            "text": "",
             "column_header": true,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 239.8,
-              "t": 347.11,
-              "r": 278.33,
-              "b": 355.48,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 2,
+            "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
-            "end_row_offset_idx": 2,
+            "end_row_offset_idx": 1,
             "start_col_offset_idx": 2,
             "end_col_offset_idx": 3,
-            "text": "Language",
+            "text": "",
             "column_header": true,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 324.67,
-              "t": 341.63,
-              "r": 348.26,
-              "b": 350.0,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
-            "col_span": 3,
+            "col_span": 1,
             "start_row_offset_idx": 0,
             "end_row_offset_idx": 1,
             "start_col_offset_idx": 3,
-            "end_col_offset_idx": 6,
+            "end_col_offset_idx": 4,
             "text": "TEDs",
             "column_header": true,
             "row_header": false,
@@ -417,159 +532,129 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 394.93,
-              "t": 341.63,
-              "r": 418.47,
-              "b": 360.96,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 2,
+            "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 6,
-            "end_col_offset_idx": 7,
-            "text": "mAP (0.75)",
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 4,
+            "end_col_offset_idx": 5,
+            "text": "",
             "column_header": true,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 427.15,
-              "t": 341.63,
-              "r": 470.77,
-              "b": 360.96,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 2,
+            "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 0,
-            "end_row_offset_idx": 2,
-            "start_col_offset_idx": 7,
-            "end_col_offset_idx": 8,
-            "text": "Inference time (secs)",
+            "end_row_offset_idx": 1,
+            "start_col_offset_idx": 5,
+            "end_col_offset_idx": 6,
+            "text": "mAP",
             "column_header": true,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 286.69,
-              "t": 354.58,
-              "r": 312.33,
-              "b": 362.95,
-              "coord_origin": "TOPLEFT"
-            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 0,
+            "end_col_offset_idx": 1,
+            "text": "enc-layers dec-layers",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 1,
+            "end_col_offset_idx": 2,
+            "text": "simple",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 1,
+            "end_row_offset_idx": 2,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
+            "text": "complex",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 3,
             "end_col_offset_idx": 4,
-            "text": "simple",
-            "column_header": true,
+            "text": "",
+            "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 320.7,
-              "t": 354.58,
-              "r": 353.72,
-              "b": 362.95,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "complex",
-            "column_header": true,
+            "text": "(0.75) all",
+            "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 369.31,
-              "t": 354.58,
-              "r": 379.03,
-              "b": 362.95,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 1,
             "end_row_offset_idx": 2,
             "start_col_offset_idx": 5,
             "end_col_offset_idx": 6,
-            "text": "all",
-            "column_header": true,
+            "text": "time (secs)",
+            "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 161.91,
-              "t": 373.41,
-              "r": 166.51,
-              "b": 381.78,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "6",
+            "text": "6 6 2.73 5.39",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 209.51,
-              "t": 373.41,
-              "r": 214.12,
-              "b": 381.78,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
             "end_row_offset_idx": 3,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "6",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 245.18,
-              "t": 367.93,
-              "r": 272.94,
-              "b": 389.25,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
             "text": "OTSL HTML",
             "column_header": false,
             "row_header": false,
@@ -577,19 +662,12 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 289.02,
-              "t": 367.93,
-              "r": 310.01,
-              "b": 389.25,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
             "end_row_offset_idx": 3,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
             "text": "0.965 0.969",
             "column_header": false,
             "row_header": false,
@@ -597,19 +675,12 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 326.72,
-              "t": 367.93,
-              "r": 347.71,
-              "b": 389.25,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
             "end_row_offset_idx": 3,
-            "start_col_offset_idx": 4,
-            "end_col_offset_idx": 5,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
             "text": "0.934 0.927",
             "column_header": false,
             "row_header": false,
@@ -617,19 +688,12 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 363.68,
-              "t": 367.93,
-              "r": 384.67,
-              "b": 389.25,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
             "end_row_offset_idx": 3,
-            "start_col_offset_idx": 5,
-            "end_col_offset_idx": 6,
+            "start_col_offset_idx": 4,
+            "end_col_offset_idx": 5,
             "text": "0.955 0.955",
             "column_header": false,
             "row_header": false,
@@ -637,19 +701,12 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 396.21,
-              "t": 366.64,
-              "r": 417.2,
-              "b": 389.25,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 2,
             "end_row_offset_idx": 3,
-            "start_col_offset_idx": 6,
-            "end_col_offset_idx": 7,
+            "start_col_offset_idx": 5,
+            "end_col_offset_idx": 6,
             "text": "0.88 0.857",
             "column_header": false,
             "row_header": false,
@@ -657,79 +714,25 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 439.53,
-              "t": 366.64,
-              "r": 458.39,
-              "b": 389.25,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 2,
-            "end_row_offset_idx": 3,
-            "start_col_offset_idx": 7,
-            "end_col_offset_idx": 8,
-            "text": "2.73 5.39",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 161.91,
-              "t": 399.71,
-              "r": 166.51,
-              "b": 408.08,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "4",
+            "text": "4 4 1.97 3.77",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 209.51,
-              "t": 399.71,
-              "r": 214.12,
-              "b": 408.08,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "4",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 245.18,
-              "t": 394.23,
-              "r": 272.94,
-              "b": 415.55,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
             "text": "OTSL HTML",
             "column_header": false,
             "row_header": false,
@@ -737,19 +740,12 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 289.02,
-              "t": 394.23,
-              "r": 310.01,
-              "b": 415.55,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
             "end_row_offset_idx": 4,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
             "text": "0.938 0.952",
             "column_header": false,
             "row_header": false,
@@ -757,139 +753,64 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 326.72,
-              "t": 394.23,
-              "r": 347.71,
-              "b": 415.55,
-              "coord_origin": "TOPLEFT"
-            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 3,
+            "end_row_offset_idx": 4,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "0.904 0.909 0.938",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "0.904 0.909",
+            "text": "0.927 0.853",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 362.09,
-              "t": 394.23,
-              "r": 386.25,
-              "b": 416.03,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 3,
             "end_row_offset_idx": 4,
             "start_col_offset_idx": 5,
             "end_col_offset_idx": 6,
-            "text": "0.927 0.938",
+            "text": "0.843",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 394.62,
-              "t": 392.94,
-              "r": 418.78,
-              "b": 415.55,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 6,
-            "end_col_offset_idx": 7,
-            "text": "0.853 0.843",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 439.53,
-              "t": 392.94,
-              "r": 458.39,
-              "b": 415.55,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 3,
-            "end_row_offset_idx": 4,
-            "start_col_offset_idx": 7,
-            "end_col_offset_idx": 8,
-            "text": "1.97 3.77",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 161.91,
-              "t": 426.01,
-              "r": 166.51,
-              "b": 434.38,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "2",
+            "text": "2 4 1.91 3.81",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 209.51,
-              "t": 426.01,
-              "r": 214.12,
-              "b": 434.38,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "4",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 245.18,
-              "t": 420.53,
-              "r": 272.94,
-              "b": 441.86,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
             "text": "OTSL HTML",
             "column_header": false,
             "row_header": false,
@@ -897,19 +818,12 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 289.02,
-              "t": 420.53,
-              "r": 310.01,
-              "b": 441.86,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
             "end_row_offset_idx": 5,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
             "text": "0.923 0.945",
             "column_header": false,
             "row_header": false,
@@ -917,139 +831,64 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 326.72,
-              "t": 420.53,
-              "r": 347.71,
-              "b": 441.86,
-              "coord_origin": "TOPLEFT"
-            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 4,
+            "end_row_offset_idx": 5,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "0.897 0.901 0.931",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "0.897 0.901",
+            "text": "0.915 0.859",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 362.09,
-              "t": 420.53,
-              "r": 386.25,
-              "b": 442.33,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 4,
             "end_row_offset_idx": 5,
             "start_col_offset_idx": 5,
             "end_col_offset_idx": 6,
-            "text": "0.915 0.931",
+            "text": "0.834",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 394.62,
-              "t": 419.24,
-              "r": 418.78,
-              "b": 441.86,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 6,
-            "end_col_offset_idx": 7,
-            "text": "0.859 0.834",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 439.53,
-              "t": 419.24,
-              "r": 458.39,
-              "b": 441.86,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 4,
-            "end_row_offset_idx": 5,
-            "start_col_offset_idx": 7,
-            "end_col_offset_idx": 8,
-            "text": "1.91 3.81",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 161.91,
-              "t": 452.31,
-              "r": 166.51,
-              "b": 460.69,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 0,
             "end_col_offset_idx": 1,
-            "text": "4",
+            "text": "4 2 1.22 2",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 209.51,
-              "t": 452.31,
-              "r": 214.12,
-              "b": 460.69,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 1,
             "end_col_offset_idx": 2,
-            "text": "2",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 245.18,
-              "t": 446.83,
-              "r": 272.94,
-              "b": 468.16,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 2,
-            "end_col_offset_idx": 3,
             "text": "OTSL HTML",
             "column_header": false,
             "row_header": false,
@@ -1057,19 +896,12 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 289.02,
-              "t": 446.83,
-              "r": 310.01,
-              "b": 468.16,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
             "end_row_offset_idx": 6,
-            "start_col_offset_idx": 3,
-            "end_col_offset_idx": 4,
+            "start_col_offset_idx": 2,
+            "end_col_offset_idx": 3,
             "text": "0.952 0.944",
             "column_header": false,
             "row_header": false,
@@ -1077,80 +909,39 @@
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 326.72,
-              "t": 446.83,
-              "r": 347.71,
-              "b": 468.16,
-              "coord_origin": "TOPLEFT"
-            },
+            "row_span": 1,
+            "col_span": 1,
+            "start_row_offset_idx": 5,
+            "end_row_offset_idx": 6,
+            "start_col_offset_idx": 3,
+            "end_col_offset_idx": 4,
+            "text": "0.92 0.942 0.903",
+            "column_header": false,
+            "row_header": false,
+            "row_section": false,
+            "fillable": false
+          },
+          {
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 4,
             "end_col_offset_idx": 5,
-            "text": "0.92 0.903",
+            "text": "0.857 0.931",
             "column_header": false,
             "row_header": false,
             "row_section": false,
             "fillable": false
           },
           {
-            "bbox": {
-              "l": 362.09,
-              "t": 445.54,
-              "r": 386.25,
-              "b": 468.16,
-              "coord_origin": "TOPLEFT"
-            },
             "row_span": 1,
             "col_span": 1,
             "start_row_offset_idx": 5,
             "end_row_offset_idx": 6,
             "start_col_offset_idx": 5,
             "end_col_offset_idx": 6,
-            "text": "0.942 0.931",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 394.62,
-              "t": 445.54,
-              "r": 418.78,
-              "b": 468.16,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 6,
-            "end_col_offset_idx": 7,
-            "text": "0.857 0.824",
-            "column_header": false,
-            "row_header": false,
-            "row_section": false,
-            "fillable": false
-          },
-          {
-            "bbox": {
-              "l": 439.53,
-              "t": 445.54,
-              "r": 458.39,
-              "b": 468.16,
-              "coord_origin": "TOPLEFT"
-            },
-            "row_span": 1,
-            "col_span": 1,
-            "start_row_offset_idx": 5,
-            "end_row_offset_idx": 6,
-            "start_col_offset_idx": 7,
-            "end_col_offset_idx": 8,
-            "text": "1.22 2",
+            "text": "0.824",
             "column_header": false,
             "row_header": false,
             "row_section": false,
@@ -1158,164 +949,82 @@
           }
         ],
         "num_rows": 6,
-        "num_cols": 8,
+        "num_cols": 6,
         "grid": [
           [
             {
-              "bbox": {
-                "l": 144.59,
-                "t": 341.63,
-                "r": 183.83,
-                "b": 362.95,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 2,
+              "end_row_offset_idx": 1,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "# enc-layers",
+              "text": "# # Language Inference",
               "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 192.19,
-                "t": 341.63,
-                "r": 231.42,
-                "b": 362.95,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 2,
+              "end_row_offset_idx": 1,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "# dec-layers",
+              "text": "",
               "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 239.8,
-                "t": 347.11,
-                "r": 278.33,
-                "b": 355.48,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 2,
+              "end_row_offset_idx": 1,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Language",
+              "text": "",
               "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 324.67,
-                "t": 341.63,
-                "r": 348.26,
-                "b": 350.0,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
-              "col_span": 3,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 6,
-              "text": "TEDs",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 324.67,
-                "t": 341.63,
-                "r": 348.26,
-                "b": 350.0,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 3,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 6,
-              "text": "TEDs",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 324.67,
-                "t": 341.63,
-                "r": 348.26,
-                "b": 350.0,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 3,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 1,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 6,
-              "text": "TEDs",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 394.93,
-                "t": 341.63,
-                "r": 418.47,
-                "b": 360.96,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
-              "text": "mAP (0.75)",
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "TEDs",
               "column_header": true,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 427.15,
-                "t": 341.63,
-                "r": 470.77,
-                "b": 360.96,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 0,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "Inference time (secs)",
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 4,
+              "end_col_offset_idx": 5,
+              "text": "",
+              "column_header": true,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 0,
+              "end_row_offset_idx": 1,
+              "start_col_offset_idx": 5,
+              "end_col_offset_idx": 6,
+              "text": "mAP",
               "column_header": true,
               "row_header": false,
               "row_section": false,
@@ -1324,161 +1033,79 @@
           ],
           [
             {
-              "bbox": {
-                "l": 144.59,
-                "t": 341.63,
-                "r": 183.83,
-                "b": 362.95,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 0,
+              "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "# enc-layers",
-              "column_header": true,
+              "text": "enc-layers dec-layers",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 192.19,
-                "t": 341.63,
-                "r": 231.42,
-                "b": 362.95,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 0,
+              "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "# dec-layers",
-              "column_header": true,
+              "text": "simple",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 239.8,
-                "t": 347.11,
-                "r": 278.33,
-                "b": 355.48,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
+              "row_span": 1,
               "col_span": 1,
-              "start_row_offset_idx": 0,
+              "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 2,
               "end_col_offset_idx": 3,
-              "text": "Language",
-              "column_header": true,
+              "text": "complex",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 286.69,
-                "t": 354.58,
-                "r": 312.33,
-                "b": 362.95,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 3,
               "end_col_offset_idx": 4,
-              "text": "simple",
-              "column_header": true,
+              "text": "",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 320.7,
-                "t": 354.58,
-                "r": 353.72,
-                "b": 362.95,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "complex",
-              "column_header": true,
+              "text": "(0.75) all",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 369.31,
-                "t": 354.58,
-                "r": 379.03,
-                "b": 362.95,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 1,
               "end_row_offset_idx": 2,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 6,
-              "text": "all",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 394.93,
-                "t": 341.63,
-                "r": 418.47,
-                "b": 360.96,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
-              "text": "mAP (0.75)",
-              "column_header": true,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 427.15,
-                "t": 341.63,
-                "r": 470.77,
-                "b": 360.96,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 2,
-              "col_span": 1,
-              "start_row_offset_idx": 0,
-              "end_row_offset_idx": 2,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "Inference time (secs)",
-              "column_header": true,
+              "text": "time (secs)",
+              "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
@@ -1486,59 +1113,25 @@
           ],
           [
             {
-              "bbox": {
-                "l": 161.91,
-                "t": 373.41,
-                "r": 166.51,
-                "b": 381.78,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "6",
+              "text": "6 6 2.73 5.39",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 209.51,
-                "t": 373.41,
-                "r": 214.12,
-                "b": 381.78,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
               "end_row_offset_idx": 3,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "6",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 245.18,
-                "t": 367.93,
-                "r": 272.94,
-                "b": 389.25,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
               "text": "OTSL HTML",
               "column_header": false,
               "row_header": false,
@@ -1546,19 +1139,12 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 289.02,
-                "t": 367.93,
-                "r": 310.01,
-                "b": 389.25,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
               "end_row_offset_idx": 3,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
               "text": "0.965 0.969",
               "column_header": false,
               "row_header": false,
@@ -1566,19 +1152,12 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 326.72,
-                "t": 367.93,
-                "r": 347.71,
-                "b": 389.25,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
               "end_row_offset_idx": 3,
-              "start_col_offset_idx": 4,
-              "end_col_offset_idx": 5,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
               "text": "0.934 0.927",
               "column_header": false,
               "row_header": false,
@@ -1586,19 +1165,12 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 363.68,
-                "t": 367.93,
-                "r": 384.67,
-                "b": 389.25,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
               "end_row_offset_idx": 3,
-              "start_col_offset_idx": 5,
-              "end_col_offset_idx": 6,
+              "start_col_offset_idx": 4,
+              "end_col_offset_idx": 5,
               "text": "0.955 0.955",
               "column_header": false,
               "row_header": false,
@@ -1606,40 +1178,13 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 396.21,
-                "t": 366.64,
-                "r": 417.2,
-                "b": 389.25,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 2,
               "end_row_offset_idx": 3,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
+              "start_col_offset_idx": 5,
+              "end_col_offset_idx": 6,
               "text": "0.88 0.857",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 439.53,
-                "t": 366.64,
-                "r": 458.39,
-                "b": 389.25,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 2,
-              "end_row_offset_idx": 3,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "2.73 5.39",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1648,59 +1193,25 @@
           ],
           [
             {
-              "bbox": {
-                "l": 161.91,
-                "t": 399.71,
-                "r": 166.51,
-                "b": 408.08,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "4",
+              "text": "4 4 1.97 3.77",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 209.51,
-                "t": 399.71,
-                "r": 214.12,
-                "b": 408.08,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "4",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 245.18,
-                "t": 394.23,
-                "r": 272.94,
-                "b": 415.55,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
               "text": "OTSL HTML",
               "column_header": false,
               "row_header": false,
@@ -1708,19 +1219,12 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 289.02,
-                "t": 394.23,
-                "r": 310.01,
-                "b": 415.55,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
               "end_row_offset_idx": 4,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
               "text": "0.938 0.952",
               "column_header": false,
               "row_header": false,
@@ -1728,80 +1232,39 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 326.72,
-                "t": 394.23,
-                "r": 347.71,
-                "b": 415.55,
-                "coord_origin": "TOPLEFT"
-              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 3,
+              "end_row_offset_idx": 4,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "0.904 0.909 0.938",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "0.904 0.909",
+              "text": "0.927 0.853",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 362.09,
-                "t": 394.23,
-                "r": 386.25,
-                "b": 416.03,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 3,
               "end_row_offset_idx": 4,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 6,
-              "text": "0.927 0.938",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 394.62,
-                "t": 392.94,
-                "r": 418.78,
-                "b": 415.55,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
-              "text": "0.853 0.843",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 439.53,
-                "t": 392.94,
-                "r": 458.39,
-                "b": 415.55,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 3,
-              "end_row_offset_idx": 4,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "1.97 3.77",
+              "text": "0.843",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1810,59 +1273,25 @@
           ],
           [
             {
-              "bbox": {
-                "l": 161.91,
-                "t": 426.01,
-                "r": 166.51,
-                "b": 434.38,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "2",
+              "text": "2 4 1.91 3.81",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 209.51,
-                "t": 426.01,
-                "r": 214.12,
-                "b": 434.38,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "4",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 245.18,
-                "t": 420.53,
-                "r": 272.94,
-                "b": 441.86,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
               "text": "OTSL HTML",
               "column_header": false,
               "row_header": false,
@@ -1870,19 +1299,12 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 289.02,
-                "t": 420.53,
-                "r": 310.01,
-                "b": 441.86,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
               "end_row_offset_idx": 5,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
               "text": "0.923 0.945",
               "column_header": false,
               "row_header": false,
@@ -1890,80 +1312,39 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 326.72,
-                "t": 420.53,
-                "r": 347.71,
-                "b": 441.86,
-                "coord_origin": "TOPLEFT"
-              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 4,
+              "end_row_offset_idx": 5,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "0.897 0.901 0.931",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "0.897 0.901",
+              "text": "0.915 0.859",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 362.09,
-                "t": 420.53,
-                "r": 386.25,
-                "b": 442.33,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 4,
               "end_row_offset_idx": 5,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 6,
-              "text": "0.915 0.931",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 394.62,
-                "t": 419.24,
-                "r": 418.78,
-                "b": 441.86,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
-              "text": "0.859 0.834",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 439.53,
-                "t": 419.24,
-                "r": 458.39,
-                "b": 441.86,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 4,
-              "end_row_offset_idx": 5,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "1.91 3.81",
+              "text": "0.834",
               "column_header": false,
               "row_header": false,
               "row_section": false,
@@ -1972,59 +1353,25 @@
           ],
           [
             {
-              "bbox": {
-                "l": 161.91,
-                "t": 452.31,
-                "r": 166.51,
-                "b": 460.69,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 0,
               "end_col_offset_idx": 1,
-              "text": "4",
+              "text": "4 2 1.22 2",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 209.51,
-                "t": 452.31,
-                "r": 214.12,
-                "b": 460.69,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 1,
               "end_col_offset_idx": 2,
-              "text": "2",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 245.18,
-                "t": 446.83,
-                "r": 272.94,
-                "b": 468.16,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 2,
-              "end_col_offset_idx": 3,
               "text": "OTSL HTML",
               "column_header": false,
               "row_header": false,
@@ -2032,19 +1379,12 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 289.02,
-                "t": 446.83,
-                "r": 310.01,
-                "b": 468.16,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
-              "start_col_offset_idx": 3,
-              "end_col_offset_idx": 4,
+              "start_col_offset_idx": 2,
+              "end_col_offset_idx": 3,
               "text": "0.952 0.944",
               "column_header": false,
               "row_header": false,
@@ -2052,80 +1392,39 @@
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 326.72,
-                "t": 446.83,
-                "r": 347.71,
-                "b": 468.16,
-                "coord_origin": "TOPLEFT"
-              },
+              "row_span": 1,
+              "col_span": 1,
+              "start_row_offset_idx": 5,
+              "end_row_offset_idx": 6,
+              "start_col_offset_idx": 3,
+              "end_col_offset_idx": 4,
+              "text": "0.92 0.942 0.903",
+              "column_header": false,
+              "row_header": false,
+              "row_section": false,
+              "fillable": false
+            },
+            {
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 4,
               "end_col_offset_idx": 5,
-              "text": "0.92 0.903",
+              "text": "0.857 0.931",
               "column_header": false,
               "row_header": false,
               "row_section": false,
               "fillable": false
             },
             {
-              "bbox": {
-                "l": 362.09,
-                "t": 445.54,
-                "r": 386.25,
-                "b": 468.16,
-                "coord_origin": "TOPLEFT"
-              },
               "row_span": 1,
               "col_span": 1,
               "start_row_offset_idx": 5,
               "end_row_offset_idx": 6,
               "start_col_offset_idx": 5,
               "end_col_offset_idx": 6,
-              "text": "0.942 0.931",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 394.62,
-                "t": 445.54,
-                "r": 418.78,
-                "b": 468.16,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 6,
-              "end_col_offset_idx": 7,
-              "text": "0.857 0.824",
-              "column_header": false,
-              "row_header": false,
-              "row_section": false,
-              "fillable": false
-            },
-            {
-              "bbox": {
-                "l": 439.53,
-                "t": 445.54,
-                "r": 458.39,
-                "b": 468.16,
-                "coord_origin": "TOPLEFT"
-              },
-              "row_span": 1,
-              "col_span": 1,
-              "start_row_offset_idx": 5,
-              "end_row_offset_idx": 6,
-              "start_col_offset_idx": 7,
-              "end_col_offset_idx": 8,
-              "text": "1.22 2",
+              "text": "0.824",
               "column_header": false,
               "row_header": false,
               "row_section": false,

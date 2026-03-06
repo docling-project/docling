@@ -2,8 +2,6 @@
 
 <!-- image -->
 
-<!-- image -->
-
 There are 2 pictures grouped together
 
 <!-- image -->

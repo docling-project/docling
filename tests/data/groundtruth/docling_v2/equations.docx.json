@@ -1,10 +1,10 @@
 {
   "schema_name": "DoclingDocument",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "name": "equations",
   "origin": {
     "mimetype": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "binary_hash": 8638432756089077257,
+    "binary_hash": 13926367954351621561,
     "filename": "equations.docx"
   },
   "furniture": {
@@ -19,6 +19,9 @@
     "children": [
       {
         "$ref": "#/groups/0"
+      },
+      {
+        "$ref": "#/texts/2"
       },
       {
         "$ref": "#/texts/3"
@@ -49,6 +52,9 @@
       },
       {
         "$ref": "#/texts/12"
+      },
+      {
+        "$ref": "#/texts/13"
       },
       {
         "$ref": "#/groups/1"
@@ -90,10 +96,13 @@
         "$ref": "#/texts/27"
       },
       {
-        "$ref": "#/groups/2"
+        "$ref": "#/texts/28"
       },
       {
-        "$ref": "#/texts/31"
+        "$ref": "#/texts/29"
+      },
+      {
+        "$ref": "#/groups/2"
       },
       {
         "$ref": "#/texts/32"
@@ -145,6 +154,42 @@
       },
       {
         "$ref": "#/texts/48"
+      },
+      {
+        "$ref": "#/texts/49"
+      },
+      {
+        "$ref": "#/texts/50"
+      },
+      {
+        "$ref": "#/texts/51"
+      },
+      {
+        "$ref": "#/texts/52"
+      },
+      {
+        "$ref": "#/texts/53"
+      },
+      {
+        "$ref": "#/texts/54"
+      },
+      {
+        "$ref": "#/texts/55"
+      },
+      {
+        "$ref": "#/texts/56"
+      },
+      {
+        "$ref": "#/texts/57"
+      },
+      {
+        "$ref": "#/texts/58"
+      },
+      {
+        "$ref": "#/texts/59"
+      },
+      {
+        "$ref": "#/texts/60"
       }
     ],
     "content_layer": "body",
@@ -163,9 +208,6 @@
         },
         {
           "$ref": "#/texts/1"
-        },
-        {
-          "$ref": "#/texts/2"
         }
       ],
       "content_layer": "body",
@@ -178,9 +220,6 @@
         "$ref": "#/body"
       },
       "children": [
-        {
-          "$ref": "#/texts/13"
-        },
         {
           "$ref": "#/texts/14"
         },
@@ -199,13 +238,10 @@
       },
       "children": [
         {
-          "$ref": "#/texts/28"
-        },
-        {
-          "$ref": "#/texts/29"
-        },
-        {
           "$ref": "#/texts/30"
+        },
+        {
+          "$ref": "#/texts/31"
         }
       ],
       "content_layer": "body",
@@ -223,8 +259,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a word document and this is an inline equation: ",
-      "text": "This is a word document and this is an inline equation: "
+      "orig": "This is a word document and this is an inline equation:",
+      "text": "This is a word document and this is an inline equation:"
     },
     {
       "self_ref": "#/texts/1",
@@ -235,23 +271,11 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "A= \\pi r^{2}",
-      "text": "A= \\pi r^{2}"
+      "orig": "A= \\pi r^{2}. If instead, I want an equation by line, I can do this:",
+      "text": "A= \\pi r^{2}. If instead, I want an equation by line, I can do this:"
     },
     {
       "self_ref": "#/texts/2",
-      "parent": {
-        "$ref": "#/groups/0"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "text",
-      "prov": [],
-      "orig": ". If instead, I want an equation by line, I can do this:",
-      "text": ". If instead, I want an equation by line, I can do this:"
-    },
-    {
-      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -263,7 +287,7 @@
       "text": ""
     },
     {
-      "self_ref": "#/texts/4",
+      "self_ref": "#/texts/3",
       "parent": {
         "$ref": "#/body"
       },
@@ -271,8 +295,20 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "a^{2}+b^{2}=c^{2} \\text{ \\texttimes } 23",
-      "text": "a^{2}+b^{2}=c^{2} \\text{ \\texttimes } 23"
+      "orig": "a^{2}+b^{2}=c^{2} \\times  23",
+      "text": "a^{2}+b^{2}=c^{2} \\times  23"
+    },
+    {
+      "self_ref": "#/texts/4",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/5",
@@ -284,14 +320,7 @@
       "label": "text",
       "prov": [],
       "orig": "And that is an equation by itself. Cheers!",
-      "text": "And that is an equation by itself. Cheers!",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "And that is an equation by itself. Cheers!"
     },
     {
       "self_ref": "#/texts/6",
@@ -315,14 +344,7 @@
       "label": "text",
       "prov": [],
       "orig": "This is another equation:",
-      "text": "This is another equation:",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "text": "This is another equation:"
     },
     {
       "self_ref": "#/texts/8",
@@ -333,8 +355,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "f\\left(x\\right)=a_{0}+\\sum_{n=1}^{ \\infty }\\left(a_{n}\\cos(\\frac{n \\pi x}{L})+b_{n}\\sin(\\frac{n \\pi x}{L})\\right)",
-      "text": "f\\left(x\\right)=a_{0}+\\sum_{n=1}^{ \\infty }\\left(a_{n}\\cos(\\frac{n \\pi x}{L})+b_{n}\\sin(\\frac{n \\pi x}{L})\\right)"
+      "orig": "f\\left(x\\right)=a_{0}+\\sum_{n=1}^{\\infty } \\left(a_{n}cos \\frac{n \\pi x}{L}+b_{n}sin \\frac{n \\pi x}{L}\\right)",
+      "text": "f\\left(x\\right)=a_{0}+\\sum_{n=1}^{\\infty } \\left(a_{n}cos \\frac{n \\pi x}{L}+b_{n}sin \\frac{n \\pi x}{L}\\right)"
     },
     {
       "self_ref": "#/texts/9",
@@ -357,15 +379,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
-      "text": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/11",
@@ -376,8 +391,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
+      "text": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text."
     },
     {
       "self_ref": "#/texts/12",
@@ -394,14 +409,14 @@
     {
       "self_ref": "#/texts/13",
       "parent": {
-        "$ref": "#/groups/1"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a word document and this is an inline equation: ",
-      "text": "This is a word document and this is an inline equation: "
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/14",
@@ -410,10 +425,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "A= \\pi r^{2}",
-      "text": "A= \\pi r^{2}"
+      "orig": "This is a word document and this is an inline equation:",
+      "text": "This is a word document and this is an inline equation:"
     },
     {
       "self_ref": "#/texts/15",
@@ -422,10 +437,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "formula",
       "prov": [],
-      "orig": ". If instead, I want an equation by line, I can do this:",
-      "text": ". If instead, I want an equation by line, I can do this:"
+      "orig": "A= \\pi r^{2}. If instead, I want an equation by line, I can do this:",
+      "text": "A= \\pi r^{2}. If instead, I want an equation by line, I can do this:"
     },
     {
       "self_ref": "#/texts/16",
@@ -448,8 +463,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "\\left(x+a\\right)^{n}=\\sum_{k=0}^{n}\\left(\\genfrac{}{}{0pt}{}{n}{k}\\right)x^{k}a^{n-k}",
-      "text": "\\left(x+a\\right)^{n}=\\sum_{k=0}^{n}\\left(\\genfrac{}{}{0pt}{}{n}{k}\\right)x^{k}a^{n-k}"
+      "orig": "\\left(x+a\\right)^{n}=\\sum_{k=0}^{n} \\left(\\frac{n}{k}\\right)x^{k}a^{n-k}",
+      "text": "\\left(x+a\\right)^{n}=\\sum_{k=0}^{n} \\left(\\frac{n}{k}\\right)x^{k}a^{n-k}"
     },
     {
       "self_ref": "#/texts/18",
@@ -472,15 +487,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And that is an equation by itself. Cheers!",
-      "text": "And that is an equation by itself. Cheers!",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/20",
@@ -491,8 +499,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "And that is an equation by itself. Cheers!",
+      "text": "And that is an equation by itself. Cheers!"
     },
     {
       "self_ref": "#/texts/21",
@@ -503,15 +511,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is another equation:",
-      "text": "This is another equation:",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/22",
@@ -522,23 +523,11 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "This is another equation:",
+      "text": "This is another equation:"
     },
     {
       "self_ref": "#/texts/23",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "formula",
-      "prov": [],
-      "orig": "\\left(1+x\\right)^{n}=1+\\frac{nx}{1!}+\\frac{n\\left(n-1\\right)x^{2}}{2!}+ \\text{ \\textellipsis }",
-      "text": "\\left(1+x\\right)^{n}=1+\\frac{nx}{1!}+\\frac{n\\left(n-1\\right)x^{2}}{2!}+ \\text{ \\textellipsis }"
-    },
-    {
-      "self_ref": "#/texts/24",
       "parent": {
         "$ref": "#/body"
       },
@@ -548,6 +537,18 @@
       "prov": [],
       "orig": "",
       "text": ""
+    },
+    {
+      "self_ref": "#/texts/24",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "\\left(1+x\\right)^{n}=1+\\frac{nx}{1!}+\\frac{n\\left(n-1\\right)x^{2}}{2!}+…",
+      "text": "\\left(1+x\\right)^{n}=1+\\frac{nx}{1!}+\\frac{n\\left(n-1\\right)x^{2}}{2!}+…"
     },
     {
       "self_ref": "#/texts/25",
@@ -558,15 +559,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
-      "text": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/26",
@@ -589,32 +583,32 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text.",
+      "text": "This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text. This is text."
     },
     {
       "self_ref": "#/texts/28",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "This is a word document and this is an inline equation: ",
-      "text": "This is a word document and this is an inline equation: "
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/29",
       "parent": {
-        "$ref": "#/groups/2"
+        "$ref": "#/body"
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "A= \\pi r^{2}",
-      "text": "A= \\pi r^{2}"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/30",
@@ -625,20 +619,20 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": ". If instead, I want an equation by line, I can do this:",
-      "text": ". If instead, I want an equation by line, I can do this:"
+      "orig": "This is a word document and this is an inline equation:",
+      "text": "This is a word document and this is an inline equation:"
     },
     {
       "self_ref": "#/texts/31",
       "parent": {
-        "$ref": "#/body"
+        "$ref": "#/groups/2"
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "formula",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "A= \\pi r^{2}. If instead, I want an equation by line, I can do this:",
+      "text": "A= \\pi r^{2}. If instead, I want an equation by line, I can do this:"
     },
     {
       "self_ref": "#/texts/32",
@@ -647,10 +641,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+ \\text{ \\textellipsis } , - \\infty  < x <  \\infty",
-      "text": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+ \\text{ \\textellipsis } , - \\infty  < x <  \\infty"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/33",
@@ -659,10 +653,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "formula",
       "prov": [],
-      "orig": "",
-      "text": ""
+      "orig": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+…,  - \\infty <x< \\infty",
+      "text": "e^{x}=1+\\frac{x}{1!}+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+…,  - \\infty <x< \\infty"
     },
     {
       "self_ref": "#/texts/34",
@@ -673,15 +667,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "And that is an equation by itself. Cheers!",
-      "text": "And that is an equation by itself. Cheers!",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/35",
@@ -704,15 +691,8 @@
       "content_layer": "body",
       "label": "text",
       "prov": [],
-      "orig": "Large operators and integrals are represented with n-ary objects in OMML XML:",
-      "text": "Large operators and integrals are represented with n-ary objects in OMML XML:",
-      "formatting": {
-        "bold": false,
-        "italic": false,
-        "underline": false,
-        "strikethrough": false,
-        "script": "baseline"
-      }
+      "orig": "And that is an equation by itself. Cheers!",
+      "text": "And that is an equation by itself. Cheers!"
     },
     {
       "self_ref": "#/texts/37",
@@ -733,10 +713,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "\\sum_{0}^{2}x",
-      "text": "\\sum_{0}^{2}x"
+      "orig": "Large operators and integrals are represented with n-ary objects in OMML XML:",
+      "text": "Large operators and integrals are represented with n-ary objects in OMML XML:"
     },
     {
       "self_ref": "#/texts/39",
@@ -745,10 +725,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "\\bigcup_{n=1}^{m}\\left(X_{n} \\cap Y_{n}\\right)",
-      "text": "\\bigcup_{n=1}^{m}\\left(X_{n} \\cap Y_{n}\\right)"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/40",
@@ -759,8 +739,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "\\prod_{k=1}^{n}A_{k}",
-      "text": "\\prod_{k=1}^{n}A_{k}"
+      "orig": "\\sum_{0}^{2} x",
+      "text": "\\sum_{0}^{2} x"
     },
     {
       "self_ref": "#/texts/41",
@@ -769,10 +749,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "\\bigwedge_{}^{}x",
-      "text": "\\bigwedge_{}^{}x"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/42",
@@ -783,8 +763,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "\\int_{}^{}(2x+1)dx",
-      "text": "\\int_{}^{}(2x+1)dx"
+      "orig": "\\bigcup_{n=1}^{m} \\left(X_{n} \\cap Y_{n}\\right)",
+      "text": "\\bigcup_{n=1}^{m} \\left(X_{n} \\cap Y_{n}\\right)"
     },
     {
       "self_ref": "#/texts/43",
@@ -793,10 +773,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "\\iint_{0}^{1}xdx",
-      "text": "\\iint_{0}^{1}xdx"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/44",
@@ -807,8 +787,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "\\iiint_{}^{}ydy",
-      "text": "\\iiint_{}^{}ydy"
+      "orig": "\\prod_{k=1}^{n} A_{k}",
+      "text": "\\prod_{k=1}^{n} A_{k}"
     },
     {
       "self_ref": "#/texts/45",
@@ -817,10 +797,10 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "\\oint_{}^{}\\frac{dy}{dx}",
-      "text": "\\oint_{}^{}\\frac{dy}{dx}"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/46",
@@ -831,8 +811,8 @@
       "content_layer": "body",
       "label": "formula",
       "prov": [],
-      "orig": "\\oiint_{0}^{2 \\pi }idt",
-      "text": "\\oiint_{0}^{2 \\pi }idt"
+      "orig": "\\bigwedge x",
+      "text": "\\bigwedge x"
     },
     {
       "self_ref": "#/texts/47",
@@ -841,13 +821,157 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "formula",
+      "label": "text",
       "prov": [],
-      "orig": "\\oiiint_{C}^{}\\frac{1}{z}dz",
-      "text": "\\oiiint_{C}^{}\\frac{1}{z}dz"
+      "orig": "",
+      "text": ""
     },
     {
       "self_ref": "#/texts/48",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "\\int (2x+1)dx",
+      "text": "\\int (2x+1)dx"
+    },
+    {
+      "self_ref": "#/texts/49",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/50",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "\\iint_{0}^{1} xdx",
+      "text": "\\iint_{0}^{1} xdx"
+    },
+    {
+      "self_ref": "#/texts/51",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/52",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "\\iiint ydy",
+      "text": "\\iiint ydy"
+    },
+    {
+      "self_ref": "#/texts/53",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/54",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "\\oint \\frac{dy}{dx}",
+      "text": "\\oint \\frac{dy}{dx}"
+    },
+    {
+      "self_ref": "#/texts/55",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/56",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "\\oiint_{0}^{2 \\pi } idt",
+      "text": "\\oiint_{0}^{2 \\pi } idt"
+    },
+    {
+      "self_ref": "#/texts/57",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/58",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "formula",
+      "prov": [],
+      "orig": "\\oiiint_{C} \\frac{1}{z}dz",
+      "text": "\\oiiint_{C} \\frac{1}{z}dz"
+    },
+    {
+      "self_ref": "#/texts/59",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [],
+      "orig": "",
+      "text": ""
+    },
+    {
+      "self_ref": "#/texts/60",
       "parent": {
         "$ref": "#/body"
       },
