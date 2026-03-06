@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time  # --- PROFILING (remove when done) ---
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
@@ -154,6 +155,10 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
         assert self._output_boxes_name is not None
         assert self._output_scores_name is not None
 
+        # --- PROFILING START (remove when done) ---
+        t_preproc_start = time.time()
+        t_preproc_mono = time.monotonic()
+        # --- PROFILING END ---
         images = [item.image.convert("RGB") for item in input_batch]
         processed_inputs = self._processor(images=images, return_tensors="np")
 
@@ -162,6 +167,17 @@ class ApiKserveV2ObjectDetectionEngine(HfObjectDetectionEngineBase):
             [[image.width, image.height] for image in images],
             dtype=np.int64,
         )
+        # --- PROFILING START (remove when done) ---
+        t_preproc_duration = time.monotonic() - t_preproc_mono
+        t_preproc_end = time.time()
+        _log.info(
+            "PIPELINE_PROFILING KServe object-detection HF preprocessor: batch_size=%d start=%.3f end=%.3f duration=%.3fs",
+            len(input_batch),
+            t_preproc_start,
+            t_preproc_end,
+            t_preproc_duration,
+        )
+        # --- PROFILING END ---
 
         outputs = self._kserve_client.infer(
             inputs={

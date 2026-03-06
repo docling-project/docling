@@ -290,7 +290,24 @@ class ThreadedPipelineStage:
                     continue
 
                 pages: List[Page] = [payload for _, payload in pages_with_payloads]
+                # --- PROFILING START (remove when done) ---
+                t_start = time.time()
+                t_mono_start = time.monotonic()
+                # --- PROFILING END ---
                 processed_pages = list(self.model(good[0].conv_res, pages))  # type: ignore[arg-type]
+                # --- PROFILING START (remove when done) ---
+                duration = time.monotonic() - t_mono_start
+                t_end = time.time()
+                _log.info(
+                    "PIPELINE_PROFILING Stage %s: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
+                    self.name,
+                    rid,
+                    [it.page_no for it in good],
+                    t_start,
+                    t_end,
+                    duration,
+                )
+                # --- PROFILING END ---
                 if len(processed_pages) != len(pages):  # strict mismatch guard
                     raise RuntimeError(
                         f"Model {self.name} returned wrong number of pages"
@@ -366,6 +383,10 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 result.extend(items)
                 continue
             try:
+                # --- PROFILING START (remove when done) ---
+                t_start = time.time()
+                t_mono_start = time.monotonic()
+                # --- PROFILING END ---
                 pages_with_payloads: list[tuple[ThreadedItem, Page]] = []
                 for it in good:
                     page = it.payload
@@ -386,6 +407,18 @@ class PreprocessThreadedStage(ThreadedPipelineStage):
                 processed_pages = list(
                     self.model(good[0].conv_res, pages)  # type: ignore[arg-type]
                 )
+                # --- PROFILING START (remove when done) ---
+                duration = time.monotonic() - t_mono_start
+                t_end = time.time()
+                _log.info(
+                    "PIPELINE_PROFILING Stage preprocess: run_id=%d pages=%s start=%.3f end=%.3f duration=%.3fs",
+                    rid,
+                    [it.page_no for it in good],
+                    t_start,
+                    t_end,
+                    duration,
+                )
+                # --- PROFILING END ---
                 if len(processed_pages) != len(pages):
                     raise RuntimeError(
                         "PagePreprocessingModel returned unexpected number of pages"
