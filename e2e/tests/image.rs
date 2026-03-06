@@ -111,8 +111,7 @@ fn test_image_corrupt_file() {
     let pictures = parsed.get("pictures").and_then(|v| v.as_array()).unwrap();
     assert!(!pictures.is_empty(), "should still have a picture item");
     assert!(
-        pictures[0].get("image").is_none()
-            || pictures[0].get("image").unwrap().is_null(),
+        pictures[0].get("image").is_none() || pictures[0].get("image").unwrap().is_null(),
         "corrupt image should have null/missing image metadata"
     );
 }

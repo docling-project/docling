@@ -68,9 +68,7 @@ impl InputFormat {
             "pptx" | "potx" | "ppsx" | "pptm" | "potm" | "ppsm" => Some(Self::Pptx),
             "xlsx" | "xlsm" | "xls" => Some(Self::Xlsx),
             "pdf" => Some(Self::Pdf),
-            "png" | "jpg" | "jpeg" | "gif" | "bmp" | "tif" | "tiff" | "webp" => {
-                Some(Self::Image)
-            }
+            "png" | "jpg" | "jpeg" | "gif" | "bmp" | "tif" | "tiff" | "webp" => Some(Self::Image),
             "tex" | "latex" => Some(Self::Latex),
             "nxml" => Some(Self::XmlJats),
             "xml" => Self::sniff_xml_format(path),
@@ -115,15 +113,11 @@ impl InputFormat {
             Self::Html => "text/html",
             Self::AsciiDoc => "text/asciidoc",
             Self::Vtt => "text/vtt",
-            Self::Docx => {
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            }
+            Self::Docx => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             Self::Pptx => {
                 "application/vnd.openxmlformats-officedocument.presentationml.presentation"
             }
-            Self::Xlsx => {
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            }
+            Self::Xlsx => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             Self::Pdf => "application/pdf",
             Self::Image => "image/png",
             Self::Latex => "application/x-tex",
@@ -185,11 +179,13 @@ impl OutputFormat {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum DocItemLabel {
     Title,
     #[serde(rename = "section_header")]
     SectionHeader,
     Paragraph,
+    #[default]
     Text,
     #[serde(rename = "list_item")]
     ListItem,
@@ -221,15 +217,11 @@ pub enum DocItemLabel {
     Unknown,
 }
 
-impl Default for DocItemLabel {
-    fn default() -> Self {
-        Self::Text
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum ContentLayer {
+    #[default]
     Body,
     Furniture,
     Background,
@@ -239,15 +231,11 @@ pub enum ContentLayer {
     Unknown,
 }
 
-impl Default for ContentLayer {
-    fn default() -> Self {
-        Self::Body
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum GroupLabel {
+    #[default]
     Unspecified,
     List,
     #[serde(rename = "ordered_list")]
@@ -267,12 +255,6 @@ pub enum GroupLabel {
     PictureArea,
     #[serde(other)]
     Unknown,
-}
-
-impl Default for GroupLabel {
-    fn default() -> Self {
-        Self::Unspecified
-    }
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]

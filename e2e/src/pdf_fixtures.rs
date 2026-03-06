@@ -58,12 +58,12 @@ impl PdfBuilder {
         let xref_offset = buf.len();
         let max_id = self.next_id;
         write!(buf, "xref\n0 {max_id}\n").unwrap();
-        write!(buf, "0000000000 65535 f \n").unwrap();
+        writeln!(buf, "0000000000 65535 f ").unwrap();
 
         let mut sorted = offsets.clone();
         sorted.sort_by_key(|(id, _)| *id);
         for (_, offset) in &sorted {
-            write!(buf, "{offset:010} 00000 n \n").unwrap();
+            writeln!(buf, "{offset:010} 00000 n ").unwrap();
         }
 
         write!(
@@ -93,9 +93,7 @@ fn make_content_stream(texts: &[(f64, f64, f64, &str)]) -> String {
     let mut stream = String::new();
     for &(x, y, size, text) in texts {
         let escaped = escape_pdf_string(text);
-        stream.push_str(&format!(
-            "BT /F1 {size} Tf {x} {y} Td ({escaped}) Tj ET\n"
-        ));
+        stream.push_str(&format!("BT /F1 {size} Tf {x} {y} Td ({escaped}) Tj ET\n"));
     }
     stream
 }
@@ -169,9 +167,7 @@ fn generate_single_page(path: &Path) {
 
     b.add(
         pages_id,
-        format!(
-            "<< /Type /Pages /Kids [{page_id} 0 R] /Count 1 >>"
-        ),
+        format!("<< /Type /Pages /Kids [{page_id} 0 R] /Count 1 >>"),
     );
     b.add(
         catalog_id,
@@ -200,7 +196,12 @@ fn generate_multi_page(path: &Path) {
         792.0,
         &[
             (72.0, 700.0, 20.0, "1 Introduction"),
-            (72.0, 660.0, 12.0, "This is the first page of a multi-page document. It introduces the main topic."),
+            (
+                72.0,
+                660.0,
+                12.0,
+                "This is the first page of a multi-page document. It introduces the main topic.",
+            ),
         ],
     );
 
@@ -212,7 +213,12 @@ fn generate_multi_page(path: &Path) {
         792.0,
         &[
             (72.0, 700.0, 16.0, "2 Methods"),
-            (72.0, 660.0, 12.0, "The second page describes the methods used in this study."),
+            (
+                72.0,
+                660.0,
+                12.0,
+                "The second page describes the methods used in this study.",
+            ),
         ],
     );
 
@@ -224,15 +230,18 @@ fn generate_multi_page(path: &Path) {
         792.0,
         &[
             (72.0, 700.0, 16.0, "3 Conclusion"),
-            (72.0, 660.0, 12.0, "The third page wraps up with conclusions."),
+            (
+                72.0,
+                660.0,
+                12.0,
+                "The third page wraps up with conclusions.",
+            ),
         ],
     );
 
     b.add(
         pages_id,
-        format!(
-            "<< /Type /Pages /Kids [{p1} 0 R {p2} 0 R {p3} 0 R] /Count 3 >>"
-        ),
+        format!("<< /Type /Pages /Kids [{p1} 0 R {p2} 0 R {p3} 0 R] /Count 3 >>"),
     );
     b.add(
         catalog_id,

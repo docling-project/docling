@@ -84,7 +84,10 @@ fn test_cli_convert_doctags_output() {
     assert_eq!(result.exit_code, 0, "convert failed: {}", result.stderr);
 
     let actual = read_output(&result, "csv-comma", "doctags");
-    assert!(actual.starts_with("<doctags>"), "should start with <doctags> root");
+    assert!(
+        actual.starts_with("<doctags>"),
+        "should start with <doctags> root"
+    );
     assert!(actual.contains("</doctags>"), "should end with </doctags>");
     assert!(actual.contains("<table>"), "CSV should produce a table");
 }
@@ -335,12 +338,7 @@ fn test_cli_directory_input() {
         let json_files: Vec<_> = fs::read_dir(tmp.path())
             .unwrap()
             .filter_map(|e| e.ok())
-            .filter(|e| {
-                e.path()
-                    .extension()
-                    .map(|x| x == "json")
-                    .unwrap_or(false)
-            })
+            .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
             .collect();
         assert!(
             !json_files.is_empty(),

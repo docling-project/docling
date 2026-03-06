@@ -71,7 +71,11 @@ impl Backend for AsciiDocBackend {
             // Image macro: image::path[alt]
             if let Some(caps) = image_macro_re.captures(line) {
                 let alt = caps[2].trim().to_string();
-                let alt_ref = if alt.is_empty() { None } else { Some(alt.as_str()) };
+                let alt_ref = if alt.is_empty() {
+                    None
+                } else {
+                    Some(alt.as_str())
+                };
                 doc.add_picture(alt_ref, current_parent.as_deref());
                 i += 1;
                 continue;
@@ -81,7 +85,7 @@ impl Backend for AsciiDocBackend {
             if let Some(caps) = heading_re.captures(line) {
                 let level = caps[1].len() as u32;
                 let text = strip_inline_formatting(&caps[2], &inline_fmt_re);
-                let text = text.trim_end_matches(|c: char| c == '=' || c == ' ');
+                let text = text.trim_end_matches(['=', ' ']);
                 if level == 1 {
                     let idx = doc.add_title(text, None);
                     current_parent = Some(format!("#/texts/{}", idx));
@@ -149,8 +153,7 @@ impl Backend for AsciiDocBackend {
 
             // Unordered lists (* or -)
             if ulist_re.is_match(line) || dash_list_re.is_match(line) {
-                let group_idx =
-                    doc.add_group("list", GroupLabel::List, current_parent.as_deref());
+                let group_idx = doc.add_group("list", GroupLabel::List, current_parent.as_deref());
                 let group_ref = format!("#/groups/{}", group_idx);
                 while i < lines.len() {
                     if let Some(caps) = ulist_re.captures(lines[i]) {
@@ -271,11 +274,7 @@ impl Backend for AsciiDocBackend {
             }
 
             let para_text = strip_inline_formatting(&para_text, &inline_fmt_re);
-            doc.add_text(
-                DocItemLabel::Text,
-                &para_text,
-                current_parent.as_deref(),
-            );
+            doc.add_text(DocItemLabel::Text, &para_text, current_parent.as_deref());
         }
 
         Ok(doc)

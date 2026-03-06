@@ -4,6 +4,12 @@ use std::process::Command;
 use tempfile::TempDir;
 
 pub fn docling_bin() -> PathBuf {
+    let bin_name = if cfg!(windows) {
+        "docling-rs.exe"
+    } else {
+        "docling-rs"
+    };
+
     if let Ok(p) = std::env::var("DOCLING_BIN") {
         return PathBuf::from(p);
     }
@@ -13,18 +19,18 @@ pub fn docling_bin() -> PathBuf {
     base.push("docling-rs");
 
     if let Ok(target_dir) = std::env::var("CARGO_TARGET_DIR") {
-        let release = PathBuf::from(&target_dir).join("release").join("docling-rs");
+        let release = PathBuf::from(&target_dir).join("release").join(bin_name);
         if release.exists() {
             return release;
         }
-        return PathBuf::from(&target_dir).join("debug").join("docling-rs");
+        return PathBuf::from(&target_dir).join("debug").join(bin_name);
     }
 
-    let release = base.join("target").join("release").join("docling-rs");
+    let release = base.join("target").join("release").join(bin_name);
     if release.exists() {
         return release;
     }
-    base.join("target").join("debug").join("docling-rs")
+    base.join("target").join("debug").join(bin_name)
 }
 
 pub fn test_data_dir() -> PathBuf {
@@ -51,10 +57,7 @@ pub fn run_convert(input: &Path, formats: &[&str]) -> ConvertResult {
     let bin = docling_bin();
 
     let mut cmd = Command::new(&bin);
-    cmd.arg("convert")
-        .arg(input)
-        .arg("-o")
-        .arg(tmp.path());
+    cmd.arg("convert").arg(input).arg("-o").arg(tmp.path());
 
     for fmt in formats {
         cmd.arg("--to").arg(fmt);
@@ -70,7 +73,11 @@ pub fn run_convert(input: &Path, formats: &[&str]) -> ConvertResult {
     }
 }
 
-pub fn run_convert_with_format(input: &Path, formats: &[&str], input_format: &str) -> ConvertResult {
+pub fn run_convert_with_format(
+    input: &Path,
+    formats: &[&str],
+    input_format: &str,
+) -> ConvertResult {
     let tmp = TempDir::new().expect("failed to create temp dir");
     let bin = docling_bin();
 
@@ -99,14 +106,16 @@ pub fn run_convert_with_format(input: &Path, formats: &[&str], input_format: &st
 pub fn read_output(result: &ConvertResult, stem: &str, ext: &str) -> String {
     let filename = format!("{}.{}", stem, ext);
     let path = result.output_dir.path().join(&filename);
-    std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("Failed to read output file {}: {}", path.display(), e))
+    let content = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("Failed to read output file {}: {}", path.display(), e));
+    content.replace("\r\n", "\n")
 }
 
 pub fn read_groundtruth(name: &str) -> String {
     let path = groundtruth_dir().join(name);
-    std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("Failed to read groundtruth {}: {}", path.display(), e))
+    let content = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("Failed to read groundtruth {}: {}", path.display(), e));
+    content.replace("\r\n", "\n")
 }
 
 pub fn levenshtein_similarity(a: &str, b: &str) -> f64 {
@@ -302,8 +311,14 @@ pub fn assert_json_strict_structural_match(actual: &str, expected: &str) {
     }
 
     // Verify body children (check both have children, allow structural differences)
-    let actual_body = actual_val.get("body").and_then(|v| v.get("children")).and_then(|v| v.as_array());
-    let expected_body = expected_val.get("body").and_then(|v| v.get("children")).and_then(|v| v.as_array());
+    let actual_body = actual_val
+        .get("body")
+        .and_then(|v| v.get("children"))
+        .and_then(|v| v.as_array());
+    let expected_body = expected_val
+        .get("body")
+        .and_then(|v| v.get("children"))
+        .and_then(|v| v.as_array());
     if let (Some(ab), Some(eb)) = (actual_body, expected_body) {
         assert!(
             !ab.is_empty() || eb.is_empty(),
@@ -359,7 +374,11 @@ pub fn assert_json_lenient_structural_match(actual: &str, expected: &str) {
     ) {
         let an_base = an.split('.').next().unwrap_or(an);
         let en_base = en.split('.').next().unwrap_or(en);
-        assert_eq!(an_base, en_base, "name base mismatch: actual={}, expected={}", an, en);
+        assert_eq!(
+            an_base, en_base,
+            "name base mismatch: actual={}, expected={}",
+            an, en
+        );
     }
 
     let actual_texts = actual_val.get("texts").and_then(|v| v.as_array());
@@ -413,13 +432,21 @@ pub fn assert_valid_docling_document(json: &str) {
             .and_then(|v| v.as_str())
             .expect("body child must have a $ref");
         let valid = if let Some(rest) = ref_str.strip_prefix("#/texts/") {
-            rest.parse::<usize>().map(|i| i < texts_len).unwrap_or(false)
+            rest.parse::<usize>()
+                .map(|i| i < texts_len)
+                .unwrap_or(false)
         } else if let Some(rest) = ref_str.strip_prefix("#/tables/") {
-            rest.parse::<usize>().map(|i| i < tables_len).unwrap_or(false)
+            rest.parse::<usize>()
+                .map(|i| i < tables_len)
+                .unwrap_or(false)
         } else if let Some(rest) = ref_str.strip_prefix("#/groups/") {
-            rest.parse::<usize>().map(|i| i < groups_len).unwrap_or(false)
+            rest.parse::<usize>()
+                .map(|i| i < groups_len)
+                .unwrap_or(false)
         } else if let Some(rest) = ref_str.strip_prefix("#/pictures/") {
-            rest.parse::<usize>().map(|i| i < pictures_len).unwrap_or(false)
+            rest.parse::<usize>()
+                .map(|i| i < pictures_len)
+                .unwrap_or(false)
         } else {
             false
         };
@@ -432,12 +459,17 @@ pub fn assert_valid_docling_document(json: &str) {
 }
 
 /// Normalize Python's `cref` keys to `$ref` for comparison with Rust output.
+#[allow(dead_code)]
 fn normalize_refs(val: &serde_json::Value) -> serde_json::Value {
     match val {
         serde_json::Value::Object(map) => {
             let mut new_map = serde_json::Map::new();
             for (k, v) in map {
-                let key = if k == "cref" { "$ref".to_string() } else { k.clone() };
+                let key = if k == "cref" {
+                    "$ref".to_string()
+                } else {
+                    k.clone()
+                };
                 new_map.insert(key, normalize_refs(v));
             }
             serde_json::Value::Object(new_map)
@@ -461,7 +493,9 @@ fn safe_truncate(s: &str, max_bytes: usize) -> &str {
 }
 
 pub fn assert_md_similar(actual: &str, expected: &str, min_similarity: f64) {
-    let sim = levenshtein_similarity(actual.trim(), expected.trim());
+    let actual_norm = actual.replace("\r\n", "\n");
+    let expected_norm = expected.replace("\r\n", "\n");
+    let sim = levenshtein_similarity(actual_norm.trim(), expected_norm.trim());
     assert!(
         sim >= min_similarity,
         "Markdown similarity {:.2}% is below threshold {:.2}%\n--- Actual ---\n{}\n--- Expected ---\n{}",

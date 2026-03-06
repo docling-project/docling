@@ -105,6 +105,8 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
     let end_re = Regex::new(r"^\\end\{(\w+\*?)\}").unwrap();
     let item_re = Regex::new(r"^\\item\s*(.*)").unwrap();
     let inline_math_re = Regex::new(r"\$([^$]+)\$").unwrap();
+    static CAPTION_RE: OnceLock<Regex> = OnceLock::new();
+    let caption_re = CAPTION_RE.get_or_init(|| Regex::new(r"\\caption\{([^}]*)\}").unwrap());
 
     while i < lines.len() {
         let line = lines[i].trim();
@@ -189,8 +191,7 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
             let env = caps[1].to_string();
             match env.as_str() {
                 "itemize" | "enumerate" | "description" => {
-                    let gidx =
-                        doc.add_group("list", GroupLabel::List, current_parent.as_deref());
+                    let gidx = doc.add_group("list", GroupLabel::List, current_parent.as_deref());
                     let group_ref = format!("#/groups/{}", gidx);
 
                     i += 1;
@@ -221,9 +222,7 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
                             i += 1;
                             break;
                         }
-                        if l.starts_with("\\begin{tabular}")
-                            || l.starts_with("\\end{tabular}")
-                        {
+                        if l.starts_with("\\begin{tabular}") || l.starts_with("\\end{tabular}") {
                             i += 1;
                             continue;
                         }
@@ -236,9 +235,6 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
                             continue;
                         }
                         if l.starts_with("\\caption") {
-                            static CAPTION_RE: OnceLock<Regex> = OnceLock::new();
-                            let caption_re = CAPTION_RE
-                                .get_or_init(|| Regex::new(r"\\caption\{([^}]*)\}").unwrap());
                             if let Some(cc) = caption_re.captures(l) {
                                 let ct = clean_latex(&cc[1]);
                                 if !ct.is_empty() {
@@ -250,18 +246,15 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
                         }
                         if l.contains('&') || l.contains("\\\\") {
                             let row_text = l.trim_end_matches("\\\\").trim();
-                            let cols: Vec<String> = row_text
-                                .split('&')
-                                .map(|s| clean_latex(s.trim()))
-                                .collect();
+                            let cols: Vec<String> =
+                                row_text.split('&').map(|s| clean_latex(s.trim())).collect();
                             rows.push(cols);
                         }
                         i += 1;
                     }
 
                     if !rows.is_empty() {
-                        let num_cols =
-                            rows.iter().map(|r| r.len()).max().unwrap_or(0) as u32;
+                        let num_cols = rows.iter().map(|r| r.len()).max().unwrap_or(0) as u32;
                         let num_rows = rows.len() as u32;
                         let mut cells = Vec::new();
                         for (row_idx, row) in rows.iter().enumerate() {
@@ -282,12 +275,7 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
                                 });
                             }
                         }
-                        doc.add_table(
-                            cells,
-                            num_rows,
-                            num_cols,
-                            current_parent.as_deref(),
-                        );
+                        doc.add_table(cells, num_rows, num_cols, current_parent.as_deref());
                     }
 
                     if let Some(ct) = caption_text {
@@ -296,8 +284,8 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
                     continue;
                 }
                 "equation" | "equation*" | "align" | "align*" | "math" | "displaymath"
-                | "gather" | "gather*" | "multline" | "multline*" | "eqnarray"
-                | "eqnarray*" | "flalign" | "flalign*" => {
+                | "gather" | "gather*" | "multline" | "multline*" | "eqnarray" | "eqnarray*"
+                | "flalign" | "flalign*" => {
                     i += 1;
                     let mut formula = String::new();
                     while i < lines.len() {
@@ -315,11 +303,7 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
                         i += 1;
                     }
                     if !formula.is_empty() {
-                        doc.add_text(
-                            DocItemLabel::Formula,
-                            &formula,
-                            current_parent.as_deref(),
-                        );
+                        doc.add_text(DocItemLabel::Formula, &formula, current_parent.as_deref());
                     }
                     continue;
                 }
@@ -467,11 +451,7 @@ fn parse_latex(content: &str, doc: &mut DoclingDocument) {
 
         // Regular text paragraph — also handles inline math extraction
         let text = clean_latex(line);
-        if !text.is_empty()
-            && !text.starts_with('\\')
-            && !text.starts_with('{')
-            && text.len() > 2
-        {
+        if !text.is_empty() && !text.starts_with('\\') && !text.starts_with('{') && text.len() > 2 {
             let mut para = text;
             i += 1;
             while i < lines.len() {

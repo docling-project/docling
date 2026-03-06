@@ -99,11 +99,9 @@ fn process_node<'a>(node: &'a comrak::nodes::AstNode<'a>, ctx: &mut ConvertCtx) 
             if text.is_empty() {
                 return;
             }
-            let idx = ctx.doc.add_text(
-                DocItemLabel::Code,
-                &text,
-                ctx.current_parent.as_deref(),
-            );
+            let idx = ctx
+                .doc
+                .add_text(DocItemLabel::Code, &text, ctx.current_parent.as_deref());
             if !info.is_empty() {
                 let lang = info.split_whitespace().next().unwrap_or(&info);
                 ctx.doc.texts[idx].code_language = Some(lang.to_string());
@@ -119,15 +117,9 @@ fn process_node<'a>(node: &'a comrak::nodes::AstNode<'a>, ctx: &mut ConvertCtx) 
             } else {
                 GroupLabel::List
             };
-            let name = if is_ordered {
-                "ordered list"
-            } else {
-                "list"
-            };
+            let name = if is_ordered { "ordered list" } else { "list" };
             let parent = ctx.list_parent.clone().or(ctx.current_parent.clone());
-            let group_idx =
-                ctx.doc
-                    .add_group(name, label, parent.as_deref());
+            let group_idx = ctx.doc.add_group(name, label, parent.as_deref());
             let group_ref = format!("#/groups/{}", group_idx);
 
             let mut counter = start;
@@ -143,12 +135,8 @@ fn process_node<'a>(node: &'a comrak::nodes::AstNode<'a>, ctx: &mut ConvertCtx) 
                     } else {
                         Some("-".to_string())
                     };
-                    ctx.doc.add_list_item(
-                        &item_text,
-                        is_ordered,
-                        marker.as_deref(),
-                        &group_ref,
-                    );
+                    ctx.doc
+                        .add_list_item(&item_text, is_ordered, marker.as_deref(), &group_ref);
 
                     // Process nested lists within this item
                     let saved_list_parent = ctx.list_parent.clone();
@@ -167,12 +155,8 @@ fn process_node<'a>(node: &'a comrak::nodes::AstNode<'a>, ctx: &mut ConvertCtx) 
                     let item_text = collect_item_text(child);
                     let prefix = if is_checked { "[x] " } else { "[ ] " };
                     let full_text = format!("{}{}", prefix, item_text);
-                    ctx.doc.add_list_item(
-                        &full_text,
-                        false,
-                        Some("-"),
-                        &group_ref,
-                    );
+                    ctx.doc
+                        .add_list_item(&full_text, false, Some("-"), &group_ref);
 
                     let saved_list_parent = ctx.list_parent.clone();
                     ctx.list_parent = Some(group_ref.clone());

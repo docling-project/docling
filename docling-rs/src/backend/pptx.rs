@@ -7,11 +7,11 @@ use base64::Engine;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
+use super::Backend;
 use crate::models::common::{DocItemLabel, GroupLabel, InputFormat};
 use crate::models::document::{create_doc_from_file, DoclingDocument};
 use crate::models::picture::{ImageRef, ImageSize};
 use crate::models::table::TableCell;
-use super::Backend;
 
 pub struct PptxBackend;
 
@@ -28,17 +28,12 @@ impl Backend for PptxBackend {
         let slide_names = find_slides(&mut archive);
 
         for (slide_idx, slide_name) in slide_names.iter().enumerate() {
-            let rels_path = slide_name
-                .replace("ppt/slides/", "ppt/slides/_rels/")
-                + ".rels";
+            let rels_path = slide_name.replace("ppt/slides/", "ppt/slides/_rels/") + ".rels";
             let rels = parse_relationships(&mut archive, &rels_path);
             let xml = read_zip_entry(&mut archive, slide_name)?;
 
-            let slide_group_idx = doc.add_group(
-                &format!("slide-{}", slide_idx),
-                GroupLabel::Chapter,
-                None,
-            );
+            let slide_group_idx =
+                doc.add_group(&format!("slide-{}", slide_idx), GroupLabel::Chapter, None);
             let slide_parent = format!("#/groups/{}", slide_group_idx);
 
             if let Some((w, h)) = slide_size {
@@ -56,14 +51,7 @@ impl Backend for PptxBackend {
                 );
             }
 
-            parse_slide_xml(
-                &xml,
-                slide_idx,
-                &rels,
-                &media,
-                &slide_parent,
-                &mut doc,
-            )?;
+            parse_slide_xml(&xml, slide_idx, &rels, &media, &slide_parent, &mut doc)?;
 
             // Parse notes for this slide via relationship lookup
             if let Some(notes_target) = rels.resolve_notes_path() {
@@ -81,9 +69,7 @@ impl Backend for PptxBackend {
 // Presentation-level info
 // ---------------------------------------------------------------------------
 
-fn read_slide_size(
-    archive: &mut zip::ZipArchive<std::fs::File>,
-) -> Option<(f64, f64)> {
+fn read_slide_size(archive: &mut zip::ZipArchive<std::fs::File>) -> Option<(f64, f64)> {
     let xml = read_zip_entry(archive, "ppt/presentation.xml").ok()?;
     let mut reader = Reader::from_str(&xml);
     loop {
@@ -120,13 +106,15 @@ struct Relationships {
 
 impl Relationships {
     fn resolve_url(&self, r_id: &str) -> Option<String> {
-        self.map.get(r_id).and_then(|(target, is_ext)| {
-            if *is_ext {
-                Some(target.clone())
-            } else {
-                None
-            }
-        })
+        self.map.get(r_id).and_then(
+            |(target, is_ext)| {
+                if *is_ext {
+                    Some(target.clone())
+                } else {
+                    None
+                }
+            },
+        )
     }
 
     fn resolve_notes_path(&self) -> Option<String> {
@@ -152,10 +140,7 @@ impl Relationships {
     }
 }
 
-fn parse_relationships(
-    archive: &mut zip::ZipArchive<std::fs::File>,
-    path: &str,
-) -> Relationships {
+fn parse_relationships(archive: &mut zip::ZipArchive<std::fs::File>, path: &str) -> Relationships {
     let mut rels = Relationships::default();
     let xml = match read_zip_entry(archive, path) {
         Ok(x) => x,
@@ -167,11 +152,9 @@ fn parse_relationships(
             Ok(Event::Start(ref e)) | Ok(Event::Empty(ref e)) => {
                 let local = get_local_name(e);
                 if local == "Relationship" {
-                    if let (Some(id), Some(target)) =
-                        (get_attr(e, "Id"), get_attr(e, "Target"))
-                    {
+                    if let (Some(id), Some(target)) = (get_attr(e, "Id"), get_attr(e, "Target")) {
                         let is_ext = get_attr(e, "TargetMode")
-                            .map_or(false, |m| m.eq_ignore_ascii_case("External"));
+                            .is_some_and(|m| m.eq_ignore_ascii_case("External"));
                         rels.map.insert(id, (target, is_ext));
                     }
                 }
@@ -408,8 +391,7 @@ fn parse_slide_xml(
                         }
                     }
                     "blip" if in_pic => {
-                        pic_blip_rid = get_attr(e, "embed")
-                            .or_else(|| get_attr(e, "link"));
+                        pic_blip_rid = get_attr(e, "embed").or_else(|| get_attr(e, "link"));
                     }
                     "cNvPr" if in_pic => {
                         if pic_desc.is_none() {
@@ -469,8 +451,7 @@ fn parse_slide_xml(
                         check_merge_attrs(e, &mut cell_is_hmerge, &mut cell_is_vmerge);
                     }
                     "blip" if in_pic => {
-                        pic_blip_rid = get_attr(e, "embed")
-                            .or_else(|| get_attr(e, "link"));
+                        pic_blip_rid = get_attr(e, "embed").or_else(|| get_attr(e, "link"));
                     }
                     "cNvPr" if in_pic => {
                         pic_desc = get_attr(e, "descr");
@@ -514,8 +495,12 @@ fn parse_slide_xml(
                 if in_run && in_paragraph && !shape_skip {
                     let entity = String::from_utf8_lossy(e.as_ref());
                     let ch = match entity.as_ref() {
-                        "amp" => "&", "lt" => "<", "gt" => ">",
-                        "apos" => "'", "quot" => "\"", _ => "",
+                        "amp" => "&",
+                        "lt" => "<",
+                        "gt" => ">",
+                        "apos" => "'",
+                        "quot" => "\"",
+                        _ => "",
                     };
                     if !ch.is_empty() {
                         if in_table_cell {
@@ -754,11 +739,7 @@ fn emit_txbody_texts(
     }
 }
 
-fn check_merge_attrs(
-    e: &quick_xml::events::BytesStart,
-    hmerge: &mut bool,
-    vmerge: &mut bool,
-) {
+fn check_merge_attrs(e: &quick_xml::events::BytesStart, hmerge: &mut bool, vmerge: &mut bool) {
     if let Some(hm) = get_attr(e, "hMerge") {
         if hm == "1" || hm == "true" {
             *hmerge = true;
@@ -804,8 +785,12 @@ fn parse_notes_xml(xml: &str, slide_parent: &str, doc: &mut DoclingDocument) {
             Ok(Event::GeneralRef(ref e)) if in_run && in_paragraph => {
                 let entity = String::from_utf8_lossy(e.as_ref());
                 let ch = match entity.as_ref() {
-                    "amp" => "&", "lt" => "<", "gt" => ">",
-                    "apos" => "'", "quot" => "\"", _ => "",
+                    "amp" => "&",
+                    "lt" => "<",
+                    "gt" => ">",
+                    "apos" => "'",
+                    "quot" => "\"",
+                    _ => "",
                 };
                 para_text.push_str(ch);
             }

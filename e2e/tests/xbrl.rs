@@ -23,7 +23,10 @@ fn test_xbrl_mlac() {
         let expected_json = read_groundtruth(gt_json);
         assert_json_structural_match(&actual_json, &expected_json);
     } else {
-        eprintln!("WARNING: groundtruth file {} not found, skipping comparison", gt_json);
+        eprintln!(
+            "WARNING: groundtruth file {} not found, skipping comparison",
+            gt_json
+        );
     }
 
     let actual_md = read_output(&result, "mlac-20251231", "md");
@@ -34,7 +37,10 @@ fn test_xbrl_mlac() {
         let expected_md = read_groundtruth(gt_md);
         assert_md_similar(&actual_md, &expected_md, 0.15);
     } else {
-        eprintln!("WARNING: groundtruth file {} not found, skipping comparison", gt_md);
+        eprintln!(
+            "WARNING: groundtruth file {} not found, skipping comparison",
+            gt_md
+        );
     }
 }
 
@@ -61,7 +67,10 @@ fn test_xbrl_grve() {
         let expected_json = read_groundtruth(gt_json);
         assert_json_structural_match(&actual_json, &expected_json);
     } else {
-        eprintln!("WARNING: groundtruth file {} not found, skipping comparison", gt_json);
+        eprintln!(
+            "WARNING: groundtruth file {} not found, skipping comparison",
+            gt_json
+        );
     }
 
     let actual_md = read_output(&result, "grve_10q_htm", "md");
@@ -72,7 +81,10 @@ fn test_xbrl_grve() {
         let expected_md = read_groundtruth(gt_md);
         assert_md_similar(&actual_md, &expected_md, 0.15);
     } else {
-        eprintln!("WARNING: groundtruth file {} not found, skipping comparison", gt_md);
+        eprintln!(
+            "WARNING: groundtruth file {} not found, skipping comparison",
+            gt_md
+        );
     }
 }
 

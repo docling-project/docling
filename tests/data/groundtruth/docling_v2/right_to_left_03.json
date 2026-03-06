@@ -81,6 +81,9 @@
         "$ref": "#/texts/20"
       },
       {
+        "$ref": "#/texts/21"
+      },
+      {
         "$ref": "#/pictures/0"
       }
     ],
@@ -97,26 +100,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 85.46399688720703,
+            "t": 528.5799865722656,
+            "r": 104.90399932861328,
+            "b": 540.5799865722656,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            78
+            6
           ]
         }
       ],
-      "orig": "یلخاد ی لااک - یلصا رازاب رد شريذپ همان ديما",
-      "text": "یلخاد ی لااک - یلصا رازاب رد شريذپ همان ديما",
-      "level": 2
+      "orig": "تن 4",
+      "text": "تن 4"
     },
     {
       "self_ref": "#/texts/1",
@@ -125,25 +127,26 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "section_header",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 208.00999450683594,
+            "t": 573.4599914550781,
+            "r": 220.25,
+            "b": 585.4599914550781,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            215
+            3
           ]
         }
       ],
-      "orig": "یرگ  هتخير  شور  هب  هدش  ديلوت  لاشمش  و  هشمش درادناتسا مان\n قباطم - یا  هزاس  یاهدلاوف  رد  فرصم  دروم  هتسويپ\nتسويپ زيلانآ",
-      "text": "یرگ  هتخير  شور  هب  هدش  ديلوت  لاشمش  و  هشمش درادناتسا مان\n قباطم - یا  هزاس  یاهدلاوف  رد  فرصم  دروم  هتسويپ\nتسويپ زيلانآ"
+      "orig": "5 %",
+      "text": "5 %",
+      "level": 1
     },
     {
       "self_ref": "#/texts/2",
@@ -157,21 +160,21 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 103.94000244140625,
+            "t": 528.5799865722656,
+            "r": 214.73001098632812,
+            "b": 540.5799865722656,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            42
+            11
           ]
         }
       ],
-      "orig": "20300 یلم درادناتسا هرامش",
-      "text": "20300 یلم درادناتسا هرامش",
-      "level": 1
+      "orig": "7.500 % 5 0",
+      "text": "7.500 % 5 0",
+      "level": 2
     },
     {
       "self_ref": "#/texts/3",
@@ -185,21 +188,21 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 109.22000122070312,
+            "t": 413.9499816894531,
+            "r": 226.6999969482422,
+            "b": 495.66998291015625,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            54
+            97
           ]
         }
       ],
-      "orig": "ريخ یلب ؟تسا یرابجا درادناتسا",
-      "text": "ريخ یلب ؟تسا یرابجا درادناتسا",
-      "level": 2
+      "orig": "436 1403 / 10 / 05 بورس رمون آ کارگزاری جهانی های اساس قيمت بر",
+      "text": "436 1403 / 10 / 05 بورس رمون آ کارگزاری جهانی های اساس قيمت بر",
+      "level": 1
     },
     {
       "self_ref": "#/texts/4",
@@ -208,25 +211,26 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "text",
+      "label": "section_header",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 137.89999389648438,
+            "t": 368.4499816894531,
+            "r": 189.7639923095703,
+            "b": 403.14996337890625,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            96
+            29
           ]
         }
       ],
-      "orig": "ناريا درادناتسا یلم نامزاس درادناتسا هدننکرداص عجرم",
-      "text": "ناريا درادناتسا یلم نامزاس درادناتسا هدننکرداص عجرم"
+      "orig": "1403 / 09 / 19 1403 / 10 / 04",
+      "text": "1403 / 09 / 19 1403 / 10 / 04",
+      "level": 1
     },
     {
       "self_ref": "#/texts/5",
@@ -240,163 +244,23 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 129.02000427246094,
+            "t": 528.5799865722656,
+            "r": 261.0199890136719,
+            "b": 540.5799865722656,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            103
+            46
           ]
         }
       ],
-      "orig": "ريخ        یلب ذخا ار روکذم درادناتسا ،لوصحم هدننکديلوت ايآ",
-      "text": "ريخ        یلب ذخا ار روکذم درادناتسا ،لوصحم هدننکديلوت ايآ"
+      "orig": "از توليد ساليانه يا حداقل",
+      "text": "از توليد ساليانه يا حداقل"
     },
     {
       "self_ref": "#/texts/6",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
-            "coord_origin": "TOPLEFT"
-          },
-          "charspan": [
-            0,
-            47
-          ]
-        }
-      ],
-      "orig": "1403 / 09 / 19 کرادم هئارا خيرات",
-      "text": "1403 / 09 / 19 کرادم هئارا خيرات",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/7",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
-            "coord_origin": "TOPLEFT"
-          },
-          "charspan": [
-            0,
-            36
-          ]
-        }
-      ],
-      "orig": "1403 / 10 / 04 شريذپ خيرات",
-      "text": "1403 / 10 / 04 شريذپ خيرات",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/8",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
-            "coord_origin": "TOPLEFT"
-          },
-          "charspan": [
-            0,
-            43
-          ]
-        }
-      ],
-      "orig": "436 هضرع هتيمک هسلج هرامش",
-      "text": "436 هضرع هتيمک هسلج هرامش",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/9",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
-            "coord_origin": "TOPLEFT"
-          },
-          "charspan": [
-            0,
-            49
-          ]
-        }
-      ],
-      "orig": "1403 / 10 / 05 همانديما جرد خيرات",
-      "text": "1403 / 10 / 05 همانديما جرد خيرات",
-      "level": 1
-    },
-    {
-      "self_ref": "#/texts/10",
-      "parent": {
-        "$ref": "#/body"
-      },
-      "children": [],
-      "content_layer": "body",
-      "label": "section_header",
-      "prov": [
-        {
-          "page_no": 1,
-          "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
-            "coord_origin": "TOPLEFT"
-          },
-          "charspan": [
-            0,
-            59
-          ]
-        }
-      ],
-      "orig": "سروب نومر آ یرازگراک شريذپ رواشم",
-      "text": "سروب نومر آ یرازگراک شريذپ رواشم",
-      "level": 2
-    },
-    {
-      "self_ref": "#/texts/11",
       "parent": {
         "$ref": "#/body"
       },
@@ -407,20 +271,156 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 106.94000244140625,
+            "t": 573.4599914550781,
+            "r": 258.739990234375,
+            "b": 585.4599914550781,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            113
+            43
           ]
         }
       ],
-      "orig": "یناهج یاه تميق ساسا رب رد لااک شريذپ زا سپ هياپ تميق نييعت ةوحن",
-      "text": "یناهج یاه تميق ساسا رب رد لااک شريذپ زا سپ هياپ تميق نييعت ةوحن"
+      "orig": "آخرين محموله قابل تحويل",
+      "text": "آخرين محموله قابل تحويل"
+    },
+    {
+      "self_ref": "#/texts/7",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 266.57000732421875,
+            "t": 529.4199829101562,
+            "r": 309.21197509765625,
+            "b": 543.4599914550781,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            10
+          ]
+        }
+      ],
+      "orig": "فروش /",
+      "text": "فروش /"
+    },
+    {
+      "self_ref": "#/texts/8",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 66.26399993896484,
+            "t": 174.6199951171875,
+            "r": 105.86399841308594,
+            "b": 186.6199951171875,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            12
+          ]
+        }
+      ],
+      "orig": "مطابق -",
+      "text": "مطابق -"
+    },
+    {
+      "self_ref": "#/texts/9",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 127.81999969482422,
+            "t": 57.1199951171875,
+            "r": 135.5419921875,
+            "b": 71.15997314453125,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            1
+          ]
+        }
+      ],
+      "orig": "-",
+      "text": "-"
+    },
+    {
+      "self_ref": "#/texts/10",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 191.2100067138672,
+            "t": 278.69000244140625,
+            "r": 289.72998046875,
+            "b": 290.69000244140625,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            13
+          ]
+        }
+      ],
+      "orig": "بلی خير",
+      "text": "بلی خير"
+    },
+    {
+      "self_ref": "#/texts/11",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "section_header",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 191.2100067138672,
+            "t": 210.6199951171875,
+            "r": 269.8699951171875,
+            "b": 245.3299560546875,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            19
+          ]
+        }
+      ],
+      "orig": "20300 خير بلی",
+      "text": "20300 خير بلی",
+      "level": 1
     },
     {
       "self_ref": "#/texts/12",
@@ -434,20 +434,20 @@
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 105.0199966430664,
+            "t": 174.6199951171875,
+            "r": 297.8599853515625,
+            "b": 204.3800048828125,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            137
+            90
           ]
         }
       ],
-      "orig": "نت 4 7.500 اي هنايلاس ديلوت زا % 5 0 لقادح شورف / شورف لک / ديلوت زا هضرع دصرد لقادح",
-      "text": "نت 4 7.500 اي هنايلاس ديلوت زا % 5 0 لقادح شورف / شورف لک / ديلوت زا هضرع دصرد لقادح"
+      "orig": "در فوالدهای سازه ای پيوسته مورد مصرف آناليز پيوست",
+      "text": "در فوالدهای سازه ای پيوسته مورد مصرف آناليز پيوست"
     },
     {
       "self_ref": "#/texts/13",
@@ -456,26 +456,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 160.4600067138672,
+            "t": 256.00994873046875,
+            "r": 338.17999267578125,
+            "b": 268.00994873046875,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            76
+            49
           ]
         }
       ],
-      "orig": "ليوحت لباق هلومحم نيرخآ 5 % ليوحت زاجم یاطخ",
-      "text": "ليوحت لباق هلومحم نيرخآ 5 % ليوحت زاجم یاطخ",
-      "level": 2
+      "orig": "سازمان ملی استاندارد ايران",
+      "text": "سازمان ملی استاندارد ايران"
     },
     {
       "self_ref": "#/texts/14",
@@ -484,26 +483,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 305.92999267578125,
+            "t": 529.4199829101562,
+            "r": 520.0599975585938,
+            "b": 588.3399810791016,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            6
+            55
           ]
         }
       ],
-      "orig": "Page 7",
-      "text": "Page 7",
-      "level": 2
+      "orig": "فروش کل / داخلی خطای مجاز تحويل",
+      "text": "فروش کل / داخلی خطای مجاز تحويل"
     },
     {
       "self_ref": "#/texts/15",
@@ -512,26 +510,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 360.07000732421875,
+            "t": 506.5899658203125,
+            "r": 545.3980102539062,
+            "b": 543.4599914550781,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            39
+            53
           ]
         }
       ],
-      "orig": "ناريا یلااک سروب تکرش",
-      "text": "ناريا یلااک سروب تکرش",
-      "level": 2
+      "orig": "بورس حداقل درصد عرضه از توليد",
+      "text": "بورس حداقل درصد عرضه از توليد"
     },
     {
       "self_ref": "#/texts/16",
@@ -540,26 +537,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 281.3299865722656,
+            "t": 346.6099548339844,
+            "r": 590.2099609375,
+            "b": 498.54998779296875,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            36
+            253
           ]
         }
       ],
-      "orig": "لاا ک درادناتسا - 2 - 5",
-      "text": "لاا ک درادناتسا - 2 - 5",
-      "level": 2
+      "orig": "پذيرش در بورس - 3 تاريخ ارائه مدارک تاريخ پذيرش کميته عرضه شماره جلسه تاريخ درج اميدنامه مشاور پذيرش نحوة تعيين قيمت پايه پس از پذيرش کاال در",
+      "text": "پذيرش در بورس - 3 تاريخ ارائه مدارک تاريخ پذيرش کميته عرضه شماره جلسه تاريخ درج اميدنامه مشاور پذيرش نحوة تعيين قيمت پايه پس از پذيرش کاال در"
     },
     {
       "self_ref": "#/texts/17",
@@ -568,15 +564,15 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 461.9800109863281,
+            "t": 301.72998046875,
+            "r": 539.2000122070312,
+            "b": 315.76995849609375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
@@ -585,9 +581,8 @@
           ]
         }
       ],
-      "orig": "؟تسا هدومن",
-      "text": "؟تسا هدومن",
-      "level": 2
+      "orig": "نموده است؟",
+      "text": "نموده است؟"
     },
     {
       "self_ref": "#/texts/18",
@@ -596,26 +591,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 389.4700012207031,
+            "t": 211.46002197265625,
+            "r": 574.7979736328125,
+            "b": 270.88995361328125,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            28
+            124
           ]
         }
       ],
-      "orig": "سروب رد شريذپ - 3",
-      "text": "سروب رد شريذپ - 3",
-      "level": 2
+      "orig": "شماره استاندارد ملی استاندارد اجباری است؟ مرجع صادرکننده استاندارد",
+      "text": "شماره استاندارد ملی استاندارد اجباری است؟ مرجع صادرکننده استاندارد"
     },
     {
       "self_ref": "#/texts/19",
@@ -624,26 +618,25 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 66.38400268554688,
+            "t": 133.4599609375,
+            "r": 559.1259765625,
+            "b": 171.6199951171875,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            8
+            132
           ]
         }
       ],
-      "orig": "سروب",
-      "text": "سروب",
-      "level": 2
+      "orig": "اال استاندارد ک - 2 - 5 گری ريخته روش به شده توليد شمشال وشمشه نام استاندارد",
+      "text": "اال استاندارد ک - 2 - 5 گری ريخته روش به شده توليد شمشال وشمشه نام استاندارد"
     },
     {
       "self_ref": "#/texts/20",
@@ -652,26 +645,52 @@
       },
       "children": [],
       "content_layer": "body",
-      "label": "section_header",
+      "label": "text",
       "prov": [
         {
           "page_no": 1,
           "bbox": {
-            "l": 0.0,
-            "t": 0.0,
-            "r": 595.3200073242188,
-            "b": 842.0399780273438,
+            "l": 383.3500061035156,
+            "t": 87.97998046875,
+            "r": 510.42999267578125,
+            "b": 99.01995849609375,
             "coord_origin": "TOPLEFT"
           },
           "charspan": [
             0,
-            10
+            39
           ]
         }
       ],
-      "orig": "یلخاد",
-      "text": "یلخاد",
-      "level": 2
+      "orig": "شرکت بورس کاالی ايران",
+      "text": "شرکت بورس کاالی ايران"
+    },
+    {
+      "self_ref": "#/texts/21",
+      "parent": {
+        "$ref": "#/body"
+      },
+      "children": [],
+      "content_layer": "body",
+      "label": "text",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": {
+            "l": 292.1300048828125,
+            "t": 279.530029296875,
+            "r": 639.6199951171875,
+            "b": 293.57000732421875,
+            "coord_origin": "TOPLEFT"
+          },
+          "charspan": [
+            0,
+            82
+          ]
+        }
+      ],
+      "orig": "آيا توليدکننده محصول، استاندارد مذکور را اخذ",
+      "text": "آيا توليدکننده محصول، استاندارد مذکور را اخذ"
     }
   ],
   "pictures": [
@@ -688,9 +707,9 @@
           "page_no": 1,
           "bbox": {
             "l": 411.79998779296875,
-            "t": 82.989990234375,
-            "r": 458.44998931884766,
-            "b": 129.28998947143555,
+            "t": 36.69000244140625,
+            "r": 458.4499816894531,
+            "b": 82.989990234375,
             "coord_origin": "TOPLEFT"
           }
         }
@@ -698,6 +717,15 @@
       "captions": [],
       "references": [],
       "footnotes": [],
+      "image": {
+        "mimetype": "image/png",
+        "dpi": 72,
+        "size": {
+          "width": 129.0,
+          "height": 128.0
+        },
+        "uri": "data:image/png;base64,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"
+      },
       "annotations": []
     }
   ],

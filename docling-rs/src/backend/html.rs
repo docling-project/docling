@@ -122,8 +122,11 @@ fn process_html_node(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
                 "pre" => {
                     let text = collect_preformatted_text(node);
                     if !text.is_empty() {
-                        let idx = ctx.doc
-                            .add_text(DocItemLabel::Code, &text, ctx.current_parent.as_deref());
+                        let idx = ctx.doc.add_text(
+                            DocItemLabel::Code,
+                            &text,
+                            ctx.current_parent.as_deref(),
+                        );
                         if let Some(lang) = detect_code_language(node) {
                             ctx.doc.texts[idx].code_language = Some(lang);
                         }
@@ -131,19 +134,14 @@ fn process_html_node(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
                 }
                 "ul" => {
                     let parent = ctx.list_parent.clone().or(ctx.current_parent.clone());
-                    let group_idx = ctx.doc.add_group(
-                        "list",
-                        GroupLabel::List,
-                        parent.as_deref(),
-                    );
+                    let group_idx = ctx
+                        .doc
+                        .add_group("list", GroupLabel::List, parent.as_deref());
                     let group_ref = format!("#/groups/{}", group_idx);
                     process_list_items(node, &group_ref, false, 1, ctx);
                 }
                 "ol" => {
-                    let start: u32 = el
-                        .attr("start")
-                        .and_then(|v| v.parse().ok())
-                        .unwrap_or(1);
+                    let start: u32 = el.attr("start").and_then(|v| v.parse().ok()).unwrap_or(1);
                     let parent = ctx.list_parent.clone().or(ctx.current_parent.clone());
                     let group_idx = ctx.doc.add_group(
                         "ordered list",
@@ -155,11 +153,9 @@ fn process_html_node(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
                 }
                 "dl" => {
                     let parent = ctx.list_parent.clone().or(ctx.current_parent.clone());
-                    let group_idx = ctx.doc.add_group(
-                        "list",
-                        GroupLabel::List,
-                        parent.as_deref(),
-                    );
+                    let group_idx = ctx
+                        .doc
+                        .add_group("list", GroupLabel::List, parent.as_deref());
                     let group_ref = format!("#/groups/{}", group_idx);
                     for child in node.children() {
                         if let Node::Element(child_el) = child.value() {
@@ -180,8 +176,11 @@ fn process_html_node(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
                     let text = collect_element_text(node);
                     if !text.is_empty() {
                         let href = el.attr("href").map(|s| s.to_string());
-                        let idx = ctx.doc
-                            .add_text(DocItemLabel::Text, &text, ctx.current_parent.as_deref());
+                        let idx = ctx.doc.add_text(
+                            DocItemLabel::Text,
+                            &text,
+                            ctx.current_parent.as_deref(),
+                        );
                         if let Some(url) = href {
                             ctx.doc.texts[idx].hyperlink = Some(url);
                         }
@@ -189,7 +188,11 @@ fn process_html_node(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
                 }
                 "img" => {
                     let alt = el.attr("alt").unwrap_or("").to_string();
-                    let alt_ref = if alt.is_empty() { None } else { Some(alt.as_str()) };
+                    let alt_ref = if alt.is_empty() {
+                        None
+                    } else {
+                        Some(alt.as_str())
+                    };
                     ctx.doc.add_picture(alt_ref, ctx.current_parent.as_deref());
                 }
                 "blockquote" => {
@@ -208,8 +211,8 @@ fn process_html_node(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
                         );
                     }
                 }
-                "div" | "section" | "article" | "main" | "header" | "aside"
-                | "details" | "summary" | "span" => {
+                "div" | "section" | "article" | "main" | "header" | "aside" | "details"
+                | "summary" | "span" => {
                     process_element_children(node, ctx);
                 }
                 "nav" => {
@@ -256,7 +259,11 @@ fn process_figure(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
                 "img" => {
                     img_alt = el.attr("alt").and_then(|a| {
                         let t = a.trim();
-                        if t.is_empty() { None } else { Some(t.to_string()) }
+                        if t.is_empty() {
+                            None
+                        } else {
+                            Some(t.to_string())
+                        }
                     });
                 }
                 _ => {}
@@ -269,7 +276,9 @@ fn process_figure(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
 
     if let Some(cap) = caption_text {
         let pic_ref = format!("#/pictures/{}", pic_idx);
-        let cap_idx = ctx.doc.add_text(DocItemLabel::Caption, &cap, Some(&pic_ref));
+        let cap_idx = ctx
+            .doc
+            .add_text(DocItemLabel::Caption, &cap, Some(&pic_ref));
         let cap_ref = RefItem {
             ref_path: format!("#/texts/{}", cap_idx),
         };
@@ -310,18 +319,18 @@ fn process_list_items(
                     .add_list_item(&text, ordered, Some(&marker), group_ref);
                 counter += 1;
 
-                    // Handle nested lists inside <li>
-                    let saved_list_parent = ctx.list_parent.clone();
-                    ctx.list_parent = Some(group_ref.to_string());
-                    for li_child in child.children() {
-                        if let Node::Element(li_child_el) = li_child.value() {
-                            let li_child_tag = li_child_el.name.local.as_ref();
-                            if li_child_tag == "ul" || li_child_tag == "ol" {
-                                process_html_node(&li_child, ctx);
-                            }
+                // Handle nested lists inside <li>
+                let saved_list_parent = ctx.list_parent.clone();
+                ctx.list_parent = Some(group_ref.to_string());
+                for li_child in child.children() {
+                    if let Node::Element(li_child_el) = li_child.value() {
+                        let li_child_tag = li_child_el.name.local.as_ref();
+                        if li_child_tag == "ul" || li_child_tag == "ol" {
+                            process_html_node(&li_child, ctx);
                         }
                     }
-                    ctx.list_parent = saved_list_parent;
+                }
+                ctx.list_parent = saved_list_parent;
             }
         }
     }
@@ -374,14 +383,10 @@ fn convert_table(node: &NodeRef<Node>, ctx: &mut HtmlCtx) {
 
                     let text = collect_element_text(&child);
                     let is_header = tag == "th" || is_header_row;
-                    let col_span: u32 = el
-                        .attr("colspan")
-                        .and_then(|v| v.parse().ok())
-                        .unwrap_or(1);
-                    let row_span: u32 = el
-                        .attr("rowspan")
-                        .and_then(|v| v.parse().ok())
-                        .unwrap_or(1);
+                    let col_span: u32 =
+                        el.attr("colspan").and_then(|v| v.parse().ok()).unwrap_or(1);
+                    let row_span: u32 =
+                        el.attr("rowspan").and_then(|v| v.parse().ok()).unwrap_or(1);
 
                     // Mark cells as occupied for rowspan tracking
                     for dr in 0..row_span {
@@ -461,7 +466,11 @@ fn extract_sole_link_href(node: &NodeRef<Node>) -> Option<String> {
             }
         }
     }
-    if link_count == 1 { link_href } else { None }
+    if link_count == 1 {
+        link_href
+    } else {
+        None
+    }
 }
 
 fn collect_element_text(node: &NodeRef<Node>) -> String {

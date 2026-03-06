@@ -31,7 +31,10 @@ fn test_latex_example_02() {
 
 #[test]
 fn test_latex_multifile_1706() {
-    let input = test_data_dir().join("latex").join("1706.03762").join("main.tex");
+    let input = test_data_dir()
+        .join("latex")
+        .join("1706.03762")
+        .join("main.tex");
 
     let result = run_convert(&input, &["json", "md"]);
     assert_eq!(result.exit_code, 0, "convert failed: {}", result.stderr);
@@ -62,7 +65,10 @@ fn test_latex_multifile_1706() {
 
 #[test]
 fn test_latex_2310_06825_smoke() {
-    let input = test_data_dir().join("latex").join("2310.06825").join("main.tex");
+    let input = test_data_dir()
+        .join("latex")
+        .join("2310.06825")
+        .join("main.tex");
     let result = run_convert(&input, &["json"]);
     assert_eq!(result.exit_code, 0, "convert failed: {}", result.stderr);
 
@@ -73,7 +79,10 @@ fn test_latex_2310_06825_smoke() {
 
 #[test]
 fn test_latex_2305_03393_smoke() {
-    let input = test_data_dir().join("latex").join("2305.03393").join("main.tex");
+    let input = test_data_dir()
+        .join("latex")
+        .join("2305.03393")
+        .join("main.tex");
     let result = run_convert(&input, &["json"]);
     assert_eq!(result.exit_code, 0, "convert failed: {}", result.stderr);
 
@@ -84,7 +93,10 @@ fn test_latex_2305_03393_smoke() {
 
 #[test]
 fn test_latex_2501_00089_smoke() {
-    let input = test_data_dir().join("latex").join("2501.00089").join("main.tex");
+    let input = test_data_dir()
+        .join("latex")
+        .join("2501.00089")
+        .join("main.tex");
     let result = run_convert(&input, &["json"]);
     assert_eq!(result.exit_code, 0, "convert failed: {}", result.stderr);
 
@@ -167,8 +179,13 @@ fn test_latex_example_02_has_formula() {
 
     let texts = parsed.get("texts").and_then(|v| v.as_array()).unwrap();
 
-    let has_formula = texts.iter().any(|t| t.get("label").and_then(|l| l.as_str()) == Some("formula"));
-    assert!(has_formula, "example_02 should have at least one formula item");
+    let has_formula = texts
+        .iter()
+        .any(|t| t.get("label").and_then(|l| l.as_str()) == Some("formula"));
+    assert!(
+        has_formula,
+        "example_02 should have at least one formula item"
+    );
 
     let tables = parsed.get("tables").and_then(|v| v.as_array()).unwrap();
     assert_eq!(tables.len(), 1, "example_02 should have exactly one table");
